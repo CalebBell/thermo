@@ -17,7 +17,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 import sys
 import importlib.util
@@ -49,7 +50,7 @@ replaced = fluids.numba.numerics_dict.copy()
 def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     import chemicals.numba
 
-    cache_blacklist = set(['sequential_substitution_2P_functional',])
+    cache_blacklist = {'sequential_substitution_2P_functional',}
     __funcs.update(normal_fluids.numba.numbafied_fluids_functions.copy())
 
     blacklist = set(['identify_sort_phases', 'score_phases_S', 'score_phases_VL',

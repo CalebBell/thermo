@@ -5689,7 +5689,7 @@ class GCEOSMIX(GCEOS):
             return d2ns
         return array(d2ns)
 
-class EpsilonZeroMixingRules(object):
+class EpsilonZeroMixingRules:
     @property
     def depsilon_dzs(self):
         r'''Helper method for calculating the composition derivatives of
@@ -5822,7 +5822,7 @@ class EpsilonZeroMixingRules(object):
 
 
 
-class PSRKMixingRules(object):
+class PSRKMixingRules:
     u = 1.1
     A = -0.6466271649250525 # log(1.1/(1.1+1))
     A_inv = 1.0/A

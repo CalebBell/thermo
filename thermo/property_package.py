@@ -257,7 +257,7 @@ random_values = [0.8444218515250481, 0.7579544029403025, 0.420571580830845, 0.25
 
 
 
-class StabilityTester(object):
+class StabilityTester:
 
     def __init__(self, Tcs, Pcs, omegas, aqueous_check=False, CASs=None):
         self.Tcs = Tcs
@@ -547,7 +547,7 @@ class StabilityTester(object):
         return guesses
 
 
-class PropertyPackage(object):
+class PropertyPackage:
 
 
     # Constant - if the phase fraction is this close to either the liquid or
@@ -951,7 +951,7 @@ class PropertyPackage(object):
             raise Exception('Optional dependency matplotlib is required for plotting')
         from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
-        import numpy.ma as ma
+        from numpy import ma
 
         if Pmin is None:
             raise Exception('Minimum pressure could not be auto-detected; please provide it')

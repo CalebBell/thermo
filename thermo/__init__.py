@@ -17,7 +17,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 import os
 from fluids import numerics
@@ -267,18 +268,17 @@ if not numerics.is_micropython:
         def __getattr__(name):
             global vectorized, numba, units, numba_vectorized
             if name == 'vectorized':
-                import thermo.vectorized as vectorized
-                return vectorized
+                import thermo.vectorized
+                return thermo.vectorized
             if name == 'numba':
-                import thermo.numba as numba
-                return numba
+                import thermo.numba
+                return thermo.numba
             if name == 'units':
-                import thermo.units as units
-                return units
+                import thermo.units
+                return thermo.units
             if name == 'numba_vectorized':
-                import thermo.numba as numba
-                import thermo.numba_vectorized as numba_vectorized
-                return numba_vectorized
+                import thermo.numba_vectorized
+                return thermo.numba_vectorized
             raise AttributeError(f"module {__name__} has no attribute {name}")
     else:
         from . import vectorized

@@ -17,7 +17,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 __all__ = ['MixtureProperty']
 
@@ -27,7 +28,7 @@ from fluids.numerics import linspace, derivative, numpy as np
 from thermo.utils import has_matplotlib, POLY_FIT
 from thermo.eos_mix import GCEOSMIX
 
-class MixtureProperty(object):
+class MixtureProperty:
     RAISE_PROPERTY_CALCULATION_ERROR = False
     name = 'Test'
     units = 'test units'
@@ -141,7 +142,7 @@ class MixtureProperty(object):
                 d[k] = [v.as_json() for v in d[k]]
 
         try:
-            eos = getattr(self, 'eos')
+            eos = self.eos
             if eos:
                 d['eos'] = eos[0].as_json()
         except:
@@ -769,7 +770,7 @@ class MixtureProperty(object):
             import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
-        import numpy.ma as ma
+        from numpy import ma
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
         if Pmin is None:

@@ -1126,7 +1126,7 @@ class VolumeLiquidMixture(MixtureProperty):
 
         if none_and_length_check([self.MWs, self.Tcs, self.Pcs, self.Zcs]):
             methods.append(RACKETT)
-            if none_and_length_check([self.Tcs, self.CASs]) and all([CAS in volume.rho_data_COSTALD.index for CAS in self.CASs]):
+            if none_and_length_check([self.Tcs, self.CASs]) and all(CAS in volume.rho_data_COSTALD.index for CAS in self.CASs):
                 Z_RAs = [volume.rho_data_COSTALD.at[CAS, 'Z_RA'] for CAS in self.CASs]
                 if not any(np.isnan(Z_RAs)):
                     self.Z_RAs = Z_RAs

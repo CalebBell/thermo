@@ -58,7 +58,7 @@ from chemicals.identifiers import check_CAS, sorted_CAS_key
 
 
 
-class InteractionParameterDB(object):
+class InteractionParameterDB:
     '''Basic database framework for interaction parameters.
     '''
 
@@ -347,7 +347,7 @@ class InteractionParameterDB(object):
                 values[i][j] = i_ip
         return values
 
-class ScalarParameterDB(object):
+class ScalarParameterDB:
     '''Basic database framework for scalar parameters of various thermodynamic
     models. The following keys are used:
 

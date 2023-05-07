@@ -297,7 +297,8 @@ class ViscosityLiquid(TPDependentProperty):
     @staticmethod
     def interpolation_T(T):
         '''Function to make the data-based interpolation as linear as possible.
-        This transforms the input `T` into the `1/T` domain.'''
+        This transforms the input `T` into the `1/T` domain.
+        '''
         return 1./T
 
     @staticmethod
@@ -309,7 +310,8 @@ class ViscosityLiquid(TPDependentProperty):
     @staticmethod
     def interpolation_property_inv(P):
         '''exp(P) interpolation transformation by default; reverses
-        :obj:`interpolation_property_inv`.'''
+        :obj:`interpolation_property_inv`.
+        '''
         return exp(P)
 
     tabular_extrapolation_permitted = True

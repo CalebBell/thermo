@@ -682,7 +682,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
             methods.append(FILIPPOV)
         if '7732-18-5' in self.CASs and len(self.CASs)>1:
             wCASs = [i for i in self.CASs if i != '7732-18-5']
-            if all([i in electrochem.Magomedovk_thermal_cond.index for i in wCASs]):
+            if all(i in electrochem.Magomedovk_thermal_cond.index for i in wCASs):
                 methods.append(MAGOMEDOV)
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')

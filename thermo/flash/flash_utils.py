@@ -1831,7 +1831,7 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
     s = 'dlnphis_d%s' %(iter_var)
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
     dlnphis_diter_var_const = getattr(const_phase.__class__, s)
-    dlnphis_dzs = getattr(iter_phase.__class__, 'dlnphis_dzs')
+    dlnphis_dzs = iter_phase.__class__.dlnphis_dzs
 
     info = []
     kwargs = {}
@@ -2616,9 +2616,9 @@ strs_to_ders = {('H', 'T', 'P'): 'dH_dT_P',
 }
 
 
-multiple_solution_sets = set([('T', 'S'), ('T', 'H'), ('T', 'U'), ('T', 'A'), ('T', 'G'),
+multiple_solution_sets = {('T', 'S'), ('T', 'H'), ('T', 'U'), ('T', 'A'), ('T', 'G'),
                               ('S', 'T'), ('H', 'T'), ('U', 'T'), ('A', 'T'), ('G', 'T'),
-                              ])
+                              }
 
 def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
                        iter_var='T', fixed_var='P', spec='H',
@@ -3461,7 +3461,8 @@ def solve_T_VF_IG_K_composition_independent(VF, T, zs, gas, liq, xtol=1e-10):
     # Ki = l_phi(P)/g_phi(P)
     Ki = l_phi(P)#/g_phi
     err = zi*(Ki-1)/(1+VF*(Ki-1))
-    cse([diff(err, P), err], optimizations='basic')'''
+    cse([diff(err, P), err], optimizations='basic')
+    '''
     # gas phis are all one in IG model
 #     gas.to(T=T, P=P, zs=zs)
     cmps = range(liq.N)

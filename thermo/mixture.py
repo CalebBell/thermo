@@ -17,7 +17,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 
 __all__ = ['Mixture']
@@ -160,7 +161,7 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
     return IDs, zs, ws, Vfls, Vfgs
 
 
-class Mixture(object):
+class Mixture:
     '''Creates a Mixture object which contains basic information such as
     molecular weight and the structure of the species, as well as thermodynamic
     and transport properties as a function of two of the variables temperature,

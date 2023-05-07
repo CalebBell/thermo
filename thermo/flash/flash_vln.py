@@ -17,7 +17,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 __all__ = ['FlashVLN']
 
@@ -223,8 +224,8 @@ class FlashVLN(FlashVL):
 
         self.N = constants.N
 
-        self.K_composition_independent = all([i.composition_independent for i in self.phases])
-        self.ideal_gas_basis = all([i.ideal_gas_basis for i in self.phases])
+        self.K_composition_independent = all(i.composition_independent for i in self.phases)
+        self.ideal_gas_basis = all(i.ideal_gas_basis for i in self.phases)
 
 
         self.aqueous_check = (self.SS_STAB_AQUEOUS_CHECK and '7732-18-5' in constants.CASs)

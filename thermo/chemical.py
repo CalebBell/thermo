@@ -17,7 +17,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 
 __all__ = ['Chemical', 'reference_states']
@@ -88,7 +89,7 @@ reference_states = [IAPWS, ASHRAE, IIR, REFPROP, CHEMSEP, PRO_II, HYSYS,
 
 
 
-class ChemicalConstants(object):
+class ChemicalConstants:
     __slots__ = ('CAS', 'Tc', 'Pc', 'Vc', 'omega', 'Tb', 'Tm', 'Tt', 'Pt',
                  'Hfus', 'Hsub', 'Hfg', 'dipole',
                  'HeatCapacityGas', 'HeatCapacityLiquid', 'HeatCapacitySolid',
@@ -216,7 +217,7 @@ def set_user_chemical_property_databases(paths):
 
 
 
-class Chemical(object): # pragma: no cover
+class Chemical: # pragma: no cover
     '''Creates a Chemical object which contains basic information such as
     molecular weight and the structure of the species, as well as thermodynamic
     and transport properties as a function of temperature and pressure.

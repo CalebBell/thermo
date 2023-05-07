@@ -17,7 +17,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 
 __all__ = ['TDependentProperty', 'PROPERTY_TRANSFORM_LN', 'PROPERTY_TRANSFORM_DLN',
@@ -238,7 +239,7 @@ def create_local_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T):
             value = float(f)
         except:
             raise ValueError("`f` must be either a callable or a number")
-        if not all([i is None for i in (f_der, f_der2, f_der3, f_int, f_int_over_T)]):
+        if not all(i is None for i in (f_der, f_der2, f_der3, f_int, f_int_over_T)):
             raise ValueError("cannot define derivatives and integrals "
                              "when `f` is a number")
         return ConstantLocalMethod(value)
@@ -300,7 +301,7 @@ PROPERTY_TRANSFORM_D2_X = 'd2xdT2overx'
 
 
 
-class TDependentProperty(object):
+class TDependentProperty:
     r'''Class for calculating temperature-dependent chemical properties.
 
     On creation, a :obj:`TDependentProperty` examines all the possible methods
@@ -1338,7 +1339,7 @@ class TDependentProperty(object):
             if hasattr(self, name):
                 d[name] = CASRN
         try:
-            eos = getattr(self, 'eos')
+            eos = self.eos
             if eos:
                 d['eos'] = eos[0].as_json()
         except:
@@ -1781,7 +1782,8 @@ class TDependentProperty(object):
     @property
     def Tmin(self):
         '''Minimum temperature (K) at which the current method can calculate the
-        property.'''
+        property.
+        '''
         method = self._method
         T_limits = self.T_limits
         return T_limits[method][0] if method in T_limits else None
@@ -1789,7 +1791,8 @@ class TDependentProperty(object):
     @property
     def Tmax(self):
         '''Maximum temperature (K) at which the current method can calculate the
-        property.'''
+        property.
+        '''
         method = self._method
         T_limits = self.T_limits
         return T_limits[method][1] if method in T_limits else None
@@ -1797,7 +1800,8 @@ class TDependentProperty(object):
     @property
     def _T_min_any(self):
         '''Return the minimum temperature (K) at which no method can calculate the
-        property under.'''
+        property under.
+        '''
         Tmins = [i[0] for i in self.T_limits.values()]
         Tmins = [i for i in Tmins if i is not None]
         return min(Tmins) if Tmins else None
@@ -1805,7 +1809,8 @@ class TDependentProperty(object):
     @property
     def _T_max_any(self):
         '''Maximum temperature (K) at which no method can calculate the
-        property above.'''
+        property above.
+        '''
         Tmaxs = [i[1] for i in self.T_limits.values()]
         Tmaxs = [i for i in Tmaxs if i is not None]
         return max(Tmaxs) if Tmaxs else None
@@ -2999,7 +3004,8 @@ class TDependentProperty(object):
     def _calculate_derivative_transformed(self, T, method, order=1,
                                           interpolation_property=None, interpolation_T=None):
         r'''Basic funtion which wraps calculate_derivative such that the output
-        of the derivative is in the transformed basis.'''
+        of the derivative is in the transformed basis.
+        '''
         if interpolation_property is None  and interpolation_T is None:
             return self.calculate_derivative(T, method, order=order)
 

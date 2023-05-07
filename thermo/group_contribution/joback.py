@@ -179,7 +179,7 @@ SHI_CHENYANG_JOBACK_SMARTS_id_dict = {i+1: j[1] for i, j in enumerate(SHI_CHENYA
 SHI_CHENYANG_JOBACK_SMARTS_str_dict = {i[0]: i[1] for i in SHI_CHENYANG_JOBACK_SMARTS}
 
 
-class JOBACK(object):
+class JOBACK:
     __slots__ = ('i', 'name', 'Tc', 'Pc', 'Vc', 'Tb', 'Tm', 'Hform',
                  'Gform', 'Cpa', 'Cpb', 'Cpc', 'Cpd', 'Hfus', 'Hvap',
                  'mua', 'mub')
@@ -298,7 +298,7 @@ for j in joback_groups_str_dict.values():
     joback_groups_id_dict[j.i] = j
 
 
-class Joback(object):
+class Joback:
     r'''Class for performing chemical property estimations with the Joback
     group contribution method as described in [1]_ and [2]_. This is a very
     common method with low accuracy but wide applicability. This routine can be

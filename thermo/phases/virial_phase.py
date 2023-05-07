@@ -101,7 +101,7 @@ VIRIAL_CROSS_B_TARAKAD_DANNER = 'Tarakad-Danner'
 VIRIAL_CROSS_C_TARAKAD_DANNER = 'Tarakad-Danner'
 
 
-class VirialCSP(object):
+class VirialCSP:
     r'''Class for calculating the `B` virial coefficients of pure components
     and their B interaction matrix, and the `C` virial coefficients of pure
     components and their mixtures. It is configurable which corresponding

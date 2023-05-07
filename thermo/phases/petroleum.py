@@ -28,7 +28,7 @@ from thermo.activity import IdealSolution
 from thermo.phases.phase import Phase
 
 # hydrogen, methane
-Grayson_Streed_special_CASs = set(['1333-74-0', '74-82-8'])
+Grayson_Streed_special_CASs = {'1333-74-0', '74-82-8'}
 
 class GraysonStreed(Phase):
     phase = force_phase = 'l'

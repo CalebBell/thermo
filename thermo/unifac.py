@@ -159,7 +159,7 @@ except (ImportError, AttributeError):
     pass
 
 
-class UNIFAC_subgroup(object):
+class UNIFAC_subgroup:
     __slots__ = ['group_id', 'group', 'main_group_id', 'main_group', 'R', 'Q',
                  'smarts', 'smart_rdkit', 'hydrogen_from_smarts',
                  'priority', 'atoms', 'bonds']

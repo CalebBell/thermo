@@ -84,7 +84,7 @@ __all__.extend(['PHASE_GAS', 'PHASE_LIQUID0', 'PHASE_LIQUID1', 'PHASE_LIQUID2',
                 'PHASE_SOLID1', 'PHASE_SOLID2', 'PHASE_SOLID3', 'PHASE_BULK_SOLID',
                 'PHASE_BULK', 'PHASE_REFERENCES'])
 
-class EquilibriumState(object):
+class EquilibriumState:
     r'''Class to represent a thermodynamic equilibrium state with one or more
     phases in it. This object is designed to be the output of the
     :obj:`thermo.flash.Flash` interface and to provide easy acess to all
@@ -3141,7 +3141,7 @@ def _make_getter_bulk_property(name):
 
 ### For the pure component fixed properties, allow them to be retrived from the phase
 # and bulk object as well as the Equilibrium State Object
-constant_blacklist = set(['atom_fractions'])
+constant_blacklist = {'atom_fractions'}
 
 for name in ChemicalConstantsPackage.properties:
     if name not in constant_blacklist:

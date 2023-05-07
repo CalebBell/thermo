@@ -257,7 +257,7 @@ def d3interaction_exp_dT3(T, N, B, C, E, F, lambdas, dlambdas_dT, d3lambdas_dT3=
 
     return d3lambdas_dT3
 
-class GibbsExcess(object):
+class GibbsExcess:
     r'''Class for representing an activity coefficient model.
     While these are typically presented as tools to compute activity
     coefficients, in truth they are excess Gibbs energy models and activity

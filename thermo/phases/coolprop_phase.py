@@ -51,9 +51,9 @@ def set_coolprop_constants():
 
     CPPQ_INPUTS, CPQT_INPUTS = CoolProp.PQ_INPUTS, CoolProp.QT_INPUTS
 
-    CoolProp_gas_phases = set([CoolProp.iphase_gas, CoolProp.iphase_supercritical, CoolProp.iphase_unknown,
-                              CoolProp.iphase_critical_point, CoolProp.iphase_supercritical_gas])
-    CoolProp_liquid_phases = set([CoolProp.iphase_liquid, CoolProp.iphase_supercritical_liquid])
+    CoolProp_gas_phases = {CoolProp.iphase_gas, CoolProp.iphase_supercritical, CoolProp.iphase_unknown,
+                              CoolProp.iphase_critical_point, CoolProp.iphase_supercritical_gas}
+    CoolProp_liquid_phases = {CoolProp.iphase_liquid, CoolProp.iphase_supercritical_liquid}
 
     CPliquid = CoolProp.iphase_liquid
     CPgas = CoolProp.iphase_gas

@@ -17,13 +17,14 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 __all__ = ['MultiCheb1D']
 
 from bisect import bisect_left
 
-class MultiCheb1D(object):
+class MultiCheb1D:
     '''Simple class to store set of coefficients for multiple chebyshev
     approximations and perform calculations from them.
     '''

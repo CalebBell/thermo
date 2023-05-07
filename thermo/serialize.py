@@ -131,7 +131,8 @@ def _load_orjson():
 
 def dump_json_np(obj, library='json'):
     '''Serialization tool that handles numpy arrays. By default this will
-    use the standard library json, but this can also use orjson.'''
+    use the standard library json, but this can also use orjson.
+    '''
     if library == 'json':
         if BasicNumpyEncoder is None:
             build_numpy_encoder()
@@ -144,7 +145,8 @@ def dump_json_np(obj, library='json'):
 
 def load_json_np(obj, library='json'):
     '''Serialization tool that handles numpy arrays. By default this will
-    use the standard library json, but this can also use orjson.'''
+    use the standard library json, but this can also use orjson.
+    '''
     if library == 'json':
         if BasicNumpyDecoder is None:
             build_numpy_decoder()

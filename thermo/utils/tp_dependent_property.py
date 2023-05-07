@@ -17,7 +17,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 from thermo.utils import TDependentProperty, has_matplotlib
 from fluids.numerics import linspace, derivative, numpy as np
@@ -635,7 +636,7 @@ class TPDependentProperty(TDependentProperty):
             raise Exception('Optional dependency matplotlib is required for plotting')
         from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
-        import numpy.ma as ma
+        from numpy import ma
         import matplotlib.pyplot as plt
 
         if Pmin is None:

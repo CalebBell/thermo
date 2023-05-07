@@ -444,7 +444,7 @@ def eos_G_dep(T, P, V, b, delta, epsilon, a_alpha):
     lnphi = eos_lnphi(T, P, V, b, delta, epsilon, a_alpha)
     return lnphi*R*T
 
-class GCEOS(object):
+class GCEOS:
     r'''Class for solving a generic Pressure-explicit three-parameter cubic
     equation of state. Does not implement any parameters itself; must be
     subclassed by an equation of state class which uses it. Works for mixtures
@@ -1098,7 +1098,8 @@ class GCEOS(object):
 
     def check_sufficient_inputs(self):
         '''Method to an exception if none of the pairs (T, P), (T, V), or
-        (P, V) are given. '''
+        (P, V) are given.
+        '''
         if not ((self.T is not None and self.P is not None) or
                 (self.T is not None and self.V is not None) or
                 (self.P is not None and self.V is not None)):

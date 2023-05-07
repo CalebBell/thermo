@@ -119,7 +119,7 @@ warn_chemicals_msg ="""`chemicals <https://github.com/CalebBell/chemicals>`_ is 
             so please submit a complete table of data from the source."""
 
 
-class ChemicalConstantsPackage(object):
+class ChemicalConstantsPackage:
     non_vector_properties = ('atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
                  'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs',
                  'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass',
@@ -1344,7 +1344,7 @@ mix_properties_to_classes = {'VolumeGasMixture': VolumeGasMixture,
                             'ThermalConductivityLiquidMixture': ThermalConductivityLiquidMixture,
                             'SurfaceTensionMixture': SurfaceTensionMixture}
 
-class PropertyCorrelationsPackage(object):
+class PropertyCorrelationsPackage:
     r'''Class for creating and storing `T` and `P` and `zs` dependent chemical
     property objects. All parameters are also attributes.
 

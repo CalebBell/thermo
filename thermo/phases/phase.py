@@ -52,7 +52,7 @@ try:
 except:
     pass
 
-class Phase(object):
+class Phase:
     '''`Phase` is the base class for all phase objects in `thermo`. Each
     sub-class implements a number of core properties; many other properties
     can be calculated from them.

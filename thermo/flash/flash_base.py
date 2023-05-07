@@ -91,9 +91,10 @@ SECANT_PHASE_BOUNDARY = 'SECANT_PHASE_BOUNDARY'
 CAS_H2O = '7732-18-5'
 
 
-class Flash(object):
+class Flash:
     r'''Base class for performing flash calculations. All Flash objects need
-    to inherit from this, and common methods can be added to it.'''
+    to inherit from this, and common methods can be added to it.
+    '''
 
     def __init_subclass__(cls):
         cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
@@ -813,9 +814,9 @@ class Flash(object):
             spec_keys.append('SF')
             spec_iters.append(SFs)
 
-        V_set = set([check1, check0])
-        TV_iter = V_set == set(['T', 'V'])
-        PV_iter = V_set == set(['P', 'V'])
+        V_set = {check1, check0}
+        TV_iter = V_set == {'T', 'V'}
+        PV_iter = V_set == {'P', 'V'}
         high_prec_V = TV_iter or PV_iter
 
         for n0, spec0 in enumerate(spec_iters[0]):
@@ -844,7 +845,7 @@ class Flash(object):
 
                 # TV_iter is important to always do
                 if TV_iter:
-                    kwargs['V'] = getattr(state, 'V_iter')(force=False)
+                    kwargs['V'] = state.V_iter(force=False)
                 kwargs['retry'] = retry
                 kwargs['solution'] = lambda new: abs(new.value(nearest_check_prop) - state.value(nearest_check_prop))
                 try:
@@ -853,13 +854,13 @@ class Flash(object):
                         # Do a check here on tolerance
                         err = abs((new.value(nearest_check_prop) - state.value(nearest_check_prop))/state.value(nearest_check_prop))
                         if err > 1e-8:
-                            kwargs['V'] = getattr(state, 'V_iter')(force=True)
+                            kwargs['V'] = state.V_iter(force=True)
                             new = self.flash(**kwargs)
                 except Exception as e:
                     # Was it a precision issue? Some flashes can be brutal
                     if 'V' in kwargs:
                         try:
-                             kwargs['V'] = getattr(state, 'V_iter')(True)
+                             kwargs['V'] = state.V_iter(True)
                              new = self.flash(**kwargs)
                         except Exception as e2:
                             new = None
@@ -1184,7 +1185,7 @@ class Flash(object):
                        'VLS': 7, 'VLLS': 8, 'VLLSS': 9, 'LLL': 10, 'VLLL': 11,
                        'VLLLL': 12, 'LLLL': 13, 'F': 0}
 
-        used_regions = set([])
+        used_regions = set()
         for row in matrix:
             for v in row:
                 used_regions.add(v)

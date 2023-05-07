@@ -1340,14 +1340,14 @@ def Chen_Yang_alpha_pure(T, Tc, omega, c1, c2, c3, c4, c5, c6, c7):
     return exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
 
 
-class a_alpha_base(object):
+class a_alpha_base:
     def _init_test(self, Tc, a, alpha_coeffs, **kwargs):
         self.Tc = Tc
         self.a = a
         self.alpha_coeffs = alpha_coeffs
         self.__dict__.update(kwargs)
 
-class Poly_a_alpha(object):
+class Poly_a_alpha:
     def a_alpha_and_derivatives_pure(self, T):
         r'''Method to calculate `a_alpha` and its first and second
         derivatives given that there is a polynomial equation for
