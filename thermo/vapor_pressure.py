@@ -83,7 +83,6 @@ from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluid
 """
 Move this to its own file?
 """
-from math import exp
 
 # These methods will be higher priority than the other types of methods
 Psat_extra_correlations = {}

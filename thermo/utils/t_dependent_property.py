@@ -29,7 +29,6 @@ try:
     pass
 except: # pragma: no cover
     pass
-from math import inf, exp, log
 
 from fluids.numerics import (quad, brenth, secant, linspace, polyint, polyint_over_x, derivative,
                              trunc_log, trunc_exp, interp,
@@ -61,7 +60,7 @@ from fluids.numerics import (quad, brenth, secant, linspace, polyint, polyint_ov
                              horner_stable_ln_tau, horner_stable_ln_tau_and_der, horner_stable_ln_tau_and_der2, horner_stable_ln_tau_and_der3,
                              exp_cheb_ln_tau, exp_cheb_ln_tau_and_der, exp_cheb_ln_tau_and_der2,
                              exp_horner_stable_ln_tau, exp_horner_stable_ln_tau_and_der, exp_horner_stable_ln_tau_and_der2,
-                             isnan, log,
+                             isnan, log, exp, inf
 )
 
 import fluids
