@@ -101,7 +101,6 @@ Mixture Gas Thermal Conductivity
 
 '''
 
-from __future__ import division
 
 __all__ = [
  'ThermalConductivityGasMixture', 'ThermalConductivityLiquidMixture',
@@ -160,12 +159,12 @@ thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS,
                                        SHEFFY_JOHNSON, SATO_RIEDEL,
                                        LAKSHMI_PRASAD, BAHADORI_L,
                                        NICOLA, NICOLA_ORIGINAL]
-'''Holds all low-pressure methods available for the :obj:`ThermalConductivityLiquid`
-class, for use in iterating over them.'''
+"""Holds all low-pressure methods available for the :obj:`ThermalConductivityLiquid`
+class, for use in iterating over them."""
 
 thermal_conductivity_liquid_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
-'''Holds all high-pressure methods available for the :obj:`ThermalConductivityLiquid`
-class, for use in iterating over them.'''
+"""Holds all high-pressure methods available for the :obj:`ThermalConductivityLiquid`
+class, for use in iterating over them."""
 
 class ThermalConductivityLiquid(TPDependentProperty):
     r'''Class for dealing with liquid thermal conductivity as a function of
@@ -286,29 +285,30 @@ class ThermalConductivityLiquid(TPDependentProperty):
     .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
+
     name = 'liquid thermal conductivity'
     units = 'W/m/K'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_P = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default.'''
+    """Allow tabular extrapolation by default."""
     property_min = 0.0
-    '''Mimimum valid value of liquid thermal conductivity.'''
+    """Mimimum valid value of liquid thermal conductivity."""
     property_max = 10.0
-    '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
+    """Maximum valid value of liquid thermal conductivity. Generous limit."""
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,
                       GHARAGHEIZI_L, SHEFFY_JOHNSON, SATO_RIEDEL,
                       LAKSHMI_PRASAD, BAHADORI_L, NICOLA, NICOLA_ORIGINAL]
-    '''Default rankings of the low-pressure methods.'''
+    """Default rankings of the low-pressure methods."""
     ranked_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
-    '''Default rankings of the high-pressure methods.'''
+    """Default rankings of the high-pressure methods."""
 
 
     custom_args = ('MW', 'Tm', 'Tb', 'Tc', 'Pc', 'omega', 'Hfus')
@@ -327,7 +327,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
         self.Hfus = Hfus
         if 'extrapolation_min' not in kwargs:
             kwargs['extrapolation_min'] = extrapolation_min
-        super(ThermalConductivityLiquid, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -539,7 +539,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
             if T < self.CP_f.Tt or T > self.CP_f.Tc:
                 return False
         else:
-            return super(ThermalConductivityLiquid, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return True
 
     def test_method_validity_P(self, T, P, method):
@@ -580,7 +580,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['liquid', 'supercritical_liquid']
         else:
-            return super(ThermalConductivityLiquid, self).test_method_validity_P(T, P, method)
+            return super().test_method_validity_P(T, P, method)
         return validity
 
 MAGOMEDOV = 'MAGOMEDOV'
@@ -588,8 +588,8 @@ DIPPR_9H = 'DIPPR_9H'
 FILIPPOV = 'FILIPPOV'
 
 thermal_conductivity_liquid_mixture_methods = [MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR]
-'''Holds all mixing rules available for the :obj:`ThermalConductivityLiquidMixture`
-class, for use in iterating over them.'''
+"""Holds all mixing rules available for the :obj:`ThermalConductivityLiquidMixture`
+class, for use in iterating over them."""
 
 
 class ThermalConductivityLiquidMixture(MixtureProperty):
@@ -644,12 +644,13 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+
     name = 'liquid thermal conductivity'
     units = 'W/m/K'
     property_min = 0
-    '''Mimimum valid value of liquid thermal conductivity.'''
+    """Mimimum valid value of liquid thermal conductivity."""
     property_max = 10
-    '''Maximum valid value of liquid thermal conductivity. Generous limit.'''
+    """Maximum valid value of liquid thermal conductivity. Generous limit."""
 
     ranked_methods = [MAGOMEDOV, DIPPR_9H, LINEAR, FILIPPOV]
 
@@ -663,7 +664,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         self.CASs = CASs
         self.ThermalConductivityLiquids = ThermalConductivityLiquids
         self.MWs = MWs
-        super(ThermalConductivityLiquidMixture, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -798,12 +799,12 @@ DIPPR_9B = 'DIPPR_9B'
 thermal_conductivity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_G,
                                     DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
                                     EUCKEN, BAHADORI_G]
-'''Holds all low-pressure methods available for the :obj:`ThermalConductivityGas`
-class, for use in iterating over them.'''
+"""Holds all low-pressure methods available for the :obj:`ThermalConductivityGas`
+class, for use in iterating over them."""
 thermal_conductivity_gas_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
                                       STIEL_THODOS_DENSE]
-'''Holds all high-pressure methods available for the :obj:`ThermalConductivityGas`
-class, for use in iterating over them.'''
+"""Holds all high-pressure methods available for the :obj:`ThermalConductivityGas`
+class, for use in iterating over them."""
 
 class ThermalConductivityGas(TPDependentProperty):
     r'''Class for dealing with gas thermal conductivity as a function of
@@ -939,30 +940,31 @@ class ThermalConductivityGas(TPDependentProperty):
     .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
     '''
+
     name = 'gas thermal conductivity'
     units = 'W/m/K'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_P = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default.'''
+    """Allow tabular extrapolation by default."""
     property_min = 0
-    '''Mimimum valid value of gas thermal conductivity.'''
+    """Mimimum valid value of gas thermal conductivity."""
     property_max = 10
-    '''Maximum valid value of gas thermal conductivity. Generous limit.'''
+    """Maximum valid value of gas thermal conductivity. Generous limit."""
 
     ranked_methods = [COOLPROP, VDI_PPDS, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, DIPPR_9B,
                       CHUNG, ELI_HANLEY, EUCKEN_MOD, EUCKEN,
                       BAHADORI_G]
-    '''Default rankings of the low-pressure methods.'''
+    """Default rankings of the low-pressure methods."""
     ranked_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
                         STIEL_THODOS_DENSE]
-    '''Default rankings of the high-pressure methods.'''
+    """Default rankings of the high-pressure methods."""
 
     obj_references = pure_references = ('mug', 'Vmg', 'Cpgm')
     obj_references_types = pure_reference_types = (ViscosityGas, VolumeGas, HeatCapacityGas)
@@ -988,7 +990,7 @@ class ThermalConductivityGas(TPDependentProperty):
         if 'extrapolation_min' not in kwargs:
             kwargs['extrapolation_min'] = extrapolation_min
 
-        super(ThermalConductivityGas, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
 
     def load_all_methods(self, load_data=True):
@@ -1197,7 +1199,7 @@ class ThermalConductivityGas(TPDependentProperty):
             if T < self.CP_f.Tmin or T > self.CP_f.Tmax:
                 return False
         else:
-            return super(ThermalConductivityGas, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return True
 
     def test_method_validity_P(self, T, P, method):
@@ -1239,14 +1241,14 @@ class ThermalConductivityGas(TPDependentProperty):
             else:
                 return PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
         else:
-            return super(ThermalConductivityGas, self).test_method_validity_P(T, P, method)
+            return super().test_method_validity_P(T, P, method)
         return validity
 
 
 LINDSAY_BROMLEY = 'LINDSAY_BROMLEY'
 thermal_conductivity_gas_mixture_methods = [LINDSAY_BROMLEY, LINEAR]
-'''Holds all mixing rules available for the :obj:`ThermalConductivityGasMixture`
-class, for use in iterating over them.'''
+"""Holds all mixing rules available for the :obj:`ThermalConductivityGasMixture`
+class, for use in iterating over them."""
 
 class ThermalConductivityGasMixture(MixtureProperty):
     '''Class for dealing with thermal conductivity of a gas mixture as a
@@ -1297,12 +1299,13 @@ class ThermalConductivityGasMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+
     name = 'gas thermal conductivity'
     units = 'W/m/K'
     property_min = 0.
-    '''Mimimum valid value of gas thermal conductivity.'''
+    """Mimimum valid value of gas thermal conductivity."""
     property_max = 10.
-    '''Maximum valid value of gas thermal conductivity. Generous limit.'''
+    """Maximum valid value of gas thermal conductivity. Generous limit."""
 
     ranked_methods = [LINDSAY_BROMLEY, LINEAR]
 
@@ -1319,7 +1322,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
         self.ThermalConductivityGases = ThermalConductivityGases
         self.ViscosityGases = ViscosityGases
 
-        super(ThermalConductivityGasMixture, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
     def load_all_methods(self):

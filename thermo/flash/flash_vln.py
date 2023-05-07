@@ -154,6 +154,7 @@ class FlashVLN(FlashVL):
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
+
     SS_NP_MAXITER = FlashVL.PT_SS_MAXITER
     SS_NP_TRIVIAL_TOL = 5e-5
     SS_NP_TOL = 1e-15

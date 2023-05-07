@@ -48,7 +48,6 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 '''
 
-from __future__ import division
 
 __all__ = ['Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
@@ -126,9 +125,9 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Thiol", "-SH", "[SX2H]"],
 ["Thioether acyclic", "-S- (nonring)", "[#16X2H0;!R]"],
 ["Thioether cyclic", "-S- (ring)", "[#16X2H0;R]"]]
-'''Metadata for the Joback groups. The first element is the group name; the
+"""Metadata for the Joback groups. The first element is the group name; the
 second is the group symbol; and the third is the SMARTS matching string.
-'''
+"""
 
 J_BIGGS_JOBACK_SMARTS_id_dict = {i+1: j[2] for i, j in enumerate(J_BIGGS_JOBACK_SMARTS)}
 J_BIGGS_JOBACK_SMARTS_str_dict = {i[1]: i[2] for i in J_BIGGS_JOBACK_SMARTS}
@@ -206,8 +205,8 @@ class JOBACK(object):
         self.mub = mub
 
     def __repr__(self):
-        return '''JOBACK(i=%r, name=%r, Tc=%r, Pc=%r, Vc=%r, Tb=%r, Tm=%r, Hform=%r, Gform=%r,
-Cpa=%r, Cpb=%r, Cpc=%r, Cpd=%r, Hfus=%r, Hvap=%r, mua=%r, mub=%r)''' % (
+        return """JOBACK(i=%r, name=%r, Tc=%r, Pc=%r, Vc=%r, Tb=%r, Tm=%r, Hform=%r, Gform=%r,
+Cpa=%r, Cpb=%r, Cpc=%r, Cpd=%r, Hfus=%r, Hvap=%r, mua=%r, mub=%r)""" % (
         self.i, self.name, self.Tc, self.Pc, self.Vc, self.Tb, self.Tm,
         self.Hform, self.Gform, self.Cpa, self.Cpb, self.Cpc, self.Cpd,
         self.Hfus, self.Hvap, self.mua, self.mub)
@@ -385,6 +384,7 @@ class Joback(object):
        Communications 57, no. 1-6 (July 1, 1987): 233-43.
        doi:10.1080/00986448708960487.
     '''
+
     calculated_Cpig_coeffs = None
     calculated_mul_coeffs = None
 

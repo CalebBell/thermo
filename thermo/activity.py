@@ -65,7 +65,6 @@ References
 
 '''
 
-from __future__ import division
 
 __all__ = ['GibbsExcess', 'IdealSolution']
 from fluids.constants import R, R_inv
@@ -282,10 +281,11 @@ class GibbsExcess(object):
     immutable.
 
     '''
+
     _x_infinite_dilution = 0.0
-    '''When set, this will be the limiting mole fraction used to approximate
+    """When set, this will be the limiting mole fraction used to approximate
     the :obj:`gammas_infinite_dilution` calculation. This is important
-    as not all models can mathematically be evaluated at zero mole-fraction.'''
+    as not all models can mathematically be evaluated at zero mole-fraction."""
 
 
     __slots__ = ('T', 'N', 'xs', 'scalar', '_GE', '_dGE_dT', '_SE','_d2GE_dT2', '_d2GE_dTdxs', '_dGE_dxs',
@@ -297,7 +297,7 @@ class GibbsExcess(object):
                          'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
                          'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns',
                          'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas')
-    '''These are all methods which take no arguments. For use in testing.'''
+    """These are all methods which take no arguments. For use in testing."""
 
     def __init_subclass__(cls):
         cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
@@ -476,10 +476,10 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        '''f = symbols('f', cls=Function)
+        """f = symbols('f', cls=Function)
         T = symbols('T')
         simplify(-T**2*diff(f(T)/T, T))
-        '''
+        """
         return -self.T*self.dGE_dT() + self.GE()
 
     def dHE_dT(self):
@@ -625,13 +625,13 @@ class GibbsExcess(object):
         -----
 
         '''
-        '''from sympy import *
+        """from sympy import *
         T = symbols('T')
         G, H = symbols('G, H', cls=Function)
         S = (H(T) - G(T))/T
         print(diff(S, T))
         # (-Derivative(G(T), T) + Derivative(H(T), T))/T - (-G(T) + H(T))/T**2
-        '''
+        """
         # excess entropy temperature derivative
         dHE_dT = self.dHE_dT()
         try:
@@ -999,12 +999,12 @@ class GibbsExcess(object):
         Notes
         -----
         '''
-        r'''
+        r"""
         from sympy import *
         R, T = symbols('R, T')
         f = symbols('f', cls=Function)
         diff(exp(f(T)/(R*T)), T)
-        '''
+        """
         try:
             return self._dgammas_dT
         except AttributeError:
@@ -1067,6 +1067,7 @@ class IdealSolution(GibbsExcess):
     >>> model.dgammas_dT()
     [0.0, 0.0, 0.0, 0.0]
     '''
+
     _model_attributes = ()
 
     model_id = 0

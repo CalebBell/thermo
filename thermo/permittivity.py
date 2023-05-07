@@ -42,7 +42,6 @@ Pure Liquid Permittivity
 .. autodata:: permittivity_methods
 '''
 
-from __future__ import division
 
 __all__ = ['PermittivityLiquid']
 
@@ -61,8 +60,8 @@ from thermo.utils import TDependentProperty, IAPWS
 CRC = 'CRC'
 CRC_CONSTANT = 'CRC_CONSTANT'
 permittivity_methods = [CRC, CRC_CONSTANT, IAPWS]
-'''Holds all methods available for the :obj:`PermittivityLiquid` class, for use in
-iterating over them.'''
+"""Holds all methods available for the :obj:`PermittivityLiquid` class, for use in
+iterating over them."""
 
 
 class PermittivityLiquid(TDependentProperty):
@@ -111,28 +110,29 @@ class PermittivityLiquid(TDependentProperty):
     .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
     '''
+
     name = 'liquid relative permittivity'
     units = '-'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default.'''
+    """Allow tabular extrapolation by default."""
     property_min = 1.0
-    '''Relative permittivity must always be larger than 1; nothing is better
-    than a vacuum.'''
+    """Relative permittivity must always be larger than 1; nothing is better
+    than a vacuum."""
     property_max = 1000.0
-    '''Maximum valid of permittivity; highest in the data available is ~240.'''
+    """Maximum valid of permittivity; highest in the data available is ~240."""
 
     ranked_methods = [IAPWS, CRC, CRC_CONSTANT]
-    '''Default rankings of the available methods.'''
+    """Default rankings of the available methods."""
 
     _fit_force_n = {}
-    '''Dictionary containing method: fit_n, for use in methods which should
-    only ever be fit to a specific `n` value'''
+    """Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value"""
     _fit_force_n[CRC_CONSTANT] = 1
 
     _fit_max_n = {CRC: 4}
@@ -153,7 +153,7 @@ class PermittivityLiquid(TDependentProperty):
 
     def __init__(self, CASRN='', extrapolation='linear', **kwargs):
         self.CASRN = CASRN
-        super(PermittivityLiquid, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data):
         r'''Method which picks out coefficients for the specified chemical
@@ -243,5 +243,5 @@ class PermittivityLiquid(TDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        return super(PermittivityLiquid, self).test_method_validity(T, method)
+        return super().test_method_validity(T, method)
 

@@ -193,7 +193,6 @@ Pure Alpha Functions
 
 '''
 
-from __future__ import division, print_function
 
 __all__ = [
            'PR_a_alphas_vectorized', 'PR_a_alpha_and_derivatives_vectorized',
@@ -731,7 +730,7 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s,
     >>> PRSV_a_alpha_and_derivatives_vectorized(299.0, Tcs=Tcs, ais=ais, kappa0s=kappa0s, kappa1s=kappa1s)
     ([3.8129856983], [-0.0069769034748], [2.00265608110e-05])
     '''
-    r'''
+    r"""
     Formula derived with:
     from sympy import *
     Tc = symbols('T_{c\,i}')
@@ -739,7 +738,7 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s,
     kappa = kappa0 + kappa1*(1 + sqrt(T/Tc))*(Rational(7, 10)-T/Tc)
     a_alpha = a*(1 + kappa*(1-sqrt(T/Tc)))**2
     diff(a_alpha, T, 2)
-    '''
+    """
     sqrtT = sqrt(T)
     T_inv = 1.0/T
     N = len(Tcs)
@@ -1679,13 +1678,13 @@ class Mathias_Copeman_poly_a_alpha(a_alpha_base):
             d2a_alpha_dT2 = a*((x0*x2/Tc + x1*x1/Tc + rt*x0*x1/T)/(2.0*T))
             return a_alpha, da_alpha_dT, d2a_alpha_dT2
         else:
-            '''
+            """
             from sympy import *
             T, Tc, c1 = symbols('T, Tc, c1')
             tau = 1 - sqrt(T/Tc)
             alpha = (1 + c1*tau)**2
             cse([alpha, diff(alpha, T), diff(alpha, T, T)], optimizations='basic')
-            '''
+            """
             # [-2] is the index to get the second-last coefficient (c1)! Wasted time on this before.
             c1 = alpha_coeffs[-2]
             x0 = 1.0/T

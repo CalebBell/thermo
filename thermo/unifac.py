@@ -131,7 +131,6 @@ Data for VTPR UNIFAC
     :type: dict[int: dict[int: tuple(float, 3)]]
 '''
 
-from __future__ import division
 
 __all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', 'UFMG',
 
@@ -279,9 +278,9 @@ def priority_from_atoms(atoms, bonds=None):
     return priority
 
 
-'''Rules for bonds:
+"""Rules for bonds:
 All groups that have any any atoms as part of any aromatic ring should have at least one aromatic bond.
-'''
+"""
 
 UFSG = {}
 # UFSG[subgroup ID] = (subgroup formula, main group ID, subgroup  R, subgroup Q)
@@ -1895,10 +1894,10 @@ PSRKMG = {1: ("CH2", [1, 2, 3, 4]),
 85: ("CLNO", [149]),
 }
 
-'''
+"""
 Magnussen, Thomas, Peter Rasmussen, and Aage Fredenslund. "UNIFAC Parameter Table for Prediction of Liquid-Liquid Equilibriums."
  Industrial & Engineering Chemistry Process Design and Development 20, no. 2 (April 1, 1981): 331-39. https://doi.org/10.1021/i200013a024.
-'''
+"""
 LLEUFSG = {}
 # LLEUFSG[subgroup ID] = (subgroup formula, main group ID, subgroup R, subgroup Q)
 LLEUFSG[1] = UNIFAC_subgroup(1, 'CH3', 1, 'CH2', 0.9011, 0.848,
@@ -2103,7 +2102,7 @@ LLEUFSG[57] = UNIFAC_subgroup(57, 'DMSO', 32, 'DMSO', 2.8266, 2.472,
                              bonds=UFSG[67].bonds, atoms=UFSG[67].atoms,
                               smarts=UFSG[67].smarts)
 # Generated with the following:
-'''
+"""
 t = 'LLEMG = {'
 for main_key in range(1, 33):
     main_group = None
@@ -2114,7 +2113,7 @@ for main_key in range(1, 33):
             hits.append(subgroup_key)
     t += '%d: ("%s", %s),\n' %(main_key, main_group, list(sorted(hits)))
 t += '}'
-'''
+"""
 
 LLEMG = {   1: ("CH2", [1, 2, 3, 4]),
             2: ("C=C", [5, 6, 7, 8]),
@@ -2150,12 +2149,12 @@ LLEMG = {   1: ("CH2", [1, 2, 3, 4]),
             32: ("DMSO", [57]),
 }
 
-'''
+"""
 Larsen, Bent L., Peter Rasmussen, and Aage Fredenslund. "A Modified UNIFAC
 Group-Contribution Model for Prediction of Phase Equilibria and Heats of Mixing."
 Industrial & Engineering Chemistry Research 26, no. 11 (November 1, 1987):
 2274-86. https://doi.org/10.1021/ie00071a018.
-'''
+"""
 LUFSG = {}
 LUFSG[1] = UNIFAC_subgroup(1, 'CH3', 1, 'CH2', 0.9011, 0.848,
                            atoms=UFSG[1].atoms, bonds=UFSG[1].bonds, smarts=UFSG[1].smarts)
@@ -2485,10 +2484,10 @@ NISTKTUFMG = {1: ("C", [1, 2, 3, 4]),
 52: ("C=C(cyc)", [30, 31, 32]),
 }
 
-'''Compared to storing the values in dict[(int1, int2)] = (values),
+"""Compared to storing the values in dict[(int1, int2)] = (values),
 the dict-in-dict structure is found emperically to take 111608 bytes vs.
 79096 bytes, or 30% less memory.
-'''
+"""
 
 for d in (UFSG, DOUFSG, NISTUFSG, NISTKTUFSG, LLEUFSG, LUFSG, PSRKSG, VTPRSG):
     for group in d.values():
@@ -2863,7 +2862,7 @@ def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
             a, b, c = interaction_data[main1][main2]
         except:
             return 1.
-        return exp((-a/T -b - c*T))
+        return exp(-a/T -b - c*T)
     else:
         try:
             return exp(-interaction_data[main1][main2]/T)
@@ -4381,7 +4380,7 @@ class UNIFAC(GibbsExcess):
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
 
-    '''
+    """
     List of functions not fully optimized (for Python anyway)
     psis second derivative
 
@@ -4394,7 +4393,7 @@ class UNIFAC(GibbsExcess):
     unifac_dlnGammas_subgroups_dxs can have one more vec to save time
 
 
-    '''
+    """
 
     gammas_from_args = staticmethod(unifac_gammas_from_args)
 
@@ -7658,7 +7657,7 @@ class UNIFAC(GibbsExcess):
         self._dlngammas_c_dxs = unifac_dlngammas_c_dxs(N, version, qs, Fis, dFis_dxs, Vis, dVis_dxs, Vis_modified, dVis_modified_dxs, dlngammas_c_dxs)
         return dlngammas_c_dxs
 
-    ''' Sympy code used to get these derivatives - not yet validated with numerical values from SymPy!
+    """ Sympy code used to get these derivatives - not yet validated with numerical values from SymPy!
         Second and third derivative formulas generated with SymPy.
     from sympy import *
 
@@ -7696,9 +7695,9 @@ class UNIFAC(GibbsExcess):
     # Third derivative
     good_third = diff(loggammacs[0], x0, x1, x2).subs(V0(x0, x1, x2), Vi).subs(F0(x0, x1, x2), Fi).subs(V0D(x0, x1, x2), ViD).subs(x0, xj).subs(x1, xk).subs(x2, xm).subs(q0, qi)
     good_third = simplify(good_third)
-    '''
+    """
 
-    '''For the Lyngby model composition derivatives remaining:
+    """For the Lyngby model composition derivatives remaining:
 
     from sympy import *
     N = 4
@@ -7708,7 +7707,7 @@ class UNIFAC(GibbsExcess):
     Vis = [Vis[i](x0, x1, x2, x3) for i in range(N)]
     loggammacs = [1 + log(Vis[i]/xs[i]) - Vis[i]/xs[i] for i in range(N)]
     diff(loggammacs[0], xs[1], xs[2])
-    '''
+    """
 
     def d2lngammas_c_dxixjs(self):
         r'''Second composition derivative of

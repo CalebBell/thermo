@@ -503,7 +503,7 @@ class HelmholtzEOS(Phase):
             d3A_ddelta3 = self._d3A_ddelta3
         except:
             d3A_ddelta3 = self.d3A_ddelta3()
-        '''
+        """
         from sympy import *
         from chemicals import Vm_to_rho
         T_red, rho_red, V, R = symbols('T_red, rho_red, V, R')
@@ -518,7 +518,7 @@ class HelmholtzEOS(Phase):
         dA_ddelta = iapws95_dA_ddelta(tau, delta)
         P = (dA_ddelta*delta)*rho*R*T
         print(diff(P,V, 2))
-        '''
+        """
         R, T, V, rho_red = self.R, self.T, self._V, self.rho_red
 
         self._d2P_dV2 = d2P_dV2 = R*T*(6.0*dA_ddelta + (2*d2A_ddelta2 + d3A_ddelta3/(V*rho_red))/(V*rho_red) + 4*d2A_ddelta2/(V*rho_red))/(V**4*rho_red)

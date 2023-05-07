@@ -74,7 +74,6 @@ Higher-Precision Solvers
 
 '''
 
-from __future__ import division, print_function
 __all__ = ['volume_solutions_mpmath', 'volume_solutions_mpmath_float',
            'volume_solutions_NR', 'volume_solutions_NR_low_P', 'volume_solutions_halley',
            'volume_solutions_fast', 'volume_solutions_Cardano', 'volume_solutions_a1',
@@ -501,21 +500,21 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
     '''
 
 
-    '''Even if mpmath is used for greater precision in the calculated root,
+    """Even if mpmath is used for greater precision in the calculated root,
     it gets rounded back to a float - and then error occurs.
     Cannot beat numerical method or numpy roots!
 
     The only way out is to keep volume as many decimals, to pass back in
     to initialize the TV state.
-    '''
+    """
     # Initial calculation - could use any method, however this is fastest
     # 2 divisions, 2 powers in here
     # First bit is top left corner
     if a_alpha == 0.0:
-        '''from sympy import *
+        """from sympy import *
             R, T, P, b, V = symbols('R, T, P, b, V')
             solve(Eq(P, R*T/(V-b)), V)
-        '''
+        """
         # EOS has devolved into having the first term solution only
         return [b + R*T/P, -1j, -1j]
     if P < 1e-2:
@@ -841,9 +840,9 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
        :alt: PR EOS methanol volume error low pressure
 
     '''
-    '''
+    """
     Cases known to be failing:
-    '''
+    """
     # Test the case where a_alpha is so low, even with the lowest possible volume `b`,
     # the value of the second term plus P is equal to P.
     if a_alpha/(b*(b + delta) + epsilon) + P == P:
@@ -1608,9 +1607,9 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
     a_inv = 1.0/a
     a_inv2 = a_inv*a_inv
     bb = b*b
-    '''Herbie modifications for f:
+    """Herbie modifications for f:
     c*a_inv - b_a*b_a*third
-    '''
+    """
     b_a = b*a_inv
     b_a2 = b_a*b_a
     f = c*a_inv - b_a2*third
@@ -1632,7 +1631,7 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
     if T >= 0.0:
         U = (T**(third))
     else:
-        U = -(((-T)**(third)))
+        U = -((-T)**(third))
 
     SU = S + U
     b_3a = b*(third*a_inv)

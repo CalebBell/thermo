@@ -72,7 +72,6 @@ Bulk Settings Class
 
 '''
 
-from __future__ import division
 __all__ = ['Bulk', 'BulkSettings', 'default_settings']
 
 from fluids.constants import R, R_inv, atm
@@ -86,13 +85,13 @@ from thermo.phases import Phase
 from thermo.phase_identification import VL_ID_PIP, S_ID_D2P_DVDT
 from thermo.phase_identification import DENSITY_MASS, PROP_SORT, WATER_NOT_SPECIAL
 from thermo.chemical_package import ChemicalConstantsPackage
-'''Class designed to have multiple phases.
+"""Class designed to have multiple phases.
 
 Calculates dew, bubble points as properties (going to call back to property package)
 I guess it's going to need MW as well.
 
 Does not have any flow property.
-'''
+"""
 
 EQUILIBRIUM_DERIVATIVE = 'EQUILIBRIUM_DERIVATIVE'
 FROM_DERIVATIVE_SETTINGS = 'FROM_DERIVATIVE_SETTINGS'
@@ -116,17 +115,17 @@ DP_DT_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                  LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
                  EQUILIBRIUM_DERIVATIVE,
                  MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
-'''List of all valid and implemented calculation methods for the `DP_DT` bulk setting'''
+"""List of all valid and implemented calculation methods for the `DP_DT` bulk setting"""
 DP_DV_METHODS = DP_DT_METHODS
-'''List of all valid and implemented calculation methods for the `DP_DV` bulk setting'''
+"""List of all valid and implemented calculation methods for the `DP_DV` bulk setting"""
 D2P_DV2_METHODS =  [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                  LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
                  MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
-'''List of all valid and implemented calculation methods for the `D2P_DV2` bulk setting'''
+"""List of all valid and implemented calculation methods for the `D2P_DV2` bulk setting"""
 D2P_DT2_METHODS = D2P_DV2_METHODS
-'''List of all valid and implemented calculation methods for the `D2P_DT2` bulk setting'''
+"""List of all valid and implemented calculation methods for the `D2P_DT2` bulk setting"""
 D2P_DTDV_METHODS = D2P_DV2_METHODS
-'''List of all valid and implemented calculation methods for the `D2P_DTDV` bulk setting'''
+"""List of all valid and implemented calculation methods for the `D2P_DTDV` bulk setting"""
 
 FIROOZABADI_PAN = 'FIROOZABADI_PAN'
 
@@ -135,20 +134,20 @@ SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                 LOG_PROP_VOLUME_WEIGHTED, MINIMUM_PHASE_PROP,
                 MAXIMUM_PHASE_PROP, FROM_DERIVATIVE_SETTINGS,
                 EQUILIBRIUM_DERIVATIVE, FIROOZABADI_PAN]
-'''List of all valid and implemented calculation methods for the `speed_of_sound` bulk setting'''
+"""List of all valid and implemented calculation methods for the `speed_of_sound` bulk setting"""
 
 BETA_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                 LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED,
                 LOG_PROP_VOLUME_WEIGHTED, MINIMUM_PHASE_PROP,
                 MAXIMUM_PHASE_PROP, EQUILIBRIUM_DERIVATIVE,
                 FROM_DERIVATIVE_SETTINGS]
-'''List of all valid and implemented calculation methods for the `isothermal_compressibility` bulk setting'''
+"""List of all valid and implemented calculation methods for the `isothermal_compressibility` bulk setting"""
 
 
 KAPPA_METHODS = BETA_METHODS
-'''List of all valid and implemented calculation methods for the `kappa` bulk setting'''
+"""List of all valid and implemented calculation methods for the `kappa` bulk setting"""
 JT_METHODS = BETA_METHODS
-'''List of all valid and implemented calculation methods for the `JT` bulk setting'''
+"""List of all valid and implemented calculation methods for the `JT` bulk setting"""
 
 
 
@@ -162,16 +161,16 @@ MU_LL_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                  POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED,
                  MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP
                  ]
-'''List of all valid and implemented mixing rules for the `MU_LL` setting'''
+"""List of all valid and implemented mixing rules for the `MU_LL` setting"""
 
 MU_LL_METHODS_set = frozenset(MU_LL_METHODS)
 
 K_LL_METHODS = MU_LL_METHODS
-'''List of all valid and implemented mixing rules for the `K_LL` setting'''
+"""List of all valid and implemented mixing rules for the `K_LL` setting"""
 K_LL_METHODS_set = frozenset(K_LL_METHODS)
 
 SIGMA_LL_METHODS = MU_LL_METHODS
-'''List of all valid and implemented mixing rules for the `SIGMA_LL` setting'''
+"""List of all valid and implemented mixing rules for the `SIGMA_LL` setting"""
 SIGMA_LL_METHODS_set = frozenset(SIGMA_LL_METHODS)
 
 
@@ -187,11 +186,11 @@ MU_VL_CORRELATIONS_SET = set(MU_VL_CORRELATIONS)
 
 
 MU_VL_METHODS = MU_LL_METHODS + [AS_ONE_GAS] + MU_VL_CORRELATIONS
-'''List of all valid and implemented mixing rules for the `MU_VL` setting'''
+"""List of all valid and implemented mixing rules for the `MU_VL` setting"""
 MU_VL_METHODS_SET = set(MU_VL_METHODS)
 
 K_VL_METHODS = K_LL_METHODS + [AS_ONE_GAS]
-'''List of all valid and implemented mixing rules for the `K_VL` setting'''
+"""List of all valid and implemented mixing rules for the `K_VL` setting"""
 K_VL_METHODS_SET = set(K_VL_METHODS)
 
 __all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED', 'EQUILIBRIUM_DERIVATIVE',
@@ -529,6 +528,7 @@ class Bulk(Phase):
 
 
     '''
+
     bulk_phase_type = True
 
     __slots__ = ('phases', 'phase_fractions', 'phase_bulk', 'result', 'constants', 'correlations', 'flasher', 'settings')

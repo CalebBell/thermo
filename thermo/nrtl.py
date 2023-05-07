@@ -49,7 +49,6 @@ NRTL Regression Calculations
 
 '''
 
-from __future__ import division
 from math import log, exp
 from fluids.constants import R
 from fluids.numerics import numpy as np, trunc_exp, transpose
@@ -1452,14 +1451,14 @@ class NRTL(GibbsExcess):
         Notes
         -----
         '''
-        '''from sympy import *
+        """from sympy import *
         R, T, x = symbols('R, T, x')
         g, tau = symbols('g, tau', cls=Function)
         m, n, o = symbols('m, n, o', cls=Function)
         r, s, t = symbols('r, s, t', cls=Function)
         u, v, w = symbols('u, v, w', cls=Function)
         diff(T* (m(T)*n(T) + r(T)*s(T) + u(T)*v(T))/(o(T) + t(T) + w(T)), T)
-        '''
+        """
         try:
             return self._dGE_dT
         except AttributeError:
@@ -1494,7 +1493,7 @@ class NRTL(GibbsExcess):
         Notes
         -----
         '''
-        '''from sympy import *
+        """from sympy import *
         R, T, x = symbols('R, T, x')
         g, tau = symbols('g, tau', cls=Function)
         m, n, o = symbols('m, n, o', cls=Function)
@@ -1502,7 +1501,7 @@ class NRTL(GibbsExcess):
         u, v, w = symbols('u, v, w', cls=Function)
 
         (diff(T*(m(T)*n(T) + r(T)*s(T))/(o(T) + t(T)), T, 2))
-        '''
+        """
         try:
             return self._d2GE_dT2
         except AttributeError:
@@ -1537,7 +1536,7 @@ class NRTL(GibbsExcess):
         Notes
         -----
         '''
-        '''
+        """
         from sympy import *
         N = 3
         R, T = symbols('R, T')
@@ -1566,7 +1565,7 @@ class NRTL(GibbsExcess):
             ge += xs[i]*num/den
         ge = ge#*R*T
         diff(ge, x1), diff(ge, x2)
-        '''
+        """
         try:
             return self._dGE_dxs
         except AttributeError:
@@ -1607,7 +1606,7 @@ class NRTL(GibbsExcess):
         Notes
         -----
         '''
-        '''
+        """
         from sympy import *
         N = 3
         R, T = symbols('R, T')
@@ -1647,7 +1646,7 @@ class NRTL(GibbsExcess):
         ge = ge#R*T
 
         diff(ge, x0, x1)
-        '''
+        """
         try:
             return self._d2GE_dxixjs
         except AttributeError:

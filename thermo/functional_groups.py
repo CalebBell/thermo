@@ -191,7 +191,6 @@ Functions using group identification
 
 '''
 
-from __future__ import division
 from chemicals.elements import simple_formula_parser
 
 group_names = ['mercaptan', 'sulfide', 'disulfide', 'sulfoxide', 'sulfone',

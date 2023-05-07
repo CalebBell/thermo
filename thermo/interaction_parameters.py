@@ -47,7 +47,6 @@ SPDB
     access it as `thermo.interaction_parameters.SPDB`.
 '''
 
-from __future__ import division
 
 __all__ = ['InteractionParameterDB', 'ScalarParameterDB']
 
@@ -395,6 +394,7 @@ class ScalarParameterDB(object):
 
 
     '''
+
     def __init__(self):
         self.tables = {}
         self.metadata = {}

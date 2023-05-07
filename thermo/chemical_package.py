@@ -55,7 +55,6 @@ Sample Constants and Correlations
 
 '''
 
-from __future__ import division
 
 __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationsPackage',
            'iapws_constants', 'iapws_correlations', 'lemmon2000_constants',
@@ -104,7 +103,7 @@ CAS_H2O = '7732-18-5'
 
 
 
-warn_chemicals_msg ='''`chemicals <https://github.com/CalebBell/chemicals>`_ is a
+warn_chemicals_msg ="""`chemicals <https://github.com/CalebBell/chemicals>`_ is a
             project with a focus on collecting data and
             correlations from various sources. In no way is it a project to
             critically evaluate these and provide recommendations. You are
@@ -118,7 +117,7 @@ warn_chemicals_msg ='''`chemicals <https://github.com/CalebBell/chemicals>`_ is 
             `chemicals <https://github.com/CalebBell/chemicals>`_
             fairly easily once the data entry is complete.
             It is not feasible to add individual components,
-            so please submit a complete table of data from the source.'''
+            so please submit a complete table of data from the source."""
 
 
 class ChemicalConstantsPackage(object):
@@ -146,7 +145,7 @@ class ChemicalConstantsPackage(object):
                  )
     __full_path__ = "%s.%s" %(__module__, __qualname__)
     properties = ('atom_fractions',) + non_vector_properties
-    '''Tuple of all properties that can be held by this object.'''
+    """Tuple of all properties that can be held by this object."""
 
     __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash')
     non_vectors = ('atom_fractions',)
@@ -1285,7 +1284,7 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'Hf_STPs_mass': ("list[float]", "Standard state mass enthalpies of formation for each component", "[J/kg]", None),
 }
 
-constants_doc = r'''Class for storing efficiently chemical constants for a
+constants_doc = r"""Class for storing efficiently chemical constants for a
 group of components. This is intended as a base
 object from which a set of thermodynamic methods can access miscellaneous for
 purposes such as phase identification or initialization.
@@ -1304,12 +1303,12 @@ All parameters are also attributes.
 
 Parameters
 ----------
-'''
+"""
 for name, (var_type, desc, units, return_desc) in constants_docstrings.items():
     type_name = var_type if type(var_type) is str else var_type.__name__
-    new = '''%s : %s
+    new = """%s : %s
     %s, %s.
-''' %(name, type_name, desc, units)
+""" %(name, type_name, desc, units)
     constants_doc += new
 
 try:
@@ -1437,6 +1436,7 @@ class PropertyCorrelationsPackage(object):
     >>> correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=False)
 
     '''
+
     pure_correlations = ('VaporPressures', 'VolumeLiquids', 'VolumeGases',
                          'VolumeSolids', 'HeatCapacityGases', 'HeatCapacitySolids',
                          'HeatCapacityLiquids', 'EnthalpyVaporizations',
@@ -1864,9 +1864,9 @@ class PropertyCorrelationsPackage(object):
 # Values except for omega from IAPWS; heat capacity isn't official.
 iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],
                                            Pcs=[22064000.0], Tcs=[647.096])
-''':obj:`ChemicalConstantsPackage` : Object intended to hold the IAPWS-95 water constants
+""":obj:`ChemicalConstantsPackage` : Object intended to hold the IAPWS-95 water constants
 for use with the :obj:`thermo.phases.IAPWS95` phase object.
-'''
+"""
 
 iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip_missing=True,
                                                  SurfaceTensions=[SurfaceTension(load_data=False, Tc=647.14, exp_poly_fit_ln_tau=(248.14999999999998, 643.9043, 647.14,
@@ -1874,16 +1874,16 @@ iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip
                                                      -1.0946692428934923, -0.08982641235684152, -2.383855224250596]))],
                                                  HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
                                                                             4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
-''':obj:`PropertyCorrelationsPackage`: IAPWS correlations and properties, [-]'''
+""":obj:`PropertyCorrelationsPackage`: IAPWS correlations and properties, [-]"""
 
 lemmon2000_constants = ChemicalConstantsPackage(CASs=['132259-10-0'], MWs=[28.9586], omegas=[0.0335],
                                            Pcs=[3.78502E6], Tcs=[132.6312])
-''':obj:`ChemicalConstantsPackage` : Object intended to hold the Lemmon (2000) air constants
+""":obj:`ChemicalConstantsPackage` : Object intended to hold the Lemmon (2000) air constants
 for use with the :obj:`thermo.phases.DryAirLemmon` phase object.
-'''
+"""
 
 # 20 coefficients gets a very good fit 1e-8 rtol
 lemmon2000_correlations = PropertyCorrelationsPackage(constants=lemmon2000_constants, skip_missing=True,
                                                  HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(132.6313, 2000.0, [-6.626125905505976e-57, 1.3834500819751098e-52, -1.33739947283832e-48, 7.939514061796618e-45, -3.2364291450043207e-41, 9.594346367764268e-38, -2.13653752371752e-34, 3.6389955418840433e-31, -4.779579487030328e-28, 4.842352128842408e-25, -3.7575972075674665e-22, 2.2015407920080106e-19, -9.545492841183412e-17, 3.0147537523176223e-14, -7.116946884523906e-12, 1.4112957512038422e-09, -2.416177742609162e-07, 3.041947869442721e-05, -0.0022420811935852042, 29.099089803167224]))])
-''':obj:`PropertyCorrelationsPackage`: Lemmon (2000) air correlations and properties, [-]'''
+""":obj:`PropertyCorrelationsPackage`: Lemmon (2000) air correlations and properties, [-]"""
 

@@ -28,6 +28,7 @@ class MultiCheb1D(object):
     '''Simple class to store set of coefficients for multiple chebyshev
     approximations and perform calculations from them.
     '''
+
     def __init__(self, points, coeffs):
         self.points = points
         self.coeffs = coeffs

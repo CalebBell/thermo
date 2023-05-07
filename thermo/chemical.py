@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from __future__ import division
 
 __all__ = ['Chemical', 'reference_states']
 
@@ -3230,7 +3229,7 @@ def _make_getter_group(name):
 for _name in group_names:
     getter = property(_make_getter_group(_name))
     name = 'is_%s' %(_name)
-    _add_attrs_doc =  r'''Method to return whether or not this chemical is in the category %s, [-]
-            ''' %(_name)
+    _add_attrs_doc =  r"""Method to return whether or not this chemical is in the category %s, [-]
+            """ %(_name)
     getter.__doc__ = _add_attrs_doc
     setattr(Chemical, name, getter)

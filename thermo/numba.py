@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from __future__ import division
 import sys
 import importlib.util
 import types
@@ -37,10 +36,10 @@ normal = thermo
 
 orig_file = __file__
 caching = False
-'''
+"""
 
 
-'''
+"""
 __all__ = []
 __funcs = {}
 
@@ -319,7 +318,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     __funcs['eos_mix'].IGMIX.volume_solutions = staticmethod(__funcs['volume_solutions_ideal'])
 transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False)
 
-'''Before jitclasses could be used on Activity models, numba would have to add:
+"""Before jitclasses could be used on Activity models, numba would have to add:
 Support type call.
 Support class methods.
 Support class constants.
@@ -332,7 +331,7 @@ IdealSolutionNumba = jitclass(IdealSolution_spec)(thermo.numba.activity.IdealSol
 
 # activity.IdealSolution
 IdealSolutionNumba(T=300.0, xs=np.array([.2, .5]))
-'''
+"""
 
 
 globals().update(__funcs)

@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from __future__ import division
 
 __all__ = [#'DSL_data', 'TSCA_data',
            #'EINECS_data', 'SPIN_data', 'NLP_data',
@@ -266,7 +265,7 @@ def load_economic_data():
     folder = os_path_join(os.path.dirname(__file__), 'Law')
 
 
-    '''OECD are chemicals produced by and OECD members in > 1000 tonnes/year.'''
+    """OECD are chemicals produced by and OECD members in > 1000 tonnes/year."""
     HPV_data = pd.read_csv(os.path.join(folder, 'HPV 2015 March 3.csv'),
                            sep='\t', index_col=0)
     # 13061-29-2 not valid and removed
@@ -288,11 +287,11 @@ def load_economic_data():
 
     _EPACDRDict = {}
     with open(os.path.join(folder, 'EPA 2012 Chemical Data Reporting.csv')) as f:
-        '''EPA summed reported chemical usages. In metric tonnes/year after conversion.
+        """EPA summed reported chemical usages. In metric tonnes/year after conversion.
         Many producers keep their date confidential.
         This was originally in terms of lb/year, but rounded to the nearest kg.
 
-        '''
+        """
         next(f)
         for line in f:
             values = line.rstrip().split('\t')

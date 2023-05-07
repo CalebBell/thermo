@@ -45,7 +45,6 @@ UNIQUAC Functional Calculations
 .. autofunction:: UNIQUAC_gammas
 '''
 
-from __future__ import division
 from math import log, exp
 from fluids.numerics import numpy as np, trunc_exp
 from fluids.constants import R
@@ -513,6 +512,7 @@ class UNIQUAC(GibbsExcess):
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
+
     z = 10.0
     _x_infinite_dilution = 1e-12
     model_id = 300

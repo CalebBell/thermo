@@ -245,6 +245,7 @@ class FlashPureVLS(Flash):
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
+
     VF_interpolators_built = False
     N = 1
     VL_EOS_hacks = True
@@ -934,13 +935,13 @@ class FlashPureVLS(Flash):
             flash_convergence['SF flash convergence'] = SF_flash.flash_convergence
 
         if G_min == 1e100:
-            '''Calculate the values of val at minimum and maximum temperature
+            """Calculate the values of val at minimum and maximum temperature
             for each phase.
             Calculate the val at the phase changes.
             Include all in the exception to prove within bounds;
             also have a self check to say whether or not the value should have
             had a converged value.
-            '''
+            """
             if iter_var == 'T':
                 min_bound = Phase.T_MIN_FIXED*(1.0-1e-15)
                 max_bound = Phase.T_MAX_FIXED*(1.0+1e-15)

@@ -207,6 +207,7 @@ class GibbsExcessLiquid(Phase):
         often an assumption that is made.
 
     '''
+
     PIP_INCALCULABLE_VALUE = 2
     force_phase = 'l'
     phase = 'l'
@@ -1615,14 +1616,14 @@ class GibbsExcessLiquid(Phase):
         c0 = 2.0*x6*x6
 
         self._d2Poyntings_dT2 = d2Poyntings_dT2 = []
-        '''
+        """
         from sympy import *
         R, T, P = symbols('R, T, P')
         Vml, Psat = symbols('Vml, Psat', cls=Function)
         RT_inv = 1/(R*T)
         Poy = exp(Vml(T)*(P-Psat(T))*RT_inv)
         cse(diff(Poy, T, 2), optimizations='basic')
-        '''
+        """
         for i in range(self.N):
             x0 = Vms[i]
             x1 = Psats[i]
@@ -2152,7 +2153,7 @@ class GibbsExcessLiquid(Phase):
             # Page 650  Chemical Thermodynamics for Process Simulation
             # Confirmed with CoolProp via analytical integrals
             # Not actually checked numerically until Hvap is implemented though
-            '''
+            """
             from scipy.integrate import *
             from CoolProp.CoolProp import PropsSI
 
@@ -2170,7 +2171,7 @@ class GibbsExcessLiquid(Phase):
                 alpha = PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', 'T', T, 'P', P, fluid)
                 return Vm -alpha*T*Vm
             quad(to_int, Psat, P2, epsabs=1.49e-14, epsrel=1.49e-14)[0]/dH
-            '''
+            """
 
             if self.use_IG_Cp:
                 try:
@@ -2721,7 +2722,7 @@ class GibbsExcessLiquid(Phase):
                     Cp += zs[i]*(-T*(P - x0)*d2Vms_sat_dT2[i] - T*(x4 + x5)*d2Psats_dT2[i]
                     + x2*(x1 - x4) + x2*(T*x6 + x5) - x7*(-R*x7*Psat_inv*Psat_inv + x3 - x6) + Cpigs_pure[i])
                     # The second derivative of volume is zero when extrapolating, which causes zero issues, discontinuous derivative
-                '''
+                """
                 from sympy import *
                 T, P, R, zi = symbols('T, P, R, zi')
                 Psat, Cpig_int, Vmsat = symbols('Psat, Cpig_int, Vmsat', cls=Function)
@@ -2736,7 +2737,7 @@ class GibbsExcessLiquid(Phase):
                 H += zi*dP*(Vmsat(T) - T*dVmsatdT)
 
                 (cse(diff(H, T), optimizations='basic'))
-                '''
+                """
             except (ZeroDivisionError, ValueError):
                 # Handle the zero division on Psat or the log getting two small
                 failed_dPsat_dT = True
@@ -2748,7 +2749,7 @@ class GibbsExcessLiquid(Phase):
                 for i in range(self.N):
                     Cp += zs[i]*(Cpigs_pure[i] - P*T*d2Vms_sat_dT2[i] - R*T*T*d2lnPsats_dT2[i]
                     - 2.0*R*T*dlnPsats_dT[i])
-                    '''
+                    """
                     from sympy import *
                     T, P, R, zi = symbols('T, P, R, zi')
                     lnPsat, Cpig_T_int, Vmsat = symbols('lnPsat, Cpig_T_int, Vmsat', cls=Function)
@@ -2761,7 +2762,7 @@ class GibbsExcessLiquid(Phase):
                     dP = P
                     H += zi*dP*(Vmsat(T) - T*dVmsatdT)
                     print(simplify(expand(diff(H, T)).subs(exp(lnPsat(T)), 0)/zi))
-                    '''
+                    """
 #                Cp += zs[i]*(Cpigs_pure[i] - dHvaps_dT[i])
 #                Cp += zs[i]*(-T*(P - Psats[i])*d2Vms_sat_dT2[i] + (T*dVms_sat_dT[i] - Vms_sat[i])*dPsats_dT[i])
 
@@ -2879,7 +2880,7 @@ class GibbsExcessLiquid(Phase):
                     failed_dPsat_dT = True
             if not failed_dPsat_dT:
                 try:
-                    '''
+                    """
                     from sympy import *
                     T, P, R, zi, P_REF_IG = symbols('T, P, R, zi, P_REF_IG')
 
@@ -2897,7 +2898,7 @@ class GibbsExcessLiquid(Phase):
                     dSi -= dP*dVmsatdT
                     S += dSi*zi
                     # cse(diff(S, T), optimizations='basic')
-                    '''
+                    """
                     for i in range(self.N):
                         x0 = Psats[i]
                         x1 = dPsats_dT[i]
@@ -2917,7 +2918,7 @@ class GibbsExcessLiquid(Phase):
 #                P*Derivative(Vmsat(T), (T, 2))
 #                R*T*Derivative(lnPsat(T), (T, 2))
 #                 2*R*Derivative(lnPsat(T), T) + Derivative(Cpig_T_int(T), T)
-                '''
+                """
                 from sympy import *
                 T, P, R, zi, P_REF_IG = symbols('T, P, R, zi, P_REF_IG')
 
@@ -2940,7 +2941,7 @@ class GibbsExcessLiquid(Phase):
                 print(simplify(expand(diff(S, T)).subs(exp(lnPsat(T)), 0)/zi))
 
 
-                '''
+                """
                 dS_dT = 0.0
                 for i in range(self.N):
                     dS_dT -= zs[i]*(P*d2Vms_sat_dT2[i] + RT*d2lnPsats_dT2[i]
@@ -3111,10 +3112,10 @@ class GibbsExcessLiquid(Phase):
             pass
         zs = self.zs
         Vms = self.Vms()
-        '''To make a fugacity-volume identity consistent, cannot use pressure
+        """To make a fugacity-volume identity consistent, cannot use pressure
         correction unless the Poynting factor is calculated with quadrature/
         integration.
-        '''
+        """
         V = 0.0
         for i in range(self.N):
             V += zs[i]*Vms[i]
@@ -3402,7 +3403,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                  Hfs=None, Gfs=None, Sfs=None,
                  T=None, P=None, zs=None,
                  ):
-        super(GibbsExcessSolid, self).__init__(VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
+        super().__init__(VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
               HeatCapacityGases=HeatCapacityGases, EnthalpyVaporizations=EnthalpySublimations,
               use_Poynting=use_Poynting,
               Hfs=Hfs, Gfs=Gfs, Sfs=Sfs, T=T, P=P, zs=zs)

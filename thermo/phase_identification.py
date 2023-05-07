@@ -74,7 +74,6 @@ Sorting Phases
 
 '''
 
-from __future__ import division
 __all__ = ['vapor_score_Tpc', 'vapor_score_Vpc',
            'vapor_score_Tpc_weighted', 'vapor_score_Tpc_Vpc',
            'vapor_score_Wilson', 'vapor_score_Poling',
@@ -627,12 +626,12 @@ VL_ID_TRACES = 'Traces'
 
 VL_ID_METHODS = [VL_ID_TPC, VL_ID_VPC, VL_ID_TPC_VC_WEIGHTED, VL_ID_TPC_VPC,
                  VL_ID_WILSON, VL_ID_POLING, VL_ID_PIP, VL_ID_BS, VL_ID_TRACES]
-'''List of all the methods available to perform the Vapor-Liquid phase ID.
-'''
+"""List of all the methods available to perform the Vapor-Liquid phase ID.
+"""
 S_ID_D2P_DVDT = 'd2P_dVdT'
 S_ID_METHODS = [S_ID_D2P_DVDT]
-'''List of all the methods available to perform the solid-liquid phase ID.
-'''
+"""List of all the methods available to perform the solid-liquid phase ID.
+"""
 
 def score_phases_S(phases, constants, correlations, method=S_ID_D2P_DVDT,
                    S_ID_settings=None):

@@ -224,6 +224,7 @@ class VirialCSP(object):
        International Journal of Thermophysics 24, no. 6 (November 1, 2003):
        1667-80. https://doi.org/10.1023/B:IJOT.0000004098.98614.38.
     '''
+
     cross_B_calculated = False
     cross_C_calculated = False
     pure_B_calculated = False
@@ -932,6 +933,7 @@ class VirialGas(IdealGasDeparturePhase):
     VirialGas(model=VirialCSP(Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA', T=300), HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [0, 0, 0, 0, 20.7861565453831]))], cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz', T=300, P=100000.0, zs=[0.78, 0.21, 0.01])
 
     '''
+
     phase = 'g'
     force_phase = 'g'
     is_gas = True
@@ -1334,7 +1336,7 @@ class VirialGas(IdealGasDeparturePhase):
         -----
 
         '''
-        '''
+        """
         from sympy import *
         Z, R, T, V, P = symbols('Z, R, T, V, P')
         B, C = symbols('B, C', cls=Function)
@@ -1345,7 +1347,7 @@ class VirialGas(IdealGasDeparturePhase):
         # Two ways to compute H_dep
         Hdep2 = R*T - P_sln*V + integrate(P_sln - T*diff(P_sln, T), (V, oo, V))
         Hdep = -R*T*(Z-1) -integrate(diff(Z, T)/V, (V, oo, V))*R*T**2
-        '''
+        """
         try:
             return self._H_dep
         except:
@@ -1413,13 +1415,13 @@ class VirialGas(IdealGasDeparturePhase):
             [J/(mol*Pa)]
 
         '''
-        '''
+        """
         from sympy import *
         R, V, P = symbols('R, V, P')
         dB_dT, dC_dT, T, B, C = symbols('dB_dT, dC_dT, T, B, C', cls=Function)
         H_dep_const_V = -R*T(P)**2*(-2*V*dB_dT(P)- dC_dT(P))/(2*V**2) - R*T(P)*(-1 + (V**2 + V*B(P) + C(P))/V**2)
         print(diff(H_dep_const_V, P))
-        '''
+        """
         T, V = self.T, self._V
         B = self.B()
         C = self.C()
@@ -1502,13 +1504,13 @@ class VirialGas(IdealGasDeparturePhase):
             temperature [J/(mol*Pa)]
 
         '''
-        '''
+        """
         from sympy import *
         R, P, T, B, C, dB_dT, dC_dT = symbols('R, P, T, B, C, dB_dT, dC_dT')
         V = symbols('V', cls=Function)
         H_dep_const_T = -R*T**2*(-2*V(P)*dB_dT - dC_dT)/(2*V(P)**2) - R*T*(-1 + (V(P)**2 + V(P)*B + C)/V(P)**2)
         print(diff(H_dep_const_T, P))
-        '''
+        """
         T, V = self.T, self._V
         B = self.B()
         C = self.C()
@@ -1543,13 +1545,13 @@ class VirialGas(IdealGasDeparturePhase):
             temperature [J/(mol*Pa*K)]
 
         '''
-        '''
+        """
         from sympy import *
         R, P, T, B, C, dB_dT, dC_dT = symbols('R, P, T, B, C, dB_dT, dC_dT')
         V = symbols('V', cls=Function)
         S_dep_to_diff = R*log((V(P)**2 + V(P)*B + C)/V(P)**2) + (-R*T*dC_dT - R*C + V(P)*(-2*R*T*dB_dT - 2*R*B))/(2*V(P)**2)
         print((diff(S_dep_to_diff, P)))
-        '''
+        """
         T, V = self.T, self._V
         B = self.B()
         C = self.C()
@@ -1578,13 +1580,13 @@ class VirialGas(IdealGasDeparturePhase):
             temperature [J/(m^3)]
 
         '''
-        '''
+        """
         from sympy import *
         R, V, T, B, C, dB_dT, dC_dT = symbols('R, V, T, B, C, dB_dT, dC_dT')
         P = symbols('P', cls=Function)
         H_dep_const_T = -R*T**2*(-2*V*dB_dT - dC_dT)/(2*V**2) - R*T*(-1 + (V**2 + V*B + C)/V**2)
         print(diff(H_dep_const_T, V))
-        '''
+        """
         T, V = self.T, self._V
         B = self.B()
         C = self.C()
@@ -1611,13 +1613,13 @@ class VirialGas(IdealGasDeparturePhase):
             temperature [J/(m^3*K)]
 
         '''
-        '''
+        """
         from sympy import *
         R, V, T, B, C, dB_dT, dC_dT = symbols('R, V, T, B, C, dB_dT, dC_dT')
         P = symbols('P', cls=Function)
         S_dep_const_T = R*log((V**2 + V*B + C)/V**2) + (-R*T*dC_dT - R*C + V*(-2*R*T*dB_dT - 2*R*B))/(2*V**2)
         print(latex(diff(S_dep_const_T, V)))
-        '''
+        """
         T, V = self.T, self._V
         B = self.B()
         C = self.C()
@@ -1654,13 +1656,13 @@ class VirialGas(IdealGasDeparturePhase):
             pressure [J/(m^3)]
 
         '''
-        '''
+        """
         from sympy import *
         R, V, P = symbols('R, V, P')
         dB_dT, dC_dT, T, B, C = symbols('dB_dT, dC_dT, T, B, C', cls=Function)
         H_dep_const_P = -R*T(V)**2*(-2*V*dB_dT(V)- dC_dT(V))/(2*V**2) - R*T(V)*(-1 + (V**2 + V*B(V) + C(V))/V**2)
         print((diff(H_dep_const_P, V)))
-        '''
+        """
         T, V = self.T, self._V
         B = self.B()
         C = self.C()
@@ -1705,13 +1707,13 @@ class VirialGas(IdealGasDeparturePhase):
             pressure [J/(m^3)]
 
         '''
-        '''
+        """
         from sympy import *
         R, V, P = symbols('R, V, P')
         dB_dT, dC_dT, T, B, C = symbols('dB_dT, dC_dT, T, B, C', cls=Function)
         term = R*log((V**2 + V*B(V) + C(V))/V**2) + (-R*T(V)*dC_dT(V) - R*C(V) + V*(-2*R*T(V)*dB_dT(V) - 2*R*B(V)))/(2*V**2)
         print((diff(term, V)))
-        '''
+        """
         T, V = self.T, self._V
         B = self.B()
         C = self.C()
@@ -1743,11 +1745,11 @@ class VirialGas(IdealGasDeparturePhase):
         -----
 
         '''
-        '''
+        """
         dP_dT = diff(P_sln, T)
         S_dep = integrate(dP_dT - R/V, (V, oo, V)) + R*log(Z)
 
-        '''
+        """
         try:
             return self._S_dep
         except:
@@ -2038,14 +2040,14 @@ class VirialGas(IdealGasDeparturePhase):
             Cijs = self.model.C_interactions()
             dCijs = self.model.dC_dT_interactions()
             # TODO
-            '''
+            """
             from sympy import *
             Cij, Cik, Cjk = symbols('Cij, Cik, Cjk', cls=Function)
             T = symbols('T')
             # The derivative of this is messy
             expr = (Cij(T)*Cik(T)*Cjk(T))**Rational('1/3')
             # diff(expr, T, 3)
-            '''
+            """
             self._dC_dT = dC_dT = float(dCVirial_mixture_dT_Orentlicher_Prausnitz(zs, Cijs, dCijs))
             return dC_dT
 

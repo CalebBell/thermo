@@ -48,7 +48,6 @@ Wilson Regression Calculations
 
 '''
 
-from __future__ import division
 from math import log, exp
 from fluids.constants import R
 from fluids.numerics import numpy as np, trunc_exp
@@ -295,7 +294,7 @@ def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
     return calc
 
 
-'''
+"""
 Actually readable expression of `wilson_gammas_binaries`:
 
     if lambda12 < MIN_LAMBDA_WILSON:
@@ -330,7 +329,7 @@ Actually readable expression of `wilson_gammas_binaries`:
         calc[i2] = gammas[0]
         calc[i2 + 1] = gammas[1]
     return calc
-'''
+"""
 
 def wilson_gammas_binaries_jac(xs, lambda12, lambda21, calc=None):
     if lambda12 < MIN_LAMBDA_WILSON:
@@ -1256,7 +1255,7 @@ class Wilson(GibbsExcess):
         Notes
         -----
         '''# Derived with:
-        '''from sympy import *
+        """from sympy import *
         N = 4
         R, T = symbols('R, T')
         x1, x2, x3, x4 = symbols('x1, x2, x3, x4')
@@ -1277,7 +1276,7 @@ class Wilson(GibbsExcess):
         ge = ge*R*T
 
         diff(ge, T)
-        '''
+        """
         try:
             return self._dGE_dT
         except AttributeError:
@@ -1458,7 +1457,7 @@ class Wilson(GibbsExcess):
         Notes
         -----
         '''
-        '''
+        """
         from sympy import *
         N = 4
         R, T = symbols('R, T')
@@ -1481,7 +1480,7 @@ class Wilson(GibbsExcess):
 
 
         diff(ge, x1)#, diff(ge, x1, x2), diff(ge, x1, x2, x3)
-        '''
+        """
         try:
             return self._dGE_dxs
         except AttributeError:

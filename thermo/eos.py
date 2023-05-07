@@ -251,7 +251,6 @@ at all.
 
 '''
 
-from __future__ import division, print_function
 
 __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'APISRK', 'TWUPR', 'TWUSRK', 'eos_list', 'eos_2P_list',
@@ -854,19 +853,20 @@ class GCEOS(object):
     V_g_mpmath
     V_l_mpmath
     '''
+
     # Slots does not help performance in either implementation
     kwargs = {}
-    '''Dictionary which holds input parameters to an EOS which are non-standard;
+    """Dictionary which holds input parameters to an EOS which are non-standard;
     this excludes `T`, `P`, `V`, `omega`, `Tc`, `Pc`, `Vc` but includes EOS
     specific parameters like `S1` and `alpha_coeffs`.
-    '''
+    """
 
     N = 1
-    '''The number of components in the EOS'''
+    """The number of components in the EOS"""
     scalar = True
 
     multicomponent = False
-    '''Whether or not the EOS is multicomponent or not'''
+    """Whether or not the EOS is multicomponent or not"""
     _P_zero_l_cheb_coeffs = None
     P_zero_l_cheb_limits = (0.0, 0.0)
     _P_zero_g_cheb_coeffs = None
@@ -876,9 +876,9 @@ class GCEOS(object):
     main_derivatives_and_departures = staticmethod(main_derivatives_and_departures)
 
     c1 = None
-    '''Parameter used by some equations of state in the `a` calculation'''
+    """Parameter used by some equations of state in the `a` calculation"""
     c2 = None
-    '''Parameter used by some equations of state in the `b` calculation'''
+    """Parameter used by some equations of state in the `b` calculation"""
 
     nonstate_constants = ('Tc', 'Pc', 'omega', 'kwargs', 'a', 'b', 'delta', 'epsilon')
     kwargs_keys = tuple()
@@ -6869,7 +6869,7 @@ class GCEOS(object):
             {\left(P \right)}\right)^{2}}
 
         '''
-        r'''Feels like a really strange derivative. Have not been able to construct
+        r"""Feels like a really strange derivative. Have not been able to construct
         it from others yet. Value is Symmetric - can calculate it both ways.
         Still feels like there should be a general method for obtaining these derivatives.
 
@@ -6879,7 +6879,7 @@ class GCEOS(object):
 
         dP_dV = 1/(1/(-R*T/(V(P) - b)**2 - a_alpha(T)*(-2*V(P) - delta)/(V(P)**2 + V(P)*delta + epsilon)**2))
         cse(diff(dP_dV, P), optimizations='basic')
-        '''
+        """
         T, P, b, delta, epsilon = self.T, self.P, self.b, self.delta, self.epsilon
         x0 = self.V_g
         x1 = self.a_alpha
@@ -7164,16 +7164,17 @@ class IG(GCEOS):
     .. [1] Smith, J. M, H. C Van Ness, and Michael M Abbott. Introduction to
        Chemical Engineering Thermodynamics. Boston: McGraw-Hill, 2005.
     '''
+
     Zc = 1.0
-    '''float: Critical compressibility for an ideal gas is 1'''
+    """float: Critical compressibility for an ideal gas is 1"""
     a = 0.0
-    '''float: `a` parameter for an ideal gas is 0'''
+    """float: `a` parameter for an ideal gas is 0"""
     b = 0.0
-    '''float: `b` parameter for an ideal gas is 0'''
+    """float: `b` parameter for an ideal gas is 0"""
     delta = 0.0
-    '''float: `delta` parameter for an ideal gas is 0'''
+    """float: `delta` parameter for an ideal gas is 0"""
     epsilon = 0.0
-    '''float: `epsilon` parameter for an ideal gas is 0'''
+    """float: `epsilon` parameter for an ideal gas is 0"""
     volume_solutions = staticmethod(volume_solutions_ideal)
 
     # Handle the properties where numerical error puts values - but they should
@@ -7422,23 +7423,24 @@ class PR(GCEOS):
        Prediction of Petroleum Fluid-Phase Behaviour," 11. EDP Sciences, 2011.
        doi:10.1051/jeep/201100011.
     '''
+
     # constant part of `a`,
     # X = (-1 + (6*sqrt(2)+8)**Rational(1,3) - (6*sqrt(2)-8)**Rational(1,3))/3
     # (8*(5*X+1)/(49-37*X)).evalf(40)
     c1 = 0.4572355289213821893834601962251837888504
-    '''Full value of the constant in the `a` parameter'''
+    """Full value of the constant in the `a` parameter"""
     c1R2 = c1*R2
 
     # Constant part of `b`, (X/(X+3)).evalf(40)
     c2 = 0.0777960739038884559718447100373331839711
-    '''Full value of the constant in the `b` parameter'''
+    """Full value of the constant in the `b` parameter"""
     c2R = c2*R
     c1R2_c2R = c1R2/c2R
     #    c1, c2 = 0.45724, 0.07780
 
     # Zc is the mechanical compressibility for mixtures as well.
     Zc = 0.3074013086987038480093850966542222720096
-    '''Mechanical compressibility of Peng-Robinson EOS'''
+    """Mechanical compressibility of Peng-Robinson EOS"""
 
     Psat_coeffs_limiting = [-3.4758880164801873, 0.7675486448347723]
 
@@ -7667,7 +7669,7 @@ class PR(GCEOS):
         >>> e.P_max_at_V(e.V)
         2247886208.7
         '''
-        '''# Partial notes on how this was determined.
+        """# Partial notes on how this was determined.
         from sympy import *
         P, T, V = symbols('P, T, V', positive=True)
         Tc, Pc, omega = symbols('Tc, Pc, omega', positive=True)
@@ -7678,7 +7680,7 @@ class PR(GCEOS):
                    kappa: thing.kappa,
                    a: thing.a, R: thermo.eos.R, Tc: thing.Tc, V: thing.V, Tc: thing.Tc, omega: thing.omega}
         solve(Eq(main, 0), P)[0].subs(to_subs)
-        '''
+        """
         try:
             Tc, a, b, kappa = self.Tc, self.a, self.b, self.kappa
         except:
@@ -7810,7 +7812,7 @@ class PR(GCEOS):
         T_calc = (x102*(x100 - x101)) # Normally the correct root
         if T_calc < 0.0:
             # Ruined, call the numerical method; sometimes it happens
-            return super(PR, self).solve_T(P, V, solution=solution)
+            return super().solve_T(P, V, solution=solution)
 
         Tc_inv = 1.0/Tc
 
@@ -7825,7 +7827,7 @@ class PR(GCEOS):
             err = c1*T_calc - alpha_root*alpha_root*c2 - P
             if abs(err/P) > 1e-2:
                 # Numerical issue - such a bad solution we cannot converge
-                return super(PR, self).solve_T(P, V, solution=solution)
+                return super().solve_T(P, V, solution=solution)
 
             # Newton step - might as well compute it
             derr = c1 + c2*kappa*rt*(kappa*(1.0 -rt) + 1.0)/T_calc
@@ -7876,8 +7878,8 @@ class PR(GCEOS):
             a_alpha_low = a*(1.0 + kappa*(1.0-(T_calc/Tc)**0.5))**2.0
             a_alpha_high = a*(1.0 + kappa*(1.0-(T_calc_high/Tc)**0.5))**2.0
 
-            err_low = abs((R*T_calc/(V-b) - a_alpha_low/(V*V + delta*V + epsilon) - P))
-            err_high = abs((R*T_calc_high/(V-b) - a_alpha_high/(V*V + delta*V + epsilon) - P))
+            err_low = abs(R*T_calc/(V-b) - a_alpha_low/(V*V + delta*V + epsilon) - P)
+            err_high = abs(R*T_calc_high/(V-b) - a_alpha_high/(V*V + delta*V + epsilon) - P)
 #                print(err_low, err_high, T_calc, T_calc_high, a_alpha_low, a_alpha_high)
 
             RT_low = R*T_calc
@@ -8060,10 +8062,10 @@ class PR78(PR):
     '''
 
     low_omega_constants = (0.37464, 1.54226, -0.26992)
-    '''Constants for the `kappa` formula for the low-omega region.'''
+    """Constants for the `kappa` formula for the low-omega region."""
 
     high_omega_constants = (0.379642, 1.48503, -0.164423, 0.016666)
-    '''Constants for the `kappa` formula for the high-omega region.'''
+    """Constants for the `kappa` formula for the high-omega region."""
 
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None):
         self.Tc = Tc
@@ -8142,6 +8144,7 @@ class PRTranslated(PR):
     .. [1] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
+
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
     kwargs_keys = ('c', 'alpha_coeffs')
@@ -8240,6 +8243,7 @@ class PRTranslatedPPJP(PRTranslated):
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
+
     # Direct solver for T could be implemented but cannot use the PR one
     kwargs_keys = ('c',)
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
@@ -8628,6 +8632,7 @@ class PRSV(PR):
        of Industrial Interest." The Canadian Journal of Chemical Engineering
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
     '''
+
     kappa1_Tr_limit = False
     kwargs_keys = ('kappa1',)
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=None):
@@ -8887,6 +8892,7 @@ class PRSV2(PR):
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26.
        doi:10.1002/cjce.5450640516.
     '''
+
     kwargs_keys = ('kappa1', 'kappa2', 'kappa3')
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0, kappa2=0, kappa3=0):
         self.Tc = Tc
@@ -9139,13 +9145,13 @@ class VDW(GCEOS):
     '''
 
     delta = 0.0
-    '''`delta` is always zero for the :obj:`VDW` EOS'''
+    """`delta` is always zero for the :obj:`VDW` EOS"""
     epsilon = 0.0
-    '''`epsilon` is always zero for the :obj:`VDW` EOS'''
+    """`epsilon` is always zero for the :obj:`VDW` EOS"""
     omega = None
-    '''`omega` has no impact on the :obj:`VDW` EOS'''
+    """`omega` has no impact on the :obj:`VDW` EOS"""
     Zc = 3.0/8.
-    '''Mechanical compressibility of :obj:`VDW` EOS'''
+    """Mechanical compressibility of :obj:`VDW` EOS"""
 
     c1 = 27.0/64.0
     c2 = 1.0/8.0
@@ -9455,16 +9461,16 @@ class RK(GCEOS):
     '''
 
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
-    '''Full value of the constant in the `a` parameter'''
+    """Full value of the constant in the `a` parameter"""
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3
-    '''Full value of the constant in the `b` parameter'''
+    """Full value of the constant in the `b` parameter"""
 
     epsilon = 0.0
-    '''`epsilon` is always zero for the :obj:`RK` EOS'''
+    """`epsilon` is always zero for the :obj:`RK` EOS"""
     omega = None
-    '''`omega` has no impact on the :obj:`RK` EOS'''
+    """`omega` has no impact on the :obj:`RK` EOS"""
     Zc = 1.0/3.
-    '''Mechanical compressibility of :obj:`RK` EOS'''
+    """Mechanical compressibility of :obj:`RK` EOS"""
 
     c1R2 = c1*R2
     c2R = c2*R
@@ -9638,7 +9644,7 @@ class RK(GCEOS):
             except:
                 pass
             # Turns out the above solution does not cover all cases
-        return super(RK, self).solve_T(P, V, solution=solution)
+        return super().solve_T(P, V, solution=solution)
 
 
     def T_discriminant_zeros_analytical(self, valid=False):
@@ -9779,20 +9785,20 @@ class SRK(GCEOS):
     '''
 
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
-    '''Full value of the constant in the `a` parameter'''
+    """Full value of the constant in the `a` parameter"""
 
 
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3
-    '''Full value of the constant in the `b` parameter'''
+    """Full value of the constant in the `b` parameter"""
 
     c1R2 = c1*R2
     c2R = c2*R
     c1R2_c2R = c1R2/c2R
 
     epsilon = 0.0
-    '''`epsilon` is always zero for the :obj:`SRK` EOS'''
+    """`epsilon` is always zero for the :obj:`SRK` EOS"""
     Zc = 1/3.
-    '''Mechanical compressibility of :obj:`SRK` EOS'''
+    """Mechanical compressibility of :obj:`SRK` EOS"""
 
     Psat_coeffs_limiting = [-3.2308843103522107, 0.7210534170705403]
 
@@ -9934,7 +9940,7 @@ class SRK(GCEOS):
         >>> e.P_max_at_V(e.V)
         490523786.2
         '''
-        '''
+        """
         from sympy import *
         # Solve for when T equal
         P, T, V, R, a, b, m = symbols('P, T, V, R, a, b, m')
@@ -9946,7 +9952,7 @@ class SRK(GCEOS):
         lhs = P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2
         rhs = R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a
         hit = solve(Eq(lhs, rhs), P)
-        '''
+        """
         # grows unbounded for all mixture EOS?
         try:
             Tc, a, m, b = self.Tc, self.a, self.m, self.b
@@ -10244,6 +10250,7 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
        Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
        https://doi.org/10.1016/0378-3812(94)87021-7.
     '''
+
     kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, M=None, N=None, alpha_coeffs=None, c=0.0,
                  T=None, P=None, V=None):
@@ -10394,6 +10401,7 @@ class SRKTranslatedPPJP(SRK):
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
+
     kwargs_keys = ('c',)
     # No point in subclassing SRKTranslated - just disables direct solver for T
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
@@ -10500,6 +10508,7 @@ class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
     '''
+
     kwargs_keys = ('c', 'alpha_coeffs')
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
                  P=None, V=None):
@@ -10599,6 +10608,7 @@ class APISRK(SRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
+
     kwargs_keys = ('S1', 'S2')
 
     def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None,
@@ -10807,6 +10817,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
+
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
 
@@ -10900,6 +10911,7 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
+
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
 
@@ -10922,20 +10934,20 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
 eos_list = [IG, PR, PR78, PRSV, PRSV2, VDW, RK, SRK, APISRK, TWUPR, TWUSRK,
             PRTranslatedPPJP, SRKTranslatedPPJP, MSRKTranslated,
             PRTranslatedConsistent, SRKTranslatedConsistent]
-'''list : List of all cubic equation of state classes.
-'''
+"""list : List of all cubic equation of state classes.
+"""
 eos_2P_list = list(eos_list)
-'''list : List of all cubic equation of state classes that can represent
+"""list : List of all cubic equation of state classes that can represent
 multiple phases.
-'''
+"""
 
 eos_2P_list.remove(IG)
 
 eos_dict = {c.__name__: c for c in eos_list}
-'''dict : Dict of all cubic equation of state classes, indexed by their class name.
-'''
+"""dict : Dict of all cubic equation of state classes, indexed by their class name.
+"""
 
 eos_full_path_dict = {c.__full_path__: c for c in eos_list}
-'''dict : Dict of all cubic equation of state classes, indexed by their module path and class name.
-'''
+"""dict : Dict of all cubic equation of state classes, indexed by their module path and class name.
+"""
 

@@ -45,12 +45,12 @@ class MixtureProperty(object):
     pure_reference_types = ()
 
     skip_prop_validity_check = False
-    '''Flag to disable checking the output of the value. Saves a little time.
-    '''
+    """Flag to disable checking the output of the value. Saves a little time.
+    """
     skip_method_validity_check = False
-    '''Flag to disable checking the validity of the method at the
+    """Flag to disable checking the validity of the method at the
     specified conditions. Saves a little time.
-    '''
+    """
 
     def __init_subclass__(cls):
         cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
@@ -101,15 +101,15 @@ class MixtureProperty(object):
         self._correct_pressure_pure = kwargs.get('correct_pressure_pure', self._correct_pressure_pure)
 
         self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        property under.'''
+        """Minimum temperature at which no method can calculate the
+        property under."""
         self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        property above.'''
+        """Maximum temperature at which no method can calculate the
+        property above."""
 
         self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
+        """Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`."""
         self.load_all_methods()
 
         self.set_poly_fit_coeffs()

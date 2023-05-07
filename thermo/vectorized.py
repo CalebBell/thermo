@@ -56,7 +56,6 @@ array([591.75, 647.14])
 
 """
 
-from __future__ import division
 from fluids.numerics import numpy as np, FakePackage
 import thermo
 

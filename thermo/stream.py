@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from __future__ import division
 
 __all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance', 'energy_balance']
 
@@ -1627,6 +1626,7 @@ class Stream(Mixture):
         for them.
 
     '''
+
     flashed = True
     def __repr__(self): # pragma: no cover
         txt = '<Stream, components=%s, mole fractions=%s, mass flow=%s kg/s, mole flow=%s mol/s' % (self.names, [round(i,4) for i in self.zs], self.m, self.n)
@@ -1701,12 +1701,12 @@ class Stream(Mixture):
 
         # If T and P are known, only need to flash once
         if T is not None and P is not None:
-            super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
+            super().__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
                  T=T, P=P, Vf_TP=Vf_TP, pkg=pkg)
         else:
             # Initialize without a flash
             Mixture.autoflash = False
-            super(Stream, self).__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
+            super().__init__(IDs, zs=zs, ws=ws, Vfls=Vfls, Vfgs=Vfgs,
                  Vf_TP=Vf_TP, pkg=pkg)
             Mixture.autoflash = True
 
@@ -1888,7 +1888,7 @@ class Stream(Mixture):
 
         if S is not None:
             Sm = property_mass_to_molar(S, self.MW)
-        super(Stream, self).flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
+        super().flash_caloric(T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
         self.set_extensive_properties()
 
 
@@ -1920,7 +1920,7 @@ class Stream(Mixture):
         if (set(self.CASs) == set(other.CASs)) and (len(self.CASs) == len(other.CASs)):
             cmps = self.CASs
         else:
-            cmps = sorted(list(set((self.CASs + other.CASs))))
+            cmps = sorted(list(set(self.CASs + other.CASs)))
         mole = self.n + other.n
         moles = []
         for cmp in cmps:
@@ -2163,7 +2163,7 @@ class EquilibriumStream(EquilibriumState):
             if type(existing_flash) is EquilibriumStream:
                 composition_spec, flow_spec = self.composition_spec, self.flow_spec
 
-            super(EquilibriumStream, self).__init__(T=existing_flash.T, P=existing_flash.P, zs=existing_flash.zs, gas=existing_flash.gas, liquids=existing_flash.liquids, solids=existing_flash.solids,
+            super().__init__(T=existing_flash.T, P=existing_flash.P, zs=existing_flash.zs, gas=existing_flash.gas, liquids=existing_flash.liquids, solids=existing_flash.solids,
                  betas=existing_flash.betas, flash_specs=existing_flash.flash_specs,
                  flash_convergence=existing_flash.flash_convergence,
                  constants=existing_flash.constants, correlations=existing_flash.correlations,
@@ -2174,7 +2174,7 @@ class EquilibriumStream(EquilibriumState):
                 # Delete if so
 
         else:
-            dest = super(EquilibriumStream, self).__init__
+            dest = super().__init__
             # print(dict(T=T, P=P, V=V, rho=rho, rho_mass=rho_mass, VF=VF,
             #               H=H, H_mass=H_mass, S=S, S_mass=S_mass,
             #               G=G, G_mass=G_mass, U=U, U_mass=U_mass,

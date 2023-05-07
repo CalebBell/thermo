@@ -70,10 +70,11 @@ class IdealGas(Phase):
     29.1733530
 
     '''
-    '''DO NOT DELETE - EOS CLASS IS TOO SLOW!
+
+    """DO NOT DELETE - EOS CLASS IS TOO SLOW!
     This will be important for fitting.
 
-    '''
+    """
     phase = 'g'
     force_phase = 'g'
     is_gas = True

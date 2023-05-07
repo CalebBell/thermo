@@ -43,7 +43,6 @@ Regular Solution Regression Calculations
 
 '''
 
-from __future__ import division
 from fluids.numerics import numpy as np, trunc_exp
 from thermo.activity import GibbsExcess
 from fluids.numerics import exp, log
@@ -308,6 +307,7 @@ class RegularSolution(GibbsExcess):
     .. [4] Kooijman, Harry A., and Ross Taylor. The ChemSep Book. Books on
        Demand Norderstedt, Germany, 2000.
     '''
+
     model_id = 400
 
     gammas_from_args = staticmethod(regular_solution_gammas)
@@ -446,7 +446,7 @@ class RegularSolution(GibbsExcess):
         Notes
         -----
         '''
-        '''
+        """
         from sympy import *
         GEvar, dGEvar_dT, GEvar_dx, dGEvar_dxixj, H = symbols("GEvar, dGEvar_dT, GEvar_dx, dGEvar_dxixj, H", cls=Function)
 
@@ -469,7 +469,7 @@ class RegularSolution(GibbsExcess):
                 Aij = (SPs[i] - SPs[j])**2/2 + l_ijs[i][j]*SPs[i]*SPs[j]
                 num += xs[i]*xs[j]*Vs[i]*Vs[j]*Aij
         GE = num/denom
-        '''
+        """
         try:
             return self._GE
         except AttributeError:
@@ -495,11 +495,11 @@ class RegularSolution(GibbsExcess):
         Notes
         -----
         '''
-        '''
+        """
         dGEdxs = (diff(GE, x0)).subs(GE, GEvar(x0, x1, x2))
         Hi = dGEdxs.args[0].args[1]
         dGEdxs
-        '''
+        """
         try:
             return self._dGE_dxs
         except AttributeError:
@@ -549,10 +549,10 @@ class RegularSolution(GibbsExcess):
         Notes
         -----
         '''
-        '''
+        """
         d2GEdxixjs = diff((diff(GE, x0)).subs(GE, GEvar(x0, x1, x2)), x1).subs(Hi, H(x0, x1, x2))
         d2GEdxixjs
-        '''
+        """
         try:
             return self._d2GE_dxixjs
         except AttributeError:

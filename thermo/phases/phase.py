@@ -83,6 +83,7 @@ class Phase(object):
     not accessible from Phase objects without a reference to the constants.
 
     '''
+
     INCOMPRESSIBLE_CONST = 1e30
     R = R
     R2 = R*R
@@ -93,8 +94,8 @@ class Phase(object):
     ideal_gas_basis = False # Parameter fot has the same ideal gas Cp
     T_REF_IG = 298.15
     T_REF_IG_INV = 1.0/T_REF_IG
-    '''The numerical inverse of :obj:`T_REF_IG`, stored to save a division.
-    '''
+    """The numerical inverse of :obj:`T_REF_IG`, stored to save a division.
+    """
     P_REF_IG = 101325.
     P_REF_IG_INV = 1.0/P_REF_IG
     LOG_P_REF_IG = log(P_REF_IG)
@@ -111,8 +112,8 @@ class Phase(object):
     T_MIN_FLASH = 1e-300
 
     force_phase = None
-    '''Attribute which can be set to a global Phase object to force the phases
-    identification routines to label it a certain phase. Accepts values of ('g', 'l', 's').'''
+    """Attribute which can be set to a global Phase object to force the phases
+    identification routines to label it a certain phase. Accepts values of ('g', 'l', 's')."""
 
     _Psats_data = None
     _Cpgs_data = None
@@ -126,28 +127,28 @@ class Phase(object):
     __slots__ = ('__dict__', 'result', 'constants', 'correlations')
 
     pure_references = ()
-    '''Tuple of attribute names which hold lists of :obj:`thermo.utils.TDependentProperty`
-    or :obj:`thermo.utils.TPDependentProperty` instances.'''
+    """Tuple of attribute names which hold lists of :obj:`thermo.utils.TDependentProperty`
+    or :obj:`thermo.utils.TPDependentProperty` instances."""
 
     pure_reference_types = ()
-    '''Tuple of types of :obj:`thermo.utils.TDependentProperty`
-    or :obj:`thermo.utils.TPDependentProperty` corresponding to `pure_references`.'''
+    """Tuple of types of :obj:`thermo.utils.TDependentProperty`
+    or :obj:`thermo.utils.TPDependentProperty` corresponding to `pure_references`."""
 
     obj_references = ()
-    '''Tuple of object instances which should be stored as json using their own
+    """Tuple of object instances which should be stored as json using their own
     as_json method.
-    '''
+    """
     pointer_references = ()
-    '''Tuple of attributes which should be stored by converting them to
+    """Tuple of attributes which should be stored by converting them to
     a string, and then they will be looked up in their corresponding
     `pointer_reference_dicts` entry.
-    '''
+    """
     pointer_reference_dicts = ()
-    '''Tuple of dictionaries for string -> object
-    '''
+    """Tuple of dictionaries for string -> object
+    """
     reference_pointer_dicts = ()
-    '''Tuple of dictionaries for object -> string
-    '''
+    """Tuple of dictionaries for object -> string
+    """
 
     bulk_phase_type = False
 
@@ -3145,7 +3146,7 @@ class Phase(object):
             Temperature derivative of isobaric coefficient of a thermal
             expansion, [1/K^2]
         '''
-        '''
+        """
         from sympy import *
         T, P = symbols('T, P')
         V = symbols('V', cls=Function)
@@ -3153,7 +3154,7 @@ class Phase(object):
         diff(expr, T)
         Derivative(V(T, P), (T, 2))/V(T, P) - Derivative(V(T, P), T)**2/V(T, P)**2
         # Untested
-        '''
+        """
         V_inv = 1.0/self.V()
         dV_dT = self.dV_dT()
         return V_inv*(self.d2V_dT2() - dV_dT*dV_dT*V_inv)
@@ -3175,7 +3176,7 @@ class Phase(object):
             Pressure derivative of isobaric coefficient of a thermal
             expansion, [1/(K*Pa)]
         '''
-        '''
+        """
         from sympy import *
         T, P = symbols('T, P')
         V = symbols('V', cls=Function)
@@ -3183,7 +3184,7 @@ class Phase(object):
         diff(expr, P)
         Derivative(V(T, P), P, T)/V(T, P) - Derivative(V(T, P), P)*Derivative(V(T, P), T)/V(T, P)**2
 
-        '''
+        """
         V_inv = 1.0/self.V()
         dV_dT = self.dV_dT()
         dV_dP = self.dV_dP()
@@ -4633,7 +4634,7 @@ class Phase(object):
         -----
         Requires `dV_dT`, `MW`, and `V`.
         '''
-        '''
+        """
 
         This expression is readily obtainable with SymPy:
 
@@ -4643,7 +4644,7 @@ class Phase(object):
         >>> rho_mass = (Vm(T))**-1*MW/1000 # doctest: +SKIP
         >>> diff(rho_mass, T) # doctest: +SKIP
         -MW*Derivative(Vm(T), T)/(1000*Vm(T)**2)
-        '''
+        """
         try:
             return self._drho_mass_dT
         except AttributeError:
@@ -4672,7 +4673,7 @@ class Phase(object):
         -----
         Requires `dV_dP`, `MW`, and `V`.
         '''
-        '''
+        """
 
         This expression is readily obtainable with SymTy:
 
@@ -4682,7 +4683,7 @@ class Phase(object):
         >>> rho_mass = (Vm(P))**-1*MW/1000 # doctest: +SKIP
         >>> diff(rho_mass, P) # doctest: +SKIP
         -MW*Derivative(Vm(P), P)/(1000*Vm(P)**2)
-        '''
+        """
         try:
             return self._drho_mass_dP
         except AttributeError:
@@ -5057,12 +5058,12 @@ class Phase(object):
         calculated at constant temperature and then pressure respectively.
         These can be tricky to obtain.
         '''
-        '''Calculation with SymPy:
+        """Calculation with SymPy:
         from sympy import *
         T = symbols('T')
         V, dPdV_T, Cp, Cv = symbols('V, dPdV_T, Cp, Cv', cls=Function)
         c = sqrt(-V(T)**2*dPdV_T(T)*Cp(T)/Cv(T))
-        '''
+        """
         x0 = self.Cp()
         x1 = self.V()
         x2 = self.dP_dV()
@@ -5110,13 +5111,13 @@ class Phase(object):
         Notes
         -----
         '''
-        '''
+        """
         from sympy import *
         P = symbols('P')
         V, dPdV_T, Cp, Cv = symbols('V, dPdV_T, Cp, Cv', cls=Function)
         c = sqrt(-V(P)**2*dPdV_T(P)*Cp(P)/Cv(P))
         print(latex(diff(c, P)))
-        '''
+        """
         x0 = self.Cp()
         x1 = self.V()
         x2 = self.dP_dV()
@@ -5965,14 +5966,14 @@ class IdealGasDeparturePhase(Phase):
             [J/(mol*K^2)]
         '''
         # Good
-        '''
+        """
         # Second last bit from
         from sympy import *
         T, R = symbols('T, R')
         P = symbols('P', cls=Function)
         expr =-R*log(P(T)/101325)
         diff(expr, T)
-        '''
+        """
         dS_dT_V = self.Cp_ideal_gas()/self.T - self.R/self.P*self.dP_dT()
         dS_dT_V += self.dS_dep_dT_V()
         return dS_dT_V
@@ -6028,7 +6029,7 @@ for a, a_str, a_units, a_name in zip(*prop_iter):
             def _der(self, property=a, differentiate_by=b, at_constant=c):
                 return self._derivs_jacobian(a=property, b=differentiate_by, c=at_constant)
             t = 'd%s_d%s_%s' %(a, b, c)
-            doc = r'''Method to calculate and return the %s derivative of %s of the phase at constant %s.
+            doc = r"""Method to calculate and return the %s derivative of %s of the phase at constant %s.
 
     .. math::
         \left(\frac{\partial %s}{\partial %s}\right)_{%s}
@@ -6037,7 +6038,7 @@ Returns
 -------
 %s : float
     The %s derivative of %s of the phase at constant %s, [%s/%s]
-''' %(b_name, a_name, c_name, a_str, b_str, c, t, b_name, a_name, c_name, a_units, b_units)
+""" %(b_name, a_name, c_name, a_str, b_str, c, t, b_name, a_name, c_name, a_units, b_units)
             setattr(Phase, t, _der)
             try:
                 _der.__doc__ = doc
@@ -6081,7 +6082,7 @@ for attr in derivatives_thermodynamic:
         at_constant = 'T' if diff_by == 'P' else 'P'
     s = '%s_mass_%s' %(base, end)
 
-    doc = r'''Method to calculate and return the %s derivative of mass %s of the phase at constant %s.
+    doc = r"""Method to calculate and return the %s derivative of mass %s of the phase at constant %s.
 
     .. math::
         \left(\frac{\partial %s_{\text{mass}}}{\partial %s}\right)_{%s}
@@ -6090,7 +6091,7 @@ Returns
 -------
 %s : float
     The %s derivative of mass %s of the phase at constant %s, [%s/%s]
-''' %(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
+""" %(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
     try:
         _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
     except:

@@ -50,7 +50,7 @@ Faster implementations which do not store N^2 matrices:
 .. autofunction:: a_alpha_quadratic_terms
 .. autofunction:: a_alpha_and_derivatives_quadratic_terms
 '''
-'''
+"""
 Direct fugacity calls
 ---------------------
 The object-oriented interface is quite convenient. However, sometimes it is
@@ -63,7 +63,7 @@ implemented
 .. autofunction:: PR_lnphis_fastest
 
 
-'''
+"""
 # TODO: put methods like "_fast_init_specific" in here so numba can accelerate them.
 from fluids.constants import R
 from fluids.numerics import numpy as np, catanh
@@ -524,7 +524,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
 
     return float(a_alpha), a_alpha_j_rows
     # This is faster in PyPy and can be made even faster optimizing a_alpha!
-    '''
+    """
     N = len(a_alphas)
     a_alpha_j_rows = [0.0]*N
     a_alpha = 0.0
@@ -544,7 +544,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
         a_alpha_j_rows[i] += t200
 
     return a_alpha, a_alpha_j_rows
-    '''
+    """
 
 
 def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
@@ -718,9 +718,9 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
             x0 = a_alphai*a_alphaj
 
             # Technically could use a second list of double a_alphas, probably not used
-            d2a_alpha_dT2_ij =  v0_inv*v0_inv*v1*(  (x0*(
+            d2a_alpha_dT2_ij =  v0_inv*v0_inv*v1*(  x0*(
                               -0.5*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
-                              - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2))
+                              - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2)
 
             d2a_alpha_dT2_ij *= zi_zj
             workingd1 += da_alpha_dT_ij

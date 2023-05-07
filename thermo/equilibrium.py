@@ -38,7 +38,6 @@ EquilibriumState
     :exclude-members: dH_dP_V, dH_dT_V, dH_dV_P, dH_dV_T, dS_dP_V, dS_dT, dS_dT_P, dS_dT_V
 '''
 
-from __future__ import division
 __all__ = ['EquilibriumState']
 
 from fluids.constants import R, R_inv, N_A
@@ -201,6 +200,7 @@ class EquilibriumState(object):
     bulk : :obj:`Bulk<thermo.bulk.Bulk>`
         Overall phase bulk, [-]
     '''
+
     max_liquid_phases = 1
     reacted = False
     flashed = True
@@ -1955,12 +1955,12 @@ class EquilibriumState(object):
         MW = phase.MW()
         # Standard MW of air as in dry air standard
         # It would be excessive to do a true density call
-        '''Lemmon, Eric W., Richard T. Jacobsen, Steven G. Penoncello, and
+        """Lemmon, Eric W., Richard T. Jacobsen, Steven G. Penoncello, and
         Daniel G. Friend. "Thermodynamic Properties of Air and Mixtures of
         Nitrogen, Argon, and Oxygen From 60 to 2000 K at Pressures to 2000
         MPa." Journal of Physical and Chemical Reference Data 29, no. 3 (May
         1, 2000): 331-85. https://doi.org/10.1063/1.1285884.
-        '''
+        """
         return MW/28.9586
 #        rho_mass = self.rho_mass(phase)
 #        return SG(rho_mass, rho_ref=1.2)
@@ -3088,8 +3088,8 @@ def _make_getter_correlations(name):
     def get_correlation(self):
         return getattr(self.correlations, name)
 
-    text = '''Wrapper to obtain the list of %s objects of the associated
-:obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`.''' %(name)
+    text = """Wrapper to obtain the list of %s objects of the associated
+:obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`.""" %(name)
     try:
         get_correlation.__doc__ = text
     except:
@@ -3153,12 +3153,12 @@ for name in ChemicalConstantsPackage.properties:
             type_name = var_type if type(var_type) is str else var_type.__name__
             if return_desc is None:
                 return_desc = desc
-            full_desc = '''%s, %s.
+            full_desc = """%s, %s.
 
 Returns
 -------
 %s : %s
-    %s, %s.''' %(desc, units, name, type_name, return_desc, units)
+    %s, %s.""" %(desc, units, name, type_name, return_desc, units)
 #            print(full_desc)
             getter.__doc__ = full_desc
         except:
@@ -3308,9 +3308,9 @@ for ele in periodic_table:
     getter = _make_getter_atom_fraction(ele.symbol)
     name = '%s_atom_fraction' %(ele.name)
 
-    _add_attrs_doc =  r'''Method to calculate and return the mole fraction that
+    _add_attrs_doc =  r"""Method to calculate and return the mole fraction that
             is %s element, [-]
-            ''' %(ele.name)
+            """ %(ele.name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3332,9 +3332,9 @@ for ele in periodic_table:
     getter = _make_getter_atom_mass_fraction(ele.symbol)
     name = '%s_atom_mass_fraction' %(ele.name)
 
-    _add_attrs_doc =  r'''Method to calculate and return the mass fraction of the phase
+    _add_attrs_doc =  r"""Method to calculate and return the mass fraction of the phase
             that is %s element, [-]
-            ''' %(ele.name)
+            """ %(ele.name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3356,9 +3356,9 @@ for ele in periodic_table:
     getter = _make_getter_atom_mass_flow(ele.symbol)
     name = '%s_atom_mass_flow' %(ele.name)
 
-    _add_attrs_doc =  r'''Method to calculate and return the mass flow of atoms
+    _add_attrs_doc =  r"""Method to calculate and return the mass flow of atoms
             that are %s element, [kg/s]
-            ''' %(ele.name)
+            """ %(ele.name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3380,9 +3380,9 @@ for ele in periodic_table:
     getter = _make_getter_atom_flow(ele.symbol)
     name = '%s_atom_flow' %(ele.name)
 
-    _add_attrs_doc =  r'''Method to calculate and return the mole flow that is
+    _add_attrs_doc =  r"""Method to calculate and return the mole flow that is
             %s, [mol/s]
-            ''' %(ele.name)
+            """ %(ele.name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3404,9 +3404,9 @@ for ele in periodic_table:
     getter = _make_getter_atom_count_flow(ele.symbol)
     name = '%s_atom_count_flow' %(ele.name)
 
-    _add_attrs_doc =  r'''Method to calculate and return the number of atoms in the
+    _add_attrs_doc =  r"""Method to calculate and return the number of atoms in the
             flow which are %s, [atoms/s]
-            ''' %(ele.name)
+            """ %(ele.name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3436,8 +3436,8 @@ for _name, _CAS in _comonent_specific_properties.items():
     getter = _make_getter_partial_pressure(_CAS)
     name = '%s_partial_pressure' %(_name)
 
-    _add_attrs_doc =  r'''Method to calculate and return the ideal partial pressure of %s, [Pa]
-            ''' %(_name)
+    _add_attrs_doc =  r"""Method to calculate and return the ideal partial pressure of %s, [Pa]
+            """ %(_name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3458,12 +3458,12 @@ for _name, _CAS in _comonent_specific_properties.items():
     getter = _make_getter_component_molar_weight(_CAS)
     name = '%s_molar_weight' %(_name)
 
-    _add_attrs_doc =  r'''Method to calculate and return the effective quantiy
+    _add_attrs_doc =  r"""Method to calculate and return the effective quantiy
     of %s in the phase as a molar weight, [g/mol].
 
     This is the molecular weight of the phase times the mass fraction of the
     %s component.
-            ''' %(_name, _name)
+            """ %(_name, _name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)

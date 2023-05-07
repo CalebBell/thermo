@@ -104,7 +104,6 @@ attribute of this module.
 
 '''
 
-from __future__ import division
 
 __all__ = ['Laliberte_density', 'Laliberte_heat_capacity',
            'Laliberte_viscosity','Laliberte_viscosity_mix',

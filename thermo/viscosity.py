@@ -85,7 +85,6 @@ Mixture Gas Viscosity
 
 '''
 
-from __future__ import division
 
 __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
            'ViscosityLiquid', 'ViscosityGas', 'viscosity_gas_methods',
@@ -135,11 +134,11 @@ LUCAS = 'LUCAS'
 viscosity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                          VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
-'''Holds all low-pressure methods available for the ViscosityLiquid class, for
-use in iterating over them.'''
+"""Holds all low-pressure methods available for the ViscosityLiquid class, for
+use in iterating over them."""
 viscosity_liquid_methods_P = [COOLPROP, LUCAS]
-'''Holds all high-pressure methods available for the ViscosityLiquid class, for
-use in iterating over them.'''
+"""Holds all high-pressure methods available for the ViscosityLiquid class, for
+use in iterating over them."""
 
 
 class ViscosityLiquid(TPDependentProperty):
@@ -286,6 +285,7 @@ class ViscosityLiquid(TPDependentProperty):
        Fundamental Physical Constants." Science Advances, April 2020.
        https://doi.org/10.1126/sciadv.aba3747.
     '''
+
     name = 'liquid viscosity'
     units = 'Pa*s'
 
@@ -314,19 +314,19 @@ class ViscosityLiquid(TPDependentProperty):
         return exp(P)
 
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default.'''
+    """Allow tabular extrapolation by default."""
     property_min = 0.0
-    '''Mimimum valid value of liquid viscosity.'''
+    """Mimimum valid value of liquid viscosity."""
     property_max = 2E8
-    '''Maximum valid value of liquid viscosity. Generous limit, as
-    the value is that of bitumen in a Pitch drop experiment.'''
+    """Maximum valid value of liquid viscosity. Generous limit, as
+    the value is that of bitumen in a Pitch drop experiment."""
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                       VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                       VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
-    '''Default rankings of the low-pressure methods.'''
+    """Default rankings of the low-pressure methods."""
     ranked_methods_P = [COOLPROP, LUCAS]
-    '''Default rankings of the high-pressure methods.'''
+    """Default rankings of the high-pressure methods."""
 
     obj_references = pure_references = ('Psat', 'Vml')
     obj_references_types = pure_reference_types = (VaporPressure, VolumeLiquid)
@@ -348,7 +348,7 @@ class ViscosityLiquid(TPDependentProperty):
         self.Vml = Vml
         if 'extrapolation_min' not in kwargs:
             kwargs['extrapolation_min'] = extrapolation_min
-        super(ViscosityLiquid, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -610,7 +610,7 @@ class ViscosityLiquid(TPDependentProperty):
             except:
                 return False
         else:
-            return super(ViscosityLiquid, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return True
 
     def calculate_P(self, T, P, method):
@@ -675,7 +675,7 @@ class ViscosityLiquid(TPDependentProperty):
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['liquid', 'supercritical_liquid']
         else:
-            validity = super(ViscosityLiquid, self).test_method_validity_P(T, P, method)
+            validity = super().test_method_validity_P(T, P, method)
         return validity
 
 GHARAGHEIZI = 'GHARAGHEIZI'
@@ -685,11 +685,11 @@ LUCAS_GAS = 'LUCAS_GAS'
 
 viscosity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                          STIEL_THODOS, LUCAS_GAS]
-'''Holds all low-pressure methods available for the ViscosityGas
-class, for use in iterating over them.'''
+"""Holds all low-pressure methods available for the ViscosityGas
+class, for use in iterating over them."""
 viscosity_gas_methods_P = [COOLPROP]
-'''Holds all high-pressure methods available for the ViscosityGas
-class, for use in iterating over them.'''
+"""Holds all high-pressure methods available for the ViscosityGas
+class, for use in iterating over them."""
 
 
 class ViscosityGas(TPDependentProperty):
@@ -802,29 +802,30 @@ class ViscosityGas(TPDependentProperty):
        Fundamental Physical Constants." Science Advances, April 2020.
        https://doi.org/10.1126/sciadv.aba3747.
     '''
+
     name = 'Gas viscosity'
     units = 'Pa*s'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_P = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default.'''
+    """Allow tabular extrapolation by default."""
     property_min = 0.0
-    '''Mimimum valid value of gas viscosity; limiting condition at low pressure
-    is 0.'''
+    """Mimimum valid value of gas viscosity; limiting condition at low pressure
+    is 0."""
     property_max = 1E-3
-    '''Maximum valid value of gas viscosity. Might be too high, or too low.'''
+    """Maximum valid value of gas viscosity. Might be too high, or too low."""
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                       STIEL_THODOS, LUCAS_GAS]
-    '''Default rankings of the low-pressure methods.'''
+    """Default rankings of the low-pressure methods."""
     ranked_methods_P = [COOLPROP]
-    '''Default rankings of the high-pressure methods.'''
+    """Default rankings of the high-pressure methods."""
 
     obj_references = pure_references = ('Vmg',)
     obj_references_types = pure_reference_types = (VolumeGas,)
@@ -842,7 +843,7 @@ class ViscosityGas(TPDependentProperty):
         self.Vmg = Vmg
         if 'extrapolation_min' not in kwargs:
             kwargs['extrapolation_min'] = extrapolation_min
-        super(ViscosityGas, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -989,7 +990,7 @@ class ViscosityGas(TPDependentProperty):
         elif method == VDI_PPDS:
             pass # Polynomial always works
         else:
-            return super(ViscosityGas, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return validity
 
     def calculate_P(self, T, P, method):
@@ -1049,7 +1050,7 @@ class ViscosityGas(TPDependentProperty):
         if method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
         else:
-            validity = super(ViscosityGas, self).test_method_validity_P(T, P, method)
+            validity = super().test_method_validity_P(T, P, method)
         return validity
 
 
@@ -1058,8 +1059,8 @@ MIXING_LOG_MOLAR = 'Logarithmic mixing, molar'
 MIXING_LOG_MASS = 'Logarithmic mixing, mass'
 
 viscosity_liquid_mixture_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, LINEAR]
-'''Holds all mixing rules available for the :obj:`ViscosityLiquidMixture`
-class, for use in iterating over them.'''
+"""Holds all mixing rules available for the :obj:`ViscosityLiquidMixture`
+class, for use in iterating over them."""
 
 
 class ViscosityLiquidMixture(MixtureProperty):
@@ -1110,13 +1111,14 @@ class ViscosityLiquidMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+
     name = 'liquid viscosity'
     units = 'Pa*s'
     property_min = 0
-    '''Mimimum valid value of liquid viscosity.'''
+    """Mimimum valid value of liquid viscosity."""
     property_max = 2E8
-    '''Maximum valid value of liquid viscosity. Generous limit, as
-    the value is that of bitumen in a Pitch drop experiment.'''
+    """Maximum valid value of liquid viscosity. Generous limit, as
+    the value is that of bitumen in a Pitch drop experiment."""
 
     ranked_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, LINEAR]
 
@@ -1129,7 +1131,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         self.CASs = CASs
         self.ViscosityLiquids = ViscosityLiquids
         self.MWs = MWs
-        super(ViscosityLiquidMixture, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1299,8 +1301,8 @@ BROKAW = 'BROKAW'
 HERNING_ZIPPERER = 'HERNING_ZIPPERER'
 WILKE = 'WILKE'
 viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, LINEAR]
-'''Holds all mixing rules available for the :obj:`ViscosityGasMixture`
-class, for use in iterating over them.'''
+"""Holds all mixing rules available for the :obj:`ViscosityGasMixture`
+class, for use in iterating over them."""
 
 
 class ViscosityGasMixture(MixtureProperty):
@@ -1353,13 +1355,14 @@ class ViscosityGasMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+
     name = 'gas viscosity'
     units = 'Pa*s'
     property_min = 0
-    '''Mimimum valid value of gas viscosity; limiting condition at low pressure
-    is 0.'''
+    """Mimimum valid value of gas viscosity; limiting condition at low pressure
+    is 0."""
     property_max = 1E-3
-    '''Maximum valid value of gas viscosity. Might be too high, or too low.'''
+    """Maximum valid value of gas viscosity. Might be too high, or too low."""
 
     ranked_methods = [BROKAW, HERNING_ZIPPERER, LINEAR, WILKE]
 
@@ -1381,7 +1384,7 @@ class ViscosityGasMixture(MixtureProperty):
             self.Wilke_t0s, self.Wilke_t1s, self.Wilke_t2s = Wilke_prefactors(MWs)
         except:
             pass
-        super(ViscosityGasMixture, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which

@@ -32,7 +32,6 @@ SOFTWARE.
 
 '''
 
-from __future__ import division
 
 __all__ = ['PropertyPackage', 'Ideal',
            'IdealCaloric',
@@ -320,7 +319,7 @@ class StabilityTester(object):
         def f_ieqcons(guess):
             return 1.0 - sum(guess)
 
-        arr = -np.ones((len(guesses[0]) - 1))
+        arr = -np.ones(len(guesses[0]) - 1)
         def fprime_ieqcons(guess):
             return arr
 #            return [[0.0]*len(guess)]
@@ -1772,7 +1771,7 @@ class IdealCaloric(Ideal):
         return S
 
         # TODO
-        '''Cp_ideal, Cp_real, speed of sound -- or come up with a way for
+        """Cp_ideal, Cp_real, speed of sound -- or come up with a way for
         mixture to better make calls to the property package. Probably both.
-        '''
+        """
 

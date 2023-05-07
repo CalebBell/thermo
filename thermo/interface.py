@@ -59,7 +59,6 @@ Mixture Liquid Heat Capacity
 
 '''
 
-from __future__ import division
 
 __all__ = ['surface_tension_methods', 'SurfaceTension',
            'surface_tension_mixture_methods', 'SurfaceTensionMixture']
@@ -99,8 +98,8 @@ VDI_PPDS = 'VDI_PPDS'
 surface_tension_methods = [IAPWS, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                            JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                            ZUO_STENBY, ALEEM]
-'''Holds all methods available for the :obj:`SurfaceTension` class, for use in
-iterating over them.'''
+"""Holds all methods available for the :obj:`SurfaceTension` class, for use in
+iterating over them."""
 
 
 class SurfaceTension(TDependentProperty):
@@ -221,35 +220,36 @@ class SurfaceTension(TDependentProperty):
     .. [6] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
     '''
+
     name = 'Surface tension'
     units = 'N/m'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default; values below 0 will be obtained
-    at high temperatures.'''
+    """Allow tabular extrapolation by default; values below 0 will be obtained
+    at high temperatures."""
     property_min = 0
-    '''Mimimum valid value of surface tension. This occurs at the critical
-    point exactly.'''
+    """Mimimum valid value of surface tension. This occurs at the critical
+    point exactly."""
     property_max = 4.0
-    '''Maximum valid value of surface tension. Set to roughly twice that of
-    cobalt at its melting point.'''
+    """Maximum valid value of surface tension. Set to roughly twice that of
+    cobalt at its melting point."""
     critical_zero = True
-    '''Whether or not the property is declining and reaching zero at the
-    critical point.'''
+    """Whether or not the property is declining and reaching zero at the
+    critical point."""
 
     ranked_methods = [IAPWS, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                       JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                       ZUO_STENBY, ALEEM]
-    '''Default rankings of the available methods.'''
+    """Default rankings of the available methods."""
 
     _fit_force_n = {}
-    '''Dictionary containing method: fit_n, for use in methods which should
-    only ever be fit to a specific `n` value'''
+    """Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value"""
     _fit_force_n[JASPER] = 2
 
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'StielPolar',
@@ -279,7 +279,7 @@ class SurfaceTension(TDependentProperty):
         self.Vml = Vml
         self.Cpl = Cpl
 
-        super(SurfaceTension, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
 
     @staticmethod
@@ -486,7 +486,7 @@ class SurfaceTension(TDependentProperty):
             if T > self.Tb + self.Hvap_Tb/self.Cpl_Tb:
                 validity = False
         else:
-            return super(SurfaceTension, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return validity
 
 
@@ -495,8 +495,8 @@ WINTERFELDSCRIVENDAVIS = 'Winterfeld, Scriven, and Davis (1978)'
 DIGUILIOTEJA = 'Diguilio and Teja (1988)'
 
 surface_tension_mixture_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, LINEAR]
-'''Holds all methods available for the :obj:`SurfaceTensionMixture` class, for use in
-iterating over them.'''
+"""Holds all methods available for the :obj:`SurfaceTensionMixture` class, for use in
+iterating over them."""
 
 
 class SurfaceTensionMixture(MixtureProperty):
@@ -553,14 +553,15 @@ class SurfaceTensionMixture(MixtureProperty):
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
     '''
+
     name = 'Surface tension'
     units = 'N/m'
     property_min = 0
-    '''Mimimum valid value of surface tension. This occurs at the critical
-    point exactly.'''
+    """Mimimum valid value of surface tension. This occurs at the critical
+    point exactly."""
     property_max = 4.0
-    '''Maximum valid value of surface tension. Set to roughly twice that of
-    cobalt at its melting point.'''
+    """Maximum valid value of surface tension. Set to roughly twice that of
+    cobalt at its melting point."""
 
     ranked_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, LINEAR]
 
@@ -577,7 +578,7 @@ class SurfaceTensionMixture(MixtureProperty):
         self.CASs = CASs
         self.SurfaceTensions = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
-        super(SurfaceTensionMixture, self).__init__(correct_pressure_pure=correct_pressure_pure, **kwargs)
+        super().__init__(correct_pressure_pure=correct_pressure_pure, **kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which

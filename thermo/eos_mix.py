@@ -187,7 +187,6 @@ Lists of Equations of State
 .. autodata:: thermo.eos_mix.eos_mix_no_coeffs_list
 
 '''
-from __future__ import division
 
 
 __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
@@ -266,24 +265,25 @@ class GCEOSMIX(GCEOS):
     .. math::
         P=\frac{RT}{V-b}-\frac{a\alpha(T)}{V^2 + \delta V + \epsilon}
     '''
+
     nonstate_constants = ('N', 'cmps', 'Tcs', 'Pcs', 'omegas', 'kijs', 'kwargs', 'ais', 'bs')
     mix_kwargs_to_pure = {}
     kwargs_square = ('kijs',)
-    '''Tuple of 2D arguments used by the specific EOS.
-    '''
+    """Tuple of 2D arguments used by the specific EOS.
+    """
     kwargs_linear = tuple()
-    '''Tuple of 1D arguments used by the specific EOS in addition to the conventional ones.
-    '''
+    """Tuple of 1D arguments used by the specific EOS in addition to the conventional ones.
+    """
     multicomponent = True
-    '''All inherited classes of GCEOSMIX are multicomponent.
-    '''
+    """All inherited classes of GCEOSMIX are multicomponent.
+    """
     scalar = True
-    '''Whether the model is implemented using pure-Python lists of floats,
+    """Whether the model is implemented using pure-Python lists of floats,
     or numpy arrays of float64.
-    '''
+    """
     translated = False
-    '''Whether or not the model implements volume translation.
-    '''
+    """Whether or not the model implements volume translation.
+    """
 
     def subset(self, idxs, **state_specs):
         r'''Method to construct a new :obj:`GCEOSMIX` that removes all components
@@ -4584,7 +4584,7 @@ class GCEOSMIX(GCEOS):
         Notes
         -----
         '''
-        '''
+        """
         from sympy import *
         phifun1, phifun2 = symbols('phifun1, phifun2', cls=Function)
         n1, n2, P = symbols('n1, n2, P')
@@ -4594,7 +4594,7 @@ class GCEOSMIX(GCEOS):
 
         to_diff = x2*P*exp(phifun1(n1))
         diff(to_diff, n1).subs({n1+n1: 1})
-        '''
+        """
         zs = self.zs
         if phase == 'l':
             Z = self.Z_l
@@ -5595,11 +5595,11 @@ class GCEOSMIX(GCEOS):
             dV_dT = self.dV_dT_l
             dG_dep_dT = (-T*self.dS_dep_dT_l - self.S_dep_l + self.dH_dep_dT_l)/(R*self.T)
             dG_dep_dT -= (-T*self.S_dep_l + self.H_dep_l)/(R*self.T*self.T)
-        '''R, T = symbols('R, T')
+        """R, T = symbols('R, T')
         H, S = symbols('H, S', cls=Function)
         print(diff((H(T) - T*S(T))/(R*T), T))
         # (-T*Derivative(S(T), T) - S(T) + Derivative(H(T), T))/(R*T) - (-T*S(T) + H(T))/(R*T**2)
-        '''
+        """
 
         d2V_dTdns = self._dnz_derivatives_and_departures(V, n=True)[2]
         dV_dns = self.dV_dns(Z)
@@ -6077,6 +6077,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
     .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th
        edition. New York: McGraw-Hill Professional, 2000.
     '''
+
     eos_pure = IG
     a_alphas = None
     da_alpha_dTs = None
@@ -6522,6 +6523,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
     .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th
        edition. New York: McGraw-Hill Professional, 2000.
     '''
+
     eos_pure = RK
 
     kwargs_keys = ('kijs',)
@@ -6859,6 +6861,7 @@ class PRMIX(GCEOSMIX, PR):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
+
     eos_pure = PR
 
     nonstate_constants_specific = ('kappas', )
@@ -7905,6 +7908,7 @@ class PRMIXTranslated(PRMIX):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
+
     translated = True
     eos_pure = PRTranslated
     mix_kwargs_to_pure = {'cs': 'c'}
@@ -8317,6 +8321,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
     '''
+
     eos_pure = PRTranslatedPPJP
     mix_kwargs_to_pure = {'cs': 'c'}
     kwargs_linear = ('cs',)
@@ -8485,6 +8490,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
     '''
+
     eos_pure = PRTranslatedConsistent
     kwargs_linear = ('cs', 'alpha_coeffs')
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
@@ -8669,6 +8675,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
     '''
+
     eos_pure = SRK
     nonstate_constants_specific = ('ms',)
     kwargs_keys = ('kijs', )
@@ -8944,7 +8951,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
         x6 = (dZ_dP - x4)/(x5 - Z)
         x7 = a_alpha
         x9 = 1./Z
-        x10 = a_alpha*x9*(self.P*dZ_dP*x9 - 1.0)*RT_inv*RT_inv/((x5*x9 + 1.0))
+        x10 = a_alpha*x9*(self.P*dZ_dP*x9 - 1.0)*RT_inv*RT_inv/(x5*x9 + 1.0)
 
         x50 = 2.0/a_alpha
         d_lnphi_dPs = [0.0]*N if self.scalar else zeros(N)
@@ -9034,6 +9041,7 @@ class SRKMIXTranslated(SRKMIX):
     For P-V initializations, a numerical solver is used to find T.
 
     '''
+
     fugacity_coefficients = GCEOSMIX.fugacity_coefficients
     dlnphis_dT = GCEOSMIX.dlnphis_dT
     dlnphis_dP = GCEOSMIX.dlnphis_dP
@@ -9458,6 +9466,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
 
     '''
+
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
@@ -9669,6 +9678,7 @@ class MSRKMIXTranslated(Soave_1979_a_alpha, SRKMIXTranslatedConsistent):
        Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
        https://doi.org/10.1016/0378-3812(94)87021-7.
     '''
+
     kwargs_keys = ('kijs', 'alpha_coeffs', 'cs')
     eos_pure = MSRKTranslated
     model_id = 11103
@@ -9814,6 +9824,7 @@ class PSRK(Mathias_Copeman_poly_a_alpha, PSRKMixingRules, SRKMIXTranslated):
        (December 30, 1991): 251-65.
        https://doi.org/10.1016/0378-3812(91)85038-V.
     '''
+
     eos_pure = SRKTranslated
     mix_kwargs_to_pure = {'cs': 'c', 'alpha_coeffs': 'alpha_coeffs'}
     kwargs_linear = ('cs', 'alpha_coeffs')
@@ -9981,6 +9992,7 @@ class PR78MIX(PRMIX):
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
     '''
+
     eos_pure = PR78
     model_id = 10201
     def __init__(self, Tcs, Pcs, omegas, zs, kijs=None, T=None, P=None, V=None,
@@ -10111,6 +10123,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
     .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th
        edition. New York: McGraw-Hill Professional, 2000.
     '''
+
     eos_pure = VDW
     nonstate_constants_specific = tuple()
     kwargs_keys = ('kijs',)
@@ -10595,6 +10608,7 @@ class PRSVMIX(PRMIX, PRSV):
        of Industrial Interest." The Canadian Journal of Chemical Engineering
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
     '''
+
     eos_pure = PRSV
     nonstate_constants_specific = ('kappa0s', 'kappa1s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1'}
@@ -10841,6 +10855,7 @@ class PRSV2MIX(PRMIX, PRSV2):
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26.
        doi:10.1002/cjce.5450640516.
     '''
+
     eos_pure = PRSV2
     nonstate_constants_specific = ('kappa1s', 'kappa2s', 'kappa3s', 'kappa0s', 'kappas')
     mix_kwargs_to_pure = {'kappa1s': 'kappa1', 'kappa2s': 'kappa2', 'kappa3s': 'kappa3'}
@@ -11096,6 +11111,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
     '''
+
     eos_pure = TWUPR
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
@@ -11251,6 +11267,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
     '''
+
 #    a_alpha_mro = -5
     kwargs_keys = ('kijs', )
     eos_pure = TWUSRK
@@ -11394,6 +11411,7 @@ class APISRKMIX(SRKMIX, APISRK):
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
     '''
+
     eos_pure = APISRK
     nonstate_constants_specific = ('S1s', 'S2s')
     mix_kwargs_to_pure = {'S1s': 'S1', 'S2s': 'S2'}
@@ -11533,24 +11551,24 @@ eos_mix_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, PRSVMIX, PRSV2MIX, TWUPRMIX,
                 TWUSRKMIX, APISRKMIX, IGMIX, RKMIX, PRMIXTranslatedConsistent,
                 PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent,
                 PRMIXTranslated, SRKMIXTranslated]
-'''List of all exported EOS classes.
-'''
+"""List of all exported EOS classes.
+"""
 eos_mix_no_coeffs_list = [PRMIX, SRKMIX, PR78MIX, VDWMIX, TWUPRMIX, TWUSRKMIX,
                           IGMIX, RKMIX, PRMIXTranslatedConsistent, PRMIXTranslated,
                           SRKMIXTranslated,
                           PRMIXTranslatedPPJP, SRKMIXTranslatedConsistent]
-'''List of all exported EOS classes that do not require special parameters
+"""List of all exported EOS classes that do not require special parameters
 or can fill in their special parameters from other specified parameters.
-'''
+"""
 
 eos_mix_dict = {c.__name__: c for c in eos_mix_list}
-'''dict : Dict of all cubic mixture equation of state classes, indexed by their class name.
-'''
+"""dict : Dict of all cubic mixture equation of state classes, indexed by their class name.
+"""
 
 eos_mix_full_path_dict = {c.__full_path__: c for c in eos_mix_list}
-'''dict : Dict of all cubic mixture equation of state classes, indexed by their module path and class name.
-'''
+"""dict : Dict of all cubic mixture equation of state classes, indexed by their module path and class name.
+"""
 
 eos_mix_full_path_reverse_dict = {c: c.__full_path__ for c in eos_mix_list}
-'''dict : Dict of all cubic mixture equation of state classes, indexed by their module path and class name.
-'''
+"""dict : Dict of all cubic mixture equation of state classes, indexed by their module path and class name.
+"""

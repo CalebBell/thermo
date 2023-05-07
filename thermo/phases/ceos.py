@@ -79,6 +79,7 @@ class CEOSPhase(IdealGasDeparturePhase):
     29.2285050
 
     '''
+
     __slots__ = ('eos_class', 'eos_kwargs', 'scalar', 'HeatCapacityGases', 'N',
     'Hfs', 'Gfs', 'Sfs', 'Cpgs_poly_fit', '_Cpgs_data', 'composition_independent',
      'eos_mix', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
@@ -91,8 +92,8 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     pointer_references = ('eos_class',)
     pointer_reference_dicts = (eos_mix_full_path_dict,)
-    '''Tuple of dictionaries for string -> object
-    '''
+    """Tuple of dictionaries for string -> object
+    """
     reference_pointer_dicts = (eos_mix_full_path_reverse_dict,)
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'eos_class',

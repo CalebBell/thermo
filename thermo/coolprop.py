@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.'''
 
-from __future__ import division
 
 __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
 'CoolProp_T_dependent_property', 'CoolProp_failing_PT_flashes',
@@ -263,6 +262,7 @@ class MultiCheb1D(object):
     '''Simple class to store set of coefficients for multiple chebshev
     approximations and perform calculations from them.
     '''
+
     def __init__(self, points, coeffs):
         self.points = points
         self.coeffs = coeffs
@@ -305,6 +305,7 @@ class CP_fluid_approximator(object):
     '''A class to hold (and calculate) approximations for certain aspects of
     CoolProp chemical's properties. This could apply equally well to REFPROP.
     '''
+
     __slots__ = ['CAS', 'Tmin', 'Tmax', 'Pmax', 'has_melting_line', 'Tc', 'Pc', 'Tt',
                  'omega', 'HEOS', 'DMOLAR_g', 'HMOLAR_g', 'SMOLAR_g',
                  'SPEED_OF_SOUND_g', 'CONDUCTIVITY_g', 'VISCOSITY_g',
@@ -342,7 +343,7 @@ class CP_fluid_approximator(object):
             try:
                 assert_close1d(prop_approx, prop_calc, rtol=1E-7, atol=1E-9)
             except:
-                '''There are several cases that assert_allclose doesn't deal
+                """There are several cases that assert_allclose doesn't deal
                 with well for some reason. We could increase rtol, but instead
                 the relative errors are used here to check everything is as desidred.
 
@@ -354,7 +355,7 @@ class CP_fluid_approximator(object):
                 -0.0
                 -1.63895899641e-16
                 -4.93284549625e-15
-                '''
+                """
                 prop_calc = np.array(prop_calc)
                 prop_approx = np.array(prop_approx)
                 errs = abs((prop_calc-prop_approx)/prop_calc)
@@ -842,8 +843,8 @@ def S_ideal_gas_Helmholtz(T, Tc, R, IdealGasHelmholtzLead_a1=0.0, IdealGasHelmho
     S = R*(tau*dA0 - A0)
     return S
 
-'''Data from CoolProp, for the fast calculation of ideal-gas heat capacity.
-'''
+"""Data from CoolProp, for the fast calculation of ideal-gas heat capacity.
+"""
 
 Helmholtz_A0_data = {'107-51-7': {'alpha0': {'IdealGasHelmholtzLead_a1': 117.9946064218,
    'IdealGasHelmholtzLead_a2': -19.6600754238,

@@ -56,7 +56,6 @@ Enthalpy of Sublimation
 .. autodata:: enthalpy_sublimation_methods
 '''
 
-from __future__ import division
 
 __all__ = ['enthalpy_vaporization_methods', 'EnthalpyVaporization',
            'enthalpy_sublimation_methods', 'EnthalpySublimation']
@@ -103,8 +102,8 @@ enthalpy_vaporization_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, ALIBAKHSHI,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
                       CLAPEYRON, RIEDEL, CHEN, VETERE, LIU]
-'''Holds all methods available for the EnthalpyVaporization class, for use in
-iterating over them.'''
+"""Holds all methods available for the EnthalpyVaporization class, for use in
+iterating over them."""
 
 
 class EnthalpyVaporization(TDependentProperty):
@@ -248,38 +247,39 @@ class EnthalpyVaporization(TDependentProperty):
        Approach." Fluid Phase Equilibria 432 (January 25, 2017): 62-69.
        doi:10.1016/j.fluid.2016.10.013.
     '''
+
     name = 'Enthalpy of vaporization'
     units = 'J/mol'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default; values below 0 will be obtained
-    at high temperatures.'''
+    """Allow tabular extrapolation by default; values below 0 will be obtained
+    at high temperatures."""
     property_min = 0
-    '''Mimimum valid value of heat of vaporization. This occurs at the critical
-    point exactly.'''
+    """Mimimum valid value of heat of vaporization. This occurs at the critical
+    point exactly."""
     property_max = 1E6
-    '''Maximum valid of heat of vaporization. Set to twice the value in the
-    available data.'''
+    """Maximum valid of heat of vaporization. Set to twice the value in the
+    available data."""
     critical_zero = True
-    '''Whether or not the property is declining and reaching zero at the
-    critical point.'''
+    """Whether or not the property is declining and reaching zero at the
+    critical point."""
 
     ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, VDI_TABULAR,
                       ALIBAKHSHI,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
                       CLAPEYRON, RIEDEL, CHEN, VETERE, LIU]
-    '''Default rankings of the available methods.'''
+    """Default rankings of the available methods."""
     boiling_methods = [RIEDEL, CHEN, VETERE, LIU]
     CSP_methods = [MORGAN_KOBAYASHI, SIVARAMAN_MAGEE_KOBAYASHI,
                    VELASCO, PITZER]
     Watson_exponent = 0.38
-    '''Exponent used in the Watson equation'''
+    """Exponent used in the Watson equation"""
 
     custom_args = ('Tb', 'Tc', 'Pc', 'omega', 'similarity_variable', 'Psat',
                    'Zl', 'Zg',)
@@ -296,7 +296,7 @@ class EnthalpyVaporization(TDependentProperty):
         self.Psat = Psat
         self.Zl = Zl
         self.Zg = Zg
-        super(EnthalpyVaporization, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
 
     def load_all_methods(self, load_data=True):
@@ -525,7 +525,7 @@ class EnthalpyVaporization(TDependentProperty):
             if not (self.Psat and T < self.Tc):
                 validity = False
         else:
-            return super(EnthalpyVaporization, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return validity
 
 ### Heat of Sublimation
@@ -538,8 +538,8 @@ WEBBOOK_HSUB = 'WEBBOOK_HSUB'
 
 enthalpy_sublimation_methods = [WEBBOOK_HSUB, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                                 GHARAGHEIZI_HSUB_298]
-'''Holds all methods available for the EnthalpySublimation class, for use in
-iterating over them.'''
+"""Holds all methods available for the EnthalpySublimation class, for use in
+iterating over them."""
 
 
 class EnthalpySublimation(TDependentProperty):
@@ -613,21 +613,22 @@ class EnthalpySublimation(TDependentProperty):
     .. [3] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     '''
+
     name = 'Enthalpy of sublimation'
     units = 'J/mol'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default; values below 0 will be obtained
-    at high temperatures.'''
+    """Allow tabular extrapolation by default; values below 0 will be obtained
+    at high temperatures."""
     property_min = 0
-    '''Mimimum valid value of heat of vaporization. A theoretical concept only.'''
+    """Mimimum valid value of heat of vaporization. A theoretical concept only."""
     property_max = 1E6
-    '''Maximum valid of heat of sublimation. A theoretical concept only.'''
+    """Maximum valid of heat of sublimation. A theoretical concept only."""
 
     ranked_methods = [WEBBOOK_HSUB, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                       GHARAGHEIZI_HSUB_298]
@@ -645,7 +646,7 @@ class EnthalpySublimation(TDependentProperty):
         self.Cpg = Cpg
         self.Cps = Cps
         self.Hvap = Hvap
-        super(EnthalpySublimation, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
 
     def load_all_methods(self, load_data=True):
@@ -765,6 +766,6 @@ class EnthalpySublimation(TDependentProperty):
         if method in (GHARAGHEIZI_HSUB_298, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM, WEBBOOK_HSUB):
             validity = True
         else:
-            return super(EnthalpySublimation, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return validity
 

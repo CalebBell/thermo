@@ -21,7 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-from __future__ import division
 __all__ = [
     'sequential_substitution_2P',
     'sequential_substitution_2P_functional',
@@ -4319,13 +4318,13 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
         if iter_P:
             if fixed_T:
                 T_inv = 1.0/T
-                Ks_P = [Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
+                Ks_P = [Pcs[i]*exp(5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv)) for i in cmps]
             def flash_model(T, P, zs):
                 global V_over_F_guess
                 P_inv = 1.0/P
                 if not fixed_T:
                     T_inv = 1.0/T
-                    Ks_P_local = [Pcs[i]*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
+                    Ks_P_local = [Pcs[i]*exp(5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv)) for i in cmps]
                     Ks = [Ki*P_inv for Ki in Ks_P_local]
                 else:
                     Ks = [Ki*P_inv for Ki in Ks_P]
@@ -4350,7 +4349,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
             def flash_model(T, P, zs):
                 global V_over_F_guess
                 T_inv = 1.0/T
-                Ks = [Pcs[i]*P_inv*exp((5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv))) for i in cmps]
+                Ks = [Pcs[i]*P_inv*exp(5.37*(1.0 + omegas[i])*(1.0 - Tcs[i]*T_inv)) for i in cmps]
                 K_low, K_high = False, False
                 for i in cmps:
                     if zs[i] != 0.0:

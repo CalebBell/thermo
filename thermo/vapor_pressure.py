@@ -57,7 +57,6 @@ Sublimation Pressure
 .. autodata:: sublimation_pressure_methods
 '''
 
-from __future__ import division
 
 __all__ = ['vapor_pressure_methods', 'VaporPressure', 'SublimationPressure',
            'sublimation_pressure_methods']
@@ -85,9 +84,9 @@ from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluid
 from thermo.base import source_path
 
 
-'''
+"""
 Move this to its own file?
-'''
+"""
 from math import exp
 
 # These methods will be higher priority than the other types of methods
@@ -131,9 +130,9 @@ Psat_extra_correlations['7440-41-7'] = [
     'f': Psat_beryllium_Arblaster_2016}
 ]
 
-'''
+"""
 End specific correlations
-'''
+"""
 
 
 
@@ -157,8 +156,8 @@ vapor_pressure_methods = [IAPWS,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                           ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
                           LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
-'''Holds all methods available for the VaporPressure class, for use in
-iterating over them.'''
+"""Holds all methods available for the VaporPressure class, for use in
+iterating over them."""
 
 
 class VaporPressure(TDependentProperty):
@@ -289,6 +288,7 @@ class VaporPressure(TDependentProperty):
         Quarterly 23, no. 3 (July 1, 1984): 309-13.
         https://doi.org/10.1179/cmq.1984.23.3.309.
     '''
+
     name = 'Vapor pressure'
     units = 'Pa'
     extra_correlations = Psat_extra_correlations
@@ -312,19 +312,19 @@ class VaporPressure(TDependentProperty):
         return exp(P)
 
     tabular_extrapolation_permitted = False
-    '''Disallow tabular extrapolation by default.'''
+    """Disallow tabular extrapolation by default."""
     property_min = 0
-    '''Mimimum valid value of vapor pressure.'''
+    """Mimimum valid value of vapor pressure."""
     property_max = 1E10
-    '''Maximum valid value of vapor pressure. Set slightly above the critical
+    """Maximum valid value of vapor pressure. Set slightly above the critical
     point estimated for Iridium; Mercury's 160 MPa critical point is the
-    highest known.'''
+    highest known."""
 
     ranked_methods = [IAPWS, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                       ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
-    '''Default rankings of the available methods.'''
+    """Default rankings of the available methods."""
 
     custom_args = ('Tb', 'Tc', 'Pc', 'omega', 'eos')
 
@@ -336,7 +336,7 @@ class VaporPressure(TDependentProperty):
         self.Pc = Pc
         self.omega = omega
         self.eos = eos
-        super(VaporPressure, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
     @staticmethod
     def _method_indexes():
@@ -542,7 +542,7 @@ class VaporPressure(TDependentProperty):
             Tmin, Tmax = T_limits[method]
             return Tmin <= T <= Tmax
         else:
-            return super(VaporPressure, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
 
     def calculate_derivative(self, T, method, order=1):
         r'''Method to calculate a derivative of a vapor pressure with respect to
@@ -619,13 +619,13 @@ class VaporPressure(TDependentProperty):
             if Tmin <= T <= Tmax:
                 if order == 1:
                     return iapws95_dPsat_dT(T)[0]
-        return super(VaporPressure, self).calculate_derivative(T, method, order)
+        return super().calculate_derivative(T, method, order)
 
 PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'
 
 sublimation_pressure_methods = [PSUB_CLAPEYRON]
-'''Holds all methods available for the SublimationPressure class, for use in
-iterating over them.'''
+"""Holds all methods available for the SublimationPressure class, for use in
+iterating over them."""
 
 
 class SublimationPressure(TDependentProperty):
@@ -675,6 +675,7 @@ class SublimationPressure(TDependentProperty):
        International Journal of Thermophysics 25, no. 2 (March 1, 2004):
        337-50. https://doi.org/10.1023/B:IJOT.0000028471.77933.80.
     '''
+
     name = 'Sublimation pressure'
     units = 'Pa'
 
@@ -683,14 +684,14 @@ class SublimationPressure(TDependentProperty):
     interpolation_property_inv = staticmethod(VaporPressure.interpolation_property_inv)
 
     tabular_extrapolation_permitted = False
-    '''Disallow tabular extrapolation by default.'''
+    """Disallow tabular extrapolation by default."""
     property_min = 1e-300
-    '''Mimimum valid value of sublimation pressure.'''
+    """Mimimum valid value of sublimation pressure."""
     property_max = 1e5
-    '''Maximum valid value of sublimation pressure. Set to 1 bar tentatively.'''
+    """Maximum valid value of sublimation pressure. Set to 1 bar tentatively."""
 
     ranked_methods = [PSUB_CLAPEYRON]
-    '''Default rankings of the available methods.'''
+    """Default rankings of the available methods."""
 
     custom_args = ('Tt', 'Pt', 'Hsub_t')
 
@@ -700,7 +701,7 @@ class SublimationPressure(TDependentProperty):
         self.Tt = Tt
         self.Pt = Pt
         self.Hsub_t = Hsub_t
-        super(SublimationPressure, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical

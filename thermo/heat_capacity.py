@@ -107,7 +107,6 @@ Mixture Solid Heat Capacity
 
 '''
 
-from __future__ import division
 
 __all__ = ['heat_capacity_gas_methods',
            'HeatCapacityGas',
@@ -155,8 +154,8 @@ LASTOVKA_SHAW = 'LASTOVKA_SHAW'
 WEBBOOK_SHOMATE = 'WEBBOOK_SHOMATE'
 heat_capacity_gas_methods = [COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, JOBACK, VDI_TABULAR]
-'''Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
-iterating over them.'''
+"""Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
+iterating over them."""
 
 
 class HeatCapacityGas(TDependentProperty):
@@ -260,32 +259,33 @@ class HeatCapacityGas(TDependentProperty):
        Communications 57, no. 1-6 (July 1, 1987): 233-43.
        doi:10.1080/00986448708960487.
     '''
+
     name = 'gas heat capacity'
     units = 'J/mol/K'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default; gases are fairly linear in
-    heat capacity at high temperatures even if not low temperatures.'''
+    """Allow tabular extrapolation by default; gases are fairly linear in
+    heat capacity at high temperatures even if not low temperatures."""
 
     property_min = 0
-    '''Heat capacities have a minimum value of 0 at 0 K.'''
+    """Heat capacities have a minimum value of 0 at 0 K."""
     property_max = 1E4
-    '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
-    the critical point, this value can be obscenely high.'''
+    """Maximum valid of Heat capacity; arbitrarily set. For fluids very near
+    the critical point, this value can be obscenely high."""
 
     ranked_methods = [TRCIG, WEBBOOK_SHOMATE, miscdata.JANAF, POLING_POLY, COOLPROP, JOBACK,
                       LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
-    '''Default rankings of the available methods.'''
+    """Default rankings of the available methods."""
 
 
     _fit_force_n = {}
-    '''Dictionary containing method: fit_n, for use in methods which should
-    only ever be fit to a specific `n` value'''
+    """Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value"""
     _fit_force_n[CRCSTD] = 1
     _fit_force_n[POLING_CONST] = 1
 
@@ -517,7 +517,7 @@ class HeatCapacityGas(TDependentProperty):
             if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
                 return False
         else:
-            return super(HeatCapacityGas, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return validity
 
     def calculate_integral(self, T1, T2, method):
@@ -568,7 +568,7 @@ class HeatCapacityGas(TDependentProperty):
             return (H_ideal_gas_Helmholtz(T2, *self.CoolProp_A0_args)
                     -H_ideal_gas_Helmholtz(T1, *self.CoolProp_A0_args))
         else:
-            return super(HeatCapacityGas, self).calculate_integral(T1, T2, method)
+            return super().calculate_integral(T1, T2, method)
 
 
     def calculate_integral_over_T(self, T1, T2, method):
@@ -615,7 +615,7 @@ class HeatCapacityGas(TDependentProperty):
                 Lastovka_Shaw_integral_over_T(T2, similarity_variable, iscyclic_aliphatic, MW, term_A)
                 - Lastovka_Shaw_integral_over_T(T1, similarity_variable, iscyclic_aliphatic, MW, term_A)
             )
-        return super(HeatCapacityGas, self).calculate_integral_over_T(T1, T2, method)
+        return super().calculate_integral_over_T(T1, T2, method)
 
 
 
@@ -635,8 +635,8 @@ heat_capacity_liquid_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
                       WEBBOOK_SHOMATE, VDI_TABULAR, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
                       DADGOSTAR_SHAW, POLING_CONST, CRCSTD]
-'''Holds all methods available for the :obj:`HeatCapacityLiquid class`, for use in
-iterating over them.'''
+"""Holds all methods available for the :obj:`HeatCapacityLiquid class`, for use in
+iterating over them."""
 
 
 class HeatCapacityLiquid(TDependentProperty):
@@ -772,24 +772,25 @@ class HeatCapacityLiquid(TDependentProperty):
     .. [6] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     '''
+
     name = 'Liquid heat capacity'
     units = 'J/mol/K'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = False
-    '''Disallow tabular extrapolation by default; higher-temeprature behavior
-    is not well predicted by most extrapolation.'''
+    """Disallow tabular extrapolation by default; higher-temeprature behavior
+    is not well predicted by most extrapolation."""
 
     property_min = 1
-    '''Allow very low heat capacities; arbitrarily set; liquid heat capacity
-    should always be somewhat substantial.'''
+    """Allow very low heat capacities; arbitrarily set; liquid heat capacity
+    should always be somewhat substantial."""
     property_max = 1E4 # Originally 1E4
-    '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
-    the critical point, this value can be obscenely high.'''
+    """Maximum valid of Heat capacity; arbitrarily set. For fluids very near
+    the critical point, this value can be obscenely high."""
 
 
     ranked_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
@@ -798,11 +799,11 @@ class HeatCapacityLiquid(TDependentProperty):
                       WEBBOOK_SHOMATE, miscdata.JANAF, VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
                       ROWLINSON_BONDI,
                       POLING_CONST, CRCSTD]
-    '''Default rankings of the available methods.'''
+    """Default rankings of the available methods."""
 
     _fit_force_n = {}
-    '''Dictionary containing method: fit_n, for use in methods which should
-    only ever be fit to a specific `n` value'''
+    """Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value"""
     _fit_force_n[CRCSTD] = 1
     _fit_force_n[POLING_CONST] = 1
 
@@ -824,7 +825,7 @@ class HeatCapacityLiquid(TDependentProperty):
         self.omega = omega
         self.Cpgm = Cpgm
         self.similarity_variable = similarity_variable
-        super(HeatCapacityLiquid, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
     @staticmethod
     def _method_indexes():
@@ -1058,7 +1059,7 @@ class HeatCapacityLiquid(TDependentProperty):
             if self.Tc and T > self.Tc:
                 return False
         else:
-            return super(HeatCapacityLiquid, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return validity
 
     def calculate_integral(self, T1, T2, method):
@@ -1108,7 +1109,7 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(dH, self.MW)
         elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             return float(quad(self.calculate, T1, T2, args=(method,))[0])
-        return super(HeatCapacityLiquid, self).calculate_integral(T1, T2, method)
+        return super().calculate_integral(T1, T2, method)
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
@@ -1157,13 +1158,13 @@ class HeatCapacityLiquid(TDependentProperty):
             return property_mass_to_molar(dS, self.MW)
         elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
             return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
-        return super(HeatCapacityLiquid, self).calculate_integral_over_T(T1, T2, method)
+        return super().calculate_integral_over_T(T1, T2, method)
 
 LASTOVKA_S = 'LASTOVKA_S'
-PERRY151 = '''PERRY151'''
+PERRY151 = """PERRY151"""
 heat_capacity_solid_methods = [WEBBOOK_SHOMATE, PERRY151, CRCSTD, LASTOVKA_S]
-'''Holds all methods available for the :obj:`HeatCapacitySolid` class, for use in
-iterating over them.'''
+"""Holds all methods available for the :obj:`HeatCapacitySolid` class, for use in
+iterating over them."""
 
 
 class HeatCapacitySolid(TDependentProperty):
@@ -1237,29 +1238,30 @@ class HeatCapacitySolid(TDependentProperty):
     .. [3] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     '''
+
     name = 'solid heat capacity'
     units = 'J/mol/K'
     interpolation_T = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     interpolation_property_inv = None
-    '''No interpolation transformation by default.'''
+    """No interpolation transformation by default."""
     tabular_extrapolation_permitted = True
-    '''Allow tabular extrapolation by default; a theoretical solid phase exists
+    """Allow tabular extrapolation by default; a theoretical solid phase exists
     for all chemicals at sufficiently high pressures, although few chemicals
-    could stably exist in those conditions.'''
+    could stably exist in those conditions."""
     property_min = 0
-    '''Heat capacities have a minimum value of 0 at 0 K.'''
+    """Heat capacities have a minimum value of 0 at 0 K."""
     property_max = 1E4
-    '''Maximum value of Heat capacity; arbitrarily set.'''
+    """Maximum value of Heat capacity; arbitrarily set."""
 
     ranked_methods = [WEBBOOK_SHOMATE, miscdata.JANAF, PERRY151, CRCSTD, LASTOVKA_S]
-    '''Default rankings of the available methods.'''
+    """Default rankings of the available methods."""
 
     _fit_force_n = {}
-    '''Dictionary containing method: fit_n, for use in methods which should
-    only ever be fit to a specific `n` value'''
+    """Dictionary containing method: fit_n, for use in methods which should
+    only ever be fit to a specific `n` value"""
     _fit_force_n[CRCSTD] = 1
 
 
@@ -1279,7 +1281,7 @@ class HeatCapacitySolid(TDependentProperty):
         self.MW = MW
         self.CASRN = CASRN
 
-        super(HeatCapacitySolid, self).__init__(extrapolation, **kwargs)
+        super().__init__(extrapolation, **kwargs)
 
     def _method_indexes():
         '''Returns a dictionary of method: index for all methods
@@ -1401,7 +1403,7 @@ class HeatCapacitySolid(TDependentProperty):
             if T > 10000 or T < 0:
                 validity = False
         else:
-            return super(HeatCapacitySolid, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
         return validity
 
     def calculate_integral(self, T1, T2, method):
@@ -1439,7 +1441,7 @@ class HeatCapacitySolid(TDependentProperty):
                     - Lastovka_solid_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
         else:
-            return super(HeatCapacitySolid, self).calculate_integral(T1, T2, method)
+            return super().calculate_integral(T1, T2, method)
 
     def calculate_integral_over_T(self, T1, T2, method):
         r'''Method to calculate the integral of a property over temperature
@@ -1478,23 +1480,23 @@ class HeatCapacitySolid(TDependentProperty):
         elif method == WEBBOOK_SHOMATE:
             return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
         else:
-            return super(HeatCapacitySolid, self).calculate_integral_over_T(T1, T2, method)
+            return super().calculate_integral_over_T(T1, T2, method)
 
 
 
 ### Mixture heat capacities
 LALIBERTE = 'LALIBERTE'
 heat_capacity_gas_mixture_methods = [LINEAR]
-'''Holds all methods available for the :obj:`HeatCapacityGasMixture` class, for use in
-iterating over them.'''
+"""Holds all methods available for the :obj:`HeatCapacityGasMixture` class, for use in
+iterating over them."""
 
 heat_capacity_liquid_mixture_methods = [LALIBERTE, LINEAR]
-'''Holds all methods available for the :obj:`HeatCapacityLiquidMixture` class, for use in
-iterating over them.'''
+"""Holds all methods available for the :obj:`HeatCapacityLiquidMixture` class, for use in
+iterating over them."""
 
 heat_capacity_solid_mixture_methods = [LINEAR]
-'''Holds all methods available for the :obj:`HeatCapacitySolidMixture` class, for use in
-iterating over them.'''
+"""Holds all methods available for the :obj:`HeatCapacitySolidMixture` class, for use in
+iterating over them."""
 
 
 class HeatCapacityLiquidMixture(MixtureProperty):
@@ -1523,14 +1525,15 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
+
     name = 'Liquid heat capacity'
     units = 'J/mol'
     property_min = 1
-    '''Allow very low heat capacities; arbitrarily set; liquid heat capacity
-    should always be somewhat substantial.'''
+    """Allow very low heat capacities; arbitrarily set; liquid heat capacity
+    should always be somewhat substantial."""
     property_max = 1E4 # Originally 1E4
-    '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
-    the critical point, this value can be obscenely high.'''
+    """Maximum valid of Heat capacity; arbitrarily set. For fluids very near
+    the critical point, this value can be obscenely high."""
 
     ranked_methods = [LALIBERTE, LINEAR]
     pure_references = ('HeatCapacityLiquids',)
@@ -1544,21 +1547,21 @@ class HeatCapacityLiquidMixture(MixtureProperty):
         self.HeatCapacityLiquids = HeatCapacityLiquids
 
         self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        heat capacity under.'''
+        """Minimum temperature at which no method can calculate the
+        heat capacity under."""
         self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        heat capacity above.'''
+        """Maximum temperature at which no method can calculate the
+        heat capacity above."""
 
         self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
+        """sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
         self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
+        """user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
         self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
+        """Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`."""
         self.load_all_methods()
 
     def load_all_methods(self):
@@ -1704,12 +1707,13 @@ class HeatCapacitySolidMixture(MixtureProperty):
     **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
+
     name = 'Solid heat capacity'
     units = 'J/mol'
     property_min = 0
-    '''Heat capacities have a minimum value of 0 at 0 K.'''
+    """Heat capacities have a minimum value of 0 at 0 K."""
     property_max = 1E4
-    '''Maximum value of Heat capacity; arbitrarily set.'''
+    """Maximum value of Heat capacity; arbitrarily set."""
 
     ranked_methods = [LINEAR]
     pure_references = ('HeatCapacitySolids',)
@@ -1723,21 +1727,21 @@ class HeatCapacitySolidMixture(MixtureProperty):
         self.MWs = MWs
 
         self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        heat capacity under.'''
+        """Minimum temperature at which no method can calculate the
+        heat capacity under."""
         self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        heat capacity above.'''
+        """Maximum temperature at which no method can calculate the
+        heat capacity above."""
 
         self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
+        """sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
         self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
+        """user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
         self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
+        """Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`."""
         self.load_all_methods()
 
     def load_all_methods(self):
@@ -1842,13 +1846,14 @@ class HeatCapacityGasMixture(MixtureProperty):
     **LINEAR**:
         Mixing rule described in :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
     '''
+
     name = 'Gas heat capacity'
     units = 'J/mol'
     property_min = 0
-    '''Heat capacities have a minimum value of 0 at 0 K.'''
+    """Heat capacities have a minimum value of 0 at 0 K."""
     property_max = 1E4
-    '''Maximum valid of Heat capacity; arbitrarily set. For fluids very near
-    the critical point, this value can be obscenely high.'''
+    """Maximum valid of Heat capacity; arbitrarily set. For fluids very near
+    the critical point, this value can be obscenely high."""
 
     ranked_methods = [LINEAR]
     pure_references = ('HeatCapacityGases',)
@@ -1862,21 +1867,21 @@ class HeatCapacityGasMixture(MixtureProperty):
         self.MWs = MWs
 
         self.Tmin = None
-        '''Minimum temperature at which no method can calculate the
-        heat capacity under.'''
+        """Minimum temperature at which no method can calculate the
+        heat capacity under."""
         self.Tmax = None
-        '''Maximum temperature at which no method can calculate the
-        heat capacity above.'''
+        """Maximum temperature at which no method can calculate the
+        heat capacity above."""
 
         self.sorted_valid_methods = []
-        '''sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
+        """sorted_valid_methods, list: Stored methods which were found valid
+        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
         self.user_methods = []
-        '''user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`.'''
+        """user_methods, list: Stored methods which were specified by the user
+        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
         self.all_methods = set()
-        '''Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`.'''
+        """Set of all methods available for a given set of information;
+        filled by :obj:`load_all_methods`."""
         self.load_all_methods()
 
     def load_all_methods(self):
