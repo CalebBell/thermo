@@ -40,16 +40,14 @@ try:
     from random import seed, uniform
 except:
     pass
-from math import log10
 
 from chemicals.flash_basic import K_value, Wilson_K_value
 from chemicals.rachford_rice import Rachford_Rice_flash_error, flash_inner_loop
 from chemicals.utils import normalize, remove_zeros
 from fluids.constants import R
-from fluids.numerics import UnconvergedError, brenth, derivative, exp, linspace, log, logspace, secant
+from fluids.numerics import UnconvergedError, brenth, derivative, exp, log, secant
 from fluids.numerics import numpy as np
 
-from thermo.utils import has_matplotlib
 
 DIRECT_1P = 'Direct 1 Phase'
 DIRECT_2P = 'Direct 2 Phase'

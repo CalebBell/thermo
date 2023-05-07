@@ -21,7 +21,7 @@ SOFTWARE.
 '''
 
 
-__all__ = ['']
+__all__ = []
 
 import marshal
 import os

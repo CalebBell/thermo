@@ -30,13 +30,13 @@ from fluids.numerics import numpy as np
 
 from thermo.chemical import Chemical
 
-global _pd
-_pd = None
+global pd
+pd = None
 def pandas():
-    global _pd
-    if _pd is None:
-        import pandas as _pd
-    return _pd
+    global pd
+    if pd is None:
+        import pandas as pd
+    return pd
 def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
     pd = pandas()
     chem = Chemical(chemical)
