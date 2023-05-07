@@ -737,9 +737,9 @@ class FlashVL(Flash):
         if self.supports_lnphis_args and 1:
 
             if liquid_phase.T != T or liquid_phase.P != P:
-                liquid_phase = liquid_phase.to_TP_zs(T=T, P=P, zs=xs)
+                liquid_phase = liquid_phase.to_TP_zs(T=T, P=P, zs=xs_guess)
             if gas_phase.T != T or gas_phase.P != P:
-                gas_phase = gas_phase.to_TP_zs(T=T, P=P, zs=ys)
+                gas_phase = gas_phase.to_TP_zs(T=T, P=P, zs=ys_guess)
 
             liquid_args = liquid_phase.lnphis_args()
             gas_args = gas_phase.lnphis_args()
