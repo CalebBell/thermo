@@ -20,7 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ['VirialCSP', 'VirialGas']
+__all__ = ['VirialCSP', 'VirialGas', 
+'VIRIAL_B_ZERO', 'VIRIAL_B_PITZER_CURL', 'VIRIAL_B_ABBOTT', 'VIRIAL_B_TSONOPOULOS', 
+'VIRIAL_B_TSONOPOULOS_EXTENDED', 'VIRIAL_B_OCONNELL_PRAUSNITZ', 'VIRIAL_B_XIANG', 'VIRIAL_B_MENG', 'VIRIAL_C_XIANG', 
+'VIRIAL_C_ORBEY_VERA', 'VIRIAL_C_ZERO', 'VIRIAL_B_MODELS', 'VIRIAL_C_MODELS']
 
 from chemicals.utils import dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, mixing_simple
 from chemicals.virial import (
@@ -92,7 +95,6 @@ VIRIAL_B_MODELS = (VIRIAL_B_ZERO,
                    VIRIAL_B_XIANG,
                    VIRIAL_B_MENG)
 
-__all__.extend(VIRIAL_B_MODELS)
 # reqiures an `a` parameter
 
 
@@ -103,7 +105,6 @@ VIRIAL_C_ORBEY_VERA = 'VIRIAL_C_ORBEY_VERA'
 VIRIAL_C_ZERO = 'VIRIAL_C_ZERO'
 
 VIRIAL_C_MODELS = (VIRIAL_C_ZERO, VIRIAL_C_XIANG, VIRIAL_C_ORBEY_VERA)
-__all__.extend(VIRIAL_C_MODELS)
 
 
 VIRIAL_CROSS_B_ZEROS = VIRIAL_CROSS_C_ZEROS = 'Zeros'

@@ -178,22 +178,31 @@ CoolProp Wrapper
 
 
 from thermo.phases import air_phase, ceos, combined, coolprop_phase, gibbs_excess, helmholtz_eos, iapws_phase, ideal_gas, petroleum, phase, virial_phase
-from thermo.phases.air_phase import *
-from thermo.phases.ceos import *
-from thermo.phases.combined import *
-from thermo.phases.coolprop_phase import *
-from thermo.phases.gibbs_excess import *
-from thermo.phases.helmholtz_eos import *
-from thermo.phases.iapws_phase import *
-from thermo.phases.ideal_gas import *
-from thermo.phases.petroleum import *
-from thermo.phases.phase import *
-from thermo.phases.virial_phase import *
+from thermo.phases.air_phase import DryAirLemmon, HumidAirRP1485
+from thermo.phases.ceos import CEOSLiquid, CEOSGas
+from thermo.phases.combined import CombinedPhase
+from thermo.phases.coolprop_phase import CoolPropPhase, CoolPropLiquid, CoolPropGas
+from thermo.phases.gibbs_excess import GibbsExcessLiquid, GibbsExcessSolid
+from thermo.phases.helmholtz_eos import HelmholtzEOS
+from thermo.phases.iapws_phase import IAPWS95, IAPWS95Gas, IAPWS95Liquid, IAPWS97
+from thermo.phases.ideal_gas import IdealGas
+from thermo.phases.petroleum import GraysonStreed, ChaoSeader
+from thermo.phases.phase import Phase,IdealGasDeparturePhase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian
+from thermo.phases.virial_phase import (VirialCSP, VirialGas, VIRIAL_B_ZERO, VIRIAL_B_PITZER_CURL, VIRIAL_B_ABBOTT, VIRIAL_B_TSONOPOULOS, VIRIAL_B_TSONOPOULOS_EXTENDED,
+  VIRIAL_B_OCONNELL_PRAUSNITZ, VIRIAL_B_XIANG, VIRIAL_B_MENG, VIRIAL_C_XIANG, VIRIAL_C_ORBEY_VERA, VIRIAL_C_ZERO, 
+  VIRIAL_B_MODELS, VIRIAL_C_MODELS)
 
-__all__ = (phase.__all__ + ideal_gas.__all__ + ceos.__all__
-           + gibbs_excess.__all__ + air_phase.__all__ + helmholtz_eos.__all__
-           + iapws_phase.__all__ + coolprop_phase.__all__
-           + virial_phase.__all__ + petroleum.__all__ + combined.__all__)
+__all__ = ('air_phase', 'ceos', 'combined', 'coolprop_phase', 'gibbs_excess', 
+'helmholtz_eos', 'iapws_phase', 'ideal_gas', 'petroleum', 'phase', 'virial_phase',
+ 'DryAirLemmon', 'HumidAirRP1485', 'CEOSLiquid', 'CEOSGas', 'CombinedPhase', 'CoolPropPhase', 
+ 'CoolPropLiquid', 'CoolPropGas', 'GibbsExcessLiquid', 'GibbsExcessSolid', 'HelmholtzEOS', 'IAPWS95', 
+ 'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97', 'IdealGas', 'GraysonStreed', 'ChaoSeader', 'Phase',
+ 'IdealGasDeparturePhase', 'derivatives_thermodynamic', 'derivatives_thermodynamic_mass', 
+ 'derivatives_jacobian', 'VirialCSP', 'VirialGas',
+
+ 'VIRIAL_B_ZERO', 'VIRIAL_B_PITZER_CURL', 'VIRIAL_B_ABBOTT', 'VIRIAL_B_TSONOPOULOS', 'VIRIAL_B_TSONOPOULOS_EXTENDED',
+  'VIRIAL_B_OCONNELL_PRAUSNITZ', 'VIRIAL_B_XIANG', 'VIRIAL_B_MENG', 'VIRIAL_C_XIANG', 'VIRIAL_C_ORBEY_VERA', 'VIRIAL_C_ZERO', 
+  'VIRIAL_B_MODELS', 'VIRIAL_C_MODELS')
 
 gas_phases = (
     IdealGas,

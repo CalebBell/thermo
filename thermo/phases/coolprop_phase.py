@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ['CoolPropPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas']
+__all__ = ['CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas']
 
 import sys
 from collections import OrderedDict
