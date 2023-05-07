@@ -90,7 +90,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                     'sequential_substitution_2P_sat',
                     'SS_VF_simultaneous',
                     'sequential_substitution_2P_HSGUAbeta',
-                    'sequential_substitution_2P_double',
+                    # 'sequential_substitution_2P_double',
                     'stability_iteration_Michelsen',
                     'TPV_double_solve_1P',
                     'TPV_solve_HSGUA_guesses_VL',

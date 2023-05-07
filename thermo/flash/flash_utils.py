@@ -42,7 +42,7 @@ __all__ = [
     'TP_solve_VF_guesses',
     'TPV_double_solve_1P',
     'nonlin_2P_HSGUAbeta',
-    'sequential_substitution_2P_double',
+    # 'sequential_substitution_2P_double',
     'cm_flash_tol',
     'nonlin_2P_newton',
     'dew_bubble_newton_zs',
@@ -2288,7 +2288,7 @@ def existence_3P_Michelsen_Mollerup(guess, fixed_val, zs, iter_phase, liquid0, l
                 err_SS += err_i*err_i
         except ZeroDivisionError:
             err_SS = 0.0
-            for Ki, xi, yi in zip(Ks, xs, ys):
+            for Ki, xi, yi in zip(Ks, liquid0_comp, liquid1_comp):
                 try:
                     err_i = Ki*xi/yi - 1.0
                     err_SS += err_i*err_i
@@ -3761,6 +3761,8 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
     else:
         V_over_F = iter_var_0
 
+    err_eq = 1e100 # initial value
+
     step_der = None
     for iteration in range(maxiter):
         if (not (iteration % update_frequency) or err_eq < update_eq) or iteration < 2:
@@ -3825,110 +3827,110 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
 
 
 
-def sequential_substitution_2P_double(zs, xs_guess, ys_guess, liquid_phase,
-                                     gas_phase, guess, spec_vals,
-                                     iter_var0='T', iter_var1='P',
-                                     spec_vars=['H', 'S'],
-                                     maxiter=1000, tol_eq=1E-13, tol_specs=1e-9,
-                                     trivial_solution_tol=1e-5, damping=1.0,
-                                     V_over_F_guess=None, fprime=True):
-    xs, ys = xs_guess, ys_guess
-    if V_over_F_guess is None:
-        V_over_F = 0.5
-    else:
-        V_over_F = V_over_F_guess
+# def sequential_substitution_2P_double(zs, xs_guess, ys_guess, liquid_phase,
+#                                      gas_phase, guess, spec_vals,
+#                                      iter_var0='T', iter_var1='P',
+#                                      spec_vars=['H', 'S'],
+#                                      maxiter=1000, tol_eq=1E-13, tol_specs=1e-9,
+#                                      trivial_solution_tol=1e-5, damping=1.0,
+#                                      V_over_F_guess=None, fprime=True):
+#     xs, ys = xs_guess, ys_guess
+#     if V_over_F_guess is None:
+#         V_over_F = 0.5
+#     else:
+#         V_over_F = V_over_F_guess
 
-    cmps = range(len(zs))
+#     cmps = range(len(zs))
 
-    iter0_val = guess[0]
-    iter1_val = guess[1]
+#     iter0_val = guess[0]
+#     iter1_val = guess[1]
 
-    spec0_val = spec_vals[0]
-    spec1_val = spec_vals[1]
+#     spec0_val = spec_vals[0]
+#     spec1_val = spec_vals[1]
 
-    spec0_var = spec_vars[0]
-    spec1_var = spec_vars[1]
+#     spec0_var = spec_vars[0]
+#     spec1_var = spec_vars[1]
 
-    spec0_fun_l = getattr(liquid_phase.__class__, spec0_var)
-    spec0_fun_g = getattr(gas_phase.__class__, spec0_var)
+#     spec0_fun_l = getattr(liquid_phase.__class__, spec0_var)
+#     spec0_fun_g = getattr(gas_phase.__class__, spec0_var)
 
-    spec1_fun_l = getattr(liquid_phase.__class__, spec1_var)
-    spec1_fun_g = getattr(gas_phase.__class__, spec1_var)
+#     spec1_fun_l = getattr(liquid_phase.__class__, spec1_var)
+#     spec1_fun_g = getattr(gas_phase.__class__, spec1_var)
 
-    spec0_der0 = f'd{spec0_var}_d{iter_var0}_{iter_var1}'
-    spec1_der0 = f'd{spec1_var}_d{iter_var0}_{iter_var1}'
-    spec0_der1 = f'd{spec0_var}_d{iter_var1}_{iter_var0}'
-    spec1_der1 = f'd{spec1_var}_d{iter_var1}_{iter_var0}'
+#     spec0_der0 = f'd{spec0_var}_d{iter_var0}_{iter_var1}'
+#     spec1_der0 = f'd{spec1_var}_d{iter_var0}_{iter_var1}'
+#     spec0_der1 = f'd{spec0_var}_d{iter_var1}_{iter_var0}'
+#     spec1_der1 = f'd{spec1_var}_d{iter_var1}_{iter_var0}'
 
-    spec0_der0_fun_l = getattr(liquid_phase.__class__, spec0_der0)
-    spec0_der0_fun_g = getattr(gas_phase.__class__, spec0_der0)
+#     spec0_der0_fun_l = getattr(liquid_phase.__class__, spec0_der0)
+#     spec0_der0_fun_g = getattr(gas_phase.__class__, spec0_der0)
 
-    spec1_der0_fun_l = getattr(liquid_phase.__class__, spec1_der0)
-    spec1_der0_fun_g = getattr(gas_phase.__class__, spec1_der0)
+#     spec1_der0_fun_l = getattr(liquid_phase.__class__, spec1_der0)
+#     spec1_der0_fun_g = getattr(gas_phase.__class__, spec1_der0)
 
-    spec0_der1_fun_l = getattr(liquid_phase.__class__, spec0_der1)
-    spec0_der1_fun_g = getattr(gas_phase.__class__, spec0_der1)
+#     spec0_der1_fun_l = getattr(liquid_phase.__class__, spec0_der1)
+#     spec0_der1_fun_g = getattr(gas_phase.__class__, spec0_der1)
 
-    spec1_der1_fun_l = getattr(liquid_phase.__class__, spec1_der1)
-    spec1_der1_fun_g = getattr(gas_phase.__class__, spec1_der1)
+#     spec1_der1_fun_l = getattr(liquid_phase.__class__, spec1_der1)
+#     spec1_der1_fun_g = getattr(gas_phase.__class__, spec1_der1)
 
-    step_der = None
-    for iteration in range(maxiter):
-        TPV_args[iter_var0] = iter0_val
-        TPV_args[iter_var1] = iter1_val
+#     step_der = None
+#     for iteration in range(maxiter):
+#         TPV_args[iter_var0] = iter0_val
+#         TPV_args[iter_var1] = iter1_val
 
-        g = gas_phase.to(zs=ys, **TPV_args)
-        l = liquid_phase.to(zs=xs, **TPV_args)
-        lnphis_g = g.lnphis()
-        lnphis_l = l.lnphis()
+#         g = gas_phase.to(zs=ys, **TPV_args)
+#         l = liquid_phase.to(zs=xs, **TPV_args)
+#         lnphis_g = g.lnphis()
+#         lnphis_l = l.lnphis()
 
-        Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
+#         Ks = [exp(lnphis_l[i] - lnphis_g[i]) for i in cmps]
 
-        V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
+#         V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
 
-        spec0_calc = spec0_fun_l(l)*(1.0 - V_over_F) + spec0_fun_g(g)*V_over_F
-        spec1_calc = spec1_fun_l(l)*(1.0 - V_over_F) + spec1_fun_g(g)*V_over_F
+#         spec0_calc = spec0_fun_l(l)*(1.0 - V_over_F) + spec0_fun_g(g)*V_over_F
+#         spec1_calc = spec1_fun_l(l)*(1.0 - V_over_F) + spec1_fun_g(g)*V_over_F
 
-        spec0_der0_calc = spec0_der0_fun_l(l)*(1.0 - V_over_F) + spec0_der0_fun_g(g)*V_over_F
-        spec0_der1_calc = spec0_der1_fun_l(l)*(1.0 - V_over_F) + spec0_der1_fun_g(g)*V_over_F
+#         spec0_der0_calc = spec0_der0_fun_l(l)*(1.0 - V_over_F) + spec0_der0_fun_g(g)*V_over_F
+#         spec0_der1_calc = spec0_der1_fun_l(l)*(1.0 - V_over_F) + spec0_der1_fun_g(g)*V_over_F
 
-        spec1_der0_calc = spec1_der0_fun_l(l)*(1.0 - V_over_F) + spec1_der0_fun_g(g)*V_over_F
-        spec1_der1_calc = spec1_der1_fun_l(l)*(1.0 - V_over_F) + spec1_der1_fun_g(g)*V_over_F
+#         spec1_der0_calc = spec1_der0_fun_l(l)*(1.0 - V_over_F) + spec1_der0_fun_g(g)*V_over_F
+#         spec1_der1_calc = spec1_der1_fun_l(l)*(1.0 - V_over_F) + spec1_der1_fun_g(g)*V_over_F
 
-        errs = [spec0_calc - spec0_val, spec1_calc - spec1_val]
-        jac = [[spec0_der0_calc, spec0_der1_calc], [spec1_der0_calc, spec1_der1_calc]]
+#         errs = [spec0_calc - spec0_val, spec1_calc - spec1_val]
+#         jac = [[spec0_der0_calc, spec0_der1_calc], [spec1_der0_calc, spec1_der1_calc]]
 
-        # Do the newton step
-        dx = py_solve(jac, [-v for v in errs])
-        iter0_val, iter1_val = (xi + dxi*damping for xi, dxi in zip([iter0_val, iter1_val], dx))
+#         # Do the newton step
+#         dx = py_solve(jac, [-v for v in errs])
+#         iter0_val, iter1_val = (xi + dxi*damping for xi, dxi in zip([iter0_val, iter1_val], dx))
 
 
-        # Check for negative fractions - normalize only if needed
-        for xi in xs_new:
-            if xi < 0.0:
-                xs_new_sum = sum(abs(i) for i in xs_new)
-                xs_new = [abs(i)/xs_new_sum for i in xs_new]
-                break
-        for yi in ys_new:
-            if yi < 0.0:
-                ys_new_sum = sum(abs(i) for i in ys_new)
-                ys_new = [abs(i)/ys_new_sum for i in ys_new]
-                break
+#         # Check for negative fractions - normalize only if needed
+#         for xi in xs_new:
+#             if xi < 0.0:
+#                 xs_new_sum = sum(abs(i) for i in xs_new)
+#                 xs_new = [abs(i)/xs_new_sum for i in xs_new]
+#                 break
+#         for yi in ys_new:
+#             if yi < 0.0:
+#                 ys_new_sum = sum(abs(i) for i in ys_new)
+#                 ys_new = [abs(i)/ys_new_sum for i in ys_new]
+#                 break
 
-        err, comp_diff = 0.0, 0.0
-        for i in cmps:
-            err_i = Ks[i]*xs[i]/ys[i] - 1.0
-            err += err_i*err_i
-            comp_diff += abs(xs[i] - ys[i])
+#         err, comp_diff = 0.0, 0.0
+#         for i in cmps:
+#             err_i = Ks[i]*xs[i]/ys[i] - 1.0
+#             err += err_i*err_i
+#             comp_diff += abs(xs[i] - ys[i])
 
-        xs, ys = xs_new, ys_new
+#         xs, ys = xs_new, ys_new
 
-        if comp_diff < trivial_solution_tol:
-            raise ValueError("Converged to trivial condition, compositions of both phases equal")
+#         if comp_diff < trivial_solution_tol:
+#             raise ValueError("Converged to trivial condition, compositions of both phases equal")
 
-        if err < tol_eq and abs(err0) < tol_spec_abs:
-            return p0, V_over_F, xs, ys, l, g, iteration, err, err0
-    raise UnconvergedError('End of SS without convergence')
+#         if err < tol_eq and abs(err0) < tol_spec_abs:
+#             return p0, V_over_F, xs, ys, l, g, iteration, err, err0
+#     raise UnconvergedError('End of SS without convergence')
 
 
 def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, test_phase,
@@ -4294,7 +4296,8 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
             T = None
 
         if T is None:
-            T = T_from_V(V, P, zs)
+            # Just assume gas I guess
+            T = T_from_V_g(V, P, zs)
 
         VF, xs, ys = flash_model(T, P, zs)
         info[:] = VF, xs, ys
@@ -4465,7 +4468,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
     elif method == IDEAL_WILSON:
         HeatCapacityGases = correlations.HeatCapacityGases
         EnthalpyVaporizations = correlations.EnthalpyVaporizations
-        def flash_model(T, P, zs):
+        def flash_model(T, P, zs): # noqa: F811
             _, _, VF, xs, ys = flash_wilson(zs, constants.Tcs, constants.Pcs, constants.omegas, T=T, P=P)
             return VF, xs, ys
 
