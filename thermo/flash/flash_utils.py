@@ -150,8 +150,8 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
 
     xs, ys = xs_guess, ys_guess
     V_over_F = V_over_F_guess
-
-    cmps = range(len(zs))
+    N = len(zs)
+    cmps = range(N)
 
     err, err1, err2, err3 = 0.0, 0.0, 0.0, 0.0
     # G_old = None
