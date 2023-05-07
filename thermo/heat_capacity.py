@@ -129,7 +129,7 @@ from chemicals.heat_capacity import (Dadgostar_Shaw, Dadgostar_Shaw_integral,
                                      Lastovka_Shaw_term_A, Lastovka_solid, Lastovka_solid_integral,
                                      Lastovka_solid_integral_over_T, Rowlinson_Bondi,
                                      Rowlinson_Poling, TRCCp, TRCCp_integral, TRCCp_integral_over_T)
-from chemicals.utils import log, exp, isnan
+from fluids.numerics import log, exp, isnan
 from chemicals.utils import (to_num, property_molar_to_mass, none_and_length_check,
                           mixing_simple, property_mass_to_molar)
 from chemicals.identifiers import CAS_to_int

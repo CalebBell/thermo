@@ -41,7 +41,8 @@ from thermo.flash.flash_utils import (incipient_phase_bounded_naive, incipient_l
                                       VLL_boolean_check, LL_boolean_check,
                                       flash_phase_boundary_one_sided_secant)
 from fluids.numerics import logspace, linspace, numpy as np
-from chemicals.utils import log10, floor, rho_to_Vm, mixing_simple, property_mass_to_molar
+from chemicals.utils import rho_to_Vm, mixing_simple, property_mass_to_molar
+from math import log10, floor
 from thermo import phases
 
 try:

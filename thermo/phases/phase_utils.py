@@ -29,8 +29,7 @@ __all__ = [
     'fugacities_direct',
 ]
 
-from fluids.numerics import trunc_exp
-from chemicals.utils import log
+from fluids.numerics import trunc_exp, log
 from thermo.eos import eos_full_path_dict
 from thermo.eos_mix import eos_mix_full_path_dict
 from thermo.eos_mix_methods import (PR_lnphis_fastest, PR_translated_lnphis_fastest,

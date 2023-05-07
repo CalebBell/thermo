@@ -66,7 +66,7 @@ import os
 from fluids.numerics import horner, horner_and_der, numpy as np
 from fluids.constants import R
 
-from chemicals.utils import log, isnan
+from fluids.numerics import log, isnan
 from chemicals.utils import property_molar_to_mass, mixing_simple, none_and_length_check
 from chemicals.dippr import EQ106
 from chemicals import miscdata

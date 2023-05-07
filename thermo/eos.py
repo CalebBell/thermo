@@ -267,7 +267,7 @@ __all__.extend(['main_derivatives_and_departures',
 
 
 from cmath import log as clog
-from math import isnan, isinf, log1p
+from math import isnan, isinf, log1p, log10, copysign
 from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              roots_cubic_a1, numpy as np, newton,
                              bisect, inf, polyder, chebder, is_micropython,
@@ -275,14 +275,13 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              horner, horner_and_der, horner_and_der2, derivative,
                              roots_cubic_a2, isclose, NoSolutionError,
                              roots_quartic, deflate_cubic_real_roots,
-                             catanh)
+                             catanh, log, exp, sqrt)
 
 from fluids.constants import mmHg, R
 
 from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
                           isothermal_compressibility,
                           phase_identification_parameter, hash_any_primitive, object_data)
-from chemicals.utils import log, log10, exp, sqrt, copysign
 from chemicals.flash_basic import Wilson_K_value
 
 from thermo import serialize

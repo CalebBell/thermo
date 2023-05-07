@@ -23,7 +23,8 @@ SOFTWARE.
 '''
 __all__ = ['GraysonStreed', 'ChaoSeader']
 
-from chemicals.utils import log, log10
+from math import log10
+from fluids.numerics import log
 from thermo.activity import IdealSolution
 from thermo.phases.phase import Phase
 

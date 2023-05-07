@@ -81,10 +81,11 @@ from fluids.numerics import (UnconvergedError, trunc_exp, newton,
                              OscillationError, NotBoundedError, jacobian,
                              best_bounding_bounds, isclose, newton_system,
                              make_damp_initial, newton_minimize, one_sided_secant,
-                             root, minimize, fsolve, linspace, logspace, make_max_step_initial)
+                             root, minimize, fsolve, linspace, logspace, make_max_step_initial,
+                             exp, log, isinf, isnan)
 from fluids.numerics import py_solve, trunc_log, bisect
-
-from chemicals.utils import (exp, log, log10, copysign, normalize, isinf, isnan,
+from math import log10, copysign
+from chemicals.utils import (normalize,
                              mixing_simple, property_mass_to_molar)
 from chemicals.heat_capacity import (Dadgostar_Shaw_integral, 
                                      Dadgostar_Shaw_integral_over_T, 

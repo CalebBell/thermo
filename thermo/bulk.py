@@ -78,7 +78,8 @@ __all__ = ['Bulk', 'BulkSettings', 'default_settings']
 from fluids.constants import R, R_inv, atm
 from fluids.two_phase_voidage import (McAdams, Beattie_Whalley, Cicchitti,
                                       Lin_Kwok, Fourar_Bories, Duckler, gas_liquid_viscosity)
-from chemicals.utils import (log, exp, sqrt, phase_identification_parameter,
+from fluids.numerics import log, exp, sqrt
+from chemicals.utils import (phase_identification_parameter,
                           isothermal_compressibility, isobaric_expansion, object_data,
                           Joule_Thomson, speed_of_sound)
 from thermo.phases import Phase

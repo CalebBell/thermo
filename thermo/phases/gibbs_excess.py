@@ -27,9 +27,9 @@ from math import isinf, isnan
 from fluids.constants import R, R_inv
 from fluids.numerics import (horner_and_der2, derivative,
                              evaluate_linear_fits, evaluate_linear_fits_d,
-                             evaluate_linear_fits_d2,
+                             evaluate_linear_fits_d2, log, exp,
                              trunc_exp, secant, numpy as np)
-from chemicals.utils import log, exp, phase_identification_parameter
+from chemicals.utils import phase_identification_parameter
 from chemicals.solubility import Henry_constants, dHenry_constants_dT, d2Henry_constants_dT2
 from thermo.activity import IdealSolution
 from thermo.utils import POLY_FIT, PROPERTY_TRANSFORM_LN, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_D2_X

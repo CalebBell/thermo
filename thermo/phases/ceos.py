@@ -25,7 +25,7 @@ __all__ = ['CEOSLiquid', 'CEOSGas']
 import os
 from fluids.constants import R
 from fluids.numerics import trunc_exp, numpy as np, trunc_log_numpy, trunc_exp_numpy
-from chemicals.utils import log
+from fluids.numerics import log
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
 from thermo.phases.phase_utils import PR_lnphis_fastest, lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas

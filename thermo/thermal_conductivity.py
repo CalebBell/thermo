@@ -120,7 +120,7 @@ import os
 
 from fluids.numerics import horner
 from fluids.constants import R, R_inv, N_A, k
-from chemicals.utils import log, exp, sqrt
+from fluids.numerics import log, exp, sqrt
 from chemicals.utils import mixing_simple, none_and_length_check
 from chemicals.dippr import EQ100, EQ102
 from chemicals.thermal_conductivity import (Bahadori_gas, Bahadori_liquid, Chung, Chung_dense,

@@ -47,10 +47,9 @@ from __future__ import division
 __all__ = ['PermittivityLiquid']
 
 import os
-from fluids.numerics import numpy as np
+from fluids.numerics import numpy as np, isnan
 from fluids.constants import N_A, epsilon_0, k
 
-from chemicals.utils import isnan
 from chemicals.permittivity import permittivity_IAPWS
 from chemicals import permittivity
 from chemicals.iapws import iapws95_rhol_sat, iapws95_Tc, iapws95_rho, iapws95_Pc

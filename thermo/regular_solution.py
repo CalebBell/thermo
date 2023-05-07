@@ -46,7 +46,7 @@ Regular Solution Regression Calculations
 from __future__ import division
 from fluids.numerics import numpy as np, trunc_exp
 from thermo.activity import GibbsExcess
-from chemicals.utils import exp, log
+from fluids.numerics import exp, log
 from fluids.constants import R, R_inv
 
 try:

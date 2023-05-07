@@ -69,8 +69,7 @@ from __future__ import division
 
 __all__ = ['GibbsExcess', 'IdealSolution']
 from fluids.constants import R, R_inv
-from fluids.numerics import numpy as np, trunc_exp
-from chemicals.utils import exp, log
+from fluids.numerics import numpy as np, trunc_exp, exp, log
 from chemicals.utils import (normalize, dxs_to_dns, dxs_to_dn_partials, 
                              dns_to_dn_partials, d2xs_to_dxdn_partials, hash_any_primitive, object_data)
 from thermo import serialize

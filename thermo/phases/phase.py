@@ -35,9 +35,9 @@ from thermo.serialize import arrays_to_lists
 from fluids.numerics import (horner, horner_log, jacobian, trunc_log, numpy as np,
                              trunc_log_numpy, trunc_exp_numpy,
                              poly_fit_integral_value, poly_fit_integral_over_T_value,
-                             newton_system, trunc_exp, is_micropython)
+                             newton_system, trunc_exp, is_micropython, log)
 from fluids.core import thermal_diffusivity, c_ideal_gas
-from chemicals.utils import (log, Cp_minus_Cv, phase_identification_parameter,
+from chemicals.utils import (Cp_minus_Cv, phase_identification_parameter,
                              Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
                              hash_any_primitive, isentropic_exponent_TV,
                              isentropic_exponent_PT, isentropic_exponent_PV,

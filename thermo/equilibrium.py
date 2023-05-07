@@ -42,8 +42,8 @@ from __future__ import division
 __all__ = ['EquilibriumState']
 
 from fluids.constants import R, R_inv, N_A
-from fluids.numerics import numpy as np
-from chemicals.utils import log, exp, normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
+from fluids.numerics import numpy as np, log, exp
+from chemicals.utils import normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
 from chemicals.virial import B_from_Z
 from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition, periodic_table
 from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian

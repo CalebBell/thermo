@@ -222,7 +222,8 @@ __all__ = [
 
 
 from fluids.numerics import (horner, horner_and_der2, numpy as np)
-from chemicals.utils import log, exp, sqrt, copysign
+from fluids.numerics import log, exp, sqrt
+from math import copysign
 
 try:
     array = np.array

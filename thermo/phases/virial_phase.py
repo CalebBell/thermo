@@ -24,8 +24,8 @@ SOFTWARE.
 __all__ = ['VirialCSP', 'VirialGas']
 
 from fluids.constants import R, R_inv
-from fluids.numerics import newton, numpy as np
-from chemicals.utils import log, mixing_simple, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, hash_any_primitive
+from fluids.numerics import newton, numpy as np, log
+from chemicals.utils import mixing_simple, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, hash_any_primitive
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase, IdealGasDeparturePhase
 from thermo.phases.ceos import CEOSGas

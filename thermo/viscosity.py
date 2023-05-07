@@ -101,7 +101,8 @@ __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
 import os
 from fluids.numerics import newton, interp, horner, brenth, numpy as np, trunc_log
 
-from chemicals.utils import log, exp, log10, isinf, isnan
+from fluids.numerics import log, exp, isinf, isnan
+from math import log10
 from chemicals.utils import none_and_length_check, mixing_simple, mixing_logarithmic
 from thermo.utils import TPDependentProperty, MixtureProperty
 from chemicals import miscdata

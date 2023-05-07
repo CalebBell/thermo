@@ -24,7 +24,7 @@ SOFTWARE.
 __all__ = ['CoolPropPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas']
 
 import sys
-from chemicals.utils import log
+from fluids.numerics import log
 from collections import OrderedDict
 from thermo.phases.phase import Phase
 from thermo.coolprop import has_CoolProp

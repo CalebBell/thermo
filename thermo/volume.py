@@ -119,7 +119,7 @@ __all__ = [
            'Tait_parameters_COSTALD']
 
 from fluids.numerics import horner, np, polyder, horner_and_der2, linspace, quadratic_from_f_ders
-from chemicals.utils import exp, isnan
+from fluids.numerics import exp, isnan
 from chemicals.utils import rho_to_Vm, mixing_simple, none_and_length_check
 from chemicals.dippr import EQ105, EQ116
 from chemicals.volume import (Amgat, Bhirud_normal, COSTALD, COSTALD_compressed, COSTALD_mixture,

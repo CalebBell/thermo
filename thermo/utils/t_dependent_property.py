@@ -64,11 +64,13 @@ from fluids.numerics import (quad, brenth, secant, linspace, newton,
                              horner_stable_ln_tau, horner_stable_ln_tau_and_der, horner_stable_ln_tau_and_der2, horner_stable_ln_tau_and_der3,
                              exp_cheb_ln_tau, exp_cheb_ln_tau_and_der, exp_cheb_ln_tau_and_der2,
                              exp_horner_stable_ln_tau, exp_horner_stable_ln_tau_and_der, exp_horner_stable_ln_tau_and_der2,
+                             isnan, log,
 )
 
 import fluids
 import chemicals
-from chemicals.utils import isnan, log, e, hash_any_primitive
+from math import e
+from chemicals.utils import hash_any_primitive
 from chemicals.vapor_pressure import (Antoine, Antoine_AB_coeffs_from_point,
                                       DIPPR101_ABC_coeffs_from_point, 
                                       Yaws_Psat_fitting_jacobian, 

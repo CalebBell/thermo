@@ -49,7 +49,7 @@ from thermo.flash.flash_utils import (
     nonlin_spec_NP,
 )
 from thermo.flash.flash_pure_vls  import FlashPureVLS
-from chemicals.utils import log, isinf
+from fluids.numerics import log, isinf
 from chemicals.exceptions import TrivialSolutionError
 from fluids.numerics import secant, trunc_log, UnconvergedError
 from thermo.property_package import StabilityTester

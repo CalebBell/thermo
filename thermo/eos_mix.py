@@ -204,7 +204,7 @@ from fluids.numerics.arrays import det, subset_matrix
 from fluids.constants import R
 
 from chemicals.utils import normalize, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials
-from chemicals.utils import log, exp, sqrt
+from fluids.numerics import log, exp, sqrt
 from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
 from chemicals.flash_basic import K_value, Wilson_K_value
 

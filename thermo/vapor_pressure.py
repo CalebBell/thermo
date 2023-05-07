@@ -67,7 +67,7 @@ from fluids.constants import R
 from fluids.numerics import NoSolutionError, polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, newton, linspace, numpy as np
 
 from math import e, inf
-from chemicals.utils import log, exp, isnan
+from fluids.numerics import log, exp, isnan
 from chemicals.dippr import EQ101
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data

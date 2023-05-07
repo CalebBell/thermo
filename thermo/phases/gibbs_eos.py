@@ -23,7 +23,6 @@ SOFTWARE.
 '''
 __all__ = ['HelmholtzEOS',]
 
-from chemicals.utils import log
 from thermo.phases.phase import Phase
 
 class GibbsEOS(Phase):
