@@ -85,6 +85,7 @@ if not numerics.is_micropython:
         fitting,
         flash,
         group_contribution,
+        functional_groups,
         heat_capacity,
         interaction_parameters,
         interface,
