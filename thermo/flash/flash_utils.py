@@ -3871,7 +3871,7 @@ def sequential_substitution_2P_double(zs, xs_guess, ys_guess, liquid_phase,
 
         # Do the newton step
         dx = py_solve(jac, [-v for v in errs])
-        iter0_val, iter1_val = [xi + dxi*damping for xi, dxi in zip([iter0_val, iter1_val], dx)]
+        iter0_val, iter1_val = (xi + dxi*damping for xi, dxi in zip([iter0_val, iter1_val], dx))
 
 
         # Check for negative fractions - normalize only if needed
@@ -4314,7 +4314,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
     def T_from_V_g(V, P, zs):
         return P*V/R
 
-    if method == IDEAL_WILSON or method == SHAW_ELEMENTAL:
+    if method in (IDEAL_WILSON, SHAW_ELEMENTAL):
         if iter_P:
             if fixed_T:
                 T_inv = 1.0/T

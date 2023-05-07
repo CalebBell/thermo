@@ -1542,7 +1542,7 @@ class Mixture:
             Reference pressure, [Pa]
 
         Returns
-        ----------
+        -------
         Hc_volumetric_g : float, optional
             Higher heat of combustion on a volumetric basis, [J/m^3]
         '''
@@ -1564,7 +1564,7 @@ class Mixture:
             Reference pressure, [Pa]
 
         Returns
-        ----------
+        -------
         Hc_volumetric_g : float, optional
             Lower heat of combustion on a volumetric basis, [J/m^3]
         '''

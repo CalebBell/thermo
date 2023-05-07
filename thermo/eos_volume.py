@@ -348,7 +348,7 @@ def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
     mp.mp.dps = dps + 40#400#400
     if P < 1e-10:
         mp.mp.dps = dps + 400
-    b, T, P, epsilon, delta, a_alpha = [mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha]]
+    b, T, P, epsilon, delta, a_alpha = (mp.mpf(i) for i in [b, T, P, epsilon, delta, a_alpha])
     roots = None
     if 1:
         RT_inv = 1/(mp.mpf(R)*T)
@@ -518,7 +518,7 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
         # if P < min(GCEOS.P_discriminant_zeros_analytical(T=T, b=b, delta=delta, epsilon=epsilon, a_alpha=a_alpha, valid=True)):
             # TODO - need function that returns range two solutions are available!
             # Very important because the below strategy only works for that regime.
-        if T > 1e-2 or 1:
+        if True:
             try:
                 return volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha)
             except Exception as e:
@@ -908,7 +908,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             break
         if V_new <= low_V or V_new >= high_V:
             V_new = 0.5*(low_V + high_V)
-            if V_new == low_V or V_new == high_V:
+            if V_new == low_V or V_new == high_V: # noqa: SIM109
                 # If the bisection has finished (interval cannot be further divided)
                 # the solver is finished
                 break

@@ -168,7 +168,7 @@ def fit_polynomial(func, low, high, n,
             cheb_fun = ChebTools.generate_Chebyshev_expansion(n-1, func_fun, low, high)
             cheb_coeffs = cheb_fun.coef()
 
-            if method == FIT_CHEBTOOLS_STABLEPOLY or method == FIT_CHEBTOOLS_POLY:
+            if method in (FIT_CHEBTOOLS_STABLEPOLY, FIT_CHEBTOOLS_POLY):
                 coeffs = cheb2poly(cheb_coeffs)[::-1].tolist()
             if method == FIT_CHEBTOOLS_CHEB:
                 return cheb_coeffs.tolist()

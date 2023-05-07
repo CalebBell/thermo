@@ -39,7 +39,7 @@ def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
     pd = pandas()
     chem = Chemical(chemical)
 
-    (rhos, Cps) = [[] for i in range(2)]
+    (rhos, Cps) = ([] for i in range(2))
     if not Tmin:  # pragma: no cover
         if chem.Tm:
             Tmin = min(chem.Tm-100, 1e-2)
@@ -71,7 +71,7 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
     chem = Chemical(chemical)
 
     (rhos, Cps, mugs, kgs, Prs, alphas, isobarics, JTs, Psats, sigmas, Hvaps,
-     permittivities) = [[] for i in range(12)]
+     permittivities) = ([] for i in range(12))
     if not Tmin:  # pragma: no cover
         if chem.Tm:
             Tmin = chem.Tm
@@ -123,7 +123,7 @@ def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
     chem = Chemical(chemical)
     pd = pandas()
 
-    (rhos, Cps, Cvs, mugs, kgs, Prs, alphas, isobarics, isentropics, JTs) = [[] for i in range(10)]
+    (rhos, Cps, Cvs, mugs, kgs, Prs, alphas, isobarics, isentropics, JTs) = ([] for i in range(10))
     if not Tmin:  # pragma: no cover
         if chem.Tm:
             Tmin = chem.Tm

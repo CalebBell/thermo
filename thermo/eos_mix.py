@@ -4985,7 +4985,7 @@ class GCEOSMIX(GCEOS):
 
     def d2Scomp_dninjs(self, phase):
         '''P_ref = symbols('P_ref')
-            diff(R*T*log(P(n1, n2, n3)/P_ref), n1, n2)
+        diff(R*T*log(P(n1, n2, n3)/P_ref), n1, n2)
         '''
         dP_dns_Vt = self.dP_dns_Vt(phase)
         d2P_dninjs_Vt = self.d2P_dninjs_Vt(phase)
@@ -6794,7 +6794,7 @@ class PRMIX(GCEOSMIX, PR):
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
 
     .. math::
-	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
     .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
@@ -7837,7 +7837,7 @@ class PRMIXTranslated(PRMIX):
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
 
     .. math::
-	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
     .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
@@ -8253,7 +8253,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
 
     .. math::
-	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
     .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
@@ -8406,7 +8406,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
 
     .. math::
-	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
     .. math::
         \alpha_i = \left(\frac{T}{T_{c}}\right)^{c_{3} \left(c_{2}
@@ -9918,7 +9918,7 @@ class PR78MIX(PRMIX):
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
 
     .. math::
-	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
     .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
@@ -10516,7 +10516,7 @@ class PRSVMIX(PRMIX, PRSV):
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
 
     .. math::
-	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
     .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
@@ -10775,7 +10775,7 @@ class PRSV2MIX(PRMIX, PRSV2):
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
 
     .. math::
-	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
     .. math::
         \alpha(T)_i=[1+\kappa_i(1-\sqrt{T_{r,i}})]^2
@@ -11033,7 +11033,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
         a_i=0.45724\frac{R^2T_{c,i}^2}{P_{c,i}}
 
     .. math::
-	    b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
+        b_i=0.07780\frac{RT_{c,i}}{P_{c,i}}
 
     .. math::
        \alpha_i = \alpha_i^{(0)} + \omega_i(\alpha_i^{(1)}-\alpha_i^{(0)})

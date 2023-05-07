@@ -97,7 +97,7 @@ def loadChemicalConstants(data, rows=True):
 
 
 def load_json_data(json_path):
-    f = open(json_path, 'r')
+    f = open(json_path)
     import json
     full_data = json.load(f)
     f.close()

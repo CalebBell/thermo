@@ -51,6 +51,7 @@ Ideal Liquid Class
     :exclude-members: gammas
 
 Notes
+-----
 =====
 Excellent references for working with activity coefficient models are [1]_ and
 [2]_.

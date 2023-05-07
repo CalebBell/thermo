@@ -237,10 +237,10 @@ def load_coolprop_fluids(depth=0):
     ver = CoolProp.__version__
     pth = os.path.join(data_dir, 'CoolPropFluids%s.json' %ver)
     try:
-        file = open(pth, 'r')
+        file = open(pth)
     except:
         store_coolprop_fluids()
-        file = open(pth, 'r')
+        file = open(pth)
     try:
       data = json.load(file)
       for CASRN in coolprop_dict:
@@ -441,7 +441,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     if phase == 'l':
         if T > Tc:
             raise Exception('For liquid properties, must be under the critical temperature.')
-        if PhaseSI('T', T, 'P', 101325, CASRN) in [u'liquid', u'supercritical_liquid']:
+        if PhaseSI('T', T, 'P', 101325, CASRN) in ['liquid', 'supercritical_liquid']:
             return PropsSI(prop, 'T', T, 'P', 101325, CASRN)
         else:
             return PropsSI(prop, 'T', T, 'Q', 0, CASRN)
@@ -457,14 +457,14 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     else:
         raise Exception('Error in CoolProp property function')
 
-if has_CoolProp and 0:
+if False:
     folder = os.path.join(os.path.dirname(__file__), 'Misc')
 
-    f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'), 'r')
+    f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'))
     vapor_properties = json.load(f)
     f.close()
 
-    f = open(os.path.join(folder, 'CoolProp CP0MOLAR fits.json'), 'r')
+    f = open(os.path.join(folder, 'CoolProp CP0MOLAR fits.json'))
     idea_gas_heat_capacity = json.load(f)
     f.close()
 
@@ -500,7 +500,7 @@ if has_CoolProp and 0:
         if CAS in idea_gas_heat_capacity:
             chebcoeffs, Tmin, Tmax = idea_gas_heat_capacity[CAS]['CP0MOLAR']
             approximator = MultiCheb1D([Tmin, Tmax], chebcoeffs)
-            setattr(obj, 'CP0MOLAR', approximator)
+            obj.CP0MOLAR = approximator
 
 #            obj.validate_prop('CP0MOLAR', 'g')
 

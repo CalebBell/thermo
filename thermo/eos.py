@@ -3947,7 +3947,7 @@ class GCEOS:
         # not need mpmath
         import mpmath as mp
         mp.mp.dps = 70
-        P, T, b, a_alpha, delta, epsilon, R_mp = [mp.mpf(i) for i in [P, self.T, self.b, self.a_alpha, self.delta, self.epsilon, R]]
+        P, T, b, a_alpha, delta, epsilon, R_mp = (mp.mpf(i) for i in [P, self.T, self.b, self.a_alpha, self.delta, self.epsilon, R])
         RT = R_mp*T
         RT6 = RT**6
         x0 = P*P
@@ -6819,7 +6819,7 @@ class GCEOS:
             \right)_P}{\partial P}\right)_{V}
             = \left(\frac{\partial^2 a \alpha}{\partial T^2}\right)_{P}
             \cdot\left( \frac{\partial T}{\partial P}\right)_V
-            '''
+        '''
         return self.d2a_alpha_dT2*self.dT_dP_g
 
     @property
@@ -6833,7 +6833,7 @@ class GCEOS:
             \right)_P}{\partial P}\right)_{V}
             = \left(\frac{\partial^2 a \alpha}{\partial T^2}\right)_{P}
             \cdot\left( \frac{\partial T}{\partial P}\right)_V
-            '''
+        '''
         return self.d2a_alpha_dT2*self.dT_dP_l
 
     @property
@@ -7315,7 +7315,7 @@ class PR(GCEOS):
         a=0.45724\frac{R^2T_c^2}{P_c}
 
     .. math::
-	     b=0.07780\frac{RT_c}{P_c}
+         b=0.07780\frac{RT_c}{P_c}
 
     .. math::
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
@@ -7995,7 +7995,7 @@ class PR78(PR):
         a=0.45724\frac{R^2T_c^2}{P_c}
 
     .. math::
-	    b=0.07780\frac{RT_c}{P_c}
+        b=0.07780\frac{RT_c}{P_c}
 
     .. math::
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
@@ -8085,7 +8085,7 @@ class PRTranslated(PR):
         a=0.45724\frac{R^2T_c^2}{P_c}
 
     .. math::
-	    b=0.07780\frac{RT_c}{P_c}
+        b=0.07780\frac{RT_c}{P_c}
 
     .. math::
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
@@ -8182,7 +8182,7 @@ class PRTranslatedPPJP(PRTranslated):
         a=0.45724\frac{R^2T_c^2}{P_c}
 
     .. math::
-	    b=0.07780\frac{RT_c}{P_c}
+        b=0.07780\frac{RT_c}{P_c}
 
     .. math::
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
@@ -8273,7 +8273,7 @@ class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
         a=0.45724\frac{R^2T_c^2}{P_c}
 
     .. math::
-	    b=0.07780\frac{RT_c}{P_c}
+        b=0.07780\frac{RT_c}{P_c}
 
     .. math::
         \alpha(T)=f(T)
@@ -8366,7 +8366,7 @@ class PRTranslatedTwu(Twu91_a_alpha, PRTranslated):
         a=0.45724\frac{R^2T_c^2}{P_c}
 
     .. math::
-	    b=0.07780\frac{RT_c}{P_c}
+        b=0.07780\frac{RT_c}{P_c}
 
     .. math::
         \alpha = \left(\frac{T}{T_{c}}\right)^{c_{3} \left(c_{2}
@@ -8432,7 +8432,7 @@ class PRTranslatedConsistent(PRTranslatedTwu):
         a=0.45724\frac{R^2T_c^2}{P_c}
 
     .. math::
-	    b=0.07780\frac{RT_c}{P_c}
+        b=0.07780\frac{RT_c}{P_c}
 
     .. math::
         \alpha = \left(\frac{T}{T_{c}}\right)^{c_{3} \left(c_{2}
@@ -8822,7 +8822,7 @@ class PRSV2(PR):
         a=0.45724\frac{R^2T_c^2}{P_c}
 
     .. math::
-	    b=0.07780\frac{RT_c}{P_c}
+        b=0.07780\frac{RT_c}{P_c}
 
     .. math::
         \alpha(T)=[1+\kappa(1-\sqrt{T_r})]^2
@@ -10741,7 +10741,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
         a=0.45724\frac{R^2T_c^2}{P_c}
 
     .. math::
-	    b=0.07780\frac{RT_c}{P_c}
+        b=0.07780\frac{RT_c}{P_c}
 
     .. math::
        \alpha = \alpha^{(0)} + \omega(\alpha^{(1)}-\alpha^{(0)})
