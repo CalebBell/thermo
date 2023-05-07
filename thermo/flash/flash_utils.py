@@ -1999,6 +1999,8 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
     comp_guess = zs if comp_guess is None else comp_guess
     damping_orig = damping
 
+    step = 1e300 # default
+
     if V_over_F == 1.0:
         iter_phase, const_phase, bubble = liquid_phase, gas_phase, False
     elif V_over_F == 0.0:
@@ -2179,6 +2181,7 @@ def existence_3P_Michelsen_Mollerup(guess, fixed_val, zs, iter_phase, liquid0, l
     cmps = range(N)
     comp_guess = zs if comp_guess is None else comp_guess
     damping_orig = damping
+    step = 1e300 # default
 
     if iter_var == 'T':
         iter_msg, const_msg = g_undefined_T_msg, l_undefined_T_msg
@@ -2390,6 +2393,7 @@ def dew_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
     N = len(zs)
     cmps = range(N)
     xs = zs if xs_guess is None else xs_guess
+    step = 1e300 # default
 
 
     T_guess_old = None
@@ -2465,6 +2469,7 @@ def bubble_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
     N = len(zs)
     cmps = range(N)
     ys = zs if ys_guess is None else ys_guess
+    step = 1e300 # default
 
 
     P_guess_old = None
@@ -2537,6 +2542,7 @@ def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
     cmps = range(N)
     xs = zs if xs_guess is None else xs_guess
 
+    step = 1e300 # default
 
     P_guess_old = None
     successive_fails = 0
