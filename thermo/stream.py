@@ -21,7 +21,7 @@ SOFTWARE.
 '''
 
 
-__all__ = ['Stream', 'EnergyTypes', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance', 'energy_balance']
+__all__ = ['Stream', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance', 'energy_balance']
 
 #import enum
 try:
@@ -2374,11 +2374,6 @@ for freq in residential_power_frequencies:
         energy_types[f'AC_ELECTRICITY_1_PHASE_{str(voltage)}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 1 PHASE {str(voltage)} V {str(freq)} Hz'
     for voltage in voltages_3_phase:
         energy_types[f'AC_ELECTRICITY_3_PHASE_{str(voltage)}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 3 PHASE {str(voltage)} V {str(freq)} Hz'
-
-try:
-    EnergyTypes = enum.Enum('EnergyTypes', energy_types)
-except:
-    EnergyTypes = ''
 
 
 class EnergyStream:
