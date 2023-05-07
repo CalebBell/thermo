@@ -381,7 +381,8 @@ class ViscosityLiquid(TPDependentProperty):
                 CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_mu:
                     self.CP_f = CP_f
-                    methods.append(COOLPROP); methods_P.append(COOLPROP)
+                    methods.append(COOLPROP)
+                    methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (l)')
@@ -867,7 +868,8 @@ class ViscosityGas(TPDependentProperty):
                 CP_f = coolprop_fluids[self.CASRN]
                 if CP_f.has_mu:
                     self.CP_f = CP_f
-                    methods.append(COOLPROP); methods_P.append(COOLPROP)
+                    methods.append(COOLPROP)
+                    methods_P.append(COOLPROP)
 #                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax*.9999)
             if self.CASRN in viscosity.mu_data_Perrys_8E_2_312.index:
@@ -1217,7 +1219,8 @@ class ViscosityLiquidMixture(MixtureProperty):
             Viscosity of the liquid mixture, [Pa*s]
         '''
         if method == LALIBERTE_MU:
-            ws = list(ws) ; ws.pop(self.index_w)
+            ws = list(ws)
+            ws.pop(self.index_w)
             return Laliberte_viscosity(T, ws, self.wCASs)
 
         if self._correct_pressure_pure:

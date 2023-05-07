@@ -351,7 +351,8 @@ class ThermalConductivityLiquid(TPDependentProperty):
                 CP_f = coolprop_fluids[self.CASRN]
                 if CP_f.has_k:
                     self.CP_f = CP_f
-                    methods.append(COOLPROP); methods_P.append(COOLPROP)
+                    methods.append(COOLPROP)
+                    methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin*1.001, self.CP_f.Tc*0.9999)
             if self.CASRN in thermal_conductivity.k_data_Perrys_8E_2_315.index:
                 methods.append(DIPPR_PERRY_8E)
@@ -726,7 +727,8 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
         '''
         if method == MAGOMEDOV:
             k_w = self.ThermalConductivityLiquids[self.index_w](T, P)
-            ws = list(ws) ; ws.pop(self.index_w)
+            ws = list(ws)
+            ws.pop(self.index_w)
             return thermal_conductivity_Magomedov(T, P, ws, self.wCASs, k_w)
 
         if self._correct_pressure_pure:
@@ -1015,7 +1017,8 @@ class ThermalConductivityGas(TPDependentProperty):
                 CP_f = coolprop_fluids[self.CASRN]
                 if CP_f.has_k:
                     self.CP_f = CP_f
-                    methods.append(COOLPROP); methods_P.append(COOLPROP)
+                    methods.append(COOLPROP)
+                    methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc*0.9999)
             if self.CASRN in thermal_conductivity.k_data_Perrys_8E_2_314.index:
                 methods.append(DIPPR_PERRY_8E)

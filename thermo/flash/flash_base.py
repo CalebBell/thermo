@@ -1524,7 +1524,9 @@ class Flash:
         ticks = [round(i / float(10), 1) for i in range(10+1)]
 
         fig, ax = plt.subplots(1, 3, gridspec_kw = {'width_ratios':[4, 4, 1]})
-        ax[0].axis("off") ; ax[1].axis("off")  ; ax[2].axis("off")
+        ax[0].axis("off")
+        ax[1].axis("off")
+        ax[2].axis("off")
         names = self.constants.aliases
 
         for axis, f, i in zip(ax[0:2], [dew_at_zs, bubble_at_zs], [0, 1]):

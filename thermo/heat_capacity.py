@@ -1639,7 +1639,8 @@ class HeatCapacityLiquidMixture(MixtureProperty):
             Cplms = [i(T) for i in self.HeatCapacityLiquids]
             return mixing_simple(zs, Cplms)
         elif method == LALIBERTE:
-            ws = list(ws) ; ws.pop(self.index_w)
+            ws = list(ws)
+            ws.pop(self.index_w)
             Cpl = Laliberte_heat_capacity(T, ws, self.wCASs)
             MW = mixing_simple(zs, self.MWs)
             return property_mass_to_molar(Cpl, MW)
