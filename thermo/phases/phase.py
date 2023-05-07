@@ -2501,9 +2501,9 @@ class Phase:
         T, P, N, scalar = self.T, self.P, self.N, self.scalar
         self._gammas = gammas = [0.0]*N if scalar else zeros(N)
         for i in range(N):
-            zeros = [0.0]*N if scalar else zeros(N)
-            zeros[i] = 1.0
-            phi = self.to_TP_zs(T=T, P=P, zs=zeros).phis()[i]
+            comp = [0.0]*N if scalar else zeros(N)
+            comp[i] = 1.0
+            phi = self.to_TP_zs(T=T, P=P, zs=comp).phis()[i]
             gammas[i] = phis[i]/phi
 
         self._gammas = gammas
