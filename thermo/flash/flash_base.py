@@ -1566,7 +1566,7 @@ class Flash:
             text = "Bubble pressure vs composition (left) and dew pressure vs composition (right) at %s K" %T
         else:
             text = "Bubble temperature vs composition (left) and dew temperature vs composition (right) at %s Pa" %P
-        fig.suptitle(text, fontsize=14);
+        fig.suptitle(text, fontsize=14)
         fig.subplots_adjust(top=0.85)
         plt.show()
 

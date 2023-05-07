@@ -287,7 +287,7 @@ def load_rdkit_modules():
 
 
 def substructures_are_entire_structure(mol, matches, exclude_Hs=True):
-    atomIdxs = set([atom.GetIdx() for atom in mol.GetAtoms() if (not exclude_Hs or atom.GetAtomicNum() != 1)])
+    atomIdxs = {atom.GetIdx() for atom in mol.GetAtoms() if (not exclude_Hs or atom.GetAtomicNum() != 1)}
     matched_atoms = []
     for h in matches:
         matched_atoms.extend(h)

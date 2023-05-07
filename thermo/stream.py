@@ -1762,7 +1762,7 @@ class Stream(Mixture):
             elif Hm is not None:
                 self.n = energy/Hm # Watt/(J/kg) = mol/s
             else:
-                raise NotImplemented
+                raise NotImplementedError
 
         # Energy specified - calculate H or Hm
         if energy is not None:

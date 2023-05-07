@@ -19,6 +19,10 @@ extend-ignore = [
 
     # chemicals specific
     "E701", # lots of this here
+    
+    # maybe these
+    "PLE0605",
+    "PLE0604",
 
     # Originally from astropy's pyproject.toml, see about removing many of them later
     
