@@ -1942,8 +1942,8 @@ class GCEOSMIX(GCEOS):
                             break
                         except ValueError as e:
                             pass
-            if xs is None:
-                raise(e)
+                if xs is None:
+                    raise(e)
 
 #        print(xs, ys, 'innerloop')
 #        Z_l_prev = None

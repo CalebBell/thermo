@@ -2294,6 +2294,9 @@ def bubble_T_Michelsen_Mollerup(T_guess, P, zs, liquid_phase, gas_phase,
     ys = zs if ys_guess is None else ys_guess
 
 
+    step = 1e300 # initialize to dummy value
+
+
     T_guess_old = None
     successive_fails = 0
     for iteration in range(maxiter):

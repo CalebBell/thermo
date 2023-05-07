@@ -281,8 +281,7 @@ def load_rdkit_modules():
         from rdkit.Chem import Descriptors, AllChem, rdMolDescriptors, CanonSmiles, MolToSmiles, MolFromSmarts
         loaded_rdkit = True
     except:
-        if not hasRDKit: # pragma: no cover
-            raise Exception(rdkit_missing)
+        raise Exception(rdkit_missing) # pragma: no cover
 
 
 
