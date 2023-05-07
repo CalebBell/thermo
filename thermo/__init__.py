@@ -47,25 +47,25 @@ if not numerics.is_micropython:
         triple,
         virial,
     )
-    from chemicals.acentric import *
-    from chemicals.combustion import *
-    from chemicals.critical import *
-    from chemicals.dipole import *
-    from chemicals.dippr import *
-    from chemicals.elements import *
-    from chemicals.environment import *
-    from chemicals.flash_basic import *
-    from chemicals.identifiers import *
-    from chemicals.lennard_jones import *
-    from chemicals.miscdata import *
-    from chemicals.rachford_rice import *
-    from chemicals.reaction import *
-    from chemicals.refractivity import *
-    from chemicals.safety import *
-    from chemicals.solubility import *
-    from chemicals.temperature import *
-    from chemicals.triple import *
-    from chemicals.virial import *
+    from chemicals.acentric import * # noqa: F403
+    from chemicals.combustion import * # noqa: F403
+    from chemicals.critical import * # noqa: F403
+    from chemicals.dipole import * # noqa: F403
+    from chemicals.dippr import * # noqa: F403
+    from chemicals.elements import * # noqa: F403
+    from chemicals.environment import * # noqa: F403
+    from chemicals.flash_basic import * # noqa: F403
+    from chemicals.identifiers import * # noqa: F403
+    from chemicals.lennard_jones import * # noqa: F403
+    from chemicals.miscdata import * # noqa: F403
+    from chemicals.rachford_rice import * # noqa: F403
+    from chemicals.reaction import * # noqa: F403
+    from chemicals.refractivity import * # noqa: F403
+    from chemicals.safety import * # noqa: F403
+    from chemicals.solubility import * # noqa: F403
+    from chemicals.temperature import * # noqa: F403
+    from chemicals.triple import * # noqa: F403
+    from chemicals.virial import * # noqa: F403
 
     from . import (
         activity,
@@ -107,45 +107,45 @@ if not numerics.is_micropython:
         volume,
         wilson,
     )
-    from .activity import *
-    from .bulk import *
-    from .chemical import *
-    from .chemical_package import *
-    from .chemical_utils import *
-    from .coolprop import *
-    from .datasheet import *
-    from .electrochem import *
-    from .eos import *
-    from .eos_alpha_functions import *
-    from .eos_mix import *
-    from .eos_mix_methods import *
-    from .eos_volume import *
-    from .equilibrium import *
-    from .fitting import *
-    from .flash import *
-    from .functional_groups import *
-    from .group_contribution import *
-    from .heat_capacity import *
-    from .interaction_parameters import *
-    from .interface import *
-    from .law import *
-    from .mixture import *
-    from .nrtl import *
-    from .permittivity import *
-    from .phase_change import *
-    from .phase_identification import *
-    from .phases import *
-    from .property_package import *
-    from .regular_solution import *
-    from .stream import *
-    from .thermal_conductivity import *
-    from .unifac import *
-    from .uniquac import *
-    from .utils import *
-    from .vapor_pressure import *
-    from .viscosity import *
-    from .volume import *
-    from .wilson import *
+    from .activity import * # noqa: F403
+    from .bulk import * # noqa: F403
+    from .chemical import * # noqa: F403
+    from .chemical_package import * # noqa: F403
+    from .chemical_utils import * # noqa: F403
+    from .coolprop import * # noqa: F403
+    from .datasheet import * # noqa: F403
+    from .electrochem import * # noqa: F403
+    from .eos import * # noqa: F403
+    from .eos_alpha_functions import * # noqa: F403
+    from .eos_mix import * # noqa: F403
+    from .eos_mix_methods import * # noqa: F403
+    from .eos_volume import * # noqa: F403
+    from .equilibrium import * # noqa: F403
+    from .fitting import * # noqa: F403
+    from .flash import * # noqa: F403
+    from .functional_groups import * # noqa: F403
+    from .group_contribution import * # noqa: F403
+    from .heat_capacity import * # noqa: F403
+    from .interaction_parameters import * # noqa: F403
+    from .interface import * # noqa: F403
+    from .law import * # noqa: F403
+    from .mixture import * # noqa: F403
+    from .nrtl import * # noqa: F403
+    from .permittivity import * # noqa: F403
+    from .phase_change import * # noqa: F403
+    from .phase_identification import * # noqa: F403
+    from .phases import * # noqa: F403
+    from .property_package import * # noqa: F403
+    from .regular_solution import * # noqa: F403
+    from .stream import * # noqa: F403
+    from .thermal_conductivity import *  # noqa: F403
+    from .unifac import * # noqa: F403
+    from .uniquac import * # noqa: F403
+    from .utils import * # noqa: F403
+    from .vapor_pressure import * # noqa: F403
+    from .viscosity import * # noqa: F403
+    from .volume import * # noqa: F403
+    from .wilson import * # noqa: F403
 
     #from chemicals import *
 
