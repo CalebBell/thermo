@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -336,7 +335,6 @@ class GibbsExcessLiquid(Phase):
         components properties and derivatives. A Multiphase will be needed to
         allow flashes with different properties from different phases.
         '''
-
         self.N = N = len(VaporPressures)
         if henry_components is None:
             henry_components = [False]*self.N
@@ -1751,7 +1749,6 @@ class GibbsExcessLiquid(Phase):
 
         Notes
         -----
-
         .. warning::
             This factor cannot be calculated when a compound is supercritical,
             as there is no longer any vapor-liquid pure-component equilibrium

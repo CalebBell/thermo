@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -669,7 +668,6 @@ class ViscosityLiquid(TPDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-
         if method == LUCAS:
             validity = True
         elif method == COOLPROP:

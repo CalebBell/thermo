@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -206,7 +205,6 @@ class FlashPureVLS(Flash):
 
     Examples
     --------
-
     Create all the necessary objects using all of the default parameters for
     decane and do a flash at 300 K and 1 bar:
 

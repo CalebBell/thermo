@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -248,7 +247,6 @@ class VirialCSP(object):
 
         Examples
         --------
-
         >>> from thermo import VirialCSP
         >>> model = VirialCSP(Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
         >>> model
@@ -431,7 +429,6 @@ class VirialCSP(object):
         --------
 
         '''
-
         new = self.__class__.__new__(self.__class__)
         new.Tcs = self.Tcs
         new.Pcs = self.Pcs

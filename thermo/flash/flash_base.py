@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021, 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -190,7 +189,6 @@ class Flash(object):
 
         Notes
         -----
-
         .. warning::
             Not all flash specifications have a unique solution. Not all flash
             specifications will converge, whether from a bad model, bad inputs,

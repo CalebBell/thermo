@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -486,7 +485,6 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
 
     Notes
     -----
-
     Sample regions where this method works perfectly are shown below:
 
     .. figure:: eos/volume_error_NR_PR_methanol_high.png
@@ -498,8 +496,6 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
        :alt: PR EOS methanol volume error low pressure
 
     '''
-
-
     """Even if mpmath is used for greater precision in the calculated root,
     it gets rounded back to a float - and then error occurs.
     Cannot beat numerical method or numpy roots!
@@ -687,7 +683,6 @@ def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha):
     The algorithm is NR, with some checks that will switch the solver to
     `brenth` some of the time.
     '''
-
     P_inv = 1.0/P
     def err_fun(V):
         denom1 = 1.0/(V*(V + delta) + epsilon)
@@ -1120,7 +1115,6 @@ def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha):
 
     Notes
     -----
-
     Two sample regions where this method does not obtain the correct solution
     (PR EOS for hydrogen) are as follows:
 
@@ -1291,7 +1285,6 @@ def volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha):
 
     Notes
     -----
-
     A sample region where this method does not obtain the correct solution
     (SRK EOS for ethane) is as follows:
 

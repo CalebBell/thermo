@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -367,7 +366,6 @@ class Chemical(object): # pragma: no cover
 
     Notes
     -----
-
     .. warning::
         The Chemical class is not designed for high-performance or the ability
         to use different thermodynamic models. It is especially limited in its
@@ -2183,7 +2181,6 @@ class Chemical(object): # pragma: no cover
 
         Examples
         --------
-
         >>> Chemical('helium', T=300.0, P=1e5).Vmg_ideal
         0.0249433878544
         '''

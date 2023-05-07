@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 

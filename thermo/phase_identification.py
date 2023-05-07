@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -932,7 +931,6 @@ def sort_phases(liquids, solids, constants, settings):
     --------
 
     '''
-
     if len(liquids) > 1:
         liquids = mini_sort_phases(liquids, sort_method=settings.liquid_sort_method,
                          prop=settings.liquid_sort_prop,

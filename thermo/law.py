@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -152,7 +151,6 @@ def legal_status(CASRN, method=None, get_methods=False, CASi=None):
 
     Notes
     -----
-
     Supported methods are:
 
         * **DSL**: Canada Domestic Substance List, [1]_. As extracted on Feb 11, 2015

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -493,7 +492,6 @@ class Mixture(object):
 
     Notes
     -----
-
     .. warning::
         The Mixture class is not designed for high-performance or the ability
         to use different thermodynamic models. It is especially limited in its
@@ -2461,7 +2459,6 @@ class Mixture(object):
         >>> Mixture(['nitrogen'], ws=[1]).speed_of_sound_g
         351.77445481641661
         '''
-
         dP_dV = 1.0/self.VolumeGasMixture.property_derivative_P(T=self.T, P=self.P,
                                                                 zs=self.ys, ws=self.wsg, order=1)
 

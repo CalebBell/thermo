@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021
 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
@@ -690,7 +689,6 @@ class GCEOSMIX(GCEOS):
 
         Examples
         --------
-
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
         >>> new = base.to_TP(T=10.0, P=2000.0)
         >>> base.state_specs, new.state_specs
@@ -722,7 +720,6 @@ class GCEOSMIX(GCEOS):
 
         Examples
         --------
-
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
         >>> new = base.to_TV(T=1000000.0, V=1.0)
         >>> base.state_specs, new.state_specs
@@ -756,7 +753,6 @@ class GCEOSMIX(GCEOS):
 
         Examples
         --------
-
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
         >>> new = base.to_PV(P=1000000.0, V=1.0)
         >>> base.state_specs, new.state_specs
@@ -6636,7 +6632,6 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
 
         Examples
         --------
-
         >>> eos = RKMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0],[0,0]])
         >>> eos.a_alpha_and_derivatives_vectorized(115)
         ([0.1449810919468, 0.30019773677], [-0.000630352573681, -0.00130520755121], [8.2219900915e-06, 1.7024446320e-05])
@@ -7446,7 +7441,6 @@ class PRMIX(GCEOSMIX, PR):
 
         Examples
         --------
-
         >>> kijs = [[0, 0.00076, 0.00171], [0.00076, 0, 0.00061], [0.00171, 0.00061, 0]]
         >>> eos = PRMIX(Tcs=[469.7, 507.4, 540.3], zs=[0.8168, 0.1501, 0.0331], omegas=[0.249, 0.305, 0.349], Pcs=[3.369E6, 3.012E6, 2.736E6], T=322.29, P=101325, kijs=kijs)
         >>> eos.dlnphis_dzs(eos.Z_l)

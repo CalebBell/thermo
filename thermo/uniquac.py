@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -401,7 +400,6 @@ class UNIQUAC(GibbsExcess):
 
     Examples
     --------
-
     **Example 1**
 
     Example 5.19 in [2]_ includes the calculation of liquid-liquid activity
@@ -1669,7 +1667,6 @@ class UNIQUAC(GibbsExcess):
 
         Examples
         --------
-
         In the following example, the `tau` values required to zero-out the
         coefficients for the n-pentane and n-hexane system are calculated. The
         parameters are converted back into `aij` parameters as used by this

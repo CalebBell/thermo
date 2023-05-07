@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -470,7 +469,6 @@ class ChemicalConstantsPackage(object):
 
         Notes
         -----
-
         .. warning::
             %s
 
@@ -506,7 +504,6 @@ class ChemicalConstantsPackage(object):
 
         Notes
         -----
-
         .. warning::
             %s
 
@@ -544,7 +541,6 @@ class ChemicalConstantsPackage(object):
 
         Notes
         -----
-
         .. warning::
             %s
 
@@ -1424,7 +1420,6 @@ class PropertyCorrelationsPackage(object):
 
     Examples
     --------
-
     Create a package from CO2 and n-hexane, with ideal-gas heat capacities
     provided while excluding all other properties:
 

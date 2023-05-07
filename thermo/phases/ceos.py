@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021, 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -203,7 +202,6 @@ class CEOSPhase(IdealGasDeparturePhase):
 
         Examples
         --------
-
         >>> from thermo.eos_mix import PRMIX
         >>> eos_kwargs = dict(Tcs=[305.32, 369.83], Pcs=[4872000.0, 4248000.0], omegas=[0.098, 0.152])
         >>> gas = CEOSGas(PRMIX, T=300.0, P=1e6, zs=[.2, .8], eos_kwargs=eos_kwargs)
@@ -437,7 +435,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         d2P_dTdV : float
             Second volume derivative of pressure, [mol*Pa^2/(J*K)]
         '''
-        pass
 
     def lnphis(self):
         r'''Method to calculate and return the log of fugacity coefficients of
@@ -450,7 +447,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         lnphis : list[float]
             Log fugacity coefficients, [-]
         '''
-        pass
     def dlnphis_dT(self):
         r'''Method to calculate and return the first temperature derivative of
         the log of fugacity coefficients of
@@ -463,7 +459,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         dlnphis_dT : list[float]
             First temperature derivative of log fugacity coefficients, [1/K]
         '''
-        pass
 
     def dlnphis_dP(self):
         r'''Method to calculate and return the first pressure derivative of
@@ -477,7 +472,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         dlnphis_dP : list[float]
             First pressure derivative of log fugacity coefficients, [1/Pa]
         '''
-        pass
 
     def V(self):
         r'''Method to calculate and return the molar volume of the phase.
@@ -487,7 +481,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         V : float
             Molar volume, [m^3/mol]
         '''
-        pass
 
     def dP_dT(self):
         r'''Method to calculate and return the first temperature derivative of
@@ -503,7 +496,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         dP_dT : float
             First temperature derivative of pressure, [Pa/K]
         '''
-        pass
 
 
     def dP_dV(self):
@@ -520,7 +512,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         dP_dV : float
             First volume derivative of pressure, [Pa*mol/m^3]
         '''
-        pass
 
 
     def d2P_dT2(self):
@@ -537,7 +528,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         d2P_dT2 : float
             Second temperature derivative of pressure, [Pa/K^2]
         '''
-        pass
 
     def d2P_dV2(self):
         r'''Method to calculate and return the second volume derivative of
@@ -555,7 +545,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         d2P_dV2 : float
             Second volume derivative of pressure, [Pa*mol^2/m^6]
         '''
-        pass
 
 
     def lnphis_lowest_Gibbs(self):

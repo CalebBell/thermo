@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -136,7 +135,6 @@ class MixtureProperty(object):
         Examples
         --------
         '''
-
         d = self.__dict__.copy() # Not a the real object dictionary
         if references == 1:
             for k in self.pure_references:

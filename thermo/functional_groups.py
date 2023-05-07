@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -331,7 +330,6 @@ def is_amide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_amide(MolFromSmiles('CN(C)C=O')) # doctest:+SKIP
     True
@@ -368,7 +366,6 @@ def is_amidine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_amidine(MolFromSmiles('C1=CC(=CC=C1C(=N)N)OCCCCCOC2=CC=C(C=C2)C(=N)N')) # doctest:+SKIP
     True
@@ -397,7 +394,6 @@ def is_primary_ketimine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_primary_ketimine(MolFromSmiles('C1=CC=C(C=C1)C(=N)C2=CC=CC=C2')) # doctest:+SKIP
     True
@@ -424,7 +420,6 @@ def is_secondary_ketimine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_secondary_ketimine(MolFromSmiles('CC(C)CC(=NC1=CC=C(C=C1)CC2=CC=C(C=C2)N=C(C)CC(C)C)C')) # doctest:+SKIP
     True
@@ -450,7 +445,6 @@ def is_primary_aldimine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_primary_aldimine(MolFromSmiles('CC=N')) # doctest:+SKIP
     True
@@ -476,7 +470,6 @@ def is_secondary_aldimine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_secondary_aldimine(MolFromSmiles( 'C1=CC=C(C=C1)/C=N\\O')) # doctest:+SKIP
     True
@@ -500,7 +493,6 @@ def is_imine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_imine(MolFromSmiles('C1=CC=C(C=C1)C(=N)C2=CC=CC=C2')) # doctest:+SKIP
     True
@@ -524,7 +516,6 @@ def is_mercaptan(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_mercaptan(MolFromSmiles("CS")) # doctest:+SKIP
     True
@@ -550,7 +541,6 @@ def is_sulfide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_sulfide(MolFromSmiles('CSC')) # doctest:+SKIP
     True
@@ -575,7 +565,6 @@ def is_disulfide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_disulfide(MolFromSmiles('CSSC')) # doctest:+SKIP
     True
@@ -600,7 +589,6 @@ def is_sulfoxide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_sulfoxide(MolFromSmiles('CS(=O)C')) # doctest:+SKIP
     True
@@ -625,7 +613,6 @@ def is_sulfone(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_sulfone(MolFromSmiles('CS(=O)(=O)C')) # doctest:+SKIP
     True
@@ -650,7 +637,6 @@ def is_sulfinic_acid(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_sulfinic_acid(MolFromSmiles('O=S(O)CCN')) # doctest:+SKIP
     True
@@ -676,7 +662,6 @@ def is_sulfonic_acid(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_sulfonic_acid(MolFromSmiles('OS(=O)(=O)c1ccccc1')) # doctest:+SKIP
     True
@@ -701,7 +686,6 @@ def is_sulfonate_ester(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_sulfonate_ester(MolFromSmiles('COS(=O)(=O)C(F)(F)F')) # doctest:+SKIP
     True
@@ -726,7 +710,6 @@ def is_thiocyanate(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_thiocyanate(MolFromSmiles('C1=CC=C(C=C1)SC#N')) # doctest:+SKIP
     True
@@ -752,7 +735,6 @@ def is_isothiocyanate(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_isothiocyanate(MolFromSmiles('C=CCN=C=S')) # doctest:+SKIP
     True
@@ -778,7 +760,6 @@ def is_thioketone(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_thioketone(MolFromSmiles('C1=CC=C(C=C1)C(=S)C2=CC=CC=C2')) # doctest:+SKIP
     True
@@ -804,7 +785,6 @@ def is_thial(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_thial(MolFromSmiles('CC=S')) # doctest:+SKIP
     True
@@ -831,7 +811,6 @@ def is_carbothioic_s_acid(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_carbothioic_s_acid(MolFromSmiles('C1=CC=C(C=C1)C(=O)S')) # doctest:+SKIP
     True
@@ -858,7 +837,6 @@ def is_carbothioic_o_acid(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_carbothioic_o_acid(MolFromSmiles('OC(=S)c1ccccc1O')) # doctest:+SKIP
     True
@@ -885,7 +863,6 @@ def is_thiolester(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_thiolester(MolFromSmiles('CSC(=O)C=C')) # doctest:+SKIP
     True
@@ -911,7 +888,6 @@ def is_thionoester(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_thionoester(MolFromSmiles('CCOC(=S)S')) # doctest:+SKIP
     True
@@ -937,7 +913,6 @@ def is_carbodithioic_acid(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_carbodithioic_acid(MolFromSmiles('C1=CC=C(C=C1)C(=S)S')) # doctest:+SKIP
     True
@@ -963,7 +938,6 @@ def is_carbodithio(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_carbodithio(MolFromSmiles('C(=S)(N)SSC(=S)N')) # doctest:+SKIP
     True
@@ -990,7 +964,6 @@ def is_siloxane(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_siloxane(MolFromSmiles('C[Si]1(O[Si](O[Si](O[Si](O1)(C)C)(C)C)(C)C)C')) # doctest:+SKIP
     True
@@ -1014,7 +987,6 @@ def is_hydrocarbon(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_hydrocarbon(MolFromSmiles("CCC")) # doctest:+SKIP
     True
@@ -1044,7 +1016,6 @@ def is_alkane(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_alkane(MolFromSmiles("CCC")) # doctest:+SKIP
     True
@@ -1071,7 +1042,6 @@ def is_cycloalkane(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_cycloalkane(MolFromSmiles('C1CCCCCCCCC1')) # doctest:+SKIP
     True
@@ -1100,7 +1070,6 @@ def is_alkene(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_alkene(MolFromSmiles('C=C')) # doctest:+SKIP
     True
@@ -1128,7 +1097,6 @@ def is_alkyne(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_alkyne(MolFromSmiles('CC#C')) # doctest:+SKIP
     True
@@ -1156,7 +1124,6 @@ def is_aromatic(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_aromatic(MolFromSmiles('CC1=CC=CC=C1C')) # doctest:+SKIP
     True
@@ -1183,7 +1150,6 @@ def is_boronic_acid(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_boronic_acid(MolFromSmiles('B(C)(O)O')) # doctest:+SKIP
     True
@@ -1209,7 +1175,6 @@ def is_boronic_ester(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_boronic_ester(MolFromSmiles('B(C)(OC(C)C)OC(C)C')) # doctest:+SKIP
     True
@@ -1237,7 +1202,6 @@ def is_borinic_acid(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_borinic_acid(MolFromSmiles('BO')) # doctest:+SKIP
     True
@@ -1266,7 +1230,6 @@ def is_borinic_ester(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_borinic_ester(MolFromSmiles('B(C1=CC=CC=C1)(C2=CC=CC=C2)OCCN')) # doctest:+SKIP
     True
@@ -1292,7 +1255,6 @@ def is_alcohol(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_alcohol(MolFromSmiles('CCO')) # doctest:+SKIP
     True
@@ -1317,7 +1279,6 @@ def is_polyol(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_polyol(MolFromSmiles('C(C(CO)O)O')) # doctest:+SKIP
     True
@@ -1343,7 +1304,6 @@ def is_acid(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_acid(MolFromSmiles('CC(=O)O')) # doctest:+SKIP
     True
@@ -1369,7 +1329,6 @@ def is_ketone(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_ketone(MolFromSmiles('C1CCC(=O)CC1')) # doctest:+SKIP
     True
@@ -1396,7 +1355,6 @@ def is_aldehyde(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_aldehyde(MolFromSmiles('C=O')) # doctest:+SKIP
     True
@@ -1424,7 +1382,6 @@ def is_acyl_halide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_acyl_halide(MolFromSmiles('C(CCC(=O)Cl)CC(=O)Cl')) # doctest:+SKIP
     True
@@ -1450,7 +1407,6 @@ def is_carbonate(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_carbonate(MolFromSmiles('C(=O)(OC(Cl)(Cl)Cl)OC(Cl)(Cl)Cl')) # doctest:+SKIP
     True
@@ -1476,7 +1432,6 @@ def is_carboxylate(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_carboxylate(MolFromSmiles('CC(=O)[O-].[Na+]')) # doctest:+SKIP
     True
@@ -1502,7 +1457,6 @@ def is_hydroperoxide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_hydroperoxide(MolFromSmiles('CC(C)(C)OO')) # doctest:+SKIP
     True
@@ -1529,7 +1483,6 @@ def is_peroxide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_peroxide(MolFromSmiles('CC(C)(C)OOC(C)(C)C')) # doctest:+SKIP
     True
@@ -1555,7 +1508,6 @@ def is_orthoester(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_orthoester(MolFromSmiles('CCOC(C)(OCC)OCC')) # doctest:+SKIP
     True
@@ -1581,7 +1533,6 @@ def is_orthocarbonate_ester (mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_orthocarbonate_ester (MolFromSmiles('COC(OC)(OC)OC') # doctest:+SKIP
     True
@@ -1607,7 +1558,6 @@ def is_carboxylic_anhydride(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_carboxylic_anhydride (MolFromSmiles('CCCC(=O)OC(=O)CCC') # doctest:+SKIP
     True
@@ -1634,7 +1584,6 @@ def is_methylenedioxy(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_methylenedioxy(MolFromSmiles('C1OC2=CC=CC=C2O1')) # doctest:+SKIP
     True
@@ -1661,7 +1610,6 @@ def is_anhydride(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_anhydride(MolFromSmiles('C1=CC(=O)OC1=O')) # doctest:+SKIP
     True
@@ -1687,7 +1635,6 @@ def is_ether(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_ether(MolFromSmiles('CC(C)OC(C)C')) # doctest:+SKIP
     True
@@ -1713,7 +1660,6 @@ def is_phenol(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_phenol(MolFromSmiles('CC(=O)NC1=CC=C(C=C1)O')) # doctest:+SKIP
     True
@@ -1739,7 +1685,6 @@ def is_nitrile(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_nitrile(MolFromSmiles('CC#N')) # doctest:+SKIP
     True
@@ -1766,7 +1711,6 @@ def is_isonitrile(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_isonitrile(MolFromSmiles('C[N+]#[C-]')) # doctest:+SKIP
     True
@@ -1791,7 +1735,6 @@ def is_imide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_imide(MolFromSmiles('C1=CC=C2C(=C1)C(=O)NC2=O')) # doctest:+SKIP
     True
@@ -1817,7 +1760,6 @@ def is_azide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_azide(MolFromSmiles('C1=CC=C(C=C1)N=[N+]=[N-]')) # doctest:+SKIP
     True
@@ -1843,7 +1785,6 @@ def is_azo(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_azo(MolFromSmiles('C1=CC=C(C=C1)N=NC2=CC=CC=C2')) # doctest:+SKIP
     True
@@ -1869,7 +1810,6 @@ def is_cyanate(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_cyanate(MolFromSmiles('COC#N')) # doctest:+SKIP
     True
@@ -1895,7 +1835,6 @@ def is_isocyanate(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_isocyanate(MolFromSmiles('CN=C=O')) # doctest:+SKIP
     True
@@ -1921,7 +1860,6 @@ def is_nitrate(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_nitrate(MolFromSmiles('CCCCCO[N+](=O)[O-]')) # doctest:+SKIP
     True
@@ -1946,7 +1884,6 @@ def is_nitro(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_nitro(MolFromSmiles('C[N+](=O)[O-]')) # doctest:+SKIP
     True
@@ -1972,7 +1909,6 @@ def is_nitrite(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_nitrite(MolFromSmiles('CC(C)CCON=O')) # doctest:+SKIP
     True
@@ -1998,7 +1934,6 @@ def is_nitroso(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_nitroso(MolFromSmiles('C1=CC=C(C=C1)N=O')) # doctest:+SKIP
     True
@@ -2024,7 +1959,6 @@ def is_oxime(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_oxime(MolFromSmiles('CC(=NO)C')) # doctest:+SKIP
     True
@@ -2050,7 +1984,6 @@ def is_pyridyl(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_pyridyl(MolFromSmiles('CN1CCC[C@H]1C1=CC=CN=C1')) # doctest:+SKIP
     True
@@ -2076,7 +2009,6 @@ def is_carbamate(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_carbamate(MolFromSmiles('CC(C)OC(=O)NC1=CC(=CC=C1)Cl')) # doctest:+SKIP
     True
@@ -2129,7 +2061,6 @@ def is_haloalkane(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_haloalkane(MolFromSmiles('CCCl')) # doctest:+SKIP
     True
@@ -2155,7 +2086,6 @@ def is_fluoroalkane(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_fluoroalkane(MolFromSmiles('CF')) # doctest:+SKIP
     True
@@ -2180,7 +2110,6 @@ def is_chloroalkane(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_chloroalkane(MolFromSmiles('CCl')) # doctest:+SKIP
     True
@@ -2205,7 +2134,6 @@ def is_bromoalkane(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_bromoalkane(MolFromSmiles('CBr')) # doctest:+SKIP
     True
@@ -2230,7 +2158,6 @@ def is_iodoalkane(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_iodoalkane(MolFromSmiles('CI')) # doctest:+SKIP
     True
@@ -2257,7 +2184,6 @@ def is_primary_amine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_primary_amine(MolFromSmiles('CN')) # doctest:+SKIP
     True
@@ -2285,7 +2211,6 @@ def is_secondary_amine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_secondary_amine(MolFromSmiles('CNC')) # doctest:+SKIP
     True
@@ -2314,7 +2239,6 @@ def is_tertiary_amine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_tertiary_amine(MolFromSmiles('CN(C)C')) # doctest:+SKIP
     True
@@ -2343,7 +2267,6 @@ def is_quat(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_quat(MolFromSmiles('CCCCCCCCCCCCCCCCCC[N+](C)(C)CCCCCCCCCCCCCCCCCC.[Cl-]')) # doctest:+SKIP
     True
@@ -2374,7 +2297,6 @@ def is_amine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_amine(MolFromSmiles('CN')) # doctest:+SKIP
     True
@@ -2404,7 +2326,6 @@ def is_phosphine(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_phosphine(MolFromSmiles('CCCPC')) # doctest:+SKIP
     True
@@ -2430,7 +2351,6 @@ def is_phosphonic_acid(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_phosphonic_acid(MolFromSmiles('C1=CC=C(C=C1)CP(=O)(O)O')) # doctest:+SKIP
     True
@@ -2456,7 +2376,6 @@ def is_phosphodiester(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_phosphodiester(MolFromSmiles('C(COP(=O)(O)OCC(C(=O)O)N)N=C(N)N')) # doctest:+SKIP
     True
@@ -2481,7 +2400,6 @@ def is_phosphate(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_phosphate(MolFromSmiles('C1=CN(C(=O)N=C1N)[C@H]2[C@@H]([C@@H]([C@H](O2)COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O)O')) # doctest:+SKIP
     True
@@ -2509,7 +2427,6 @@ def is_ester(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_ester(MolFromSmiles('CCOC(=O)C')) # doctest:+SKIP
     True
@@ -2535,7 +2452,6 @@ def is_alkyllithium(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_alkyllithium(MolFromSmiles('[Li+].[CH3-]')) # doctest:+SKIP
     True
@@ -2561,7 +2477,6 @@ def is_alkylaluminium(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_alkylaluminium(MolFromSmiles('CC[Al](CC)CC')) # doctest:+SKIP
     True
@@ -2589,7 +2504,6 @@ def is_alkylmagnesium_halide(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_alkylmagnesium_halide(MolFromSmiles('C1=CC=[C-]C=C1.[Mg+2].[Br-]')) # doctest:+SKIP
     True
@@ -2618,7 +2532,6 @@ def is_silyl_ether(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_silyl_ether(MolFromSmiles('C[Si](C)(C)OS(=O)(=O)C(F)(F)F')) # doctest:+SKIP
     True
@@ -2645,7 +2558,6 @@ def is_branched_alkane(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_branched_alkane(MolFromSmiles("CC(C)C(C)C(C)C")) # doctest:+SKIP
     True
@@ -2734,7 +2646,6 @@ def is_organic(mol, restrict_atoms=None,
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_organic(MolFromSmiles("CC(C)C(C)C(C)C")) # doctest:+SKIP
     True
@@ -2783,7 +2694,6 @@ def is_inorganic(mol):
 
     Examples
     --------
-
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_inorganic(MolFromSmiles("O=[Zr].Cl.Cl")) # doctest:+SKIP
     True
@@ -2917,7 +2827,6 @@ def BVirial_Tsonopoulos_extended_ab(Tc, Pc, dipole, smiles):
 
     Notes
     -----
-
     To calculate `a` or `b`, the following rules are used:
 
     For 'simple' or 'normal' fluids:

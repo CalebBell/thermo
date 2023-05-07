@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -319,7 +318,6 @@ class BulkSettings(object):
 
     Notes
     -----
-
     The linear mixing rules "MOLE_WEIGHTED", "MASS_WEIGHTED", and
     "VOLUME_WEIGHTED" have the following formula, with :math:`\beta`
     representing molar, mass, or volume phase fraction:

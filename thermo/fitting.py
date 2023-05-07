@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -264,7 +263,6 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
     Notes
     -----
     '''
-
     low_orig, high_orig = low, high
     if data is not None:
         all_points_orig = data[0]

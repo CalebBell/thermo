@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -603,7 +602,6 @@ def Helmholtz_A0(tau, delta,
     These parameters can be found in the literature, or extracted from a
     CoolProp .json file.
     '''
-
     lntau = log(tau)
     A0 = log(delta)
 

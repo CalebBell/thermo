@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
  Caleb Bell <Caleb.Andrew.Bell@gmail.com>
@@ -4478,7 +4477,6 @@ class UNIFAC(GibbsExcess):
 
         Notes
         -----
-
         .. warning::
             For version 0, the interaction data and subgroups default to the
             original UNIFAC model (not LLE).

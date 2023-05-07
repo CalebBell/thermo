@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -1906,7 +1905,6 @@ class GCEOS(object):
 
         Examples
         --------
-
         >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
         >>> eos.volume_error()
         5.2192e-17
@@ -3642,7 +3640,6 @@ class GCEOS(object):
 
         Examples
         --------
-
         >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
         >>> new = base.to_TP(T=1.0, P=2.0)
         >>> base.state_specs, new.state_specs
@@ -3677,7 +3674,6 @@ class GCEOS(object):
 
         Examples
         --------
-
         >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
         >>> new = base.to_TV(T=1000000.0, V=1.0)
         >>> base.state_specs, new.state_specs
@@ -3714,7 +3710,6 @@ class GCEOS(object):
 
         Examples
         --------
-
         >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
         >>> new = base.to_PV(P=1000.0, V=1.0)
         >>> base.state_specs, new.state_specs
@@ -3751,7 +3746,6 @@ class GCEOS(object):
 
         Examples
         --------
-
         >>> base = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, P=1E6)
         >>> base.to(T=300.0, P=1e9).state_specs
         {'T': 300.0, 'P': 1000000000.0}
@@ -5484,7 +5478,6 @@ class GCEOS(object):
                 a_{\alpha}}{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}}
                 + V_g \frac{\partial}{\partial T} P{\left(T,V \right)}
         '''
-
         T = self.T
         delta, epsilon = self.delta, self.epsilon
         V = self.V_g
@@ -5557,7 +5550,6 @@ class GCEOS(object):
             {\sqrt{\delta^{2} - 4 \epsilon}} \right)}}{\sqrt{\delta^{2}
             - 4 \epsilon}}
         '''
-
         T, V, delta, epsilon = self.T, self.V_l, self.delta, self.epsilon
         da_alpha_dT, d2a_alpha_dT2 = self.da_alpha_dT, self.d2a_alpha_dT2
         dT_dP = self.dT_dP_l
@@ -8953,7 +8945,6 @@ class PRSV2(PR):
 
         Examples
         --------
-
         >>> eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
         >>> eos.solve_T(P=eos.P, V=eos.V_g)
         400.0
@@ -9391,7 +9382,6 @@ class VDW(GCEOS):
         >>> base = -(expand(disc/P**2*R**3*T**3/a)) # doctest:+SKIP
         >>> collect(base, P).args # doctest:+SKIP
         '''
-
 #        T, a_alpha = self.T, self.a_alpha
 #        a = a_alpha
 #        b, epsilon, delta = self.b, self.epsilon, self.delta
@@ -10312,7 +10302,6 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
 
         Examples
         --------
-
         >>> from sympy import *  # doctest:+SKIP
         >>> Tc, m, n = symbols('Tc, m, n')  # doctest:+SKIP
         >>> T0, T1 = symbols('T_10, T_760')  # doctest:+SKIP
@@ -10320,8 +10309,6 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
         >>> Eqs = [Eq(alpha0, 1 + (1 - T0/Tc)*(m + n/(T0/Tc))), Eq(alpha1, 1 + (1 - T1/Tc)*(m + n/(T1/Tc)))]  # doctest:+SKIP
         >>> solve(Eqs, [n, m])  # doctest:+SKIP
         '''
-
-
         SRK_base = SRKTranslated(T=Tc*0.5, P=Pc*0.5, c=c, Tc=Tc, Pc=Pc, omega=omega)
         # Temperatures at 10 mmHg, 760 mmHg
         P_10, P_760 = 10.0*mmHg, 760.0*mmHg

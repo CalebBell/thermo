@@ -1,4 +1,3 @@
-  # -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -232,7 +231,6 @@ class InteractionParameterDB(object):
 
         Examples
         --------
-
         >>> from thermo.interaction_parameters import IPDB
         >>> IPDB.get_tables_with_type('PR kij')
         ['ChemSep PR']
@@ -263,7 +261,6 @@ class InteractionParameterDB(object):
 
         Examples
         --------
-
         >>> from thermo.interaction_parameters import IPDB
         >>> IPDB.get_ip_automatic(CASs=['7727-37-9', '74-84-0'], ip_type='PR kij', ip='kij')
         0.0533
@@ -294,7 +291,6 @@ class InteractionParameterDB(object):
 
         Examples
         --------
-
         >>> from thermo.interaction_parameters import IPDB
         >>> IPDB.get_ip_symmetric_matrix(name='ChemSep PR', CASs=['7727-37-9', '74-84-0', '74-98-6'], ip='kij')
         [[0.0, 0.0533, 0.0878], [0.0533, 0.0, 0.0011], [0.0878, 0.0011, 0.0]]
@@ -457,7 +453,6 @@ class ScalarParameterDB(object):
 
         Examples
         --------
-
         >>> from thermo.interaction_parameters import SPDB
         >>> SPDB.has_parameter_specific('PRTwu_PinaMartinez', '7727-37-9', 'TwuPRL')
         True
@@ -484,7 +479,6 @@ class ScalarParameterDB(object):
 
         Examples
         --------
-
         >>> from thermo.interaction_parameters import SPDB
         >>> SPDB.get_tables_with_type('TwuPRL')
         ['PRTwu_PinaMartinez', 'PRTwu_ibell_2018']
@@ -513,7 +507,6 @@ class ScalarParameterDB(object):
 
         Examples
         --------
-
         >>> from thermo.interaction_parameters import SPDB
         >>> SPDB.get_parameter_automatic('7727-37-9', parameter='TwuPRL')
         0.1243
@@ -541,7 +534,6 @@ class ScalarParameterDB(object):
 
         Examples
         --------
-
         >>> from thermo.interaction_parameters import SPDB
         >>> SPDB.get_parameter_vector(name='PRTwu_PinaMartinez', CASs=['7727-37-9', '74-84-0', '74-98-6'], parameter='TwuPRL')
         [0.1243, 0.3053, 0.7455]

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -423,7 +422,6 @@ class Phase(object):
 
         Examples
         --------
-
         These sample cases illustrate the three combinations of inputs.
         Note that some thermodynamic models may have multiple solutions for
         some inputs!
