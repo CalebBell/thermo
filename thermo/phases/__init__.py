@@ -189,19 +189,19 @@ from thermo.phases.ideal_gas import IdealGas
 from thermo.phases.petroleum import GraysonStreed, ChaoSeader
 from thermo.phases.phase import Phase,IdealGasDeparturePhase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian
 from thermo.phases.virial_phase import (VirialCSP, VirialGas, VIRIAL_B_ZERO, VIRIAL_B_PITZER_CURL, VIRIAL_B_ABBOTT, VIRIAL_B_TSONOPOULOS, VIRIAL_B_TSONOPOULOS_EXTENDED,
-  VIRIAL_B_OCONNELL_PRAUSNITZ, VIRIAL_B_XIANG, VIRIAL_B_MENG, VIRIAL_C_XIANG, VIRIAL_C_ORBEY_VERA, VIRIAL_C_ZERO, 
+  VIRIAL_B_OCONNELL_PRAUSNITZ, VIRIAL_B_XIANG, VIRIAL_B_MENG, VIRIAL_C_XIANG, VIRIAL_C_ORBEY_VERA, VIRIAL_C_ZERO,
   VIRIAL_B_MODELS, VIRIAL_C_MODELS)
 
-__all__ = ('air_phase', 'ceos', 'combined', 'coolprop_phase', 'gibbs_excess', 
+__all__ = ('air_phase', 'ceos', 'combined', 'coolprop_phase', 'gibbs_excess',
 'helmholtz_eos', 'iapws_phase', 'ideal_gas', 'petroleum', 'phase', 'virial_phase',
- 'DryAirLemmon', 'HumidAirRP1485', 'CEOSLiquid', 'CEOSGas', 'CombinedPhase', 'CoolPropPhase', 
- 'CoolPropLiquid', 'CoolPropGas', 'GibbsExcessLiquid', 'GibbsExcessSolid', 'HelmholtzEOS', 'IAPWS95', 
+ 'DryAirLemmon', 'HumidAirRP1485', 'CEOSLiquid', 'CEOSGas', 'CombinedPhase', 'CoolPropPhase',
+ 'CoolPropLiquid', 'CoolPropGas', 'GibbsExcessLiquid', 'GibbsExcessSolid', 'HelmholtzEOS', 'IAPWS95',
  'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97', 'IdealGas', 'GraysonStreed', 'ChaoSeader', 'Phase',
- 'IdealGasDeparturePhase', 'derivatives_thermodynamic', 'derivatives_thermodynamic_mass', 
+ 'IdealGasDeparturePhase', 'derivatives_thermodynamic', 'derivatives_thermodynamic_mass',
  'derivatives_jacobian', 'VirialCSP', 'VirialGas',
 
  'VIRIAL_B_ZERO', 'VIRIAL_B_PITZER_CURL', 'VIRIAL_B_ABBOTT', 'VIRIAL_B_TSONOPOULOS', 'VIRIAL_B_TSONOPOULOS_EXTENDED',
-  'VIRIAL_B_OCONNELL_PRAUSNITZ', 'VIRIAL_B_XIANG', 'VIRIAL_B_MENG', 'VIRIAL_C_XIANG', 'VIRIAL_C_ORBEY_VERA', 'VIRIAL_C_ZERO', 
+  'VIRIAL_B_OCONNELL_PRAUSNITZ', 'VIRIAL_B_XIANG', 'VIRIAL_B_MENG', 'VIRIAL_C_XIANG', 'VIRIAL_C_ORBEY_VERA', 'VIRIAL_C_ZERO',
   'VIRIAL_B_MODELS', 'VIRIAL_C_MODELS')
 
 gas_phases = (

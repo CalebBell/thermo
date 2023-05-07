@@ -277,9 +277,9 @@ class GibbsExcessLiquid(Phase):
                 pure_strs += f'{k}={s}, '
 
 
-        base = f'''{self.__class__.__name__}(GibbsExcessModel={self.GibbsExcessModel}, 
-               equilibrium_basis={self.equilibrium_basis}, caloric_basis={self.caloric_basis}, 
-               eos_pure_instances={self.eos_pure_instances}, {pure_strs}'''
+        base = f"""{self.__class__.__name__}(GibbsExcessModel={self.GibbsExcessModel},
+               equilibrium_basis={self.equilibrium_basis}, caloric_basis={self.caloric_basis},
+               eos_pure_instances={self.eos_pure_instances}, {pure_strs}"""
         for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
             if hasattr(self, s) and getattr(self, s) is not None:
                 base += f'{s}={getattr(self, s)}, '
