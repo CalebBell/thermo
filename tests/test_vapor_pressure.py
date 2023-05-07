@@ -540,6 +540,7 @@ def test_VaporPressure_generic_polynomial_exp_parameters_complicated():
     obj2 = VaporPressure(exp_poly_fit=(175.7, 512.49, coeffs))
     assert_close(obj2(T), 18601.061401014867, rtol=1e-13)
     
+    # All derivatives/integrals are numerical with the generic form
     assert_close(obj2.T_dependent_property_derivative(T), 954.1652489206775, rtol=1e-14)
     assert_close(obj2.T_dependent_property_derivative(T, order=2), 41.8787546283273, rtol=1e-14)
     assert_close(obj2.T_dependent_property_derivative(T, order=3), 1.496803960985584, rtol=1e-13)
