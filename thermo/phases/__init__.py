@@ -154,28 +154,28 @@ CoolProp Wrapper
    :exclude-members: __init__
 
 '''
-"""
-# Not ready to be documented or exposed
-Petroleum Specific Phases
-=========================
-.. autoclass:: GraysonStreed
-   :show-inheritance:
-   :members: __init__
-   :exclude-members: __init__
 
-.. autoclass:: ChaoSeader
-   :show-inheritance:
-   :members: __init__
-   :exclude-members: __init__
+# # Not ready to be documented or exposed
+# Petroleum Specific Phases
+# =========================
+# .. autoclass:: GraysonStreed
+#    :show-inheritance:
+#    :members: __init__
+#    :exclude-members: __init__
 
-Solids Phases
-=============
-.. autoclass:: GibbsExcessSolid
-   :show-inheritance:
-   :members: __init__
-   :exclude-members: __init__
+# .. autoclass:: ChaoSeader
+#    :show-inheritance:
+#    :members: __init__
+#    :exclude-members: __init__
 
-"""
+# Solids Phases
+# =============
+# .. autoclass:: GibbsExcessSolid
+#    :show-inheritance:
+#    :members: __init__
+#    :exclude-members: __init__
+
+
 
 from thermo.phases import( phase, ideal_gas, ceos, gibbs_excess, helmholtz_eos,
                           air_phase, iapws_phase, coolprop_phase, virial_phase,

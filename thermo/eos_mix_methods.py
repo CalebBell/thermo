@@ -49,27 +49,17 @@ Faster implementations which do not store N^2 matrices:
 .. autofunction:: a_alpha_quadratic_terms
 .. autofunction:: a_alpha_and_derivatives_quadratic_terms
 '''
-"""
-Direct fugacity calls
----------------------
-The object-oriented interface is quite convenient. However, sometimes it is
-desireable to perform a calculation at maximum speed, with no garbage collection
-and the only temperature-dependent parts re-used each calculation.
-For that reason, select equations of state have these functional forms
-implemented
 
-.. autofunction:: PR_lnphis
-.. autofunction:: PR_lnphis_fastest
+# Direct fugacity calls
+# ---------------------
+# The object-oriented interface is quite convenient. However, sometimes it is
+# desireable to perform a calculation at maximum speed, with no garbage collection
+# and the only temperature-dependent parts re-used each calculation.
+# For that reason, select equations of state have these functional forms
+# implemented
 
-
-"""
-# TODO: put methods like "_fast_init_specific" in here so numba can accelerate them.
-from fluids.constants import R
-from fluids.numerics import catanh
-from math import sqrt, log
-from thermo.eos import eos_lnphi, eos_G_dep
-from thermo.eos_volume import volume_solutions_halley
-
+# .. autofunction:: PR_lnphis
+# .. autofunction:: PR_lnphis_fastest
 __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
            'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
@@ -108,6 +98,12 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
 
            'eos_mix_dV_dzs', 'eos_mix_a_alpha_volume']
+from fluids.constants import R
+from fluids.numerics import catanh
+from math import sqrt, log
+from thermo.eos import eos_lnphi, eos_G_dep
+from thermo.eos_volume import volume_solutions_halley
+
 
 
 R2 = R*R

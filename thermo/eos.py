@@ -257,12 +257,10 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 'PRTranslatedConsistent', 'SRKTranslatedConsistent', 'MSRKTranslated',
 'SRKTranslated', 'PRTranslated', 'PRTranslatedCoqueletChapoyRichon',
 'PRTranslatedTwu', 'PRTranslatedPoly',
-]
-
-__all__.extend(['main_derivatives_and_departures',
+'main_derivatives_and_departures',
                 'main_derivatives_and_departures_VDW',
-                'eos_lnphi'])
-
+                'eos_lnphi'
+]
 
 from cmath import log as clog
 from math import isnan, isinf, log1p, log10
