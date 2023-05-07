@@ -265,33 +265,25 @@ __all__.extend(['main_derivatives_and_departures',
 
 
 from cmath import log as clog
-from math import isnan, isinf, log1p, log10, copysign
-from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
-                             roots_cubic_a1, numpy as np, newton,
+from math import isnan, isinf, log1p, log10
+from fluids.numerics import (chebval, brenth, roots_cubic,
+                             numpy as np, newton,
                              bisect, inf, polyder, chebder, is_micropython,
-                             trunc_exp, secant, linspace, logspace,
-                             horner, horner_and_der, horner_and_der2, derivative,
-                             roots_cubic_a2, isclose, NoSolutionError,
-                             roots_quartic, deflate_cubic_real_roots,
-                             catanh, log, exp, sqrt)
+                             secant, linspace, logspace,
+                             horner, derivative,
+                             isclose, NoSolutionError,
+                             roots_quartic, catanh, log, exp, sqrt)
 
 from fluids.constants import mmHg, R
 
-from chemicals.utils import (Cp_minus_Cv, isobaric_expansion,
-                          isothermal_compressibility,
-                          phase_identification_parameter, hash_any_primitive, object_data)
+from chemicals.utils import (hash_any_primitive, object_data)
 from chemicals.flash_basic import Wilson_K_value
 
 from thermo import serialize
 from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_float,
-                               volume_solutions_NR, volume_solutions_NR_low_P,
-                               volume_solutions_halley, volume_solutions_fast,
-                               volume_solutions_Cardano, volume_solutions_numpy,
-                               volume_solutions_ideal, volume_solutions_a1, volume_solutions_a2,
-                               volume_solutions_doubledouble_float)
+                               volume_solutions_NR, volume_solutions_halley, volume_solutions_ideal)
 from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_poly_a_alpha,
-                                        TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_1979_a_alpha,
-                                        TWU_a_alpha_common)
+                                        TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_1979_a_alpha)
 R2 = R*R
 R_2 = 0.5*R
 R_inv = 1.0/R
@@ -2109,7 +2101,7 @@ class GCEOS:
 
         if plot:
             import matplotlib.pyplot as plt
-            from matplotlib import ticker, cm
+            from matplotlib import cm
             from matplotlib.colors import LogNorm
             X, Y = np.meshgrid(Ts, Ps)
             z = np.array(errs).T
@@ -2326,7 +2318,7 @@ class GCEOS:
 
 #        if plot:
         import matplotlib.pyplot as plt
-        from matplotlib import ticker, cm
+        from matplotlib import cm
         from matplotlib.colors import LogNorm
         X, Y = np.meshgrid(Ts, Ps)
         z = np.array(Vs).T

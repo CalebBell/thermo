@@ -25,9 +25,6 @@ __all__ = ['']
 
 import os
 import marshal
-from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho
-from fluids.constants import N_A, k
-from thermo.utils import TDependentProperty, MixtureProperty
 from thermo.chemical import ChemicalConstants
 
 

@@ -23,22 +23,15 @@ SOFTWARE.
 
 __all__ = ['u']
 import types
-import re
-import inspect
-import functools
-import collections
 import thermo
-import numpy as np
 try:
-    import pint
     from pint import _DEFAULT_REGISTRY as u
-    from pint import DimensionalityError
 
 except ImportError: # pragma: no cover
     raise ImportError('The unit handling in fluids requires the installation '
                       'of the package pint, available on pypi or from '
                       'https://github.com/hgrecco/pint')
-from fluids.units import wraps_numpydoc, wrap_numpydoc_obj
+from fluids.units import wrap_numpydoc_obj
 
 __funcs = {}
 

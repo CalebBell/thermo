@@ -634,7 +634,6 @@ class TPDependentProperty(TDependentProperty):
         '''
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
-        from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
         import matplotlib.pyplot as plt

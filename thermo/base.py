@@ -23,7 +23,7 @@ import os
 
 
 try:  # pragma: no cover
-    from appdirs import user_data_dir, user_config_dir
+    from appdirs import user_config_dir
     data_dir = user_config_dir('thermo')
     if not os.path.exists(data_dir):
         try:

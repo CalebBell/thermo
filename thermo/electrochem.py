@@ -119,12 +119,12 @@ __all__ = ['Laliberte_density', 'Laliberte_heat_capacity',
 
 import os
 from fluids.constants import e, N_A
-from fluids.numerics import newton, horner, chebval
+from fluids.numerics import horner, chebval
 from chemicals.utils import source_path, os_path_join, can_load_data, PY37
 from chemicals.data_reader import data_source, register_df_source
 from fluids.numerics import exp, isnan
 from math import log10
-from chemicals.utils import to_num, ws_to_zs, mixing_simple
+from chemicals.utils import ws_to_zs, mixing_simple
 from chemicals import identifiers
 
 # For saturation properties of water

@@ -32,7 +32,7 @@ __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
 'S_ideal_gas_Helmholtz']
 import os
 from fluids.numerics import assert_close1d, numpy as np
-from thermo.base import data_dir, source_path
+from thermo.base import data_dir
 from chemicals.utils import mark_numba_incompatible
 from math import log, exp
 
@@ -55,7 +55,6 @@ def has_CoolProp():
     global _has_CoolProp
     if _has_CoolProp is None:
         try:
-            import CoolProp
             load_coolprop_fluids()
             _has_CoolProp = True
         except:

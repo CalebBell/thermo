@@ -73,17 +73,14 @@ Bulk Settings Class
 
 __all__ = ['Bulk', 'BulkSettings', 'default_settings']
 
-from fluids.constants import R, R_inv, atm
-from fluids.two_phase_voidage import (McAdams, Beattie_Whalley, Cicchitti,
-                                      Lin_Kwok, Fourar_Bories, Duckler, gas_liquid_viscosity)
+from fluids.constants import R, atm
+from fluids.two_phase_voidage import (gas_liquid_viscosity)
 from fluids.numerics import log, exp, sqrt
-from chemicals.utils import (phase_identification_parameter,
-                          isothermal_compressibility, isobaric_expansion, object_data,
+from chemicals.utils import (isothermal_compressibility, isobaric_expansion, object_data,
                           Joule_Thomson, speed_of_sound)
 from thermo.phases import Phase
 from thermo.phase_identification import VL_ID_PIP, S_ID_D2P_DVDT
 from thermo.phase_identification import DENSITY_MASS, PROP_SORT, WATER_NOT_SPECIAL
-from thermo.chemical_package import ChemicalConstantsPackage
 """Class designed to have multiple phases.
 
 Calculates dew, bubble points as properties (going to call back to property package)

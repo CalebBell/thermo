@@ -60,9 +60,7 @@ Sublimation Pressure
 __all__ = ['vapor_pressure_methods', 'VaporPressure', 'SublimationPressure',
            'sublimation_pressure_methods']
 
-import os
-from fluids.constants import R
-from fluids.numerics import NoSolutionError, polyint_over_x, horner_log, horner, polyint, horner_and_der2, horner_and_der, derivative, newton, linspace, numpy as np
+from fluids.numerics import NoSolutionError
 
 from math import e, inf
 from fluids.numerics import log, exp, isnan
@@ -80,7 +78,6 @@ from chemicals import vapor_pressure
 from thermo.utils import TDependentProperty
 from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS, IAPWS
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
-from thermo.base import source_path
 
 
 """

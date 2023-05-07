@@ -256,7 +256,7 @@ if not numerics.is_micropython:
         unifac.load_unifac_ip()
         unifac.load_group_assignments_DDBST()
         try:
-            import CoolProp
+            pass
         except:
             pass
     if hasattr(os, '_called_from_test'):
@@ -281,7 +281,7 @@ if not numerics.is_micropython:
                 return thermo.numba_vectorized
             raise AttributeError(f"module {__name__} has no attribute {name}")
     else:
-        from . import vectorized
+        pass
 
 try:
     thermo_dir = os.path.dirname(__file__)

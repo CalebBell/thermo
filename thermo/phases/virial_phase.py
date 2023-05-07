@@ -22,12 +22,11 @@ SOFTWARE.
 '''
 __all__ = ['VirialCSP', 'VirialGas']
 
-from fluids.constants import R, R_inv
+from fluids.constants import R
 from fluids.numerics import newton, numpy as np, log
 from chemicals.utils import mixing_simple, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, hash_any_primitive
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase, IdealGasDeparturePhase
-from thermo.phases.ceos import CEOSGas
 
 
 from chemicals.virial import (BVirial_Pitzer_Curl_vec,BVirial_Pitzer_Curl_mat,
@@ -35,7 +34,6 @@ from chemicals.virial import (BVirial_Pitzer_Curl_vec,BVirial_Pitzer_Curl_mat,
                                 BVirial_Tsonopoulos_vec, BVirial_Tsonopoulos_mat,
                                 BVirial_Tsonopoulos_extended_vec,
                                 BVirial_Tsonopoulos_extended_mat,
-                                Meng_virial_a,
                                 BVirial_Meng_vec, BVirial_Meng_mat,
                                 BVirial_Oconnell_Prausnitz_vec,
                                 BVirial_Oconnell_Prausnitz_mat,
@@ -53,7 +51,7 @@ from chemicals.virial import (BVirial_Pitzer_Curl_vec,BVirial_Pitzer_Curl_mat,
                               d2CVirial_mixture_Orentlicher_Prausnitz_dTdzs,
                               CVirial_Orbey_Vera_mat, CVirial_Liu_Xiang_mat,
                               CVirial_Orbey_Vera_vec, CVirial_Liu_Xiang_vec,
-                              Tarakad_Danner_virial_CSP_kijs, Tarakad_Danner_virial_CSP_Tcijs,
+                              Tarakad_Danner_virial_CSP_Tcijs,
                               Tarakad_Danner_virial_CSP_Pcijs, Lee_Kesler_virial_CSP_Vcijs,
                               Tarakad_Danner_virial_CSP_omegaijs,
                               dV_dzs_virial, d2V_dzizjs_virial)

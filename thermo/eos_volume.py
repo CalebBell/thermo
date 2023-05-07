@@ -85,8 +85,7 @@ from cmath import sqrt as csqrt
 
 from fluids.numerics import (brenth, third, sixth, roots_cubic, newton,
                              roots_cubic_a1, numpy as np, sqrt,
-                             roots_cubic_a2, horner_and_der,
-                             deflate_cubic_real_roots)
+                             roots_cubic_a2, deflate_cubic_real_roots)
 from fluids.numerics.doubledouble import (add_dd, add_imag_dd, cbrt_imag_dd, div_dd,
                                           div_imag_dd, mul_dd, mul_imag_dd,
                                           mul_noerrors_dd, sqrt_imag_dd, square_dd,

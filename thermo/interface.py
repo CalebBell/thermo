@@ -62,8 +62,7 @@ Mixture Liquid Heat Capacity
 __all__ = ['surface_tension_methods', 'SurfaceTension',
            'surface_tension_mixture_methods', 'SurfaceTensionMixture']
 
-import os
-from fluids.numerics import log, exp, isnan
+from fluids.numerics import isnan
 from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho, property_molar_to_mass
 from chemicals.dippr import EQ106
 from chemicals.interface import (Aleem, Brock_Bird, Diguilio_Teja, Jasper, Miqueu, Pitzer_sigma,
@@ -71,8 +70,6 @@ from chemicals.interface import (Aleem, Brock_Bird, Diguilio_Teja, Jasper, Mique
                                  Zuo_Stenby, sigma_IAPWS)
 from chemicals.iapws import iapws95_Tc
 from chemicals import interface
-from fluids.numerics import numpy as np
-from fluids.constants import N_A, k
 from thermo.utils import TDependentProperty, MixtureProperty, LINEAR, VDI_TABULAR, IAPWS
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data

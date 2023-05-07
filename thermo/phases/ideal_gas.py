@@ -23,7 +23,6 @@ SOFTWARE.
 
 __all__ = ['IdealGas']
 
-from fluids.constants import R
 from fluids.numerics import numpy as np, log
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase
@@ -62,6 +61,7 @@ class IdealGas(Phase):
     T-P initialization for oxygen and nitrogen, using Poling's polynomial heat
     capacities:
 
+    >>> from scipy.constants import R
     >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
     ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
     >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
@@ -128,11 +128,12 @@ class IdealGas(Phase):
         Examples
         --------
         >>> from thermo import HeatCapacityGas, IdealGas
+        >>> from scipy.constants import R
         >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
         ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
         >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)
         >>> phase
-        IdealGas(HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626]))], T=300, P=100000.0, zs=[0.79, 0.21])
+        IdealGas(HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-8.23131799e-12, 1.30537063e-08, 5.82012383e-07, -0.0021700747, 29.42488320])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [1.48828880e-11, -4.988677570e-08, 5.470916402e-05, -0.01491614593, 30.1814993]))], T=300, P=100000.0, zs=[0.79, 0.21])
 
         '''
         Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
@@ -159,6 +160,7 @@ class IdealGas(Phase):
 
         Examples
         --------
+        >>> from scipy.constants import R
         >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
         ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63]))]
         >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=HeatCapacityGases)

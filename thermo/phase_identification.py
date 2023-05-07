@@ -94,7 +94,7 @@ __all__ = ['vapor_score_Tpc', 'vapor_score_Vpc',
            ]
 
 
-from chemicals.rachford_rice import Rachford_Rice_flash_error, flash_inner_loop
+from chemicals.rachford_rice import Rachford_Rice_flash_error
 from chemicals.flash_basic import Wilson_K_value
 from chemicals.utils import phase_identification_parameter, Vm_to_rho
 

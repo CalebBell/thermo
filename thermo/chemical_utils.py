@@ -23,8 +23,7 @@ SOFTWARE.
 
 __all__ = ['standard_entropy', 'S0_basis_converter']
 
-import os
-from fluids.numerics import quad, numpy as np, isnan
+from fluids.numerics import quad
 
 
 def standard_entropy(c=None, dS_trans_s=None, dH_trans_s=None, T_trans_s=None,

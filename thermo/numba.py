@@ -20,12 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-import sys
-import importlib.util
-import types
 from types import ModuleType
-import numpy as np
-import inspect
 import numba
 import thermo
 import fluids

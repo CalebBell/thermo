@@ -44,7 +44,7 @@ Regular Solution Regression Calculations
 
 from fluids.numerics import numpy as np, trunc_exp
 from thermo.activity import GibbsExcess
-from fluids.numerics import exp, log
+from fluids.numerics import exp
 from fluids.constants import R, R_inv
 
 try:
@@ -283,6 +283,7 @@ class RegularSolution(GibbsExcess):
     ChemSep except when making the following manual solution. The example below
     uses parameters from ChemSep for ethanol and water.
 
+    >>> from math import log
     >>> GE = RegularSolution(T=298.15, xs=[0.5, 0.5], Vs=[0.05868e-3, 0.01807e-3], SPs=[26140.0, 47860.0])
     >>> GE.gammas() # Regular solution activity coefficients
     [1.8570955489, 7.464567232]

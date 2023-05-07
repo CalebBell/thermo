@@ -44,9 +44,7 @@ Pure Liquid Permittivity
 
 __all__ = ['PermittivityLiquid']
 
-import os
-from fluids.numerics import numpy as np, isnan
-from fluids.constants import N_A, epsilon_0, k
+from fluids.numerics import isnan
 
 from chemicals.permittivity import permittivity_IAPWS
 from chemicals import permittivity

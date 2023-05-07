@@ -36,7 +36,7 @@ from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
 from thermo.volume import VolumeLiquid, VolumeSolid
 from thermo.vapor_pressure import VaporPressure, SublimationPressure
 from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
-from thermo.nrtl import nrtl_taus as ln_henries, nrtl_dtaus_dT as dln_henries_dT, nrtl_d2taus_dT2 as d2ln_henries_dT2, nrtl_d3taus_dT3 as d3ln_henries_dT3
+from thermo.nrtl import nrtl_taus as ln_henries, nrtl_dtaus_dT as dln_henries_dT, nrtl_d2taus_dT2 as d2ln_henries_dT2
 
 from thermo.phases.phase import Phase
 

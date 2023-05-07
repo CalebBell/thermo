@@ -96,12 +96,10 @@ __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
            'VISWANATH_NATARAJAN_2E', 'LETSOU_STIEL', 'PRZEDZIECKI_SRIDHAR',
            'LUCAS', 'GHARAGHEIZI', 'YOON_THODOS', 'STIEL_THODOS', 'LUCAS_GAS']
 
-import os
-from fluids.numerics import newton, interp, horner, brenth, numpy as np, trunc_log
+from fluids.numerics import horner, brenth, trunc_log
 
 from fluids.numerics import log, exp, isinf, isnan
-from math import log10
-from chemicals.utils import none_and_length_check, mixing_simple, mixing_logarithmic
+from chemicals.utils import none_and_length_check, mixing_simple
 from thermo.utils import TPDependentProperty, MixtureProperty
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
@@ -118,7 +116,7 @@ from chemicals.viscosity import viscosity_gas_Gharagheizi, dPPDS9_dT
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import JOBACK
 
-from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, POLY_FIT, VDI_TABULAR, VDI_PPDS, COOLPROP, LINEAR
+from thermo.utils import DIPPR_PERRY_8E, VDI_TABULAR, VDI_PPDS, COOLPROP, LINEAR
 from thermo.volume import VolumeGas, VolumeLiquid
 from thermo.vapor_pressure import VaporPressure
 

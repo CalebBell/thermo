@@ -148,7 +148,7 @@ __all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', '
 import os
 from fluids.constants import R
 from fluids.numerics import numpy as np, log, exp
-from chemicals.utils import dxs_to_dns, can_load_data, PY37
+from chemicals.utils import can_load_data, PY37
 from chemicals.identifiers import CAS_to_int
 from thermo.activity import GibbsExcess
 from thermo.group_contribution.group_contribution_base import str_group_assignment_to_dict

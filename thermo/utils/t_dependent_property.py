@@ -26,17 +26,15 @@ __all__ = ['TDependentProperty', 'PROPERTY_TRANSFORM_LN', 'PROPERTY_TRANSFORM_DL
 
 import os
 try:
-    from random import uniform
+    pass
 except: # pragma: no cover
     pass
 from math import inf, exp, log
 
-from fluids.numerics import (quad, brenth, secant, linspace, newton,
-                             polyint, polyint_over_x, derivative,
+from fluids.numerics import (quad, brenth, secant, linspace, polyint, polyint_over_x, derivative,
                              trunc_log, trunc_exp, interp,
-                             polyder, horner, numpy as np, curve_fit,
-                             differential_evolution, fit_minimization_targets,
-                             leastsq, horner_backwards, exp_horner_backwards,
+                             polyder, horner, numpy as np, fit_minimization_targets,
+                             horner_backwards, exp_horner_backwards,
                              exp_horner_backwards_ln_tau,
                              exp_horner_backwards_ln_tau_and_der,
                              exp_horner_backwards_ln_tau_and_der2,
@@ -112,8 +110,8 @@ from thermo.eos_alpha_functions import (Twu91_alpha_pure, Soave_1979_alpha_pure,
                                         Saffari_alpha_pure, Chen_Yang_alpha_pure)
 from thermo.eos import GCEOS
 from thermo.coolprop import coolprop_fluids
-from thermo.base import data_dir, source_path
-from thermo.fitting import data_fit_statistics, fit_customized
+from thermo.base import source_path
+from thermo.fitting import fit_customized
 import thermo
 from thermo.utils import (VDI_TABULAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU,
                           EXP_POLY_FIT_LN_TAU, STABLEPOLY_FIT, EXP_STABLEPOLY_FIT,

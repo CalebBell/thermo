@@ -37,30 +37,20 @@ __all__ = ['PropertyPackage', 'Ideal',
            'StabilityTester']
 
 try:
-    from random import uniform, shuffle, seed
+    from random import uniform, seed
 except:
     pass
-from fluids.numerics import (OscillationError, UnconvergedError,
-                             derivative, caching_decorator,
-                             newton, linspace, logspace,
-                             brenth, py_solve, log,exp,
-                             oscillation_checker, secant, damping_maintain_sign,
-                             oscillation_checking_wrapper, numpy as np)
-from fluids.constants import R, pi, N_A
-from chemicals.utils import  dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, remove_zeros, normalize, Cp_minus_Cv, mixing_simple, property_mass_to_molar
-from math import log10, copysign
+from fluids.numerics import (UnconvergedError,
+                             derivative, linspace, logspace,
+                             brenth, log,exp,
+                             secant, numpy as np)
+from fluids.constants import R
+from chemicals.utils import  remove_zeros, normalize
+from math import log10
 from thermo.utils import has_matplotlib
-from chemicals.elements import mixture_atomic_composition, similarity_variable
-from chemicals.identifiers import IDs_to_CASs
-from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_solution2
-from chemicals.flash_basic import K_value, Wilson_K_value, flash_wilson, flash_Tb_Tc_Pc, flash_ideal
-from thermo.wilson import Wilson_gammas as Wilson
+from chemicals.rachford_rice import flash_inner_loop
+from chemicals.flash_basic import K_value, Wilson_K_value
 from chemicals.rachford_rice import Rachford_Rice_flash_error
-from thermo.unifac import UNIFAC_gammas, UFSG, DOUFSG
-from thermo import unifac
-from thermo.eos_mix import PRMIX
-from chemicals.heat_capacity import Lastovka_Shaw_T_for_Hm, Lastovka_Shaw_T_for_Sm, Dadgostar_Shaw_integral_over_T, Dadgostar_Shaw_integral, Lastovka_Shaw_integral
-from thermo.phase_change import SMK
 
 
 DIRECT_1P = 'Direct 1 Phase'
@@ -949,9 +939,7 @@ class PropertyPackage:
 
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
-        from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
-        from numpy import ma
 
         if Pmin is None:
             raise Exception('Minimum pressure could not be auto-detected; please provide it')

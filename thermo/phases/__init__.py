@@ -179,7 +179,7 @@ Solids Phases
 
 from thermo.phases import( phase, ideal_gas, ceos, gibbs_excess, helmholtz_eos,
                           air_phase, iapws_phase, coolprop_phase, virial_phase,
-                          petroleum, combined, phase_utils)
+                          petroleum, combined)
 from thermo.phases.phase import *
 from thermo.phases.ideal_gas import *
 from thermo.phases.ceos import *

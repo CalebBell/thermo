@@ -194,23 +194,22 @@ __all__ = ['GCEOSMIX', 'PRMIX', 'SRKMIX', 'PR78MIX', 'VDWMIX', 'PRSVMIX',
 'SRKMIXTranslatedConsistent', 'PSRK', 'MSRKMIXTranslated',
 'eos_mix_list', 'eos_mix_no_coeffs_list', 'SRKMIXTranslated', 'one_minus_kijs']
 
-import sys
 from cmath import log as clog
 
-from fluids.numerics import numpy as np, IS_PYPY, newton_system, broyden2, UnconvergedError, trunc_exp, solve_2_direct, catanh
+from fluids.numerics import numpy as np, newton_system, broyden2, UnconvergedError, trunc_exp, solve_2_direct, catanh
 from fluids.numerics.arrays import det, subset_matrix
 from fluids.constants import R
 
 from chemicals.utils import normalize, dxs_to_dn_partials, dxs_to_dns, dns_to_dn_partials, d2xs_to_dxdn_partials, d2ns_to_dn2_partials
 from fluids.numerics import log, exp, sqrt
-from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error, Rachford_Rice_solution2
+from chemicals.rachford_rice import flash_inner_loop, Rachford_Rice_flash_error
 from chemicals.flash_basic import K_value, Wilson_K_value
 
 from thermo import serialize
 from thermo.eos_mix_methods import (a_alpha_aijs_composition_independent,
-    a_alpha_and_derivatives, a_alpha_and_derivatives_full,
+    a_alpha_and_derivatives_full,
     a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms,
-    G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, PR_lnphis, SRK_lnphis, eos_mix_db_dns, PR_translated_ddelta_dns,
+    G_dep_lnphi_d_helper, eos_mix_dV_dzs, VDW_lnphis, PR_lnphis, SRK_lnphis, PR_translated_ddelta_dns,
     PR_translated_depsilon_dns, PR_depsilon_dns, PR_translated_d2epsilon_dzizjs,
     PR_d2epsilon_dninjs, PR_d3epsilon_dninjnks, PR_d2delta_dninjs, PR_d3delta_dninjnks,
     PR_ddelta_dzs, PR_ddelta_dns, PR_d2epsilon_dzizjs, PR_depsilon_dzs,

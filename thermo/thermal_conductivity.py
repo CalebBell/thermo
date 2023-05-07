@@ -114,11 +114,10 @@ __all__ = [
 
            ]
 
-import os
 
 from fluids.numerics import horner
-from fluids.constants import R, R_inv, N_A, k
-from fluids.numerics import log, exp, sqrt
+from fluids.constants import R
+from fluids.numerics import sqrt
 from chemicals.utils import mixing_simple, none_and_length_check
 from chemicals.dippr import EQ100, EQ102
 from chemicals.thermal_conductivity import (Bahadori_gas, Bahadori_liquid, Chung, Chung_dense,
@@ -140,7 +139,7 @@ from thermo.heat_capacity import HeatCapacityGas
 from thermo.volume import VolumeGas
 
 
-from thermo.utils import NEGLIGIBLE, DIPPR_PERRY_8E, POLY_FIT, VDI_TABULAR, VDI_PPDS, COOLPROP, LINEAR
+from thermo.utils import DIPPR_PERRY_8E, VDI_TABULAR, VDI_PPDS, COOLPROP, LINEAR
 
 
 GHARAGHEIZI_L = 'GHARAGHEIZI_L'

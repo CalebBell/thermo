@@ -959,7 +959,7 @@ class Flash:
 
         if plot:
             import matplotlib.pyplot as plt
-            from matplotlib import ticker, cm
+            from matplotlib import cm
             from matplotlib.colors import LogNorm
 #            plt.ioff()
             X, Y = np.meshgrid(specs0, specs1)
@@ -1050,7 +1050,7 @@ class Flash:
 
         if plot:
             import matplotlib.pyplot as plt
-            from matplotlib import ticker, cm
+            from matplotlib import cm
             from matplotlib.colors import LogNorm
             X, Y = np.meshgrid(specs0, specs1)
             z = np.array(props).T

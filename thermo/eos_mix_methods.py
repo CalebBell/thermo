@@ -65,10 +65,10 @@ implemented
 """
 # TODO: put methods like "_fast_init_specific" in here so numba can accelerate them.
 from fluids.constants import R
-from fluids.numerics import numpy as np, catanh
+from fluids.numerics import catanh
 from math import sqrt, log
 from thermo.eos import eos_lnphi, eos_G_dep
-from thermo.eos_volume import volume_solutions_halley, volume_solutions_fast
+from thermo.eos_volume import volume_solutions_halley
 
 __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',

@@ -51,7 +51,6 @@ __all__ = ['InteractionParameterDB', 'ScalarParameterDB']
 
 import os
 from math import isnan
-from fluids.numerics import numpy as np
 from chemicals.utils import can_load_data, PY37
 from chemicals.identifiers import check_CAS, sorted_CAS_key
 

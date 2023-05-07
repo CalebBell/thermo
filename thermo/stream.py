@@ -34,9 +34,8 @@ from chemicals.utils import property_molar_to_mass, property_mass_to_molar, solv
 from chemicals.exceptions import OverspeficiedError
 from chemicals.volume import ideal_gas
 from chemicals.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws, Vm_to_rho, zs_to_Vfs
-from thermo.mixture import Mixture, preprocess_mixture_composition
+from thermo.mixture import Mixture
 from thermo.equilibrium import EquilibriumState
-from thermo.flash import Flash
 from fluids.pump import voltages_1_phase_residential, voltages_3_phase, residential_power_frequencies
 
 

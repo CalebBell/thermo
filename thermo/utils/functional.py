@@ -34,7 +34,6 @@ def has_matplotlib():
     global _has_matplotlib
     if _has_matplotlib is None:
         try:
-            import matplotlib
             _has_matplotlib = True
         except:
             _has_matplotlib = False

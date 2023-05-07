@@ -768,7 +768,6 @@ class MixtureProperty:
             raise Exception('Optional dependency matplotlib is required for plotting')
         else:
             import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import axes3d
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
         if zs is None or ws is None:

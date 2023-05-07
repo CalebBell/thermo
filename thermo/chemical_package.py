@@ -61,7 +61,7 @@ __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationsPackage',
 
 from fluids.constants import R
 
-from thermo.chemical import Chemical, user_chemical_property_lookup
+from thermo.chemical import user_chemical_property_lookup
 from chemicals.identifiers import CAS_from_any
 from chemicals import identifiers
 from chemicals.utils import hash_any_primitive
@@ -81,22 +81,20 @@ from chemicals.critical import Tc, Pc, Vc
 from chemicals.phase_change import Tb, Tm, Hfus
 from chemicals.acentric import omega, Stiel_polar_factor
 from chemicals.triple import Tt, Pt
-from chemicals.reaction import Hfs, Hfl, Hfg, S0g, S0l, S0s, Gibbs_formation, Hf_basis_converter, entropy_formation
+from chemicals.reaction import Hfs, Hfl, Hfg, S0g, Gibbs_formation
 from chemicals.safety import T_flash, T_autoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen
 from chemicals.solubility import solubility_parameter
 from chemicals.dipole import dipole_moment as dipole
 from chemicals.lennard_jones import Stockmayer, molecular_diameter
 from chemicals.environment import GWP, ODP, logP
 from chemicals.refractivity import RI
-from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
+from chemicals.elements import atom_fractions, similarity_variable, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
 from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
 
 from thermo.utils import identify_phase
 from thermo.unifac import UNIFAC_group_assignment_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 from thermo.electrochem import conductivity
-from thermo.law import legal_status, economic_status
 from thermo.eos import PR
-from thermo import serialize
 
 CAS_H2O = '7732-18-5'
 

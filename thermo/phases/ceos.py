@@ -21,14 +21,11 @@ SOFTWARE.
 
 '''
 __all__ = ['CEOSLiquid', 'CEOSGas']
-import os
-from fluids.constants import R
-from fluids.numerics import trunc_exp, numpy as np, trunc_log_numpy, trunc_exp_numpy
-from fluids.numerics import log
+from fluids.numerics import trunc_exp, numpy as np, trunc_exp_numpy
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
-from thermo.phases.phase_utils import PR_lnphis_fastest, lnphis_direct
+from thermo.phases.phase_utils import lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.phases.phase import Phase, IdealGasDeparturePhase
+from thermo.phases.phase import IdealGasDeparturePhase
 try:
     zeros, ndarray, full, array = np.zeros, np.ndarray, np.full, np.array
 except:
@@ -69,6 +66,7 @@ class CEOSPhase(IdealGasDeparturePhase):
     T-P initialization for oxygen and nitrogen with the PR EOS, using Poling's
     polynomial heat capacities:
 
+    >>> from scipy.constants import R
     >>> from thermo import HeatCapacityGas, PRMIX, CEOSGas
     >>> eos_kwargs = dict(Tcs=[154.58, 126.2], Pcs=[5042945.25, 3394387.5], omegas=[0.021, 0.04], kijs=[[0.0, -0.0159], [-0.0159, 0.0]])
     >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),

@@ -78,7 +78,6 @@ def load_law_data():
     except:
         pass
     import pandas as pd
-    import zipfile
     folder = os_path_join(os.path.dirname(__file__), 'Law')
 
 

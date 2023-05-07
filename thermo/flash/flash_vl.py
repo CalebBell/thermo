@@ -30,7 +30,6 @@ from thermo.flash.flash_utils import (
     nonlin_2P_newton,
     WILSON_GUESS,
     IDEAL_PSAT,
-    LAST_CONVERGED,
     TB_TC_GUESS,
     dew_bubble_Michelsen_Mollerup,
     dew_bubble_newton_zs,
@@ -48,8 +47,7 @@ from thermo.flash.flash_utils import (
     SHAW_ELEMENTAL, IDEAL_WILSON,
     nonlin_spec_NP,
 )
-from thermo.flash.flash_pure_vls  import FlashPureVLS
-from fluids.numerics import log, isinf
+from fluids.numerics import isinf
 from chemicals.exceptions import TrivialSolutionError
 from fluids.numerics import secant, trunc_log, UnconvergedError
 from thermo.property_package import StabilityTester

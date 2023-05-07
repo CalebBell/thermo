@@ -25,19 +25,18 @@ __all__ = ['Mixture']
 
 from collections import OrderedDict
 
-from fluids.numerics import newton, numpy as np
+from fluids.numerics import numpy as np
 from fluids.core import Jakob, Prandtl, nu_mu_converter, thermal_diffusivity
 from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
 
 from chemicals.virial import B_from_Z
 from chemicals.volume import ideal_gas
 from chemicals.identifiers import CAS_from_any, mixture_from_any
-from chemicals.identifiers import IDs_to_CASs
 from chemicals.utils import (Joule_Thomson, Parachor, R, SG, SG_to_API, Vfs_to_zs, Vm_to_rho, Z,
                              isentropic_exponent, isobaric_expansion, mixing_simple,
                              none_and_length_check, property_mass_to_molar, property_molar_to_mass,
                              speed_of_sound, vapor_mass_quality, ws_to_zs, zs_to_Vfs, zs_to_ws)
-from chemicals.elements import atom_fractions, mass_fractions, simple_formula_parser, molecular_weight, mixture_atomic_composition
+from chemicals.elements import mass_fractions, mixture_atomic_composition
 
 from thermo.chemical import Chemical
 from thermo.utils import phase_select_property
@@ -3270,7 +3269,6 @@ class Mixture:
         '''
         try:
             from rdkit.Chem import Draw
-            from rdkit.Chem.Draw import IPythonConsole
             if Hs:
                 mols = [i.rdkitmol_Hs for i in self.Chemicals]
             else:

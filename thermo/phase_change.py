@@ -59,13 +59,9 @@ Enthalpy of Sublimation
 __all__ = ['enthalpy_vaporization_methods', 'EnthalpyVaporization',
            'enthalpy_sublimation_methods', 'EnthalpySublimation']
 
-import os
 
-from fluids.numerics import horner, horner_and_der, numpy as np
-from fluids.constants import R
 
-from fluids.numerics import log, isnan
-from chemicals.utils import property_molar_to_mass, mixing_simple, none_and_length_check
+from fluids.numerics import isnan
 from chemicals.dippr import EQ106
 from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
@@ -74,10 +70,9 @@ from chemicals.phase_change import (Alibakhshi, Chen, Clapeyron, Liu, MK, PPDS12
                                     SMK, Velasco, Vetere, Watson)
 from chemicals.identifiers import CAS_to_int
 
-from thermo.vapor_pressure import VaporPressure
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacitySolid
 from thermo.utils import TDependentProperty
-from thermo.utils import COOLPROP, VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, POLY_FIT
+from thermo.utils import COOLPROP, VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS
 from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids, CoolProp_failing_PT_flashes
 
 
