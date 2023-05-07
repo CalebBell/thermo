@@ -205,8 +205,8 @@ class JOBACK(object):
         self.mub = mub
 
     def __repr__(self):
-        return """JOBACK(i=%r, name=%r, Tc=%r, Pc=%r, Vc=%r, Tb=%r, Tm=%r, Hform=%r, Gform=%r,
-Cpa=%r, Cpb=%r, Cpc=%r, Cpd=%r, Hfus=%r, Hvap=%r, mua=%r, mub=%r)""" % (
+        return """JOBACK(i={!r}, name={!r}, Tc={!r}, Pc={!r}, Vc={!r}, Tb={!r}, Tm={!r}, Hform={!r}, Gform={!r},
+Cpa={!r}, Cpb={!r}, Cpc={!r}, Cpd={!r}, Hfus={!r}, Hvap={!r}, mua={!r}, mub={!r})""".format(
         self.i, self.name, self.Tc, self.Pc, self.Vc, self.Tb, self.Tm,
         self.Hform, self.Gform, self.Cpa, self.Cpb, self.Cpc, self.Cpd,
         self.Hfus, self.Hvap, self.mua, self.mub)

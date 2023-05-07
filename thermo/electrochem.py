@@ -180,7 +180,7 @@ if PY37:
             if not _loaded_electrochem_data:
                 _load_electrochem_data()
             return globals()[name]
-        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+        raise AttributeError(f"module {__name__} has no attribute {name}")
 else:
     if can_load_data:
         _load_electrochem_data()

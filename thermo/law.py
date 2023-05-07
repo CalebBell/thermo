@@ -108,7 +108,7 @@ if PY37:
                     'NLP_data'):
             load_law_data()
             return globals()[name]
-        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+        raise AttributeError(f"module {__name__} has no attribute {name}")
 else: # pragma: no cover
     if can_load_data:
         load_law_data()

@@ -371,7 +371,7 @@ class BulkSettings(object):
        https://www.iso.org/cms/render/live/en/sites/isoorg/contents/data/standard/02/04/20461.html.
     '''
 
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
+    __full_path__ = f"{__module__}.{__qualname__}"
 
     def as_json(self):
         d = object_data(self)

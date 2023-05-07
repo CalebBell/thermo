@@ -143,7 +143,7 @@ class ChemicalConstantsPackage(object):
                  'Vmg_STPs', 'rhog_STPs', 'rhog_STPs_mass', 'sigma_STPs',
                  'sigma_Tms', 'sigma_Tbs', 'Hf_STPs', 'Hf_STPs_mass',
                  )
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
+    __full_path__ = f"{__module__}.{__qualname__}"
     properties = ('atom_fractions',) + non_vector_properties
     """Tuple of all properties that can be held by this object."""
 
@@ -397,7 +397,7 @@ class ChemicalConstantsPackage(object):
         s = 'ChemicalConstantsPackage('
         for k in properties:
             if any(i is not None for i in getattr(self, k)):
-                s += '%s=%s%s'%(k, getattr(self, k), delim)
+                s += f'{k}={getattr(self, k)}{delim}'
         s = s[:-2] + ')'
         return s
 
@@ -1306,9 +1306,9 @@ Parameters
 """
 for name, (var_type, desc, units, return_desc) in constants_docstrings.items():
     type_name = var_type if type(var_type) is str else var_type.__name__
-    new = """%s : %s
-    %s, %s.
-""" %(name, type_name, desc, units)
+    new = """{} : {}
+    {}, {}.
+""".format(name, type_name, desc, units)
     constants_doc += new
 
 try:
@@ -1453,7 +1453,7 @@ class PropertyCorrelationsPackage(object):
     correlations = pure_correlations + mixture_correlations
 #    __slots__ = correlations + ('constants', 'skip_missing')
 
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
+    __full_path__ = f"{__module__}.{__qualname__}"
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)
@@ -1847,7 +1847,7 @@ class PropertyCorrelationsPackage(object):
                 prop_attr = getattr(self, prop)
                 if prop_attr is not None:
                     try:
-                        s += '%s=%s,\n' %(prop, self.as_poly_fit(prop_attr))
+                        s += f'{prop}={self.as_poly_fit(prop_attr)},\n'
                     except Exception as e:
                         print(e, prop)
 

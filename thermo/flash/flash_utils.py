@@ -824,7 +824,7 @@ def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_g
     dlnphis_diter_s = 'dlnphis_d' + iter_var
     dlnphis_diter_callables = [getattr(phase.__class__, dlnphis_diter_s) for phase in phases]
 
-    dspec_diter_s = 'd%s_d%s' %(spec, iter_var)
+    dspec_diter_s = f'd{spec}_d{iter_var}'
     dspec_diter_callables = [getattr(phase.__class__, dspec_diter_s) for phase in phases]
 
     dspec_dn_s = 'd%s_dns' %(spec)
@@ -3726,7 +3726,7 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
         spec_fun_l = getattr(liquid_phase.__class__, spec)
         spec_fun_g = getattr(gas_phase.__class__, spec)
 
-        s_der = 'd%s_d%s_%s'%(spec, iter_var, fixed_var)
+        s_der = f'd{spec}_d{iter_var}_{fixed_var}'
         spec_der_fun_l = getattr(liquid_phase.__class__, s_der)
         spec_der_fun_g = getattr(gas_phase.__class__, s_der)
     else:
@@ -3826,10 +3826,10 @@ def sequential_substitution_2P_double(zs, xs_guess, ys_guess, liquid_phase,
     spec1_fun_l = getattr(liquid_phase.__class__, spec1_var)
     spec1_fun_g = getattr(gas_phase.__class__, spec1_var)
 
-    spec0_der0 = 'd%s_d%s_%s'%(spec0_var, iter_var0, iter_var1)
-    spec1_der0 = 'd%s_d%s_%s'%(spec1_var, iter_var0, iter_var1)
-    spec0_der1 = 'd%s_d%s_%s'%(spec0_var, iter_var1, iter_var0)
-    spec1_der1 = 'd%s_d%s_%s'%(spec1_var, iter_var1, iter_var0)
+    spec0_der0 = f'd{spec0_var}_d{iter_var0}_{iter_var1}'
+    spec1_der0 = f'd{spec1_var}_d{iter_var0}_{iter_var1}'
+    spec0_der1 = f'd{spec0_var}_d{iter_var1}_{iter_var0}'
+    spec1_der1 = f'd{spec1_var}_d{iter_var1}_{iter_var0}'
 
     spec0_der0_fun_l = getattr(liquid_phase.__class__, spec0_der0)
     spec0_der0_fun_g = getattr(gas_phase.__class__, spec0_der0)
@@ -4083,10 +4083,10 @@ def TPV_double_solve_1P(zs, phase, guesses, spec_vals,
                         maxiter=200, xtol=1E-10, ytol=None, spec_funs=None):
     kwargs = {'zs': zs}
     phase_cls = phase.__class__
-    s00 = 'd%s_d%s_%s' %(goal_specs[0], state_specs[0], state_specs[1])
-    s01 = 'd%s_d%s_%s' %(goal_specs[0], state_specs[1], state_specs[0])
-    s10 = 'd%s_d%s_%s' %(goal_specs[1], state_specs[0], state_specs[1])
-    s11 = 'd%s_d%s_%s' %(goal_specs[1], state_specs[1], state_specs[0])
+    s00 = f'd{goal_specs[0]}_d{state_specs[0]}_{state_specs[1]}'
+    s01 = f'd{goal_specs[0]}_d{state_specs[1]}_{state_specs[0]}'
+    s10 = f'd{goal_specs[1]}_d{state_specs[0]}_{state_specs[1]}'
+    s11 = f'd{goal_specs[1]}_d{state_specs[1]}_{state_specs[0]}'
     try:
         err0_fun = getattr(phase_cls, goal_specs[0])
         err1_fun = getattr(phase_cls, goal_specs[1])

@@ -137,10 +137,10 @@ class IdealGas(Phase):
 
         '''
         Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
-        base = 'IdealGas(HeatCapacityGases=[%s], '  %(Cpgs,)
+        base = f'IdealGas(HeatCapacityGases=[{Cpgs}], '
         for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
             if hasattr(self, s) and getattr(self, s) is not None:
-                base += '%s=%s, ' %(s, getattr(self, s))
+                base += f'{s}={getattr(self, s)}, '
         if base[-2:] == ', ':
             base = base[:-2]
         base += ')'

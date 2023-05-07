@@ -53,7 +53,7 @@ class MixtureProperty(object):
     """
 
     def __init_subclass__(cls):
-        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+        cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
 
     def set_poly_fit_coeffs(self):
         pure_objs = self.pure_objs()
@@ -74,12 +74,12 @@ class MixtureProperty(object):
         for k in self.custom_args:
             v = getattr(self, k)
             if v is not None:
-                base += '%s=%s, ' %(k, v)
+                base += f'{k}={v}, '
         base += 'CASs=%s, ' %(self.CASs)
         base += 'correct_pressure_pure=%s, ' %(self._correct_pressure_pure)
         base += 'method="%s", ' %(self.method)
         for attr in self.pure_references:
-            base += '%s=%s, ' %(attr, getattr(self, attr))
+            base += f'{attr}={getattr(self, attr)}, '
 
         if base[-2:] == ', ':
             base = base[:-2]
@@ -334,9 +334,9 @@ class MixtureProperty(object):
                 if self.skip_prop_validity_check or self.test_property_validity(prop):
                     return prop
                 elif self.RAISE_PROPERTY_CALCULATION_ERROR:
-                    raise RuntimeError("%s method '%s' computed an invalid value of %s %s" %(self.name, method, prop, self.units))
+                    raise RuntimeError(f"{self.name} method '{method}' computed an invalid value of {prop} {self.units}")
         elif self.RAISE_PROPERTY_CALCULATION_ERROR:
-            raise RuntimeError("%s method '%s' is not valid at T=%s K and P=%s Pa" %(self.name, method, T, P))
+            raise RuntimeError(f"{self.name} method '{method}' is not valid at T={T} K and P={P} Pa")
 
     def excess_property(self, T, P, zs=None, ws=None):
         r'''Method to calculate the excess property with sanity checking and

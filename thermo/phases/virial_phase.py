@@ -258,7 +258,7 @@ class VirialCSP(object):
             Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
         except:
             Cpgs = ''
-        base = '%s('  %(self.__class__.__name__,)
+        base = f'{self.__class__.__name__}('
         for s in self.nonstate_constants + ('T',):
             if hasattr(self, s) and getattr(self, s) is not None:
                 val = getattr(self, s)
@@ -267,7 +267,7 @@ class VirialCSP(object):
                 elif isinstance(val, (np.ndarray, list,)):
                     if not np.any(val):
                         continue
-                base += '%s=%s, ' %(s, val)
+                base += f'{s}={val}, '
         if base[-2:] == ', ':
             base = base[:-2]
         base += ')'
@@ -1003,13 +1003,13 @@ class VirialGas(IdealGasDeparturePhase):
             Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
         except:
             Cpgs = ''
-        base = '%s(model=%s, HeatCapacityGases=[%s], '  %(self.__class__.__name__, self.model, Cpgs)
+        base = f'{self.__class__.__name__}(model={self.model}, HeatCapacityGases=[{Cpgs}], '
         for s in ('cross_B_model', 'cross_C_model', 'Hfs', 'Gfs', 'T', 'P', 'zs'):
             if hasattr(self, s) and getattr(self, s) is not None:
                 val = getattr(self, s)
                 if type(val) is str:
                     val = f"'{val}'"
-                base += '%s=%s, ' %(s, val)
+                base += f'{s}={val}, '
         if base[-2:] == ', ':
             base = base[:-2]
         base += ')'

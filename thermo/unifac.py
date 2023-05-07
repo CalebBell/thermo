@@ -2577,7 +2577,7 @@ if PY37:
                     'NISTUFIP', 'NISTKTUFIP', 'PSRKIP', 'VTPRIP'):
             load_unifac_ip()
             return globals()[name]
-        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+        raise AttributeError(f"module {__name__} has no attribute {name}")
 else:
     if can_load_data:
         load_unifac_ip()
@@ -4596,8 +4596,8 @@ class UNIFAC(GibbsExcess):
 
         psi_abc = (self.psi_a, self.psi_b, self.psi_c)
         s = 'UNIFAC('
-        s += 'T=%s, xs=%s, rs=%s, qs=%s' %(self.T, self.xs, self.rs, self.qs)
-        s += ', Qs=%s, vs=%s, psi_abc=%s, version=%s' %(self.Qs, self.vs,
+        s += f'T={self.T}, xs={self.xs}, rs={self.rs}, qs={self.qs}'
+        s += ', Qs={}, vs={}, psi_abc={}, version={}'.format(self.Qs, self.vs,
                                                         psi_abc, self.version)
         s += ')'
         return s

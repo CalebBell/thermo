@@ -269,7 +269,7 @@ class FlashPureVLS(Flash):
     PSF_xtol = 1e-10
 
     def __repr__(self):
-        return "FlashPureVLS(gas=%s, liquids=%s, solids=%s)" %(self.gas, self.liquids, self.solids)
+        return f"FlashPureVLS(gas={self.gas}, liquids={self.liquids}, solids={self.solids})"
     def __init__(self, constants, correlations, gas, liquids, solids,
                  settings=default_settings):
         # These attributes are all that needs to be stored, then call _finish_initialization
@@ -976,21 +976,21 @@ class FlashPureVLS(Flash):
 
                     low, high = getattr(phases_at_min[-1], spec)(), getattr(phases_at_max[-1], spec)()
                     low, high = min(low, high), max(low, high)
-                    s += '%s 1 Phase solution: (%g, %g); ' %(p.__class__.__name__, low, high)
+                    s += f'{p.__class__.__name__} 1 Phase solution: ({low:g}, {high:g}); '
                     if low <= spec_val <= high:
                         had_solution = True
                 except:
                     uncertain_solution = True
 
             if VL_liq is not None:
-                s += '(%s, %s) VL 2 Phase solution: (%g, %g); ' %(
+                s += '({}, {}) VL 2 Phase solution: ({:g}, {:g}); '.format(
                         VL_liq.__class__.__name__, VL_gas.__class__.__name__,
                         spec_val_l, spec_val_g)
                 VL_min_spec, VL_max_spec = min(spec_val_l, spec_val_g), max(spec_val_l, spec_val_g),
                 if VL_min_spec <= spec_val <= VL_max_spec:
                     had_solution = True
             if SF is not None:
-                s += '(%s, %s) VL 2 Phase solution: (%g, %g); ' %(
+                s += '({}, {}) VL 2 Phase solution: ({:g}, {:g}); '.format(
                         VS_flash.phases[0].__class__.__name__, VS_flash.solid0.__class__.__name__,
                         spec_val_s, spec_other)
                 S_min_spec, S_max_spec = min(spec_val_s, spec_other), max(spec_val_s, spec_other),
@@ -1001,7 +1001,7 @@ class FlashPureVLS(Flash):
             elif uncertain_solution:
                 raise UnconvergedError("Could not converge and unable to detect if solution detected in bounds")
             else:
-                raise NoSolutionError("No physical solution in bounds for %s=%s at %s=%s: %s" %(spec, spec_val, fixed_var, fixed_var_val, s))
+                raise NoSolutionError(f"No physical solution in bounds for {spec}={spec_val} at {fixed_var}={fixed_var_val}: {s}")
 
         flash_convergence['iterations'] = iterations
         flash_convergence['err'] = err

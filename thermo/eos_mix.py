@@ -359,17 +359,17 @@ class GCEOSMIX(GCEOS):
 
 
     def __repr__(self):
-        s = '%s(Tcs=%s, Pcs=%s, omegas=%s, ' %(self.__class__.__name__, repr(self.Tcs), repr(self.Pcs), repr(self.omegas))
+        s = f'{self.__class__.__name__}(Tcs={repr(self.Tcs)}, Pcs={repr(self.Pcs)}, omegas={repr(self.omegas)}, '
         for k, v in self.kwargs.items():
-            s += '%s=%s, ' %(k, repr(v))
+            s += f'{k}={repr(v)}, '
 
         s += 'zs=%s, ' %(repr(self.zs))
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            s += 'P=%s, V=%s' %(repr(self.P), repr(self.V))
+            s += f'P={repr(self.P)}, V={repr(self.V)}'
         elif self.V is not None:
-            s += 'T=%s, V=%s' %(repr(self.T), repr(self.V))
+            s += f'T={repr(self.T)}, V={repr(self.V)}'
         else:
-            s += 'T=%s, P=%s' %(repr(self.T), repr(self.P))
+            s += f'T={repr(self.T)}, P={repr(self.P)}'
         s += ')'
         return s
 

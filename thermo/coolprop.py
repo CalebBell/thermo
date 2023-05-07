@@ -362,7 +362,7 @@ class CP_fluid_approximator(object):
                 try:
                     assert max(errs) < 2E-6
                 except:
-                    print('%s %s failed with mean relative error %s and maximum relative error %s' %(self.CAS, prop, str(np.mean(errs)), str(max(errs))))
+                    print(f'{self.CAS} {prop} failed with mean relative error {str(np.mean(errs))} and maximum relative error {str(max(errs))}')
 
 
 

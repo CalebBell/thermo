@@ -213,7 +213,7 @@ class EquilibriumState(object):
     P_REF_IG = Phase.P_REF_IG
     P_REF_IG_INV = Phase.P_REF_IG_INV
 
-    __full_path__ = "%s.%s" %(__module__, __qualname__)
+    __full_path__ = f"{__module__}.{__qualname__}"
 
     __slots__ = ('T', 'P', 'zs', 'N', 'gas_count', 'liquid_count', 'solid_count', 'phase_count', 'gas',
                  'liquids', 'solids', 'phases', 'betas', 'gas_beta', 'liquids_betas', 'solids_betas',
@@ -227,7 +227,7 @@ class EquilibriumState(object):
         return s
 
     def __repr__(self):
-        s = '%s(T=%s, P=%s, zs=%s, betas=%s' %(self.__class__.__name__, self.T, self.P, self.zs, self.betas)
+        s = f'{self.__class__.__name__}(T={self.T}, P={self.P}, zs={self.zs}, betas={self.betas}'
         s += ', gas=%s' %(self.gas)
         s += ', liquids=%s' %(self.liquids)
         s += ', solids=%s' %(self.solids)
@@ -3153,12 +3153,12 @@ for name in ChemicalConstantsPackage.properties:
             type_name = var_type if type(var_type) is str else var_type.__name__
             if return_desc is None:
                 return_desc = desc
-            full_desc = """%s, %s.
+            full_desc = """{}, {}.
 
 Returns
 -------
-%s : %s
-    %s, %s.""" %(desc, units, name, type_name, return_desc, units)
+{} : {}
+    {}, {}.""".format(desc, units, name, type_name, return_desc, units)
 #            print(full_desc)
             getter.__doc__ = full_desc
         except:
@@ -3459,11 +3459,11 @@ for _name, _CAS in _comonent_specific_properties.items():
     name = '%s_molar_weight' %(_name)
 
     _add_attrs_doc =  r"""Method to calculate and return the effective quantiy
-    of %s in the phase as a molar weight, [g/mol].
+    of {} in the phase as a molar weight, [g/mol].
 
     This is the molecular weight of the phase times the mass fraction of the
-    %s component.
-            """ %(_name, _name)
+    {} component.
+            """.format(_name, _name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)

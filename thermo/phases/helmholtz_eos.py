@@ -52,7 +52,7 @@ class HelmholtzEOS(Phase):
         base = '%s('  %(self.__class__.__name__)
         for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
             if hasattr(self, s) and getattr(self, s) is not None:
-                base += '%s=%s, ' %(s, getattr(self, s))
+                base += f'{s}={getattr(self, s)}, '
         if base[-2:] == ', ':
             base = base[:-2]
         base += ')'

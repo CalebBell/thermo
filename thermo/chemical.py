@@ -724,7 +724,7 @@ class Chemical(object): # pragma: no cover
     __legal_status = None
     __economic_status = None
     def __repr__(self):
-        return '<Chemical [%s], T=%.2f K, P=%.0f Pa>' %(self.name, self.T, self.P)
+        return f'<Chemical [{self.name}], T={self.T:.2f} K, P={self.P:.0f} Pa>'
 
     def __init__(self, ID, T=298.15, P=101325, autocalc=True):
         if isinstance(ID, dict):

@@ -117,10 +117,10 @@ class CEOSPhase(IdealGasDeparturePhase):
             Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
         except:
             Cpgs = ''
-        base = '%s(eos_class=%s, eos_kwargs=%s, HeatCapacityGases=[%s], '  %(self.__class__.__name__, self.eos_class.__name__, eos_kwargs, Cpgs)
+        base = f'{self.__class__.__name__}(eos_class={self.eos_class.__name__}, eos_kwargs={eos_kwargs}, HeatCapacityGases=[{Cpgs}], '
         for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
             if hasattr(self, s) and getattr(self, s) is not None:
-                base += '%s=%s, ' %(s, getattr(self, s))
+                base += f'{s}={getattr(self, s)}, '
         if base[-2:] == ', ':
             base = base[:-2]
         base += ')'

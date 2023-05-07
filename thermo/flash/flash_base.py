@@ -97,7 +97,7 @@ class Flash(object):
     to inherit from this, and common methods can be added to it.'''
 
     def __init_subclass__(cls):
-        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+        cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
               S=None, G=None, U=None, A=None, solution=None, hot_start=None,
@@ -270,21 +270,21 @@ class Flash(object):
             T = float(T)
             flash_specs['T'] = T
             if T < self.T_MIN_FLASH:
-                raise ValueError("Specified temperature (%s K) is below the minimum temeprature (%s K) "
-                                 "supported by the provided phases" %(T, self.T_MIN_FLASH))
+                raise ValueError("Specified temperature ({} K) is below the minimum temeprature ({} K) "
+                                 "supported by the provided phases".format(T, self.T_MIN_FLASH))
             # if T <= 0.0:
             #     raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
         if P_spec:
             P = float(P)
             flash_specs['P'] = P
             if P <= 0.0:
-                raise ValueError("Specified pressure (%s Pa) is unphysical"%(P,))
+                raise ValueError(f"Specified pressure ({P} Pa) is unphysical")
         if V_spec:
             # high-precision volumes are needed in some cases
             # V = float(V)
             flash_specs['V'] = V
             if V <= 0.0:
-                raise ValueError("Specified molar volume (%s m^3/mol) is unphysical"%(V,))
+                raise ValueError(f"Specified molar volume ({V} m^3/mol) is unphysical")
         if H_spec:
             H = float(H)
             flash_specs['H'] = H
@@ -305,14 +305,14 @@ class Flash(object):
             VF_spec = float(VF_spec)
             flash_specs['VF'] = VF
             if VF < 0.0 or VF > 1.0:
-                raise ValueError("Specified vapor fraction (%s) is not between 0 and 1"%(VF,))
+                raise ValueError(f"Specified vapor fraction ({VF}) is not between 0 and 1")
             elif not self.supports_VF_flash:
                 raise ValueError("Cannot flash with a vapor fraction spec without at least one gas and liquid phase defined")
         if SF_spec:
             SF_spec = float(SF_spec)
             flash_specs['SF'] = SF
             if SF < 0.0 or SF > 1.0:
-                raise ValueError("Specified solid fraction (%s) is not between 0 and 1"%(VF,))
+                raise ValueError(f"Specified solid fraction ({VF}) is not between 0 and 1")
             elif not self.supports_SF_flash:
                 raise ValueError("Cannot flash with a solid fraction spec without at least one gas and liquid phase defined, as well as a solid phase")
 
@@ -734,7 +734,7 @@ class Flash(object):
                     state = self.flash(**flash_specs)
                 except Exception as e:
                     state = None
-                    print('Failed trying to flash %s, with exception %s.'%(flash_specs, e))
+                    print(f'Failed trying to flash {flash_specs}, with exception {e}.')
 
                 if store:
                     row_flashes.append(state)
@@ -866,11 +866,11 @@ class Flash(object):
                         except Exception as e2:
                             new = None
                             if verbose:
-                                print('Failed trying to flash %s, from original point %s, with exception %s.'%(kwargs, flash_specs, e))
+                                print(f'Failed trying to flash {kwargs}, from original point {flash_specs}, with exception {e}.')
                     else:
                         new = None
                         if verbose:
-                            print('Failed trying to flash %s, from original point %s, with exception %s.' % (kwargs, flash_specs, e))
+                            print(f'Failed trying to flash {kwargs}, from original point {flash_specs}, with exception {e}.')
                 row_spec_flashes.append(state)
                 row_flashes.append(new)
 
@@ -990,7 +990,7 @@ class Flash(object):
             if trunc_err_high is not None and max_err > trunc_err_high:
                 max_err = trunc_err_high
 
-            ax.set_title('%s %s validation of %s; Reference flash %s %s; max err %.1e' %(check0, check1, prop0, spec0, spec1, max_err))
+            ax.set_title(f'{check0} {check1} validation of {prop0}; Reference flash {spec0} {spec1}; max err {max_err:.1e}')
 
 
             if show:
@@ -1132,7 +1132,7 @@ class Flash(object):
         ax.set_yscale('log')
         ax.set_xlabel('Temperature [K]')
         ax.set_ylabel('Pressure [Pa]')
-        plt.title('PT flash mixing %s boundary flashes, zs=%s, zs_mixing=%s' %(boundary, zs, zs_mixing))
+        plt.title(f'PT flash mixing {boundary} boundary flashes, zs={zs}, zs_mixing={zs_mixing}')
         if show:
             plt.show()
         else:

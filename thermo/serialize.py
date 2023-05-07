@@ -172,7 +172,7 @@ if PY37:
             import json
             json_loaded = True
             return json
-        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+        raise AttributeError(f"module {__name__} has no attribute {name}")
 else:
     import json
     json_loaded = True

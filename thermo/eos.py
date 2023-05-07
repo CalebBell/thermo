@@ -885,7 +885,7 @@ class GCEOS(object):
 
     if not is_micropython:
         def __init_subclass__(cls):
-            cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+            cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
     else:
         __full_path__ = None
 
@@ -991,16 +991,16 @@ class GCEOS(object):
         >>> eos
         PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1000000.0)
         '''
-        s = '%s(Tc=%s, Pc=%s, omega=%s, ' %(self.__class__.__name__, repr(self.Tc), repr(self.Pc), repr(self.omega))
+        s = f'{self.__class__.__name__}(Tc={repr(self.Tc)}, Pc={repr(self.Pc)}, omega={repr(self.omega)}, '
         for k, v in self.kwargs.items():
-            s += '%s=%s, ' %(k, v)
+            s += f'{k}={v}, '
 
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            s += 'P=%s, V=%s' %(repr(self.P), repr(self.V))
+            s += f'P={repr(self.P)}, V={repr(self.V)}'
         elif self.V is not None:
-            s += 'T=%s, V=%s' %(repr(self.T), repr(self.V))
+            s += f'T={repr(self.T)}, V={repr(self.V)}'
         else:
-            s += 'T=%s, P=%s' %(repr(self.T), repr(self.P))
+            s += f'T={repr(self.T)}, P={repr(self.P)}'
         s += ')'
         return s
 
@@ -1280,7 +1280,7 @@ class GCEOS(object):
                 extra = ', zs is %s' %(self.zs)
             else:
                 extra = ''
-            raise ValueError('No acceptable roots were found; the roots are %s, T is %s K, P is %s Pa, a_alpha is %s, b is %s%s' %(str(Vs), str(self.T), str(self.P), str([self.a_alpha]), str([self.b]), extra))
+            raise ValueError(f'No acceptable roots were found; the roots are {str(Vs)}, T is {str(self.T)} K, P is {str(self.P)} Pa, a_alpha is {str([self.a_alpha])}, b is {str([self.b])}{extra}')
 
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha,
@@ -1621,7 +1621,7 @@ class GCEOS(object):
             ax2.set_yscale('symlog')
             ln1 = ax2.plot(Ts, da_alphas, 'b', label='First derivative [J^2/mol^2/Pa/K]')
             ax2.set_ylabel(r'$\frac{\partial a \alpha}{\partial T}$')
-            ax1.set_title(r'$a \alpha$ vs temperature; range %.4g to %.4g' %(max(a_alphas), min(a_alphas)))
+            ax1.set_title(fr'$a \alpha$ vs temperature; range {max(a_alphas):.4g} to {min(a_alphas):.4g}')
 
             lines = ln0 + ln1 + ln2
             labels = [l.get_label() for l in lines]
@@ -2094,7 +2094,7 @@ class GCEOS(object):
                 try:
                     obj = self.to(**kwargs)
                 except Exception as e:
-                    print('Failed to go to point, kwargs=%s with exception %s' %(kwargs, e))
+                    print(f'Failed to go to point, kwargs={kwargs} with exception {e}')
                     # So bad we failed to calculate a real point
                     val = 1.0
                 if timing:

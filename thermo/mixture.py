@@ -552,10 +552,10 @@ class Mixture(object):
     autoflash = True # Whether or not to flash on init
 
     def __repr__(self):
-        txt = '<Mixture, components=%s, mole fractions=%s' % (self.names, [round(i,4) for i in self.zs])
+        txt = f'<Mixture, components={self.names}, mole fractions={[round(i,4) for i in self.zs]}'
         # T and P may not be available if a flash has failed
         try:
-            txt += ', T=%.2f K, P=%.0f Pa>' %(self.T, self.P)
+            txt += f', T={self.T:.2f} K, P={self.P:.0f} Pa>'
         except:
             txt += ', thermodynamic conditions unknown>'
         return txt

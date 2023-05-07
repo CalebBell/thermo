@@ -611,7 +611,7 @@ if PY37:
         if name in ('SPDB',):
             load_all_scalar_parameters()
             return globals()[name]
-        raise AttributeError("module %s has no attribute %s" %(__name__, name))
+        raise AttributeError(f"module {__name__} has no attribute {name}")
 else:
     if can_load_data:
         load_all_interaction_parameters()

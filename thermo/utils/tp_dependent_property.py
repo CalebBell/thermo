@@ -227,7 +227,7 @@ class TPDependentProperty(TDependentProperty):
         method_P = self._method_P
         if method_P is None:
             if self.RAISE_PROPERTY_CALCULATION_ERROR:
-                raise RuntimeError("No pressure-dependent %s method selected for component with CASRN '%s'" %(self.name.lower(), self.CASRN))
+                raise RuntimeError(f"No pressure-dependent {self.name.lower()} method selected for component with CASRN '{self.CASRN}'")
             else:
                 return None
         if self.test_method_validity_P(T, P, method_P):
@@ -235,14 +235,14 @@ class TPDependentProperty(TDependentProperty):
                 prop = self.calculate_P(T, P, method_P)
             except:  # pragma: no cover
                 if self.RAISE_PROPERTY_CALCULATION_ERROR:
-                    raise RuntimeError("Failed to evaluate %s method '%s' at T=%s K and P=%s Pa for component with CASRN '%s'" %(self.name.lower(), method_P, T, P, self.CASRN))
+                    raise RuntimeError(f"Failed to evaluate {self.name.lower()} method '{method_P}' at T={T} K and P={P} Pa for component with CASRN '{self.CASRN}'")
             else:
                 if self.test_property_validity(prop):
                     return prop
                 elif self.RAISE_PROPERTY_CALCULATION_ERROR:
-                    raise RuntimeError("%s method '%s' computed an invalid value of %s %s for component with CASRN '%s'" %(self.name, method_P, prop, self.units, self.CASRN))
+                    raise RuntimeError(f"{self.name} method '{method_P}' computed an invalid value of {prop} {self.units} for component with CASRN '{self.CASRN}'")
         elif self.RAISE_PROPERTY_CALCULATION_ERROR:
-            raise RuntimeError("%s method '%s' is not valid at T=%s K and P=%s Pa for component with CASRN '%s'" %(self.name, method_P, T, P, self.CASRN))
+            raise RuntimeError(f"{self.name} method '{method_P}' is not valid at T={T} K and P={P} Pa for component with CASRN '{self.CASRN}'")
 
     def TP_or_T_dependent_property(self, T, P):
         r'''Method to calculate the property given a temperature and pressure

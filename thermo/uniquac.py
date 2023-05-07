@@ -542,7 +542,7 @@ class UNIQUAC(GibbsExcess):
     gammas_from_args = staticmethod(uniquac_gammas_from_args)
 
     def __repr__(self):
-        s = '%s(T=%s, xs=%s, rs=%s, qs=%s, ABCDEF=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
+        s = '{}(T={}, xs={}, rs={}, qs={}, ABCDEF={})'.format(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
                 (self.tau_coeffs_A,  self.tau_coeffs_B, self.tau_coeffs_C,
                  self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F))
         return s
@@ -575,10 +575,10 @@ class UNIQUAC(GibbsExcess):
             try:
                 all_lengths = tuple(len(coeffs) for coeffs in ABCDEF if coeffs is not None)
                 if len(set(all_lengths)) > 1:
-                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths,))
+                    raise ValueError(f"Coefficient arrays of different size found: {all_lengths}")
                 all_lengths_inner = tuple(len(coeffs[0]) for coeffs in ABCDEF if coeffs is not None)
                 if len(set(all_lengths_inner)) > 1:
-                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
+                    raise ValueError(f"Coefficient arrays of different size found: {all_lengths_inner}")
             except:
                 raise ValueError("Coefficients not input correctly")
         else:

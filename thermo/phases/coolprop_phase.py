@@ -166,11 +166,11 @@ class CoolPropPhase(Phase):
 
     def __str__(self):
         if self.phase == 'g':
-            s =  '<%s, ' %('CoolPropGas')
+            s =  '<{}, '.format('CoolPropGas')
         else:
-            s =  '<%s, ' %('CoolPropLiquid')
+            s =  '<{}, '.format('CoolPropLiquid')
         try:
-            s += 'T=%g K, P=%g Pa' %(self.T, self.P)
+            s += f'T={self.T:g} K, P={self.P:g} Pa'
         except:
             pass
         s += '>'

@@ -373,10 +373,10 @@ class RegularSolution(GibbsExcess):
     _model_attributes = ('Vs', 'SPs', 'lambda_coeffs')
 
     def __repr__(self):
-        s = '%s(T=%s, xs=%s, Vs=%s, SPs=%s' %(self.__class__.__name__, repr(self.T), repr(self.xs),
+        s = '{}(T={}, xs={}, Vs={}, SPs={}'.format(self.__class__.__name__, repr(self.T), repr(self.xs),
                 self.Vs, self.SPs)
         if not self._lambda_coeffs_zero:
-            s += ' , lambda_coeffs=%s)' %(self.lambda_coeffs,)
+            s += f' , lambda_coeffs={self.lambda_coeffs})'
         else:
             s += ')'
 

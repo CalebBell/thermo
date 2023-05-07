@@ -1027,10 +1027,10 @@ class StreamArgs(object):
 
 
     def __repr__(self):
-        s = '%s(flasher=%s, ' %(self.__class__.__name__, self.flasher is not None)
+        s = f'{self.__class__.__name__}(flasher={self.flasher is not None}, '
         for k, v in self.specifications.items():
             if v is not None:
-                s += '%s=%s, ' %(k, repr(v))
+                s += f'{k}={repr(v)}, '
         s = s[:-2]
         s += ')'
         return s
@@ -1040,11 +1040,11 @@ class StreamArgs(object):
         n, m, Q = s['n'], s['m'], s['Q']
         if n is not None:
             if m is not None:
-                raise OverspeficiedError("Flow specification is overspecified: n=%g, m=%g" %(n, m))
+                raise OverspeficiedError(f"Flow specification is overspecified: n={n:g}, m={m:g}")
             elif Q is not None:
-                raise OverspeficiedError("Flow specification is overspecified: n=%g, Q=%g" %(n, Q))
+                raise OverspeficiedError(f"Flow specification is overspecified: n={n:g}, Q={Q:g}")
         elif m is not None and Q is not None:
-            raise OverspeficiedError("Flow specification is overspecified: m=%g, Q=%g" %(m, Q))
+            raise OverspeficiedError(f"Flow specification is overspecified: m={m:g}, Q={Q:g}")
 
         ns, zs, ms, ws = s['ns'], s['zs'], s['ms'], s['ws']
         if n is not None and ns is not None:
@@ -1629,10 +1629,10 @@ class Stream(Mixture):
 
     flashed = True
     def __repr__(self): # pragma: no cover
-        txt = '<Stream, components=%s, mole fractions=%s, mass flow=%s kg/s, mole flow=%s mol/s' % (self.names, [round(i,4) for i in self.zs], self.m, self.n)
+        txt = f'<Stream, components={self.names}, mole fractions={[round(i,4) for i in self.zs]}, mass flow={self.m} kg/s, mole flow={self.n} mol/s'
         # T and P may not be available if a flash has failed
         try:
-            txt += ', T=%.2f K, P=%.0f Pa>' %(self.T, self.P)
+            txt += f', T={self.T:.2f} K, P={self.P:.0f} Pa>'
         except:
             txt += ', thermodynamic conditions unknown>'
         return txt
@@ -2373,9 +2373,9 @@ energy_types = {'LP_STEAM': 'Steam 50 psi',
                 'DC_ELECTRICITY': 'DC Electricity'}
 for freq in residential_power_frequencies:
     for voltage in voltages_1_phase_residential:
-        energy_types['AC_ELECTRICITY_1_PHASE_%s_V_%s_Hz'% (str(voltage), str(freq))] = 'AC_ELECTRICITY 1 PHASE %s V %s Hz'% (str(voltage), str(freq))
+        energy_types[f'AC_ELECTRICITY_1_PHASE_{str(voltage)}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 1 PHASE {str(voltage)} V {str(freq)} Hz'
     for voltage in voltages_3_phase:
-        energy_types['AC_ELECTRICITY_3_PHASE_%s_V_%s_Hz'% (str(voltage), str(freq))] = 'AC_ELECTRICITY 3 PHASE %s V %s Hz'%  (str(voltage), str(freq))
+        energy_types[f'AC_ELECTRICITY_3_PHASE_{str(voltage)}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 3 PHASE {str(voltage)} V {str(freq)} Hz'
 
 try:
     EnergyTypes = enum.Enum('EnergyTypes', energy_types)
@@ -2400,7 +2400,7 @@ class EnergyStream(object):
             medium = self.medium.value
         except:
             medium = self.medium
-        return '<Energy stream, Q=%s W, medium=%s>' %(self.Q, medium)
+        return f'<Energy stream, Q={self.Q} W, medium={medium}>'
 
     def __init__(self, Q, medium=None):
         self.medium = medium

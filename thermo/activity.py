@@ -300,7 +300,7 @@ class GibbsExcess(object):
     """These are all methods which take no arguments. For use in testing."""
 
     def __init_subclass__(cls):
-        cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+        cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
 
     def __repr__(self):
         r'''Method to create a string representation of the state of the model.
@@ -319,7 +319,7 @@ class GibbsExcess(object):
         IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
         '''
         # Other classes with different parameters should expose them here too
-        s = '%s(T=%s, xs=%s)' %(self.__class__.__name__, repr(self.T), repr(self.xs))
+        s = f'{self.__class__.__name__}(T={repr(self.T)}, xs={repr(self.xs)})'
         return s
 
     def __eq__(self, other):

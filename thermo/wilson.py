@@ -762,10 +762,10 @@ class Wilson(GibbsExcess):
             try:
                 all_lengths = tuple(len(coeffs) for coeffs in ABCDEF if coeffs is not None)
                 if len(set(all_lengths)) > 1:
-                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths,))
+                    raise ValueError(f"Coefficient arrays of different size found: {all_lengths}")
                 all_lengths_inner = tuple(len(coeffs[0]) for coeffs in ABCDEF if coeffs is not None)
                 if len(set(all_lengths_inner)) > 1:
-                    raise ValueError("Coefficient arrays of different size found: %s" %(all_lengths_inner,))
+                    raise ValueError(f"Coefficient arrays of different size found: {all_lengths_inner}")
             except:
                 raise ValueError("Coefficients not input correctly")
 
@@ -840,10 +840,10 @@ class Wilson(GibbsExcess):
 
     def __repr__(self):
 
-        s = '%s(T=%s, xs=%s' %(self.__class__.__name__, repr(self.T), repr(self.xs))
+        s = f'{self.__class__.__name__}(T={repr(self.T)}, xs={repr(self.xs)}'
         for i, attr in enumerate(self._model_attributes):
             if self.lambda_coeffs_nonzero[i]:
-                s += ', %s=%s' %(attr, getattr(self, attr))
+                s += f', {attr}={getattr(self, attr)}'
         s += ')'
         return s
 

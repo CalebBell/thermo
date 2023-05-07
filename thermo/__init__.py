@@ -280,7 +280,7 @@ if not numerics.is_micropython:
                 import thermo.numba as numba
                 import thermo.numba_vectorized as numba_vectorized
                 return numba_vectorized
-            raise AttributeError("module %s has no attribute %s" %(__name__, name))
+            raise AttributeError(f"module {__name__} has no attribute {name}")
     else:
         from . import vectorized
 

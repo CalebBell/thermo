@@ -154,14 +154,14 @@ class Phase(object):
 
     if not is_micropython:
         def __init_subclass__(cls):
-            cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
+            cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
     else:
         __full_path__ = None
 
     def __str__(self):
         s =  '<%s, ' %(self.__class__.__name__)
         try:
-            s += 'T=%g K, P=%g Pa' %(self.T, self.P)
+            s += f'T={self.T:g} K, P={self.P:g} Pa'
         except:
             pass
         s += '>'
@@ -4520,17 +4520,17 @@ class Phase(object):
            Environmental Earth Sciences 70, no. 8 (April 10, 2013): 3497-3503.
            https://doi.org/10.1007/s12665-013-2394-z.
         '''
-        n0 = getattr(self, 'd%s_d%s_%s'%(a, x, y))()
-        n1 = getattr(self, 'd%s_d%s_%s'%(c, y, x))()
+        n0 = getattr(self, f'd{a}_d{x}_{y}')()
+        n1 = getattr(self, f'd{c}_d{y}_{x}')()
 
-        n2 = getattr(self, 'd%s_d%s_%s'%(a, y, x))()
-        n3 = getattr(self, 'd%s_d%s_%s'%(c, x, y))()
+        n2 = getattr(self, f'd{a}_d{y}_{x}')()
+        n3 = getattr(self, f'd{c}_d{x}_{y}')()
 
-        d0 = getattr(self, 'd%s_d%s_%s'%(b, x, y))()
-        d1 = getattr(self, 'd%s_d%s_%s'%(c, y, x))()
+        d0 = getattr(self, f'd{b}_d{x}_{y}')()
+        d1 = getattr(self, f'd{c}_d{y}_{x}')()
 
-        d2 = getattr(self, 'd%s_d%s_%s'%(b, y, x))()
-        d3 = getattr(self, 'd%s_d%s_%s'%(c, x, y))()
+        d2 = getattr(self, f'd{b}_d{y}_{x}')()
+        d3 = getattr(self, f'd{c}_d{x}_{y}')()
 
         return (n0*n1 - n2*n3)/(d0*d1 - d2*d3)
 
@@ -6028,17 +6028,17 @@ for a, a_str, a_units, a_name in zip(*prop_iter):
         for c, c_name in zip(('H', 'S', 'G', 'U', 'A'), ('enthalpy', 'entropy', 'Gibbs energy', 'internal energy', 'Helmholtz energy')):
             def _der(self, property=a, differentiate_by=b, at_constant=c):
                 return self._derivs_jacobian(a=property, b=differentiate_by, c=at_constant)
-            t = 'd%s_d%s_%s' %(a, b, c)
-            doc = r"""Method to calculate and return the %s derivative of %s of the phase at constant %s.
+            t = f'd{a}_d{b}_{c}'
+            doc = r"""Method to calculate and return the {} derivative of {} of the phase at constant {}.
 
     .. math::
-        \left(\frac{\partial %s}{\partial %s}\right)_{%s}
+        \left(\frac{{\partial {}}}{{\partial {}}}\right)_{{{}}}
 
 Returns
 -------
-%s : float
-    The %s derivative of %s of the phase at constant %s, [%s/%s]
-""" %(b_name, a_name, c_name, a_str, b_str, c, t, b_name, a_name, c_name, a_units, b_units)
+{} : float
+    The {} derivative of {} of the phase at constant {}, [{}/{}]
+""".format(b_name, a_name, c_name, a_str, b_str, c, t, b_name, a_name, c_name, a_units, b_units)
             setattr(Phase, t, _der)
             try:
                 _der.__doc__ = doc
@@ -6080,18 +6080,18 @@ for attr in derivatives_thermodynamic:
     except:
         prop, diff_by = vals
         at_constant = 'T' if diff_by == 'P' else 'P'
-    s = '%s_mass_%s' %(base, end)
+    s = f'{base}_mass_{end}'
 
-    doc = r"""Method to calculate and return the %s derivative of mass %s of the phase at constant %s.
+    doc = r"""Method to calculate and return the {} derivative of mass {} of the phase at constant {}.
 
     .. math::
-        \left(\frac{\partial %s_{\text{mass}}}{\partial %s}\right)_{%s}
+        \left(\frac{{\partial {}_{{\text{{mass}}}}}}{{\partial {}}}\right)_{{{}}}
 
 Returns
 -------
-%s : float
-    The %s derivative of mass %s of the phase at constant %s, [%s/%s]
-""" %(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
+{} : float
+    The {} derivative of mass {} of the phase at constant {}, [{}/{}]
+""".format(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
     try:
         _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
     except:
