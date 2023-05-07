@@ -941,7 +941,7 @@ class Mixture:
             Sm = property_mass_to_molar(S, self.MW)
         self.property_package.flash_caloric(zs=self.zs, T=T, P=P, VF=VF, Hm=Hm, Sm=Sm)
         self.status = self.property_package.status
-        if self.status == True:
+        if self.status is True:
             self.T = self.property_package.T
             self.P = self.property_package.P
             self.V_over_F = self.VF = self.property_package.V_over_F

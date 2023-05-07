@@ -1480,9 +1480,9 @@ def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
             adjust = n_anions + cation_index
     anion_zs, cation_zs, z_water = ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust=adjust)
     new_zi = cation_zs[cation_index] if positive else anion_zs[anion_index]
-    if increase == True and new_zi < old_zi:
+    if increase is True and new_zi < old_zi:
         raise ValueError('Adjusting specified ion %s resulted in a decrease of its quantity but an increase was specified' % selected_ion.formula)
-    elif increase == False and new_zi > old_zi:
+    elif increase is False and new_zi > old_zi:
         raise ValueError('Adjusting specified ion %s resulted in a increase of its quantity but an decrease was specified' % selected_ion.formula)
     return anion_zs, cation_zs, z_water
 

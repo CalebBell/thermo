@@ -34,7 +34,8 @@ from fluids.numerics import (chebval, numpy as np, polyder, std, min_max_ratios,
                              horner_stable, curve_fit, differential_evolution, fit_minimization_targets, leastsq,
                              polynomial_offset_scale,
                              lmder)
-import fluids, thermo
+import fluids
+import thermo
 try:
     from numpy.polynomial.chebyshev import cheb2poly
     from numpy.polynomial.polynomial import Polynomial

@@ -3156,7 +3156,7 @@ def TPV_solve_HSGUA_guesses_1P(zs, method, constants, correlations,
             guess = 0.024465403697038125
         return secant(err, guess, xtol=xtol, ytol=ytol,
                       maxiter=maxiter, bisection=True, low=min_bound)
-    except (UnconvergedError,):
+    except UnconvergedError:
         # G and A specs are NOT MONOTONIC and the brackets will likely NOT BRACKET
         # THE ROOTS!
         return brenth(err, min_bound, max_bound, xtol=xtol, ytol=ytol, maxiter=maxiter)
@@ -4478,7 +4478,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
         val = secant(err, guess, xtol=xtol, ytol=ytol,
                       maxiter=maxiter, bisection=True, low=min_bound, require_xtol=False)
         return val, info[0], info[1], info[2]
-    except (UnconvergedError,) as e:
+    except UnconvergedError as e:
         val = brenth(err, min_bound, max_bound, xtol=xtol, ytol=ytol, maxiter=maxiter)
         return val, info[0], info[1], info[2]
 

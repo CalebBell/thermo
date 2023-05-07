@@ -5827,7 +5827,6 @@ class PSRKMixingRules:
     A_inv = 1.0/A
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
                                 pure_a_alphas=True):
-
         r'''Method to calculate `a_alpha` and its first and second
         derivatives for an EOS with the PSRK mixing rules. Returns
         `a_alpha`, `da_alpha_dT`, and `d2a_alpha_dT2`.

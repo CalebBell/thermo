@@ -595,7 +595,6 @@ def Helmholtz_A0(tau, delta,
            IdealGasHelmholtzPlanckEinsteinGeneralized_ts=None,
            IdealGasHelmholtzPlanckEinsteinGeneralized_cs=None,
            IdealGasHelmholtzPlanckEinsteinGeneralized_ds=None):
-
     '''Compute the dimensionless ideal gas Helmholtz energy for a  Helmholtz
     equation of state.
 
