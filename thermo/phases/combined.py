@@ -89,7 +89,6 @@ class CombinedPhase(Phase):
             raise ValueError("No method specified")
         return fun
 
-    lnphis = makeeqfun("lnphis")
     dlnphis_dT = makeeqfun("dlnphis_dT")
     dlnphis_dP = makeeqfun("dlnphis_dP")
     dlnphis_dns = makeeqfun("dlnphis_dns")

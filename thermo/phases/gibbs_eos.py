@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ['HelmholtzEOS',]
+__all__ = ['GibbsEOS',]
 
 from thermo.phases.phase import Phase
 
