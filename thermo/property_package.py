@@ -48,7 +48,6 @@ from fluids.constants import R
 from fluids.numerics import UnconvergedError, brenth, derivative, exp, log, secant
 from fluids.numerics import numpy as np
 
-
 DIRECT_1P = 'Direct 1 Phase'
 DIRECT_2P = 'Direct 2 Phase'
 RIGOROUS_BISECTION = 'Bisection'
