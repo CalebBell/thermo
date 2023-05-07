@@ -6014,7 +6014,7 @@ class IdealGasDeparturePhase(Phase):
         if self.scalar:
             self._gammas = [phis[i]/phi_pures[i] for i in range(self.N)]
         else:
-            self._gammas = phis[i]/phi_pures[i]
+            self._gammas = phis/phi_pures
         return self._gammas
 
 

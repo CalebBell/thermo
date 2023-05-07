@@ -2405,7 +2405,7 @@ class TDependentProperty:
         else:
             raise ValueError("Unknown transform")
 
-    def extrapolate_transform(self, T, method, transform):
+    def extrapolate_transform(self, T, method, transform, in_range='error'):
         T_limits = self.T_limits
         if T < 0.0:
             raise ValueError("Negative temperature")

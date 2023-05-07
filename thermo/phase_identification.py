@@ -954,7 +954,7 @@ def sort_phases(liquids, solids, constants, settings):
                         liquids.insert(0, water)
     if len(solids) > 1:
         solids = mini_sort_phases(solids, sort_method=settings.solid_sort_method,
-                         prop=setings.solid_sort_prop,
+                         prop=settings.solid_sort_prop,
                          cmps=settings.solid_sort_cmps,
                          cmps_neg=settings.solid_sort_cmps_neg,
                          reverse=settings.phase_sort_higher_first, constants=constants)
