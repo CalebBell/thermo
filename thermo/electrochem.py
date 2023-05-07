@@ -118,19 +118,26 @@ __all__ = ['Laliberte_density', 'Laliberte_heat_capacity',
            ]
 
 import os
-from fluids.constants import e, N_A
-from fluids.numerics import horner, chebval
-from chemicals.utils import source_path, os_path_join, can_load_data, PY37
-from chemicals.data_reader import data_source, register_df_source
-from fluids.numerics import exp, isnan
 from math import log10
-from chemicals.utils import ws_to_zs, mixing_simple
+
 from chemicals import identifiers
+from chemicals.data_reader import data_source, register_df_source
 
 # For saturation properties of water
-from chemicals.iapws import (iapws95_rhoc_inv, iapws95_Tc, iapws95_R,
-                             iapws95_rhol_sat, iapws95_d2A0_dtau2, iapws95_d2Ar_dtau2,
-                             iapws95_dAr_ddelta, iapws95_d2Ar_ddeltadtau, iapws95_d2Ar_ddelta2)
+from chemicals.iapws import (
+    iapws95_d2A0_dtau2,
+    iapws95_d2Ar_ddelta2,
+    iapws95_d2Ar_ddeltadtau,
+    iapws95_d2Ar_dtau2,
+    iapws95_dAr_ddelta,
+    iapws95_R,
+    iapws95_rhoc_inv,
+    iapws95_rhol_sat,
+    iapws95_Tc,
+)
+from chemicals.utils import PY37, can_load_data, mixing_simple, os_path_join, source_path, ws_to_zs
+from fluids.constants import N_A, e
+from fluids.numerics import chebval, exp, horner, isnan
 
 F = e*N_A
 

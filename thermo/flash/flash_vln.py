@@ -22,25 +22,15 @@ SOFTWARE.
 
 __all__ = ['FlashVLN']
 
-from thermo.flash.flash_vl import FlashVL
+from chemicals.exceptions import PhaseCountReducedError, TrivialSolutionError
 from chemicals.rachford_rice import flash_inner_loop
-from chemicals.exceptions import (
-    TrivialSolutionError,
-    PhaseCountReducedError
-)
-from fluids.numerics import (
-    UnconvergedError,
-    OscillationError
-)
+from fluids.numerics import OscillationError, UnconvergedError
+
+from thermo.bulk import default_settings
+from thermo.flash.flash_utils import deduplicate_stab_results, empty_flash_conv, one_in_list, sequential_substitution_NP
+from thermo.flash.flash_vl import FlashVL
 from thermo.phase_identification import identify_sort_phases
 from thermo.property_package import StabilityTester
-from thermo.bulk import default_settings
-from thermo.flash.flash_utils import (
-    sequential_substitution_NP,
-    one_in_list,
-    empty_flash_conv,
-    deduplicate_stab_results
-)
 
 CAS_H2O = '7732-18-5'
 

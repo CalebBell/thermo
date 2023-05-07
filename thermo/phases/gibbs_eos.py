@@ -24,5 +24,6 @@ __all__ = ['HelmholtzEOS',]
 
 from thermo.phases.phase import Phase
 
+
 class GibbsEOS(Phase):
     pass

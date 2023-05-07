@@ -94,9 +94,10 @@ __all__ = ['vapor_score_Tpc', 'vapor_score_Vpc',
            ]
 
 
-from chemicals.rachford_rice import Rachford_Rice_flash_error
 from chemicals.flash_basic import Wilson_K_value
-from chemicals.utils import phase_identification_parameter, Vm_to_rho
+from chemicals.rachford_rice import Rachford_Rice_flash_error
+from chemicals.utils import Vm_to_rho, phase_identification_parameter
+
 
 def vapor_score_Tpc(T, Tcs, zs):
     r'''Compute a vapor score representing how vapor-like a phase is

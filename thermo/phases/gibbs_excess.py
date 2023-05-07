@@ -23,22 +23,23 @@ SOFTWARE.
 __all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid']
 
 from math import isinf, isnan
-from fluids.constants import R, R_inv
-from fluids.numerics import (horner_and_der2, derivative,
-                             evaluate_linear_fits, evaluate_linear_fits_d,
-                             evaluate_linear_fits_d2, log, exp,
-                             trunc_exp, secant, numpy as np)
-from chemicals.utils import phase_identification_parameter
-from chemicals.solubility import Henry_constants, dHenry_constants_dT, d2Henry_constants_dT2
-from thermo.activity import IdealSolution
-from thermo.utils import POLY_FIT, PROPERTY_TRANSFORM_LN, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_D2_X
-from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
-from thermo.volume import VolumeLiquid, VolumeSolid
-from thermo.vapor_pressure import VaporPressure, SublimationPressure
-from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
-from thermo.nrtl import nrtl_taus as ln_henries, nrtl_dtaus_dT as dln_henries_dT, nrtl_d2taus_dT2 as d2ln_henries_dT2
 
+from chemicals.solubility import Henry_constants, d2Henry_constants_dT2, dHenry_constants_dT
+from chemicals.utils import phase_identification_parameter
+from fluids.constants import R, R_inv
+from fluids.numerics import derivative, evaluate_linear_fits, evaluate_linear_fits_d, evaluate_linear_fits_d2, exp, horner_and_der2, log, secant, trunc_exp
+from fluids.numerics import numpy as np
+
+from thermo.activity import IdealSolution
+from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid
+from thermo.nrtl import nrtl_d2taus_dT2 as d2ln_henries_dT2
+from thermo.nrtl import nrtl_dtaus_dT as dln_henries_dT
+from thermo.nrtl import nrtl_taus as ln_henries
+from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
 from thermo.phases.phase import Phase
+from thermo.utils import POLY_FIT, PROPERTY_TRANSFORM_D2_X, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_LN
+from thermo.vapor_pressure import SublimationPressure, VaporPressure
+from thermo.volume import VolumeLiquid, VolumeSolid
 
 try:
     zeros, array = np.zeros, np.array

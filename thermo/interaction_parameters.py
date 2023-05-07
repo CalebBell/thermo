@@ -51,10 +51,9 @@ __all__ = ['InteractionParameterDB', 'ScalarParameterDB']
 
 import os
 from math import isnan
-from chemicals.utils import can_load_data, PY37
+
 from chemicals.identifiers import check_CAS, sorted_CAS_key
-
-
+from chemicals.utils import PY37, can_load_data
 
 
 class InteractionParameterDB:

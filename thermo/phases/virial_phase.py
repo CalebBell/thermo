@@ -22,40 +22,52 @@ SOFTWARE.
 '''
 __all__ = ['VirialCSP', 'VirialGas']
 
+from chemicals.utils import dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, mixing_simple
+from chemicals.virial import (
+    BVirial_Abbott_mat,
+    BVirial_Abbott_vec,
+    BVirial_Meng_mat,
+    BVirial_Meng_vec,
+    BVirial_mixture,
+    BVirial_Oconnell_Prausnitz_mat,
+    BVirial_Oconnell_Prausnitz_vec,
+    BVirial_Pitzer_Curl_mat,
+    BVirial_Pitzer_Curl_vec,
+    BVirial_Tsonopoulos_extended_mat,
+    BVirial_Tsonopoulos_extended_vec,
+    BVirial_Tsonopoulos_mat,
+    BVirial_Tsonopoulos_vec,
+    BVirial_Xiang_mat,
+    BVirial_Xiang_vec,
+    CVirial_Liu_Xiang_mat,
+    CVirial_Liu_Xiang_vec,
+    CVirial_mixture_Orentlicher_Prausnitz,
+    CVirial_Orbey_Vera_mat,
+    CVirial_Orbey_Vera_vec,
+    Lee_Kesler_virial_CSP_Vcijs,
+    Tarakad_Danner_virial_CSP_omegaijs,
+    Tarakad_Danner_virial_CSP_Pcijs,
+    Tarakad_Danner_virial_CSP_Tcijs,
+    Z_from_virial_density_form,
+    d2BVirial_mixture_dzizjs,
+    d2CVirial_mixture_dT2_Orentlicher_Prausnitz,
+    d2CVirial_mixture_Orentlicher_Prausnitz_dTdzs,
+    d2CVirial_mixture_Orentlicher_Prausnitz_dzizjs,
+    d2V_dzizjs_virial,
+    d3BVirial_mixture_dzizjzks,
+    d3CVirial_mixture_dT3_Orentlicher_Prausnitz,
+    d3CVirial_mixture_Orentlicher_Prausnitz_dzizjzks,
+    dBVirial_mixture_dzs,
+    dCVirial_mixture_dT_Orentlicher_Prausnitz,
+    dCVirial_mixture_Orentlicher_Prausnitz_dzs,
+    dV_dzs_virial,
+)
 from fluids.constants import R
-from fluids.numerics import newton, numpy as np, log
-from chemicals.utils import mixing_simple, dxs_to_dns, dxs_to_dn_partials, dns_to_dn_partials, hash_any_primitive
+from fluids.numerics import log, newton
+from fluids.numerics import numpy as np
+
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.phases.phase import Phase, IdealGasDeparturePhase
-
-
-from chemicals.virial import (BVirial_Pitzer_Curl_vec,BVirial_Pitzer_Curl_mat,
-                                BVirial_Abbott_vec, BVirial_Abbott_mat,
-                                BVirial_Tsonopoulos_vec, BVirial_Tsonopoulos_mat,
-                                BVirial_Tsonopoulos_extended_vec,
-                                BVirial_Tsonopoulos_extended_mat,
-                                BVirial_Meng_vec, BVirial_Meng_mat,
-                                BVirial_Oconnell_Prausnitz_vec,
-                                BVirial_Oconnell_Prausnitz_mat,
-                                BVirial_Xiang_vec,
-                                BVirial_Xiang_mat,
-                              Z_from_virial_density_form, BVirial_mixture,
-                              dBVirial_mixture_dzs, d2BVirial_mixture_dzizjs, d3BVirial_mixture_dzizjzks,
-                              CVirial_mixture_Orentlicher_Prausnitz,
-                              dCVirial_mixture_dT_Orentlicher_Prausnitz,
-                              d2CVirial_mixture_dT2_Orentlicher_Prausnitz,
-                              d3CVirial_mixture_dT3_Orentlicher_Prausnitz,
-                              dCVirial_mixture_Orentlicher_Prausnitz_dzs,
-                              d2CVirial_mixture_Orentlicher_Prausnitz_dzizjs,
-                              d3CVirial_mixture_Orentlicher_Prausnitz_dzizjzks,
-                              d2CVirial_mixture_Orentlicher_Prausnitz_dTdzs,
-                              CVirial_Orbey_Vera_mat, CVirial_Liu_Xiang_mat,
-                              CVirial_Orbey_Vera_vec, CVirial_Liu_Xiang_vec,
-                              Tarakad_Danner_virial_CSP_Tcijs,
-                              Tarakad_Danner_virial_CSP_Pcijs, Lee_Kesler_virial_CSP_Vcijs,
-                              Tarakad_Danner_virial_CSP_omegaijs,
-                              dV_dzs_virial, d2V_dzizjs_virial)
-
+from thermo.phases.phase import IdealGasDeparturePhase, Phase
 
 try:
     array, zeros, ones, delete, npsum, nplog = np.array, np.zeros, np.ones, np.delete, np.sum, np.log

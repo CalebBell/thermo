@@ -51,7 +51,8 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 __all__ = ['Joback', 'J_BIGGS_JOBACK_SMARTS',
            'J_BIGGS_JOBACK_SMARTS_id_dict']
 
-from fluids.numerics import horner, exp
+from fluids.numerics import exp, horner
+
 from thermo.group_contribution.group_contribution_base import smarts_fragment
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
@@ -64,9 +65,7 @@ def load_rdkit_modules():
         return
     try:
         from rdkit import Chem
-        from rdkit.Chem import Descriptors
-        from rdkit.Chem import AllChem
-        from rdkit.Chem import rdMolDescriptors
+        from rdkit.Chem import AllChem, Descriptors, rdMolDescriptors
         loaded_rdkit = True
     except:
         if not loaded_rdkit: # pragma: no cover

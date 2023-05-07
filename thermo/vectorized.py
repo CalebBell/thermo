@@ -55,7 +55,9 @@ array([591.75, 647.14])
 
 """
 
-from fluids.numerics import numpy as np, FakePackage
+from fluids.numerics import FakePackage
+from fluids.numerics import numpy as np
+
 import thermo
 
 __all__ = []

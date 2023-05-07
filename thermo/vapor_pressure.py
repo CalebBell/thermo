@@ -60,25 +60,37 @@ Sublimation Pressure
 __all__ = ['vapor_pressure_methods', 'VaporPressure', 'SublimationPressure',
            'sublimation_pressure_methods']
 
-from fluids.numerics import NoSolutionError
-
 from math import e, inf
-from fluids.numerics import log, exp, isnan
+
+from chemicals import miscdata, vapor_pressure
 from chemicals.dippr import EQ101
-from chemicals import miscdata
-from chemicals.miscdata import lookup_VDI_tabular_data
-from chemicals.vapor_pressure import (Ambrose_Walton, Antoine, Edalat, Lee_Kesler, Psub_Clapeyron,
-                                      Sanjari, TRC_Antoine_extended, Wagner, Wagner_original,
-                                      boiling_critical_relation)
-from chemicals.vapor_pressure import dAntoine_dT, d2Antoine_dT2, dWagner_original_dT, d2Wagner_original_dT2, dWagner_dT, d2Wagner_dT2, dTRC_Antoine_extended_dT, d2TRC_Antoine_extended_dT2
+from chemicals.iapws import iapws95_dPsat_dT, iapws95_Psat, iapws95_Tc
 from chemicals.identifiers import CAS_to_int
-from chemicals.iapws import iapws95_Tc, iapws95_Psat, iapws95_dPsat_dT
+from chemicals.miscdata import lookup_VDI_tabular_data
+from chemicals.vapor_pressure import (
+    Ambrose_Walton,
+    Antoine,
+    Edalat,
+    Lee_Kesler,
+    Psub_Clapeyron,
+    Sanjari,
+    TRC_Antoine_extended,
+    Wagner,
+    Wagner_original,
+    boiling_critical_relation,
+    d2Antoine_dT2,
+    d2TRC_Antoine_extended_dT2,
+    d2Wagner_dT2,
+    d2Wagner_original_dT2,
+    dAntoine_dT,
+    dTRC_Antoine_extended_dT,
+    dWagner_dT,
+    dWagner_original_dT,
+)
+from fluids.numerics import NoSolutionError, exp, isnan, log
 
-from chemicals import vapor_pressure
-from thermo.utils import TDependentProperty
-from thermo.utils import VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, EOS, IAPWS
-from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids
-
+from thermo.coolprop import PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, IAPWS, VDI_PPDS, VDI_TABULAR, TDependentProperty
 
 """
 Move this to its own file?

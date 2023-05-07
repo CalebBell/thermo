@@ -98,13 +98,13 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
 
            'eos_mix_dV_dzs', 'eos_mix_a_alpha_volume']
+from math import log, sqrt
+
 from fluids.constants import R
 from fluids.numerics import catanh
-from math import sqrt, log
-from thermo.eos import eos_lnphi, eos_G_dep
+
+from thermo.eos import eos_G_dep, eos_lnphi
 from thermo.eos_volume import volume_solutions_halley
-
-
 
 R2 = R*R
 R_inv = 1.0/R

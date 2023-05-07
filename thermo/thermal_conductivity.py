@@ -115,32 +115,44 @@ __all__ = [
            ]
 
 
-from fluids.numerics import horner
-from fluids.constants import R
-from fluids.numerics import sqrt
-from chemicals.utils import mixing_simple, none_and_length_check
+from chemicals import miscdata, thermal_conductivity
 from chemicals.dippr import EQ100, EQ102
-from chemicals.thermal_conductivity import (Bahadori_gas, Bahadori_liquid, Chung, Chung_dense,
-                                            DIPPR9B, DIPPR9G, DIPPR9H, Eli_Hanley, Eli_Hanley_dense,
-                                            Eucken, Eucken_modified, Filippov, Gharagheizi_gas,
-                                            Gharagheizi_liquid, Lakshmi_Prasad, Lindsay_Bromley,
-                                            Missenard, Nicola, Nicola_original, Sato_Riedel,
-                                            Sheffy_Johnson, Stiel_Thodos_dense)
-from chemicals import thermal_conductivity
-
-from thermo.utils import TPDependentProperty, MixtureProperty
-from chemicals import miscdata
 from chemicals.miscdata import lookup_VDI_tabular_data
-from thermo.coolprop import has_CoolProp, coolprop_dict, coolprop_fluids, CoolProp_T_dependent_property, PropsSI, PhaseSI, CoolProp_failing_PT_flashes
+from chemicals.thermal_conductivity import (
+    DIPPR9B,
+    DIPPR9G,
+    DIPPR9H,
+    Bahadori_gas,
+    Bahadori_liquid,
+    Chung,
+    Chung_dense,
+    Eli_Hanley,
+    Eli_Hanley_dense,
+    Eucken,
+    Eucken_modified,
+    Filippov,
+    Gharagheizi_gas,
+    Gharagheizi_liquid,
+    Lakshmi_Prasad,
+    Lindsay_Bromley,
+    Missenard,
+    Nicola,
+    Nicola_original,
+    Sato_Riedel,
+    Sheffy_Johnson,
+    Stiel_Thodos_dense,
+)
+from chemicals.utils import mixing_simple, none_and_length_check
+from fluids.constants import R
+from fluids.numerics import horner, sqrt
+
 from thermo import electrochem
+from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import thermal_conductivity_Magomedov
-from thermo.viscosity import ViscosityGas
 from thermo.heat_capacity import HeatCapacityGas
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, MixtureProperty, TPDependentProperty
+from thermo.viscosity import ViscosityGas
 from thermo.volume import VolumeGas
-
-
-from thermo.utils import DIPPR_PERRY_8E, VDI_TABULAR, VDI_PPDS, COOLPROP, LINEAR
-
 
 GHARAGHEIZI_L = 'GHARAGHEIZI_L'
 NICOLA = 'NICOLA'

@@ -27,9 +27,10 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_
 .. contents:: :local:
 '''
 # This module SHOULD NOT import anything from thermo
-from fluids.numerics import numpy as np
-from chemicals.utils import PY37
 import sys
+
+from chemicals.utils import PY37
+from fluids.numerics import numpy as np
 
 __all__ = ['object_from_json', 'json_default']
 try:

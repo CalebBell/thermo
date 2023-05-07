@@ -25,98 +25,206 @@ __all__ = ['TDependentProperty', 'PROPERTY_TRANSFORM_LN', 'PROPERTY_TRANSFORM_DL
            'PROPERTY_TRANSFORM_D2LN', 'PROPERTY_TRANSFORM_D_X', 'PROPERTY_TRANSFORM_D2_X']
 
 import os
+
 try:
     pass
 except: # pragma: no cover
     pass
 
-from fluids.numerics import (quad, brenth, secant, linspace, polyint, polyint_over_x, derivative,
-                             trunc_log, trunc_exp, interp,
-                             polyder, horner, numpy as np, fit_minimization_targets,
-                             horner_backwards, exp_horner_backwards,
-                             exp_horner_backwards_ln_tau,
-                             exp_horner_backwards_ln_tau_and_der,
-                             exp_horner_backwards_ln_tau_and_der2,
-                             exp_poly_ln_tau_coeffs2, exp_poly_ln_tau_coeffs3,
-                             exp_horner_backwards, exp_horner_backwards_and_der,
-                             exp_horner_backwards_and_der2,
-                             exp_horner_backwards_and_der3,
-                             polynomial_offset_scale,
-                             chebval, chebder, chebint,
-                             horner_and_der, horner_and_der2, horner_and_der3,
-                             horner_stable_and_der2,
-                             horner_backwards_ln_tau,
-                             horner_backwards_ln_tau_and_der,
-                             horner_backwards_ln_tau_and_der2,
-                             horner_backwards_ln_tau_and_der3,
-                             fit_integral_linear_extrapolation,
-                             fit_integral_over_T_linear_extrapolation,
-                             horner_stable, horner_stable_and_der, horner_stable_and_der2,
-                             horner_stable_and_der3, horner_stable_and_der4,
-                             exp_horner_stable, exp_horner_stable_and_der,
-                             exp_horner_stable_and_der2, exp_horner_stable_and_der3,
-                             exp_cheb, exp_cheb_and_der, exp_cheb_and_der2, exp_cheb_and_der3,
-                             chebval_ln_tau, chebval_ln_tau_and_der, chebval_ln_tau_and_der2, chebval_ln_tau_and_der3,
-                             horner_stable_ln_tau, horner_stable_ln_tau_and_der, horner_stable_ln_tau_and_der2, horner_stable_ln_tau_and_der3,
-                             exp_cheb_ln_tau, exp_cheb_ln_tau_and_der, exp_cheb_ln_tau_and_der2,
-                             exp_horner_stable_ln_tau, exp_horner_stable_ln_tau_and_der, exp_horner_stable_ln_tau_and_der2,
-                             isnan, log, exp, inf
-)
-
-import fluids
-import chemicals
 from math import e
+
+import chemicals
+import fluids
+from chemicals.dippr import (
+    EQ100,
+    EQ101,
+    EQ102,
+    EQ104,
+    EQ105,
+    EQ106,
+    EQ106_AB,
+    EQ106_ABC,
+    EQ107,
+    EQ114,
+    EQ115,
+    EQ116,
+    EQ127,
+    EQ101_fitting_jacobian,
+    EQ102_fitting_jacobian,
+    EQ105_fitting_jacobian,
+    EQ106_fitting_jacobian,
+    EQ107_fitting_jacobian,
+)
+from chemicals.heat_capacity import (
+    Poling,
+    Poling_integral,
+    Poling_integral_over_T,
+    TRCCp,
+    TRCCp_integral,
+    TRCCp_integral_over_T,
+    Zabransky_cubic,
+    Zabransky_cubic_integral,
+    Zabransky_cubic_integral_over_T,
+    Zabransky_quasi_polynomial,
+    Zabransky_quasi_polynomial_integral,
+    Zabransky_quasi_polynomial_integral_over_T,
+)
+from chemicals.interface import PPDS14, ISTExpansion, Jasper, REFPROP_sigma, Somayajulu, Watson_sigma
+from chemicals.phase_change import PPDS12, Alibakhshi, Watson, Watson_n
+from chemicals.thermal_conductivity import PPDS3, PPDS8, Chemsep_16
 from chemicals.utils import hash_any_primitive
-from chemicals.vapor_pressure import (Antoine, Antoine_AB_coeffs_from_point,
-                                      DIPPR101_ABC_coeffs_from_point,
-                                      Yaws_Psat_fitting_jacobian,
-                                      d2Yaws_Psat_dT2, dYaws_Psat_dT,
-                                      Yaws_Psat, TDE_PVExpansion,
-                                      Wagner, Wagner_original,
-                                      TRC_Antoine_extended,
-                                      dAntoine_dT, d2Antoine_dT2,
-                                      dWagner_original_dT, d2Wagner_original_dT2,
-                                      dWagner_dT, d2Wagner_dT2,
-                                      dTRC_Antoine_extended_dT,
-                                      d2TRC_Antoine_extended_dT2,
-                                      Wagner_fitting_jacobian,
-                                      Wagner_original_fitting_jacobian,
-                                      Antoine_fitting_jacobian,
-                                      TRC_Antoine_extended_fitting_jacobian)
-from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian, EQ106_fitting_jacobian, EQ105_fitting_jacobian, EQ107_fitting_jacobian, EQ106_AB, EQ106_ABC
-from chemicals.phase_change import Watson, Watson_n, Alibakhshi, PPDS12
-from chemicals.viscosity import (Viswanath_Natarajan_2, Viswanath_Natarajan_2_exponential,
-                                 Viswanath_Natarajan_3, PPDS9, dPPDS9_dT,
-                                 mu_Yaws, dmu_Yaws_dT,
-                                 PPDS5, mu_TDE)
-from chemicals.heat_capacity import (Poling, Poling_integral, Poling_integral_over_T,
-                                     TRCCp, TRCCp_integral, TRCCp_integral_over_T,
-                                     Zabransky_quasi_polynomial, Zabransky_quasi_polynomial_integral, Zabransky_quasi_polynomial_integral_over_T,
-                                     Zabransky_cubic, Zabransky_cubic_integral, Zabransky_cubic_integral_over_T)
-from chemicals.thermal_conductivity import Chemsep_16, PPDS8, PPDS3
-from chemicals.interface import REFPROP_sigma, Somayajulu, Jasper, PPDS14, Watson_sigma, ISTExpansion
-from chemicals.volume import volume_VDI_PPDS, Rackett_fit, PPDS17, TDE_VDNS_rho
-from thermo.eos_alpha_functions import (Twu91_alpha_pure, Soave_1979_alpha_pure,
-                                        Soave_1972_alpha_pure, Heyen_alpha_pure,
-                                        Harmens_Knapp_alpha_pure, Mathias_1983_alpha_pure,
-                                        Mathias_Copeman_untruncated_alpha_pure,
-                                        Gibbons_Laughton_alpha_pure, Soave_1984_alpha_pure,
-                                        Yu_Lu_alpha_pure, Trebble_Bishnoi_alpha_pure,
-                                        Melhem_alpha_pure, Androulakis_alpha_pure,
-                                        Schwartzentruber_alpha_pure, Almeida_alpha_pure,
-                                        Soave_1993_alpha_pure, Gasem_alpha_pure,
-                                        Coquelet_alpha_pure, Haghtalab_alpha_pure,
-                                        Saffari_alpha_pure, Chen_Yang_alpha_pure)
-from thermo.eos import GCEOS
-from thermo.coolprop import coolprop_fluids
-from thermo.base import source_path
-from thermo.fitting import fit_customized
+from chemicals.vapor_pressure import (
+    Antoine,
+    Antoine_AB_coeffs_from_point,
+    Antoine_fitting_jacobian,
+    DIPPR101_ABC_coeffs_from_point,
+    TDE_PVExpansion,
+    TRC_Antoine_extended,
+    TRC_Antoine_extended_fitting_jacobian,
+    Wagner,
+    Wagner_fitting_jacobian,
+    Wagner_original,
+    Wagner_original_fitting_jacobian,
+    Yaws_Psat,
+    Yaws_Psat_fitting_jacobian,
+    d2Antoine_dT2,
+    d2TRC_Antoine_extended_dT2,
+    d2Wagner_dT2,
+    d2Wagner_original_dT2,
+    d2Yaws_Psat_dT2,
+    dAntoine_dT,
+    dTRC_Antoine_extended_dT,
+    dWagner_dT,
+    dWagner_original_dT,
+    dYaws_Psat_dT,
+)
+from chemicals.viscosity import (
+    PPDS5,
+    PPDS9,
+    Viswanath_Natarajan_2,
+    Viswanath_Natarajan_2_exponential,
+    Viswanath_Natarajan_3,
+    dmu_Yaws_dT,
+    dPPDS9_dT,
+    mu_TDE,
+    mu_Yaws,
+)
+from chemicals.volume import PPDS17, Rackett_fit, TDE_VDNS_rho, volume_VDI_PPDS
+from fluids.numerics import (
+    brenth,
+    chebder,
+    chebint,
+    chebval,
+    chebval_ln_tau,
+    chebval_ln_tau_and_der,
+    chebval_ln_tau_and_der2,
+    chebval_ln_tau_and_der3,
+    derivative,
+    exp,
+    exp_cheb,
+    exp_cheb_and_der,
+    exp_cheb_and_der2,
+    exp_cheb_and_der3,
+    exp_cheb_ln_tau,
+    exp_cheb_ln_tau_and_der,
+    exp_cheb_ln_tau_and_der2,
+    exp_horner_backwards,
+    exp_horner_backwards_and_der,
+    exp_horner_backwards_and_der2,
+    exp_horner_backwards_and_der3,
+    exp_horner_backwards_ln_tau,
+    exp_horner_backwards_ln_tau_and_der,
+    exp_horner_backwards_ln_tau_and_der2,
+    exp_horner_stable,
+    exp_horner_stable_and_der,
+    exp_horner_stable_and_der2,
+    exp_horner_stable_and_der3,
+    exp_horner_stable_ln_tau,
+    exp_horner_stable_ln_tau_and_der,
+    exp_horner_stable_ln_tau_and_der2,
+    exp_poly_ln_tau_coeffs2,
+    exp_poly_ln_tau_coeffs3,
+    fit_integral_linear_extrapolation,
+    fit_integral_over_T_linear_extrapolation,
+    fit_minimization_targets,
+    horner,
+    horner_and_der,
+    horner_and_der2,
+    horner_and_der3,
+    horner_backwards,
+    horner_backwards_ln_tau,
+    horner_backwards_ln_tau_and_der,
+    horner_backwards_ln_tau_and_der2,
+    horner_backwards_ln_tau_and_der3,
+    horner_stable,
+    horner_stable_and_der,
+    horner_stable_and_der2,
+    horner_stable_and_der3,
+    horner_stable_and_der4,
+    horner_stable_ln_tau,
+    horner_stable_ln_tau_and_der,
+    horner_stable_ln_tau_and_der2,
+    horner_stable_ln_tau_and_der3,
+    inf,
+    interp,
+    isnan,
+    linspace,
+    log,
+    polyder,
+    polyint,
+    polyint_over_x,
+    polynomial_offset_scale,
+    quad,
+    secant,
+    trunc_exp,
+    trunc_log,
+)
+from fluids.numerics import numpy as np
+
 import thermo
-from thermo.utils import (VDI_TABULAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU,
-                          EXP_POLY_FIT_LN_TAU, STABLEPOLY_FIT, EXP_STABLEPOLY_FIT,
-                          STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU,
-                          CHEB_FIT, EXP_CHEB_FIT, CHEB_FIT_LN_TAU, EXP_CHEB_FIT_LN_TAU,
-                          has_matplotlib)
+from thermo.base import source_path
+from thermo.coolprop import coolprop_fluids
+from thermo.eos import GCEOS
+from thermo.eos_alpha_functions import (
+    Almeida_alpha_pure,
+    Androulakis_alpha_pure,
+    Chen_Yang_alpha_pure,
+    Coquelet_alpha_pure,
+    Gasem_alpha_pure,
+    Gibbons_Laughton_alpha_pure,
+    Haghtalab_alpha_pure,
+    Harmens_Knapp_alpha_pure,
+    Heyen_alpha_pure,
+    Mathias_1983_alpha_pure,
+    Mathias_Copeman_untruncated_alpha_pure,
+    Melhem_alpha_pure,
+    Saffari_alpha_pure,
+    Schwartzentruber_alpha_pure,
+    Soave_1972_alpha_pure,
+    Soave_1979_alpha_pure,
+    Soave_1984_alpha_pure,
+    Soave_1993_alpha_pure,
+    Trebble_Bishnoi_alpha_pure,
+    Twu91_alpha_pure,
+    Yu_Lu_alpha_pure,
+)
+from thermo.fitting import fit_customized
+from thermo.utils import (
+    CHEB_FIT,
+    CHEB_FIT_LN_TAU,
+    EXP_CHEB_FIT,
+    EXP_CHEB_FIT_LN_TAU,
+    EXP_POLY_FIT,
+    EXP_POLY_FIT_LN_TAU,
+    EXP_STABLEPOLY_FIT,
+    EXP_STABLEPOLY_FIT_LN_TAU,
+    POLY_FIT,
+    POLY_FIT_LN_TAU,
+    STABLEPOLY_FIT,
+    STABLEPOLY_FIT_LN_TAU,
+    VDI_TABULAR,
+    has_matplotlib,
+)
 
 
 def generate_fitting_function(model,
@@ -1531,7 +1639,7 @@ class TDependentProperty:
 
     def _generate_polynomial(self, func, low, high, n, start_n, max_n, eval_pts, fit_form, fit_method, data=None):
         # If data (Ts, values) is given do the stuff on those
-        from thermo.fitting import fit_polynomial, poly_fit_statistics, fit_cheb_poly_auto, FIT_CHEBTOOLS_POLY
+        from thermo.fitting import FIT_CHEBTOOLS_POLY, fit_cheb_poly_auto, fit_polynomial, poly_fit_statistics
         interpolation_T = lambda x: x
         interpolation_T_inv = lambda x: x
 

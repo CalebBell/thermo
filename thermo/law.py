@@ -30,8 +30,9 @@ __all__ = [#'DSL_data', 'TSCA_data',
            'load_law_data']
 
 import os
+
 from chemicals.identifiers import CAS_to_int
-from chemicals.utils import to_num, os_path_join, can_load_data, PY37
+from chemicals.utils import PY37, can_load_data, os_path_join, to_num
 
 DSL = 'DSL'
 TSCA = 'TSCA'
@@ -258,8 +259,9 @@ def load_economic_data():
     if HPV_data is not None:
         return None
     global _EPACDRDict, _ECHATonnageDict
-    import pandas as pd
     import zipfile
+
+    import pandas as pd
     folder = os_path_join(os.path.dirname(__file__), 'Law')
 
 

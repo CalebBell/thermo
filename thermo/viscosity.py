@@ -96,29 +96,37 @@ __all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
            'VISWANATH_NATARAJAN_2E', 'LETSOU_STIEL', 'PRZEDZIECKI_SRIDHAR',
            'LUCAS', 'GHARAGHEIZI', 'YOON_THODOS', 'STIEL_THODOS', 'LUCAS_GAS']
 
-from fluids.numerics import horner, brenth, trunc_log
-
-from fluids.numerics import log, exp, isinf, isnan
-from chemicals.utils import none_and_length_check, mixing_simple
-from thermo.utils import TPDependentProperty, MixtureProperty
-from chemicals import miscdata
-from chemicals.miscdata import lookup_VDI_tabular_data
-from thermo import electrochem
-from thermo.electrochem import Laliberte_viscosity
-from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property, CoolProp_failing_PT_flashes
+from chemicals import miscdata, viscosity
 from chemicals.dippr import EQ101, EQ102
-from chemicals import viscosity
-from chemicals.viscosity import (Brokaw, Herning_Zipperer, Letsou_Stiel, Lucas, Lucas_gas, PPDS9,
-                                 Przedziecki_Sridhar, Stiel_Thodos, Viswanath_Natarajan_2,
-                                 Viswanath_Natarajan_2_exponential, Viswanath_Natarajan_3,
-                                 Wilke_prefactored, Wilke_prefactors, Yoon_Thodos)
-from chemicals.viscosity import viscosity_gas_Gharagheizi, dPPDS9_dT
 from chemicals.identifiers import CAS_to_int
-from chemicals.miscdata import JOBACK
+from chemicals.miscdata import JOBACK, lookup_VDI_tabular_data
+from chemicals.utils import mixing_simple, none_and_length_check
+from chemicals.viscosity import (
+    PPDS9,
+    Brokaw,
+    Herning_Zipperer,
+    Letsou_Stiel,
+    Lucas,
+    Lucas_gas,
+    Przedziecki_Sridhar,
+    Stiel_Thodos,
+    Viswanath_Natarajan_2,
+    Viswanath_Natarajan_2_exponential,
+    Viswanath_Natarajan_3,
+    Wilke_prefactored,
+    Wilke_prefactors,
+    Yoon_Thodos,
+    dPPDS9_dT,
+    viscosity_gas_Gharagheizi,
+)
+from fluids.numerics import brenth, exp, horner, isinf, isnan, log, trunc_log
 
-from thermo.utils import DIPPR_PERRY_8E, VDI_TABULAR, VDI_PPDS, COOLPROP, LINEAR
-from thermo.volume import VolumeGas, VolumeLiquid
+from thermo import electrochem
+from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
+from thermo.electrochem import Laliberte_viscosity
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, MixtureProperty, TPDependentProperty
 from thermo.vapor_pressure import VaporPressure
+from thermo.volume import VolumeGas, VolumeLiquid
 
 DUTT_PRASAD = 'DUTT_PRASAD'
 VISWANATH_NATARAJAN_3 = 'VISWANATH_NATARAJAN_3'

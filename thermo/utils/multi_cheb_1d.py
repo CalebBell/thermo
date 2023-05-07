@@ -24,6 +24,7 @@ __all__ = ['MultiCheb1D']
 
 from bisect import bisect_left
 
+
 class MultiCheb1D:
     '''Simple class to store set of coefficients for multiple chebyshev
     approximations and perform calculations from them.

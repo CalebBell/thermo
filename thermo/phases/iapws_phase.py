@@ -24,11 +24,13 @@ __all__ = ['IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97']
 
 from chemicals import iapws
 from chemicals.interface import sigma_IAPWS
-from chemicals.viscosity import mu_IAPWS
 from chemicals.thermal_conductivity import k_IAPWS
+from chemicals.utils import Vm_to_rho, rho_to_Vm
+from chemicals.viscosity import mu_IAPWS
+
 from thermo.phases.helmholtz_eos import HelmholtzEOS
-from chemicals.utils import rho_to_Vm, Vm_to_rho
 from thermo.phases.phase import Phase
+
 
 class IAPWS95(HelmholtzEOS):
     model_name = 'iapws95'

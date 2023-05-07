@@ -31,10 +31,13 @@ __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
 'Cp_ideal_gas_Helmholtz', 'H_ideal_gas_Helmholtz',
 'S_ideal_gas_Helmholtz']
 import os
-from fluids.numerics import assert_close1d, numpy as np
-from thermo.base import data_dir
+from math import exp, log
+
 from chemicals.utils import mark_numba_incompatible
-from math import log, exp
+from fluids.numerics import assert_close1d
+from fluids.numerics import numpy as np
+
+from thermo.base import data_dir
 
 #try:
 #    import CoolProp
@@ -209,8 +212,9 @@ coolprop_fluids = {}
 
 @mark_numba_incompatible
 def store_coolprop_fluids():
-    import CoolProp
     import json
+
+    import CoolProp
     for CASRN in coolprop_dict:
         HEOS = AbstractState("HEOS", CASRN)
         try:
@@ -233,6 +237,7 @@ def store_coolprop_fluids():
 @mark_numba_incompatible
 def load_coolprop_fluids(depth=0):
     import json
+
     import CoolProp
     ver = CoolProp.__version__
     pth = os.path.join(data_dir, 'CoolPropFluids%s.json' %ver)

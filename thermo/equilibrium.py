@@ -39,13 +39,16 @@ EquilibriumState
 
 __all__ = ['EquilibriumState']
 
-from fluids.constants import R, N_A
-from fluids.numerics import numpy as np, log
-from chemicals.utils import normalize, zs_to_ws, vapor_mass_quality, mixing_simple, Vm_to_rho, SG
 from chemicals.elements import mass_fractions, periodic_table
-from thermo.phases import gas_phases, liquid_phases, solid_phases, Phase, derivatives_thermodynamic, derivatives_thermodynamic_mass, derivatives_jacobian
-from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
+from chemicals.utils import SG, Vm_to_rho, mixing_simple, normalize, vapor_mass_quality, zs_to_ws
+from fluids.constants import N_A, R
+from fluids.numerics import log
+from fluids.numerics import numpy as np
+
 from thermo.bulk import Bulk, default_settings
+from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
+from thermo.phases import Phase, derivatives_jacobian, derivatives_thermodynamic, derivatives_thermodynamic_mass, gas_phases, liquid_phases, solid_phases
+
 all_phases = gas_phases + liquid_phases + solid_phases
 
 try:

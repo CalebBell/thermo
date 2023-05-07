@@ -21,6 +21,7 @@ SOFTWARE.
 
 '''
 from chemicals.elements import simple_formula_parser
+
 __all__ = ['str_group_assignment_to_dict', 'group_assignment_to_str',
            'smarts_fragment_priority', 'smarts_fragment']
 
@@ -34,9 +35,7 @@ def load_rdkit_modules():
         return
     try:
         from rdkit import Chem
-        from rdkit.Chem import Descriptors
-        from rdkit.Chem import AllChem
-        from rdkit.Chem import rdMolDescriptors
+        from rdkit.Chem import AllChem, Descriptors, rdMolDescriptors
         loaded_rdkit = True
     except:
         if not loaded_rdkit: # pragma: no cover

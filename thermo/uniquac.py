@@ -44,10 +44,13 @@ UNIQUAC Functional Calculations
 .. autofunction:: UNIQUAC_gammas
 '''
 
-from math import log, exp
-from fluids.numerics import numpy as np, trunc_exp
+from math import exp, log
+
 from fluids.constants import R
-from thermo.activity import GibbsExcess, gibbs_excess_gammas, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
+from fluids.numerics import numpy as np
+from fluids.numerics import trunc_exp
+
+from thermo.activity import GibbsExcess, d2interaction_exp_dT2, d3interaction_exp_dT3, dinteraction_exp_dT, gibbs_excess_gammas, interaction_exp
 
 __all__ = ['UNIQUAC', 'UNIQUAC_gammas', 'UNIQUAC_gammas_binary', 'UNIQUAC_gammas_binaries']
 

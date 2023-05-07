@@ -30,9 +30,9 @@ This functionality requires the RDKit library to work.
 '''
 __all__ = ['Fedors']
 
-from thermo.functional_groups import (count_rings_attatched_to_rings,
-                                      smarts_mol_cache, alcohol_smarts, amine_smarts)
 from chemicals.elements import simple_formula_parser
+
+from thermo.functional_groups import alcohol_smarts, amine_smarts, count_rings_attatched_to_rings, smarts_mol_cache
 
 fedors_allowed_atoms = frozenset(['C', 'H', 'O', 'N', 'F', 'Cl', 'Br', 'I', 'S'])
 fedors_contributions = {'C': 34.426, 'H': 9.172, 'O': 20.291,

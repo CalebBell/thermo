@@ -42,10 +42,11 @@ Regular Solution Regression Calculations
 
 '''
 
-from fluids.numerics import numpy as np, trunc_exp
-from thermo.activity import GibbsExcess
-from fluids.numerics import exp
 from fluids.constants import R, R_inv
+from fluids.numerics import exp, trunc_exp
+from fluids.numerics import numpy as np
+
+from thermo.activity import GibbsExcess
 
 try:
     array, zeros, npsum = np.array, np.zeros, np.sum
@@ -711,7 +712,8 @@ class RegularSolution(GibbsExcess):
                                   do_statistics=True, **kwargs):
         # Load the functions either locally or with numba
         if use_numba:
-            from thermo.numba import regular_solution_gammas_binaries as work_func, regular_solution_gammas_binaries_jac as jac_func
+            from thermo.numba import regular_solution_gammas_binaries as work_func
+            from thermo.numba import regular_solution_gammas_binaries_jac as jac_func
             Vs, SPs, Ts = array(Vs), array(SPs), array(Ts)
         else:
             work_func = regular_solution_gammas_binaries

@@ -25,28 +25,43 @@ __all__ = ['Mixture']
 
 from collections import OrderedDict
 
-from fluids.numerics import numpy as np
-from fluids.core import Jakob, Prandtl, nu_mu_converter, thermal_diffusivity
-from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
-
+from chemicals.elements import mass_fractions, mixture_atomic_composition
+from chemicals.identifiers import CAS_from_any, mixture_from_any
+from chemicals.utils import (
+    SG,
+    Joule_Thomson,
+    Parachor,
+    R,
+    SG_to_API,
+    Vfs_to_zs,
+    Vm_to_rho,
+    Z,
+    isentropic_exponent,
+    isobaric_expansion,
+    mixing_simple,
+    none_and_length_check,
+    property_mass_to_molar,
+    property_molar_to_mass,
+    speed_of_sound,
+    vapor_mass_quality,
+    ws_to_zs,
+    zs_to_Vfs,
+    zs_to_ws,
+)
 from chemicals.virial import B_from_Z
 from chemicals.volume import ideal_gas
-from chemicals.identifiers import CAS_from_any, mixture_from_any
-from chemicals.utils import (Joule_Thomson, Parachor, R, SG, SG_to_API, Vfs_to_zs, Vm_to_rho, Z,
-                             isentropic_exponent, isobaric_expansion, mixing_simple,
-                             none_and_length_check, property_mass_to_molar, property_molar_to_mass,
-                             speed_of_sound, vapor_mass_quality, ws_to_zs, zs_to_Vfs, zs_to_ws)
-from chemicals.elements import mass_fractions, mixture_atomic_composition
+from fluids.core import Bond, Capillary, Grashof, Jakob, Peclet_heat, Prandtl, Reynolds, Weber, nu_mu_converter, thermal_diffusivity
+from fluids.numerics import numpy as np
 
 from thermo.chemical import Chemical
-from thermo.utils import phase_select_property
-from thermo.thermal_conductivity import ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
-from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture, LINEAR_MISSING_IDEAL
-from thermo.heat_capacity import HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
-from thermo.interface import SurfaceTensionMixture
-from thermo.viscosity import ViscosityLiquidMixture, ViscosityGasMixture
 from thermo.eos import IG, PR
 from thermo.eos_mix import PRMIX
+from thermo.heat_capacity import HeatCapacityGasMixture, HeatCapacityLiquidMixture, HeatCapacitySolidMixture
+from thermo.interface import SurfaceTensionMixture
+from thermo.thermal_conductivity import ThermalConductivityGasMixture, ThermalConductivityLiquidMixture
+from thermo.utils import phase_select_property
+from thermo.viscosity import ViscosityGasMixture, ViscosityLiquidMixture
+from thermo.volume import LINEAR_MISSING_IDEAL, VolumeGasMixture, VolumeLiquidMixture, VolumeSolidMixture
 
 
 def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,

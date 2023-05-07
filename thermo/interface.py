@@ -62,20 +62,30 @@ Mixture Liquid Heat Capacity
 __all__ = ['surface_tension_methods', 'SurfaceTension',
            'surface_tension_mixture_methods', 'SurfaceTensionMixture']
 
-from fluids.numerics import isnan
-from chemicals.utils import mixing_simple, none_and_length_check, Vm_to_rho, property_molar_to_mass
+from chemicals import interface, miscdata
 from chemicals.dippr import EQ106
-from chemicals.interface import (Aleem, Brock_Bird, Diguilio_Teja, Jasper, Miqueu, Pitzer_sigma,
-                                 REFPROP_sigma, Sastri_Rao, Somayajulu, Winterfeld_Scriven_Davis,
-                                 Zuo_Stenby, sigma_IAPWS)
 from chemicals.iapws import iapws95_Tc
-from chemicals import interface
-from thermo.utils import TDependentProperty, MixtureProperty, LINEAR, VDI_TABULAR, IAPWS
-from chemicals import miscdata
+from chemicals.interface import (
+    Aleem,
+    Brock_Bird,
+    Diguilio_Teja,
+    Jasper,
+    Miqueu,
+    Pitzer_sigma,
+    REFPROP_sigma,
+    Sastri_Rao,
+    Somayajulu,
+    Winterfeld_Scriven_Davis,
+    Zuo_Stenby,
+    sigma_IAPWS,
+)
 from chemicals.miscdata import lookup_VDI_tabular_data
-from thermo.volume import VolumeLiquid
-from thermo.heat_capacity import HeatCapacityLiquid
+from chemicals.utils import Vm_to_rho, mixing_simple, none_and_length_check, property_molar_to_mass
+from fluids.numerics import isnan
 
+from thermo.heat_capacity import HeatCapacityLiquid
+from thermo.utils import IAPWS, LINEAR, VDI_TABULAR, MixtureProperty, TDependentProperty
+from thermo.volume import VolumeLiquid
 
 STREFPROP = 'REFPROP'
 SOMAYAJULU2 = 'SOMAYAJULU2'

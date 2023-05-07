@@ -28,20 +28,24 @@ __all__ = [
     'fugacities_direct',
 ]
 
-from fluids.numerics import trunc_exp, log
+from fluids.numerics import log, trunc_exp
+
+from thermo.activity import IdealSolution
 from thermo.eos import eos_full_path_dict
 from thermo.eos_mix import eos_mix_full_path_dict
-from thermo.eos_mix_methods import (PR_lnphis_fastest, PR_translated_lnphis_fastest,
-                                    SRK_lnphis_fastest, SRK_translated_lnphis_fastest,
-                                    RK_lnphis_fastest,  VDW_lnphis_fastest)
-from thermo.activity import IdealSolution
-from thermo.wilson import Wilson, wilson_gammas_from_args
-from thermo.unifac import UNIFAC, unifac_gammas_from_args
-from thermo.regular_solution import RegularSolution, regular_solution_gammas
-from thermo.uniquac import UNIQUAC, uniquac_gammas_from_args
+from thermo.eos_mix_methods import (
+    PR_lnphis_fastest,
+    PR_translated_lnphis_fastest,
+    RK_lnphis_fastest,
+    SRK_lnphis_fastest,
+    SRK_translated_lnphis_fastest,
+    VDW_lnphis_fastest,
+)
 from thermo.nrtl import NRTL, nrtl_gammas_from_args
-
-
+from thermo.regular_solution import RegularSolution, regular_solution_gammas
+from thermo.unifac import UNIFAC, unifac_gammas_from_args
+from thermo.uniquac import UNIQUAC, uniquac_gammas_from_args
+from thermo.wilson import Wilson, wilson_gammas_from_args
 
 activity_pointer_reference_dicts = {
     'thermo.activity.IdealSolution': IdealSolution,

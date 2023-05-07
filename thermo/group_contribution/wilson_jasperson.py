@@ -35,12 +35,23 @@ from math import exp
 
 from chemicals.elements import simple_formula_parser
 
-from thermo.functional_groups import (smarts_mol_cache, alcohol_smarts, ether_smarts,
-                                      aldehyde_smarts, ketone_smarts, carboxylic_acid_smarts,
-                                      ester_smarts, nitrile_smarts,
-                                      nitro_smarts, siloxane_smarts,
-                                      is_haloalkane, all_amine_smarts,
-                                      mercaptan_smarts, sulfide_smarts, disulfide_smarts)
+from thermo.functional_groups import (
+    alcohol_smarts,
+    aldehyde_smarts,
+    all_amine_smarts,
+    carboxylic_acid_smarts,
+    disulfide_smarts,
+    ester_smarts,
+    ether_smarts,
+    is_haloalkane,
+    ketone_smarts,
+    mercaptan_smarts,
+    nitrile_smarts,
+    nitro_smarts,
+    siloxane_smarts,
+    smarts_mol_cache,
+    sulfide_smarts,
+)
 
 Wilson_Jasperson_Tc_increments = {
 'H': 0.002793,

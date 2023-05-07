@@ -116,24 +116,36 @@ __all__ = [
            'VolumeLiquidMixture', 'VolumeGasMixture', 'VolumeSolidMixture',
            'Tait_parameters_COSTALD']
 
-from fluids.numerics import horner, np, polyder, horner_and_der2, linspace, quadratic_from_f_ders
-from fluids.numerics import exp, isnan
-from chemicals.utils import rho_to_Vm, mixing_simple, none_and_length_check
+from chemicals import miscdata, volume
 from chemicals.dippr import EQ105, EQ116
-from chemicals.volume import (Amgat, Bhirud_normal, COSTALD, COSTALD_compressed, COSTALD_mixture,
-                              CRC_inorganic, Campbell_Thodos, Goodman, Rackett, Rackett_mixture,
-                              SNM0, Townsend_Hales, Yamada_Gunn, Yen_Woods_saturation, ideal_gas)
-from chemicals import volume
-from chemicals.virial import BVirial_Pitzer_Curl, BVirial_Abbott, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
-from chemicals import miscdata
-from chemicals.miscdata import lookup_VDI_tabular_data, COMMON_CHEMISTRY
+from chemicals.miscdata import COMMON_CHEMISTRY, lookup_VDI_tabular_data
+from chemicals.utils import mixing_simple, none_and_length_check, rho_to_Vm
+from chemicals.virial import BVirial_Abbott, BVirial_Pitzer_Curl, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
+from chemicals.volume import (
+    COSTALD,
+    SNM0,
+    Amgat,
+    Bhirud_normal,
+    Campbell_Thodos,
+    COSTALD_compressed,
+    COSTALD_mixture,
+    CRC_inorganic,
+    Goodman,
+    Rackett,
+    Rackett_mixture,
+    Townsend_Hales,
+    Yamada_Gunn,
+    Yen_Woods_saturation,
+    ideal_gas,
+)
+from fluids.numerics import exp, horner, horner_and_der2, isnan, linspace, np, polyder, quadratic_from_f_ders
 
 from thermo import electrochem
+from thermo.coolprop import CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_density
-from thermo.coolprop import has_CoolProp, PropsSI, PhaseSI, coolprop_fluids, coolprop_dict, CoolProp_T_dependent_property
-from thermo.utils import TDependentProperty, TPDependentProperty, MixtureProperty
-from thermo.utils import  VDI_TABULAR, VDI_PPDS, COOLPROP, EOS, DIPPR_PERRY_8E, LINEAR
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, LINEAR, VDI_PPDS, VDI_TABULAR, MixtureProperty, TDependentProperty, TPDependentProperty
 from thermo.vapor_pressure import VaporPressure
+
 
 def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
     # Limits of any of their data for Tr

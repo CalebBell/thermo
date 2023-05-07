@@ -24,9 +24,10 @@ __all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
 'assert_component_balance', 'assert_energy_balance', 'allclose_variable',
 'identify_phase', 'phase_select_property']
 
-from fluids.numerics import assert_close, numpy as np, trunc_log, log
-from fluids.constants import R
 from chemicals.utils import mix_multiple_component_flows, velocity_to_molar_velocity
+from fluids.constants import R
+from fluids.numerics import assert_close, log, trunc_log
+from fluids.numerics import numpy as np
 
 global _has_matplotlib
 _has_matplotlib = None

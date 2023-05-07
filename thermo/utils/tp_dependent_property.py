@@ -20,8 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
+from fluids.numerics import derivative, linspace
+from fluids.numerics import numpy as np
+
 from thermo.utils import TDependentProperty, has_matplotlib
-from fluids.numerics import linspace, derivative, numpy as np
 
 __all__ = ['TPDependentProperty']
 
@@ -634,9 +636,9 @@ class TPDependentProperty(TDependentProperty):
         '''
         if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
+        import matplotlib.pyplot as plt
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
-        import matplotlib.pyplot as plt
 
         if Pmin is None:
             if self.Pmin is not None:

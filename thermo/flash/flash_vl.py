@@ -20,40 +20,41 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-from thermo.flash.flash_base import Flash
-from thermo.flash.flash_utils import (
-    PT_SS, PT_SS_MEHRA, PT_SS_GDEM3, PT_NEWTON_lNKVF,
-    sequential_substitution_2P,
-    sequential_substitution_2P_functional,
-    sequential_substitution_Mehra_2P,
-    sequential_substitution_GDEM3_2P,
-    nonlin_2P_newton,
-    WILSON_GUESS,
-    IDEAL_PSAT,
-    TB_TC_GUESS,
-    dew_bubble_Michelsen_Mollerup,
-    dew_bubble_newton_zs,
-    SS_VF_simultaneous,
-    solve_T_VF_IG_K_composition_independent,
-    TP_solve_VF_guesses,
-    dew_bubble_newton_zs,
-    solve_P_VF_IG_K_composition_independent,
-    dew_bubble_newton_zs,
-    dew_bubble_bounded_naive,
-    TP_solve_VF_guesses,
-    stability_iteration_Michelsen,
-    solve_PTV_HSGUA_1P,
-    TPV_solve_HSGUA_guesses_VL,
-    SHAW_ELEMENTAL, IDEAL_WILSON,
-    nonlin_spec_NP,
-)
-from fluids.numerics import isinf
 from chemicals.exceptions import TrivialSolutionError
-from fluids.numerics import secant, trunc_log, UnconvergedError
-from thermo.property_package import StabilityTester
+from fluids.numerics import UnconvergedError, isinf, secant, trunc_log
+
+from thermo import phases
 from thermo.bulk import default_settings
 from thermo.coolprop import CPiP_min
-from thermo import phases
+from thermo.flash.flash_base import Flash
+from thermo.flash.flash_utils import (
+    IDEAL_PSAT,
+    IDEAL_WILSON,
+    PT_SS,
+    PT_SS_GDEM3,
+    PT_SS_MEHRA,
+    SHAW_ELEMENTAL,
+    TB_TC_GUESS,
+    WILSON_GUESS,
+    PT_NEWTON_lNKVF,
+    SS_VF_simultaneous,
+    TP_solve_VF_guesses,
+    TPV_solve_HSGUA_guesses_VL,
+    dew_bubble_bounded_naive,
+    dew_bubble_Michelsen_Mollerup,
+    dew_bubble_newton_zs,
+    nonlin_2P_newton,
+    nonlin_spec_NP,
+    sequential_substitution_2P,
+    sequential_substitution_2P_functional,
+    sequential_substitution_GDEM3_2P,
+    sequential_substitution_Mehra_2P,
+    solve_P_VF_IG_K_composition_independent,
+    solve_PTV_HSGUA_1P,
+    solve_T_VF_IG_K_composition_independent,
+    stability_iteration_Michelsen,
+)
+from thermo.property_package import StabilityTester
 
 __all__ = ['FlashVL']
 

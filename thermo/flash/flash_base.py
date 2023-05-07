@@ -29,20 +29,28 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 __all__ = ['Flash']
 
+from math import floor, log10, nan
+
+from chemicals.utils import mixing_simple, property_mass_to_molar, rho_to_Vm
 from fluids.constants import R
-from math import nan
+from fluids.numerics import linspace, logspace
+from fluids.numerics import numpy as np
+
+from thermo import phases
 from thermo.equilibrium import EquilibriumState
+from thermo.flash.flash_utils import (
+    LL_boolean_check,
+    VL_boolean_check,
+    VLL_boolean_check,
+    VLL_or_LL_boolean_check,
+    VLN_or_LN_boolean_check,
+    flash_phase_boundary_one_sided_secant,
+    incipient_liquid_bounded_PT_sat,
+    incipient_phase_bounded_naive,
+    incipient_phase_one_sided_secant,
+)
 from thermo.phase_identification import identify_sort_phases
 from thermo.utils import has_matplotlib
-from thermo.flash.flash_utils import (incipient_phase_bounded_naive, incipient_liquid_bounded_PT_sat,
-                                      incipient_phase_one_sided_secant, VLN_or_LN_boolean_check,
-                                      VL_boolean_check, VLL_or_LL_boolean_check,
-                                      VLL_boolean_check, LL_boolean_check,
-                                      flash_phase_boundary_one_sided_secant)
-from fluids.numerics import logspace, linspace, numpy as np
-from chemicals.utils import rho_to_Vm, mixing_simple, property_mass_to_molar
-from math import log10, floor
-from thermo import phases
 
 try:
     zeros, ones, ndarray = np.zeros, np.ones, np.ndarray
@@ -1518,8 +1526,8 @@ class Flash:
             else:
                 return res.T
 
-        import matplotlib.pyplot as plt
         import matplotlib
+        import matplotlib.pyplot as plt
         axes_colors = {'b': 'g', 'l': 'r', 'r':'b'}
         ticks = [round(i / float(10), 1) for i in range(10+1)]
 

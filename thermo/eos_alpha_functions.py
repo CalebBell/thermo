@@ -219,8 +219,8 @@ __all__ = [
     'Chen_Yang_alpha_pure', 'Mathias_Copeman_a_alpha']
 
 
-from fluids.numerics import (horner, horner_and_der2, numpy as np)
-from fluids.numerics import log, exp, sqrt
+from fluids.numerics import exp, horner, horner_and_der2, log, sqrt
+from fluids.numerics import numpy as np
 
 try:
     array = np.array

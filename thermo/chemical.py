@@ -23,49 +23,71 @@ SOFTWARE.
 
 __all__ = ['Chemical', 'reference_states']
 
-from fluids.constants import epsilon_0
-
-from fluids.core import Reynolds, Capillary, Weber, Bond, Grashof, Peclet_heat
-from fluids.core import Jakob, Prandtl, nu_mu_converter, thermal_diffusivity
-from fluids.numerics import newton
-
-
-from fluids.numerics import exp, log
+from chemicals.acentric import Stiel_polar_factor, omega, omega_methods
+from chemicals.combustion import HHV_stoichiometry, LHV_from_HHV, combustion_stoichiometry
+from chemicals.critical import Pc, Pc_methods, Tc, Tc_methods, Vc, Vc_methods
+from chemicals.dipole import dipole_moment as dipole
+from chemicals.dipole import dipole_moment_methods
+from chemicals.elements import (
+    atom_fractions,
+    atoms_to_Hill,
+    charge_from_formula,
+    homonuclear_elements,
+    mass_fractions,
+    molecular_weight,
+    periodic_table,
+    similarity_variable,
+    simple_formula_parser,
+)
+from chemicals.environment import GWP, ODP, GWP_methods, ODP_methods, logP, logP_methods
 from chemicals.identifiers import search_chemical
-from chemicals.phase_change import Tb, Tm, Hfus, Tb_methods, Tm_methods, Hfus_methods
-from chemicals.critical import Tc, Pc, Vc, Tc_methods, Pc_methods, Vc_methods
-from chemicals.acentric import omega, Stiel_polar_factor, omega_methods
-from chemicals.triple import Tt, Pt, Tt_methods, Pt_methods
+from chemicals.lennard_jones import Stockmayer, Stockmayer_methods, molecular_diameter, molecular_diameter_methods
+from chemicals.phase_change import Hfus, Hfus_methods, Tb, Tb_methods, Tm, Tm_methods
+from chemicals.reaction import Gibbs_formation, Hf_basis_converter, Hfg, Hfg_methods, Hfl, Hfl_methods, Hfs, Hfs_methods, S0g, S0g_methods
+from chemicals.refractivity import RI, RI_methods
+from chemicals.safety import (
+    LFL,
+    STEL,
+    TWA,
+    UFL,
+    Carcinogen,
+    Ceiling,
+    Ceiling_methods,
+    LFL_methods,
+    Skin,
+    Skin_methods,
+    STEL_methods,
+    T_autoignition,
+    T_autoignition_methods,
+    T_flash,
+    T_flash_methods,
+    TWA_methods,
+    UFL_methods,
+)
+from chemicals.solubility import solubility_parameter
+from chemicals.triple import Pt, Pt_methods, Tt, Tt_methods
+from chemicals.utils import SG, Joule_Thomson, Parachor, R, SG_to_API, Vm_to_rho, Z, isentropic_exponent, isobaric_expansion, property_molar_to_mass
 from chemicals.virial import B_from_Z
 from chemicals.volume import ideal_gas
-from chemicals.reaction import Hfg_methods, S0g_methods, Hfl_methods, Hfs_methods, Hfs, Hfl, Hfg, S0g, Gibbs_formation, Hf_basis_converter
-from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
-from chemicals.safety import T_flash, T_autoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen, T_flash_methods, T_autoignition_methods, LFL_methods, UFL_methods, TWA_methods, STEL_methods, Ceiling_methods, Skin_methods
-from chemicals.solubility import solubility_parameter
-from chemicals.dipole import dipole_moment as dipole, dipole_moment_methods
-from chemicals.utils import (Joule_Thomson, Parachor, R, SG, SG_to_API, Vm_to_rho, Z,
-                             isentropic_exponent, isobaric_expansion, property_molar_to_mass)
-from chemicals.lennard_jones import Stockmayer_methods, molecular_diameter_methods, Stockmayer, molecular_diameter
-from chemicals.environment import GWP, ODP, logP, GWP_methods, ODP_methods, logP_methods
-from chemicals.refractivity import RI, RI_methods
-from chemicals.elements import atom_fractions, mass_fractions, similarity_variable, atoms_to_Hill, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
+from fluids.constants import epsilon_0
+from fluids.core import Bond, Capillary, Grashof, Jakob, Peclet_heat, Prandtl, Reynolds, Weber, nu_mu_converter, thermal_diffusivity
+from fluids.numerics import exp, log, newton
 
-from thermo.vapor_pressure import VaporPressure, SublimationPressure
-from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
-from thermo.utils import identify_phase, phase_select_property
-from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas
-from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid
-from thermo.permittivity import PermittivityLiquid
-from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid
-from thermo.interface import SurfaceTension
-from thermo.viscosity import ViscosityLiquid, ViscosityGas
-from thermo.law import legal_status, economic_status
+from thermo import functional_groups
 from thermo.electrochem import conductivity, conductivity_methods
 from thermo.eos import IG, PR
-from thermo.unifac import UNIFAC_group_assignment_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
-from thermo import functional_groups
 from thermo.functional_groups import group_names
-
+from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolid
+from thermo.interface import SurfaceTension
+from thermo.law import economic_status, legal_status
+from thermo.permittivity import PermittivityLiquid
+from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
+from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityLiquid
+from thermo.unifac import UNIFAC_RQ, UNIFAC_group_assignment_DDBST, Van_der_Waals_area, Van_der_Waals_volume
+from thermo.utils import identify_phase, phase_select_property
+from thermo.vapor_pressure import SublimationPressure, VaporPressure
+from thermo.viscosity import ViscosityGas, ViscosityLiquid
+from thermo.volume import VolumeGas, VolumeLiquid, VolumeSolid
 
 caching = True
 
@@ -852,10 +874,10 @@ class Chemical: # pragma: no cover
         None
         '''
         try:
-            from rdkit import Chem
-            from rdkit.Chem import AllChem
             import py3Dmol
             from IPython.display import display
+            from rdkit import Chem
+            from rdkit.Chem import AllChem
             if Hs:
                 mol = self.rdkitmol_Hs
             else:

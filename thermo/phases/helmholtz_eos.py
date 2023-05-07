@@ -22,8 +22,10 @@ SOFTWARE.
 '''
 __all__ = ['HelmholtzEOS',]
 
-from fluids.numerics import log, isnan
+from fluids.numerics import isnan, log
+
 from thermo.phases.phase import Phase
+
 
 class HelmholtzEOS(Phase):
 

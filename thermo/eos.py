@@ -263,25 +263,40 @@ __all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
 ]
 
 from cmath import log as clog
-from math import isnan, isinf, log1p, log10
-from fluids.numerics import (chebval, brenth, roots_cubic,
-                             numpy as np, newton,
-                             bisect, inf, polyder, chebder, is_micropython,
-                             secant, linspace, logspace,
-                             horner, derivative,
-                             isclose, NoSolutionError,
-                             roots_quartic, catanh, log, exp, sqrt)
+from math import isinf, isnan, log1p, log10
 
-from fluids.constants import mmHg, R
-
-from chemicals.utils import (hash_any_primitive, object_data)
 from chemicals.flash_basic import Wilson_K_value
+from chemicals.utils import hash_any_primitive, object_data
+from fluids.constants import R, mmHg
+from fluids.numerics import (
+    NoSolutionError,
+    bisect,
+    brenth,
+    catanh,
+    chebder,
+    chebval,
+    derivative,
+    exp,
+    horner,
+    inf,
+    is_micropython,
+    isclose,
+    linspace,
+    log,
+    logspace,
+    newton,
+    polyder,
+    roots_cubic,
+    roots_quartic,
+    secant,
+    sqrt,
+)
+from fluids.numerics import numpy as np
 
 from thermo import serialize
-from thermo.eos_volume import (volume_solutions_mpmath, volume_solutions_mpmath_float,
-                               volume_solutions_NR, volume_solutions_halley, volume_solutions_ideal)
-from thermo.eos_alpha_functions import (Poly_a_alpha, Twu91_a_alpha, Mathias_Copeman_poly_a_alpha,
-                                        TwuSRK95_a_alpha, TwuPR95_a_alpha, Soave_1979_a_alpha)
+from thermo.eos_alpha_functions import Mathias_Copeman_poly_a_alpha, Poly_a_alpha, Soave_1979_a_alpha, Twu91_a_alpha, TwuPR95_a_alpha, TwuSRK95_a_alpha
+from thermo.eos_volume import volume_solutions_halley, volume_solutions_ideal, volume_solutions_mpmath, volume_solutions_mpmath_float, volume_solutions_NR
+
 R2 = R*R
 R_2 = 0.5*R
 R_inv = 1.0/R

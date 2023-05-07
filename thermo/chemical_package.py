@@ -59,42 +59,54 @@ __all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationsPackage',
            'iapws_constants', 'iapws_correlations', 'lemmon2000_constants',
            'lemmon2000_correlations']
 
+from chemicals import identifiers
+from chemicals.acentric import Stiel_polar_factor, omega
+from chemicals.combustion import HHV_stoichiometry, LHV_from_HHV, combustion_stoichiometry
+
+# For Constants
+from chemicals.critical import Pc, Tc, Vc
+from chemicals.dipole import dipole_moment as dipole
+from chemicals.elements import (
+    atom_fractions,
+    charge_from_formula,
+    homonuclear_elements,
+    molecular_weight,
+    periodic_table,
+    similarity_variable,
+    simple_formula_parser,
+)
+from chemicals.environment import GWP, ODP, logP
+from chemicals.identifiers import CAS_from_any
+from chemicals.lennard_jones import Stockmayer, molecular_diameter
+from chemicals.phase_change import Hfus, Tb, Tm
+from chemicals.reaction import Gibbs_formation, Hfg, Hfl, Hfs, S0g
+from chemicals.refractivity import RI
+from chemicals.safety import LFL, STEL, TWA, UFL, Carcinogen, Ceiling, Skin, T_autoignition, T_flash
+from chemicals.solubility import solubility_parameter
+from chemicals.triple import Pt, Tt
+from chemicals.utils import Parachor, hash_any_primitive, property_molar_to_mass
 from fluids.constants import R
 
 from thermo.chemical import user_chemical_property_lookup
-from chemicals.identifiers import CAS_from_any
-from chemicals import identifiers
-from chemicals.utils import hash_any_primitive
-
-from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas, ThermalConductivityLiquidMixture, ThermalConductivityGasMixture
-from thermo.volume import VolumeLiquidMixture, VolumeGasMixture, VolumeSolidMixture, VolumeLiquid, VolumeGas, VolumeSolid
-from thermo.permittivity import PermittivityLiquid
-from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolidMixture, HeatCapacityGasMixture, HeatCapacityLiquidMixture
-from thermo.interface import SurfaceTension, SurfaceTensionMixture
-from thermo.viscosity import ViscosityLiquid, ViscosityGas, ViscosityLiquidMixture, ViscosityGasMixture
-from chemicals.utils import property_molar_to_mass, Parachor
-from thermo.vapor_pressure import VaporPressure, SublimationPressure
-from thermo.phase_change import EnthalpyVaporization, EnthalpySublimation
-
-# For Constants
-from chemicals.critical import Tc, Pc, Vc
-from chemicals.phase_change import Tb, Tm, Hfus
-from chemicals.acentric import omega, Stiel_polar_factor
-from chemicals.triple import Tt, Pt
-from chemicals.reaction import Hfs, Hfl, Hfg, S0g, Gibbs_formation
-from chemicals.safety import T_flash, T_autoignition, LFL, UFL, TWA, STEL, Ceiling, Skin, Carcinogen
-from chemicals.solubility import solubility_parameter
-from chemicals.dipole import dipole_moment as dipole
-from chemicals.lennard_jones import Stockmayer, molecular_diameter
-from chemicals.environment import GWP, ODP, logP
-from chemicals.refractivity import RI
-from chemicals.elements import atom_fractions, similarity_variable, simple_formula_parser, molecular_weight, charge_from_formula, periodic_table, homonuclear_elements
-from chemicals.combustion import combustion_stoichiometry, HHV_stoichiometry, LHV_from_HHV
-
-from thermo.utils import identify_phase
-from thermo.unifac import UNIFAC_group_assignment_DDBST, UNIFAC_RQ, Van_der_Waals_volume, Van_der_Waals_area
 from thermo.electrochem import conductivity
 from thermo.eos import PR
+from thermo.heat_capacity import (
+    HeatCapacityGas,
+    HeatCapacityGasMixture,
+    HeatCapacityLiquid,
+    HeatCapacityLiquidMixture,
+    HeatCapacitySolid,
+    HeatCapacitySolidMixture,
+)
+from thermo.interface import SurfaceTension, SurfaceTensionMixture
+from thermo.permittivity import PermittivityLiquid
+from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
+from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityGasMixture, ThermalConductivityLiquid, ThermalConductivityLiquidMixture
+from thermo.unifac import UNIFAC_RQ, UNIFAC_group_assignment_DDBST, Van_der_Waals_area, Van_der_Waals_volume
+from thermo.utils import identify_phase
+from thermo.vapor_pressure import SublimationPressure, VaporPressure
+from thermo.viscosity import ViscosityGas, ViscosityGasMixture, ViscosityLiquid, ViscosityLiquidMixture
+from thermo.volume import VolumeGas, VolumeGasMixture, VolumeLiquid, VolumeLiquidMixture, VolumeSolid, VolumeSolidMixture
 
 CAS_H2O = '7732-18-5'
 

@@ -23,11 +23,12 @@ SOFTWARE.
 __all__ = ['CoolPropPhase', 'CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas']
 
 import sys
-from fluids.numerics import log
 from collections import OrderedDict
-from thermo.phases.phase import Phase
-from thermo.coolprop import has_CoolProp
 
+from fluids.numerics import log
+
+from thermo.coolprop import has_CoolProp
+from thermo.phases.phase import Phase
 
 SORTED_DICT = sys.version_info >= (3, 6)
 # Emperically measured to be ~140 KB/instance, do not want to cache too many - 35 is 5 MB

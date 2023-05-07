@@ -47,10 +47,13 @@ Wilson Regression Calculations
 
 '''
 
-from math import log, exp
+from math import exp, log
+
 from fluids.constants import R
-from fluids.numerics import numpy as np, trunc_exp
-from thermo.activity import GibbsExcess, interaction_exp, dinteraction_exp_dT, d2interaction_exp_dT2, d3interaction_exp_dT3
+from fluids.numerics import numpy as np
+from fluids.numerics import trunc_exp
+
+from thermo.activity import GibbsExcess, d2interaction_exp_dT2, d3interaction_exp_dT3, dinteraction_exp_dT, interaction_exp
 
 try:
     array, zeros, npsum, nplog, ones = np.array, np.zeros, np.sum, np.log, np.ones
@@ -1624,7 +1627,8 @@ class Wilson(GibbsExcess):
                                   do_statistics=True, **kwargs):
         # Load the functions either locally or with numba
         if use_numba:
-            from thermo.numba import wilson_gammas_binaries as work_func, wilson_gammas_binaries_jac as jac_func
+            from thermo.numba import wilson_gammas_binaries as work_func
+            from thermo.numba import wilson_gammas_binaries_jac as jac_func
         else:
             work_func = wilson_gammas_binaries
             jac_func = wilson_gammas_binaries_jac

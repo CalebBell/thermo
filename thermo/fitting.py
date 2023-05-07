@@ -27,15 +27,30 @@ __all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit_function',
            'fit_polynomial', 'poly_fit_statistics', 'fit_cheb_poly_auto',
            'data_fit_statistics', 'fit_customized']
 
-from fluids.numerics import (chebval, numpy as np, polyder, std, min_max_ratios,
-                             linspace, stable_poly_to_unstable,
-                             horner, horner_and_der3,
-                             is_poly_positive, is_poly_negative,
-                             horner_stable, curve_fit, differential_evolution, fit_minimization_targets, leastsq,
-                             polynomial_offset_scale,
-                             lmder)
 import fluids
+from fluids.numerics import (
+    chebval,
+    curve_fit,
+    differential_evolution,
+    fit_minimization_targets,
+    horner,
+    horner_and_der3,
+    horner_stable,
+    is_poly_negative,
+    is_poly_positive,
+    leastsq,
+    linspace,
+    lmder,
+    min_max_ratios,
+    polyder,
+    polynomial_offset_scale,
+    stable_poly_to_unstable,
+    std,
+)
+from fluids.numerics import numpy as np
+
 import thermo
+
 try:
     from numpy.polynomial.chebyshev import cheb2poly
     from numpy.polynomial.polynomial import Polynomial

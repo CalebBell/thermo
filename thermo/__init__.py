@@ -21,126 +21,131 @@ SOFTWARE.
 '''
 
 import os
+
 from fluids import numerics
 
 if not numerics.is_micropython:
 
-    from . import eos_alpha_functions
-    from . import eos_volume
-    from chemicals import acentric
-    from chemicals import rachford_rice
-    from chemicals import flash_basic
-    from . import chemical
-    from . import chemical_package
-    from chemicals import combustion
-    from chemicals import critical
-    from . import coolprop
-    from chemicals import dipole
-    from chemicals import dippr
-    from . import datasheet
-    from . import electrochem
-    from chemicals import elements
-    from chemicals import environment
-    from . import eos
-    from . import eos_mix
-    from . import equilibrium
-    from . import flash
-    from . import heat_capacity
-    from chemicals import identifiers
-    from . import interaction_parameters
-    from . import group_contribution
-    from . import law
-    from chemicals import lennard_jones
-    from chemicals import miscdata
-    from . import mixture
-    from . import permittivity
-    from . import phase_change
-    from . import phases
-    from . import phase_identification
-    from . import property_package
-    from chemicals import reaction
-    from chemicals import refractivity
-    from . import regular_solution
-    from chemicals import safety
-    from chemicals import solubility
-    from . import stream
-    from . import interface
-    from . import thermal_conductivity
-    from chemicals import triple
-    from . import unifac
-    from . import utils
-    from . import vapor_pressure
-    from chemicals import virial
-    from . import viscosity
-    from . import volume
-    from . import fitting
-    from . import chemical_utils
-    from . import wilson
-    from . import nrtl
-    from . import uniquac
-    from . import bulk
-    from chemicals import temperature
-    from . import eos_mix_methods
-    from . import activity
-
-    from .eos_alpha_functions import *
-    from .eos_mix_methods import *
-    from .eos_volume import *
+    from chemicals import (
+        acentric,
+        combustion,
+        critical,
+        dipole,
+        dippr,
+        elements,
+        environment,
+        flash_basic,
+        identifiers,
+        lennard_jones,
+        miscdata,
+        rachford_rice,
+        reaction,
+        refractivity,
+        safety,
+        solubility,
+        temperature,
+        triple,
+        virial,
+    )
     from chemicals.acentric import *
-    from chemicals.rachford_rice import *
-    from chemicals.flash_basic import *
-    from .chemical import *
-    from .chemical_package import *
     from chemicals.combustion import *
     from chemicals.critical import *
-    from .coolprop import *
     from chemicals.dipole import *
     from chemicals.dippr import *
-    from .datasheet import *
-    from .electrochem import *
     from chemicals.elements import *
     from chemicals.environment import *
-    from .eos import *
-    from .eos_mix import *
-    from .flash import *
-    from .heat_capacity import *
-    from .group_contribution import *
+    from chemicals.flash_basic import *
     from chemicals.identifiers import *
-    from .interaction_parameters import *
-    from .law import *
-    from .bulk import *
     from chemicals.lennard_jones import *
     from chemicals.miscdata import *
-    from .mixture import *
-    from .permittivity import *
-    from .phase_change import *
-    from .phases import *
-    from .phase_identification import *
-    from .property_package import *
+    from chemicals.rachford_rice import *
     from chemicals.reaction import *
     from chemicals.refractivity import *
-    from .regular_solution import *
     from chemicals.safety import *
     from chemicals.solubility import *
-    from .stream import *
-    from .interface import *
-    from .thermal_conductivity import *
+    from chemicals.temperature import *
     from chemicals.triple import *
+    from chemicals.virial import *
+
+    from . import (
+        activity,
+        bulk,
+        chemical,
+        chemical_package,
+        chemical_utils,
+        coolprop,
+        datasheet,
+        electrochem,
+        eos,
+        eos_alpha_functions,
+        eos_mix,
+        eos_mix_methods,
+        eos_volume,
+        equilibrium,
+        fitting,
+        flash,
+        group_contribution,
+        heat_capacity,
+        interaction_parameters,
+        interface,
+        law,
+        mixture,
+        nrtl,
+        permittivity,
+        phase_change,
+        phase_identification,
+        phases,
+        property_package,
+        regular_solution,
+        stream,
+        thermal_conductivity,
+        unifac,
+        uniquac,
+        utils,
+        vapor_pressure,
+        viscosity,
+        volume,
+        wilson,
+    )
+    from .activity import *
+    from .bulk import *
+    from .chemical import *
+    from .chemical_package import *
+    from .chemical_utils import *
+    from .coolprop import *
+    from .datasheet import *
+    from .electrochem import *
+    from .eos import *
+    from .eos_alpha_functions import *
+    from .eos_mix import *
+    from .eos_mix_methods import *
+    from .eos_volume import *
+    from .equilibrium import *
+    from .fitting import *
+    from .flash import *
+    from .functional_groups import *
+    from .group_contribution import *
+    from .heat_capacity import *
+    from .interaction_parameters import *
+    from .interface import *
+    from .law import *
+    from .mixture import *
+    from .nrtl import *
+    from .permittivity import *
+    from .phase_change import *
+    from .phase_identification import *
+    from .phases import *
+    from .property_package import *
+    from .regular_solution import *
+    from .stream import *
+    from .thermal_conductivity import *
     from .unifac import *
+    from .uniquac import *
     from .utils import *
     from .vapor_pressure import *
-    from chemicals.virial import *
     from .viscosity import *
     from .volume import *
-    from .chemical_utils import *
     from .wilson import *
-    from .nrtl import *
-    from .uniquac import *
-    from .equilibrium import *
-    from chemicals.temperature import *
-    from .activity import *
-    from .fitting import *
-    from .functional_groups import *
 
     #from chemicals import *
 

@@ -23,7 +23,9 @@ SOFTWARE.
 
 __all__ = ['u']
 import types
+
 import thermo
+
 try:
     from pint import _DEFAULT_REGISTRY as u
 

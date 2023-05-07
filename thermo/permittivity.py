@@ -44,15 +44,12 @@ Pure Liquid Permittivity
 
 __all__ = ['PermittivityLiquid']
 
+from chemicals import permittivity
+from chemicals.iapws import iapws95_Pc, iapws95_rho, iapws95_rhol_sat, iapws95_Tc
+from chemicals.permittivity import permittivity_IAPWS
 from fluids.numerics import isnan
 
-from chemicals.permittivity import permittivity_IAPWS
-from chemicals import permittivity
-from chemicals.iapws import iapws95_rhol_sat, iapws95_Tc, iapws95_rho, iapws95_Pc
-
-
-from thermo.utils import TDependentProperty, IAPWS
-
+from thermo.utils import IAPWS, TDependentProperty
 
 CRC = 'CRC'
 CRC_CONSTANT = 'CRC_CONSTANT'

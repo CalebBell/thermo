@@ -21,11 +21,14 @@ SOFTWARE.
 
 '''
 __all__ = ['CEOSLiquid', 'CEOSGas']
-from fluids.numerics import trunc_exp, numpy as np, trunc_exp_numpy
+from fluids.numerics import numpy as np
+from fluids.numerics import trunc_exp, trunc_exp_numpy
+
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
-from thermo.phases.phase_utils import lnphis_direct
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import IdealGasDeparturePhase
+from thermo.phases.phase_utils import lnphis_direct
+
 try:
     zeros, ndarray, full, array = np.zeros, np.ndarray, np.full, np.array
 except:

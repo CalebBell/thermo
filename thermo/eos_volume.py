@@ -83,15 +83,24 @@ __all__ = ['volume_solutions_mpmath', 'volume_solutions_mpmath_float',
 
 from cmath import sqrt as csqrt
 
-from fluids.numerics import (brenth, third, sixth, roots_cubic, newton,
-                             roots_cubic_a1, numpy as np, sqrt,
-                             roots_cubic_a2, deflate_cubic_real_roots)
-from fluids.numerics.doubledouble import (add_dd, add_imag_dd, cbrt_imag_dd, div_dd,
-                                          div_imag_dd, mul_dd, mul_imag_dd,
-                                          mul_noerrors_dd, sqrt_imag_dd, square_dd,
-                                          sqrt_dd, cbrt_dd)
-
 from fluids.constants import R, R_inv
+from fluids.numerics import brenth, deflate_cubic_real_roots, newton, roots_cubic, roots_cubic_a1, roots_cubic_a2, sixth, sqrt, third
+from fluids.numerics import numpy as np
+from fluids.numerics.doubledouble import (
+    add_dd,
+    add_imag_dd,
+    cbrt_dd,
+    cbrt_imag_dd,
+    div_dd,
+    div_imag_dd,
+    mul_dd,
+    mul_imag_dd,
+    mul_noerrors_dd,
+    sqrt_dd,
+    sqrt_imag_dd,
+    square_dd,
+)
+
 
 def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
     r'''Solution of this form of the cubic EOS in terms of volumes, using the
@@ -225,7 +234,7 @@ def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
     '''
     if P == 0.0 or T == 0.0:
         raise ValueError("Bad P or T; issue is not the algorithm")
-    from sympy import sqrt, Rational, I
+    from sympy import I, Rational, sqrt
     if isinstance(T, float):
         T = Rational(T)
     if isinstance(P, float):

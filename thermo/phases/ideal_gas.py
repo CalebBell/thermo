@@ -23,7 +23,9 @@ SOFTWARE.
 
 __all__ = ['IdealGas']
 
-from fluids.numerics import numpy as np, log
+from fluids.numerics import log
+from fluids.numerics import numpy as np
+
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import Phase
 

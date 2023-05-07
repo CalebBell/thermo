@@ -29,15 +29,25 @@ try:
 except:
     pass
 
-from fluids.constants import R
-from chemicals.utils import property_molar_to_mass, property_mass_to_molar, solve_flow_composition_mix
 from chemicals.exceptions import OverspeficiedError
+from chemicals.utils import (
+    Vfs_to_zs,
+    Vm_to_rho,
+    mixing_simple,
+    normalize,
+    property_mass_to_molar,
+    property_molar_to_mass,
+    solve_flow_composition_mix,
+    ws_to_zs,
+    zs_to_Vfs,
+    zs_to_ws,
+)
 from chemicals.volume import ideal_gas
-from chemicals.utils import mixing_simple, normalize, Vfs_to_zs, ws_to_zs, zs_to_ws, Vm_to_rho, zs_to_Vfs
-from thermo.mixture import Mixture
-from thermo.equilibrium import EquilibriumState
-from fluids.pump import voltages_1_phase_residential, voltages_3_phase, residential_power_frequencies
+from fluids.constants import R
+from fluids.pump import residential_power_frequencies, voltages_1_phase_residential, voltages_3_phase
 
+from thermo.equilibrium import EquilibriumState
+from thermo.mixture import Mixture
 
 
 class StreamArgs:

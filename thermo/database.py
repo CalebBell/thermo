@@ -23,10 +23,10 @@ SOFTWARE.
 
 __all__ = ['']
 
-import os
 import marshal
-from thermo.chemical import ChemicalConstants
+import os
 
+from thermo.chemical import ChemicalConstants
 
 folder = os.path.join(os.path.dirname(__file__), 'Misc')
 

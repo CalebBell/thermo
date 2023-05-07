@@ -278,7 +278,7 @@ def load_rdkit_modules():
         return
     try:
         from rdkit import Chem
-        from rdkit.Chem import Descriptors, AllChem, rdMolDescriptors, CanonSmiles, MolToSmiles, MolFromSmarts
+        from rdkit.Chem import AllChem, CanonSmiles, Descriptors, MolFromSmarts, MolToSmiles, rdMolDescriptors
         loaded_rdkit = True
     except:
         raise Exception(rdkit_missing) # pragma: no cover

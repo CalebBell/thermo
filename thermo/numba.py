@@ -21,11 +21,14 @@ SOFTWARE.
 '''
 
 from types import ModuleType
-import numba
-import thermo
+
 import fluids
 import fluids.numba
+import numba
 from numba.core.registry import CPUDispatcher
+
+import thermo
+
 normal_fluids = fluids
 normal = thermo
 

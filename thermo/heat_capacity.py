@@ -114,29 +114,42 @@ __all__ = ['heat_capacity_gas_methods',
            'heat_capacity_solid_methods',
            'HeatCapacitySolid', 'HeatCapacitySolidMixture',
            'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture']
-from fluids.numerics import (horner, quad)
-from fluids.constants import R, calorie
-from chemicals.heat_capacity import (Dadgostar_Shaw, Dadgostar_Shaw_integral,
-                                     Dadgostar_Shaw_integral_over_T, Lastovka_Shaw,
-                                     Lastovka_Shaw_integral, Lastovka_Shaw_integral_over_T,
-                                     Lastovka_Shaw_term_A, Lastovka_solid, Lastovka_solid_integral,
-                                     Lastovka_solid_integral_over_T, Rowlinson_Bondi,
-                                     Rowlinson_Poling, TRCCp, TRCCp_integral, TRCCp_integral_over_T)
-from fluids.numerics import log, isnan
-from chemicals.utils import (mixing_simple, property_mass_to_molar)
+from chemicals import heat_capacity, miscdata
+from chemicals.heat_capacity import (
+    Dadgostar_Shaw,
+    Dadgostar_Shaw_integral,
+    Dadgostar_Shaw_integral_over_T,
+    Lastovka_Shaw,
+    Lastovka_Shaw_integral,
+    Lastovka_Shaw_integral_over_T,
+    Lastovka_Shaw_term_A,
+    Lastovka_solid,
+    Lastovka_solid_integral,
+    Lastovka_solid_integral_over_T,
+    Rowlinson_Bondi,
+    Rowlinson_Poling,
+    TRCCp,
+    TRCCp_integral,
+    TRCCp_integral_over_T,
+)
 from chemicals.identifiers import CAS_to_int
-from chemicals import heat_capacity
-from chemicals import miscdata
-from chemicals.miscdata import lookup_VDI_tabular_data
+from chemicals.miscdata import JOBACK, lookup_VDI_tabular_data
+from chemicals.utils import mixing_simple, property_mass_to_molar
+from fluids.constants import R, calorie
+from fluids.numerics import horner, isnan, log, quad
 
 from thermo import electrochem
+from thermo.coolprop import (
+    CoolProp_T_dependent_property,
+    Cp_ideal_gas_Helmholtz,
+    H_ideal_gas_Helmholtz,
+    Helmholtz_A0_data,
+    coolprop_dict,
+    coolprop_fluids,
+    has_CoolProp,
+)
 from thermo.electrochem import Laliberte_heat_capacity
-from thermo.utils import TDependentProperty, MixtureProperty
-from thermo.coolprop import (CoolProp_T_dependent_property, Cp_ideal_gas_Helmholtz,
-                             H_ideal_gas_Helmholtz, Helmholtz_A0_data, coolprop_dict,
-                             coolprop_fluids, has_CoolProp)
-from thermo.utils import VDI_TABULAR, COOLPROP, LINEAR
-from chemicals.miscdata import JOBACK
+from thermo.utils import COOLPROP, LINEAR, VDI_TABULAR, MixtureProperty, TDependentProperty
 
 TRCIG = 'TRCIG'
 POLING_POLY = 'POLING_POLY'

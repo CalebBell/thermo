@@ -23,12 +23,14 @@ SOFTWARE.
 __all__ = ['DryAirLemmon', 'HumidAirRP1485']
 
 from chemicals import air
+from chemicals.thermal_conductivity import k_air_lemmon
 from chemicals.virial import Z_from_virial_density_form
 from chemicals.viscosity import mu_air_lemmon
-from chemicals.thermal_conductivity import k_air_lemmon
+
 from thermo.phases.helmholtz_eos import HelmholtzEOS
-from thermo.phases.virial_phase import VirialGas
 from thermo.phases.iapws_phase import IAPWS95
+from thermo.phases.virial_phase import VirialGas
+
 
 class DryAirLemmon(HelmholtzEOS):
     model_name = 'lemmon2000'

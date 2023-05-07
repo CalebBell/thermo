@@ -28,24 +28,46 @@ __all__ = [
     'derivatives_jacobian',
 ]
 
-from fluids.constants import R, R_inv
 from math import sqrt
-from thermo.serialize import arrays_to_lists
-from fluids.numerics import (horner, horner_log, jacobian, trunc_log, numpy as np,
-                             trunc_log_numpy, trunc_exp_numpy,
-                             poly_fit_integral_value, poly_fit_integral_over_T_value,
-                             newton_system, trunc_exp, is_micropython, log)
-from fluids.core import thermal_diffusivity, c_ideal_gas
-from chemicals.utils import (Cp_minus_Cv, phase_identification_parameter,
-                             Joule_Thomson, speed_of_sound, dxs_to_dns, dns_to_dn_partials,
-                             hash_any_primitive, isentropic_exponent_TV,
-                             isentropic_exponent_PT, isentropic_exponent_PV,
-                             property_molar_to_mass, object_data, normalize,
-                             )
+
+from chemicals.utils import (
+    Cp_minus_Cv,
+    Joule_Thomson,
+    dns_to_dn_partials,
+    dxs_to_dns,
+    hash_any_primitive,
+    isentropic_exponent_PT,
+    isentropic_exponent_PV,
+    isentropic_exponent_TV,
+    normalize,
+    object_data,
+    phase_identification_parameter,
+    property_molar_to_mass,
+    speed_of_sound,
+)
 from chemicals.virial import B_from_Z
-from thermo.utils import POLY_FIT
+from fluids.constants import R, R_inv
+from fluids.core import c_ideal_gas, thermal_diffusivity
+from fluids.numerics import (
+    horner,
+    horner_log,
+    is_micropython,
+    jacobian,
+    log,
+    newton_system,
+    poly_fit_integral_over_T_value,
+    poly_fit_integral_value,
+    trunc_exp,
+    trunc_exp_numpy,
+    trunc_log,
+    trunc_log_numpy,
+)
+from fluids.numerics import numpy as np
+
 from thermo import phases
 from thermo.phases.phase_utils import object_lookups
+from thermo.serialize import arrays_to_lists
+from thermo.utils import POLY_FIT
 
 try:
     dot, zeros, array = np.dot, np.zeros, np.array

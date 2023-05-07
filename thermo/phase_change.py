@@ -61,20 +61,16 @@ __all__ = ['enthalpy_vaporization_methods', 'EnthalpyVaporization',
 
 
 
-from fluids.numerics import isnan
+from chemicals import miscdata, phase_change
 from chemicals.dippr import EQ106
-from chemicals import miscdata
-from chemicals.miscdata import lookup_VDI_tabular_data
-from chemicals import phase_change
-from chemicals.phase_change import (Alibakhshi, Chen, Clapeyron, Liu, MK, PPDS12, Pitzer, Riedel,
-                                    SMK, Velasco, Vetere, Watson)
 from chemicals.identifiers import CAS_to_int
+from chemicals.miscdata import lookup_VDI_tabular_data
+from chemicals.phase_change import MK, PPDS12, SMK, Alibakhshi, Chen, Clapeyron, Liu, Pitzer, Riedel, Velasco, Vetere, Watson
+from fluids.numerics import isnan
 
+from thermo.coolprop import CoolProp_failing_PT_flashes, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacitySolid
-from thermo.utils import TDependentProperty
-from thermo.utils import COOLPROP, VDI_TABULAR, DIPPR_PERRY_8E, VDI_PPDS
-from thermo.coolprop import has_CoolProp, PropsSI, coolprop_dict, coolprop_fluids, CoolProp_failing_PT_flashes
-
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, TDependentProperty
 
 CRC_HVAP_TB = 'CRC_HVAP_TB'
 CRC_HVAP_298 = 'CRC_HVAP_298'

@@ -70,36 +70,56 @@ __all__ = [
     'generate_phase_boundaries_naive'
 ]
 
+from math import copysign, log10
 from random import shuffle
-from fluids.constants import R
-from fluids.numerics import (UnconvergedError, trunc_exp, newton,
-                             brenth, secant, translate_bound_f_jac,
-                             numpy as np, assert_close, assert_close1d,
-                             damping_maintain_sign, oscillation_checking_wrapper,
-                             OscillationError, NotBoundedError, jacobian,
-                             best_bounding_bounds, isclose, newton_system,
-                             make_damp_initial, newton_minimize, one_sided_secant,
-                             root, minimize, fsolve, linspace, logspace, make_max_step_initial,
-                             exp, log, isinf, isnan)
-from fluids.numerics import py_solve, trunc_log, bisect
-from math import log10, copysign
-from chemicals.utils import (normalize,
-                             mixing_simple, property_mass_to_molar)
-from chemicals.heat_capacity import (Dadgostar_Shaw_integral,
-                                     Dadgostar_Shaw_integral_over_T,
-                                     Lastovka_Shaw_integral,
-                                     Lastovka_Shaw_integral_over_T)
-from chemicals.rachford_rice import (flash_inner_loop,
-                                     Rachford_Rice_solutionN,
-                                     Rachford_Rice_flash_error,
-                                     Rachford_Rice_solution_LN2)
-from chemicals.phase_change import SMK
-from chemicals.volume import COSTALD
-from chemicals.flash_basic import flash_wilson, flash_Tb_Tc_Pc, flash_ideal
+
 from chemicals.exceptions import TrivialSolutionError
-from thermo.phases import Phase, CoolPropPhase, CEOSLiquid, CEOSGas, IAPWS95
-from thermo.phases.phase_utils import lnphis_direct
+from chemicals.flash_basic import flash_ideal, flash_Tb_Tc_Pc, flash_wilson
+from chemicals.heat_capacity import Dadgostar_Shaw_integral, Dadgostar_Shaw_integral_over_T, Lastovka_Shaw_integral, Lastovka_Shaw_integral_over_T
+from chemicals.phase_change import SMK
+from chemicals.rachford_rice import Rachford_Rice_flash_error, Rachford_Rice_solution_LN2, Rachford_Rice_solutionN, flash_inner_loop
+from chemicals.utils import mixing_simple, normalize, property_mass_to_molar
+from chemicals.volume import COSTALD
+from fluids.constants import R
+from fluids.numerics import (
+    NotBoundedError,
+    OscillationError,
+    UnconvergedError,
+    assert_close,
+    assert_close1d,
+    best_bounding_bounds,
+    bisect,
+    brenth,
+    damping_maintain_sign,
+    exp,
+    fsolve,
+    isclose,
+    isinf,
+    isnan,
+    jacobian,
+    linspace,
+    log,
+    logspace,
+    make_damp_initial,
+    make_max_step_initial,
+    minimize,
+    newton,
+    newton_minimize,
+    newton_system,
+    one_sided_secant,
+    oscillation_checking_wrapper,
+    py_solve,
+    root,
+    secant,
+    translate_bound_f_jac,
+    trunc_exp,
+    trunc_log,
+)
+from fluids.numerics import numpy as np
+
 from thermo.coolprop import CPiP_min
+from thermo.phases import IAPWS95, CEOSGas, CEOSLiquid, CoolPropPhase, Phase
+from thermo.phases.phase_utils import lnphis_direct
 
 LASTOVKA_SHAW = 'Lastovka Shaw'
 DADGOSTAR_SHAW_1 = 'Dadgostar Shaw 1'

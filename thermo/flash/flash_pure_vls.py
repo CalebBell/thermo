@@ -22,59 +22,38 @@ SOFTWARE.
 
 __all__ = ['FlashPureVLS']
 
-from thermo.flash.flash_base import Flash
-from fluids.numerics import (
-    numpy as np,
-    secant,
-    brenth,
-    newton,
-    linspace,
-    assert_close,
-    UnconvergedError,
-    NoSolutionError
-)
-from chemicals.utils import rho_to_Vm, Vm_to_rho
 from chemicals.exceptions import PhaseExistenceImpossible
+from chemicals.iapws import iapws95_MW, iapws95_Pc, iapws95_Psat, iapws95_rhog_sat, iapws95_rhol_sat, iapws95_T, iapws95_Tc, iapws95_Tsat
+from chemicals.utils import Vm_to_rho, rho_to_Vm
+from fluids.numerics import NoSolutionError, UnconvergedError, assert_close, brenth, linspace, newton, secant
+from fluids.numerics import numpy as np
+
 from thermo.bulk import default_settings
-from thermo.eos_mix import IGMIX
 from thermo.coolprop import CPiP_min
-from thermo.phases import coolprop_phase
+from thermo.eos_mix import IGMIX
+from thermo.equilibrium import EquilibriumState
+from thermo.flash.flash_base import Flash
+from thermo.flash.flash_utils import PSF_pure_newton, PVF_pure_newton, TSF_pure_newton, TVF_pure_secant, solve_PTV_HSGUA_1P
+from thermo.phases import (
+    CEOSGas,
+    CEOSLiquid,
+    CoolPropGas,
+    CoolPropLiquid,
+    DryAirLemmon,
+    GibbsExcessLiquid,
+    IAPWS95Gas,
+    IAPWS95Liquid,
+    IdealGas,
+    Phase,
+    coolprop_phase,
+)
 from thermo.phases.coolprop_phase import (
     CPPQ_INPUTS,
     CPQT_INPUTS,
-    CPunknown,
     CPiDmolar,
+    CPunknown,
 )
-from chemicals.iapws import (
-    iapws95_Psat,
-    iapws95_Tsat,
-    iapws95_rhog_sat,
-    iapws95_rhol_sat,
-    iapws95_Tc,
-    iapws95_Pc,
-    iapws95_MW,
-    iapws95_T
-)
-from thermo.phases import (
-    Phase,
-    CEOSGas,
-    CEOSLiquid,
-    IdealGas,
-    CoolPropGas,
-    CoolPropLiquid,
-    IAPWS95Gas,
-    IAPWS95Liquid,
-    GibbsExcessLiquid,
-    DryAirLemmon
-)
-from thermo.flash.flash_utils import (
-    TVF_pure_secant,
-    PVF_pure_newton,
-    TSF_pure_newton,
-    PSF_pure_newton,
-    solve_PTV_HSGUA_1P
-)
-from thermo.equilibrium import EquilibriumState
+
 
 class FlashPureVLS(Flash):
     r'''Class for performing flash calculations on pure-component systems.

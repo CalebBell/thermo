@@ -21,7 +21,6 @@ SOFTWARE.
 '''
 import os
 
-
 try:  # pragma: no cover
     from appdirs import user_config_dir
     data_dir = user_config_dir('thermo')
