@@ -457,58 +457,6 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     else:
         raise Exception('Error in CoolProp property function')
 
-if False:
-    folder = os.path.join(os.path.dirname(__file__), 'Misc')
-
-    f = open(os.path.join(folder, 'CoolProp vapor properties fits.json'))
-    vapor_properties = json.load(f)
-    f.close()
-
-    f = open(os.path.join(folder, 'CoolProp CP0MOLAR fits.json'))
-    idea_gas_heat_capacity = json.load(f)
-    f.close()
-
-    CP_approximators = {}
-
-    for CAS in coolprop_dict:
-        obj = CP_fluid_approximator()
-        CP_approximators[CAS] = obj
-        obj.CAS = CAS
-        HEOS = AbstractState("HEOS", CAS)
-
-        obj.Tmin = HEOS.Tmin()
-        if CAS in CoolProp_Tmin_overrides:
-            obj.Tmin = max(obj.Tmin, CoolProp_Tmin_overrides[CAS])
-        obj.Tmax = HEOS.Tmax()
-        if CAS in CoolProp_Tmax_overrides:
-            obj.Tmax = max(obj.Tmax, CoolProp_Tmax_overrides[CAS])
-        obj.Pmax = HEOS.pmax()
-        obj.has_melting_line = HEOS.has_melting_line()
-        obj.Tc = HEOS.T_critical()
-        obj.Pc = HEOS.p_critical(),
-        obj.Tt = HEOS.Ttriple()
-        obj.omega = HEOS.acentric_factor()
-
-
-        if CAS in vapor_properties:
-            for key, value in vapor_properties[CAS].items():
-                chebcoeffs, limits = value
-                limits = [limits[0][0]] + [i[1] for i in limits]
-                approximator = MultiCheb1D(limits, chebcoeffs)
-                setattr(obj, key+'_g', approximator)
-
-        if CAS in idea_gas_heat_capacity:
-            chebcoeffs, Tmin, Tmax = idea_gas_heat_capacity[CAS]['CP0MOLAR']
-            approximator = MultiCheb1D([Tmin, Tmax], chebcoeffs)
-            obj.CP0MOLAR = approximator
-
-#            obj.validate_prop('CP0MOLAR', 'g')
-
-
-def CoolProp_T_dependent_property_approximation(T, CASRN, prop, phase):
-    pass
-
-
 
 def CoolProp_json_alpha0_to_kwargs(json_data, as_np=False):
     '''

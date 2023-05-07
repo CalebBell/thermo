@@ -1550,7 +1550,6 @@ def volume_solutions_doubledouble_float(T, P, b, delta, epsilon, a_alpha):
 
 
 
-third = 1/3.
 one_27 = 1.0/27.0
 complex_factor = 0.8660254037844386j # (sqrt(3)*0.5j)
 
