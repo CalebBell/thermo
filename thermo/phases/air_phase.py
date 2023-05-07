@@ -36,7 +36,7 @@ class DryAirLemmon(HelmholtzEOS):
     is_liquid = False
     force_phase = 'g'
 
-    _MW = air.lemmon2000_air_MW
+    # _MW = air.lemmon2000_air_MW = 28.9586
     _MW = 28.96546 # CoolProp
     rho_red = air.lemmon2000_air_rho_reducing
     rho_red_inv = 1.0/rho_red

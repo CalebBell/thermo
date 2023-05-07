@@ -396,12 +396,8 @@ class IdealGas(Phase):
     def d2T_dV2(self):
         return 0.0
 
-    d2T_dV2_P = d2T_dV2
-
     def d2V_dT2(self):
         return 0.0
-
-    d2V_dT2_P = d2V_dT2
 
     def dV_dT(self):
         return self.R/self.P
