@@ -912,8 +912,8 @@ class GCEOSMIX(GCEOS):
     def Psat(self, T, polish=False):
         r'''Generic method to calculate vapor pressure of a pure-component
         equation of state for a specified `T`. An explicit solution is used
-        unless `polish` is True. 
-        
+        unless `polish` is True.
+
         The result of this function has no physical meaning for multicomponent
         mixtures, and does not represent either a dew point or a bubble point!
 
@@ -1064,7 +1064,7 @@ class GCEOSMIX(GCEOS):
     #         a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = self.a_alpha_ijs, self.a_alpha_roots, self.a_alpha_ij_roots_inv
     #     except (AttributeError, AssertionError):
     #         if self.scalar:
-    #             a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv =  [[0.0]*N for _ in range(N)], [0.0]*N, [[0.0]*N for _ in range(N)] 
+    #             a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv =  [[0.0]*N for _ in range(N)], [0.0]*N, [[0.0]*N for _ in range(N)]
     #         else:
     #             a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = zeros((N, N)), zeros(N), zeros((N, N))
     #         a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs, a_alpha_ijs=a_alpha_ijs, a_alpha_roots=a_alpha_roots, a_alpha_ij_roots_inv=a_alpha_ij_roots_inv)
@@ -1125,7 +1125,7 @@ class GCEOSMIX(GCEOS):
         a_alpha_ijs = (one_minus_kijs)*x0_05
         z_products = np.einsum('i,j', zs, zs)
         a_alpha = np.einsum('ij,ji', a_alpha_ijs, z_products)
-        
+
         if self.scalar:
             self.a_alpha_ijs = a_alpha_ijs.tolist()
         else:
@@ -2426,7 +2426,7 @@ class GCEOSMIX(GCEOS):
             a_alpha_j_rows = [0.0]*N
         else:
             a_alpha_j_rows = zeros(N)
-            
+
         for i in range(N):
             l = a_alpha_ijs[i]
             for j in range(i):
@@ -2441,7 +2441,7 @@ class GCEOSMIX(GCEOS):
         if not hasattr(self, 'd2a_alpha_dT2s'):
             self.a_alpha_and_derivatives(self.T, full=True, pure_a_alphas=True)
         if self.scalar:
-            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv =  [[0.0]*N for _ in range(N)], [0.0]*N, [[0.0]*N for _ in range(N)] 
+            a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv =  [[0.0]*N for _ in range(N)], [0.0]*N, [[0.0]*N for _ in range(N)]
         else:
             a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = zeros((N, N)), zeros(N), zeros((N, N))
         a_alpha_ijs, a_alpha_roots, a_alpha_ij_roots_inv = a_alpha_aijs_composition_independent(self.a_alphas, self.one_minus_kijs,
@@ -3006,7 +3006,7 @@ class GCEOSMIX(GCEOS):
         N = self.N
         zs = self.zs
         a_alpha3 = 3.0*a_alpha
-        
+
         if self.scalar:
             hessian = [[0.0]*N for _ in range(N)]
         else:
@@ -3242,7 +3242,7 @@ class GCEOSMIX(GCEOS):
         d2a_alpha_dT2 = self.d2a_alpha_dT2
         if self.scalar:
             return [2.0*(t - d2a_alpha_dT2) for t in d2a_alpha_dT2_j_rows]
-        return 2.0*(d2a_alpha_dT2_j_rows - d2a_alpha_dT2) 
+        return 2.0*(d2a_alpha_dT2_j_rows - d2a_alpha_dT2)
 
     def dV_dzs(self, Z):
         r'''Calculates the molar volume composition derivative
@@ -3734,7 +3734,7 @@ class GCEOSMIX(GCEOS):
         T_inv = 1.0/self.T
         if self.scalar:
             return [T_inv*(dH_dep_dzs[i] - dG_dep_dzs[i]) for i in range(self.N)]
-        return T_inv*(dH_dep_dzs - dG_dep_dzs) 
+        return T_inv*(dH_dep_dzs - dG_dep_dzs)
 
     def dS_dep_dns(self, Z):
         r'''Calculates the molar departure entropy mole number derivatives
@@ -4622,7 +4622,7 @@ class GCEOSMIX(GCEOS):
             ziPphi = phi_P*zs[i]
             r = dlnphis_dns[i]
             for j in range(N):
-                matrix[i][j] = ziPphi*(dlnphis_dns[j][i] - 1.0) 
+                matrix[i][j] = ziPphi*(dlnphis_dns[j][i] - 1.0)
             matrix[i][i] += phi_P
         return matrix
 
@@ -6098,7 +6098,7 @@ class IGMIX(EpsilonZeroMixingRules, GCEOSMIX, IG):
             return [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             return zeros((N, N, N))
-    
+
     @property
     def a_alpha_roots(self):
         return self.zeros1d
@@ -6645,7 +6645,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
         else:
             a_alphas, da_alpha_dTs, d2a_alpha_dT2s = zeros(N), zeros(N), zeros(N)
         return RK_a_alpha_and_derivatives_vectorized(T, self.Tcs, self.ais,
-                                                     a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs, 
+                                                     a_alphas=a_alphas, da_alpha_dTs=da_alpha_dTs,
                                                      d2a_alpha_dT2s=d2a_alpha_dT2s)
 
     def solve_T(self, P, V, solution=None):
@@ -6866,14 +6866,14 @@ class PRMIX(GCEOSMIX, PR):
     model_id = 10200
 
 
-    eos_slots = ('V_l', 'Z_l', 'PIP_l', 'dP_dT_l', 'dP_dV_l', 'dV_dT_l', 'dV_dP_l', 'dT_dV_l', 'dT_dP_l', 
+    eos_slots = ('V_l', 'Z_l', 'PIP_l', 'dP_dT_l', 'dP_dV_l', 'dV_dT_l', 'dV_dP_l', 'dT_dV_l', 'dT_dP_l',
     'd2P_dT2_l', 'd2P_dV2_l', 'd2P_dTdV_l', 'H_dep_l', 'S_dep_l', 'G_dep_l', 'Cp_dep_l', 'Cv_dep_l',
     'T', 'P', 'V', 'b', 'delta', 'epsilon', 'a_alpha', 'da_alpha_dT', 'd2a_alpha_dT2', 'raw_volumes',
       'V_g', 'Z_g', 'PIP_g', 'dP_dT_g', 'dP_dV_g', 'dV_dT_g', 'dV_dP_g', 'dT_dV_g', 'dT_dP_g',
        'd2P_dT2_g', 'd2P_dV2_g', 'd2P_dTdV_g', 'H_dep_g', 'S_dep_g', 'G_dep_g', 'Cp_dep_g', 'Cv_dep_g', 'phase', 'kwargs',)
-    
+
     eos_mix_slots = ('lnphis_l', 'phis_l', 'fugacities_l', 'N', 'Tcs', 'Pcs', 'omegas', 'zs', 'scalar', 'kijs', 'one_minus_kijs', 'bs',
-     'bs', 'ais', 'a_alphas', 'da_alpha_dTs', 'd2a_alpha_dT2s', 'a_alpha_roots', 'a_alpha_j_rows', 'da_alpha_dT_j_rows', 
+     'bs', 'ais', 'a_alphas', 'da_alpha_dTs', 'd2a_alpha_dT2s', 'a_alpha_roots', 'a_alpha_j_rows', 'da_alpha_dT_j_rows',
    'lnphis_g', 'phis_g', 'fugacities_g')
 
     __slots__ = ('kappas',) + eos_slots + eos_mix_slots
@@ -7773,7 +7773,7 @@ class PRMIX(GCEOSMIX, PR):
         N = self.N
         out = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
         return PR_d2epsilon_dninjs(self.b, self.bs, N, out)
-    
+
 
 
     @property
@@ -7967,10 +7967,10 @@ class PRMIXTranslated(PRMIX):
             b0 = float((b0s*zs).sum())
             c = float((cs*zs).sum())
             bs = b0s - cs
-        
+
         self.kwargs = {'kijs': kijs, 'cs': cs}
         self.cs = cs
-        
+
         self.b0s = b0s
         self.bs = bs
         self.c = c
@@ -8019,7 +8019,7 @@ class PRMIXTranslated(PRMIX):
         This derivative is checked numerically.
         '''
         N = self.N
-        return PR_translated_ddelta_dzs(self.b0s, self.cs, N, 
+        return PR_translated_ddelta_dzs(self.b0s, self.cs, N,
                                         [0.0]*N if self.scalar else zeros(N))
 
     # Zero in both cases
@@ -8357,7 +8357,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
                 cs = [0.0]*N
             else:
                 cs = zeros(N)
-        
+
         if scalar:
             self.kappas = [omega*(omega*(0.1063*omega - 0.2721) + 1.4996) + 0.3919 for omega in omegas]
             b0, c = 0.0, 0.0
@@ -8365,12 +8365,12 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
                 b0 += b0s[i]*zs[i]
                 c += cs[i]*zs[i]
             bs = [b0s[i] - cs[i] for i in range(N)]
-        else:   
+        else:
             self.kappas = omegas*(omegas*(0.1063*omegas - 0.2721) + 1.4996) + 0.3919
             b0 = float((b0s*zs).sum())
             c = float((cs*zs).sum())
             bs = b0s - cs
-            
+
         self.kwargs = {'kijs': kijs, 'cs': cs}
         self.cs = cs
 
@@ -8540,7 +8540,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
         self.kwargs = {'kijs': kijs, 'alpha_coeffs': alpha_coeffs, 'cs': cs}
         self.alpha_coeffs = alpha_coeffs
         self.cs = cs
-        
+
         if scalar:
             b0, c = 0.0, 0.0
             for i in range(N):
@@ -8567,7 +8567,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
         self.alpha_coeffs = other.alpha_coeffs
         zs = self.zs
         self.b0s = b0s = other.b0s
-        
+
         if self.scalar:
             b0, c = 0.0, 0.0
             for i in range(self.N):
@@ -8711,7 +8711,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
             self.bs = bs = self.c2R*Tc_Pc_ratio
             ms = omegas*(1.574 - 0.176*omegas) + 0.480
             b =  float((bs*zs).sum())
-        
+
         self.b = b
         self.ms = ms
         self.delta = self.b
@@ -9073,10 +9073,10 @@ class SRKMIXTranslated(SRKMIX):
         self.T = T
         self.P = P
         self.V = V
-        
-        
+
+
         c2R, c1R2_c2R = self.c2R, self.c1R2_c2R
-        
+
         if scalar:
             b0s = [c2R*Tcs[i]/Pcs[i] for i in cmps]
             self.ais = [c1R2_c2R*Tcs[i]*b0s[i] for i in cmps]
@@ -9086,7 +9086,7 @@ class SRKMIXTranslated(SRKMIX):
             self.ais = c1R2_c2R*Tcs*b0s
             self.ms = 0.480 + omegas*(1.574 - 0.176*omegas)
         self.cs = cs
-        
+
         if scalar:
             b0, c = 0.0, 0.0
             for i in range(N):
@@ -9113,7 +9113,7 @@ class SRKMIXTranslated(SRKMIX):
         self.ms = other.ms
         zs = self.zs
         self.b0s = b0s = other.b0s
-        
+
         if self.scalar:
             b0, c = 0.0, 0.0
             for i in range(self.N):
@@ -9319,7 +9319,7 @@ class SRKMIXTranslated(SRKMIX):
         N = self.N
         out = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
         return SRK_translated_d2epsilon_dninjs(self.b0s, self.cs, self.b, self.c, N, out)
-        
+
     @property
     def d3epsilon_dninjnks(self):
         r'''Helper method for calculating the third partial mole number
@@ -9499,7 +9499,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
                     for i in range(N)]
             else:
                 cs = R*Tcs/Pcs*(0.0172*npmin(npmax(omegas, -0.01), 1.46) + 0.0096)
-                
+
         if alpha_coeffs is None:
             alpha_coeffs = []
             for i in range(N):
@@ -9511,7 +9511,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
         self.kwargs = {'kijs': kijs, 'alpha_coeffs': alpha_coeffs, 'cs': cs}
         self.alpha_coeffs = alpha_coeffs
         self.cs = cs
-        
+
         if scalar:
             b0, c = 0.0, 0.0
             for i in range(N):
@@ -10003,7 +10003,7 @@ class PR78MIX(PRMIX):
         self.T = T
         self.P = P
         self.V = V
-        
+
         c1R2_c2R, c2R = self.c1R2_c2R, self.c2R
 
         if scalar:
@@ -10016,7 +10016,7 @@ class PR78MIX(PRMIX):
             b = 0.0
             for i in cmps:
                 b += bs[i]*zs[i]
-            
+
         else:
             self.bs = bs = c2R*Tcs/Pcs
             self.ais = c1R2_c2R*Tcs*bs
@@ -10134,7 +10134,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         self.T = T
         self.P = P
         self.V = V
-        
+
         c1R2, c2R = self.c1R2, self.c2R
         if self.scalar:
             self.ais = [c1R2*Tc*Tc/Pc for Tc, Pc in zip(Tcs, Pcs)]
@@ -10145,7 +10145,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             self.ais = c1R2*Tcs*Tc_Pc_ratio
             self.bs = bs = c2R*Tc_Pc_ratio
             self.b = float((bs*zs).sum())
-    
+
         self.omegas = omegas
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
@@ -10629,10 +10629,10 @@ class PRSVMIX(PRMIX, PRSV):
         self.T = T
         self.P = P
         self.V = V
-        
+
         c1R2_c2R, c2R = self.c1R2_c2R, self.c2R
 
-        
+
         if scalar:
             self.kappa0s = [omega*(omega*(0.0196554*omega - 0.17131848) + 1.4897153) + 0.378893 for omega in omegas]
             self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]
@@ -10645,7 +10645,7 @@ class PRSVMIX(PRMIX, PRSV):
             self.bs = bs = c2R*Tcs/Pcs
             self.ais = c1R2_c2R*Tcs*bs
             b = float((bs*zs).sum())
-            
+
         self.b = b
 
         self.delta = 2.0*b
@@ -10866,7 +10866,7 @@ class PRSV2MIX(PRMIX, PRSV2):
                 kijs = zeros((N, N))
         self.kijs = kijs
         self.one_minus_kijs = one_minus_kijs(kijs)
-        
+
         if scalar:
             if kappa1s is None:
                 kappa1s = [0.0]*N
@@ -10881,7 +10881,7 @@ class PRSV2MIX(PRMIX, PRSV2):
                 kappa2s = zeros(N)
             if kappa3s is None:
                 kappa3s = zeros(N)
-        
+
         self.kwargs = {'kijs': kijs, 'kappa1s': kappa1s, 'kappa2s': kappa2s, 'kappa3s': kappa3s}
         self.kappa1s = kappa1s
         self.kappa2s = kappa2s
@@ -10890,7 +10890,7 @@ class PRSV2MIX(PRMIX, PRSV2):
         self.T = T
         self.P = P
         self.V = V
-        
+
         c2R, c1R2_c2R = self.c2R, self.c1R2_c2R
 
         if scalar:
@@ -10915,7 +10915,7 @@ class PRSV2MIX(PRMIX, PRSV2):
             solution = 'g' if (only_g and not only_l) else ('l' if only_l else None)
             self.T = T = self.solve_T(self.P, self.V, solution=solution)
 
-        
+
         if scalar:
             kappas = [0.0]*N
             for i in cmps:
@@ -10926,9 +10926,9 @@ class PRSV2MIX(PRMIX, PRSV2):
             Trs = T/Tcs
             sqrtTrs = npsqrt(Trs)
             kappas = kappa0s + ((kappa1s + kappa2s*(kappa3s - Trs)*(1. - sqrtTrs))*(1. + sqrtTrs)*(0.7 - Trs))
-        
+
         self.kappas = kappas
-        
+
         self.solve(only_l=only_l, only_g=only_g)
         if fugacities:
             self.fugacities()
@@ -11122,7 +11122,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
         self.T = T
         self.P = P
         self.V = V
-        
+
         c2R, c1R2_c2R = self.c2R, self.c1R2_c2R
         if scalar:
             self.bs = bs = [c2R*Tcs[i]/Pcs[i] for i in cmps]

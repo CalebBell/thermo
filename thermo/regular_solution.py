@@ -54,7 +54,7 @@ try:
 except (ImportError, AttributeError):
     pass
 
-__all__ = ['RegularSolution', 'regular_solution_gammas', 
+__all__ = ['RegularSolution', 'regular_solution_gammas',
            'regular_solution_gammas_binaries',
            'regular_solution_gammas_binaries_jac']
 
@@ -102,27 +102,27 @@ def regular_solution_dGE_dxs(Vs, Hi_sums, N, xsVs_sum_inv, GE, dGE_dxs=None):
     return dGE_dxs
 
 
-def regular_solution_gammas(xs, N, T, Vs, SPs, lambda_coeffs, 
+def regular_solution_gammas(xs, N, T, Vs, SPs, lambda_coeffs,
                             xsVs=None, Hi_sums=None, dGE_dxs=None,
                             gammas=None):
     if xsVs is None:
         xsVs = [0.0]*N
-    
+
     for i in range(N):
         xsVs[i] = xs[i]*Vs[i]
-    
+
     xsVs_sum = 0.0
     for i in range(N):
         xsVs_sum += xsVs[i]
     xsVs_sum_inv = 1.0/xsVs_sum
-    
+
     if Hi_sums is None:
         Hi_sums = [0.0]*N
-    
+
     Hi_sums = regular_solution_Hi_sums(SPs=SPs, Vs=Vs, xsVs=xsVs, coeffs=lambda_coeffs,
                                        N=N, Hi_sums=Hi_sums)
     GE = regular_solution_GE(SPs=SPs, xsVs=xsVs, coeffs=lambda_coeffs, N=N, xsVs_sum_inv=xsVs_sum_inv)
-    
+
     if dGE_dxs is None:
         dGE_dxs = [0.0]*N
     dG_dxs = regular_solution_dGE_dxs(Vs=Vs, Hi_sums=Hi_sums, N=N, xsVs_sum_inv=xsVs_sum_inv,
@@ -130,10 +130,10 @@ def regular_solution_gammas(xs, N, T, Vs, SPs, lambda_coeffs,
     xdx_totF = GE
     for i in range(N):
         xdx_totF -= xs[i]*dG_dxs[i]
-    
+
     if gammas is None:
         gammas = [0.0]*N
-    
+
     for i in range(N):
         gammas[i] = dG_dxs[i] + xdx_totF
     RT_inv = 1.0/(R*T)
@@ -177,7 +177,7 @@ def regular_solution_d3GE_dxixjxks(Vs, SPs, Hi_sums, dGE_dxs, N, GE, xsVs_sum_in
                 seconds = Vs[i]*(Vs[j]*dGE_dxs[k] + Vs[k]*dGE_dxs[j])
                 seconds -= Vs[i]*Vs[j]*Vs[k]*(
                             SPs[i]*(SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPs[k]*(coeffs[i][k] + coeffs[k][i]))
-                             + (SPs[i]-SPs[j])**2 + (SPs[i] - SPs[k])**2    
+                             + (SPs[i]-SPs[j])**2 + (SPs[i] - SPs[k])**2
                              )
                 firsts = -Vs[i]*d2GE_dxixjs[j][k]
 
@@ -238,22 +238,22 @@ class RegularSolution(GibbsExcess):
     -----
     In addition to the methods presented here, the methods of its base class
     :obj:`thermo.activity.GibbsExcess` are available as well.
-    
+
     Additional equations of note are as follows.
-    
+
     .. math::
         G^E = H^E
-    
+
     .. math::
         S^E = 0
-        
+
     .. math::
         \delta = \sqrt{\frac{\Delta H_{vap} - RT}{V_m}}
 
     Examples
     --------
     **Example 1**
-    
+
     From [2]_, calculate the activity coefficients at infinite dilution for the
     system benzene-cyclohexane at 253.15 K using the regular solution model
     (example 5.20, with unit conversion in-line):
@@ -264,27 +264,27 @@ class RegularSolution(GibbsExcess):
     [1.1352128394, 1.16803058378]
 
     This matches the solution given of [1.135, 1.168].
-    
+
     **Example 2**
-    
+
     Benzene and cyclohexane calculation from [3]_, without interaction
     parameters.
-    
+
     >>> GE = RegularSolution(T=353, xs=[0.01, 0.99], Vs=[8.90e-05, 1.09e-04], SPs=[9.2*(calorie/1e-6)**0.5, 8.2*(calorie/1e-6)**0.5])
     >>> GE.gammas()
     [1.1329295, 1.00001039]
-    
-    
+
+
     **Example 3**
-    
-    Another common model is the Flory-Huggins model. This isn't implemented 
+
+    Another common model is the Flory-Huggins model. This isn't implemented
     as a separate model, but it is possible to modify the activity coefficient
     results of :obj:`RegularSolution` to obtain the activity coefficients from
     the Flory-Huggins model anyway. ChemSep [4]_ implements the Flory-Huggins model
     and calls it the regular solution model, so results can't be compared with
     ChemSep except when making the following manual solution. The example below
     uses parameters from ChemSep for ethanol and water.
-        
+
     >>> GE = RegularSolution(T=298.15, xs=[0.5, 0.5], Vs=[0.05868e-3, 0.01807e-3], SPs=[26140.0, 47860.0])
     >>> GE.gammas() # Regular solution activity coefficients
     [1.8570955489, 7.464567232]
@@ -293,7 +293,7 @@ class RegularSolution(GibbsExcess):
     >>> gammas_flory_huggins = [exp(lngammass[i] + log(thetas[i]) + 1 - thetas[i]) for i in range(GE.N)]
     >>> gammas_flory_huggins
     [1.672945693, 5.9663471]
-    
+
     This matches the values calculated from ChemSep exactly.
 
     References
@@ -303,9 +303,9 @@ class RegularSolution(GibbsExcess):
        Professional, 2000.
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    .. [3] Elliott, J., and Carl Lira. Introductory Chemical Engineering 
+    .. [3] Elliott, J., and Carl Lira. Introductory Chemical Engineering
        Thermodynamics. 2nd edition. Upper Saddle River, NJ: Prentice Hall, 2012.
-    .. [4] Kooijman, Harry A., and Ross Taylor. The ChemSep Book. Books on 
+    .. [4] Kooijman, Harry A., and Ross Taylor. The ChemSep Book. Books on
        Demand Norderstedt, Germany, 2000.
     '''
     model_id = 400
@@ -342,7 +342,7 @@ class RegularSolution(GibbsExcess):
             else:
                 lambda_coeffs = zeros((N, N))
         self.lambda_coeffs = lambda_coeffs
-        
+
         lambda_coeffs_zero = True
         for i in range(N):
             r = lambda_coeffs[i]
@@ -379,7 +379,7 @@ class RegularSolution(GibbsExcess):
             s += ' , lambda_coeffs=%s)' %(self.lambda_coeffs,)
         else:
             s += ')'
-        
+
         return s
 
     def to_T_xs(self, T, xs):
@@ -716,7 +716,7 @@ class RegularSolution(GibbsExcess):
         else:
             work_func = regular_solution_gammas_binaries
             jac_func = regular_solution_gammas_binaries_jac
-        
+
         # Allocate all working memory
         pts = len(xs)
         gammas_iter = zeros(pts*2)
@@ -726,17 +726,17 @@ class RegularSolution(GibbsExcess):
         if symmetric:
             def fitting_func(xs, lambda12):
                 return work_func(xs, Vs, SPs, Ts, lambda12, lambda12, gammas_iter)
-            
+
             def analytical_jac(xs, lambda12):
                 return jac_func(xs, Vs, SPs, Ts, lambda12, lambda12, jac_iter).sum(axis=1)
-    
+
         else:
             def fitting_func(xs, lambda12, lambda21):
                 return work_func(xs, Vs, SPs, Ts, lambda12, lambda21, gammas_iter)
-            
+
             def analytical_jac(xs, lambda12, lambda21):
                 return jac_func(xs, Vs, SPs, Ts, lambda12, lambda21, jac_iter)
-    
+
         # The extend calls has been tested to be the fastest compared to numpy and list comprehension
         xs_working = []
         for xsi in xs:
@@ -744,25 +744,25 @@ class RegularSolution(GibbsExcess):
         gammas_working = []
         for gammasi in gammas:
             gammas_working.extend(gammasi)
-            
+
         xs_working = array(xs_working)
         gammas_working = array(gammas_working)
-        
+
         # Objective functions for leastsq maximum speed
         if symmetric:
             def func_wrapped_for_leastsq(params):
                 return work_func(xs_working, Vs, SPs, Ts, params[0], params[0], gammas_iter) - gammas_working
-    
+
             def jac_wrapped_for_leastsq(params):
                 return jac_func(xs_working, Vs, SPs, Ts, params[0], params[0], jac_iter).sum(axis=1)
-        
+
         else:
             def func_wrapped_for_leastsq(params):
                 return work_func(xs_working, Vs, SPs, Ts, params[0], params[1], gammas_iter) - gammas_working
-    
+
             def jac_wrapped_for_leastsq(params):
                 return jac_func(xs_working, Vs, SPs, Ts, params[0], params[1], jac_iter)
-        
+
         if symmetric:
             use_fit_parameters = ['lambda12']
         else:
@@ -794,15 +794,15 @@ MAX_LAMBDA_REGULAR_SOLUTION = 1e100
 # MIN_LAMBDA_REGULAR_SOLUTION = -10.0
 # MAX_LAMBDA_REGULAR_SOLUTION = 10.0
 
-def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21, 
+def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
                                      gammas=None):
     r'''Calculates activity coefficients with the regular solution model
     at fixed `lambda` values for
     a binary system at a series of mole fractions at specified temperatures.
-    This is used for 
+    This is used for
     regression of `lambda` parameters. This function is highly optimized,
     and operates on multiple points at a time.
-    
+
     .. math::
         \ln \gamma_1 = \frac{V_1\phi_2^2}{RT}\left[
             (\text{SP}_1-\text{SP}_2)^2 + \lambda_{12}\text{SP}_1\text{SP}_2
@@ -814,7 +814,7 @@ def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
             (\text{SP}_1-\text{SP}_2)^2 + \lambda_{12}\text{SP}_1\text{SP}_2
             + \lambda_{21}\text{SP}_1\text{SP}_2
             \right]
-    
+
     .. math::
         \phi_1 = \frac{x_1 V_1}{x_1 V_1 + x_2 V_2}
 
@@ -840,7 +840,7 @@ def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
     lambda21 : float
         `lambda` parameter for 21, [-]
     gammas : list[float], optional
-        Array to store the activity coefficient for each species in the liquid 
+        Array to store the activity coefficient for each species in the liquid
         mixture, indexed the same as `xs`; can be omitted or provided
         for slightly better performance [-]
 
@@ -852,7 +852,7 @@ def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
 
     Notes
     -----
-    
+
     Examples
     --------
     >>> regular_solution_gammas_binaries([.1, .9, 0.3, 0.7, .85, .15], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7], Ts=[300.0, 400.0, 500.0], lambda12=0.1759, lambda21=0.7991)
@@ -868,11 +868,11 @@ def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
         lambda21 = MAX_LAMBDA_REGULAR_SOLUTION
     pts = len(xs)//2 # Always even
     # lambda21 = lambda12
-    
+
     if gammas is None:
         allocate_size = (pts*2)
         gammas = [0.0]*allocate_size
-        
+
     l01, l10 = lambda12, lambda21
     SP0, SP1 = SPs
     V0, V1 = Vs
@@ -883,7 +883,7 @@ def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
         i2 = i*2
         x0 = xs[i2]
         x1 = 1.0 - x0
-        
+
         x0V0 = x0*V0
         x1V1 = x1*V1
         den_inv = 1.0/(x0V0 + x1V1)
@@ -903,29 +903,29 @@ def regular_solution_gammas_binaries_jac(xs, Vs, SPs, Ts, lambda12, lambda21, ja
     if lambda21 > MAX_LAMBDA_REGULAR_SOLUTION:
         lambda21 = MAX_LAMBDA_REGULAR_SOLUTION
     pts = len(xs)//2 # Always even
-    
+
     if jac is None:
         allocate_size = (pts*2)
         jac = np.zeros((allocate_size, 2))
-        
+
     l01, l10 = lambda12, lambda21
     SP0, SP1 = SPs
     V0, V1 = Vs
-    
+
     x2 = SP0*SP1
     c99 =  (SP0 - SP1)
     c100 = (l01*x2 + l10*x2 + c99*c99)
     c101 = V0*V1*V1
     c102 = V0*V0*V1
-    
+
     for i in range(pts):
         i2 = i*2
         x0 = xs[i2]
         x1 = 1.0 - x0
         T = Ts[i]
-        
+
         c0 = (V0*x0 + V1*x1)
-        
+
         x3 = R_inv/(T*c0*c0)
         x4 = x3*c100
         x5 = c101*x1*x1
@@ -936,6 +936,6 @@ def regular_solution_gammas_binaries_jac(xs, Vs, SPs, Ts, lambda12, lambda21, ja
 
         jac[i2][0] = x7
         jac[i2][1] = x7
-        jac[i2 + 1][0] = x9 
+        jac[i2 + 1][0] = x9
         jac[i2 + 1][1] = x9
     return jac

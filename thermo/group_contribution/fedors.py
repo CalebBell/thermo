@@ -47,7 +47,7 @@ fedors_contributions = {'C': 34.426, 'H': 9.172, 'O': 20.291,
 
 def Fedors(mol):
     r'''Estimate the critical volume of a molecule
-    using the Fedors [1]_ method, which is a basic 
+    using the Fedors [1]_ method, which is a basic
     group contribution method that also uses certain
     bond count features and the number of different
     types of rings.
@@ -73,7 +73,7 @@ def Fedors(mol):
     unrecognized_ring_size : bool
         Whether or not all rings in the molecule were matched successfully;
         if this is True, the results should not be trusted, [-]
-    
+
     Notes
     -----
     Raises an exception if rdkit is not installed, or `smi` or `rdkitmol` is
@@ -82,14 +82,14 @@ def Fedors(mol):
     Examples
     --------
     Example for sec-butanol in [2]_:
-        
+
     >>> Vc, status, _, _, _ = Fedors('CCC(C)O') # doctest:+SKIP
     >>> Vc, status # doctest:+SKIP
     (0.000274024, 'OK')
-    
+
     References
     ----------
-    .. [1] Fedors, R. F. "A Method to Estimate Critical Volumes." AIChE 
+    .. [1] Fedors, R. F. "A Method to Estimate Critical Volumes." AIChE
        Journal 25, no. 1 (1979): 202-202. https://doi.org/10.1002/aic.690250129.
     .. [2] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
@@ -101,13 +101,13 @@ def Fedors(mol):
     else:
         rdkitmol = Chem.MolFromSmiles(mol)
         no_H_mol = Chem.Mol(rdkitmol)
-    
+
     # Canont modify the molecule we are given
     rdkitmol = Chem.AddHs(rdkitmol)
-    
+
     ri = no_H_mol.GetRingInfo()
     atom_rings = ri.AtomRings()
-    
+
     UNRECOGNIZED_RING_SIZE = False
     three_rings = four_rings = five_rings = six_rings = 0
     for ring in atom_rings:
@@ -122,17 +122,17 @@ def Fedors(mol):
             six_rings += 1
         else:
             UNRECOGNIZED_RING_SIZE = True
-            
+
     rings_attatched_to_rings = count_rings_attatched_to_rings(no_H_mol, atom_rings=atom_rings)
-    
+
     UNRECOGNIZED_BOND_TYPE = False
     DOUBLE_BOND = Chem.rdchem.BondType.DOUBLE
     TRIPLE_BOND = Chem.rdchem.BondType.TRIPLE
     SINGLE_BOND = Chem.rdchem.BondType.SINGLE
     AROMATIC_BOND = Chem.rdchem.BondType.AROMATIC
-    
+
     double_bond_count = triple_bond_count = 0
-    # GetBonds is very slow; we can make it a little faster by iterating 
+    # GetBonds is very slow; we can make it a little faster by iterating
     # over a copy without hydrogens
     for bond in no_H_mol.GetBonds():
         bond_type = bond.GetBondType()
@@ -144,10 +144,10 @@ def Fedors(mol):
             pass
         else:
             UNRECOGNIZED_BOND_TYPE = True
-            
+
     alcohol_matches = rdkitmol.GetSubstructMatches(smarts_mol_cache(alcohol_smarts))
     amine_matches = rdkitmol.GetSubstructMatches(smarts_mol_cache(amine_smarts))
-    
+
     # This was the fastest way to get the atom counts
     atoms = simple_formula_parser(Chem.rdMolDescriptors.CalcMolFormula(rdkitmol))
     # For the atoms with functional groups, they always have to be there
@@ -157,7 +157,7 @@ def Fedors(mol):
         atoms['O'] = 0
     found_atoms = set(atoms.keys())
     UNKNOWN_ATOMS = bool(not found_atoms.issubset(fedors_allowed_atoms))
-    
+
     atoms['O_alcohol'] = len(alcohol_matches)
     atoms['O'] -= len(alcohol_matches)
     atoms['N_amine'] = len(amine_matches)
@@ -169,7 +169,7 @@ def Fedors(mol):
     atoms['double_bond'] = double_bond_count
     atoms['triple_bond'] = triple_bond_count
     atoms['ring_ring_bonds'] = rings_attatched_to_rings
-    
+
 #     print(atoms)
     Vc = 26.6
     for k, v in fedors_contributions.items():
@@ -177,10 +177,10 @@ def Fedors(mol):
             Vc += atoms[k]*v
         except KeyError:
             pass
-        
+
     Vc *= 1e-6
-    
+
     status = 'errors found' if (UNKNOWN_ATOMS or UNRECOGNIZED_BOND_TYPE or UNRECOGNIZED_RING_SIZE) else 'OK'
-    
+
     return Vc, status, UNKNOWN_ATOMS, UNRECOGNIZED_BOND_TYPE, UNRECOGNIZED_RING_SIZE
 

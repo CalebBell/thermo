@@ -23,51 +23,51 @@ SOFTWARE.
 
 from __future__ import division
 __all__ = [
-    'sequential_substitution_2P', 
+    'sequential_substitution_2P',
     'sequential_substitution_2P_functional',
     'sequential_substitution_GDEM3_2P',
-    'dew_bubble_Michelsen_Mollerup', 
+    'dew_bubble_Michelsen_Mollerup',
     'bubble_T_Michelsen_Mollerup',
     'dew_T_Michelsen_Mollerup',
     'bubble_P_Michelsen_Mollerup',
     'dew_P_Michelsen_Mollerup',
-    'minimize_gibbs_2P_transformed', 
+    'minimize_gibbs_2P_transformed',
     'sequential_substitution_Mehra_2P',
-    'nonlin_2P', 
-    'nonlin_n_2P', 
+    'nonlin_2P',
+    'nonlin_n_2P',
     'sequential_substitution_NP',
-    'minimize_gibbs_NP_transformed', 
-    'TPV_HSGUA_guesses_1P_methods', 
+    'minimize_gibbs_NP_transformed',
+    'TPV_HSGUA_guesses_1P_methods',
     'TPV_solve_HSGUA_guesses_1P',
     'sequential_substitution_2P_HSGUAbeta',
-    'sequential_substitution_2P_sat', 
+    'sequential_substitution_2P_sat',
     'TP_solve_VF_guesses',
-    'TPV_double_solve_1P', 
+    'TPV_double_solve_1P',
     'nonlin_2P_HSGUAbeta',
     'sequential_substitution_2P_double',
-    'cm_flash_tol', 
+    'cm_flash_tol',
     'nonlin_2P_newton',
     'dew_bubble_newton_zs',
     'existence_3P_Michelsen_Mollerup',
     'SS_VF_simultaneous',
     'stability_iteration_Michelsen',
-    'assert_stab_success_2P', 
+    'assert_stab_success_2P',
     'nonlin_equilibrium_NP',
     'nonlin_spec_NP',
     'TPV_solve_HSGUA_guesses_VL',
     'solve_P_VF_IG_K_composition_independent',
     'solve_T_VF_IG_K_composition_independent',
-    'incipient_phase_bounded_naive', 
-    'generate_incipient_phase_boundaries_naive', 
-    'incipient_phase_status', 'VLN_or_LN_boolean_check', 'VL_boolean_check', 
+    'incipient_phase_bounded_naive',
+    'generate_incipient_phase_boundaries_naive',
+    'incipient_phase_status', 'VLN_or_LN_boolean_check', 'VL_boolean_check',
     'VLL_or_LL_boolean_check', 'VLL_boolean_check', 'LL_boolean_check',
     'incipient_liquid_bounded_PT_sat',
     'generate_pure_phase_boolean_check',
-    'flash_mixing_minimum_factor', 
+    'flash_mixing_minimum_factor',
     'flash_mixing_remove_overlap',
     'incipient_phase_one_sided_secant',
-    'flash_phase_boundary_one_sided_secant', 
-    'VLN_bubble_boolean_check', 
+    'flash_phase_boundary_one_sided_secant',
+    'VLN_bubble_boolean_check',
     'VL_dew_boolean_check',
     'generate_phase_boundaries_naive'
 ]
@@ -87,13 +87,13 @@ from fluids.numerics import py_solve, trunc_log, bisect
 from math import log10, copysign
 from chemicals.utils import (normalize,
                              mixing_simple, property_mass_to_molar)
-from chemicals.heat_capacity import (Dadgostar_Shaw_integral, 
-                                     Dadgostar_Shaw_integral_over_T, 
+from chemicals.heat_capacity import (Dadgostar_Shaw_integral,
+                                     Dadgostar_Shaw_integral_over_T,
                                      Lastovka_Shaw_integral,
                                      Lastovka_Shaw_integral_over_T)
-from chemicals.rachford_rice import (flash_inner_loop, 
+from chemicals.rachford_rice import (flash_inner_loop,
                                      Rachford_Rice_solutionN,
-                                     Rachford_Rice_flash_error, 
+                                     Rachford_Rice_flash_error,
                                      Rachford_Rice_solution_LN2)
 from chemicals.phase_change import SMK
 from chemicals.volume import COSTALD
@@ -317,13 +317,13 @@ def sequential_substitution_2P_functional(T, P, zs, xs_guess, ys_guess,
                                liquid_args, gas_args, maxiter=1000, tol=1E-13,
                                trivial_solution_tol=1e-5, V_over_F_guess=0.5):
     xs, ys = xs_guess, ys_guess
-    V_over_F = V_over_F_guess   
+    V_over_F = V_over_F_guess
     N = len(zs)
 
     err, err1, err2, err3 = 0.0, 0.0, 0.0, 0.0
     V_over_F_old = V_over_F
     error_increases = 0
-    
+
     Ks = [0.0]*N
     for iteration in range(maxiter):
         lnphis_g = lnphis_direct(ys, *gas_args)
@@ -404,7 +404,7 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
     for i, phase in enumerate(phases):
         if phase.T != T or phase.P != P:
             phases[i] = phase.to_TP_zs(T=T, P=P, zs=phase.zs)
-    
+
     compositions_old = None
 
     for iteration in range(maxiter):
@@ -413,7 +413,7 @@ def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
 
 
 
-        
+
 
         Ks = []
         lnphis_ref = lnphis[ref_phase]
@@ -1794,7 +1794,7 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
             if phase.beta == 1:
                 present_phase_hot = phase
                 break
-            
+
         if present_phase_hot.zs == zs:
             other_phase = hot_start.phases[1] if present_phase_hot is hot_start.phases[0] else hot_start.phases[0]
             comp_guess = other_phase.zs
@@ -1928,7 +1928,7 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
         # def fun_and_jac(x):
         #     x, j = to_solve_comp(x.tolist())
         #     return np.array(x), np.array(j)
-        
+
 
         f_j, into, outof = translate_bound_f_jac(to_solve_comp, jac=True, low=low, high=high, as_np=True)
 
@@ -3917,7 +3917,7 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
     #             corrections[i] = ci = zs[i]/zs_test[i]*trunc_exp(lnphis_trial[i] - lnphis_test[i])*sum_zs_test_inv
     # however numerical differences seem to be huge and operate better on fugacities with the trunc_exp function
     # then anything else.
-    
+
     # Can this whole function be switched to the functional approach?
     # Should be possible
     # Note that the trial and test phase have to be at the right conditions
@@ -4542,7 +4542,7 @@ def flash_mixing_minimum_factor(zs_existing, zs_added):
     for i in range(len(zs_existing)):
         if zs_added[i] > 0 and zs_existing[i] == 0:
             return 0
-        
+
     factor = None
     for i in range(len(zs_existing)):
         if zs_added[i] > 0:
@@ -4558,14 +4558,14 @@ def flash_mixing_minimum_factor(zs_existing, zs_added):
 
 def flash_mixing_remove_overlap(zs_existing, zs_added):
     '''For the problem of considering mixing one stream with another stream,
-    and seeking to find the correct mixing ratio, it may be useful to 
+    and seeking to find the correct mixing ratio, it may be useful to
     actually remove some of the new stream. However, this is a nastier numerical
-    problem. It is nicer to remove as much as possible of the new stream 
-    before trying to solve the problem. This function will adjust the 
+    problem. It is nicer to remove as much as possible of the new stream
+    before trying to solve the problem. This function will adjust the
     composition of the initial feed to make that happen.
     '''
     factor = flash_mixing_minimum_factor(zs_existing, zs_added)
-    
+
     # Create the new composition which will not sum to 1
     new = [zs_existing[i] + factor*zs_added[i] for i in range(len(zs_existing))]
     # normalize the new composition
@@ -4582,7 +4582,7 @@ phase_boundary_perturbation_factors = [1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10
 
 def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, check, V_over_F, hot_start=None,
                                     iter_guesses=None, ignore_der=False):
-    '''Attempt to bound the formation of an incipient phase, using a 
+    '''Attempt to bound the formation of an incipient phase, using a
     variety of hardcoded options.
     '''
     unperturbable_msg = "Multiple perturbations around the found point did not provide a stable derivative, revise the objective function"
@@ -4598,7 +4598,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
         guesses = phase_boundaries_S_guesses
     elif iter_var == 'U':
         guesses = phase_boundaries_U_guesses
-        
+
     kwargs = {spec_var: spec_val}
     kwargs_pert = {spec_var: spec_val}
     if iter_guesses is not None:
@@ -4607,7 +4607,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
         all_iter_guesses = guesses
     if hot_start is not None:
         all_iter_guesses = [hot_start.value(iter_var)] + all_iter_guesses
-    
+
     # does not necessarily bound in the right direction
     # that means at least two points are needed in the real region
     # this is a huge hole and bug
@@ -4620,11 +4620,11 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
     non_phase_vals = []
     non_phase_results = []
     non_phase_checks = []
-    
+
     all_phase_vals = []
     all_phase_ress = []
     all_phase_check_vals = []
-    
+
     all_phase_der_dirs = []
     all_phase_perts = []
 
@@ -4697,7 +4697,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
 
             if best_non_phase_val is not None:
                 return (best_non_phase_val, phase_val, best_non_phase_res, phase_res, res_pert, i + 1)
-    
+
     # We are out of guesses. Try searching through all of them to see if any non-flat values have a derivative that goes to the criteria
     # instead of just testing against the lowest one
     # Start by Calculating all of the perturbations
@@ -4713,10 +4713,10 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
                 der_dir = der > 0
                 if check_pert >= 0:
                     break
-    
+
             if check_pert < 0:
                 raise ValueError(unperturbable_msg)
-                
+
             all_phase_perts.append(res_pert)
             all_phase_der_dirs.append(der_dir)
 
@@ -4727,7 +4727,7 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
 
             for (iter_val, phase_res, check_phase_val, der_dir, res_pert) in zip(all_phase_vals, all_phase_ress, all_phase_check_vals, all_phase_der_dirs, all_phase_perts):
                 distance = abs(non_phase_res.value(iter_var) - phase_res.value(iter_var))
-    
+
                 if (not der_dir and non_phase_val > phase_val) or (der_dir and non_phase_val < phase_val):
                     if distance < best_non_phase_distance:
                         best_non_phase_distance = distance
@@ -4736,16 +4736,16 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
                         best_phase_res = phase_res
                         best_phase_val = iter_val
                         best_res_pert = res_pert
-    
+
             if best_non_phase_val is not None:
                 return (best_non_phase_val, best_phase_val, best_non_phase_res, best_phase_res, best_res_pert, len(all_iter_guesses))
-    
-                
+
+
     raise ValueError("Failed to bound the flash")
 
 def flash_phase_boundary_one_sided_secant(flasher, zs, spec_var, spec_val, iter_var, check, hot_start=None,
                                           ytol=1e-6, xtol=None, maxiter=100, iter_guesses=None):
-    
+
     non_phase_val, phase_val, non_phase_res, phase_res, res_pert, bounding_iter = generate_phase_boundaries_naive(
         flasher=flasher, zs=zs, spec_var=spec_var, spec_val=spec_val, iter_var=iter_var, V_over_F=None,
         check=check, hot_start=hot_start,
@@ -4755,7 +4755,7 @@ def flash_phase_boundary_one_sided_secant(flasher, zs, spec_var, spec_val, iter_
     store = []
     flat = -1.0
     specs = {spec_var: spec_val}
-    
+
     def to_solve(guess):
         nonlocal iterations
         iterations += 1
@@ -4770,11 +4770,11 @@ def flash_phase_boundary_one_sided_secant(flasher, zs, spec_var, spec_val, iter_
     # vals = [to_solve(p) for p in pts]
     # plt.plot(pts, vals, 'x')
     # plt.show()
-    
+
     y0 = check(phase_res)
     y1 = check(res_pert)
 
-    guess = one_sided_secant(to_solve, x_flat=non_phase_val, 
+    guess = one_sided_secant(to_solve, x_flat=non_phase_val,
                                   x0=phase_val, y_flat=flat,
                                   x1=res_pert.value(iter_var),
                                   y0=y0, y1=y1,
@@ -4790,14 +4790,14 @@ def generate_hydrocarbon_phase_check(atomss, required_zi=0.5, required_wi=None,
     include_idxs = []
     for i in range(len(atomss)):
         atoms = atomss[i]
-        if (len(atoms) == 2 and 'C' in atoms 
-            and 'H' in atoms 
+        if (len(atoms) == 2 and 'C' in atoms
+            and 'H' in atoms
             and not (atoms['C'] == 1 and atoms['H'] == 4)):
             include_idxs.append(i)
-    
+
     def component_check(res):
         phases = res.phases if not require_liquid else res.liquids
-        
+
         for p in phases:
             z_hydro_total = 0.0
             w_hydro_total = 0.0
@@ -4818,7 +4818,7 @@ def generate_hydrocarbon_phase_check(atomss, required_zi=0.5, required_wi=None,
     return component_check
 
 def generate_pure_phase_boolean_check(idx, required_zi=0.999, required_wi=None):
-    '''Generate and return a function which will return -1 if 
+    '''Generate and return a function which will return -1 if
     a pure-ish phase with the required concentration is not found;
     and 1 if it is found.
     '''
@@ -4866,11 +4866,11 @@ def VL_dew_boolean_check(res):
         return -1
     # Something else, need to avoid this
     return -10000
-    
+
 def VL_boolean_check(res):
-    '''Function that returns 1 if a gas is present and there is a liquid 
+    '''Function that returns 1 if a gas is present and there is a liquid
     present and there are only two phases, and -1 otherwise.
-    
+
     '''
     if res.gas is not None and res.liquids is not None and res.phase_count==2 and res.solid_count == 0:
         return 1
@@ -4878,7 +4878,7 @@ def VL_boolean_check(res):
 
 def LL_boolean_check(res):
     '''Function that returns 1 if there are only two liquid phases and -1 otherwise.
-    
+
     '''
     if res.phase_count==2 and res.liquid_count == 2:
         return 1
@@ -4912,7 +4912,7 @@ def VLL_boolean_check(res):
 def incipient_phase_status(mix_ratio, flasher, specs, zs_existing, zs_added,
                            check, store=None):
     '''Perform a check whether or not the incipient phase is formed.
-    
+
     Parameters
     ----------
     mix_ratio : float
@@ -4968,14 +4968,14 @@ all_factors += _tmp_pts
 # all_factors += linspace(0,1, 80) + logspace(log10(1), log10(MAX_FACTOR_INCIPIENT_PHASE_NAIVE), 80)
 
 
-def generate_incipient_phase_boundaries_naive(flasher, specs, zs_existing, 
+def generate_incipient_phase_boundaries_naive(flasher, specs, zs_existing,
                                               zs_added, check):
-    '''Attempt to bound the formation of an incipient phase, using a 
+    '''Attempt to bound the formation of an incipient phase, using a
     factor-based approach.
     '''
     negative_bound = positive_bound = None
     store = []
-     
+
     zero = incipient_phase_status(0, flasher, specs, zs_existing, zs_added, check, store=store)
     if zero == -1:
         negative_bound = 0
@@ -4983,7 +4983,7 @@ def generate_incipient_phase_boundaries_naive(flasher, specs, zs_existing,
     elif zero == 1:
         positive_bound = 0
         positive_bound_res = store[-1]
-        
+
     one = incipient_phase_status(1, flasher, specs, zs_existing, zs_added, check, store=store)
     if one == -1:
         negative_bound = 1
@@ -4991,11 +4991,11 @@ def generate_incipient_phase_boundaries_naive(flasher, specs, zs_existing,
     elif one == 1:
         positive_bound = 1
         positive_bound_res = store[-1]
-        
+
     if negative_bound is not None and positive_bound is not None:
         return (negative_bound, positive_bound, negative_bound_res, positive_bound_res, len(store))
-    
-    
+
+
     for factor in all_factors:
         num = incipient_phase_status(factor, flasher, specs, zs_existing, zs_added, check, store=store)
         if num == -1:
@@ -5011,7 +5011,7 @@ def generate_incipient_phase_boundaries_naive(flasher, specs, zs_existing,
 
 def incipient_phase_bounded_naive(flasher, specs, zs_existing, zs_added, check, xtol=1e-6):
     '''
-    
+
     Returns
     -------
     res : EquilibriumState
@@ -5024,30 +5024,30 @@ def incipient_phase_bounded_naive(flasher, specs, zs_existing, zs_added, check, 
         The multiplier used to mix the two streams in the end, [-]
     '''
     zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
-    
+
     (negative_bound, positive_bound, negative_bound_res, positive_bound_res,
-     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs, 
+     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs,
                                                            zs_existing=zs_existing, zs_added=zs_added, check=check)
-    
+
     # print(low, high, 'bounds')
     store = []
     args = (flasher, specs, zs_existing, zs_added, check, store)
-    multiplier = bisect(incipient_phase_status, a=negative_bound, b=positive_bound, 
+    multiplier = bisect(incipient_phase_status, a=negative_bound, b=positive_bound,
                       args=args,
                      xtol=xtol)
-    
+
     # import matplotlib.pyplot as plt
     # pts = linspace(negative_bound, positive_bound, 500)
     # vals = [incipient_phase_status(p, *args) for p in pts]
     # plt.plot(pts, vals, 'x')
     # plt.show()
-    
+
 
     # Make sure the final return value matches the criteria
     for v in store[::-1]:
         if check(v) == 1:
             break
-    
+
     return v, attempts, len(store), multiplier
 
 def incipient_phase_one_sided_secant(flasher, specs, zs_existing, zs_added,
@@ -5055,7 +5055,7 @@ def incipient_phase_one_sided_secant(flasher, specs, zs_existing, zs_added,
     '''Solver which uses a one-sided secant algorithm to converge
     with the same convergence order as secant.
     A line search algorithm is used to make every step a secant one.
-    
+
     Returns
     -------
     res : EquilibriumState
@@ -5070,9 +5070,9 @@ def incipient_phase_one_sided_secant(flasher, specs, zs_existing, zs_added,
     zs_existing_orig = zs_existing
     zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
     removed_composition = zs_existing_orig != zs_existing
-    
+
     (negative_bound, positive_bound, negative_bound_res, positive_bound_res,
-     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs, 
+     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs,
                                                            zs_existing=zs_existing, zs_added=zs_added, check=check)
     if check is LL_boolean_check:
         mode = 'LF0' # Does not work for phase label transitions but does
@@ -5095,7 +5095,7 @@ def incipient_phase_one_sided_secant(flasher, specs, zs_existing, zs_added,
     N = len(zs_existing)
     flat = -1.0
 
-    
+
     def to_solve(mix_ratio):
         nonlocal iterations
         iterations += 1
@@ -5125,7 +5125,7 @@ def incipient_phase_one_sided_secant(flasher, specs, zs_existing, zs_added,
     # plt.plot(pts, vals, 'x')
     # plt.show()
 
-    multiplier = one_sided_secant(to_solve, x_flat=negative_bound, 
+    multiplier = one_sided_secant(to_solve, x_flat=negative_bound,
                                   x0=positive_bound, y_flat=flat,
                                   x1=positive_bound*(1-1e-9),
                                   xtol=xtol, ytol=ytol)
@@ -5137,15 +5137,15 @@ def incipient_phase_one_sided_secant(flasher, specs, zs_existing, zs_added,
 
 def incipient_phase_bounded_secant(flasher, gas, liquid, T, P, zs_existing, zs_added, check, xtol=1e-6):
     '''Solver which, when the PT flash does not converge to a two-phase
-    solution, uses the stability test to return a vapor fraction that 
+    solution, uses the stability test to return a vapor fraction that
     makes the objective function continuous.
     '''
     zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
-    
+
     (negative_bound, positive_bound, negative_bound_res, positive_bound_res,
-     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs={'T': T, 'P': P}, 
+     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs={'T': T, 'P': P},
                                                            zs_existing=zs_existing, zs_added=zs_added, check=check)
-    
+
     iterations = 0
     store = []
     N = len(zs_existing)
@@ -5175,7 +5175,7 @@ def incipient_phase_bounded_secant(flasher, gas, liquid, T, P, zs_existing, zs_a
         raise ValueError("Shold not get here")
 
     x0 = 0.5*negative_bound + positive_bound*0.5
-    
+
     # import matplotlib.pyplot as plt
     # pts = linspace(negative_bound, positive_bound, 500)
     # vals = [to_solve(p) for p in pts]
@@ -5204,18 +5204,18 @@ def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check
         raise ValueError("This algorithm requires T or P as a specification")
     other_spec, other_spec_value = list(specs_working.keys())[0], list(specs_working.values())[0]
     zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
-    
+
     (negative_bound, positive_bound, negative_bound_res, positive_bound_res,
-     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs, 
+     attempts) = generate_incipient_phase_boundaries_naive(flasher, specs=specs,
                                                            zs_existing=zs_existing, zs_added=zs_added, check=check)
-                                                           
+
     iterations = 0
     store = []
     N = len(zs_existing)
     def to_solve(mix_ratio):
         nonlocal iterations
         iterations += 1
-        
+
         ns = [zs_existing[i] + mix_ratio*zs_added[i] for i in range(N)]
         zs = normalize(ns)
         if has_T:
@@ -5229,20 +5229,20 @@ def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check
 
     x0 = 0.99*negative_bound + positive_bound*0.01
     multiplier = secant(to_solve, x0=x0, low=negative_bound, high=positive_bound, xtol=xtol)
-    
+
     # Make sure the final return value matches the criteria
     for v in store[::-1]:
         if check(v) == 1:
             break
-    
+
     return v, attempts, iterations, multiplier
-    
+
 
 def cricondentherm_direct_criteria(res, require_two_phase=True, require_gas=False):
     if require_two_phase and res.phase_count != 2:
         raise ValueError("Solution is not two phase")
     tot = 0.0
-    
+
     if require_gas or res.gas is not None:
         dlnphis_dP_gas = res.gas.dlnphis_dP()
     else:
@@ -5252,7 +5252,7 @@ def cricondentherm_direct_criteria(res, require_two_phase=True, require_gas=Fals
     for i in range(res.N):
         tot += xs[i]*(dlnphis_dP_gas[i] - dlnphis_dP_liquid[i])
     return tot
- 
+
 
 def critcondenbar_direct_criteria(res, require_two_phase=True, require_gas=False):
     if require_two_phase and res.phase_count != 2:

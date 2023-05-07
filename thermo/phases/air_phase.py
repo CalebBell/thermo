@@ -146,7 +146,7 @@ class DryAirLemmon(HelmholtzEOS):
         return mu
 
     def k(self):
-        r'''Calculate and return the thermal conductivity of air according to 
+        r'''Calculate and return the thermal conductivity of air according to
         Lemmon and Jacobsen (2004)
         For details, see :obj:`chemicals.thermal_conductivity.k_air_lemmon`.
 
@@ -161,7 +161,7 @@ class DryAirLemmon(HelmholtzEOS):
             pass
         # We require viscosity to calculate thermal conductivity
         self.mu()
-        
+
         # This call is very expensive; this could be curve-fit as it is a 1D function
         drho_dP_Tr = self.to(T=self.T_fixed_transport, V=self._V, zs=self.zs).drho_dP()
 

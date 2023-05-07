@@ -191,7 +191,7 @@ class GibbsExcessLiquid(Phase):
         `f` parameters used in calculating henry's law constant, [1/K^2]
     henry_mode : str
         The setting for henry's law. 'solvents' to consider all
-        components set not to be henry's law components a solvent (if 
+        components set not to be henry's law components a solvent (if
         any parameters are missing this will not make sense at all);
         'solvents_with_parameters' to consider only the solvents with
         parameters (vapor pressures will be used if a component has
@@ -249,9 +249,9 @@ class GibbsExcessLiquid(Phase):
        'eos_pure_instances', 'equilibrium_basis', 'caloric_basis', 'use_phis_sat', 'use_Poynting', 'use_phis_sat_caloric',
         'use_Poynting_caloric', 'use_Hvap_caloric', 'has_henry_components', 'henry_components',
         'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs','henry_mode',
-         'composition_independent', 
+         'composition_independent',
         'Hfs', 'Gfs', 'Sfs', 'model_id', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
-    
+
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with
         the goal of making it easy to obtain standalone code which reproduces
@@ -274,8 +274,8 @@ class GibbsExcessLiquid(Phase):
                 except:
                     continue
                 pure_strs += '%s=%s, ' %(k, s)
-                
-                
+
+
         base = f'{self.__class__.__name__}(GibbsExcessModel={self.GibbsExcessModel}, '\
                f'equilibrium_basis={self.equilibrium_basis}, caloric_basis={self.caloric_basis}, '\
                f'eos_pure_instances={self.eos_pure_instances}, {pure_strs}'
@@ -304,10 +304,10 @@ class GibbsExcessLiquid(Phase):
 
                  Hfs=None, Gfs=None, Sfs=None,
 
-                 henry_components=None, 
+                 henry_components=None,
                  henry_abcdef=None,
-                 henry_as=None, henry_bs=None, 
-                 henry_cs=None, henry_ds=None, 
+                 henry_as=None, henry_bs=None,
+                 henry_cs=None, henry_ds=None,
                  henry_es=None, henry_fs=None,
                  henry_mode='solvents_with_parameters',
 
@@ -551,7 +551,7 @@ class GibbsExcessLiquid(Phase):
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
-        
+
         self.model_id = 20000 + GibbsExcessModel.model_id
 
         if T is not None and P is not None and zs is not None:
@@ -708,9 +708,9 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         return new
-    
+
     supports_lnphis_args = False
-    
+
     def lnphis_args(self):
         try:
             return self._lnphis_args
@@ -764,7 +764,7 @@ class GibbsExcessLiquid(Phase):
         Returns
         -------
         dlnHenry_matrix_dT : list[list[float]]
-            First temperature derivative of Henry's law interaction 
+            First temperature derivative of Henry's law interaction
             parameters, [log(Pa)/K]
 
         Notes
@@ -791,7 +791,7 @@ class GibbsExcessLiquid(Phase):
         Returns
         -------
         d2lnHenry_matrix_dT2 : list[list[float]]
-            Second temperature derivative of Henry's law interaction 
+            Second temperature derivative of Henry's law interaction
             parameters, [log(Pa)/K]
 
         Notes
@@ -827,7 +827,7 @@ class GibbsExcessLiquid(Phase):
         dHs = [0.0]*N if scalar else zeros(N)
         dHenry_constants_dT(lnHenry_matrix, dlnHenry_matrix_dT, zs, henry_components, solvents_with_parameters, dHs)
         return dHs
-        
+
     def d2Henry_constants_dT2(self):
         zs, scalar, N, henry_components, henry_mode = self.zs, self.scalar, self.N, self.henry_components, self.henry_mode
         solvents_with_parameters = henry_mode == 'solvents_with_parameters'
@@ -1077,8 +1077,8 @@ class GibbsExcessLiquid(Phase):
                 lnPsats.append(Psat)
             self._lnPsats = lnPsats
             return lnPsats
-        
-        self._lnPsats = lnPsats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN) 
+
+        self._lnPsats = lnPsats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN)
                                    for VaporPressure in self.VaporPressures]
         if self.has_henry_components:
             Hs, henry_components = self.Henry_constants(), self.henry_components
@@ -1117,7 +1117,7 @@ class GibbsExcessLiquid(Phase):
                     dlnPsats_dT[i] = dHs[i]/Hs[i]
 
         return dlnPsats_dT
-    
+
     def d2lnPsats_dT2(self):
         T, N = self.T, self.N
         T_inv = 1.0/T
@@ -1881,7 +1881,7 @@ class GibbsExcessLiquid(Phase):
             gammas = self._gammas
         except AttributeError:
             gammas = self.gammas()
-            
+
 
         try:
             Psats = self._Psats

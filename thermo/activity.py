@@ -70,7 +70,7 @@ from __future__ import division
 __all__ = ['GibbsExcess', 'IdealSolution']
 from fluids.constants import R, R_inv
 from fluids.numerics import numpy as np, trunc_exp, exp, log
-from chemicals.utils import (normalize, dxs_to_dns, dxs_to_dn_partials, 
+from chemicals.utils import (normalize, dxs_to_dns, dxs_to_dn_partials,
                              dns_to_dn_partials, d2xs_to_dxdn_partials, hash_any_primitive, object_data)
 from thermo import serialize
 from thermo.fitting import fit_customized
@@ -286,10 +286,10 @@ class GibbsExcess(object):
     '''When set, this will be the limiting mole fraction used to approximate
     the :obj:`gammas_infinite_dilution` calculation. This is important
     as not all models can mathematically be evaluated at zero mole-fraction.'''
-    
+
 
     __slots__ = ('T', 'N', 'xs', 'scalar', '_GE', '_dGE_dT', '_SE','_d2GE_dT2', '_d2GE_dTdxs', '_dGE_dxs',
-                  '_gammas', '_dgammas_dns', '_dgammas_dT', '_d2GE_dxixjs',  '_dHE_dxs', '_dSE_dxs', 
+                  '_gammas', '_dgammas_dns', '_dgammas_dT', '_d2GE_dxixjs',  '_dHE_dxs', '_dSE_dxs',
                   '_model_hash')
 
     _point_properties = ('CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns',
@@ -298,7 +298,7 @@ class GibbsExcess(object):
                          'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns',
                          'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas')
     '''These are all methods which take no arguments. For use in testing.'''
-    
+
     def __init_subclass__(cls):
         cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
 
@@ -929,7 +929,7 @@ class GibbsExcess(object):
         xs = self.xs
         d2GE_dxixjs = self.d2GE_dxixjs()
 
-        dgammas_dns = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N)) 
+        dgammas_dns = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
 
         dgammas_dns = gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, self.T, dgammas_dns)
 
@@ -1019,21 +1019,21 @@ class GibbsExcess(object):
             dgammas_dT = array(dgammas_dT)
         self._dgammas_dT = dgammas_dT
         return dgammas_dT
-    
+
     @classmethod
     def _regress_binary_parameters(cls, gammas, xs, fitting_func, fit_parameters,
                                    use_fit_parameters, initial_guesses=None, analytical_jac=None,
                                    **kwargs):
 
-        fit_kwargs = dict(fit_method='lm', 
-                    # fit_method='differential_evolution', 
-                   objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr', 
+        fit_kwargs = dict(fit_method='lm',
+                    # fit_method='differential_evolution',
+                   objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr',
                    initial_guesses=initial_guesses, analytical_jac=analytical_jac,
                    solver_kwargs=None, use_numba=False, multiple_tries=False,
                    do_statistics=True, multiple_tries_max_err=1e-5)
         fit_kwargs.update(kwargs)
-         
-             
+
+
         res = fit_customized(xs, data=gammas, fitting_func=fitting_func, fit_parameters=fit_parameters, use_fit_parameters=use_fit_parameters,
                     **fit_kwargs)
         return res
@@ -1068,10 +1068,10 @@ class IdealSolution(GibbsExcess):
     [0.0, 0.0, 0.0, 0.0]
     '''
     _model_attributes = ()
-    
+
     model_id = 0
     __slots__ = GibbsExcess.__slots__
-    
+
     def gammas_args(self, T=None):
         N = self.N
         return (N,)

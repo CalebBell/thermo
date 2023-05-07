@@ -118,7 +118,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     r'''Fragments a molecule into a set of unique groups and counts as
     specified by the `catalog`, which is a list of objects containing
     the attributes `smarts`, `group`, and `priority`.
-    
+
     The molecule can either be an rdkit
     molecule object, or a smiles string which will be parsed by rdkit.
     Returns a dictionary of groups and their counts according to the
@@ -167,10 +167,10 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             success = False
             return {}, success, status
     from itertools import combinations
-    
+
     # Remove this
     catalog = [i for i in catalog if i.priority is not None]
-    
+
     rdkitmol_Hs = Chem.AddHs(rdkitmol)
     # H_count = rdkitmol_Hs.GetNumAtoms() - rdkitmol.GetNumAtoms()
     atoms = simple_formula_parser(rdMolDescriptors.CalcMolFormula(rdkitmol))
@@ -185,7 +185,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     atom_count = len(all_atom_idxs)
     status = 'OK'
     success = True
-    
+
     counts = {}
     all_matches = {}
     for obj in catalog:
@@ -222,7 +222,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             all_heavies_matched_by_a_pattern.update(t)
 
     # excludes H
-    
+
     ignore_matches = set()
     matched_atoms, final_group_counts, final_assignments = run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs, H_count)
     # Count the hydrogens
@@ -250,7 +250,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         for k in all_matches:
             for v in all_matches[k]:
                 things_to_ignore.append((k, v))
-                
+
         # if len(things_to_ignore) < 25:
             # remove_up_to = 4
         # elif len(things_to_ignore) < 25:
@@ -271,7 +271,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                 tries += 1
                 if tries > max_tries:
                     break
-                
+
                 ignore_matches = set(ignore_matches)
                 matched_atoms, final_group_counts, final_assignments = run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs, H_count)
                 heavy_atom_matched = atom_count == len(matched_atoms)
@@ -285,7 +285,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                             hydrogens_found += sum(H_counts_by_idx[i] for i in found_atoms)
                         else:
                             hydrogens_found += group_to_obj[found_group].atoms.get('H', 0)
-                
+
                 hydrogens_matched = hydrogens_found == H_count
                 success = heavy_atom_matched and hydrogens_matched
 
@@ -314,7 +314,7 @@ def run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs,
                 # If the group matches everything, check the group has the right number of hydrogens
                 if match_set == all_atom_idxs and H_count and obj.atoms.get('H', 0) != H_count:
                     continue
-                
+
                 if (obj.group_id, match) in ignore_matches:
                     continue
                 matched_atoms.update(match)
@@ -323,14 +323,14 @@ def run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs,
                 except:
                     final_group_counts[obj.group_id] = 0
                 final_group_counts[obj.group_id] += 1
-                
+
                 try:
                     final_assignments[obj.group_id]
                 except:
                     final_assignments[obj.group_id] = []
                 final_assignments[obj.group_id].append(match)
     return matched_atoms, final_group_counts, final_assignments
-    
+
 
 
 def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):

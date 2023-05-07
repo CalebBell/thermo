@@ -149,7 +149,7 @@ class ViscosityLiquid(TPDependentProperty):
     For low-pressure (at 1 atm while under the vapor pressure; along the
     saturation line otherwise) liquids, there are six coefficient-based methods
     from three data sources, one source of tabular information, two
-    corresponding-states estimators, one group contribution method, and the 
+    corresponding-states estimators, one group contribution method, and the
     external library CoolProp.
 
     For high-pressure liquids (also, <1 atm liquids), there is one
@@ -250,7 +250,7 @@ class ViscosityLiquid(TPDependentProperty):
         dependence.
 
     A minimum viscosity value of 1e-5 Pa*s is set according to [4]_.
-    This is also just above the lowest experimental values of viscosity of 
+    This is also just above the lowest experimental values of viscosity of
     helium, 9.4e-6 Pa*s. This excludes the behavior of superfluids,
     and also systems where the mean free path between moleules approaches
     the geometry of the system and then the viscosity is geometry-dependent.
@@ -282,7 +282,7 @@ class ViscosityLiquid(TPDependentProperty):
        Properties from Group-Contributions." Chemical Engineering
        Communications 57, no. 1-6 (July 1, 1987): 233-43.
        doi:10.1080/00986448708960487.
-    .. [6] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from 
+    .. [6] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from
        Fundamental Physical Constants." Science Advances, April 2020.
        https://doi.org/10.1126/sciadv.aba3747.
     '''
@@ -374,7 +374,7 @@ class ViscosityLiquid(TPDependentProperty):
                 if not isnan(mul0):
                     methods.append(JOBACK)
                     self.joback_coeffs = [mul0, float(jb_df.at[CASRN_int, 'mul1'])]
-                                          
+
                     Tmin_jb, Tmax_jb = float(jb_df.at[CASRN_int, 'Tm']), float(jb_df.at[CASRN_int, 'Tc'])*2.5
                     T_limits[JOBACK] = (Tmin_jb, Tmax_jb)
 
@@ -669,7 +669,7 @@ class ViscosityLiquid(TPDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        
+
         if method == LUCAS:
             validity = True
         elif method == COOLPROP:
@@ -774,10 +774,10 @@ class ViscosityGas(TPDependentProperty):
         Range is limited to that of the equations of state it uses, as
         described in [1]_. Very slow, but unparalled in accuracy for pressure
         dependence.
-        
-        
+
+
     A minimum viscosity value of 1e-5 Pa*s is set according to [4]_.
-    This is also just above the lowest experimental values of viscosity of 
+    This is also just above the lowest experimental values of viscosity of
     helium, 9.4e-6 Pa*s.
 
     See Also
@@ -798,7 +798,7 @@ class ViscosityGas(TPDependentProperty):
        Berlin; New York:: Springer, 2010.
     .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
-    .. [4] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from 
+    .. [4] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from
        Fundamental Physical Constants." Science Advances, April 2020.
        https://doi.org/10.1126/sciadv.aba3747.
     '''

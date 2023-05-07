@@ -355,57 +355,57 @@ class InteractionParameterDB(object):
 class ScalarParameterDB(object):
     '''Basic database framework for scalar parameters of various thermodynamic
     models. The following keys are used:
-    
+
     **Peng-Robinson**
-    
+
     :obj:`Twu Volume-translated Peng-Robinson <thermo.eos_mix.PRMIXTranslatedConsistent>`:
     `TwuPRL`, `TwuPRM`, `TwuPRN`, `TwuPRc`
-    
+
     :obj:`Volume-translated Peng-Robinson <thermo.eos_mix.PRMIXTranslated>`:
     `PRc`
-    
+
     :obj:`Peng-Robinson-Stryjek-Vera  <thermo.eos_mix.PRSVMIX>`:
     `PRSVkappa1`
-    
+
     :obj:`Peng-Robinson-Stryjek-Vera 2  <thermo.eos_mix.PRSV2MIX>`:
     `PRSV2kappa1`, `PRSV2kappa2`, `PRSV2kappa3`
-    
+
     **SRK**
-    
+
     :obj:`Twu Volume-translated Peng-Robinson <thermo.eos_mix.SRKMIXTranslatedConsistent>`:
     `TwuSRKL`, `TwuSRKM`, `TwuSRKN`, `TwuSRKc`
-    
+
     :obj:`Volume-translated Peng-Robinson <thermo.eos_mix.SRKMIXTranslated>`:
     `SRKc`
 
     :obj:`Refinery Soave-Redlich-Kwong  <thermo.eos_mix.APISRKMIX>`:
     `APISRKS1`, `APISRKS2`
-    
+
     :obj:`MSRK  <thermo.eos_mix.MSRKMIXTranslated>`:
     `MSRKM`, `MSRKN`, `MSRKc`
 
     :obj:`Predictive Soave-Redlich-Kwong <thermo.eos_mix.PSRK>`:
     `MCSRKC1`, `MCSRKC2`, `MCSRKC3`
 
-    
+
     **Excess Gibbs Energy Models**
-    
+
     :obj:`Regular Solution <thermo.regular_solution.RegularSolution>`:
     `RegularSolutionV`, `RegularSolutionSP`
-    
-        
+
+
     '''
     def __init__(self):
         self.tables = {}
         self.metadata = {}
     def load_json(self, file, name):
-        
+
         import json
         f = open(file).read()
         dat = json.loads(f)
         self.tables[name] = dat['data']
         self.metadata[name] = dat['metadata']
-        
+
     def get_parameter_specific(self, name, CAS, parameter):
         '''Get a parameter from a table. If the specified
         parameter is missing, the default `missing` value as defined in
@@ -566,7 +566,7 @@ def load_all_interaction_parameters():
                 'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json'),
                 'ChemSep UNIQUAC': os.path.join(chemsep_db_path, 'uniquac.json'),
                 'ChemSep Wilson': os.path.join(chemsep_db_path, 'wilson.json'),
-                
+
                 'ChemSep Henry': os.path.join(chemsep_db_path, 'henry.json'),
                 'Sander Const': os.path.join(folder, 'Sander_henry_const.json'),
                 'Sander T dep': os.path.join(folder, 'Sander_henry_T_dep.json'),

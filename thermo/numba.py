@@ -123,9 +123,9 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
         mod.__dict__.update(__funcs)
 
     to_change = ['eos.volume_solutions_halley',
-                 
+
                  'eos_mix_methods.a_alpha_quadratic_terms',
-                 
+
                  'eos_mix_methods.a_alpha_and_derivatives_quadratic_terms',
                  'eos_mix_methods.a_alpha_aijs_composition_independent',
                  'eos_mix_methods.a_alpha_and_derivatives_full',
@@ -173,7 +173,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
              'eos_mix_methods.PR_translated_d3delta_dninjnks',
              'eos_mix_methods.PR_translated_d3epsilon_dninjnks',
              'eos_mix_methods.RK_d3delta_dninjnks',
-             
+
 
                  'regular_solution.regular_solution_Hi_sums',
                  'regular_solution.regular_solution_dGE_dxs',
@@ -293,7 +293,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
 
              'phases.phase_utils.lnphis_direct',
              'flash.flash_utils.sequential_substitution_2P_functional',
-             
+
              'fitting.data_fit_statistics',
 
                  ]
@@ -315,7 +315,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     __funcs['eos'].GCEOS.main_derivatives_and_departures = staticmethod(__funcs['main_derivatives_and_departures'])
     __funcs['eos_mix'].GCEOSMIX.volume_solutions = staticmethod(__funcs['volume_solutions_halley'])
     __funcs['eos_mix'].GCEOSMIX.main_derivatives_and_departures = staticmethod(__funcs['main_derivatives_and_departures'])
-    
+
     __funcs['eos_mix'].IGMIX.volume_solutions = staticmethod(__funcs['volume_solutions_ideal'])
 transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False)
 

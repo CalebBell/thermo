@@ -34,7 +34,7 @@ UNIQUAC Class
 
 .. autoclass:: UNIQUAC
     :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs,
-              d2GE_dxixjs, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, phis, 
+              d2GE_dxixjs, taus, dtaus_dT, d2taus_dT2, d3taus_dT3, phis,
               thetas, regress_binary_parameters
     :undoc-members:
     :show-inheritance:
@@ -389,22 +389,22 @@ class UNIQUAC(GibbsExcess):
     -----
     In addition to the methods presented here, the methods of its base class
     :obj:`thermo.activity.GibbsExcess` are available as well.
-    
+
     .. warning::
         There is no such thing as a missing parameter in the UNIQUAC model.
         It is possible to find :math:`\tau_{ij}` and :math:`\tau_{ji}` which
         make :math:`\gamma_i = 1` and :math:`\gamma_j = 1`, but those tau values
         depend on `rs`, `qs`, and `xs` - the composition, which obviously will
         change. It is therefore
-        impossible to make an interaction parameter "missing"; whatever value 
+        impossible to make an interaction parameter "missing"; whatever value
         it has will always impact the phase equilibria problem. At best, the
         tau values can produce close to ideal behavior.
 
     Examples
     --------
-    
+
     **Example 1**
-    
+
     Example 5.19 in [2]_ includes the calculation of liquid-liquid activity
     coefficients for the water-ethanol-benzene system. Two calculations are
     reproduced accurately here. Note that the DDBST-style coefficients assume
@@ -446,7 +446,7 @@ class UNIQUAC(GibbsExcess):
     (-153.19624152, -6.69851118521, 4.7394001431, 0.0158960259705)
 
     **Example 2**
-    
+
     Another problem is 8.32 in [1]_ - acetonitrile, benzene, n-heptane at
     45 °C. The sign flip is needed here as well to convert their single
     temperature-dependent values into the correct form, but it has already been
@@ -467,14 +467,14 @@ class UNIQUAC(GibbsExcess):
     The given values in [1]_ are [7.15, 1.25, 1.06].
 
     **Example 3**
-    
-    ChemSep is a program for modeling distillation. Chemsep ships with a 
+
+    ChemSep is a program for modeling distillation. Chemsep ships with a
     permissive license several
     sets of binary interaction parameters. The UNIQUAC parameters in it can
     be accessed from Thermo as follows. In the following case, we compute
     activity coefficients of the ethanol-water system at mole fractions of
     [.252, 0.748].
-    
+
     >>> from thermo.interaction_parameters import IPDB
     >>> CAS1, CAS2 = '64-17-5', '7732-18-5'
     >>> xs = [0.252, 0.748]
@@ -488,23 +488,23 @@ class UNIQUAC(GibbsExcess):
     [1.977454, 1.1397696]
 
     In ChemSep, the form of the UNIQUAC `tau` equation is
-    
+
     .. math::
         \tau_{ij} = \exp\left( \frac{-A_{ij}}{RT}\right)
-    
+
     The parameters were converted to the form used by Thermo as follows:
-        
+
     .. math::
         b_{ij} = \frac{-A_{ij}}{R}= \frac{-A_{ij}}{1.9872042586408316}
-        
-    
+
+
     This system was chosen because there is also a sample problem for the same
     components from the DDBST which can be found here:
     http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01c%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20UNIQUAC.xps
-    
+
     In that example, with different data sets and parameters, they obtain at
     the same conditions activity coefficients of [2.359, 1.244].
-    
+
     References
     ----------
     .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
@@ -522,9 +522,9 @@ class UNIQUAC(GibbsExcess):
                         'rs', 'qs')
 
     __slots__ = GibbsExcess.__slots__ + ('tau_coeffs_C', 'tau_coeffs_A', '_qsxs_sum_inv', '_thetaj_d3taus_dT3_jis',
-                 '_thetas', '_d2taus_dT2', '_thetaj_dtaus_dT_jis', '_thetaj_taus_jis', '_thetaj_d2taus_dT2_jis', 
-                 '_dthetas_dxs', 'zero_coeffs', '_rsxs_sum_inv', 'tau_coeffs_E', '_phis_inv', '_dtaus_dT', 
-                 'tau_coeffs_D', 'tau_coeffs_F', '_d3taus_dT3', 'qs', '_d2phis_dxixjs', 'tau_coeffs_B', 
+                 '_thetas', '_d2taus_dT2', '_thetaj_dtaus_dT_jis', '_thetaj_taus_jis', '_thetaj_d2taus_dT2_jis',
+                 '_dthetas_dxs', 'zero_coeffs', '_rsxs_sum_inv', 'tau_coeffs_E', '_phis_inv', '_dtaus_dT',
+                 'tau_coeffs_D', 'tau_coeffs_F', '_d3taus_dT3', 'qs', '_d2phis_dxixjs', 'tau_coeffs_B',
                  '_phis', 'rs', '_dphis_dxs', '_taus', '_thetaj_taus_jis_inv', '_d2thetas_dxixjs', '_d3GE_dT3')
 
     def gammas_args(self, T=None):
@@ -547,8 +547,8 @@ class UNIQUAC(GibbsExcess):
                  self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F))
         return s
 
-    def __init__(self, T, xs, rs, qs, tau_coeffs=None, ABCDEF=None, 
-                 tau_as=None, tau_bs=None, tau_cs=None, tau_ds=None, 
+    def __init__(self, T, xs, rs, qs, tau_coeffs=None, ABCDEF=None,
+                 tau_as=None, tau_bs=None, tau_cs=None, tau_ds=None,
                  tau_es=None, tau_fs=None):
         self.T = T
         self.xs = xs
@@ -559,8 +559,8 @@ class UNIQUAC(GibbsExcess):
         self.N = N = len(rs)
 
         multiple_inputs = (tau_as, tau_bs, tau_cs, tau_ds, tau_es, tau_fs)
-        
-        input_count = ((tau_coeffs is not None) + (ABCDEF is not None) 
+
+        input_count = ((tau_coeffs is not None) + (ABCDEF is not None)
                        + (any(i is not None for i in multiple_inputs)))
         if input_count > 1:
             raise ValueError("Input only one of tau_coeffs, ABCDEF, or (tau_as..)")
@@ -583,7 +583,7 @@ class UNIQUAC(GibbsExcess):
                 raise ValueError("Coefficients not input correctly")
         else:
             raise ValueError("`tau_coeffs` or `ABCDEF` is required")
-        
+
         if scalar:
             self.zero_coeffs = zero_coeffs = [[0.0]*N for _ in range(N)]
         else:
@@ -685,7 +685,7 @@ class UNIQUAC(GibbsExcess):
             except AttributeError:
                 pass
         return new
-    
+
 
     def taus(self):
         r'''Calculate and return the `tau` terms for the UNIQUAC model for the
@@ -1629,7 +1629,7 @@ class UNIQUAC(GibbsExcess):
                                   do_statistics=True, **kwargs):
         r'''Perform a basic regression to determine the values of the `tau`
         terms in the UNIQUAC model, given a series of known or predicted
-        activity coefficients and mole fractions. 
+        activity coefficients and mole fractions.
 
         Parameters
         ----------
@@ -1652,30 +1652,30 @@ class UNIQUAC(GibbsExcess):
         Returns
         -------
         parameters : dict[str, float]
-            Dimentionless interaction parameters of each compound with each 
+            Dimentionless interaction parameters of each compound with each
             other; these are the actual `tau` values. [-]
         statistics : dict[str: float]
             Statistics, calculated and returned only if `do_statistics` is True, [-]
-            
+
         Notes
         -----
         Notes on getting fitting coefficients that yield gammas of 1:
-        
+
             * This is possible some of the time to a pretty high accuracy
             * This is not possible whatsoever in some cases
             * The values of `rs`, and `qs` determine how close the fitting can be
             * If `rs` and `qs` are close to each other, it may well fit nicely
             * If they are distant (1.2-1.5x) they usually will not fit
-        
+
         Examples
         --------
-        
+
         In the following example, the `tau` values required to zero-out the
         coefficients for the n-pentane and n-hexane system are calculated. The
         parameters are converted back into `aij` parameters as used by this
         activity coefficient object, and then the calculated values are
         verified to be fairly nearly one.
-        
+
         >>> from thermo import UNIQUAC
         >>> import numpy as np
         >>> pts = 30
@@ -1693,7 +1693,7 @@ class UNIQUAC(GibbsExcess):
         >>> GE = UNIQUAC(T=300, xs=[.5, .5], rs=rs, qs=qs, ABCDEF=ABCDEF)
         >>> GE.gammas()
         [1.000000466, 1.000000180]
-        
+
         Note how the `tau` coefficients need to be converted into the `a`
         parameters of the `tau` equation. They could also have been converted
         into any of the other parameters, but then the activity coefficients
@@ -1702,8 +1702,8 @@ class UNIQUAC(GibbsExcess):
         .. math::
             \tau_{ij} = \exp\left[a_{ij}+\frac{b_{ij}}{T}+c_{ij}\ln T
                     + d_{ij}T + \frac{e_{ij}}{T^2} + f_{ij}{T^2}\right]
-            
-            
+
+
         The UNIQUAC model's `r` and `q` parameters create their own biases in
         the model, based on the structure of each of the pure species. Water
         and n-pentane are not miscible liquids; they will form two liquid
@@ -1711,7 +1711,7 @@ class UNIQUAC(GibbsExcess):
         matter the values of `tau`, it is not possible to make the UNIQUAC
         equation predict activity coefficients very close to one for this
         system, as shown in the following sample.
-        
+
         >>> rs = [3.8254, 0.92]
         >>> qs = [3.316, 1.4]
         >>> pts = 6
@@ -1720,7 +1720,7 @@ class UNIQUAC(GibbsExcess):
         >>> coeffs, stats = UNIQUAC.regress_binary_parameters(gammas, xs, rs, qs)
         >>> stats['MAE']
         0.0254
-        
+
         '''
         if use_numba:
             from thermo.numba import UNIQUAC_gammas_binaries as work_func
@@ -1728,15 +1728,15 @@ class UNIQUAC(GibbsExcess):
             qs = array(qs)
         else:
             work_func = UNIQUAC_gammas_binaries
-        
+
         def fitting_func(xs, tau12, tau21):
             # Capture rs, qs unfortunately is necessary. Works nicely with numba though.
             # try:
             return work_func(xs, rs, qs, tau12, tau21)
             # except:
             #     print(xs.tolist(), tau12, tau21)
-        
-        
+
+
         pts = len(xs)
         xs_working = []
         for i in range(pts):
@@ -1746,7 +1746,7 @@ class UNIQUAC(GibbsExcess):
         for i in range(pts):
             gammas_working.append(gammas[i][0])
             gammas_working.append(gammas[i][1])
-            
+
         xs_working = np.array(xs_working)
         gammas_working = np.array(gammas_working)
 
@@ -1758,8 +1758,8 @@ class UNIQUAC(GibbsExcess):
                                                       use_numba=use_numba,
                                                       do_statistics=do_statistics,
                                                       **kwargs)
-         
-    
+
+
     _gamma_parameter_guesses = [#{'tau12': 1, 'tau21': 1}, # 1 is always tried
                             {'tau12': 1.0529981904211922, 'tau21': 1.1976772649513237},
                             {'tau12': 1.8748910210873349, 'tau21': 998.612171671497}, # Found seeking gamma = 1 for rs, qs = [[1.4, 7.219], [39.95, 47.2727]]
@@ -1770,12 +1770,12 @@ class UNIQUAC(GibbsExcess):
                             {'tau12': 0.00056, 'tau21': 41.9}, # acetone and chloroform from ChemSep main
                             {'tau12': 1.45, 'tau21': 2.2e-7}, # methanol and ethene, chloro- from ChemSep main
                             ]
-    
+
     for i in range(len(_gamma_parameter_guesses)):
         r = _gamma_parameter_guesses[i]
         _gamma_parameter_guesses.append({'tau12': r['tau21'], 'tau21': r['tau12']})
-        
-         
+
+
 
 MIN_TAU_UNIQUAC = 1e-20
 
@@ -1839,10 +1839,10 @@ def UNIQUAC_gammas_binary(x1, r1, r2, q1, q2, tau12, tau21):
     x39 = 5*log(q2*x12/r2)
     x40 = x23*x6
     x41 = -q2**2*x2*x33*(x22*x31 + x24 - 1) + q2*x20*x40*(-tau21*(1 - x24) + x23) - q2*x38 + q2*x39 - x1*x36 + x10*x19 - x29*x40*(q2*x27 - r2) + x27*x3*x30*(-x17*x26 + x24)/x16
-    x42 = x0*x13 - x0*x8 + x1*x35 - x1*(x34 + x35) - x2*x37 + x2*(x37 + x41) + x3*x38 - x3*x39    
+    x42 = x0*x13 - x0*x8 + x1*x35 - x1*(x34 + x35) - x2*x37 + x2*(x37 + x41) + x3*x38 - x3*x39
     return (x15*trunc_exp(x34 + x42), x36*trunc_exp(x41 + x42))
-    
-    
+
+
 def UNIQUAC_gammas(xs, rs, qs, taus):
     r'''Calculates the activity coefficients of each species in a mixture
     using the Universal quasi-chemical (UNIQUAC) equation, given their mole

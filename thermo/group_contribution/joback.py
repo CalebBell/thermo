@@ -297,8 +297,8 @@ joback_groups_str_dict = {'-CH3': JOBACK(i=1, name='-CH3', Tc=0.0141, Pc=-0.0012
 
 joback_groups_id_dict = {}
 for j in joback_groups_str_dict.values():
-    joback_groups_id_dict[j.i] = j 
-    
+    joback_groups_id_dict[j.i] = j
+
 
 class Joback(object):
     r'''Class for performing chemical property estimations with the Joback

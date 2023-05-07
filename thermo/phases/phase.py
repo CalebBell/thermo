@@ -22,10 +22,10 @@ SOFTWARE.
 '''
 
 __all__ = [
-    'Phase', 
+    'Phase',
     'IdealGasDeparturePhase',
-    'derivatives_thermodynamic', 
-    'derivatives_thermodynamic_mass', 
+    'derivatives_thermodynamic',
+    'derivatives_thermodynamic_mass',
     'derivatives_jacobian',
 ]
 
@@ -57,31 +57,31 @@ class Phase(object):
     '''`Phase` is the base class for all phase objects in `thermo`. Each
     sub-class implements a number of core properties; many other properties
     can be calculated from them.
-    
+
     Among those properties are `H`, `S`, `Cp`, `dP_dT`, `dP_dV`,
     `d2P_dT2`, `d2P_dV2`, and `d2P_dTdV`.
-    
-    An additional set of properties that can be implemented and that enable 
+
+    An additional set of properties that can be implemented and that enable
     more functionality are `dH_dP`, `dS_dT`, `dS_dP`, `d2H_dT2`, `d2H_dP2`,
-    `d2S_dP2`, `dH_dT_V`, `dH_dP_V`, `dH_dV_T`, `dH_dV_P`, `dS_dT_V`, 
-    `dS_dP_V`, `d2H_dTdP`, `d2H_dT2_V`, `d2P_dTdP`, `d2P_dVdP`, `d2P_dVdT_TP`, 
+    `d2S_dP2`, `dH_dT_V`, `dH_dP_V`, `dH_dV_T`, `dH_dV_P`, `dS_dT_V`,
+    `dS_dP_V`, `d2H_dTdP`, `d2H_dT2_V`, `d2P_dTdP`, `d2P_dVdP`, `d2P_dVdT_TP`,
     `d2P_dT2_PV`.
-    
+
     Some models may re-implement properties which would normally be
     calculated by this `Phase` base class because they have more explicit,
     faster ways of calculating the property.
-    
+
     When a phase object is the result of a Flash calculation, the resulting
-    phase objects have a reference to a 
+    phase objects have a reference to a
     :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
     object and all of its properties can be accessed from from the resulting
     phase objects as well.
-    
+
     A :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
-    object can also be manually set to the attribute `constants` to enable 
+    object can also be manually set to the attribute `constants` to enable
     access to those properties. This includes mass-based properties, which are
     not accessible from Phase objects without a reference to the constants.
-    
+
     '''
     INCOMPRESSIBLE_CONST = 1e30
     R = R
@@ -107,7 +107,7 @@ class Phase(object):
 
     V_MIN_FIXED = 1e-9 # m^3/mol
     V_MAX_FIXED = 1e9 # m^#/mol
-    
+
     T_MIN_FLASH = 1e-300
 
     force_phase = None
@@ -148,9 +148,9 @@ class Phase(object):
     reference_pointer_dicts = ()
     '''Tuple of dictionaries for object -> string
     '''
-    
+
     bulk_phase_type = False
-    
+
     if not is_micropython:
         def __init_subclass__(cls):
             cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
@@ -163,7 +163,7 @@ class Phase(object):
             s += 'T=%g K, P=%g Pa' %(self.T, self.P)
         except:
             pass
-        s += '>' 
+        s += '>'
         return s
 
     def as_json(self):
@@ -915,7 +915,7 @@ class Phase(object):
         #     return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
         # else:
         #     return P*zs*trunc_exp_numpy(lnphis)
-            
+
     def lnphi(self):
         r'''Method to calculate and return the log of fugacity coefficient of
         the phase; provided the phase is 1 component.
@@ -1034,7 +1034,7 @@ class Phase(object):
         return lnfugacities
 
     fugacities_lowest_Gibbs = fugacities
-    
+
     def lnphis_lowest_Gibbs(self):
         try:
             return self._lnphis_lowest_Gibbs
@@ -1186,9 +1186,9 @@ class Phase(object):
             self._dphis_dP = dlnphis_dP*phis
 
         return self._dphis_dP
-    
+
     def dphis_dzs(self):
-        r'''Method to calculate and return the molar composition derivative of 
+        r'''Method to calculate and return the molar composition derivative of
         fugacity coefficients of the phase.
 
         .. math::
@@ -1217,14 +1217,14 @@ class Phase(object):
             phis = self._phis
         except AttributeError:
             phis = self.phis()
-            
+
         N = self.N
-        self._dphis_dzs = [[dlnphis_dzs[i][j]*phis[i] for j in range(N)] 
+        self._dphis_dzs = [[dlnphis_dzs[i][j]*phis[i] for j in range(N)]
                            for i in range(N)]
         if not self.scalar:
             self._dphis_dzs = array(self._dphis_dzs)
         return self._dphis_dzs
-    
+
 
     def dfugacities_dP(self):
         r'''Method to calculate and return the pressure derivative of the
@@ -1260,7 +1260,7 @@ class Phase(object):
         if self.scalar:
             return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in range(self.N)]
         else:
-            return zs*(P*dphis_dP + phis) 
+            return zs*(P*dphis_dP + phis)
 
     def dfugacities_dns(self):
         r'''Method to calculate and return the mole number derivative of the
@@ -1298,7 +1298,7 @@ class Phase(object):
             ziPphi = phi_P*zs[i]
             r = dlnphis_dns[i]
             for j in range(N):
-                matrix[i][j] = ziPphi*(r[j] - 1.0) 
+                matrix[i][j] = ziPphi*(r[j] - 1.0)
             matrix[i][i] += phi_P
         return matrix
 
@@ -1964,7 +1964,7 @@ class Phase(object):
         -----
         '''
         return property_molar_to_mass(self.H_dep(), self.MW())
-        
+
     def S_dep_mass(self):
         r'''Method to calculate and return the mass departure entropy of
         the phase.
@@ -1978,7 +1978,7 @@ class Phase(object):
         -----
         '''
         return property_molar_to_mass(self.S_dep(), self.MW())
-        
+
     def G_dep_mass(self):
         r'''Method to calculate and return the mass departure Gibbs free energy of
         the phase.
@@ -2262,7 +2262,7 @@ class Phase(object):
         -----
         '''
         return property_molar_to_mass(self.H_formation_ideal_gas(), self.MW())
-        
+
     def S_formation_ideal_gas_mass(self):
         r'''Method to calculate and return the mass ideal-gas formation entropy of
         the phase.
@@ -2276,7 +2276,7 @@ class Phase(object):
         -----
         '''
         return property_molar_to_mass(self.S_formation_ideal_gas(), self.MW())
-        
+
     def G_formation_ideal_gas_mass(self):
         r'''Method to calculate and return the mass ideal-gas formation Gibbs free energy of
         the phase.
@@ -2318,7 +2318,7 @@ class Phase(object):
         -----
         '''
         return property_molar_to_mass(self.A_formation_ideal_gas(), self.MW())
-    
+
     def Cv(self):
         r'''Method to calculate and return the constant-volume heat
         capacity `Cv` of the phase.
@@ -2506,7 +2506,7 @@ class Phase(object):
             zeros[i] = 1.0
             phi = self.to_TP_zs(T=T, P=P, zs=zeros).phis()[i]
             gammas[i] = phis[i]/phi
-        
+
         self._gammas = gammas
         return gammas
 
@@ -2565,10 +2565,10 @@ class Phase(object):
         '''
         return self.Cp()/self.Cv()
 
-    
+
     def isentropic_exponent_PV(self):
         r'''Method to calculate and return the real gas isentropic exponent
-        of the phase, which satisfies the relationship 
+        of the phase, which satisfies the relationship
         :math:`PV^k = \text{const}`.
 
         .. math::
@@ -2578,17 +2578,17 @@ class Phase(object):
         -------
         k_PV : float
             Isentropic exponent of a real fluid, [-]
-    
+
         Notes
         -----
         '''
         return isentropic_exponent_PV(Cp=self.Cp(), Cv=self.Cv(), Vm=self.V(), P=self.P, dP_dV_T=self.dP_dV_T())
-    
+
     isentropic_exponent = isentropic_exponent_PV
-    
+
     def isentropic_exponent_PT(self):
         r'''Method to calculate and return the real gas isentropic exponent
-        of the phase, which satisfies the relationship 
+        of the phase, which satisfies the relationship
         :math:`P^{(1-k)}T^k = \text{const}`.
 
         .. math::
@@ -2598,15 +2598,15 @@ class Phase(object):
         -------
         k_PT : float
             Isentropic exponent of a real fluid, [-]
-    
+
         Notes
         -----
         '''
         return isentropic_exponent_PT(Cp=self.Cp(), P=self.P, dV_dT_P=self.dV_dT_P())
-    
+
     def isentropic_exponent_TV(self):
         r'''Method to calculate and return the real gas isentropic exponent
-        of the phase, which satisfies the relationship 
+        of the phase, which satisfies the relationship
         :math:`TV^{k-1} = \text{const}`.
 
         .. math::
@@ -2616,24 +2616,24 @@ class Phase(object):
         -------
         k_TV : float
             Isentropic exponent of a real fluid, [-]
-    
+
         Notes
         -----
         '''
         return isentropic_exponent_TV(Cv=self.Cv(), Vm=self.V(), dP_dT_V=self.dP_dT_V())
-    
-    
+
+
     def Prandtl(self):
         r'''Method to calculate and return the Prandtl number of the phase
 
         .. math::
             Pr = \frac{C_p \mu}{k} = \frac{\nu}{\alpha} = \frac{C_p \rho \nu}{k}
-        
+
         Returns
         -------
         Pr : float
             Prandtl number []
-        
+
         Notes
         -----
         '''
@@ -3011,7 +3011,7 @@ class Phase(object):
         -----
         '''
         raise NotImplementedError("Must be implemented by subphases")
-    
+
     def dV_dns(self):
         r'''Method to calculate and return the mole number derivatives of the
         molar volume `V` of the phase.
@@ -3031,7 +3031,7 @@ class Phase(object):
         return dxs_to_dns(self.dV_dzs(), self.zs, out)
 
     def dnV_dns(self):
-        r'''Method to calculate and return the partial mole number derivatives 
+        r'''Method to calculate and return the partial mole number derivatives
         of the molar volume `V` of the phase.
 
         .. math::
@@ -3250,10 +3250,10 @@ class Phase(object):
         .. math::
             w = \left[-V^2 \left(\frac{\partial P}{\partial V}\right)_T \frac{C_p}
             {C_v}\right]^{1/2}
-        
+
         .. math::
             \left(\frac{\partial P}{\partial V}\right)_T = \frac{-P^2}{RT}
-                                                                          
+
         Returns
         -------
         w : float
@@ -4011,7 +4011,7 @@ class Phase(object):
         return Cp
 
     def Cp_ideal_gas_mass(self):
-        r'''Method to calculate and return mass constant pressure 
+        r'''Method to calculate and return mass constant pressure
         departure heat capacity of the phase.
 
         .. math::
@@ -4731,7 +4731,7 @@ class Phase(object):
 
         self._H_reactive_mass = H_reactive_mass = self.H_reactive()*1e3*self.MW_inv()
         return H_reactive_mass
-    
+
     def S_mass(self):
         r'''Method to calculate and return mass entropy of the phase.
 
@@ -4909,7 +4909,7 @@ class Phase(object):
         return Cp_mass
 
     def Cp_dep_mass(self):
-        r'''Method to calculate and return mass constant pressure 
+        r'''Method to calculate and return mass constant pressure
         departure heat capacity of the phase.
 
         .. math::
@@ -4950,7 +4950,7 @@ class Phase(object):
         return Cv_mass
 
     def Cv_dep_mass(self):
-        r'''Method to calculate and return mass constant pressure 
+        r'''Method to calculate and return mass constant pressure
         departure heat capacity of the phase.
 
         .. math::
@@ -5141,9 +5141,9 @@ class Phase(object):
             return self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         else:
             raise NotImplementedError("Did not work")
-            
+
     def nu(self):
-        r'''Method to calculate and return the kinematic viscosity of the 
+        r'''Method to calculate and return the kinematic viscosity of the
         phase, [m^2/s]
 
         Returns
@@ -5158,7 +5158,7 @@ class Phase(object):
         if mu is None:
             return None
         return mu/self.rho_mass()
-    
+
     kinematic_viscosity = nu
 
     def alpha(self):
@@ -5180,7 +5180,7 @@ class Phase(object):
         k = self.k()
         Cp = self.Cp_mass()
         return thermal_diffusivity(k=k, rho=rho, Cp=Cp)
-    
+
     thermal_diffusivity = alpha
 
     def ws(self):
@@ -5324,10 +5324,10 @@ class Phase(object):
         -----
         '''
         return self.result.gas_beta
-    
+
     @property
     def energy(self):
-        r'''Method to return the energy (enthalpy times flow rate) of this 
+        r'''Method to return the energy (enthalpy times flow rate) of this
         phase.
         This method is only
         available when the phase is linked to an EquilibriumStream.
@@ -5349,12 +5349,12 @@ class Phase(object):
             return self._energy
         except:
             return None
-        
+
     energy_calc = energy
 
     @property
     def energy_reactive(self):
-        r'''Method to return the reactive energy (reactive enthalpy times flow rate) of this 
+        r'''Method to return the reactive energy (reactive enthalpy times flow rate) of this
         phase.
         This method is only
         available when the phase is linked to an EquilibriumStream.
@@ -5376,9 +5376,9 @@ class Phase(object):
             return self._energy_reactive
         except:
             return None
-    
+
     energy_reactive_calc = energy_reactive
-    
+
     @property
     def n(self):
         r'''Method to return the molar flow rate of this phase.
@@ -5402,7 +5402,7 @@ class Phase(object):
             return self._n
         except:
             return None
-    
+
     n_calc = n
 
     @property
@@ -5427,7 +5427,7 @@ class Phase(object):
                 return self._m
         except:
             return None
-        
+
     m_calc = m
 
     @property
@@ -5452,7 +5452,7 @@ class Phase(object):
                 return self._Q
         except:
             return None
-        
+
     Q_calc = Q
 
     @property
@@ -5481,7 +5481,7 @@ class Phase(object):
                 return self._ns
         except:
             return None
-        
+
     ns_calc = ns
 
     @property
@@ -5511,9 +5511,9 @@ class Phase(object):
             return self._ms
         except:
             return None
-        
+
     ms_calc = ms
-    
+
     @property
     def Qgs(self):
         r'''Method to return the volume flow rate of each component in
@@ -5543,12 +5543,12 @@ class Phase(object):
         else:
             self._Qgs = self.zs*Vn
         return self._Qgs
-    
+
     Qgs_calc = Qgs
 
     @property
     def Qg(self):
-        r'''Method to return the volume flow rate of 
+        r'''Method to return the volume flow rate of
         this phase as an ideal gas, using the configured
         temperature `T_gas_ref` and pressure `P_gas_ref`. This method is only
         available when the phase is linked to an EquilibriumStream.
@@ -5571,7 +5571,7 @@ class Phase(object):
             return self._Qg
         except:
             return None
-        
+
     Qg_calc = Qg
 
     @property
@@ -5601,7 +5601,7 @@ class Phase(object):
         else:
             self._Qls = ns*Vmls
         return self._Qls
-    
+
     Qls_calc = Qls
 
     @property
@@ -5629,9 +5629,9 @@ class Phase(object):
             return self._Ql
         except:
             return None
-        
+
     Ql_calc = Ql
-        
+
 
     @property
     def T_calc(self):
@@ -5656,11 +5656,11 @@ class Phase(object):
     @property
     def Vfls_calc(self):
         return self.Vfls()
-    
+
     @property
     def Vfgs_calc(self):
         return self.zs
-    
+
     @property
     def m_calc(self):
         return self.m
@@ -5668,7 +5668,7 @@ class Phase(object):
     @property
     def n_calc(self):
         return self.n
-    
+
     @property
     def H_calc(self):
         return self.H()
@@ -5676,7 +5676,7 @@ class Phase(object):
     def as_EquilibriumState(self, flasher=None):
         has_result = hasattr(self, 'result')
         if not has_result and flasher is None:
-            raise ValueError("Phase must have been created into an EquilibriumState already or be provided with a flasher") 
+            raise ValueError("Phase must have been created into an EquilibriumState already or be provided with a flasher")
         from thermo.equilibrium import EquilibriumState
         if has_result:
             flasher = self.result.flasher
@@ -5721,7 +5721,7 @@ class Phase(object):
         return EquilibriumStream(flasher=state.flasher, zs=self.zs, n=n,  P=self.P, T=self.T, existing_flash=state)
 
     def concentrations(self):
-        r'''Method to return the molar concentrations of each component in the 
+        r'''Method to return the molar concentrations of each component in the
         phase in units of mol/m^3. Molarity is a term used in chemistry for a
         similar concept, usually given in units of mol/L.
 
@@ -5744,11 +5744,11 @@ class Phase(object):
         else:
             self._concentrations = concentrations = rho*zs
         return concentrations
-    
+
     def concentrations_mass(self):
-        r'''Method to return the mass concentrations of each component in the 
-        phase in units of kg/m^3. 
-        
+        r'''Method to return the mass concentrations of each component in the
+        phase in units of kg/m^3.
+
         Returns
         -------
         concentrations_mass : list[float]
@@ -5770,13 +5770,13 @@ class Phase(object):
         return self._concentrations_mass
 
     def partial_pressures(self):
-        r'''Method to return the partial pressures of each component in the 
+        r'''Method to return the partial pressures of each component in the
         phase. Note that this is the conventional definition assumed in almost
         every source; there is also a non-ideal definition.
-        
+
         .. math::
             P_i = z_i P
-        
+
         Returns
         -------
         partial_pressures : list[float]
@@ -5866,10 +5866,10 @@ class IdealGasDeparturePhase(Phase):
             pass
         self._dH_dP = dH_dP = self.dH_dep_dP_T()
         return dH_dP
-    
+
     dH_dP_T = dH_dP
-    
-    
+
+
     def dH_dT_V(self):
         dH_dT_V = self.Cp_ideal_gas()
         dH_dT_V += self.dH_dep_dT_V()
@@ -5976,8 +5976,8 @@ class IdealGasDeparturePhase(Phase):
         dS_dT_V = self.Cp_ideal_gas()/self.T - self.R/self.P*self.dP_dT()
         dS_dT_V += self.dS_dep_dT_V()
         return dS_dT_V
-    
-    
+
+
     def dS_dP_V(self):
         dS_dP_V = -self.R/self.P + self.Cp_ideal_gas()/self.T*self.dT_dP()
         dS_dP_V += self.dS_dep_dP_V()

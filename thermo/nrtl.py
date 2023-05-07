@@ -84,10 +84,10 @@ def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas, vec0=Non
 
     for j in range(N):
         vec0[j] = xs[j]*xj_Gs_jis_inv[j]
-    
+
     for j in range(N):
         vec1[j] = xj_Gs_taus_jis[j]*xj_Gs_jis_inv[j]
-    
+
     for i in range(N):
         tot = vec1[i]
         Gsi = Gs[i]
@@ -561,7 +561,7 @@ class NRTL(GibbsExcess):
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
-    
+
     _model_attributes = ('tau_as', 'tau_bs', 'tau_es', 'tau_fs',
                          'tau_gs', 'tau_hs', 'alpha_cs', 'alpha_ds')
     model_id = 100
@@ -599,16 +599,16 @@ class NRTL(GibbsExcess):
         return (N, Gs, taus, Gs_transposed, Gs_taus_transposed, Gs_taus, xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1)
 
     gammas_from_args = staticmethod(nrtl_gammas_from_args)
-    
+
     def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
                  ABEFGHCD=None, tau_as=None, tau_bs=None, tau_es=None,
-                 tau_fs=None, tau_gs=None, tau_hs=None, alpha_cs=None, 
+                 tau_fs=None, tau_gs=None, tau_hs=None, alpha_cs=None,
                  alpha_ds=None):
         self.T = T
         self.xs = xs
         self.scalar = scalar = type(xs) is list
         self.N = N = len(xs)
-        
+
         if self.scalar:
             self.zero_coeffs = [[0.0]*N for _ in range(N)]
         else:
@@ -616,8 +616,8 @@ class NRTL(GibbsExcess):
 
         multiple_inputs = (tau_as, tau_bs, tau_es, tau_fs, tau_gs, tau_hs,
                         alpha_cs, alpha_ds)
-        
-        input_count = ((tau_coeffs is not None or alpha_coeffs is not None) 
+
+        input_count = ((tau_coeffs is not None or alpha_coeffs is not None)
                        + (ABEFGHCD is not None) + (any(i is not None for i in multiple_inputs)))
         if input_count > 1:
             raise ValueError("Input only one of (tau_coeffs, alpha_coeffs), ABEFGHCD, or (tau_as...alpha_ds)")
@@ -665,27 +665,27 @@ class NRTL(GibbsExcess):
                 self.tau_as = self.zero_coeffs
             else:
                 self.tau_as = ABEFGHCD[0]
-                
+
             if ABEFGHCD[1] is None:
                 self.tau_bs = self.zero_coeffs
             else:
                 self.tau_bs = ABEFGHCD[1]
-                
+
             if ABEFGHCD[2] is None:
                 self.tau_es = self.zero_coeffs
             else:
                 self.tau_es = ABEFGHCD[2]
-                
+
             if ABEFGHCD[3] is None:
                 self.tau_fs = self.zero_coeffs
             else:
                 self.tau_fs = ABEFGHCD[3]
-                
+
             if ABEFGHCD[4] is None:
                 self.tau_gs = self.zero_coeffs
             else:
                 self.tau_gs = ABEFGHCD[4]
-                
+
             if ABEFGHCD[5] is None:
                 self.tau_hs = self.zero_coeffs
             else:
@@ -735,7 +735,7 @@ class NRTL(GibbsExcess):
         for i, attr in enumerate(self._model_attributes[:6]):
             if self.tau_coeffs_nonzero[i]:
                 s += ', %s=%s' %(attr, getattr(self, attr))
-        s += ', alpha_cs=%s' %(self.alpha_cs)        
+        s += ', alpha_cs=%s' %(self.alpha_cs)
         if not self.alpha_temperature_independent:
             s += ', alpha_ds=%s' %(self.alpha_ds)
         s += ')'
@@ -769,7 +769,7 @@ class NRTL(GibbsExcess):
         (new.T, new.xs, new.N, new.scalar) = T, xs, self.N, self.scalar
         (new.tau_as, new.tau_bs, new.tau_es,
          new.tau_fs, new.tau_gs, new.tau_hs,
-         new.alpha_cs, new.alpha_ds, new.tau_coeffs_nonzero, 
+         new.alpha_cs, new.alpha_ds, new.tau_coeffs_nonzero,
          new.alpha_temperature_independent) = (self.tau_as, self.tau_bs, self.tau_es,
                          self.tau_fs, self.tau_gs, self.tau_hs,
                          self.alpha_cs, self.alpha_ds, self.tau_coeffs_nonzero, self.alpha_temperature_independent)
@@ -1015,7 +1015,7 @@ class NRTL(GibbsExcess):
         except AttributeError:
             pass
         N = self.N
-        
+
         if self.alpha_temperature_independent:
             self._alphas = alphas = self.alpha_cs
         else:
@@ -1023,7 +1023,7 @@ class NRTL(GibbsExcess):
                 alphas = [[0.0]*N for _ in range(N)]
             else:
                 alphas = zeros((N, N))
-    
+
             self._alphas = nrtl_alphas(self.T, N, self.alpha_cs, self.alpha_ds, alphas)
         return alphas
 
@@ -1222,7 +1222,7 @@ class NRTL(GibbsExcess):
             self._Gs_transposed = transpose(self.Gs())
         else:
             self._Gs_transposed = ascontiguousarray(nptranspose(self.Gs()))
-        
+
         return self._Gs_transposed
 
     def Gs_taus_transposed(self):
@@ -1241,7 +1241,7 @@ class NRTL(GibbsExcess):
             self._Gs_taus_transposed = mat
         else:
             self._Gs_taus_transposed = ascontiguousarray(nptranspose(self.taus())*self.Gs_transposed())
-        
+
         return self._Gs_taus_transposed
 
     def Gs_taus(self):
@@ -1737,7 +1737,7 @@ class NRTL(GibbsExcess):
         else:
             work_func = NRTL_gammas_binaries
             jac_func = NRTL_gammas_binaries_jac
-        
+
         # Allocate all working memory
         pts = len(xs)
         gammas_iter = zeros(pts*2)
@@ -1747,17 +1747,17 @@ class NRTL(GibbsExcess):
         if symmetric_alphas:
             def fitting_func(xs, tau12, tau21, alpha):
                 return work_func(xs, tau12, tau21, alpha, alpha, gammas_iter)
-            
+
             def analytical_jac(xs, tau12, tau21, alpha):
                 return delete(jac_func(xs, tau12, tau21, alpha, alpha, jac_iter), 3, axis=1)
-    
+
         else:
             def fitting_func(xs, tau12, tau21, alpha12, alpha21):
                 return work_func(xs, tau12, tau21, alpha12, alpha21, gammas_iter)
-            
+
             def analytical_jac(xs, tau12, tau21, alpha12, alpha21):
                 return jac_func(xs, tau12, tau21, alpha12, alpha21, jac_iter)
-    
+
         # The extend calls has been tested to be the fastest compared to numpy and list comprehension
         xs_working = []
         for xsi in xs:
@@ -1765,28 +1765,28 @@ class NRTL(GibbsExcess):
         gammas_working = []
         for gammasi in gammas:
             gammas_working.extend(gammasi)
-            
+
         xs_working = array(xs_working)
         gammas_working = array(gammas_working)
-        
+
         # Objective functions for leastsq maximum speed
         if symmetric_alphas:
             def func_wrapped_for_leastsq(params):
                 return work_func(xs_working, params[0], params[1], params[2], params[2], gammas_iter) - gammas_working
-    
+
             def jac_wrapped_for_leastsq(params):
                 out = jac_func(xs_working, params[0], params[1], params[2], params[2], jac_iter)
                 new_out = delete(out, 3, axis=1)
                 new_out[:, 2] = out[:, 2] + out[:, 3]
                 return new_out
-        
+
         else:
             def func_wrapped_for_leastsq(params):
                 return work_func(xs_working, params[0], params[1], params[2], params[3], gammas_iter) - gammas_working
-    
+
             def jac_wrapped_for_leastsq(params):
                 return jac_func(xs_working, params[0], params[1], params[2], params[3], jac_iter)
-        
+
         if symmetric_alphas:
             use_fit_parameters = ['tau12', 'tau21', 'alpha12']
         else:
@@ -1810,7 +1810,7 @@ class NRTL(GibbsExcess):
                                 {'tau12': 1, 'tau21': 1, 'alpha12': 0.3, 'alpha21': 0.3},
                                 {'tau12': 1, 'tau21': 1, 'alpha12': 0.47, 'alpha21': 0.47},
                                ]
-    
+
     for i in range(len(_gamma_parameter_guesses)):
         r = _gamma_parameter_guesses[i]
         # Swap the taus
@@ -1826,23 +1826,23 @@ MIN_ALPHA_NRTL = 1e-10
 
 def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
     r'''Calculates activity coefficients at fixed `tau` and `alpha` values for
-    a binary system at a series of mole fractions. This is used for 
+    a binary system at a series of mole fractions. This is used for
     regression of `tau` and `alpha` parameters. This function is highly optimized,
     and operates on multiple points at a time.
-    
+
     .. math::
         \ln \gamma_1 = x_2^2\left[\tau_{21}\left(\frac{G_{21}}{x_1 + x_2 G_{21}}
             \right)^2 + \frac{\tau_{12}G_{12}}{(x_2 + x_1G_{12})^2}
             \right]
-        
+
     .. math::
         \ln \gamma_2 =  x_1^2\left[\tau_{12}\left(\frac{G_{12}}{x_2 + x_1 G_{12}}
             \right)^2 + \frac{\tau_{21}G_{21}}{(x_1 + x_2 G_{21})^2}
             \right]
-        
+
     .. math::
         G_{ij}=\exp(-\alpha_{ij}\tau_{ij})
-        
+
 
     Parameters
     ----------
@@ -1860,7 +1860,7 @@ def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
     alpha21 : float
         `alpha` parameter for 21, [-]
     gammas : list[float], optional
-        Array to store the activity coefficient for each species in the liquid 
+        Array to store the activity coefficient for each species in the liquid
         mixture, indexed the same as `xs`; can be omitted or provided
         for slightly better performance [-]
 
@@ -1872,7 +1872,7 @@ def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
 
     Notes
     -----
-    
+
     Examples
     --------
     >>> NRTL_gammas_binaries([.1, .9, 0.3, 0.7, .85, .15], 0.1759, 0.7991, .2, .3)
@@ -1886,18 +1886,18 @@ def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
         alpha12 = MIN_ALPHA_NRTL
     if alpha21 < MIN_ALPHA_NRTL:
         alpha21 = MIN_ALPHA_NRTL
-        
+
     pts = len(xs)//2 # Always even
-    
+
     if gammas is None:
         allocate_size = (pts*2)
         gammas = [0.0]*allocate_size
-        
+
     tau01, tau10, alpha01, alpha10 = tau12, tau21, alpha12, alpha21
 
     G01 = exp(-alpha01*tau01)
     G10 = exp(-alpha10*tau10)
-    
+
     G10_2_tau10 = G10*G10*tau10
     G10_tau10 = G10*tau10
 
@@ -1908,10 +1908,10 @@ def NRTL_gammas_binaries(xs, tau12, tau21, alpha12, alpha21, gammas=None):
         i2 = i*2
         x0 = xs[i2]
         x1 = 1.0 - x0
-        
+
         c0 = 1.0/(x0 + x1*G10)
         c0 *= c0
-        
+
         c1 = 1.0/(x1 + x0*G01)
         c1 *= c1
 
@@ -1934,20 +1934,20 @@ def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
     if alpha21 < MIN_ALPHA_NRTL:
         alpha21 = MIN_ALPHA_NRTL
     pts = len(xs)//2 # Always even
-    
+
     tau01, tau10, alpha01, alpha10 = tau12, tau21, alpha12, alpha21
 
     if calc is None:
         allocate_size = pts*2
         calc = np.zeros((allocate_size, 4))
-    
+
     x2 = alpha01*tau01
     x3 = trunc_exp(x2)
     x11 = alpha10*tau10
     x12 = trunc_exp(x11)
     x26 = tau01*tau01
     x27 = tau10*tau10
-    
+
     for i in range(pts):
         i2 = i*2
         x0 = xs[i2]
@@ -1977,13 +1977,13 @@ def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
         x24 = x11*x23
         x25 = x12*x15*x21
 
-        
+
         gamma0_row = calc[i2]
         gamma0_row[0] = x19*(x2 - x8 + 1.0)# Right
         gamma0_row[1] = -x15*x18*(x24 - 1.0) # Right
         gamma0_row[2] = -x19*x26*(x7 - 1.0) # Right
         gamma0_row[3] =-x18*x22*x27*x15*x14_inv
-        
+
         gamma1_row = calc[i2+1]
         gamma1_row[0] = -x21*x9*(x8 - 1.0)
         gamma1_row[1] = x25*(x11 - x24 + 1.0)

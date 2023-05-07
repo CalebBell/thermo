@@ -190,7 +190,7 @@ class Flash(object):
 
         Notes
         -----
-        
+
         .. warning::
             Not all flash specifications have a unique solution. Not all flash
             specifications will converge, whether from a bad model, bad inputs,
@@ -199,11 +199,11 @@ class Flash(object):
             is provided AS IS, with NO SUPPORT.
 
         .. warning::
-            Convergence of a flash may be impaired by providing `hot_start`. 
+            Convergence of a flash may be impaired by providing `hot_start`.
             If reliability is desired, do not use this parameter.
 
         .. warning::
-            The most likely thermodynamic methods to converge are 
+            The most likely thermodynamic methods to converge are
             thermodynamically consistent ones. This means e.g. an ideal liquid
             and an ideal gas; or an equation of state for both
             phases. Mixing thermodynamic models increases the possibility of
@@ -247,7 +247,7 @@ class Flash(object):
         if H_reactive is not None:
             Hfgs = constants.Hfgs
             H = H_reactive - sum(zs[i]*Hfgs[i] for i in range(constants.N))
-            H_reactive = None        
+            H_reactive = None
 
         T_spec = T is not None
         P_spec = P is not None
@@ -448,10 +448,10 @@ class Flash(object):
 
         else:
             raise Exception('Flash inputs unsupported')
-            
+
     flash_phase_boundary_algos = [flash_phase_boundary_one_sided_secant]
     flash_phase_boundary_methods = [SECANT_PHASE_BOUNDARY]
-            
+
     FLASH_PHASE_BOUNDARY_MAXITER = 100
     FLASH_PHASE_BOUNDARY_MAXITER_XTOL = None
     FLASH_PHASE_BOUNDARY_MAXITER_YTOL = 1e-6
@@ -486,8 +486,8 @@ class Flash(object):
         if U_spec:
             iter_var, backup_iter_var = 'P', 'T'
             spec_var, spec_val = 'U', U
-            
-            
+
+
         for method in self.flash_phase_boundary_algos:
             res, bounding_attempts, iterations = method(flasher=self, zs=zs, spec_var=spec_var, spec_val=spec_val, iter_var=iter_var,
                                                     check=phase_frac_check, hot_start=hot_start,
@@ -504,7 +504,7 @@ class Flash(object):
         raise ValueError("Could not find a solution")
 
 
-        
+
     flash_mixing_phase_boundary_methods = [PT_SECANT_PHASE_MIXING_BOUNDARY,
                                            NAIVE_BISECTION_PHASE_MIXING_BOUNDARY,
                                            SATURATION_SECANT_PHASE_MIXING_BOUNDARY,
@@ -513,7 +513,7 @@ class Flash(object):
                                          incipient_phase_bounded_naive,
                                          incipient_liquid_bounded_PT_sat,
                                          ]
-    
+
     def flash_mixing_phase_boundary(self, specs, zs_existing, zs_added, boundary='VL'):
         if boundary == 'VL':
             # if we start from a liquid, will converge to a gas with VF=0
@@ -530,7 +530,7 @@ class Flash(object):
             check = VLL_or_LL_boolean_check
         else:
             raise ValueError("Unrecognized boundary")
-        
+
 
         for method in self.flash_mixing_phase_boundary_algos:
             # try:
@@ -556,9 +556,9 @@ class Flash(object):
             # except Exception as e:
             #     print(e)
         raise ValueError("Could not find a solution")
-                
-                
-                
+
+
+
     def generate_Ts(self, Ts=None, Tmin=None, Tmax=None, pts=50, zs=None,
                     method=None):
         if method is None:
@@ -905,7 +905,7 @@ class Flash(object):
                         pass
                     if method == 'rtol':
                         err = abs((act - calc)/act)
-                        
+
                 if err > 1e-6 and verbose:
                     try:
                         print([matrix_flashes[i][j].T, matrix_spec_flashes[i][j].T])
@@ -1080,7 +1080,7 @@ class Flash(object):
 
         return props
 
-    def debug_mixing_phase_boundary_PT(self, zs, zs_mixing, Pmin=None, Pmax=None, 
+    def debug_mixing_phase_boundary_PT(self, zs, zs_mixing, Pmin=None, Pmax=None,
                                        Tmin=None, Tmax=None, pts=50,
                 ignore_errors=True, values=False, verbose=False, show=False,
                 T_pts=None, P_pts=None, Ts=None, Ps=None, boundary='VL'): # pragma: no cover
@@ -1120,15 +1120,15 @@ class Flash(object):
 
         if values:
             return Ts, Ps, matrix
-        
+
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
-        
+
         Ts, Ps = np.meshgrid(Ts, Ps)
         im = ax.pcolormesh(Ts, Ps, matrix, cmap=plt.get_cmap('viridis'))
         cbar = fig.colorbar(im, ax=ax)
         cbar.set_label('Factor')
-        
+
         ax.set_yscale('log')
         ax.set_xlabel('Temperature [K]')
         ax.set_ylabel('Pressure [Pa]')
@@ -1137,7 +1137,7 @@ class Flash(object):
             plt.show()
         else:
             return fig
-    
+
     def debug_PT(self, zs, Pmin=None, Pmax=None, Tmin=None, Tmax=None, pts=50,
                 ignore_errors=True, values=False, verbose=False, show=False,
                 T_pts=None, P_pts=None, Ts=None, Ps=None): # pragma: no cover
@@ -1272,7 +1272,7 @@ class Flash(object):
             plotted, [-]
         show : bool, optional
             If True, the plot will be created and displayed; if False and `values`
-            is False, the plot Figure object will be returned but not displayed; 
+            is False, the plot Figure object will be returned but not displayed;
             and if False and `values` is False, no plot will be created or shown
             [-]
         hot : bool, optional
@@ -1390,7 +1390,7 @@ class Flash(object):
             plotted, [-]
         show : bool, optional
             If True, the plot will be created and displayed; if False and `values`
-            is False, the plot Figure object will be returned but not displayed; 
+            is False, the plot Figure object will be returned but not displayed;
             and if False and `values` is False, no plot will be created or shown
             [-]
         hot : bool, optional
@@ -1477,8 +1477,8 @@ class Flash(object):
             return fig
 
     def plot_ternary(self, T=None, P=None, scale=10): # pragma: no cover
-        r'''Method to create a ternary plot of the system at either a specified 
-        temperature or pressure. 
+        r'''Method to create a ternary plot of the system at either a specified
+        temperature or pressure.
 
         Parameters
         ----------
@@ -1495,12 +1495,12 @@ class Flash(object):
             raise Exception('Optional dependency python-ternary is required for ternary plotting')
         if self.N != 3:
             raise Exception('Ternary plotting requires a mixture of exactly three components')
-        
+
         is_T_spec = T is not None
         if not is_T_spec and P is None:
             raise ValueError("Either T or P must be specified")
         values = []
-        
+
         cond = {'T': T} if is_T_spec else {'P': P}
 
         def dew_at_zs(zs):
@@ -1571,7 +1571,7 @@ class Flash(object):
 
 
     def plot_Txy(self, P, pts=30, ignore_errors=True, values=False, show=True): # pragma: no cover
-        r'''Method to create a Txy plot for a binary system (holding pressure 
+        r'''Method to create a Txy plot for a binary system (holding pressure
         constant); the mole fraction of the first species is varied.
 
         Parameters
@@ -1589,7 +1589,7 @@ class Flash(object):
             plotted, [-]
         show : bool, optional
             If True, the plot will be created and displayed; if False and `values`
-            is False, the plot Figure object will be returned but not displayed; 
+            is False, the plot Figure object will be returned but not displayed;
             and if False and `values` is False, no plot will be created or shown
             [-]
 
@@ -1649,7 +1649,7 @@ class Flash(object):
             return fig
 
     def plot_Pxy(self, T, pts=30, ignore_errors=True, values=False, show=True): # pragma: no cover
-        r'''Method to create a Pxy plot for a binary system (holding temperature 
+        r'''Method to create a Pxy plot for a binary system (holding temperature
         constant); the mole fraction of the first species is varied.
 
         Parameters
@@ -1667,7 +1667,7 @@ class Flash(object):
             plotted, [-]
         show : bool, optional
             If True, the plot will be created and displayed; if False and `values`
-            is False, the plot Figure object will be returned but not displayed; 
+            is False, the plot Figure object will be returned but not displayed;
             and if False and `values` is False, no plot will be created or shown
             [-]
 
@@ -1727,7 +1727,7 @@ class Flash(object):
         else:
             return fig
 
-    def plot_xy(self, P=None, T=None, pts=30, ignore_errors=True, values=False, 
+    def plot_xy(self, P=None, T=None, pts=30, ignore_errors=True, values=False,
                 show=True, VF=0.0): # pragma: no cover
         r'''Method to create a xy diagram for a binary system. Either a
         temperature or pressure can be specified. By default, bubble point
@@ -1749,7 +1749,7 @@ class Flash(object):
             plotted, [-]
         show : bool, optional
             If True, the plot will be created and displayed; if False and `values`
-            is False, the plot Figure object will be returned but not displayed; 
+            is False, the plot Figure object will be returned but not displayed;
             and if False and `values` is False, no plot will be created or shown
             [-]
 

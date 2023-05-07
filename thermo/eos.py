@@ -324,7 +324,7 @@ def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
 #    arg2 = (hard_input + 1.0)/(hard_input - 1.0)
 #    fancy = 0.25*log(arg2*arg2)
 #    x12 = 2.*x11*fancy # Possible to use a catan, but then a complex division and sq root is needed too
-    hard_input = x11*x5    
+    hard_input = x11*x5
     hard_term = catanh(hard_input).real # numba: delete
 #    hard_term = 0.25*log1p(4.*hard_input/((1.0-hard_input)*(1.0-hard_input))) # numba: uncomment
     x12 = 2.*x11*hard_term # Possible to use a catan, but then a complex division and sq root is needed too
@@ -882,7 +882,7 @@ class GCEOS(object):
 
     nonstate_constants = ('Tc', 'Pc', 'omega', 'kwargs', 'a', 'b', 'delta', 'epsilon')
     kwargs_keys = tuple()
-    
+
     if not is_micropython:
         def __init_subclass__(cls):
             cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
@@ -1215,7 +1215,7 @@ class GCEOS(object):
             # All roots will have some imaginary component; ignore them if > 1E-9 (when using a solver that does not strip them)
         b = self.b
 #        good_roots = [i.real for i in Vs if (i.real ==0 or abs(i.imag/i.real) < 1E-12) and i.real > 0.0]
-        # good_roots = [i.real for i in Vs if (i.real > b and 
+        # good_roots = [i.real for i in Vs if (i.real > b and
         #             (i.imag == 0.0 or abs(i.imag/i.real) < 1E-12))]
 
         Vmin = 1e100
@@ -9146,8 +9146,8 @@ class VDW(GCEOS):
     '''`omega` has no impact on the :obj:`VDW` EOS'''
     Zc = 3.0/8.
     '''Mechanical compressibility of :obj:`VDW` EOS'''
-    
-    c1 = 27.0/64.0    
+
+    c1 = 27.0/64.0
     c2 = 1.0/8.0
 
     c1R2 = c1*R2
@@ -9780,11 +9780,11 @@ class SRK(GCEOS):
 
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     '''Full value of the constant in the `a` parameter'''
-    
-    
+
+
     c2 = 0.08664034996495772158907020242607611685675 # (2**(1/3.)-1)/3
     '''Full value of the constant in the `b` parameter'''
-    
+
     c1R2 = c1*R2
     c2R = c2*R
     c1R2_c2R = c1R2/c2R

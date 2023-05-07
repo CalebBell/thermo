@@ -82,7 +82,7 @@ if not numerics.is_micropython:
     from chemicals import temperature
     from . import eos_mix_methods
     from . import activity
-    
+
     from .eos_alpha_functions import *
     from .eos_mix_methods import *
     from .eos_volume import *
@@ -141,10 +141,10 @@ if not numerics.is_micropython:
     from .activity import *
     from .fitting import *
     from .functional_groups import *
-    
+
     #from chemicals import *
-    
-    
+
+
     __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'combustion', 'critical', 'flash',
      'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
      'heat_capacity',  'identifiers', 'group_contribution', 'law', 'lennard_jones',
@@ -158,7 +158,7 @@ if not numerics.is_micropython:
      'equilibrium', 'phase_identification', 'temperature', 'fitting',
      'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods', 'activity',
      'functional_groups']
-    
+
     __all__.extend(eos_volume.__all__)
     __all__.extend(eos_alpha_functions.__all__)
     __all__.extend(acentric.__all__)
@@ -217,8 +217,8 @@ if not numerics.is_micropython:
     __all__.extend(activity.__all__)
     __all__.extend(fitting.__all__)
     __all__.extend(functional_groups.__all__)
-    
-    
+
+
     # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
     try:
         chemical.__dict__['Mixture'] = mixture.Mixture
@@ -231,21 +231,21 @@ if not numerics.is_micropython:
                   electrochem, eos, eos_mix, equilibrium, heat_capacity,
                   identifiers, interaction_parameters, interface, group_contribution.joback, law,
                   mixture, nrtl, permittivity, phase_change, phase_identification,
-                  property_package, regular_solution, 
+                  property_package, regular_solution,
                   stream, thermal_conductivity, unifac, uniquac, safety,
                   fitting,functional_groups,
                   utils, vapor_pressure, viscosity, volume, wilson, eos_alpha_functions,
-                  eos_volume, eos_mix_methods,              
+                  eos_volume, eos_mix_methods,
                   flash, flash.flash_base, flash.flash_pure_vls,
-                  flash.flash_utils, flash.flash_vl, flash.flash_vln,              
-                  phases, phases.air_phase, phases.ceos, phases.combined, 
+                  flash.flash_utils, flash.flash_vl, flash.flash_vln,
+                  phases, phases.air_phase, phases.ceos, phases.combined,
                   phases.coolprop_phase, phases.gibbs_excess, phases.helmholtz_eos,
-                  phases.iapws_phase, phases.ideal_gas, phases.petroleum, 
+                  phases.iapws_phase, phases.ideal_gas, phases.petroleum,
                   phases.phase, phases.phase_utils, phases.virial_phase,
                   utils.functional, utils.mixture_property,
                   utils.t_dependent_property, utils.tp_dependent_property,
                   utils.multi_cheb_1d]
-    
+
     def complete_lazy_loading():
         import chemicals
         chemicals.complete_lazy_loading()
@@ -262,7 +262,7 @@ if not numerics.is_micropython:
     if hasattr(os, '_called_from_test'):
         # pytest timings are hard to measure with lazy loading
         complete_lazy_loading()
-    
+
     global vectorized, numba, units, numba_vectorized
     if numerics.PY37:
         def __getattr__(name):
@@ -283,7 +283,7 @@ if not numerics.is_micropython:
             raise AttributeError("module %s has no attribute %s" %(__name__, name))
     else:
         from . import vectorized
-    
+
 try:
     thermo_dir = os.path.dirname(__file__)
 except:

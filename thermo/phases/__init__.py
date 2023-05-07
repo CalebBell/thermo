@@ -24,9 +24,9 @@ SOFTWARE.
 
 The phases subpackage exposes classes that represent the state of single
 phase mixture, including the composition, temperature, pressure, enthalpy,
-and entropy. Phase objects are immutable and know nothing about bulk properties 
-or transport properties. The goal is for each phase to be able to compute all 
-of its thermodynamic properties, including volume-based ones. 
+and entropy. Phase objects are immutable and know nothing about bulk properties
+or transport properties. The goal is for each phase to be able to compute all
+of its thermodynamic properties, including volume-based ones.
 Use settings to handle different assumptions.
 
 
@@ -80,9 +80,9 @@ Gas Phase Object
    :show-inheritance:
    :members: V, dP_dT, dP_dV, d2P_dTdV, d2P_dV2, d2P_dT2,
              H_dep, dH_dep_dT, S_dep, dS_dep_dT,
-             B, dB_dT, d2B_dT2, d3B_dT3, 
-             C, dC_dT, d2C_dT2, d3C_dT3, 
-             dB_dzs, d2B_dTdzs, d2B_dzizjs, 
+             B, dB_dT, d2B_dT2, d3B_dT3,
+             C, dC_dT, d2C_dT2, d3C_dT3,
+             dB_dzs, d2B_dTdzs, d2B_dzizjs,
              dC_dzs, d2C_dTdzs, d2C_dzizjs,
              d2V_dzizjs, dV_dzs, dG_dep_dzs,
              lnphis, __repr__
@@ -92,8 +92,8 @@ Corresponding States Virial Model
 .. autoclass:: VirialCSP
    :show-inheritance:
    :members: to, __repr__, B_pures, dB_dT_pures, d2B_dT2_pures, d3B_dT3_pures,
-             B_interactions, dB_dT_interactions, d2B_dT2_interactions, d3B_dT3_interactions, 
-             C_pures, dC_dT_pures, d2C_dT2_pures, d3C_dT3_pures, 
+             B_interactions, dB_dT_interactions, d2B_dT2_interactions, d3B_dT3_interactions,
+             C_pures, dC_dT_pures, d2C_dT2_pures, d3C_dT3_pures,
              C_interactions, dC_dT_interactions, d2C_dT2_interactions, d3C_dT3_interactions,
 
 
@@ -178,7 +178,7 @@ Solids Phases
 
 '''
 
-from thermo.phases import( phase, ideal_gas, ceos, gibbs_excess, helmholtz_eos, 
+from thermo.phases import( phase, ideal_gas, ceos, gibbs_excess, helmholtz_eos,
                           air_phase, iapws_phase, coolprop_phase, virial_phase,
                           petroleum, combined, phase_utils)
 from thermo.phases.phase import *
@@ -194,23 +194,23 @@ from thermo.phases.petroleum import *
 from thermo.phases.combined import *
 
 __all__ = (phase.__all__ + ideal_gas.__all__ + ceos.__all__
-           + gibbs_excess.__all__ + air_phase.__all__ + helmholtz_eos.__all__ 
+           + gibbs_excess.__all__ + air_phase.__all__ + helmholtz_eos.__all__
            + iapws_phase.__all__ + coolprop_phase.__all__
            + virial_phase.__all__ + petroleum.__all__ + combined.__all__)
 
 gas_phases = (
-    IdealGas, 
-    CEOSGas, 
-    CoolPropGas, 
-    IAPWS95Gas, 
-    VirialGas, 
-    HumidAirRP1485, 
+    IdealGas,
+    CEOSGas,
+    CoolPropGas,
+    IAPWS95Gas,
+    VirialGas,
+    HumidAirRP1485,
     DryAirLemmon
 )
 liquid_phases = (
-    CEOSLiquid, 
-    GibbsExcessLiquid, 
-    CoolPropLiquid, 
+    CEOSLiquid,
+    GibbsExcessLiquid,
+    CoolPropLiquid,
     IAPWS95Liquid
 )
 solid_phases = (

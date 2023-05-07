@@ -95,10 +95,10 @@ Psat_extra_correlations = {}
 
 
 def Psat_mercury_Huber_Laesecke_Friend_2006(T):
-    '''Equation 4 in 
-    
-    Huber, Marcia L., Arno Laesecke, and Daniel G. Friend. "Correlation for the Vapor 
-    Pressure of Mercury."" Industrial & Engineering Chemistry Research 45, no. 21 
+    '''Equation 4 in
+
+    Huber, Marcia L., Arno Laesecke, and Daniel G. Friend. "Correlation for the Vapor
+    Pressure of Mercury."" Industrial & Engineering Chemistry Research 45, no. 21
     (October 1, 2006): 7351-61. https://doi.org/10.1021/ie060560s.
     '''
     Tc = 1764
@@ -117,14 +117,14 @@ Psat_extra_correlations['7439-97-6'] = [
 
 def Psat_beryllium_Arblaster_2016(T):
     '''Table 5 vapor pressure for liquid phase
-    
-    Arblaster, J. W. “Thermodynamic Properties of Beryllium.” Journal of 
-    Phase Equilibria and Diffusion 37, no. 5 (October 1, 2016): 581–91. 
+
+    Arblaster, J. W. “Thermodynamic Properties of Beryllium.” Journal of
+    Phase Equilibria and Diffusion 37, no. 5 (October 1, 2016): 581–91.
     https://doi.org/10.1007/s11669-016-0488-5.
     '''
     A, B, C, D, E = 18.14516, -0.512217, -37525.7, -1.54090910E-4, 2.18352910584E-9
     return 1e5*exp(A + B*log(T) + C/T + D*T + E*T*T)
-    
+
 Psat_extra_correlations['7440-41-7'] = [
     {'name': 'ARBLASTER_2016',
     'Tmax': 2800, 'Tmin': 1560,
@@ -154,7 +154,7 @@ EDALAT = 'EDALAT'
 
 vapor_pressure_methods = [IAPWS,
                           WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
-                          DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, 
+                          DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                           ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
                           LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
 '''Holds all methods available for the VaporPressure class, for use in
@@ -215,7 +215,7 @@ class VaporPressure(TDependentProperty):
         Coefficients were altered to be in units of Pa and Kelvin.
     **ANTOINE_WEBBOOK**:
         Standard Antoine equation, as documented in the function
-        :obj:`chemicals.vapor_pressure.Antoine` and with data for ~1400 fluids 
+        :obj:`chemicals.vapor_pressure.Antoine` and with data for ~1400 fluids
         from [6]_. Coefficients were altered to be in units of Pa and Kelvin.
     **DIPPR_PERRY_8E**:
         A collection of 341 coefficient sets from the DIPPR database published
@@ -286,7 +286,7 @@ class VaporPressure(TDependentProperty):
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     .. [7] Alcock, C. B., V. P. Itkin, and M. K. Horrigan. "Vapour Pressure
         Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
-        Quarterly 23, no. 3 (July 1, 1984): 309-13. 
+        Quarterly 23, no. 3 (July 1, 1984): 309-13.
         https://doi.org/10.1179/cmq.1984.23.3.309.
     '''
     name = 'Vapor pressure'
@@ -321,7 +321,7 @@ class VaporPressure(TDependentProperty):
     highest known.'''
 
     ranked_methods = [IAPWS, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
-                      DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR, 
+                      DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                       ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     '''Default rankings of the available methods.'''
@@ -376,7 +376,7 @@ class VaporPressure(TDependentProperty):
             if CASRN == '7732-18-5':
                 methods.append(IAPWS)
                 T_limits[IAPWS] = (235.0, iapws95_Tc)
-                
+
             if CASRN_int in df_wb.index and not isnan(float(df_wb.at[CASRN_int, 'AntoineA'])):
                 methods.append(ANTOINE_WEBBOOK)
                 self.ANTOINE_WEBBOOK_coefs = [float(df_wb.at[CASRN_int, 'AntoineA']),
@@ -451,7 +451,7 @@ class VaporPressure(TDependentProperty):
                 T_limits[EOS] = (0.1*self.Tc, self.Tc)
             T_limits[LEE_KESLER_PSAT] = T_limits[AMBROSE_WALTON] = T_limits[SANJARI] = T_limits[EDALAT] = (0.01, self.Tc)
         self.all_methods.update(methods)
-    
+
     def calculate(self, T, method):
         r'''Method to calculate vapor pressure of a fluid at temperature `T`
         with a given method.

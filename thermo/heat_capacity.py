@@ -399,7 +399,7 @@ class HeatCapacityGas(TDependentProperty):
                                              A0_dat.get('IdealGasHelmholtzPlanckEinsteinGeneralized_cs', None),
                                              A0_dat.get('IdealGasHelmholtzPlanckEinsteinGeneralized_ds', None),
                                              )
-                    
+
                     Tmin = min(self.CP_f.Tt, self.CP_f.Tmin)
                     Tmax = max(self.CP_f.Tc, self.CP_f.Tmax)
                 else:
@@ -413,7 +413,7 @@ class HeatCapacityGas(TDependentProperty):
             T_limits[LASTOVKA_SHAW] = (1e-3, 1e5)
             self.Lastovka_Shaw_term_A = Lastovka_Shaw_term_A(self.similarity_variable, self.iscyclic_aliphatic)
         self.all_methods.update(methods)
-        
+
     @property
     def T_limits_fitting(self):
         values = self.T_limits.copy()

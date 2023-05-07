@@ -113,7 +113,7 @@ class MixtureProperty(object):
         self.load_all_methods()
 
         self.set_poly_fit_coeffs()
-        
+
         if 'method' in kwargs: self.method = kwargs['method']
 
     def as_json(self, references=1):

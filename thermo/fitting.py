@@ -35,8 +35,8 @@ from fluids.numerics import (chebval, brenth, third, sixth, roots_cubic,
                              horner, horner_and_der2, horner_and_der3,
                              is_poly_positive, is_poly_negative,
                              horner_stable, horner_stable_and_der,
-                             max_abs_error, max_abs_rel_error, max_squared_error, 
-                             max_squared_rel_error, mean_abs_error, mean_abs_rel_error, 
+                             max_abs_error, max_abs_rel_error, max_squared_error,
+                             max_squared_rel_error, mean_abs_error, mean_abs_rel_error,
                              mean_squared_error, mean_squared_rel_error,
                              curve_fit, differential_evolution, fit_minimization_targets, leastsq,
                              polynomial_offset_scale,
@@ -175,7 +175,7 @@ def fit_polynomial(func, low, high, n,
                 import ChebTools
             cheb_fun = ChebTools.generate_Chebyshev_expansion(n-1, func_fun, low, high)
             cheb_coeffs = cheb_fun.coef()
-            
+
             if method == FIT_CHEBTOOLS_STABLEPOLY or method == FIT_CHEBTOOLS_POLY:
                 coeffs = cheb2poly(cheb_coeffs)[::-1].tolist()
             if method == FIT_CHEBTOOLS_CHEB:
@@ -213,7 +213,7 @@ def data_fit_statistics(xs, actual_pts, calc_pts):
     min_ratio, max_ratio = min_max_ratios(actual_pts, calc_pts)
     return mae, err_std, min_ratio, max_ratio
 
-    
+
 def poly_fit_statistics(func, coeffs, low, high, pts=200,
                         interpolation_property_inv=None,
                         interpolation_x=lambda x: x,
@@ -603,8 +603,8 @@ def fit_function(fun, x0=None, args=None, check_fun=None, debug=False,
 
 
 
-def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters, 
-                   fit_method, objective, multiple_tries_max_objective, 
+def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
+                   fit_method, objective, multiple_tries_max_objective,
                    guesses=None, initial_guesses=None, analytical_jac=None,
                    solver_kwargs=None, use_numba=False, multiple_tries=False,
                    do_statistics=False, multiple_tries_max_err=1e-5,
@@ -619,19 +619,19 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
     err_func = fit_func_dict[objective]
     err_fun_multiple_guesses = fit_func_dict[multiple_tries_max_objective]
     do_minimization = fit_method == 'differential_evolution'
-    
+
     if do_minimization:
         def minimize_func(params):
             calc = fitting_func(Ts, *params)
             err = err_func(data, calc)
             return err
-        
+
     p0 = [1.0]*len(fit_parameters)
     if guesses:
         for i, k in enumerate(use_fit_parameters):
             if k in guesses:
                 p0[i] = guesses[k]
-                
+
     if initial_guesses:
         # iterate over all the initial guess parameters we have and find the one
         # with the lowest error (according to the error criteria)
@@ -648,7 +648,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
             for i, k in enumerate(use_fit_parameters):
                 ph[i] = hardcoded[k]
             array_init_guesses.append(ph)
-            
+
             calc = fitting_func(Ts, *ph)
             err = err_func_init(data, calc)
             hardcoded_errors.append(err)
@@ -661,7 +661,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         array_init_guesses = [p0 for _, p0 in sorted(zip(hardcoded_errors, array_init_guesses))]
     else:
         array_init_guesses = [p0]
-    
+
 
     if func_wrapped_for_leastsq is None:
         def func_wrapped_for_leastsq(params):
@@ -690,7 +690,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         for i in range(len(init), popsize):
             to_add = [uniform(ll, lh) for ll, lh in working_bounds]
             init.append(to_add)
-            
+
         res = differential_evolution(minimize_func,# init=np.array(init),
                                       bounds=working_bounds, **solver_kwargs)
         popt = res['x']
@@ -704,7 +704,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
             if analytical_jac is not None:
                 solver_kwargs['maxfev'] = 500
             else:
-                solver_kwargs['maxfev'] = 5000 
+                solver_kwargs['maxfev'] = 5000
         if multiple_tries:
             multiple_tries_best_error = 1e300
             best_popt, best_pcov = None, None
@@ -723,7 +723,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
 
                         pcov = None
                     else:
-                        popt, pcov = curve_fit(fitting_func, Ts, data, sigma=sigma, p0=p0, jac=analytical_jac, 
+                        popt, pcov = curve_fit(fitting_func, Ts, data, sigma=sigma, p0=p0, jac=analytical_jac,
                                                 method=fit_method, absolute_sigma=True, **solver_kwargs)
                 except:
                     continue
@@ -734,7 +734,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                     multiple_tries_best_error = curr_err
                     if curr_err < multiple_tries_max_err:
                         break
-                
+
             if best_popt is None:
                 raise ValueError("No guesses converged")
             else:
@@ -752,7 +752,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
 
     if do_statistics:
         if not use_numba:
-            stats_func = data_fit_statistics 
+            stats_func = data_fit_statistics
         else:
             stats_func = thermo.numba.fitting.data_fit_statistics
         calc = fitting_func(Ts, *popt)

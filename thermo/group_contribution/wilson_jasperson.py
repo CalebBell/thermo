@@ -174,7 +174,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     -----
     Raises an exception if rdkit is not installed, or `smi` or `rdkitmol` is
     not defined.
-    
+
     Calculated values were published in [3]_ for 448 compounds, as calculated
     by NIST TDE. There appear to be further modifications to the method in
     NIST TDE, as ~25% of values have differences larger than 5 K.
@@ -182,7 +182,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     Examples
     --------
     Example for 2-ethylphenol in [2]_:
-        
+
     >>> Tc, Pc, _, _ = Wilson_Jasperson('CCC1=CC=CC=C1O', Tb=477.67) # doctest:+SKIP
     >>> (Tc, Pc) # doctest:+SKIP
     (693.567, 3743819.6667)
@@ -192,14 +192,14 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
 
     References
     ----------
-    .. [1] Wilson, G. M., and L. V. Jasperson. "Critical Constants Tc, Pc, 
-       Estimation Based on Zero, First and Second Order Methods." In 
+    .. [1] Wilson, G. M., and L. V. Jasperson. "Critical Constants Tc, Pc,
+       Estimation Based on Zero, First and Second Order Methods." In
        Proceedings of the AIChE Spring Meeting, 21, 1996.
     .. [2] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
-    .. [3] Yan, Xinjian, Qian Dong, and Xiangrong Hong. "Reliability Analysis 
+    .. [3] Yan, Xinjian, Qian Dong, and Xiangrong Hong. "Reliability Analysis
        of Group-Contribution Methods in Predicting Critical Temperatures of
-       Organic Compounds." Journal of Chemical & Engineering Data 48, no. 2 
+       Organic Compounds." Journal of Chemical & Engineering Data 48, no. 2
        (March 1, 2003): 374-80. https://doi.org/10.1021/je025596f.
     '''
     from rdkit import Chem
@@ -216,7 +216,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     Nr = len(atom_rings)
 
     atoms = simple_formula_parser(Chem.rdMolDescriptors.CalcMolFormula(rdkitmol))
-    
+
     group_contributions = {}
     OH_matches = rdkitmol.GetSubstructMatches(smarts_mol_cache(alcohol_smarts))
     if 'C' in atoms:
@@ -224,11 +224,11 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
             group_contributions['OH_large'] = len(OH_matches)
         else:
             group_contributions['OH_small'] = len(OH_matches)
-            
+
     ether_O_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ether_smarts))
     group_contributions['-O-'] = len(ether_O_matches)
-    
-    
+
+
     group_contributions['-CN'] = 0
     amine_groups = set()
     if 'N' in atoms:
@@ -248,38 +248,38 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
                         amine_groups.add(at)
 #     print(amine_groups)
     group_contributions['amine'] = len(amine_groups)
-    
+
     if 'O' in atoms and 'C' in atoms:
         aldehyde_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(aldehyde_smarts))
         group_contributions['-CHO'] = len(aldehyde_matches)
-        
+
         ketone_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ketone_smarts))
         group_contributions['>CO'] = len(ketone_matches)
-    
+
         carboxylic_acid_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(carboxylic_acid_smarts))
         group_contributions['-COOH'] = len(carboxylic_acid_matches)
-        
+
         ester_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ester_smarts))
         group_contributions['-COO-'] = len(ester_matches)
-        
-    
-    
+
+
+
     group_contributions['halide'] = 1 if is_haloalkane(rdkitmol) else 0
-    
+
     group_contributions['sulfur_groups'] = 0
     if 'S' in atoms:
         for s in (mercaptan_smarts, sulfide_smarts, disulfide_smarts):
             group_contributions['sulfur_groups'] += len(rdkitmol.GetSubstructMatches(smarts_mol_cache(s)))
-    
+
     group_contributions['siloxane'] = 0
     if 'Si' in atoms:
         siloxane_matches = rdkitmol.GetSubstructMatches(smarts_mol_cache(siloxane_smarts))
         group_contributions['siloxane'] = len(siloxane_matches)
 
 #     group_contributions = {'OH_large': 0, '-O-': 0, 'amine': 0, '-CHO': 0,
-#                            '>CO': 0, '-COOH': 0, '-COO-': 0, '-CN': 0, 
+#                            '>CO': 0, '-COOH': 0, '-COO-': 0, '-CN': 0,
 #                            '-NO2': 0, 'halide': 0, 'sulfur_groups': 0, 'siloxane': 0}
-    
+
     missing_Tc_increments = False
     Tc_inc = 0.0
     for k, v in atoms.items():
@@ -287,7 +287,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
             Tc_inc += Wilson_Jasperson_Tc_increments[k]*v
         except KeyError:
             missing_Tc_increments = True
-    
+
     missing_Pc_increments = False
     Pc_inc = 0.0
     for k, v in atoms.items():
@@ -295,7 +295,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
             Pc_inc += Wilson_Jasperson_Pc_increments[k]*v
         except (KeyError, TypeError):
             missing_Pc_increments = True
-            
+
     second_order_Pc = 0.0
     second_order_Tc = 0.0
     if second_order:
@@ -303,7 +303,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
             second_order_Tc += Wilson_Jasperson_Tc_groups[k]*v
         for k, v in group_contributions.items():
             second_order_Pc += Wilson_Jasperson_Pc_groups[k]*v
-            
+
 #     print(atoms)
 #     print(group_contributions)
 #     print('rings', Nr)
@@ -315,7 +315,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
         # Can't make a prediction
         missing_Tc_increments = True
         Tc = Tb*2.5
-    
+
     Y = -0.00922295 - 0.0290403*Nr + 0.041*(second_order_Pc + Pc_inc)
 
     Pc = 0.0186233*Tc/(-0.96601 + exp(Y))

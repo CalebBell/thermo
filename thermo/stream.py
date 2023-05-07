@@ -45,14 +45,14 @@ from fluids.pump import voltages_1_phase_residential, voltages_3_phase, resident
 class StreamArgs(object):
     flashed = False
     _state_cache = None
-    
+
 
     def __init__(self, *, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=None, P=None,
                  VF=None, H=None, H_mass=None, S=None, S_mass=None,
                  U=None, U_mass=None, G=None, G_mass=None, A=None, A_mass=None,
                  V=None, rho=None, rho_mass=None,
-                 
+
                  ns=None, ms=None, Qls=None, Qgs=None, m=None, n=None, Q=None,
                  Ql=None, Qg=None,
                  energy=None, energy_reactive=None, H_reactive=None,
@@ -61,11 +61,11 @@ class StreamArgs(object):
         self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
                        'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
                        'n': None, 'm': None, 'Q': None, 'Ql': None, 'Qg': None,
-                       
-                       'T': None, 'P': None, 
+
+                       'T': None, 'P': None,
                        'V': None, 'rho': None, 'rho_mass': None,
-                       
-                       'VF': None, 
+
+                       'VF': None,
                        'H': None,'H_mass': None,
                        'S': None, 'S_mass': None,
                        'U': None, 'U_mass': None,
@@ -380,7 +380,7 @@ class StreamArgs(object):
     @property
     def H(self):
         return self.specifications['H']
-    
+
     @H.setter
     def H(self, H):
         if H is None:
@@ -604,11 +604,11 @@ class StreamArgs(object):
         if Qls is not None and None not in Qls:
             Vms = self.flasher.V_liquids_ref()
             return Vfs_to_zs(normalize(Qls), Vms)
-        
+
         Qgs = s['Qgs']
         if Qgs is not None and None not in Qgs:
             return normalize(Qgs)
-            
+
 
         return None
 
@@ -629,7 +629,7 @@ class StreamArgs(object):
                 self.specifications.update(args)
             else:
                 self.specifications['ws'] = arg
-                
+
     @property
     def ws_calc(self):
         ws = self.specifications['ws']
@@ -658,7 +658,7 @@ class StreamArgs(object):
             else:
                 self.specifications['Vfls'] = arg
 
-                
+
     @property
     def Vfls_calc(self):
         Vfls = self.specifications['Vfls']
@@ -668,7 +668,7 @@ class StreamArgs(object):
         if zs is not None:
             Vms = self.flasher.V_liquids_ref()
             return zs_to_Vfs(zs, Vms)
-    
+
 
     @property
     def Vfgs(self):
@@ -823,7 +823,7 @@ class StreamArgs(object):
                 s['Qls'] = arg
             else:
                 s['Qls'] = arg
-    
+
     @property
     def Qls_calc(self):
         ns_calc = self.ns_calc
@@ -907,7 +907,7 @@ class StreamArgs(object):
         ns_calc = self.ns_calc
         if ns_calc is not None and None not in ns_calc:
             return sum(ns_calc)
-    
+
         return None
 
     @property
@@ -934,7 +934,7 @@ class StreamArgs(object):
         if Qls_calc is not None:
             return sum(Qls_calc)
         return None
-    
+
     @property
     def Qg(self):
         return self.specifications['Qg']
@@ -1007,7 +1007,7 @@ class StreamArgs(object):
                     elif m is not None:
                         Q = mixture.H()*property_molar_to_mass(m, mixture.MW())
         return Q
-    
+
     @property
     def energy_reactive_calc(self):
         return self.specifications['energy_reactive']
@@ -1026,7 +1026,7 @@ class StreamArgs(object):
                     'n': None, 'm': None, 'Q': arg, 'Ql': None, 'Qg': None}
             self.specifications.update(args)
 
-    
+
     def __repr__(self):
         s = '%s(flasher=%s, ' %(self.__class__.__name__, self.flasher is not None)
         for k, v in self.specifications.items():
@@ -1209,7 +1209,7 @@ class StreamArgs(object):
     def specified_state_vars(self):
         # Slightly faster
         s = self.specifications
-        return sum(s[i] is not None for i in ('T', 'P', 'V', 'rho', 'rho_mass', 
+        return sum(s[i] is not None for i in ('T', 'P', 'V', 'rho', 'rho_mass',
                                                                 'VF', 'H_mass', 'H', 'S_mass', 'S',
                                                                 'U_mass', 'U', 'A_mass', 'A', 'G_mass', 'G',
                                                                 'energy', 'energy_reactive'))
@@ -1264,8 +1264,8 @@ class StreamArgs(object):
 
     @property
     def non_pressure_spec_specified(self):
-        state_vars = (i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass, 
-                                              self.H_mass, self.H, self.S_mass, self.S, 
+        state_vars = (i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass,
+                                              self.H_mass, self.H, self.S_mass, self.S,
                                               self.U_mass, self.U, self.A_mass, self.A, self.G_mass, self.G,
                                               self.energy, self.energy_reactive, self.H_reactive))
         if sum(state_vars) >= 1:
@@ -1347,7 +1347,7 @@ class StreamArgs(object):
         if self.flow_specified and self.composition_specified and self.state_specified:
             s = self.specifications.copy()
             return EquilibriumStream(self.flasher, **s)
-        
+
     def flash_state(self, hot_start=None):
         if self.composition_specified and self.state_specified:
             s = self.specifications
@@ -1391,7 +1391,7 @@ class StreamArgs(object):
                 spec_count += 1
             if VF is not None:
                 spec_count += 1
-                
+
             if spec_count < 2:
                 energy = s['energy']
                 if energy is not None:
@@ -1405,11 +1405,11 @@ class StreamArgs(object):
                     if n is not None:
                         H_reactive = energy_reactive/n
                         spec_count += 1
-            
+
             H_flash = s['H'] if s['H'] is not None else H
             H_reactive = s['H_reactive'] if s['H_reactive'] is not None else H_reactive
             state_cache = (T, P, VF, s['S_mass'], s['S'], s['H'], H_flash, s['H_reactive'], H_reactive,
-                           s['U'], s['U_mass'], s['G'], s['G_mass'], s['A'], s['A_mass'], 
+                           s['U'], s['U_mass'], s['G'], s['G_mass'], s['A'], s['A_mass'],
                            s['V'], s['rho'], s['rho_mass'], tuple(zs))
             if state_cache == self._state_cache:
                 try:
@@ -2007,10 +2007,10 @@ class EquilibriumStream(EquilibriumState):
     def __init__(self, flasher, *, zs=None, ws=None, Vfls=None, Vfgs=None,
                  ns=None, ms=None, Qls=None, Qgs=None,
                  n=None, m=None, Q=None, Ql=None, Qg=None,
-                 T=None, P=None, 
-                 
+                 T=None, P=None,
+
                  V=None, rho=None, rho_mass=None,
-                 
+
                  VF=None,
                  H=None, H_mass=None,
                  S=None, S_mass=None,
@@ -2179,13 +2179,13 @@ class EquilibriumStream(EquilibriumState):
             #               H=H, H_mass=H_mass, S=S, S_mass=S_mass,
             #               G=G, G_mass=G_mass, U=U, U_mass=U_mass,
             #               A=A, A_mass=A_mass, H_reactive=H_reactive,
-                          
+
             #               zs=zs))
             flasher.flash(T=T, P=P, V=V, rho=rho, rho_mass=rho_mass, VF=VF,
                           H=H, H_mass=H_mass, S=S, S_mass=S_mass,
                           G=G, G_mass=G_mass, U=U, U_mass=U_mass,
                           A=A, A_mass=A_mass, H_reactive=H_reactive,
-                          
+
                           dest=dest, zs=zs, hot_start=hot_start,
                           spec_fun=spec_fun)
 
@@ -2258,7 +2258,7 @@ class EquilibriumStream(EquilibriumState):
 
 
 
-    
+
     @property
     def Q(self):
         return self.n*self.V()
@@ -2282,11 +2282,11 @@ class EquilibriumStream(EquilibriumState):
         return [ns[i]*Vms_TP[i] for i in range(self.N)]
 
     Qls_calc = Qls
-    
+
     @property
     def Ql(self):
         return sum(self.Qls)
-    
+
     Ql_calc = Ql
 
     @property
@@ -2392,7 +2392,7 @@ class EnergyStream(object):
 
     def copy(self):
         return EnergyStream(Q=self.Q, medium=self.medium)
-    
+
     __copy__ = copy
 
     def __repr__(self):
@@ -2699,7 +2699,7 @@ def energy_balance(inlets, outlets, reactive=False):
             Q = f.energy
             if Q is None:
                 Q = f.energy_calc
-            
+
         if Q is None:
             all_in_known = False
             in_unknown_count += 1

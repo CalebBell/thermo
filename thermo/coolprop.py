@@ -24,11 +24,11 @@ from __future__ import division
 
 __all__ = ['has_CoolProp', 'coolprop_dict', 'CP_fluid', 'coolprop_fluids',
 'CoolProp_T_dependent_property', 'CoolProp_failing_PT_flashes',
-'PropsSI', 'PhaseSI','HAPropsSI', 'AbstractState', 
+'PropsSI', 'PhaseSI','HAPropsSI', 'AbstractState',
 'Helmholtz_A0', 'Helmholtz_dA0_dtau', 'Helmholtz_d2A0_dtau2',
 'Helmholtz_d3A0_dtau3',
 'CoolProp_json_alpha0_to_kwargs',
-'Helmholtz_A0_data', 
+'Helmholtz_A0_data',
 'Cp_ideal_gas_Helmholtz', 'H_ideal_gas_Helmholtz',
 'S_ideal_gas_Helmholtz']
 import os
@@ -224,7 +224,7 @@ def store_coolprop_fluids():
                        Tt=HEOS.Ttriple(), omega=HEOS.acentric_factor(), HEOS=None, CAS=CASRN,
                        Vc=1/HEOS.rhomolar_critical(), Pt=PropsSI('PTRIPLE', CASRN),
                        Tb=Tb)
-                       
+
 
     data = {CASRN: coolprop_fluids[CASRN].as_json() for CASRN in coolprop_dict}
     ver = CoolProp.__version__
@@ -512,7 +512,7 @@ def CoolProp_T_dependent_property_approximation(T, CASRN, prop, phase):
 
 def CoolProp_json_alpha0_to_kwargs(json_data, as_np=False):
     '''
-    
+
     Parameters
     ----------
     json_data : TYPE
@@ -522,7 +522,7 @@ def CoolProp_json_alpha0_to_kwargs(json_data, as_np=False):
 
     Returns
     -------
-    kwargs : dict 
+    kwargs : dict
         The parameters accepted by the residual functions.
 
     '''
@@ -540,7 +540,7 @@ def CoolProp_json_alpha0_to_kwargs(json_data, as_np=False):
             kwargs['IdealGasHelmholtzPlanckEinstein_ts'] = d['t']
         elif d['type'] == 'IdealGasHelmholtzPlanckEinsteinGeneralized':
             n, t, c, d = d['n'], d['t'], d['c'], d['d']
-            for arg, name in zip([n, t, c, d], ['IdealGasHelmholtzPlanckEinsteinGeneralized_ns', 
+            for arg, name in zip([n, t, c, d], ['IdealGasHelmholtzPlanckEinsteinGeneralized_ns',
                                                     'IdealGasHelmholtzPlanckEinsteinGeneralized_ts',
                                                     'IdealGasHelmholtzPlanckEinsteinGeneralized_cs',
                                                     'IdealGasHelmholtzPlanckEinsteinGeneralized_ds']):
@@ -560,8 +560,8 @@ def CoolProp_json_alpha0_to_kwargs(json_data, as_np=False):
             kwargs['IdealGasHelmholtzPlanckEinsteinGeneralized_ts'] = theta
             kwargs['IdealGasHelmholtzPlanckEinsteinGeneralized_cs'] = c
             kwargs['IdealGasHelmholtzPlanckEinsteinGeneralized_ds'] = d
-            
-            for arg, name in zip([n, theta, c, d], ['IdealGasHelmholtzPlanckEinsteinGeneralized_ns', 
+
+            for arg, name in zip([n, theta, c, d], ['IdealGasHelmholtzPlanckEinsteinGeneralized_ns',
                                                     'IdealGasHelmholtzPlanckEinsteinGeneralized_ts',
                                                     'IdealGasHelmholtzPlanckEinsteinGeneralized_cs',
                                                     'IdealGasHelmholtzPlanckEinsteinGeneralized_ds']):
@@ -575,16 +575,16 @@ def CoolProp_json_alpha0_to_kwargs(json_data, as_np=False):
             continue
         else:
             raise ValueError("Unrecognized alpha0 type %s" %(d['type']))
-        
+
     if as_np:
         for k, v in kwargs.items():
             if type(v) is list:
                 kwargs[k] = np.array(v)
-    
+
     return kwargs
 
 
-def Helmholtz_A0(tau, delta, 
+def Helmholtz_A0(tau, delta,
             IdealGasHelmholtzLead_a1=0.0, IdealGasHelmholtzLead_a2=0.0,
             IdealGasHelmholtzLogTau_a=0.0,
            IdealGasHelmholtzPlanckEinstein_ns=None,
@@ -595,32 +595,32 @@ def Helmholtz_A0(tau, delta,
            IdealGasHelmholtzPlanckEinsteinGeneralized_ts=None,
            IdealGasHelmholtzPlanckEinsteinGeneralized_cs=None,
            IdealGasHelmholtzPlanckEinsteinGeneralized_ds=None):
-    
+
     '''Compute the dimensionless ideal gas Helmholtz energy for a  Helmholtz
     equation of state.
-    
+
     These parameters can be found in the literature, or extracted from a
     CoolProp .json file.
     '''
-    
+
     lntau = log(tau)
     A0 = log(delta)
-    
+
     A0 += IdealGasHelmholtzLead_a1 + IdealGasHelmholtzLead_a2*tau
-    
+
     A0 += IdealGasHelmholtzLogTau_a*lntau
-    
+
     if IdealGasHelmholtzPlanckEinstein_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinstein_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinstein_ns[i], IdealGasHelmholtzPlanckEinstein_ts[i]
             A0 += ni*log(1.0 - exp(-ti*tau))
-    
+
     if IdealGasHelmholtzPower_ns is not None:
         for i in range(len(IdealGasHelmholtzPower_ns)):
             ni, ti = IdealGasHelmholtzPower_ns[i], IdealGasHelmholtzPower_ts[i]
             # A0 += ni*tau**ti
             A0 += ni*exp(ti*lntau)
-            
+
     if IdealGasHelmholtzPlanckEinsteinGeneralized_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinsteinGeneralized_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinsteinGeneralized_ns[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ts[i]
@@ -628,7 +628,7 @@ def Helmholtz_A0(tau, delta,
             A0 += ni*log(ci + di*exp(ti*tau))
     return A0
 
-def Helmholtz_dA0_dtau(tau, delta=0.0, 
+def Helmholtz_dA0_dtau(tau, delta=0.0,
             IdealGasHelmholtzLead_a1=0.0, IdealGasHelmholtzLead_a2=0.0,
             IdealGasHelmholtzLogTau_a=0.0,
            IdealGasHelmholtzPlanckEinstein_ns=None,
@@ -643,7 +643,7 @@ def Helmholtz_dA0_dtau(tau, delta=0.0,
     dA0 += IdealGasHelmholtzLead_a2
 
     dA0 += IdealGasHelmholtzLogTau_a/tau
-    
+
     if IdealGasHelmholtzPlanckEinstein_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinstein_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinstein_ns[i], IdealGasHelmholtzPlanckEinstein_ts[i]
@@ -655,10 +655,10 @@ def Helmholtz_dA0_dtau(tau, delta=0.0,
         for i in range(len(IdealGasHelmholtzPower_ns)):
             ni, ti = IdealGasHelmholtzPower_ns[i], IdealGasHelmholtzPower_ts[i]
             # dA0 += ni*ti*tau**(ti-1) # done
-            
+
             # This term could be calculated at the same time as A0
             dA0 += ni*ti*exp((ti-1.0)*lntau)
-            
+
     if IdealGasHelmholtzPlanckEinsteinGeneralized_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinsteinGeneralized_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinsteinGeneralized_ns[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ts[i]
@@ -667,7 +667,7 @@ def Helmholtz_dA0_dtau(tau, delta=0.0,
             dA0 += ni*ti*x0/(ci + x0) # done
     return dA0
 
-def Helmholtz_d2A0_dtau2(tau, delta=0.0, 
+def Helmholtz_d2A0_dtau2(tau, delta=0.0,
             IdealGasHelmholtzLead_a1=0.0, IdealGasHelmholtzLead_a2=0.0,
             IdealGasHelmholtzLogTau_a=0.0,
            IdealGasHelmholtzPlanckEinstein_ns=None,
@@ -681,7 +681,7 @@ def Helmholtz_d2A0_dtau2(tau, delta=0.0,
     d2A0 = 0.0
 
     d2A0 -= IdealGasHelmholtzLogTau_a/(tau*tau)
-    
+
     if IdealGasHelmholtzPlanckEinstein_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinstein_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinstein_ns[i], IdealGasHelmholtzPlanckEinstein_ts[i]
@@ -694,7 +694,7 @@ def Helmholtz_d2A0_dtau2(tau, delta=0.0,
         for i in range(len(IdealGasHelmholtzPower_ns)):
             ni, ti = IdealGasHelmholtzPower_ns[i], IdealGasHelmholtzPower_ts[i]
             d2A0 += ni*ti*(ti - 1.0)*exp((ti-2.0)*lntau)
-            
+
     if IdealGasHelmholtzPlanckEinsteinGeneralized_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinsteinGeneralized_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinsteinGeneralized_ns[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ts[i]
@@ -704,7 +704,7 @@ def Helmholtz_d2A0_dtau2(tau, delta=0.0,
             d2A0 += -ni*ti*ti*(x1 - 1.0)*x1 # done
     return d2A0
 
-def Helmholtz_d3A0_dtau3(tau, delta=0.0, 
+def Helmholtz_d3A0_dtau3(tau, delta=0.0,
             IdealGasHelmholtzLead_a1=0.0, IdealGasHelmholtzLead_a2=0.0,
             IdealGasHelmholtzLogTau_a=0.0,
            IdealGasHelmholtzPlanckEinstein_ns=None,
@@ -718,7 +718,7 @@ def Helmholtz_d3A0_dtau3(tau, delta=0.0,
     d3A0 = 0.0
 
     d3A0 += 2.0*IdealGasHelmholtzLogTau_a/(tau*tau*tau)
-    
+
     if IdealGasHelmholtzPlanckEinstein_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinstein_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinstein_ns[i], IdealGasHelmholtzPlanckEinstein_ts[i]
@@ -731,7 +731,7 @@ def Helmholtz_d3A0_dtau3(tau, delta=0.0,
         for i in range(len(IdealGasHelmholtzPower_ns)):
             ni, ti = IdealGasHelmholtzPower_ns[i], IdealGasHelmholtzPower_ts[i]
             d3A0 += ni*ti*(ti*ti - 3.0*ti + 2.0)*exp((ti-3.0)*lntau)
-            
+
     if IdealGasHelmholtzPlanckEinsteinGeneralized_ns is not None:
         for i in range(len(IdealGasHelmholtzPlanckEinsteinGeneralized_ns)):
             ni, ti = IdealGasHelmholtzPlanckEinsteinGeneralized_ns[i], IdealGasHelmholtzPlanckEinsteinGeneralized_ts[i]
@@ -752,8 +752,8 @@ def Cp_ideal_gas_Helmholtz(T, Tc, R, IdealGasHelmholtzLead_a1=0.0, IdealGasHelmh
            IdealGasHelmholtzPlanckEinsteinGeneralized_cs=None,
            IdealGasHelmholtzPlanckEinsteinGeneralized_ds=None):
     tau = Tc/T
-    
-    d2A0 = Helmholtz_d2A0_dtau2(tau, delta=0,            
+
+    d2A0 = Helmholtz_d2A0_dtau2(tau, delta=0,
                                 IdealGasHelmholtzLead_a1=IdealGasHelmholtzLead_a1,
                                 IdealGasHelmholtzLead_a2=IdealGasHelmholtzLead_a2,
             IdealGasHelmholtzLogTau_a=IdealGasHelmholtzLogTau_a,
@@ -780,8 +780,8 @@ def H_ideal_gas_Helmholtz(T, Tc, R, IdealGasHelmholtzLead_a1=0.0, IdealGasHelmho
            IdealGasHelmholtzPlanckEinsteinGeneralized_cs=None,
            IdealGasHelmholtzPlanckEinsteinGeneralized_ds=None):
     tau = Tc/T
-    
-    dA0 = Helmholtz_dA0_dtau(tau, delta=0,            
+
+    dA0 = Helmholtz_dA0_dtau(tau, delta=0,
                                 IdealGasHelmholtzLead_a1=IdealGasHelmholtzLead_a1,
                                 IdealGasHelmholtzLead_a2=IdealGasHelmholtzLead_a2,
             IdealGasHelmholtzLogTau_a=IdealGasHelmholtzLogTau_a,
@@ -807,15 +807,15 @@ def S_ideal_gas_Helmholtz(T, Tc, R, IdealGasHelmholtzLead_a1=0.0, IdealGasHelmho
            IdealGasHelmholtzPlanckEinsteinGeneralized_cs=None,
            IdealGasHelmholtzPlanckEinsteinGeneralized_ds=None):
     '''Calculate the ideal-gas helmholtz energy, in J/mol.
-    
+
     Note that this function CANNOT be used to implement calculate_integral_over_T
     and the heat capacity function CANNOT be integrated over T analytically,
     so unfortunately these fancy models must be done numerically.
     '''
     tau = Tc/T
     delta = 1.0
-    
-    A0 = Helmholtz_A0(tau, delta=delta,            
+
+    A0 = Helmholtz_A0(tau, delta=delta,
                                 IdealGasHelmholtzLead_a1=IdealGasHelmholtzLead_a1,
                                 IdealGasHelmholtzLead_a2=IdealGasHelmholtzLead_a2,
             IdealGasHelmholtzLogTau_a=IdealGasHelmholtzLogTau_a,
@@ -827,7 +827,7 @@ def S_ideal_gas_Helmholtz(T, Tc, R, IdealGasHelmholtzLead_a1=0.0, IdealGasHelmho
            IdealGasHelmholtzPlanckEinsteinGeneralized_ts=IdealGasHelmholtzPlanckEinsteinGeneralized_ts,
            IdealGasHelmholtzPlanckEinsteinGeneralized_cs=IdealGasHelmholtzPlanckEinsteinGeneralized_cs,
            IdealGasHelmholtzPlanckEinsteinGeneralized_ds=IdealGasHelmholtzPlanckEinsteinGeneralized_ds)
-    dA0 = Helmholtz_dA0_dtau(tau, delta=delta,            
+    dA0 = Helmholtz_dA0_dtau(tau, delta=delta,
                                 IdealGasHelmholtzLead_a1=IdealGasHelmholtzLead_a1,
                                 IdealGasHelmholtzLead_a2=IdealGasHelmholtzLead_a2,
             IdealGasHelmholtzLogTau_a=IdealGasHelmholtzLogTau_a,

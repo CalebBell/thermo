@@ -26,7 +26,7 @@ from thermo.flash.flash_vl import FlashVL
 from chemicals.rachford_rice import flash_inner_loop
 from chemicals.exceptions import (
     TrivialSolutionError,
-    PhaseCountReducedError, 
+    PhaseCountReducedError,
     PhaseExistenceImpossible
 )
 from fluids.numerics import (
@@ -166,7 +166,7 @@ class FlashVLN(FlashVL):
 
     K_COMPOSITION_INDEPENDENT_HACK = True
     skip_solids = True
-    
+
     supports_VF_flash = True
     supports_SF_flash = False
 
@@ -183,7 +183,7 @@ class FlashVLN(FlashVL):
     def _finish_initialization(self):
         constants, correlations, settings = self.constants, self.correlations, self.settings
         liquids, gas = self.liquids, self.gas
-        
+
         if gas is None:
             raise ValueError("Gas phase is required in this model")
         self.liquid0 = liquids[0] if liquids else None
@@ -315,7 +315,7 @@ class FlashVLN(FlashVL):
 
     def sequential_substitution_NP(self, T, P, zs, comps, betas, phases, maxiter, tol, trivial_solution_tol):
 
-        return sequential_substitution_NP(T, P, zs, comps, betas, phases, 
+        return sequential_substitution_NP(T, P, zs, comps, betas, phases,
                     maxiter=maxiter, tol=tol, trivial_solution_tol=trivial_solution_tol)
 
 
@@ -376,13 +376,13 @@ class FlashVLN(FlashVL):
             gas = self.gas.to(T=T, P=P, zs=ys)
             liquid = self.liquid0.to(T=T, P=P, zs=xs)
             return gas, [liquid], [], [VF, 1.0 - VF], empty_flash_conv
-    
+
     def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
         if T is None:
             return self.flash_PV(P, V, zs, solution, hot_start)
         if P is None:
             return self.flash_TV(T, V, zs, solution, hot_start)
-            
+
         if hot_start is not None and hot_start.phase_count > 1 and solution is None:
             # Only allow hot start when there are multiple phases
             try:
@@ -553,7 +553,7 @@ class FlashVLN(FlashVL):
                 failed_3P = False
 
                 sln3 = self.sequential_substitution_NP(
-                    T, P, zs, flash_comps, flash_betas, flash_phases, 
+                    T, P, zs, flash_comps, flash_betas, flash_phases,
                     maxiter=self.SS_NP_MAXITER, tol=self.SS_NP_TOL,
                     trivial_solution_tol=self.SS_NP_TRIVIAL_TOL
                 )
@@ -581,7 +581,7 @@ class FlashVLN(FlashVL):
                 if try_LL_3P_failed:
                     try:
                         V_over_F, xs, ys, l, g, iteration, err = self.sequential_substitution_2P(
-                            T=T, P=P, 
+                            T=T, P=P,
                             zs=zs, xs_guess=trial_zs,
                             ys_guess=appearing_zs,
                             liquid_phase=liquids[0],
@@ -610,7 +610,7 @@ class FlashVLN(FlashVL):
                 # converging other guesses from the stability test
                 # TODO
                 return sln_2P
-                
+
 
 
         slnN = sln3

@@ -22,7 +22,7 @@ SOFTWARE.'''
 
 from __future__ import division
 
-__all__ = ['TDependentProperty', 'PROPERTY_TRANSFORM_LN', 'PROPERTY_TRANSFORM_DLN', 
+__all__ = ['TDependentProperty', 'PROPERTY_TRANSFORM_LN', 'PROPERTY_TRANSFORM_DLN',
            'PROPERTY_TRANSFORM_D2LN', 'PROPERTY_TRANSFORM_D_X', 'PROPERTY_TRANSFORM_D2_X']
 
 import os
@@ -33,24 +33,24 @@ except: # pragma: no cover
 from math import inf, exp, log
 
 from fluids.numerics import (quad, brenth, secant, linspace, newton,
-                             polyint, polyint_over_x, derivative, 
+                             polyint, polyint_over_x, derivative,
                              trunc_log, trunc_exp, interp,
-                             polyder, horner, numpy as np, curve_fit, 
-                             differential_evolution, fit_minimization_targets, 
+                             polyder, horner, numpy as np, curve_fit,
+                             differential_evolution, fit_minimization_targets,
                              leastsq, horner_backwards, exp_horner_backwards,
                              exp_horner_backwards_ln_tau,
                              exp_horner_backwards_ln_tau_and_der,
                              exp_horner_backwards_ln_tau_and_der2,
                              exp_poly_ln_tau_coeffs2, exp_poly_ln_tau_coeffs3,
                              exp_horner_backwards, exp_horner_backwards_and_der,
-                             exp_horner_backwards_and_der2, 
+                             exp_horner_backwards_and_der2,
                              exp_horner_backwards_and_der3,
                              polynomial_offset_scale,
                              chebval, chebder, chebint,
                              horner_and_der, horner_and_der2, horner_and_der3,
                              horner_stable_and_der2,
                              horner_backwards_ln_tau,
-                             horner_backwards_ln_tau_and_der, 
+                             horner_backwards_ln_tau_and_der,
                              horner_backwards_ln_tau_and_der2,
                              horner_backwards_ln_tau_and_der3,
                              fit_integral_linear_extrapolation,
@@ -72,19 +72,19 @@ import chemicals
 from math import e
 from chemicals.utils import hash_any_primitive
 from chemicals.vapor_pressure import (Antoine, Antoine_AB_coeffs_from_point,
-                                      DIPPR101_ABC_coeffs_from_point, 
-                                      Yaws_Psat_fitting_jacobian, 
-                                      d2Yaws_Psat_dT2, dYaws_Psat_dT, 
+                                      DIPPR101_ABC_coeffs_from_point,
+                                      Yaws_Psat_fitting_jacobian,
+                                      d2Yaws_Psat_dT2, dYaws_Psat_dT,
                                       Yaws_Psat, TDE_PVExpansion,
-                                      Wagner, Wagner_original, 
-                                      TRC_Antoine_extended, 
-                                      dAntoine_dT, d2Antoine_dT2, 
-                                      dWagner_original_dT, d2Wagner_original_dT2, 
-                                      dWagner_dT, d2Wagner_dT2, 
-                                      dTRC_Antoine_extended_dT, 
-                                      d2TRC_Antoine_extended_dT2, 
-                                      Wagner_fitting_jacobian, 
-                                      Wagner_original_fitting_jacobian, 
+                                      Wagner, Wagner_original,
+                                      TRC_Antoine_extended,
+                                      dAntoine_dT, d2Antoine_dT2,
+                                      dWagner_original_dT, d2Wagner_original_dT2,
+                                      dWagner_dT, d2Wagner_dT2,
+                                      dTRC_Antoine_extended_dT,
+                                      d2TRC_Antoine_extended_dT2,
+                                      Wagner_fitting_jacobian,
+                                      Wagner_original_fitting_jacobian,
                                       Antoine_fitting_jacobian,
                                       TRC_Antoine_extended_fitting_jacobian)
 from chemicals.dippr import EQ100, EQ101, EQ102, EQ104, EQ105, EQ106, EQ107, EQ114, EQ115, EQ116, EQ127, EQ102_fitting_jacobian, EQ101_fitting_jacobian, EQ106_fitting_jacobian, EQ105_fitting_jacobian, EQ107_fitting_jacobian, EQ106_AB, EQ106_ABC
@@ -117,7 +117,7 @@ from thermo.base import data_dir, source_path
 from thermo.fitting import data_fit_statistics, fit_customized
 import thermo
 from thermo.utils import (VDI_TABULAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU,
-                          EXP_POLY_FIT_LN_TAU, STABLEPOLY_FIT, EXP_STABLEPOLY_FIT, 
+                          EXP_POLY_FIT_LN_TAU, STABLEPOLY_FIT, EXP_STABLEPOLY_FIT,
                           STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU,
                           CHEB_FIT, EXP_CHEB_FIT, CHEB_FIT_LN_TAU, EXP_CHEB_FIT_LN_TAU,
                           has_matplotlib)
@@ -169,7 +169,7 @@ def generate_fitting_function(model,
     # arg_dest_idxs is a list of indexes for each parameter
     # to be transformed into the output array
     arg_dest_idxs = []
-    
+
     # reusable_args is a mutable list of arguments to be passed to the
     # function which is being fit
     reusable_args = []
@@ -192,7 +192,7 @@ def generate_fitting_function(model,
             if k not in fit_parameters:
                 jac_skip_row_idxs.append(i)
         if jac_skip_row_idxs:
-            
+
             jac_skip_row_idxs = np.array(jac_skip_row_idxs)
             #for k in fit_parameters:
             if for_leastsq:
@@ -236,7 +236,7 @@ def create_local_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T):
     if callable(f):
         return LocalMethod(f, f_der, f_der2, f_der3, f_int, f_int_over_T)
     else:
-        try: 
+        try:
             value = float(f)
         except:
             raise ValueError("`f` must be either a callable or a number")
@@ -247,12 +247,12 @@ def create_local_method(f, f_der, f_der2, f_der3, f_int, f_int_over_T):
 
 class LocalMethod:
     __slots__ = ('f', 'f_der', 'f_der2', 'f_der3', 'f_int', 'f_int_over_T')
-    
+
     def __hash__(self):
         # Don't compare hased on this object id, compapre based on the functions
         # implemented
         return hash(tuple(id(getattr(self, o)) for o in self.__slots__))
-    
+
     def __init__(self, f, f_der, f_der2, f_der3, f_int, f_int_over_T):
         self.f = f
         self.f_der = f_der
@@ -264,26 +264,26 @@ class LocalMethod:
 
 class ConstantLocalMethod:
     __slots__ = ('value',)
-    
-    
+
+
     def __hash__(self):
         return hash(self.value)
 
     def __init__(self, value):
         self.value = value
-        
+
     def f(self, T):
         return self.value
-      
+
     def f_der(self, T):
         return 0.
-    
+
     def f_der2(self, T):
         return 0.
-    
+
     def f_der3(self, T):
         return 0.
-        
+
     def f_int(self, Ta, Tb):
         return self.value * (Tb - Ta)
 
@@ -356,15 +356,15 @@ class TDependentProperty(object):
           :obj:`EQ101 <chemicals.dippr.EQ101>` equation
         * 'Watson' - fits the model to the Heat of Vaporization model
           :obj:`Watson <chemicals.phase_change.Watson>`
-        * 'EXP_POLY_LN_TAU2' - uses the models's critical temperature and 
+        * 'EXP_POLY_LN_TAU2' - uses the models's critical temperature and
           derivative to fit the model linearly in the equation
-          :math:`\text{prop} = \exp(a + b\cdot\ln\tau)`, so that it is always 
+          :math:`\text{prop} = \exp(a + b\cdot\ln\tau)`, so that it is always
           zero at the critical point; suitable for surface tension.
-        * 'DIPPR106_AB' - uses the models's critical temperature and 
+        * 'DIPPR106_AB' - uses the models's critical temperature and
           derivative to fit the model linearly in the equation
           :obj:`EQ106 <chemicals.dippr.EQ106>`'s
           equation at the temperature limits using only the A and B coefficient
-        * 'DIPPR106_ABC' - uses the models's critical temperature and 
+        * 'DIPPR106_ABC' - uses the models's critical temperature and
           first two derivatives to fit the model quadratically in the equation
           :obj:`EQ106 <chemicals.dippr.EQ106>`'s
           equation at the temperature limits using only the A, B, and C
@@ -431,10 +431,10 @@ class TDependentProperty(object):
         [-]
     '''
     RAISE_PROPERTY_CALCULATION_ERROR = False
-    
+
     def __init_subclass__(cls):
         cls.__full_path__ = "%s.%s" %(cls.__module__, cls.__qualname__)
-    
+
     # Dummy properties
     name = 'Property name'
     units = 'Property units'
@@ -481,18 +481,18 @@ class TDependentProperty(object):
 
     obj_references = ()
     obj_references_types = ()
-    
-    
+
+
     extra_correlations = {}
     '''Dictionary containing extra methods not fully coded into a property
     t dependent object; this is more manageable for one-off equations.
     '''
 
     _json_obj_by_CAS = ('CP_f',)
-    
+
     correlation_models = {
 
-        'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2}, 
+        'Antoine': (['A', 'B', 'C'], ['base'], {'f': Antoine, 'f_der': dAntoine_dT, 'f_der2': d2Antoine_dT2},
                     {'fit_params': ['A', 'B', 'C'],
                      'fit_jac' : Antoine_fitting_jacobian,
                     'initial_guesses': [{'A': 9.0, 'B': 1000.0, 'C': -70.0},
@@ -506,7 +506,7 @@ class TDependentProperty(object):
                                         {'A': 9.0, 'B': 870.0, 'C': -37.8},
                                         {'A': 7.1, 'B': 217.0, 'C': -139.0},
                         ]}),
-                
+
         'TRC_Antoine_extended': (['Tc', 'to', 'A', 'B', 'C', 'n', 'E', 'F'], [],
                                  {'f': TRC_Antoine_extended, 'f_der': dTRC_Antoine_extended_dT, 'f_der2': d2TRC_Antoine_extended_dT2},
                                  {'fit_params': ['to', 'A', 'B', 'C', 'n', 'E', 'F'],
@@ -526,17 +526,17 @@ class TDependentProperty(object):
                                        {'to': -20.0, 'A': 9.12, 'B': 850.9, 'C': -40.2, 'n': 2.4, 'E': 31.1, 'F': 2785.0},
                                        {'to': -9.0, 'A': 8.4, 'B': 640.3, 'C': -69., 'n': 1.0, 'E': 190.0, 'F': -6600.0},
                                       ]}),
-        
+
         'Wagner_original': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner_original, 'f_der': dWagner_original_dT, 'f_der2': d2Wagner_original_dT2},
                             {'fit_params': ['a', 'b', 'c', 'd'],
                              'fit_jac': Wagner_original_fitting_jacobian,
                                     'initial_guesses': [
                                         {'a': -7.0, 'b': 1.79, 'c': -5.4, 'd': 1.68},
                                         {'a': -7.2, 'b': -0.02, 'c': 0.36, 'd': -11.0},
-                                        
+
                                         ]
                             }),
-        
+
         'Wagner': (['Tc', 'Pc', 'a', 'b', 'c', 'd'], [], {'f': Wagner, 'f_der': dWagner_dT, 'f_der2': d2Wagner_dT2},
                    {'fit_params': ['a', 'b', 'c', 'd'],
                     'fit_jac': Wagner_fitting_jacobian,
@@ -546,7 +546,7 @@ class TDependentProperty(object):
                         {'a': -7.55, 'b': 1.6, 'c': -2.0, 'd': -3.2},
                         ]
                     }),
-        
+
         'Yaws_Psat': (['A', 'B', 'C', 'D', 'E'], [], {'f': Yaws_Psat, 'f_der': dYaws_Psat_dT, 'f_der2': d2Yaws_Psat_dT2},
                    {'fit_params': ['A', 'B', 'C', 'D', 'E'],
                     'fit_jac': Yaws_Psat_fitting_jacobian,
@@ -578,16 +578,16 @@ class TDependentProperty(object):
         {'A': -9.45, 'B': 1120.0, 'C': 0.014, 'D': -1.545e-5}, # near yaws ethanol
         {'A': -25.5319, 'B': 3747.19, 'C': 0.04659, 'D': -0.0}, # near yaws 1-phenyltetradecane
                                                                                 ]},),
-    
+
 
     'Poling': (['a', 'b', 'c', 'd', 'e'], [], {'f': Poling, 'f_int': Poling_integral, 'f_int_over_T': Poling_integral_over_T}, {'fit_params': ['a', 'b', 'c', 'd', 'e']},),
     'TRCCp': (['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7'], [], {'f': TRCCp, 'f_int': TRCCp_integral, 'f_int_over_T': TRCCp_integral_over_T},
               {'fit_params': ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7']}),
     'Zabransky_quasi_polynomial': (['Tc', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6'], [], {'f': Zabransky_quasi_polynomial, 'f_int': Zabransky_quasi_polynomial_integral,
-                                                                                    'f_int_over_T': Zabransky_quasi_polynomial_integral_over_T}, 
+                                                                                    'f_int_over_T': Zabransky_quasi_polynomial_integral_over_T},
                                    {'fit_params': ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']}),
-    'Zabransky_cubic': (['a1', 'a2', 'a3', 'a4'], [], 
-                        {'f': Zabransky_cubic, 'f_int': Zabransky_cubic_integral, 'f_int_over_T': Zabransky_cubic_integral_over_T}, 
+    'Zabransky_cubic': (['a1', 'a2', 'a3', 'a4'], [],
+                        {'f': Zabransky_cubic, 'f_int': Zabransky_cubic_integral, 'f_int_over_T': Zabransky_cubic_integral_over_T},
                         {'fit_params': ['a1', 'a2', 'a3', 'a4']}),
 
     'REFPROP_sigma': (['Tc', 'sigma0', 'n0'], ['sigma1', 'n1', 'sigma2', 'n2'], {'f': REFPROP_sigma},  {'fit_params': ['sigma0', 'n0', 'sigma1', 'n1', 'sigma2', 'n2']}),
@@ -598,11 +598,11 @@ class TDependentProperty(object):
     'ISTExpansion': (['Tc', 'a1', 'a2', 'a3', 'a4', 'a5'], [], {'f': ISTExpansion}, {'fit_params': [ 'a1', 'a2', 'a3', 'a4', 'a5']}),
 
     'Chemsep_16': (['A', 'B', 'C', 'D', 'E'], [], {'f': Chemsep_16}, {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
-           {'A': 53000, 'B': 4500.0, 'C': -145.0, 'D': 1.6, 'E':-0.005}, 
-           {'A': -0.21, 'B': -16.3, 'C': -0.23, 'D': -0.0076, 'E': 2.5e-6}, 
-           {'A': 2.562e-06, 'B': -300.363, 'C': -11.49, 'D': 0.001550, 'E': -4.0805e-07}, 
-           {'A': 81911, 'B': -50003, 'C': 534.5, 'D': -1.8654, 'E':  0.00223}, 
-           {'A': -0.193, 'B':-0.885, 'C':  -0.8363, 'D': -0.191, 'E':  0.01686}, 
+           {'A': 53000, 'B': 4500.0, 'C': -145.0, 'D': 1.6, 'E':-0.005},
+           {'A': -0.21, 'B': -16.3, 'C': -0.23, 'D': -0.0076, 'E': 2.5e-6},
+           {'A': 2.562e-06, 'B': -300.363, 'C': -11.49, 'D': 0.001550, 'E': -4.0805e-07},
+           {'A': 81911, 'B': -50003, 'C': 534.5, 'D': -1.8654, 'E':  0.00223},
+           {'A': -0.193, 'B':-0.885, 'C':  -0.8363, 'D': -0.191, 'E':  0.01686},
            {'A': 56031.0, 'B': -8382.1, 'C': 267.49, 'D': -2.7228, 'E': 0.0096889},
            {'A': 0.14679, 'B': 201570.0, 'C': -2097.5, 'D': 7.255, 'E': -0.0083973},
            {'A': 29103.63, 'B': -2305.946, 'C': 11.31935, 'D': -0.00100557, 'E': 1.706099e-07},
@@ -614,7 +614,7 @@ class TDependentProperty(object):
            ]},),
     'PPDS3': (['Tc', 'a1', 'a2', 'a3'], [], {'f': PPDS3, }, {'fit_params': ['a1', 'a2', 'a3'], 'initial_guesses': [
            ]},),
-    
+
     'TDE_VDNS_rho': (['Tc', 'rhoc', 'a1', 'a2', 'a3', 'a4', 'MW',], [], {'f': TDE_VDNS_rho}, {'fit_params': ['a1', 'a2', 'a3', 'a4',]}),
     'PPDS17': (['Tc', 'a0', 'a1', 'a2', 'MW',], [], {'f': PPDS17}, {'fit_params': ['a0', 'a1', 'a2', ]}),
 
@@ -623,11 +623,11 @@ class TDependentProperty(object):
         {'n': 0.286, 'b': 0.011, 'rhoc': 28.93}, # near a point from yaws
         {'n': 0.286, 'b': 0.3, 'rhoc': 755.0}, # near a point from yaws
         {'n': 0.259, 'b': 0.233, 'rhoc': 433.1}, # near a point from yaws
-        {'n': 0.159, 'b': 0.965, 'rhoc': 1795.0},# near a point from yaws 
+        {'n': 0.159, 'b': 0.965, 'rhoc': 1795.0},# near a point from yaws
         {'n': 0.28571, 'b': 0.3, 'rhoc': 740.0}, # near a point from yaws
         {'n': 0.8, 'b': 0.647, 'rhoc': 2794.6}, # near a point from yaws
-        ]}),    
-    
+        ]}),
+
     # Plain polynomial
     'DIPPR100': ([],
       ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
@@ -698,7 +698,7 @@ class TDependentProperty(object):
        'signature': 'array'},
       {'fit_params': []},
       ),
-    'polynomial_ln_tau': (['Tc', 'coeffs'], # For enthalpy of vaporization 
+    'polynomial_ln_tau': (['Tc', 'coeffs'], # For enthalpy of vaporization
       [],
       {'f': horner_backwards_ln_tau,
        'signature': 'array'},
@@ -710,7 +710,7 @@ class TDependentProperty(object):
        'signature': 'array'},
       {'fit_params': []},
       ),
-    
+
      'DIPPR101': (['A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ101,
@@ -730,7 +730,7 @@ class TDependentProperty(object):
            {'A': 1.55, 'B': 1400.0, 'C': -2.0, 'D': 0.0, 'E': 0.0}, # near dippr viscosity acetamide
            {'A': 7.5, 'B': 300.0, 'C': -2.8, 'D': 0.0, 'E': 0.0}, # near dippr viscosity benzene
            {'A': -9, 'B': 1210.0, 'C': -0.32, 'D': 0.0, 'E': 0.0}, # perry dippr point acetic acid
-           
+
            {'A': 281.0, 'B': -32000.0, 'C': -38.8, 'D': 4e6, 'E': -2.002}, # near dippr viscosity cyclohexanol
 
            {'A': 59.7, 'B': -3520.0, 'C': -9.84, 'D': 9.03e12, 'E': -5.0}, # near dippr viscosity m-cresol
@@ -740,7 +740,7 @@ class TDependentProperty(object):
            {'A': 180., 'B': -17000.0, 'C': -22.5, 'D':1e-17, 'E': -6.02}, # near dippr Psat 1-Undecanol
            {'A': -1.9, 'B': 388.0, 'C': -1.13, 'D': 1.5e14, 'E': -6.}, # near dippr mul 1,3-dichlorobenzene
            {'A': 7.88, 'B': -106.0, 'C': -2.7, 'D': 4.27e13, 'E': -6.}, # near dippr mul ethyltrichlorosilane
-           
+
            {'A': 13.4, 'B': -233.0, 'C': -3.3, 'D': 1.75e20, 'E': -8.0}, # near dippr viscosity benzophenone
            {'A': -9.0, 'B': 1600.0, 'C': -2.15, 'D':3.3e22, 'E': -9.92}, # near dippr viscosity 1-Butanol
            {'A': 0.9, 'B': 1600.0, 'C': -2.15, 'D':3.4e22, 'E': -9.92}, # near dippr viscosity 1-Butanol point 2
@@ -748,10 +748,10 @@ class TDependentProperty(object):
            {'A': -7.8, 'B': 1200.0, 'C': -0.5, 'D': 4e23, 'E': -10.0}, # perry dippr point dodecane
            {'A': 40.0, 'B': -912.0, 'C': -7.56, 'D': 1.68e24, 'E': -10.0}, # perry dippr point formamide
            {'A': -6.3, 'B': 640.0, 'C': -0.7, 'D': 5.7e21, 'E': -10.0}, # perry dippr point hexane
-                      
+
            {'A': -375.2, 'B': 17180.0, 'C': 66.67, 'D': -3.6368, 'E': 0.5}, # near dippr viscosity diethanolamine
            {'A': -158.9768, 'B': 13684.82, 'C': 19.79212, 'D': 1.78855e-05, 'E': 1.442815}, # near Diisopropanolamine chemsep liquid viscosity
-           
+
            {'A': -804.55, 'B': 30490.0, 'C': 130.8, 'D':-0.155, 'E': 1.0}, # near dippr viscosity 1,2-propanediol
            {'A': -226.1, 'B': 6806.0, 'C': 37.55, 'D':-0.06085, 'E': 1.0}, # near dippr viscosity toluene
            {'A': -246.5, 'B': 3150.0, 'C': 50.0, 'D':-0.2255, 'E': 1.0}, # near dippr viscosity nitric oxide
@@ -776,8 +776,8 @@ class TDependentProperty(object):
            {'A': 124, 'B': -7630.0, 'C': -16.45, 'D': 0.0165, 'E': 1.0}, # near dippr Psat 2-hexyne
            {'A': 136.6, 'B': -7200.0, 'C': -19.0, 'D': 0.0223, 'E': 1.0}, # near dippr Psat isopropylamine
            {'A': 337.6, 'B': -18500.0, 'C': -50.0, 'D': 0.0474, 'E': 1.0}, # near dippr Psat nonanal
-           
-           
+
+
            {'A': -20.449, 'B': -959.41, 'C': 4.2445, 'D': -9.5025e-05, 'E': 2.0}, # near Hydrogen iodide chemsep liquid viscosity
            {'A': -27.66295, 'B': 5326.5, 'C': 1.362383, 'D': -1.706454e-06, 'E': 2.0}, # near N-aminoethyl ethanolamine chemsep liquid viscosity
            {'A': -497.9054, 'B': 22666.52, 'C': 74.36022, 'D': -7.02789e-05, 'E': 2.0}, # near N-aminoethyl piperazine chemsep liquid viscosity
@@ -829,9 +829,9 @@ class TDependentProperty(object):
            {'A': 248.5, 'B': -32240.0, 'C': -30.0, 'D': 4.8e-06, 'E': 2.0}, # near dippr Psat terephthalic acid
 
            {'A': -75.8, 'B': 4175.0, 'C': 9.65, 'D': -7.3e-9, 'E': 3.0}, # near dippr mul hydrazine
-           
+
            {'A': -116.3, 'B': 3834.0, 'C': 16.85, 'D': -2.59e-10, 'E': 4.0}, # near dippr mul hydrochloric acid
-                      
+
            {'A': -14.0, 'B': 950.0, 'C': 0.5, 'D': -6.15e-17, 'E': 6.0}, # near dippr viscosity 1-chloropropane
            {'A': 84, 'B': -10500.0, 'C': -8.25, 'D': 1.65e-18, 'E': 6.0}, # near dippr Psat ethylene glycol
            {'A': 85.5, 'B': -11900.0, 'C': -8.33, 'D': 1.29e-18, 'E': 6.0}, # near dippr Psat benzamide
@@ -843,7 +843,7 @@ class TDependentProperty(object):
            {'A': 163., 'B': -15200.0, 'C': -19.5, 'D': 1.07e-17, 'E': 6.0}, # near dippr Psat octanoic acid
            {'A': 73., 'B': -2750.0, 'C': -8.3, 'D': 9.7e-15, 'E': 6.0}, # near dippr Psat nitric oxide
            {'A': 129., 'B': -17000.0, 'C': -14.0, 'D': 2.156e-18, 'E': 6.0}, # near dippr Psat succinic acid
-           
+
            {'A': -17.7, 'B': 850.0, 'C': 1.05, 'D': -1.2e-18, 'E': 7.0}, # near dippr viscosity 1-difluoromethane
 
            {'A': -7.2, 'B': 535.0, 'C': -0.575, 'D':-4.66e-27, 'E': 10.0}, # near dippr viscosity butane
@@ -907,15 +907,15 @@ class TDependentProperty(object):
        'f_der': lambda T, **kwargs: EQ104(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ104(T, order=-1, **kwargs),
        'f_int_over_T': lambda T, **kwargs: EQ104(T, order=-1j, **kwargs)},
-      
-      
+
+
      {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
          {'A': 0.4, 'B': -700.0, 'C': -2e8, 'D': -3e21, 'E': 4e23},
          {'A': 0.02, 'B': -3.0, 'C': -400.0, 'D': 5e8, 'E': -5e9},
          ]}),
-     
-     
-     
+
+
+
      'DIPPR105': (['A', 'B', 'C', 'D'],
       [],
       {'f': EQ105,
@@ -940,7 +940,7 @@ class TDependentProperty(object):
           {'A': 2450.0, 'B': 0.275, 'C': 310.,'D': 0.29},  # near ethyne dippr volume
           {'A': 1450.0, 'B': 0.268, 'C': 365.,'D': 0.29},  # near propene dippr volume
           {'A': 1940.0, 'B': 0.24, 'C': 590.,'D': 0.244},  # near formic acid dippr volume
-          
+
           {'A': 1.05, 'B': 0.258, 'C': 540.,'D': 0.268},  # near some chemsep liquid densities
           {'A': 2.15, 'B': 0.27, 'C': 415.,'D': 0.286},  # near some chemsep liquid densities
           {'A': 0.048, 'B': 0.09, 'C': 587.,'D': 0.133},  # near some chemsep liquid densities
@@ -963,14 +963,14 @@ class TDependentProperty(object):
           {'A': 0.50221, 'B': 0.23722, 'C': 631.11,'D': 0.26133},  # near some chemsep liquid densities
           {'A': 0.67524, 'B': 0.24431, 'C': 645.61,'D': 0.26239},  # near some chemsep liquid densities
           {'A': 0.5251, 'B': 0.20924, 'C': 736.61,'D': 0.18363},  # near some chemsep liquid densities
-          
-          {'A': 0.13, 'B': 0.23, 'C': 910.,'D': 0.29},  # 
-          {'A': 9.0, 'B': 0.5, 'C': 2400.,'D': 0.58},  # 
-          {'A': 1.0, 'B': 0.14, 'C': 1000.0,'D': 0.1},  # 
-          {'A': 0.24, 'B': 0.05, 'C': 6000.0,'D': 0.2},  # 
-          {'A': 6.5, 'B': 0.5, 'C': 3.5, 'D': 0.2},  # 
-          {'A': 15.0, 'B': 0.3, 'C': 7000.0, 'D': 0.3},  # 
-          {'A': 0.1, 'B': 0.05, 'C': 3300.0, 'D': 0.1},  # 
+
+          {'A': 0.13, 'B': 0.23, 'C': 910.,'D': 0.29},  #
+          {'A': 9.0, 'B': 0.5, 'C': 2400.,'D': 0.58},  #
+          {'A': 1.0, 'B': 0.14, 'C': 1000.0,'D': 0.1},  #
+          {'A': 0.24, 'B': 0.05, 'C': 6000.0,'D': 0.2},  #
+          {'A': 6.5, 'B': 0.5, 'C': 3.5, 'D': 0.2},  #
+          {'A': 15.0, 'B': 0.3, 'C': 7000.0, 'D': 0.3},  #
+          {'A': 0.1, 'B': 0.05, 'C': 3300.0, 'D': 0.1},  #
           ]}),
 
      'DIPPR106': (['Tc', 'A', 'B'],
@@ -987,14 +987,14 @@ class TDependentProperty(object):
           {'A': 125.0, 'B': 1.3, 'C': -2.7,'D': 1.7, 'E': 0.0},  # near helium dippr Hvap
           {'A': 1010.0, 'B': 0.7, 'C': -1.8,'D': 1.45, 'E': 0.0},  # near hydrogen dippr Hvap
           {'A': 135000.0, 'B': 13.5, 'C': -23.5,'D': 10.8, 'E': 0.0},  # near hydrofluoric acid dippr Hvap
-          
+
           {'A': 7385650.0, 'B': 0.27668, 'C': 0.21125, 'D': -0.8368, 'E': 0.723}, # near chemsep Hvap air
           {'A': 62115220.0, 'B': 1.00042, 'C': -0.589, 'D': -0.2779, 'E': 0.31358,}, # near chemsep Hvap 2,2-dimethylhexane
           {'A': 4761730.0, 'B': -11.56, 'C': 30.7, 'D': -31.89, 'E': 12.678}, # near chemsep Hvap Dimethylacetylene
           # {'A': 0.119, 'B': 1.59, 'C': -0.25, 'D': 0.0, 'E': 0.0},
           # {'A': 35e6, 'B': 0.1, 'C': 0.0325, 'D': 0.25, 'E': 0.0},
            ]
-                  
+
       }),
      'YawsSigma': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
@@ -1030,7 +1030,7 @@ class TDependentProperty(object):
           {'A': 820000.0, 'B': 375000, 'C': 1750.0, 'D': -1e6, 'E': 275.},
           {'A': 150000.0, 'B': 145000, 'C': 1225.0, 'D': -5.75e7, 'E': 7.75},
         ]}),
-      # 
+      #
      'DIPPR114': (['Tc', 'A', 'B', 'C', 'D'],
       [],
       {'f': EQ114,
@@ -1041,8 +1041,8 @@ class TDependentProperty(object):
           {'A': 65.0, 'B': 30000, 'C': -850, 'D': 2000.0},
           {'A': 150.0, 'B': -45000, 'C': -2500, 'D': 6000.0},
          ]}),
-     
-     
+
+
      'DIPPR115': (['A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ115,
@@ -1076,43 +1076,43 @@ class TDependentProperty(object):
           ]}),
 
         # Alpha functions
-        'Twu91_alpha_pure': (['Tc', 'c0', 'c1', 'c2'], [], {'f': Twu91_alpha_pure}, {'fit_params': ['c0', 'c1', 'c2'], 
+        'Twu91_alpha_pure': (['Tc', 'c0', 'c1', 'c2'], [], {'f': Twu91_alpha_pure}, {'fit_params': ['c0', 'c1', 'c2'],
                              'initial_guesses': []}),
-        
-        'Heyen_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Heyen_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+
+        'Heyen_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Heyen_alpha_pure}, {'fit_params': ['c1', 'c2'],
                              'initial_guesses': []}),
-        
-        'Harmens_Knapp_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Harmens_Knapp_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+
+        'Harmens_Knapp_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Harmens_Knapp_alpha_pure}, {'fit_params': ['c1', 'c2'],
                              'initial_guesses': []}),
-        
+
         'Mathias_Copeman_untruncated_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Mathias_Copeman_untruncated_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
                              'initial_guesses': []}),
 
-        'Mathias_1983_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Mathias_1983_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+        'Mathias_1983_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Mathias_1983_alpha_pure}, {'fit_params': ['c1', 'c2'],
                              'initial_guesses': []}),
-        
-        'Soave_1972_alpha_pure': (['Tc', 'c0',], [], {'f': Soave_1972_alpha_pure}, {'fit_params': ['c0',], 
+
+        'Soave_1972_alpha_pure': (['Tc', 'c0',], [], {'f': Soave_1972_alpha_pure}, {'fit_params': ['c0',],
                              'initial_guesses': []}),
-        
-        'Soave_1979_alpha_pure': (['Tc', 'M', 'N'], [], {'f': Soave_1979_alpha_pure}, {'fit_params': ['M', 'N'], 
+
+        'Soave_1979_alpha_pure': (['Tc', 'M', 'N'], [], {'f': Soave_1979_alpha_pure}, {'fit_params': ['M', 'N'],
                              'initial_guesses': []}),
-        
-        'Gibbons_Laughton_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Gibbons_Laughton_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+
+        'Gibbons_Laughton_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Gibbons_Laughton_alpha_pure}, {'fit_params': ['c1', 'c2'],
                              'initial_guesses': []}),
-        
-        'Soave_1984_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Soave_1984_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+
+        'Soave_1984_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Soave_1984_alpha_pure}, {'fit_params': ['c1', 'c2'],
                              'initial_guesses': []}),
-        
-        'Yu_Lu_alpha_pure': (['Tc', 'c1', 'c2', 'c3', 'c4'], [], {'f': Yu_Lu_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3', 'c4'], 
+
+        'Yu_Lu_alpha_pure': (['Tc', 'c1', 'c2', 'c3', 'c4'], [], {'f': Yu_Lu_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3', 'c4'],
                              'initial_guesses': [{'c1': .4, 'c2': 0.536843, 'c3': -0.39244, 'c4': 0.26507},
                                                  {'c1': 1.1, 'c2': 0.536843, 'c3': -0.39244, 'c4': 0.26507},
                                                  {'c1': .6, 'c2': 0.536843, 'c3': -0.39244, 'c4': 0.26507},
                                                  ]}),
-        
-        'Trebble_Bishnoi_alpha_pure': (['Tc', 'c1',], [], {'f': Trebble_Bishnoi_alpha_pure}, {'fit_params': ['c1',], 
+
+        'Trebble_Bishnoi_alpha_pure': (['Tc', 'c1',], [], {'f': Trebble_Bishnoi_alpha_pure}, {'fit_params': ['c1',],
                              'initial_guesses': []}),
-        
-        'Melhem_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Melhem_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+
+        'Melhem_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Melhem_alpha_pure}, {'fit_params': ['c1', 'c2'],
                              'initial_guesses': []}),
 
         'Androulakis_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Androulakis_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
@@ -1124,24 +1124,24 @@ class TDependentProperty(object):
         'Almeida_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Almeida_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
                              'initial_guesses': []}),
 
-        'Soave_1993_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Soave_1993_alpha_pure}, {'fit_params': ['c1', 'c2'], 
+        'Soave_1993_alpha_pure': (['Tc', 'c1', 'c2'], [], {'f': Soave_1993_alpha_pure}, {'fit_params': ['c1', 'c2'],
                              'initial_guesses': []}),
-        
+
         'Gasem_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Gasem_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
                              'initial_guesses': []}),
-        
+
         'Coquelet_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Coquelet_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
                              'initial_guesses': []}),
-        
+
         'Haghtalab_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Haghtalab_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
                              'initial_guesses': []}),
-        
+
         'Saffari_alpha_pure': (['Tc', 'c1', 'c2', 'c3'], [], {'f': Saffari_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3'],
                              'initial_guesses': []}),
-        
-        'Chen_Yang_alpha_pure': (['Tc', 'omega', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'], [], {'f': Chen_Yang_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'], 
+
+        'Chen_Yang_alpha_pure': (['Tc', 'omega', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'], [], {'f': Chen_Yang_alpha_pure}, {'fit_params': ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'],
                              'initial_guesses': [
-                                 
+
                                                  ]}),
 
     }
@@ -1149,7 +1149,7 @@ class TDependentProperty(object):
         correlation_models['DIPPR115'][3]['initial_guesses'].append({
             'A': guess['A'], 'B': guess['B'], 'C': guess['C'], 'E': 0.0, 'D': 0.0})
 
-    
+
     # Did not work to transform the model into volume
     # for guess in list(correlation_models['DIPPR105'][3]['initial_guesses']):
     #     correlation_models['DIPPR105'][3]['initial_guesses'].append({
@@ -1161,8 +1161,8 @@ class TDependentProperty(object):
     correlation_models['Wagner2,5'] = correlation_models['Wagner']
     correlation_models['Wagner3,6'] = correlation_models['Wagner_original']
     correlation_models['Andrade'] = correlation_models['Viswanath_Natarajan_2']
-    
-    
+
+
     # Don't know why TDE has  Hvap = exp(A)*{1 - ( T / Tc )}^n
     # In other places they have it right: https://trc.nist.gov/TDE/TDE_Help/Eqns-Pure-Hvap/Yaws.VaporizationH.htm
     correlation_models['YawsHvap'] = correlation_models['YawsSigma']
@@ -1344,7 +1344,7 @@ class TDependentProperty(object):
                 d['eos'] = eos[0].as_json()
         except:
             pass
-        
+
         # Cannot store local methods
         if 'local_methods' in d:
             d['local_methods'] = {}
@@ -1402,8 +1402,8 @@ class TDependentProperty(object):
                 if type(d[k]) is dict:
                     sub_json = d[k]
                     d[k] = sub_cls.from_json(sub_json)
-                    
-                    
+
+
 
         d['correlations'] = correlations = {}
         for correlation_name in cls.correlation_models.keys():
@@ -1418,7 +1418,7 @@ class TDependentProperty(object):
                     correlations[model_name] = (call, model_kwargs, correlation_name)
 
         d['extrapolation_coeffs'] = {}
-        
+
         del d['py/object']
         del d["json_version"]
         new = cls.__new__(cls)
@@ -1470,7 +1470,7 @@ class TDependentProperty(object):
     def T_limits_fitting(self):
         return self.T_limits
 
-    def polynomial_from_method(self, method, n=None, start_n=3, max_n=30, 
+    def polynomial_from_method(self, method, n=None, start_n=3, max_n=30,
                                eval_pts=100, fit_form=POLY_FIT, fit_method=None):
         r'''Method to fit a T-dependent property to a polynomial. The degree
         of the polynomial can be specified with the `n` parameter, or it will
@@ -1494,8 +1494,8 @@ class TDependentProperty(object):
             The number of points to evaluate the fitted functions at to check
             for accuracy; more is better but slower, [-]
         fit_form : str
-            The shape of the polynomial; options are 
-            'POLY_FIT', 'EXP_POLY_FIT', 'EXP_POLY_FIT_LN_TAU', and 
+            The shape of the polynomial; options are
+            'POLY_FIT', 'EXP_POLY_FIT', 'EXP_POLY_FIT_LN_TAU', and
             'POLY_FIT_LN_TAU' [-]
 
         Returns
@@ -1537,7 +1537,7 @@ class TDependentProperty(object):
         from thermo.fitting import fit_polynomial, poly_fit_statistics, fit_cheb_poly_auto, FIT_CHEBTOOLS_POLY
         interpolation_T = lambda x: x
         interpolation_T_inv = lambda x: x
-        
+
         if fit_form == 'interpolation':
             interpolation_property = self.interpolation_property
             interpolation_property_inv = self.interpolation_property_inv
@@ -1591,7 +1591,7 @@ class TDependentProperty(object):
                       )
 
         return coeffs, (low, high), stats
-    
+
     def fit_add_model(self, name, model, Ts, data, **kwargs):
         r'''Method to add a new emperical fit equation to the object
         by fitting its coefficients to specified data.
@@ -1599,10 +1599,10 @@ class TDependentProperty(object):
 
         A number of hardcoded `model` names are implemented; other models
         are not supported.
-        
+
         This is a wrapper around :obj:`TDependentProperty.fit_data_to_model`
         and :obj:`TDependentProperty.add_correlation`.
-        
+
         The data is also stored in the object as a tabular method with the name
         `name`+'_data', through
         :obj:`TDependentProperty.add_tabular_data`.
@@ -1623,16 +1623,16 @@ class TDependentProperty(object):
         self.add_tabular_data(Ts=Ts, properties=data, name=name+'_data')
         fit = self.fit_data_to_model(Ts=Ts, data=data, model=model, **kwargs)
         self.add_correlation(name=name, model=model, Tmin=min(Ts), Tmax=max(Ts), **fit)
-    
+
     @classmethod
-    def fit_data_to_model(cls, Ts, data, model, model_kwargs=None, 
+    def fit_data_to_model(cls, Ts, data, model, model_kwargs=None,
                           fit_method='lm', sigma=None, use_numba=False,
                           do_statistics=False, guesses=None,
                           solver_kwargs=None, objective='MeanSquareErr',
                           multiple_tries=False, multiple_tries_max_err=1e-5,
                           multiple_tries_max_objective='MeanRelErr'):
         r'''Method to fit T-dependent property data to one of the available
-        model correlations. 
+        model correlations.
 
         Parameters
         ----------
@@ -1643,12 +1643,12 @@ class TDependentProperty(object):
         model : str
             A string representing the supported models, [-]
         model_kwargs : dict, optional
-            Various keyword arguments accepted by the model; not necessary for 
+            Various keyword arguments accepted by the model; not necessary for
             most models. Parameters which are normally fit, can be specified
             here as well with a constant value and then that fixed value will
             be used instead of fitting the parameter. [-]
         fit_method : str, optional
-            The fit method to use; one of {`lm`, `trf`, `dogbox`, 
+            The fit method to use; one of {`lm`, `trf`, `dogbox`,
             `differential_evolution`}, [-]
         sigma : None or list[float]
             Uncertainty parameters used by `curve_fit`, [-]
@@ -1664,7 +1664,7 @@ class TDependentProperty(object):
         objective : str
             The minimimization criteria; supported by `differential_evolution`.
             One of:
-            
+
             * 'MeanAbsErr': Mean absolute error
             * 'MeanRelErr': Mean relative error
             * 'MeanSquareErr': Mean squared absolute error
@@ -1684,7 +1684,7 @@ class TDependentProperty(object):
             with lower error than this, no further guesses are tried, [-]
         multiple_tries_max_objective : str
             The error criteria to use for minimization, [-]
-            
+
         Returns
         -------
         coefficients : dict[str: float]
@@ -1713,14 +1713,14 @@ class TDependentProperty(object):
         # So long as the fitting things happen with scipy, arrays are needed
         Ts = np.array(Ts)
         data = np.array(data)
-        
+
         required_args, optional_args, functions, fit_data = cls.correlation_models[model]
         fit_parameters = fit_data['fit_params']
         if not fit_parameters:
             raise NotImplementedError("Fitting is not available for this model")
         initial_guesses = fit_data.get('initial_guesses', None)
         all_fit_parameters = fit_parameters
-        
+
         use_fit_parameters = []
         for k in fit_parameters:
             if k not in model_kwargs:
@@ -1741,7 +1741,7 @@ class TDependentProperty(object):
         fitting_func = generate_fitting_function(model_function_name, param_order,
                               fit_parameters, all_fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba,
                               Ts=Ts, data=data)
-        
+
         func_wrapped_for_leastsq = generate_fitting_function(model_function_name, param_order,
                               fit_parameters, all_fit_parameters, model_kwargs, const_kwargs, try_numba=use_numba,
                               for_leastsq=True, Ts=Ts, data=data)
@@ -1756,16 +1756,16 @@ class TDependentProperty(object):
             analytical_jac = generate_fitting_function(model_function_name, param_order,
                                                      fit_parameters, all_fit_parameters, model_kwargs, const_kwargs,
                                                      try_numba=use_numba, jac=True, Ts=Ts, data=data)
-            
+
             jac_wrapped_for_leastsq = generate_fitting_function(model_function_name, param_order,
                                                      fit_parameters, all_fit_parameters, model_kwargs, const_kwargs,
                                                      try_numba=use_numba, jac=True, Ts=Ts, data=data, for_leastsq=True)
         else:
             analytical_jac = jac_wrapped_for_leastsq = None
-            
-            
-        res = fit_customized(Ts=Ts, data=data, fitting_func=fitting_func, fit_parameters=fit_parameters, use_fit_parameters=use_fit_parameters, 
-                   fit_method=fit_method, objective=objective, multiple_tries_max_objective=multiple_tries_max_objective, 
+
+
+        res = fit_customized(Ts=Ts, data=data, fitting_func=fitting_func, fit_parameters=fit_parameters, use_fit_parameters=use_fit_parameters,
+                   fit_method=fit_method, objective=objective, multiple_tries_max_objective=multiple_tries_max_objective,
                    guesses=guesses, initial_guesses=initial_guesses, analytical_jac=analytical_jac,
                    solver_kwargs=solver_kwargs, use_numba=use_numba, multiple_tries=multiple_tries,
                    do_statistics=do_statistics, multiple_tries_max_err=multiple_tries_max_err,
@@ -1902,7 +1902,7 @@ class TDependentProperty(object):
             raise ValueError("cheb_fit should be a tuple of 3 "
                              "elements, in order (Tmin, Tmax, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax = constants = cheb_fit[0:2]
         for v in constants:
             if v is None:
@@ -1913,8 +1913,8 @@ class TDependentProperty(object):
         self.cheb_fit_Tmin = Tmin
         self.cheb_fit_Tmax = Tmax
         self.cheb_fit_coeffs = cheb_fit_coeffs
-        
-        
+
+
         self.T_limits[CHEB_FIT] = (Tmin, Tmax)
         self.cheb_fit_offset, self.cheb_fit_scale = polynomial_offset_scale(Tmin, Tmax)
         self.cheb_fit_d1_coeffs = chebder(cheb_fit_coeffs, m=1, scl=self.cheb_fit_scale)
@@ -1929,7 +1929,7 @@ class TDependentProperty(object):
             raise ValueError("exp_cheb_fit should be a tuple of 3 "
                              "elements, in order (Tmin, Tmax, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax = constants = cheb_fit[0:2]
         for v in constants:
             if v is None:
@@ -1947,14 +1947,14 @@ class TDependentProperty(object):
         self.exp_cheb_fit_d2_coeffs = chebder(self.exp_cheb_fit_d1_coeffs, m=1, scl=self.exp_cheb_fit_scale)
         self.exp_cheb_fit_d3_coeffs = chebder(self.exp_cheb_fit_d2_coeffs, m=1, scl=self.exp_cheb_fit_scale)
         self.exp_cheb_fit_d4_coeffs = chebder(self.exp_cheb_fit_d3_coeffs, m=1, scl=self.exp_cheb_fit_scale)
-        
+
 
     def _set_cheb_fit_ln_tau(self, cheb_fit):
         if len(cheb_fit) != 4:
             raise ValueError("cheb_fit_ln_tau should be a tuple of 4 "
                              "elements, in order (Tmin, Tmax, Tc, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax, Tc, cheb_fit_coeffs = cheb_fit
         for v in (Tmin, Tmax, Tc):
             if v is None:
@@ -1966,7 +1966,7 @@ class TDependentProperty(object):
         self.cheb_fit_ln_tau_Tc = Tc
         self.cheb_fit_ln_tau_coeffs = cheb_fit_coeffs
         self.T_limits[CHEB_FIT_LN_TAU] = (Tmin, Tmax)
-        
+
         xmin = trunc_log(1.0 - Tmin/Tc)
         xmax = trunc_log(1.0 - Tmax/Tc)
         self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale = polynomial_offset_scale(xmin, xmax)
@@ -1981,7 +1981,7 @@ class TDependentProperty(object):
             raise ValueError("exp_cheb_fit_ln_tau should be a tuple of 4 "
                              "elements, in order (Tmin, Tmax, Tc, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax, Tc = constants = cheb_fit[0:3]
         for v in constants:
             if v is None:
@@ -1997,7 +1997,7 @@ class TDependentProperty(object):
         xmax = trunc_log(1.0 - Tmax/Tc)
         self.T_limits[EXP_CHEB_FIT_LN_TAU] = (Tmin, Tmax)
         self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale = polynomial_offset_scale(xmin, xmax)
-        
+
         self.exp_cheb_fit_ln_tau_d1_coeffs = chebder(cheb_fit_coeffs, m=1, scl=self.exp_cheb_fit_ln_tau_scale)
         self.exp_cheb_fit_ln_tau_d2_coeffs = chebder(self.exp_cheb_fit_ln_tau_d1_coeffs, m=1, scl=self.exp_cheb_fit_ln_tau_scale)
         self.exp_cheb_fit_ln_tau_d3_coeffs = chebder(self.exp_cheb_fit_ln_tau_d2_coeffs, m=1, scl=self.exp_cheb_fit_ln_tau_scale)
@@ -2008,7 +2008,7 @@ class TDependentProperty(object):
             raise ValueError("stablepoly_fit should be a tuple of 3 "
                              "elements, in order (Tmin, Tmax, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax = constants = stablepoly_fit[0:2]
         for v in constants:
             if v is None:
@@ -2020,10 +2020,10 @@ class TDependentProperty(object):
         self.stablepoly_fit_Tmax = Tmax
         self.stablepoly_fit_coeffs = stablepoly_fit_coeffs
         self.stablepoly_fit_offset, self.stablepoly_fit_scale = polynomial_offset_scale(Tmin, Tmax)
-        
+
         self.T_limits[STABLEPOLY_FIT] = (Tmin, Tmax)
-        
-        
+
+
         self.stablepoly_fit_Tmax_value, self.stablepoly_fit_Tmax_slope, self.stablepoly_fit_Tmax_dT2 = horner_stable_and_der2(self.stablepoly_fit_Tmax, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)
         self.stablepoly_fit_Tmin_value, self.stablepoly_fit_Tmin_slope, self.stablepoly_fit_Tmin_dT2 = horner_stable_and_der2(self.stablepoly_fit_Tmin, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)
 
@@ -2032,7 +2032,7 @@ class TDependentProperty(object):
             raise ValueError("exp_stablepoly_fit should be a tuple of 3 "
                              "elements, in order (Tmin, Tmax, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax = constants = stablepoly_fit[0:2]
         for v in constants:
             if v is None:
@@ -2045,19 +2045,19 @@ class TDependentProperty(object):
         self.exp_stablepoly_fit_coeffs = stablepoly_fit_coeffs
         self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale = polynomial_offset_scale(Tmin, Tmax)
         self.T_limits[EXP_STABLEPOLY_FIT] = (Tmin, Tmax)
-                
+
         self.exp_stablepoly_fit_Tmax_value, self.exp_stablepoly_fit_Tmax_slope, self.exp_stablepoly_fit_Tmax_dT2 = exp_horner_stable_and_der2(self.exp_stablepoly_fit_Tmax, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)
         self.exp_stablepoly_fit_Tmin_value, self.exp_stablepoly_fit_Tmin_slope, self.exp_stablepoly_fit_Tmin_dT2 = exp_horner_stable_and_der2(self.exp_stablepoly_fit_Tmin, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)
-        
-        
-        
+
+
+
 
     def _set_stablepoly_fit_ln_tau(self, stablepoly_fit):
         if len(stablepoly_fit) != 4:
             raise ValueError("stablepoly_fit_ln_tau should be a tuple of 4 "
                              "elements, in order (Tmin, Tmax, Tc, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax, Tc = constants = stablepoly_fit[0:3]
         for v in constants:
             if v is None:
@@ -2069,9 +2069,9 @@ class TDependentProperty(object):
         self.stablepoly_fit_ln_tau_Tmax = Tmax
         self.stablepoly_fit_ln_tau_Tc = Tc
         self.stablepoly_fit_ln_tau_coeffs = stablepoly_fit_coeffs
-        
+
         xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
-        
+
         self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale = polynomial_offset_scale(xmin, xmax)
         self.T_limits[STABLEPOLY_FIT_LN_TAU] = (Tmin, Tmax)
 
@@ -2080,7 +2080,7 @@ class TDependentProperty(object):
             raise ValueError("exp_stablepoly_fit_ln_tau should be a tuple of 4 "
                              "elements, in order (Tmin, Tmax, Tc, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax, Tc = constants = stablepoly_fit[0:3]
         for v in constants:
             if v is None:
@@ -2095,13 +2095,13 @@ class TDependentProperty(object):
         xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
         self.T_limits[EXP_STABLEPOLY_FIT_LN_TAU] = (Tmin, Tmax)
         self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau = polynomial_offset_scale(xmin, xmax)
-    
+
     def _set_exp_poly_fit(self, poly_fit):
         if len(poly_fit) != 3:
             raise ValueError("exp_poly_fit should be a tuple of 3 "
                              "elements, in order (Tmin, Tmax, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax = constants = poly_fit[0:2]
         for v in constants:
             if v is None:
@@ -2113,18 +2113,18 @@ class TDependentProperty(object):
         self.exp_poly_fit_Tmax = Tmax
         self.exp_poly_fit_coeffs = poly_fit_coeffs
         self.T_limits[EXP_POLY_FIT] = (Tmin, Tmax)
-        
-        
+
+
         self.exp_poly_fit_Tmax_value, self.exp_poly_fit_Tmax_slope, self.exp_poly_fit_Tmax_dT2 = exp_horner_backwards_and_der2(self.exp_poly_fit_Tmax, self.exp_poly_fit_coeffs)
         self.exp_poly_fit_Tmin_value, self.exp_poly_fit_Tmin_slope, self.exp_poly_fit_Tmin_dT2 = exp_horner_backwards_and_der2(self.exp_poly_fit_Tmin, self.exp_poly_fit_coeffs)
-        
+
 
     def _set_poly_fit_ln_tau(self, poly_fit):
         if len(poly_fit) != 4:
             raise ValueError("poly_fit_ln_tau should be a tuple of 4 "
                              "elements, in order (Tmin, Tmax, Tc, coefficients) "
                              "with the coefficients being an interable")
-            
+
         Tmin, Tmax, Tc = constants = poly_fit[0:3]
         for v in constants:
             if v is None:
@@ -2146,7 +2146,7 @@ class TDependentProperty(object):
             raise ValueError("exp_poly_fit_ln_tau should be a tuple of 4 "
                              "elements, in order (Tmin, Tmax, Tc, coefficients) "
                              "with the coefficients being an interable")
-            
+
         self.exp_poly_fit_ln_tau_Tmin, self.exp_poly_fit_ln_tau_Tmax, self.exp_poly_fit_ln_tau_Tc = Tmin, Tmax, Tc = constants = poly_fit[0:3]
         for v in constants:
             if v is None:
@@ -2160,7 +2160,7 @@ class TDependentProperty(object):
         self.exp_poly_fit_ln_tau_Tmin_value, self.exp_poly_fit_ln_tau_Tmin_slope, self.exp_poly_fit_ln_tau_Tmin_dT2 = exp_horner_backwards_ln_tau_and_der2(Tmin, Tc, poly_fit_coeffs)
 
 
-        
+
     def _set_poly_fit(self, poly_fit):
         if (poly_fit is not None and len(poly_fit) and (poly_fit[0] is not None
            and poly_fit[1] is not None and  poly_fit[2] is not None)
@@ -2191,7 +2191,7 @@ class TDependentProperty(object):
         method = self.method
         use_method = None
         possible_methods = (POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU,
-                            STABLEPOLY_FIT, EXP_STABLEPOLY_FIT, STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU, 
+                            STABLEPOLY_FIT, EXP_STABLEPOLY_FIT, STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU,
                             CHEB_FIT, EXP_CHEB_FIT, CHEB_FIT_LN_TAU, EXP_CHEB_FIT_LN_TAU)
         if method in possible_methods:
             use_method = method
@@ -2202,7 +2202,7 @@ class TDependentProperty(object):
                     break
         if use_method is None:
             raise ValueError("No polynomial fit defined")
-            
+
         if method == POLY_FIT:
             return '%s(load_data=False, poly_fit=(%s, %s, %s))' %(self.__class__.__name__,
                   repr(self.poly_fit_Tmin), repr(self.poly_fit_Tmax),
@@ -2352,7 +2352,7 @@ class TDependentProperty(object):
         '''
         method = self._method
         if method is None:
-            if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+            if self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError("No %s method selected for component with CASRN '%s'" %(self.name.lower(), self.CASRN))
         else:
             try:
@@ -2362,7 +2362,7 @@ class TDependentProperty(object):
                 in_range = self.test_method_validity(T, method)
             if in_range:
                 try: prop = self.calculate(T, method)
-                except: 
+                except:
                     if self.RAISE_PROPERTY_CALCULATION_ERROR:
                         raise RuntimeError("Failed to evaluate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name.lower(), method, T, self.CASRN))
                 else:
@@ -2376,14 +2376,14 @@ class TDependentProperty(object):
                 except:
                     if self.RAISE_PROPERTY_CALCULATION_ERROR:
                         raise RuntimeError("Failed to extrapolate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name.lower(), method, T, self.CASRN))
-            elif self.RAISE_PROPERTY_CALCULATION_ERROR: 
+            elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError("%s method '%s' is not valid at T=%s K for component with CASRN '%s'" %(self.name, method, T, self.CASRN))
-    
+
     def calculate_transform(self, T, method, transform):
         if transform == PROPERTY_TRANSFORM_LN:
             if method == EXP_POLY_FIT:
                 return horner(self.exp_poly_fit_coeffs, T)
-            
+
             return log(self.calculate(T, method))
         elif transform == PROPERTY_TRANSFORM_DLN:
             if method == EXP_POLY_FIT:
@@ -2403,7 +2403,7 @@ class TDependentProperty(object):
             return der/v
         else:
             raise ValueError("Unknown transform")
-        
+
     def extrapolate_transform(self, T, method, transform):
         T_limits = self.T_limits
         if T < 0.0:
@@ -2432,7 +2432,7 @@ class TDependentProperty(object):
                 extrapolation = self._extrapolation_high
         else:
             raise ValueError("Not outside normal range")
-            
+
         key = (extrapolation, method, low)
         extrapolation_coeffs = self.extrapolation_coeffs
         if key in extrapolation_coeffs:
@@ -2501,7 +2501,7 @@ class TDependentProperty(object):
 
     def T_dependent_property_transform(self, T, transform):
         r'''Method to calculate the property according to certain predefined
-        mathematical rules; this is typically needed when a property reaches 
+        mathematical rules; this is typically needed when a property reaches
         zero in double floating point precision
 
         If calculation of the property fails, None is returned.
@@ -2518,7 +2518,7 @@ class TDependentProperty(object):
         '''
         method = self._method
         if method is None:
-            if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+            if self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError("No %s method selected for component with CASRN '%s'" %(self.name.lower(), self.CASRN))
         else:
             try:
@@ -2527,9 +2527,9 @@ class TDependentProperty(object):
             except KeyError:
                 in_range = self.test_method_validity(T, method)
             if in_range:
-                try: 
+                try:
                     return self.calculate_transform(T, method, transform)
-                except: 
+                except:
                     if self.RAISE_PROPERTY_CALCULATION_ERROR:
                         raise RuntimeError("Failed to evaluate %s method '%s' at T=%s K for component with CASRN '%s'" %(self.name.lower(), method, T, self.CASRN))
             else:
@@ -2587,7 +2587,7 @@ class TDependentProperty(object):
             Tmax = max(T_limits[m][1] for m in methods)
         import matplotlib.pyplot as plt
 
-            
+
         tabular_data = self.tabular_data
 
 #        cm = plt.get_cmap('gist_rainbow')
@@ -2607,7 +2607,7 @@ class TDependentProperty(object):
                     plot_fun(tabular_data[method][0], tabular_data[method][1], fmt, label=method)
 
                 else:
-                
+
                     if only_valid:
                         properties, Ts2 = [], []
                         for T in Ts:
@@ -2741,7 +2741,7 @@ class TDependentProperty(object):
             prop = self.interpolation_property_inv(prop)
 
         return float(prop)
-    
+
 
     def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
         r'''Method to add a new set of emperical fit equation coefficients to
@@ -2820,7 +2820,7 @@ class TDependentProperty(object):
                 s += '.\n'
             _text += s
         add_correlation.__doc__ += _text
-    except: 
+    except:
         pass
 
     def add_method(self, f, Tmin=None, Tmax=None,
@@ -2968,7 +2968,7 @@ class TDependentProperty(object):
     #     exp_poly_fit_Tmin, exp_poly_fit_Tmax = self.exp_poly_fit_Tmin, self.exp_poly_fit_Tmax
     #     exp_poly_fit_Tmin_slope, exp_poly_fit_Tmax_slope = self.exp_poly_fit_Tmin_slope, self.exp_poly_fit_Tmax_slope
     #     exp_poly_fit_Tmin_value, exp_poly_fit_Tmax_value = self.exp_poly_fit_Tmin_value, self.exp_poly_fit_Tmax_value
-        
+
     #     coeffs = self.exp_poly_fit_coeffs
 
     #     T_low = log(goal*exp(exp_poly_fit_Tmin*exp_poly_fit_Tmin_slope - exp_poly_fit_Tmin_value))/exp_poly_fit_Tmin_slope
@@ -3116,7 +3116,7 @@ class TDependentProperty(object):
             if order == 2:
                 return exp_horner_stable_and_der2(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[2]
             if order == 3:
-                return exp_horner_stable_and_der3(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[3]            
+                return exp_horner_stable_and_der3(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[3]
         if method == EXP_CHEB_FIT:
             if order == 1:
                 return exp_cheb_and_der(T, self.exp_cheb_fit_coeffs, self.exp_cheb_fit_d1_coeffs, self.exp_cheb_fit_offset, self.exp_cheb_fit_scale)[1]
@@ -3131,7 +3131,7 @@ class TDependentProperty(object):
                 return chebval_ln_tau_and_der2(T, self.cheb_fit_ln_tau_Tc, self.cheb_fit_ln_tau_coeffs, self.cheb_fit_ln_tau_d1_coeffs, self.cheb_fit_ln_tau_d2_coeffs, self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale)[2]
             if order == 3:
                 return chebval_ln_tau_and_der3(T, self.cheb_fit_ln_tau_Tc, self.cheb_fit_ln_tau_coeffs, self.cheb_fit_ln_tau_d1_coeffs, self.cheb_fit_ln_tau_d2_coeffs, self.cheb_fit_ln_tau_d3_coeffs, self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale)[3]
-        
+
         elif method == STABLEPOLY_FIT_LN_TAU:
             if order == 1:
                 return horner_stable_ln_tau_and_der(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[1]
@@ -3179,7 +3179,7 @@ class TDependentProperty(object):
         derivative : float
             Calculated derivative property, [`units/K^order`]
         '''
-        method = self._method 
+        method = self._method
         T_limits = self.T_limits
         extrapolation = self._extrapolation
         if method in T_limits:
@@ -3193,14 +3193,14 @@ class TDependentProperty(object):
                     if self.RAISE_PROPERTY_CALCULATION_ERROR:
                         raise RuntimeError(
                             "Failed to extrapolate %sth derivative of %s method '%s' "
-                            "at T=%s K for component with CASRN '%s'" 
+                            "at T=%s K for component with CASRN '%s'"
                             %(order, self.name.lower(), method, T, self.CASRN)
                         )
                     return None
             elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(
                     "%s method '%s' is not valid at T=%s K "
-                    "for component with CASRN '%s'" 
+                    "for component with CASRN '%s'"
                     %(self.name, method, T, self.CASRN)
                 )
             else:
@@ -3211,7 +3211,7 @@ class TDependentProperty(object):
             if self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(
                     "Failed to evaluate %sth derivative of %s method '%s' "
-                    "at T=%s K for component with CASRN '%s'" 
+                    "at T=%s K for component with CASRN '%s'"
                     %(order, self.name.lower(), method, T, self.CASRN)
                 )
 
@@ -3280,10 +3280,10 @@ class TDependentProperty(object):
         integral : float
             Calculated integral of the property over the given range,
             [`units*K`]
-        
+
         '''
         if T2 < T1: return - self.T_dependent_property_integral(T2, T1)
-        method = self._method 
+        method = self._method
         T_limits = self.T_limits
         extrapolation = self._extrapolation
         integral = 0.
@@ -3301,7 +3301,7 @@ class TDependentProperty(object):
                         if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
                                 "Failed to extrapolate integral of %s method '%s' "
-                                "between T=%s to %s K for component with CASRN '%s'" 
+                                "between T=%s to %s K for component with CASRN '%s'"
                                 %(self.name.lower(), method, T1, Tmin, self.CASRN)
                             )
                         else:
@@ -3309,7 +3309,7 @@ class TDependentProperty(object):
                 elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
                         "%s method '%s' is not valid between T=%s to T=%s K "
-                        "for component with CASRN '%s'" 
+                        "for component with CASRN '%s'"
                         %(self.name, method, T1, Tmin, self.CASRN)
                     )
                 else:
@@ -3320,14 +3320,14 @@ class TDependentProperty(object):
                     try:
                         if T1 <= Tmax:
                             integral += self.extrapolate_integral(Tmax, T2, method)
-                        else: 
+                        else:
                             Tmax = T1
                             return self.extrapolate_integral(Tmax, T2, method)
-                    except: 
+                    except:
                         if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
                                 "Failed to extrapolate integral of %s method '%s' "
-                                "between T=%s to %s K for component with CASRN '%s'" 
+                                "between T=%s to %s K for component with CASRN '%s'"
                                 %(self.name.lower(), method, Tmax, T2, self.CASRN)
                             )
                         else:
@@ -3335,19 +3335,19 @@ class TDependentProperty(object):
                 elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
                         "%s method '%s' is not valid between T=%s to T=%s K "
-                        "for component with CASRN '%s'" 
+                        "for component with CASRN '%s'"
                         %(self.name, method, T2, Tmax, self.CASRN)
                     )
-                else: 
+                else:
                     return None
                 T2 = Tmax
         try:
             integral += self.calculate_integral(T1, T2, method)
         except: # pragma: no cover
-            if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+            if self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(
                     "Failed to evaluate integral of %s method '%s' "
-                    "between T=%s to %s K for component with CASRN '%s'" 
+                    "between T=%s to %s K for component with CASRN '%s'"
                     %(self.name.lower(), method, Tmax, T2, self.CASRN)
                 )
             else:
@@ -3422,7 +3422,7 @@ class TDependentProperty(object):
             [`units`]
         '''
         if T2 < T1: return - self.T_dependent_property_integral_over_T(T2, T1)
-        method = self._method 
+        method = self._method
         T_limits = self.T_limits
         extrapolation = self._extrapolation
         integral = 0.
@@ -3440,15 +3440,15 @@ class TDependentProperty(object):
                         if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
                                 "Failed to extrapolate integral-over-T of %s method '%s' "
-                                "between T=%s to %s K for component with CASRN '%s'" 
+                                "between T=%s to %s K for component with CASRN '%s'"
                                 %(self.name.lower(), method, T1, Tmin, self.CASRN)
                             )
                         else:
                             return None
-                elif self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
                         "%s method '%s' is not valid between T=%s to T=%s K "
-                        "for component with CASRN '%s'" 
+                        "for component with CASRN '%s'"
                         %(self.name, method, T1, Tmin, self.CASRN)
                     )
                 else:
@@ -3459,14 +3459,14 @@ class TDependentProperty(object):
                     try:
                         if T1 <= Tmax:
                             integral += self.extrapolate_integral_over_T(Tmax, T2, method)
-                        else: 
+                        else:
                             Tmax = T1
                             return self.extrapolate_integral_over_T(Tmax, T2, method)
                     except: # pragma: no cover
-                        if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+                        if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
                                 "Failed to extrapolate integral-over-T of %s method '%s' "
-                                "between T=%s to %s K for component with CASRN '%s'" 
+                                "between T=%s to %s K for component with CASRN '%s'"
                                 %(self.name.lower(), method, Tmax, T2, self.CASRN)
                             )
                         else:
@@ -3474,7 +3474,7 @@ class TDependentProperty(object):
                 elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
                         "%s method '%s' is not valid between T=%s to T=%s K "
-                        "for component with CASRN '%s'" 
+                        "for component with CASRN '%s'"
                         %(self.name, method, T2, Tmax, self.CASRN)
                     )
                 else:
@@ -3482,11 +3482,11 @@ class TDependentProperty(object):
                 T2 = Tmax
         try:
             integral += self.calculate_integral_over_T(T1, T2, method)
-        except: 
-            if self.RAISE_PROPERTY_CALCULATION_ERROR: 
+        except:
+            if self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(
                     "Failed to evaluate integral-over-T of %s method '%s' "
-                    "between T=%s to %s K for component with CASRN '%s'" 
+                    "between T=%s to %s K for component with CASRN '%s'"
                     %(self.name.lower(), method, Tmax, T2, self.CASRN)
                 )
             else:
@@ -3649,7 +3649,7 @@ class TDependentProperty(object):
                 extrapolation = self._extrapolation_high
         else:
             raise ValueError("Not outside normal range")
-            
+
         key = (extrapolation, method, low)
         extrapolation_coeffs = self.extrapolation_coeffs
         if key in extrapolation_coeffs:
@@ -3704,13 +3704,13 @@ class TDependentProperty(object):
             val = float(prop)
         else:
             raise RuntimeError("Unknown extrapolation '%s'" %extrapolation)
-        
+
         if self._extrapolation_min is not None and val < self._extrapolation_min:
             val = self._extrapolation_min
         elif self._extrapolation_max is not None and val > self._extrapolation_max:
             val = self._extrapolation_max
         return val
-    
+
 
     def extrapolate_derivative(self, T, method, order, in_range='error'):
         r'''Extrapolate the derivative of a given method according to the
@@ -3843,8 +3843,8 @@ class TDependentProperty(object):
             else:
                 extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             return coeffs * (T2 - T1)
-        elif (extrapolation == 'linear' 
-              and self.interpolation_T is None 
+        elif (extrapolation == 'linear'
+              and self.interpolation_T is None
               and self.interpolation_property is None):
             key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs
@@ -3907,8 +3907,8 @@ class TDependentProperty(object):
             else:
                 extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             return coeffs * log(T2/T1)
-        elif (extrapolation == 'linear' 
-              and self.interpolation_T is None 
+        elif (extrapolation == 'linear'
+              and self.interpolation_T is None
               and self.interpolation_property is None):
             key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs
@@ -3926,7 +3926,7 @@ class TDependentProperty(object):
         self.local_methods = {}
         """local_methods, dict[str, LocalMethod]: Local methods added by the user."""
         self.extrapolation_coeffs = {}
-        """extrapolation_coeffs, dict[tuple[str, str], object]: Cached 
+        """extrapolation_coeffs, dict[tuple[str, str], object]: Cached
         coefficients and methods used for extrapolation."""
         self.tabular_data = {}
         '''tabular_data, dict: Stored (Ts, properties) for any
@@ -4014,7 +4014,7 @@ class TDependentProperty(object):
             self._set_exp_stablepoly_fit_ln_tau(exp_stablepoly_fit_ln_tau)
             method = EXP_STABLEPOLY_FIT_LN_TAU
             self.all_methods.add(EXP_STABLEPOLY_FIT_LN_TAU)
-        
+
         if cheb_fit is not None and len(cheb_fit):
             self._set_cheb_fit(cheb_fit)
             method = CHEB_FIT
@@ -4033,15 +4033,15 @@ class TDependentProperty(object):
             self.all_methods.add(EXP_CHEB_FIT_LN_TAU)
 
         self.add_extra_correlations()
-        
+
         if method is None:
             all_methods = self.all_methods
-            for i in self.ranked_methods: 
+            for i in self.ranked_methods:
                 if i in all_methods:
                     method = i
                     break
         self.method = method
-        
+
     def add_extra_correlations(self):
         # Load any component specific methods
         if hasattr(self, 'CASRN'):
@@ -4054,7 +4054,7 @@ class TDependentProperty(object):
                     if model['name'] not in ranked_methods:
                         ranked_methods.insert(0, model['name'])
                 self.ranked_methods = ranked_methods
-        
+
 
     def load_all_methods(self, load_data):
         self.all_methods = set()

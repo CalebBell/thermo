@@ -441,7 +441,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
         [_ for _ in outlets]
     except TypeError:
         outlets = [outlets]
-    
+
     if not inlets and not outlets:
         return True
 
@@ -519,7 +519,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
         raise ValueError('Product and feeds have different components in them')
     for CAS, flow in feed_flows.items():
         assert_close(flow, product_flows[CAS], rtol=rtol, atol=atol)
-    
+
     return True
 
 def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
@@ -543,7 +543,7 @@ def assert_energy_balance(inlets, outlets, energy_inlets, energy_outlets,
         [_ for _ in energy_outlets]
     except TypeError:
         energy_outlets = [energy_outlets]
-    
+
     if inlet_areas is not None:
         inlet_molar_velocity = [velocity_to_molar_velocity(inlet.Q/A, inlet.MW()) for A, inlet in zip(inlet_areas, inlets)]
     if outlet_areas is not None:

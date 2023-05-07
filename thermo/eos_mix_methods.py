@@ -75,39 +75,39 @@ __all__ = ['a_alpha_aijs_composition_independent',
            'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
            'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
            'PR_lnphis', 'VDW_lnphis', 'SRK_lnphis', 'eos_mix_lnphis_general',
-           
+
            'VDW_lnphis_fastest', 'PR_lnphis_fastest',
            'SRK_lnphis_fastest', 'RK_lnphis_fastest',
            'PR_translated_lnphis_fastest',
-           
-           'G_dep_lnphi_d_helper', 
-           
+
+           'G_dep_lnphi_d_helper',
+
            'RK_d3delta_dninjnks',
            'PR_ddelta_dzs', 'PR_ddelta_dns',
            'PR_d2delta_dninjs', 'PR_d3delta_dninjnks',
-           
+
            'PR_depsilon_dns', 'PR_d2epsilon_dninjs', 'PR_d3epsilon_dninjnks',
            'PR_d2epsilon_dzizjs', 'PR_depsilon_dzs',
-           
-           'PR_translated_d2delta_dninjs', 'PR_translated_d3delta_dninjnks', 
+
+           'PR_translated_d2delta_dninjs', 'PR_translated_d3delta_dninjnks',
            'PR_translated_d3epsilon_dninjnks',
-           
-           'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',           
+
+           'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',
            'PR_translated_depsilon_dzs', 'PR_translated_depsilon_dns',
            'PR_translated_d2epsilon_dzizjs', 'PR_translated_d2epsilon_dninjs',
-           
+
            'SRK_translated_ddelta_dns', 'SRK_translated_depsilon_dns',
            'SRK_translated_d2epsilon_dzizjs', 'SRK_translated_depsilon_dzs',
-           'SRK_translated_d2delta_dninjs', 
+           'SRK_translated_d2delta_dninjs',
            'SRK_translated_d3delta_dninjnks',
            'SRK_translated_d2epsilon_dninjs', 'SRK_translated_d3epsilon_dninjnks',
 
-           
+
            'SRK_translated_lnphis_fastest',
-           
-           
+
+
            'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
-           
+
            'eos_mix_dV_dzs', 'eos_mix_a_alpha_volume']
 
 
@@ -118,7 +118,7 @@ root_two = sqrt(2.)
 root_two_m1 = root_two - 1.0
 root_two_p1 = root_two + 1.0
 
-def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs, a_alpha_ijs=None, 
+def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs, a_alpha_ijs=None,
 a_alpha_roots=None, a_alpha_ij_roots_inv=None):
     r'''Calculates the matrix :math:`(a\alpha)_{ij}` as well as the array
     :math:`\sqrt{(a\alpha)_{i}}` and the matrix
@@ -220,7 +220,7 @@ def a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs=None,
             for j in range(i+1, N):
                 term = a_alpha_ijs_i[j]*zi*zs[j]
                 a_alpha += term + term
-    
+
             a_alpha += a_alpha_ijs_i[i]*zi*zi
 
     return a_alpha, None, a_alpha_ijs
@@ -398,30 +398,30 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                 x0_05_inv = a_alpha_ij_roots_inv_i[j]
                 zi_zj = z_products_i[j]
                 da_alpha_dT_j = da_alpha_dTs[j]
-    
+
                 x1 = a_alphai*da_alpha_dT_j
                 x2 = a_alphaj*da_alpha_dT_i
                 x1_x2 = x1 + x2
                 x3 = x1_x2 + x1_x2
-    
+
                 kij_m1 = -one_minus_kijs_i[j]
-    
+
                 da_alpha_dT_ij = -0.5*kij_m1*x1_x2*x0_05_inv
                 # For temperature derivatives of fugacities
                 da_alpha_dT_ijs_i[j] = da_alpha_dT_ijs[j][i] = da_alpha_dT_ij
-    
+
                 da_alpha_dT_ij *= zi_zj
-    
-    
+
+
                 x0 = a_alphai*a_alphaj
-    
+
                 d2a_alpha_dT2_ij = kij_m1*(  (x0*(
                 -0.5*(a_alphai*d2a_alpha_dT2s[j] + a_alphaj*d2a_alpha_dT2_i)
                 - da_alpha_dT_i*da_alpha_dT_j) +.25*x1_x2*x1_x2)/(x0_05_inv*x0*x0))
                 d2a_alpha_dT2_ijs[i][j] = d2a_alpha_dT2_ijs[j][i] = d2a_alpha_dT2_ij
-    
+
                 d2a_alpha_dT2_ij *= zi_zj
-    
+
                 if i != j:
                     da_alpha_dT += da_alpha_dT_ij + da_alpha_dT_ij
                     d2a_alpha_dT2 += d2a_alpha_dT2_ij + d2a_alpha_dT2_ij
@@ -432,7 +432,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
     return a_alpha, da_alpha_dT, d2a_alpha_dT2, a_alpha_ijs, da_alpha_dT_ijs, d2a_alpha_dT2_ijs
 
 
-def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, 
+def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
                             a_alpha_j_rows=None, vec0=None):
     r'''Calculates the `a_alpha` term for an equation of state along with the
     vector quantities needed to compute the fugacities of the mixture. This
@@ -498,7 +498,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
 
     for i in range(N):
         a_alpha_j_rows[i] = 0.0
-    
+
     if vec0 is None:
         vec0 = [0.0]*N
     for i in range(N):
@@ -549,7 +549,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
 
 def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
                                             da_alpha_dTs, d2a_alpha_dT2s, T,
-                                            zs, one_minus_kijs, a_alpha_j_rows=None, 
+                                            zs, one_minus_kijs, a_alpha_j_rows=None,
                                             da_alpha_dT_j_rows=None):
     r'''Calculates the `a_alpha` term, and its first two temperature
     derivatives, for an equation of state along with the
@@ -825,13 +825,13 @@ def G_dep_lnphi_d_helper(T, P, b, delta, epsilon, a_alpha, N,
         t3 *= RT
         t4 *= RT
         t5 *= RT
-        
+
     c0 = t1 + t2*2.0 - t5
     for i in range(N):
         x13 = ddelta_dns[i]
         x14 = x13*delta - 2.0*depsilon_dns[i]
         x16 = x14*x15
-        diff = (dV_dns[i]*c0 - t4*da_alpha_dns[i] + t5*db_dns[i] 
+        diff = (dV_dns[i]*c0 - t4*da_alpha_dns[i] + t5*db_dns[i]
                 + t2*(x13 - x16*t6) + x14*t3 )
         # diff = (x1*t1 + t2*(x1 + x1 + x13 - x16*t6) + x14*t3 - t4*da_alpha_dns[i] - t5*(x1 - db_dns[i]))
         out[i] = diff
@@ -961,7 +961,7 @@ def PR_d3delta_dninjnks(b, bs, N, out=None):
             for k in range(N):
                 r[k] = x0 + 4.0*bs[k]
     return out
-    
+
 
 def PR_d2epsilon_dzizjs(b, bs, N, out=None):
     if out is None:
@@ -1010,15 +1010,15 @@ def PR_d3epsilon_dninjnks(b, bs, N, out=None):
     if out is None:
         out = [[[0.0]*N for _ in range(N)] for _ in range(N)]# numba: delete
         # out = np.zeros((N, N, N)) # numba: uncomment
-    
+
     c0 = 24.0*b*b
     for i in range(N):
         bi = bs[i]
         d3b_dnjnks = out[i]
         c10 = -12.0*b + 4.0*bi
-        c11 = c0 -12.0*b*bi 
+        c11 = c0 -12.0*b*bi
         c12 = (-12.0*b + 4.0*bi)
-        
+
         for j in range(N):
             bj = bs[j]
             x0 = c11 + bj*c12
@@ -1030,7 +1030,7 @@ def PR_d3epsilon_dninjnks(b, bs, N, out=None):
                 row[k] = term
     return out
 
-    
+
 
 def PR_translated_ddelta_dzs(b0s, cs, N, out=None):
     if out is None:
@@ -1057,12 +1057,12 @@ def PR_translated_d2epsilon_dninjs(b0s, cs, b, c, N, out=None):
         out = [[0.0]*N for _ in range(N)] # numba: delete
         # out = np.zeros((N, N)) # numba: uncomment
     b0 = b + c
-    
+
     v0 = -6.0*b0*b0 + 12.0*b0*c + 6.0*c*c
     v1 = 4.0*b0 - 4.0*c
     v2 = (-4.0*b0 - 4.0*c)
-    
-    
+
+
     for i in range(N):
         l = out[i]
         b0i = b0s[i]
@@ -1212,7 +1212,7 @@ def PR_translated_depsilon_dns(b, c, b0s, cs, N, out=None):
     if out is None:
         out = [0.0]*N
     b0 = b + c
-    x0 = 2.0*b0*b0 - 4.0*b0*c - 2.0*c*c 
+    x0 = 2.0*b0*b0 - 4.0*b0*c - 2.0*c*c
     x1 = -2.0*b0 + 2.0*c
     x2 = (2.0*b0 + 2.0*c)
     for i in range(N):
@@ -1354,12 +1354,12 @@ def VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=None):
     return lnphis
 
 def eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
-                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns, 
+                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns,
                            depsilon_dns, lnphis=None):
     if lnphis is None:
         lnphis = [0.0]*N
     V = Z*R*T/P
-    dV_dns = eos_mix_dV_dzs(T, P, Z, b, delta, epsilon, 
+    dV_dns = eos_mix_dV_dzs(T, P, Z, b, delta, epsilon,
                             a_alpha, db_dns, ddelta_dns,
                             depsilon_dns, da_alpha_dns, N)
 
@@ -1370,7 +1370,7 @@ def eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
     lnphi = eos_lnphi(T, P, V, b, delta, epsilon, a_alpha)
     for i in range(N):
         lnphis[i] = lnphi + dlnphi_dns[i]
-    return lnphis    
+    return lnphis
 
 
 
@@ -1383,7 +1383,7 @@ def PR_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_r
         b += bs[i]*zs[i]
     delta = 2.0*b
     epsilon = -b*b
-    
+
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return PR_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
@@ -1396,7 +1396,7 @@ def SRK_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_
         b += bs[i]*zs[i]
     delta = b
     epsilon = 0.0
-    
+
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return SRK_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_j_rows, N, lnphis=lnphis)
@@ -1409,7 +1409,7 @@ def VDW_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_
         b += bs[i]*zs[i]
     delta = 0.0
     epsilon = 0.0
-    
+
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
     return VDW_lnphis(T, P, Z, b, a_alpha, bs, a_alpha_roots, N, lnphis=lnphis)
@@ -1422,17 +1422,17 @@ def RK_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, bs, a_alphas, a_alpha_r
         b += bs[i]*zs[i]
     delta = b
     epsilon = 0.0
-    
+
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
-    
+
     ddelta_dns = db_dns = eos_mix_db_dns(b, bs, N, out=None)
     da_alpha_dns = eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None)
     depsilon_dns = [0.0]*N
 
-    
+
     return eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
-                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns, 
+                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns,
                            depsilon_dns, lnphis=lnphis)
 
 
@@ -1442,21 +1442,21 @@ def PR_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs,
     for i in range(N):
         b0 += b0s[i]*zs[i]
         c += cs[i]*zs[i]
-        
+
     b = b0 - c
     delta = 2.0*(c + b0)
     epsilon = -b0*b0 + c*(c + b0 + b0)
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
-    
+
     db_dns = eos_mix_db_dns(b, bs, N, out=None)
     da_alpha_dns = eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None)
     depsilon_dns = PR_translated_depsilon_dns(b, c, b0s, cs, N, out=None)
     ddelta_dns = PR_translated_ddelta_dns(b0s, cs, delta, N, out=None)
 
-    
+
     return eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
-                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns, 
+                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns,
                            depsilon_dns, lnphis=lnphis)
 
 
@@ -1466,20 +1466,20 @@ def SRK_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs
     for i in range(N):
         b0 += b0s[i]*zs[i]
         c += cs[i]*zs[i]
-        
+
     b = b0 - c
     delta =  c + c + b0
     epsilon = c*(b0 + c)
     Z, a_alpha, a_alpha_j_rows = eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_alphas, a_alpha_roots,
                                                         a_alpha_j_rows=a_alpha_j_rows, vec0=vec0)
-    
+
     db_dns = eos_mix_db_dns(b, bs, N, out=None)
     da_alpha_dns = eos_mix_da_alpha_dns(a_alpha, a_alpha_j_rows, N, out=None)
     depsilon_dns = SRK_translated_depsilon_dns(b, c, b0s, cs, N, out=None)
     ddelta_dns = SRK_translated_ddelta_dns(b0s, cs, delta, N, out=None)
 
-    
+
     return eos_mix_lnphis_general(T, P, Z, b, delta, epsilon, a_alpha, bs,
-                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns, 
+                           a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns,
                            depsilon_dns, lnphis=lnphis)
 

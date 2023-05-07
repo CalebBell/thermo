@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-This module contains various methods for identifying functional groups in 
+This module contains various methods for identifying functional groups in
 molecules. This functionality requires the RDKit library to work.
 
 For submitting pull requests,
@@ -194,28 +194,28 @@ Functions using group identification
 from __future__ import division
 from chemicals.elements import simple_formula_parser
 
-group_names = ['mercaptan', 'sulfide', 'disulfide', 'sulfoxide', 'sulfone', 
-               'sulfinic_acid', 'sulfonic_acid', 'sulfonate_ester', 'thiocyanate', 
-               'isothiocyanate', 'thioketone', 'thial', 'carbothioic_s_acid', 
-               'carbothioic_o_acid', 'thiolester', 'thionoester', 
+group_names = ['mercaptan', 'sulfide', 'disulfide', 'sulfoxide', 'sulfone',
+               'sulfinic_acid', 'sulfonic_acid', 'sulfonate_ester', 'thiocyanate',
+               'isothiocyanate', 'thioketone', 'thial', 'carbothioic_s_acid',
+               'carbothioic_o_acid', 'thiolester', 'thionoester',
                'carbodithioic_acid', 'carbodithio', 'siloxane',
-               'branched_alkane', 'alkane', 'cycloalkane', 'alkene', 'alkyne', 
+               'branched_alkane', 'alkane', 'cycloalkane', 'alkene', 'alkyne',
                'aromatic', 'nitrile', 'carboxylic_acid', 'haloalkane',
-               'fluoroalkane', 'chloroalkane', 'bromoalkane', 'iodoalkane', 
-               'amine', 'primary_amine', 'secondary_amine', 'tertiary_amine', 
+               'fluoroalkane', 'chloroalkane', 'bromoalkane', 'iodoalkane',
+               'amine', 'primary_amine', 'secondary_amine', 'tertiary_amine',
                'quat', 'amide', 'nitro', 'amidine', 'imine', 'primary_ketimine',
                'secondary_ketimine', 'primary_aldimine', 'secondary_aldimine',
-               'imide', 'azide', 'azo', 'cyanate', 'isocyanate', 'nitrate', 
+               'imide', 'azide', 'azo', 'cyanate', 'isocyanate', 'nitrate',
                'isonitrile', 'nitrite', 'nitroso', 'oxime', 'pyridyl',
                'carbamate', 'acyl_halide', 'alcohol', 'polyol', 'acid',
-               'ketone', 'aldehyde', 'anhydride', 'ether', 'phenol', 'carbonate', 
+               'ketone', 'aldehyde', 'anhydride', 'ether', 'phenol', 'carbonate',
                'carboxylate', 'hydroperoxide', 'peroxide', 'orthoester',
-               'methylenedioxy', 'orthocarbonate_ester', 'carboxylic_anhydride', 
+               'methylenedioxy', 'orthocarbonate_ester', 'carboxylic_anhydride',
                'ester', 'boronic_acid', 'boronic_ester', 'borinic_acid',
                'borinic_ester', 'phosphine', 'phosphonic_acid', 'phosphodiester',
-               'phosphate', 'alkyllithium', 'alkylmagnesium_halide', 
+               'phosphate', 'alkyllithium', 'alkylmagnesium_halide',
                'alkylaluminium', 'silyl_ether', 'organic', 'inorganic',
-               'is_hydrocarbon'] 
+               'is_hydrocarbon']
 __all__ = [# sulfur
            'is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
            'is_sulfone', 'is_sulfinic_acid', 'is_sulfonic_acid',
@@ -223,19 +223,19 @@ __all__ = [# sulfur
            'is_thioketone', 'is_thial', 'is_carbothioic_s_acid',
            'is_carbothioic_o_acid', 'is_thiolester', 'is_thionoester',
            'is_carbodithioic_acid', 'is_carbodithio',
-           
+
            'is_siloxane',
-           
+
            # other
            'is_hydrocarbon', 'is_branched_alkane',
            'is_alkane', 'is_cycloalkane', 'is_alkene',
            'is_alkyne', 'is_aromatic', 'is_nitrile', 'is_carboxylic_acid',
-           'is_haloalkane', 'is_fluoroalkane', 'is_chloroalkane', 
+           'is_haloalkane', 'is_fluoroalkane', 'is_chloroalkane',
            'is_bromoalkane', 'is_iodoalkane',
-           
+
            # Nitrogen
            'is_amine', 'is_primary_amine', 'is_secondary_amine',
-           'is_tertiary_amine', 'is_quat', 
+           'is_tertiary_amine', 'is_quat',
            'is_amide', 'is_nitro', 'is_amidine', 'is_imine',
            'is_primary_ketimine',
            'is_secondary_ketimine', 'is_primary_aldimine',
@@ -243,7 +243,7 @@ __all__ = [# sulfur
            'is_cyanate', 'is_isocyanate', 'is_nitrate', 'is_isonitrile',
            'is_nitrite', 'is_nitroso', 'is_oxime', 'is_pyridyl',
            'is_carbamate',
-           
+
            # oxygen
            'is_acyl_halide', 'is_alcohol', 'is_polyol',
            'is_acid', 'is_ketone', 'is_aldehyde', 'is_anhydride',
@@ -251,22 +251,22 @@ __all__ = [# sulfur
            'is_hydroperoxide', 'is_peroxide', 'is_orthoester',
            'is_methylenedioxy', 'is_orthocarbonate_ester',
            'is_carboxylic_anhydride', 'is_ester',
-           
+
            'is_boronic_acid', 'is_boronic_ester', 'is_borinic_acid',
            'is_borinic_ester',
-           
+
            'is_phosphine', 'is_phosphonic_acid', 'is_phosphodiester',
            'is_phosphate',
-           
+
            'is_alkyllithium', 'is_alkylmagnesium_halide', 'is_alkylaluminium',
            'is_silyl_ether',
-           
+
            'is_organic', 'is_inorganic',
-           
+
            'count_ring_ring_attatchments',
            'count_rings_attatched_to_rings',
            'group_names',
-           
+
            'BVirial_Tsonopoulos_extended_ab']
 
 
@@ -349,8 +349,8 @@ amidine_smarts_3 = '[NX2H1]=[CX3H0]([*])[NX3H1]([*])'
 amidine_smarts_4 = '[NX2H1]=[CX3H0]([*])[NX3H2]'
 amidine_smarts_5 = '[*][NX2]=[CX3H0]([*])[NX3H1]([*])'
 amidine_smarts_6 = '[*][NX2]=[CX3H0]([*])[NX3H2]'
-amidine_smarts_collection = [amidine_smarts_1, amidine_smarts_2, 
-                             amidine_smarts_3, amidine_smarts_4, 
+amidine_smarts_collection = [amidine_smarts_1, amidine_smarts_2,
+                             amidine_smarts_3, amidine_smarts_4,
                              amidine_smarts_5, amidine_smarts_6]
 
 def is_amidine(mol):
@@ -384,8 +384,8 @@ primary_ketimine_smarts = '[*][CX3H0](=[NX2H1])([*])'
 
 def is_primary_ketimine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a primary ketimine. 
-    
+    molecule is a primary ketimine.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -411,8 +411,8 @@ secondary_ketimine_smarts = '[*][CX3H0]([*])=[NX2H0]([*])'
 
 def is_secondary_ketimine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a secondary ketimine. 
-    
+    molecule is a secondary ketimine.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -437,8 +437,8 @@ primary_aldimine_smarts = '[*][CX3H1]=[NX2H1]'
 
 def is_primary_aldimine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a primary aldimine. 
-    
+    molecule is a primary aldimine.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -463,8 +463,8 @@ secondary_aldimine_smarts = '[*][CX3H1]=[NX2H0]'
 
 def is_secondary_aldimine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a secondary aldimine. 
-    
+    molecule is a secondary aldimine.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -488,7 +488,7 @@ def is_secondary_aldimine(mol):
 def is_imine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a imine.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -538,7 +538,7 @@ sulfide_smarts = '[!#16][#16X2H0][!#16]'
 def is_sulfide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a sulfide. This group excludes disulfides.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -562,8 +562,8 @@ def is_sulfide(mol):
 disulfide_smarts = '[#16X2H0][#16X2H0]'
 def is_disulfide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a disulfide. 
-    
+    molecule is a disulfide.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -587,8 +587,8 @@ def is_disulfide(mol):
 sulfoxide_smarts = '[$([#16X3]=[OX1]),$([#16X3+][OX1-])]'
 def is_sulfoxide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a sulfoxide. 
-    
+    molecule is a sulfoxide.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -612,8 +612,8 @@ def is_sulfoxide(mol):
 sulfone_smarts = '[$([#16X4](=[OX1])=[OX1]),$([#16X4+2]([OX1-])[OX1-])]'
 def is_sulfone(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a sulfone. 
-    
+    molecule is a sulfone.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -637,8 +637,8 @@ def is_sulfone(mol):
 sulfinic_acid_smarts = '[SX3H0](=O)([OX2H])[!H]'
 def is_sulfinic_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a sulfinic acid. 
-    
+    molecule is a sulfinic acid.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -663,8 +663,8 @@ sulfonic_acid_smarts = '[SX4H0](=O)(=O)([OX2H])[!H]'
 
 def is_sulfonic_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a sulfonic acid. 
-    
+    molecule is a sulfonic acid.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -688,8 +688,8 @@ def is_sulfonic_acid(mol):
 sulfonate_ester_smarts = '[SX4H0](=O)(=O)([OX2H0])[!H]'
 def is_sulfonate_ester(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a sulfonate ester. 
-    
+    molecule is a sulfonate ester.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -713,8 +713,8 @@ def is_sulfonate_ester(mol):
 thiocyanate_smarts = '[SX2H0]([!H])[CH0]#[NX1H0]'
 def is_thiocyanate(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a thiocyanate. 
-    
+    molecule is a thiocyanate.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -739,8 +739,8 @@ isothiocyanate_smarts = '[!H][NX2H0]=[CX2H0]=[SX1H0]'
 
 def is_isothiocyanate(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a isothiocyanate. 
-    
+    molecule is a isothiocyanate.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -765,8 +765,8 @@ thioketone_smarts = '[#6X3;H0]([!H])([!H])=[SX1H0]'
 
 def is_thioketone(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a thioketone. 
-    
+    molecule is a thioketone.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -791,8 +791,8 @@ thial_smarts = '[#6X3;H1](=[SX1H0])([!H])'
 
 def is_thial(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a thial. 
-    
+    molecule is a thial.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -818,8 +818,8 @@ carbothioic_s_acid_smarts = '[#6X3;H0](=[OX1H0])([SX2H1])([!H])'
 
 def is_carbothioic_s_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a Carbothioic S-acid. 
-    
+    molecule is a Carbothioic S-acid.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -845,8 +845,8 @@ carbothioic_o_acid_smarts = '[#6X3;H0]([OX2H1])(=[SX1H0])([!H])'
 
 def is_carbothioic_o_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a Carbothioic S-acid. 
-    
+    molecule is a Carbothioic S-acid.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -872,8 +872,8 @@ thiolester_smarts = '[#6X3;H0](=[OX1H0])([*])[SX2H0][!H]'
 
 def is_thiolester(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a thiolester. 
-    
+    molecule is a thiolester.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -898,8 +898,8 @@ thionoester_smarts = '[#6X3;H0](=[SX1H0])([*])[OX2H0][!H]'
 
 def is_thionoester(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a thionoester. 
-    
+    molecule is a thionoester.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -924,8 +924,8 @@ carbodithioic_acid_smarts = '[#6X3;H0](=[SX1H0])([!H])[SX2H1]'
 
 def is_carbodithioic_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a carbodithioic acid . 
-    
+    molecule is a carbodithioic acid .
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -950,8 +950,8 @@ carbodithio_smarts = '[#6X3;H0](=[SX1H0])([!H])[SX2H0]([!H])'
 
 def is_carbodithio(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a carbodithio. 
-    
+    molecule is a carbodithio.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -977,8 +977,8 @@ def is_carbodithio(mol):
 siloxane_smarts = '[Si][O][Si]'
 def is_siloxane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a siloxane. 
-    
+    molecule is a siloxane.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1002,7 +1002,7 @@ def is_siloxane(mol):
 def is_hydrocarbon(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an hydrocarbon (molecule containing hydrogen and carbon only)
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1027,12 +1027,12 @@ def is_hydrocarbon(mol):
     atoms = simple_formula_parser(formula)
     return ('C' in atoms and 'H' in atoms and len(atoms) == 2)
 
-alkane_smarts = '[CX4]' 
+alkane_smarts = '[CX4]'
 def is_alkane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an alkane, also refered to as a paraffin. All bonds in the
     molecule must be single carbon-carbon or carbon-hydrogen.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1059,7 +1059,7 @@ def is_alkane(mol):
 def is_cycloalkane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a cycloalkane, also refered to as a naphthenes.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1088,7 +1088,7 @@ alkene_smarts = '[CX3]=[CX3]'
 def is_alkene(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an alkene. Alkenes are also refered to as olefins.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1116,7 +1116,7 @@ alkyne_smarts = '[CX2]#C'
 def is_alkyne(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an alkyne.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1144,7 +1144,7 @@ aromatic_smarts = '[c]'
 def is_aromatic(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is aromatic.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1171,7 +1171,7 @@ boronic_acid_smarts = '[BX3]([OX2H])([OX2H])'
 def is_boronic_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule has any boronic acid functional groups.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1197,7 +1197,7 @@ boronic_ester_smarts = '[BX3;H0]([OX2H0])([OX2H0])[!O@!H]'
 def is_boronic_ester(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a boronic ester.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1225,7 +1225,7 @@ borinic_acid_smarts = (borinic_acid_smarts, borinic_acid_smarts_H1, borinic_acid
 def is_borinic_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a borinic acid.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1254,7 +1254,7 @@ borinic_ester_smarts = '[BX3;H0]([OX2H0])([!O])[!O]'
 def is_borinic_ester(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a borinic ester.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1280,7 +1280,7 @@ alcohol_smarts = '[#6][OX2H]'
 def is_alcohol(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule any alcohol functional groups.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1305,7 +1305,7 @@ def is_alcohol(mol):
 def is_polyol(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a polyol (more than 1 alcohol functional groups).
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1331,7 +1331,7 @@ acid_smarts = '[!H0;F,Cl,Br,I,N+,$([OH]-*=[!#6]),+]'
 def is_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an acid.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1357,7 +1357,7 @@ ketone_smarts = '[#6][CX3](=O)[#6]'
 def is_ketone(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a ketone.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1384,7 +1384,7 @@ aldehyde_smarts = '[CX3H1](=O)[#6]'
 def is_aldehyde(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an aldehyde.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1404,15 +1404,15 @@ def is_aldehyde(mol):
     '''
     # https://smarts.plus/smartsview/8c5ed80db53e19cc40dcfef58453d90fec96e18d8b7f602d34ff1e3a566c
     matches = mol.GetSubstructMatches(smarts_mol_cache(aldehyde_smarts))
-    return bool(matches) or CanonSmiles(MolToSmiles(mol)) == 'C=O' 
+    return bool(matches) or CanonSmiles(MolToSmiles(mol)) == 'C=O'
 
 
 acyl_halide_smarts = '[#6X3;H0](=[OX1H0])([FX1,ClX1,BrX1,IX1])[!H]'
 
 def is_acyl_halide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a acyl halide. 
-    
+    molecule is a acyl halide.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1437,8 +1437,8 @@ carbonate_smarts =  '[!H][OX2H0][CX3H0](=[OX1H0])[OX2H0][!H]'
 
 def is_carbonate(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a carbonate. 
-    
+    molecule is a carbonate.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1463,8 +1463,8 @@ carboxylate_smarts =  '[C][C](=[OX1H0])[O-X1H0]'
 
 def is_carboxylate(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a carboxylate. 
-    
+    molecule is a carboxylate.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1489,8 +1489,8 @@ hydroperoxide_smarts = '[!H][OX2H0][OX2H1]'
 
 def is_hydroperoxide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a hydroperoxide. 
-    
+    molecule is a hydroperoxide.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1516,8 +1516,8 @@ peroxide_smarts = '[!H][OX2H0][OX2H0][!H]'
 
 def is_peroxide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a peroxide. 
-    
+    molecule is a peroxide.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1536,14 +1536,14 @@ def is_peroxide(mol):
     True
     '''
     matches = mol.GetSubstructMatches(smarts_mol_cache(peroxide_smarts))
-    return bool(matches) or CanonSmiles(MolToSmiles(mol)) == 'OO' 
+    return bool(matches) or CanonSmiles(MolToSmiles(mol)) == 'OO'
 
 orthoester_smarts = '[*][CX4]([OX2H0])([OX2H0])([OX2H0])'
 
 def is_orthoester(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a orthoester. 
-    
+    molecule is a orthoester.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1568,8 +1568,8 @@ orthocarbonate_ester_smarts = '[CX4H0]([OX2])([OX2])([OX2])([OX2])'
 
 def is_orthocarbonate_ester (mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a orthocarbonate ester . 
-    
+    molecule is a orthocarbonate ester .
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1594,8 +1594,8 @@ carboxylic_anhydride_smarts = '[*][CX3H0](=[OX1H0])[OX2H0][CX3H0](=[OX1H0])[*]'
 
 def is_carboxylic_anhydride(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a carboxylic anhydride . 
-    
+    molecule is a carboxylic anhydride .
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1621,8 +1621,8 @@ methylenedioxy_smarts = '[CX4H2;R]([OX2H0;R])([OX2H0;R])'
 
 def is_methylenedioxy(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is a methylenedioxy. 
-    
+    molecule is a methylenedioxy.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1649,7 +1649,7 @@ anhydride_smarts = '[CX3](=[OX1])[OX2][CX3](=[OX1])'
 def is_anhydride(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an anhydride.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1675,7 +1675,7 @@ ether_smarts = '[OD2]([#6])[#6]'
 def is_ether(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an ether.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1701,7 +1701,7 @@ phenol_smarts = '[OX2H][cX3]:[c]'
 def is_phenol(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a phenol.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1727,7 +1727,7 @@ nitrile_smarts = '[NX1]#[CX2]'
 def is_nitrile(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a nitrile.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1754,7 +1754,7 @@ isonitrile_smarts = '[*][N+]#[C-]'
 def is_isonitrile(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a isonitrile.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1779,7 +1779,7 @@ imide_smarts = '[CX3H0](=[OX1H0])([*])[NX3][CX3H0](=[OX1H0])[*]'
 def is_imide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a imide.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1805,7 +1805,7 @@ azide_smarts = '[NX2]=[N+X2H0]=[N-X1H0]'
 def is_azide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a azide.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1831,7 +1831,7 @@ azo_smarts = '[*][NX2]=[NX2][*]'
 def is_azo(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a azo.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1857,7 +1857,7 @@ cyanate_smarts = '[*][OX2H0][CX2H0]#[NX1H0]'
 def is_cyanate(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a cyanate.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1883,7 +1883,7 @@ isocyanate_smarts = '[NX2H0]=[CX2H0]=[OX1H0]'
 def is_isocyanate(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a isocyanate.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1909,7 +1909,7 @@ nitrate_smarts = '[OX2][N+X3H0](=[OX1H0])[O-X1H0]'
 def is_nitrate(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a nitrate.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1934,7 +1934,7 @@ nitro_smarts = '[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]'
 def is_nitro(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a nitro.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1960,7 +1960,7 @@ nitrite_smarts = '[OX2][NX2H0]=[OX1H0]'
 def is_nitrite(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a nitrite.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -1986,7 +1986,7 @@ nitroso_smarts = '[*][NX2]=[OX1H0]'
 def is_nitroso(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a nitroso.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2012,7 +2012,7 @@ oxime_smarts = '[!H][CX3]([*])=[NX2H0][OX2H1]'
 def is_oxime(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a oxime.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2038,7 +2038,7 @@ pyridyl_smarts = 'c1ccncc1'
 def is_pyridyl(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a pyridyl.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2064,7 +2064,7 @@ carbamate_smarts = '[OX2][CX3H0](=[OX1H0])[NX3]'
 def is_carbamate(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a carbamate.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2090,7 +2090,7 @@ carboxylic_acid_smarts = '[CX3](=O)[OX2H1]'
 def is_carboxylic_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a carboxylic acid.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2104,7 +2104,7 @@ def is_carboxylic_acid(mol):
     Examples
     --------
     Butyric acid (butter)
-    
+
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_carboxylic_acid(MolFromSmiles('CCCC(=O)O')) # doctest:+SKIP
     True
@@ -2117,7 +2117,7 @@ haloalkane_smarts = '[#6][F,Cl,Br,I]'
 def is_haloalkane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a haloalkane.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2143,7 +2143,7 @@ fluoroalkane_smarts = '[#6][F]'
 def is_fluoroalkane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a fluoroalkane.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2168,7 +2168,7 @@ chloroalkane_smarts = '[#6][Cl]'
 def is_chloroalkane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a chloroalkane.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2193,7 +2193,7 @@ bromoalkane_smarts = '[#6][Br]'
 def is_bromoalkane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a bromoalkane.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2218,7 +2218,7 @@ iodoalkane_smarts = '[#6][I]'
 def is_iodoalkane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a iodoalkane.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2245,7 +2245,7 @@ primary_amine_smarts_aromatic = '[NX3H2+0,NX4H3+]c'
 def is_primary_amine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a primary amine.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2273,7 +2273,7 @@ secondary_amine_smarts = '[$([NH]([CX4])[CX4]);!$([NH]([CX4])[CX4][O,N]);!$([NH]
 def is_secondary_amine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a secondary amine.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2302,7 +2302,7 @@ tertiary_amine_1 = '[#6]-[#7](-[#6])-[#6]'
 def is_tertiary_amine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a tertiary amine.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2331,7 +2331,7 @@ quat_smarts = '[N+X4]([c,C])([c,C])([c,C])[c,C]'
 def is_quat(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a quat.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2362,7 +2362,7 @@ all_amine_smarts = (amine_smarts, tertiary_amine_smarts, tertiary_amine_smarts_a
 def is_amine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a amine.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2392,7 +2392,7 @@ phosphine_smarts = '[PX3]'
 def is_phosphine(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a phosphine.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2418,7 +2418,7 @@ phosphonic_acid_smarts = '[PX4](=O)([OX2H])[OX2H]'
 def is_phosphonic_acid(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a phosphonic_acid.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2438,13 +2438,13 @@ def is_phosphonic_acid(mol):
     '''
     hits = mol.GetSubstructMatches(smarts_mol_cache(phosphonic_acid_smarts))
     # phosphonic acid itself only has an H for the last group
-    return len(hits) > 0 or CanonSmiles(MolToSmiles(mol)) == 'O=[PH](O)O' 
+    return len(hits) > 0 or CanonSmiles(MolToSmiles(mol)) == 'O=[PH](O)O'
 
 phosphodiester_smarts = '[PX4;H0](=O)([OX2H])([OX2H0])[OX2H0]'
 def is_phosphodiester(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a phosphodiester.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2469,7 +2469,7 @@ phosphate_smarts = '[PX4;H0](=O)([OX2H])([OX2H])[OX2H0]'
 def is_phosphate(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a phosphate.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2497,7 +2497,7 @@ ester_smarts = '[OX2H0][#6;!$([C]=[O])]'
 def is_ester(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an ester.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2523,7 +2523,7 @@ alkyllithium_smarts = '[Li+;H0].[C-]'
 def is_alkyllithium(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule any alkyllithium functional groups.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2549,7 +2549,7 @@ alkylaluminium_smarts = '[Al][C,c]'
 def is_alkylaluminium(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule any alkylaluminium functional groups.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2577,7 +2577,7 @@ smarts_alkylmagnesium_halide_Mg2 = '[c-,C-].[Mg+2].[I-,Br-,Cl-,F-]'
 def is_alkylmagnesium_halide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule any alkylmagnesium_halide functional groups.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2606,7 +2606,7 @@ silyl_ether_smarts = '[SiX4]([OX2H0])([!H])([!H])[!H]'
 def is_silyl_ether(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule any silyl ether functional groups.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2633,7 +2633,7 @@ def is_branched_alkane(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a branched alkane, also refered to as an isoparaffin. All bonds
     in the molecule must be single carbon-carbon or carbon-hydrogen.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2668,7 +2668,7 @@ hardcoded_organic_smiles = frozenset([
 hardcoded_controversial_organic_smiles = frozenset([
     'NC(N)=O', # Urea - CRC, history
     'O=C(OC(=O)C(F)(F)F)C(F)(F)F', # Trifluoroacetic anhydride CRC, not a hydrogen in it
-    
+
     ])
 hardcoded_inorganic_smiles = frozenset([
     '[C-]#[O+]', # carbon monoxide
@@ -2704,9 +2704,9 @@ def is_organic(mol, restrict_atoms=None,
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is organic. The definition of organic vs. inorganic compounds is
     arabitrary. The rules implemented here are fairly complex.
-    
+
     * If a compound has an C-C bond, a C=C bond, a carbon triple bond, a
-      carbon attatched however to a hydrogen, a carbon in a ring, or an amide 
+      carbon attatched however to a hydrogen, a carbon in a ring, or an amide
       group.
     * If a compound is in the list of canonical smiles `organic_smiles`,
       either the defaults in the library or those provided as an input to the
@@ -2716,7 +2716,7 @@ def is_organic(mol, restrict_atoms=None,
       function, the molecule is considered inorganic.
     * If `restrict_atoms` is provided and atoms are present in the molecule
       that are restricted, the compound is considered restricted.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2727,7 +2727,7 @@ def is_organic(mol, restrict_atoms=None,
         Smiles that are hardcoded to be organic, [-]
     inorganic_smiles : Iterable[str]
         Smiles that are hardcoded to be inorganic, [-]
-    
+
     Returns
     -------
     is_organic : bool
@@ -2758,10 +2758,10 @@ def is_organic(mol, restrict_atoms=None,
             except:
                 atoms[symbol] = 1
         found_atoms = set(atoms.keys())
-    
+
         if not found_atoms.issubset(restrict_atoms):
             return False
-    
+
     for smart in organic_smarts_groups:
         matches = mol.GetSubstructMatches(smarts_mol_cache(smart))
         if matches:
@@ -2770,13 +2770,13 @@ def is_organic(mol, restrict_atoms=None,
 
 def is_inorganic(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule is inorganic. 
-    
+    molecule is inorganic.
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
         Molecule [-]
-    
+
     Returns
     -------
     is_inorganic : bool
@@ -2796,10 +2796,10 @@ def count_ring_ring_attatchments(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, count the number
     of times a ring in the molecule is bonded with another ring
     in the molecule.
-    
-    An easy explanation is cubane - each edge of the cube is a ring uniquely 
+
+    An easy explanation is cubane - each edge of the cube is a ring uniquely
     bonding with another ring; so this function returns twelve.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2827,14 +2827,14 @@ def count_ring_ring_attatchments(mol):
             shared_atoms = int(len(ring_ids[i].intersection(ring_ids[j])) > 0)
             ring_ring_attatchments += shared_atoms
     return ring_ring_attatchments
-    
+
 
 def count_rings_attatched_to_rings(mol, allow_neighbors=True, atom_rings=None):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, count the number
     of rings in the molecule that are attatched to another ring.
     if `allow_neighbors` is True, any bond to another atom that is part of a
     ring is allowed; if it is False, the rings have to share a wall.
-        
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
@@ -2868,12 +2868,12 @@ def count_rings_attatched_to_rings(mol, allow_neighbors=True, atom_rings=None):
         for j in range(ring_count):
             if i != j:
                 other_ring_atoms.update(atom_rings[j])
-        
-        
+
+
         for atom in atom_rings[i]:
             if attatched_to_ring:
                 break
-                
+
             if atom in other_ring_atoms:
                 attatched_to_ring = True
                 break
@@ -2897,7 +2897,7 @@ def count_rings_attatched_to_rings(mol, allow_neighbors=True, atom_rings=None):
 def BVirial_Tsonopoulos_extended_ab(Tc, Pc, dipole, smiles):
     r'''Calculates the  of `a` and `b` parameters of the Tsonopoulos (extended)
     second virial coefficient prediction method. These parameters account for
-    polarity. This function uses `rdkit` to identify the component type of the 
+    polarity. This function uses `rdkit` to identify the component type of the
     molecule.
 
     Parameters
@@ -2918,7 +2918,7 @@ def BVirial_Tsonopoulos_extended_ab(Tc, Pc, dipole, smiles):
 
     Notes
     -----
-    
+
     To calculate `a` or `b`, the following rules are used:
 
     For 'simple' or 'normal' fluids:
@@ -2999,26 +2999,26 @@ def BVirial_Tsonopoulos_extended_ab(Tc, Pc, dipole, smiles):
     else:
         from rdkit.Chem import MolFromSmiles
         mol = MolFromSmiles(smiles)
-        
+
         dipole_r = 1E5*dipole**2*(Pc/101325.0)/Tc**2
-        
-        if (is_ketone(mol) 
-            or is_aldehyde(mol) 
-            or is_nitrile(mol) 
+
+        if (is_ketone(mol)
+            or is_aldehyde(mol)
+            or is_nitrile(mol)
             or is_ether(mol)
             or is_carboxylic_acid(mol)
             or is_ester(mol)
             # ammonia, H2S, HCN
             or smiles in ('N', 'S', 'C#N')):
             a, b = -2.14E-4*dipole_r -4.308E-21*dipole_r**8, 0.0
-            
+
         elif (is_haloalkane(mol) or is_mercaptan(mol)
               or is_sulfide(mol) or is_disulfide(mol)):
             a, b = -2.188E-4*dipole_r**4 - 7.831E-21*dipole_r**8, 0.0
-        
-        elif (is_alcohol(mol) 
-              and not is_aromatic(mol) 
-              and not is_alkyne(mol) 
+
+        elif (is_alcohol(mol)
+              and not is_aromatic(mol)
+              and not is_alkyne(mol)
               and not is_alkene(mol)):
             a, b = 0.0878, 0.00908 + 0.0006957*dipole_r
         else:

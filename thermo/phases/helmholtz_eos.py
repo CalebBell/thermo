@@ -575,7 +575,7 @@ class HelmholtzEOS(Phase):
             fail = True
         if fail or isnan(f0):
             f0 = self._d2Ar_ddeltadtau_func(tau, 1e-20)
-        
+
         fail = False
         try:
             f1 = self._d3Ar_ddeltadtau2_func(tau, 0.0)
@@ -604,7 +604,7 @@ class HelmholtzEOS(Phase):
         if fail or isnan(f1):
             f1 = self._d3Ar_ddeltadtau2_func(tau, 1e-20)
 
-        
+
         fail = False
         try:
             f2 = self._d4Ar_ddeltadtau3_func(tau, 0.0)

@@ -256,15 +256,15 @@ class FlashVL(Flash):
     SS_2P_STAB_COMP_DIFF_MIN = None
 
     PT_methods = [
-        PT_SS, 
-        PT_SS_MEHRA, 
-        PT_SS_GDEM3, 
+        PT_SS,
+        PT_SS_MEHRA,
+        PT_SS_GDEM3,
         PT_NEWTON_lNKVF,
     ]
     PT_algorithms = [
-        sequential_substitution_2P, 
+        sequential_substitution_2P,
         sequential_substitution_Mehra_2P,
-        sequential_substitution_GDEM3_2P, 
+        sequential_substitution_GDEM3_2P,
         nonlin_2P_newton
     ]
 
@@ -275,8 +275,8 @@ class FlashVL(Flash):
     SS_acceleration_method = None
 
     VF_guess_methods = [
-        WILSON_GUESS, 
-        IDEAL_PSAT, 
+        WILSON_GUESS,
+        IDEAL_PSAT,
         TB_TC_GUESS
     ]
 
@@ -381,7 +381,7 @@ class FlashVL(Flash):
         self.unique_phases = [gas] + unique_liquids
         self.unique_phase_count = 1 + self.unique_liquid_count
         self.unique_liquid_hashes = unique_liquid_hashes
-        
+
         self._finish_initialization_base()
 
     def phases_at_TP_binary(self, T, P, zs, liq, gas):
@@ -583,7 +583,7 @@ class FlashVL(Flash):
 
         if all_solutions:
             all_solutions_list = []
-        
+
         # The composition for the assumed-stable phase comes from the min_phase object
         # The zs is the true feed.
         fugacities_trial = min_phase.fugacities_lowest_Gibbs()
@@ -759,7 +759,7 @@ class FlashVL(Flash):
                                                                                 tol=tol,trivial_solution_tol=self.PT_TRIVIAL_SOLUTION_TOL,
                                                                                 V_over_F_guess=V_over_F_guess)
 
-                                                                            
+
         return (V_over_F, xs, ys, l, g, iteration, err)
 
 
@@ -774,8 +774,8 @@ class FlashVL(Flash):
                 liquid_phase=min_phase, gas_phase=other_phase,
                 V_over_F_guess=V_over_F_guess, tol=self.PT_SS_TOL,
                 maxiter=self.PT_SS_MAXITER)
-                                                                        
-            
+
+
 
         except TrivialSolutionError:
             ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
@@ -817,7 +817,7 @@ class FlashVL(Flash):
         return self.flash_TPV_HSGUA(fixed_val=P, spec_val=V, fixed_var='P', spec='V',
                             iter_var='T', zs=zs, solution=solution,
                             hot_start=hot_start)
-    
+
 
     def flash_TV(self, T, V, zs, solution=None, hot_start=None):
         return self.flash_TPV_HSGUA(fixed_val=T, spec_val=V, fixed_var='T', spec='V',
@@ -837,7 +837,7 @@ class FlashVL(Flash):
                 liquid, gas = self.liquid, self.gas
 
                 V_over_F, xs, ys, l, g, iteration, err = self.sequential_substitution_2P(
-                    T=T, P=P, 
+                    T=T, P=P,
                     zs=zs, xs_guess=xs, ys_guess=ys, liquid_phase=liquid,
                     gas_phase=gas, maxiter=self.PT_SS_MAXITER, tol=self.PT_SS_TOL,
                     V_over_F_guess=VF_guess

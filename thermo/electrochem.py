@@ -1415,11 +1415,11 @@ def Kweq_Arcis_Tremaine_Bandura_Lvov(T, rho_w):
 
     References
     ----------
-    .. [1] Arcis, Hugues, Jane P. Ferguson, Jenny S. Cox, and Peter R. Tremaine. 
+    .. [1] Arcis, Hugues, Jane P. Ferguson, Jenny S. Cox, and Peter R. Tremaine.
        "The Ionization Constant of Water at Elevated Temperatures and Pressures:
-       New Data from Direct Conductivity Measurements and Revised Formulations 
+       New Data from Direct Conductivity Measurements and Revised Formulations
        from T = 273 K to 674 K and p = 0.1 MPa to 31 MPa." Journal of Physical
-       and Chemical Reference Data 49, no. 3 (July 23, 2020): 033103. 
+       and Chemical Reference Data 49, no. 3 (July 23, 2020): 033103.
        https://doi.org/10.1063/1.5127662.
     '''
     K_w_G = Kweq_IAPWS_gas(T)

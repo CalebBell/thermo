@@ -210,7 +210,7 @@ __all__ = [
  'Schwartzentruber_a_alpha', 'Almeida_a_alpha', 'Twu91_a_alpha', 'Soave_1993_a_alpha',
  'Gasem_a_alpha', 'Coquelet_a_alpha', 'Haghtalab_a_alpha', 'Saffari_a_alpha',
  'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_1979_a_alpha',
- 
+
  'Twu91_alpha_pure', 'Soave_1972_alpha_pure', 'Soave_1979_alpha_pure',
  'Heyen_alpha_pure', 'Harmens_Knapp_alpha_pure', 'Mathias_1983_alpha_pure',
     'Mathias_Copeman_untruncated_alpha_pure', 'Gibbons_Laughton_alpha_pure',
@@ -343,7 +343,7 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas, a_alphas=None,
     T_inv = x0_inv*x0_inv
     x0T_inv = x0_inv*T_inv
     x5, x6 = 0.5*T_inv, 0.5*x0T_inv
-    
+
     if a_alphas is None:
         a_alphas = [0.0]*N
     if da_alpha_dTs is None:
@@ -409,7 +409,7 @@ def SRK_a_alphas_vectorized(T, Tcs, ais, ms, a_alphas=None):
     return a_alphas
 
 def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms, a_alphas=None,
-                                           da_alpha_dTs=None, 
+                                           da_alpha_dTs=None,
                                            d2a_alpha_dT2s=None):
     r'''Calculates the `a_alpha` terms and their first and second temperature
     derivatives for the SRK equation of state
@@ -1059,7 +1059,7 @@ def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=None):
         a_alphas[i] = ais[i]*x2*x2
     return a_alphas
 
-def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=None, 
+def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=None,
                                               da_alpha_dTs=None, d2a_alpha_dT2s=None):
     r'''Calculates the `a_alpha` terms and their first two temperature
     derivatives for the API SRK equation of state
@@ -1279,11 +1279,11 @@ def Mathias_1983_alpha_pure(T, Tc, c1, c2):
     return (1 + c1*(1-sqrt(Tr)) -c2*(1-Tr)*(0.7-Tr))**2
 
 def Mathias_Copeman_untruncated_alpha_pure(T, Tc, c1, c2, c3):
-    return (c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2                                       
-                             
+    return (c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2
+
 def Mathias_Copeman_original_alpha_pure(T, Tc, c1, c2, c3):
     if T < Tc:
-        return (c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2                                       
+        return (c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2
     rt = sqrt(T/Tc)
     tau = 1.0 - rt
     x = (1.0 + c1*tau)
@@ -1427,7 +1427,7 @@ class Soave_1972_a_alpha(a_alpha_base):
         da_alpha_dT = -a*c0*sqrt(T/Tc)*(c0*(-sqrt(T/Tc) + 1) + 1)/T
         d2a_alpha_dT2 = a*c0*(c0/Tc - sqrt(T/Tc)*(c0*(sqrt(T/Tc) - 1) - 1)/T)/(2*T)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
-    
+
     def a_alpha_pure(self, T):
         c0 = self.alpha_coeffs[0]
         Tc, a = self.Tc, self.a
@@ -1487,7 +1487,7 @@ class Harmens_Knapp_a_alpha(a_alpha_base):
         da_alpha_dT = a*(-c1*sqrt(T/Tc)/T - 2*Tc*c2/T**2)*(c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)
         d2a_alpha_dT2 = a*((c1*sqrt(T/Tc) + 2*Tc*c2/T)**2 - (c1*sqrt(T/Tc) + 8*Tc*c2/T)*(c1*(sqrt(T/Tc) - 1) + c2*(1 - Tc/T) - 1))/(2*T**2)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
-    
+
     def a_alpha_pure(self, T):
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
@@ -1783,7 +1783,7 @@ class Yu_Lu_a_alpha(a_alpha_base):
         da_alpha_dT = a*(10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*(c4*(-T/Tc + 1)*(2*T*c3/Tc**2 + c2/Tc) - c4*(T**2*c3/Tc**2 + T*c2/Tc + c1)/Tc)*log(10))
         d2a_alpha_dT2 = a*(10**(-c4*(T/Tc - 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))*c4*(-4*T*c3/Tc - 2*c2 - 2*c3*(T/Tc - 1) + c4*(T**2*c3/Tc**2 + T*c2/Tc + c1 + (T/Tc - 1)*(2*T*c3/Tc + c2))**2*log(10))*log(10)/Tc**2)
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
-    
+
     def a_alpha_pure(self, T):
         return self.a*Yu_Lu_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
@@ -1810,7 +1810,7 @@ class Trebble_Bishnoi_a_alpha(a_alpha_base):
         da_alpha_dT = a*-c1*exp(c1*(-T/Tc + 1))/Tc
         d2a_alpha_dT2 = a*c1**2*exp(-c1*(T/Tc - 1))/Tc**2
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
-    
+
     def a_alpha_pure(self, T):
         return self.a*Trebble_Bishnoi_alpha_pure(T, self.Tc, *self.alpha_coeffs)
 
@@ -1871,7 +1871,7 @@ class Androulakis_a_alpha(a_alpha_base):
 
     def a_alpha_pure(self, T):
         return self.a*Androulakis_alpha_pure(T, self.Tc, *self.alpha_coeffs)
-    
+
 
 class Schwartzentruber_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
@@ -1919,7 +1919,7 @@ class Almeida_a_alpha(a_alpha_base):
            Dependência Com a Temperatura Do Termo Atrativo de Equações de
            Estado Cúbicas." RBE, Rev. Bras. Eng., Cad. Eng. Quim 8 (1991): 95.
         '''
-        # Note: Sympy didn't handle the derivative of the absolute value for 
+        # Note: Sympy didn't handle the derivative of the absolute value for
         # the second derivative, requires the use a CAS which can
         # handle the assumption that Tr-1 != 0.
         # A second pass on this function resulted in writting two functions:
@@ -1995,7 +1995,7 @@ class Twu91_a_alpha(a_alpha_base):
         d2a_alpha_dT2 = (x8*(c0*c0*x4*x4*x9 - c1 + c2*x1*x1
                              - 2.0*x2*x7 - x6*x9 + x7 + 1.0)*T_inv*T_inv)
         return x5, x8*(x1 - x7)*T_inv, d2a_alpha_dT2
-    
+
 
     def a_alpha_pure(self, T):
         c0, c1, c2 = self.alpha_coeffs
@@ -2518,7 +2518,7 @@ class Soave_1979_a_alpha(a_alpha_base):
         x3 = M + N*x2
         x4 = N*T_inv*T_inv
         return (a*(1.0 - x1*x3), a*(Tc*x1*x4 - x0*x3), a*(2.0*x4*(1.0 - x1*x2)))
-        
+
     def a_alpha_pure(self, T):
         M, N = self.alpha_coeffs
         Tc, a = self.Tc, self.a

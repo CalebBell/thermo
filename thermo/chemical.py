@@ -213,7 +213,7 @@ def set_user_chemical_property_databases(paths):
         string.close()
         loaded_user_dbs.append(regression_data)
         loaded_user_db_paths.append(path)
-            
+
 
 
 
@@ -1154,7 +1154,7 @@ class Chemical(object): # pragma: no cover
                           Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega,
                           dipole=self.dipole,
                           Psat=self.VaporPressure,
-                          eos=self.eos_in_a_box, CASRN=self.CAS, 
+                          eos=self.eos_in_a_box, CASRN=self.CAS,
                           **user_chemical_property_lookup(self.CAS, 'VolumeLiquid'))
 
         self.Vml_Tb = self.VolumeLiquid.T_dependent_property(self.Tb) if self.Tb else None
@@ -3225,7 +3225,7 @@ def _make_getter_group(name):
         base_name = 'is_%s' %(name)
         ref = getattr(functional_groups, base_name)
         return ref(self.rdkitmol)
-        
+
     return get
 for _name in group_names:
     getter = property(_make_getter_group(_name))

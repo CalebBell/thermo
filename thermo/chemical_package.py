@@ -257,11 +257,11 @@ class ChemicalConstantsPackage(object):
     def __add__(self, b):
         r'''Method to create a new :obj:`ChemicalConstantsPackage` object
         from two other :obj:`ChemicalConstantsPackage` objects.
-        
+
 
         Returns
         -------
-        new : :obj:`ChemicalConstantsPackage` 
+        new : :obj:`ChemicalConstantsPackage`
             New object, [-]
 
         Notes
@@ -402,11 +402,11 @@ class ChemicalConstantsPackage(object):
         s = s[:-2] + ')'
         return s
 
-    def compound_index(self, CAS=None, name=None, smiles=None, InChI=None, 
+    def compound_index(self, CAS=None, name=None, smiles=None, InChI=None,
                        InChI_Key=None, PubChem=None):
         r'''Method to retrieve the index of a compound given one of the
         optional identifiers for the compound.
-        
+
         Parameters
         ----------
         CAS : str, optional
@@ -421,7 +421,7 @@ class ChemicalConstantsPackage(object):
             InChI key identifier, [-]
         PubChem : int, optional
             PubChem identifier, [-]
-            
+
         Returns
         -------
         index : int
@@ -622,7 +622,7 @@ class ChemicalConstantsPackage(object):
                                                       **user_chemical_property_lookup(CAS, 'EnthalpyVaporization'))
                                  for CAS, Tb, Tc, Pc, sv, omega in zip(CASs, Tbs, Tcs, Pcs, similarity_variables, omegas)]
 
- 
+
         Hvap_Tbs = [o.T_dependent_property(Tb) if Tb else None for o, Tb, in zip(EnthalpyVaporizations, Tbs)]
         Hvap_Tbs_mass =  [Hvap*1000.0/MW if Hvap is not None else None for Hvap, MW in zip(Hvap_Tbs, MWs)]
 
@@ -801,7 +801,7 @@ class ChemicalConstantsPackage(object):
                                                   Vm=Vml_Tms[i], Vb=Vml_Tbs[i], CASRN=CASs[i]) for i in range(N)]
 
         UNIFAC_group_assignment_DDBST
-        
+
         UNIFAC_groups = []
         UNIFAC_Dortmund_groups = []
         PSRK_groups = []
@@ -1583,15 +1583,15 @@ class PropertyCorrelationsPackage(object):
 
 
         return new
-    
+
     def __add__(self, b):
         r'''Method to create a new :obj:`PropertyCorrelationsPackage` object
         from two other :obj:`PropertyCorrelationsPackage` objects.
-        
+
 
         Returns
         -------
-        new : :obj:`PropertyCorrelationsPackage` 
+        new : :obj:`PropertyCorrelationsPackage`
             New object, [-]
 
         Notes
@@ -1869,8 +1869,8 @@ for use with the :obj:`thermo.phases.IAPWS95` phase object.
 '''
 
 iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip_missing=True,
-                                                 SurfaceTensions=[SurfaceTension(load_data=False, Tc=647.14, exp_poly_fit_ln_tau=(248.14999999999998, 643.9043, 647.14, 
-                                                    [-2.8494246663280267e-05, -0.0007642770215779117, -0.0087879657158058, -0.056840919106152674, -0.22915223013722677, -0.607083777358256, 
+                                                 SurfaceTensions=[SurfaceTension(load_data=False, Tc=647.14, exp_poly_fit_ln_tau=(248.14999999999998, 643.9043, 647.14,
+                                                    [-2.8494246663280267e-05, -0.0007642770215779117, -0.0087879657158058, -0.056840919106152674, -0.22915223013722677, -0.607083777358256,
                                                      -1.0946692428934923, -0.08982641235684152, -2.383855224250596]))],
                                                  HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18,
                                                                             4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])

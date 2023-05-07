@@ -41,26 +41,26 @@ from thermo.coolprop import CPiP_min
 from thermo.phases import coolprop_phase
 from thermo.phases.coolprop_phase import (
     CPPQ_INPUTS,
-    CPQT_INPUTS, 
-    CPunknown, 
+    CPQT_INPUTS,
+    CPunknown,
     CPiDmolar,
 )
 from chemicals.iapws import (
-    iapws95_Psat, 
-    iapws95_Tsat, 
-    iapws95_rhog_sat, 
-    iapws95_rhol_sat, 
-    iapws95_Tc, 
-    iapws95_Pc, 
-    iapws95_MW, 
+    iapws95_Psat,
+    iapws95_Tsat,
+    iapws95_rhog_sat,
+    iapws95_rhol_sat,
+    iapws95_Tc,
+    iapws95_Pc,
+    iapws95_MW,
     iapws95_T
 )
 from thermo.phases import (
     Phase,
-    CEOSGas, 
-    CEOSLiquid, 
-    IdealGas, 
-    CoolPropGas, 
+    CEOSGas,
+    CEOSLiquid,
+    IdealGas,
+    CoolPropGas,
     CoolPropLiquid,
     IAPWS95Gas,
     IAPWS95Liquid,
@@ -291,7 +291,7 @@ class FlashPureVLS(Flash):
         self.liquid_count = len(liquids)
         self.liquid = liquids[0] if len(liquids) else None
         self.solid_count = len(solids)
-        
+
         self.supports_VF_flash = self.gas_count != 0 and self.liquid_count != 0
         self.supports_SF_flash = (self.gas_count != 0 or self.liquid_count != 0) and self.solid_count != 0
 
@@ -313,10 +313,10 @@ class FlashPureVLS(Flash):
             setattr(self, 'solid' + str(i), s)
 
         self.VL_only = self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
-        self.VL_only_CEOSs = (self.VL_only 
-                              and gas 
-                              and liquids 
-                              and isinstance(self.liquids[0], CEOSLiquid) 
+        self.VL_only_CEOSs = (self.VL_only
+                              and gas
+                              and liquids
+                              and isinstance(self.liquids[0], CEOSLiquid)
                               and isinstance(self.gas, CEOSGas))
 
         self.VL_only_IAPWS95 = (len(liquids) == 1
@@ -336,10 +336,10 @@ class FlashPureVLS(Flash):
                                    self.liquids[0].eos_class is self.gas.eos_class
                                    # self.liquids[0].kijs == self.gas.kijs
                                    and not (isinstance(self.liquids[0], (IGMIX,))
-                                            or isinstance(self.gas, (IGMIX,))) 
+                                            or isinstance(self.gas, (IGMIX,)))
                                    and self.VL_EOS_hacks)
 
-        self.VL_only_CoolProp = (len(liquids) == 1 
+        self.VL_only_CoolProp = (len(liquids) == 1
                                  and isinstance(liquids[0], CoolPropLiquid)
                                  and isinstance(gas, CoolPropGas)
                                  and (not solids) and liquids[0].backend == gas.backend and

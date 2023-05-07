@@ -79,7 +79,7 @@ class CEOSPhase(IdealGasDeparturePhase):
     29.2285050
 
     '''
-    __slots__ = ('eos_class', 'eos_kwargs', 'scalar', 'HeatCapacityGases', 'N', 
+    __slots__ = ('eos_class', 'eos_kwargs', 'scalar', 'HeatCapacityGases', 'N',
     'Hfs', 'Gfs', 'Sfs', 'Cpgs_poly_fit', '_Cpgs_data', 'composition_independent',
      'eos_mix', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
     ideal_gas_basis = True
@@ -172,7 +172,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         r'''Method to create a new Phase object with the same constants as the
         existing Phase but at a different `T` and `P`. This method has a
         special parameter `other_eos`.
-        
+
         This is added to allow a gas-type phase to be created from
         a liquid-type phase at the same conditions (and vice-versa),
         as :obj:`GCEOSMIX <thermo.eos_mix.GCEOSMIX>` objects were designed to
@@ -312,7 +312,7 @@ class CEOSPhase(IdealGasDeparturePhase):
             return eos_mix.fugacity_coefficients(eos_mix.Z_l)
 
     supports_lnphis_args = True
-    
+
     def lnphis_args(self, most_stable=False):
         # VTPR, PSRK, anything with GE not yet supported
         # Could save time by allowing T, P as an argument, and getting a new eos_mix at that
@@ -437,7 +437,7 @@ class CEOSPhase(IdealGasDeparturePhase):
             Second volume derivative of pressure, [mol*Pa^2/(J*K)]
         '''
         pass
-    
+
     def lnphis(self):
         r'''Method to calculate and return the log of fugacity coefficients of
         each component in the phase. The calculation is performed by
@@ -477,7 +477,7 @@ class CEOSPhase(IdealGasDeparturePhase):
             First pressure derivative of log fugacity coefficients, [1/Pa]
         '''
         pass
-        
+
     def V(self):
         r'''Method to calculate and return the molar volume of the phase.
 
@@ -487,7 +487,7 @@ class CEOSPhase(IdealGasDeparturePhase):
             Molar volume, [m^3/mol]
         '''
         pass
-        
+
     def dP_dT(self):
         r'''Method to calculate and return the first temperature derivative of
         pressure of the phase.
@@ -503,8 +503,8 @@ class CEOSPhase(IdealGasDeparturePhase):
             First temperature derivative of pressure, [Pa/K]
         '''
         pass
-        
-        
+
+
     def dP_dV(self):
         r'''Method to calculate and return the first volume derivative of
         pressure of the phase.
@@ -520,8 +520,8 @@ class CEOSPhase(IdealGasDeparturePhase):
             First volume derivative of pressure, [Pa*mol/m^3]
         '''
         pass
-        
-        
+
+
     def d2P_dT2(self):
         r'''Method to calculate and return the second temperature derivative of
         pressure of the phase.
@@ -537,7 +537,7 @@ class CEOSPhase(IdealGasDeparturePhase):
             Second temperature derivative of pressure, [Pa/K^2]
         '''
         pass
-        
+
     def d2P_dV2(self):
         r'''Method to calculate and return the second volume derivative of
         pressure of the phase.
@@ -556,7 +556,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         '''
         pass
 
-    
+
     def lnphis_lowest_Gibbs(self):
         try:
             return self._lnphis_lowest_Gibbs
@@ -676,7 +676,7 @@ class CEOSGas(CEOSPhase):
                 phis_pure[i] = o.phi_l
         self._phi_pures = phis_pure
         return phis_pure
-    
+
 
     def H_dep(self):
         try:
@@ -732,19 +732,19 @@ class CEOSGas(CEOSPhase):
             return self.eos_mix.dH_dep_dP_g_V
         except AttributeError:
             return self.eos_mix.dH_dep_dP_l_V
-        
+
     def dH_dep_dP_T(self):
         try:
             return self.eos_mix.dH_dep_dP_g
         except AttributeError:
             return self.eos_mix.dH_dep_dP_l
-    
+
     def dH_dep_dV_T(self):
         try:
             return self.eos_mix.dH_dep_dV_g_T
         except AttributeError:
             return self.eos_mix.dH_dep_dV_l_T
-        
+
     def dH_dep_dV_P(self):
         try:
             return self.eos_mix.dH_dep_dV_g_P
@@ -855,19 +855,19 @@ class CEOSGas(CEOSPhase):
             return self.eos_mix.d2H_dep_dTdP_g
         except AttributeError:
             return self.eos_mix.d2H_dep_dTdP_l
-        
+
     def dH_dep_dT_V(self):
         try:
             return self.eos_mix.dH_dep_dT_g_V
         except:
             return self.eos_mix.dH_dep_dT_l_V
-        
+
     def dH_dep_dzs(self):
         try:
             return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_g)
         except AttributeError:
             return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_l)
-        
+
 
     def d2P_dTdP(self):
         try:
@@ -892,13 +892,13 @@ class CEOSGas(CEOSPhase):
             return self.eos_mix.d2P_dT2_PV_g
         except AttributeError:
             return self.eos_mix.d2P_dT2_PV_l
-    
+
     def dS_dep_dzs(self):
         try:
             return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_g)
         except AttributeError:
             return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_l)
-        
+
 
 class CEOSLiquid(CEOSPhase):
     is_gas = False
@@ -916,7 +916,7 @@ class CEOSLiquid(CEOSPhase):
             return self.eos_mix.PIP_l
         except AttributeError:
             return self.eos_mix.PIP_g
-    
+
     def lnphis(self):
         try:
             return self.eos_mix.fugacity_coefficients(self.eos_mix.Z_l)
@@ -962,7 +962,7 @@ class CEOSLiquid(CEOSPhase):
                 phis_pure[i] = (o.phi_g)
         self._phi_pures = phis_pure
         return phis_pure
-    
+
 
     def H_dep(self):
         try:
@@ -1018,19 +1018,19 @@ class CEOSLiquid(CEOSPhase):
             return self.eos_mix.dH_dep_dP_l_V
         except AttributeError:
             return self.eos_mix.dH_dep_dP_g_V
-        
+
     def dH_dep_dP_T(self):
         try:
             return self.eos_mix.dH_dep_dP_l
         except AttributeError:
             return self.eos_mix.dH_dep_dP_g
-    
+
     def dH_dep_dV_T(self):
         try:
             return self.eos_mix.dH_dep_dV_l_T
         except AttributeError:
             return self.eos_mix.dH_dep_dV_g_T
-        
+
     def dH_dep_dV_P(self):
         try:
             return self.eos_mix.dH_dep_dV_l_P
@@ -1143,19 +1143,19 @@ class CEOSLiquid(CEOSPhase):
             return self.eos_mix.d2H_dep_dTdP_l
         except AttributeError:
             return self.eos_mix.d2H_dep_dTdP_g
-        
+
     def dH_dep_dT_V(self):
         try:
             return self.eos_mix.dH_dep_dT_l_V
         except:
             return self.eos_mix.dH_dep_dT_g_V
-        
+
     def dH_dep_dzs(self):
         try:
             return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_l)
         except AttributeError:
             return self.eos_mix.dH_dep_dzs(self.eos_mix.Z_g)
-        
+
 
     def d2P_dTdP(self):
         try:
@@ -1180,7 +1180,7 @@ class CEOSLiquid(CEOSPhase):
             return self.eos_mix.d2P_dT2_PV_l
         except AttributeError:
             return self.eos_mix.d2P_dT2_PV_g
-    
+
     def dS_dep_dzs(self):
         try:
             return self.eos_mix.dS_dep_dzs(self.eos_mix.Z_l)

@@ -74,7 +74,7 @@ VIRIAL_B_OCONNELL_PRAUSNITZ = "VIRIAL_B_OCONNELL_PRAUSNITZ"
 VIRIAL_B_XIANG = 'VIRIAL_B_XIANG'
 VIRIAL_B_MENG = 'VIRIAL_B_MENG'
 
-VIRIAL_B_MODELS = (VIRIAL_B_ZERO, 
+VIRIAL_B_MODELS = (VIRIAL_B_ZERO,
                    VIRIAL_B_PITZER_CURL,
                    VIRIAL_B_ABBOTT,
                    VIRIAL_B_TSONOPOULOS,
@@ -108,7 +108,7 @@ class VirialCSP(object):
     components and their mixtures. It is configurable which corresponding
     states model is used. Either the `B` or `C` model can be disabled;
     if both are off, this will revert to the ideal-gas equation of state.
-    
+
     Parameters
     ----------
     Tcs : list[float]
@@ -120,9 +120,9 @@ class VirialCSP(object):
     omegas : list[float]
         Acentric factors of all components, [-]
     B_model : str, optional
-        The model used to calculate the `B` pure component and interaction 
+        The model used to calculate the `B` pure component and interaction
         virial coefficients, [-]
-        
+
         * **VIRIAL_B_ZERO**: The B virial coefficient is always zero
         * **VIRIAL_B_PITZER_CURL** The model of [2]_, :obj:`chemicals.virial.BVirial_Pitzer_Curl`
         * **VIRIAL_B_ABBOTT** The model of [3]_, :obj:`chemicals.virial.BVirial_Abbott`
@@ -134,10 +134,10 @@ class VirialCSP(object):
 
     cross_B_model : str, optional
         The model used to calculate the `B` cross virial coefficient
-        
+
         * **VIRIAL_CROSS_B_TARAKAD_DANNER** : This model uses the mixing rules
           for estimating interaction critical components according to the
-          rules  :obj:`chemicals.virial.Tarakad_Danner_virial_CSP_Tcijs`,  
+          rules  :obj:`chemicals.virial.Tarakad_Danner_virial_CSP_Tcijs`,
           :obj:`chemicals.virial.Tarakad_Danner_virial_CSP_Pcijs`,
           :obj:`chemicals.virial.Lee_Kesler_virial_CSP_Vcijs` and
           :obj:`chemicals.virial.Tarakad_Danner_virial_CSP_omegaijs`;
@@ -152,13 +152,13 @@ class VirialCSP(object):
         Cross parameters `kijs` for **VIRIAL_CROSS_B_TARAKAD_DANNER** cross
         rule; specified or set to zero [-]
     C_model : str, optional
-        The model used to calculate the `C` pure component and interaction 
+        The model used to calculate the `C` pure component and interaction
         virial coefficients, [-]
-        
+
         * **VIRIAL_C_ZERO**: The C virial coefficient is always zero
         * **VIRIAL_C_ORBEY_VERA** The model of [9]_, :obj:`chemicals.virial.CVirial_Orbey_Vera`
         * **VIRIAL_C_XIANG** The model of [10]_, :obj:`chemicals.virial.CVirial_Liu_Xiang`
-        
+
     B_model_Meng_as : list[list[float]], optional
         Meng `a` parameters; this is essentially a correction for polar
         behavior, and must be provided for all components as well as their
@@ -187,9 +187,9 @@ class VirialCSP(object):
 
     References
     ----------
-    .. [1] O’Connell, J. P., and J. M. Prausnitz. "Empirical Correlation of 
+    .. [1] O’Connell, J. P., and J. M. Prausnitz. "Empirical Correlation of
        Second Virial Coefficients for Vapor-Liquid Equilibrium Calculations."
-       Industrial & Engineering Chemistry Process Design and Development 6, 
+       Industrial & Engineering Chemistry Process Design and Development 6,
        no. 2 (April 1, 1967): 245-50. https://doi.org/10.1021/i260022a016.
     .. [2] Pitzer, Kenneth S., and R. F. Curl. "The Volumetric and
        Thermodynamic Properties of Fluids. III. Empirical Equation for the
@@ -209,15 +209,15 @@ class VirialCSP(object):
        Workshop on Vapour-Liquid Equilibria and Related Properties in Binary
        and Ternary Mixtures of Ethers, Alkanes and Alkanols, 133, no. 1-2
        (June 1997): 11-34. doi:10.1016/S0378-3812(97)00058-7.
-    .. [7] Xiang, H. W. "The New Simple Extended Corresponding-States 
-       Principle: Vapor Pressure and Second Virial Coefficient." Chemical 
-       Engineering Science 57, no. 8 (April 2002): 1439049. 
+    .. [7] Xiang, H. W. "The New Simple Extended Corresponding-States
+       Principle: Vapor Pressure and Second Virial Coefficient." Chemical
+       Engineering Science 57, no. 8 (April 2002): 1439049.
        https://doi.org/10.1016/S0009-2509(02)00017-9.
     .. [8] Meng, Long, Yuan-Yuan Duan, and Lei Li. "Correlations for Second and
        Third Virial Coefficients of Pure Fluids." Fluid Phase Equilibria 226
        (December 10, 2004): 109-20. https://doi.org/10.1016/j.fluid.2004.09.023.
-    .. [9] Orbey, Hasan, and J. H. Vera. "Correlation for the Third Virial 
-       Coefficient Using Tc, Pc and ω as Parameters." AIChE Journal 29, no. 1 
+    .. [9] Orbey, Hasan, and J. H. Vera. "Correlation for the Third Virial
+       Coefficient Using Tc, Pc and ω as Parameters." AIChE Journal 29, no. 1
        (January 1, 1983): 107-13. https://doi.org/10.1002/aic.690290115.
     .. [10] Liu, D. X., and H. W. Xiang. "Corresponding-States Correlation and
        Prediction of Third Virial Coefficients for a Wide Range of Substances."
@@ -229,10 +229,10 @@ class VirialCSP(object):
     pure_B_calculated = False
     pure_C_calculated = False
 
-    nonstate_constants = ('Tcs', 'Pcs', 'Vcs', 'omegas', 'B_model', 'cross_B_model', 
+    nonstate_constants = ('Tcs', 'Pcs', 'Vcs', 'omegas', 'B_model', 'cross_B_model',
                           'cross_B_model_kijs', 'C_model', 'B_model_Meng_as',
                           'B_model_Tsonopoulos_extended_as', 'B_model_Tsonopoulos_extended_bs')
-        
+
     def __repr__(self):
         r'''Method to create a string representation of the VirialCSP object, with
         the goal of making it easy to obtain standalone code which reproduces
@@ -247,7 +247,7 @@ class VirialCSP(object):
 
         Examples
         --------
-        
+
         >>> from thermo import VirialCSP
         >>> model = VirialCSP(Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
         >>> model
@@ -333,14 +333,14 @@ class VirialCSP(object):
         return self.__hash__() == hash(other)
 
     def __init__(self, Tcs, Pcs, Vcs, omegas,
-                 B_model=VIRIAL_B_XIANG, 
-                 
+                 B_model=VIRIAL_B_XIANG,
+
                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                  # always require kijs in this model
                  cross_B_model_kijs=None,
-                 
+
                  C_model=VIRIAL_C_XIANG,
-                 
+
                  B_model_Meng_as=None,
                  B_model_Tsonopoulos_extended_as=None,
                  B_model_Tsonopoulos_extended_bs=None,
@@ -356,7 +356,7 @@ class VirialCSP(object):
 
         self.B_model = B_model
         self.cross_B_model = cross_B_model
-        
+
         if cross_B_model_kijs is None:
             if scalar:
                 cross_B_model_kijs = [[0.0]*N for i in range(N)]
@@ -364,7 +364,7 @@ class VirialCSP(object):
                 cross_B_model_kijs = zeros((N, N))
 
         self.cross_B_model_kijs = cross_B_model_kijs
-        
+
         # Parameters specific to `B` model
         if B_model_Meng_as is None:
             if scalar:
@@ -393,8 +393,8 @@ class VirialCSP(object):
         self.B_model_Meng_as_pure = B_model_Meng_as_pure
         self.B_model_Tsonopoulos_extended_as_pure = B_model_Tsonopoulos_extended_as_pure
         self.B_model_Tsonopoulos_extended_bs_pure = B_model_Tsonopoulos_extended_bs_pure
-        
-        
+
+
         # Cross B coefficients
         self.cross_B_model_Tcijs = Tarakad_Danner_virial_CSP_Tcijs(Tcs, self.cross_B_model_kijs)
         self.cross_B_model_Pcijs = Tarakad_Danner_virial_CSP_Pcijs(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, Tcijs=self.cross_B_model_Tcijs)
@@ -409,7 +409,7 @@ class VirialCSP(object):
         self.C_model = C_model
         self.C_zero = C_model == VIRIAL_C_ZERO
         self.B_zero = B_model == VIRIAL_B_ZERO
-        
+
     def to(self, T=None):
         r'''Method to construct a new object at a new temperature.
 
@@ -462,9 +462,9 @@ class VirialCSP(object):
         new.B_zero = self.B_zero
         new.T = T
         return new
-        
-        
-        
+
+
+
     def B_interactions_at_T(self, T):
         N = self.N
         Tcijs, Pcijs, Vcijs, omegaijs = self.cross_B_model_Tcijs, self.cross_B_model_Pcijs, self.cross_B_model_Vcijs, self.cross_B_model_omegaijs
@@ -478,7 +478,7 @@ class VirialCSP(object):
             dB_dTs = zeros((N, N))
             d2B_dT2s = zeros((N, N))
             d3B_dT3s = zeros((N, N))
-        
+
 
         if self.B_model == VIRIAL_B_ZERO:
             return Bs, dB_dTs, d2B_dT2s, d3B_dT3s
@@ -508,18 +508,18 @@ class VirialCSP(object):
                                                                                    Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
 
         return Bs_interactions, dB_dTs_interactions, d2B_dT2s_interactions, d3B_dT3s_interactions
-    
-    
+
+
     def _set_B_and_der_interactions(self):
         Bs_interactions, dB_dTs_interactions, d2B_dT2s_interactions, d3B_dT3s_interactions = self.B_interactions_at_T(self.T)
-        
+
         self.Bs_interactions = Bs_interactions
         self.dB_dTs_interactions = dB_dTs_interactions
         self.d2B_dT2s_interactions = d2B_dT2s_interactions
         self.d3B_dT3s_interactions = d3B_dT3s_interactions
         self.cross_B_calculated = True
 
-    
+
     def B_pures_at_T(self, T):
         N = self.N
         Tcs, Pcs, Vcs, omegas = self.Tcs, self.Pcs, self.Vcs, self.omegas
@@ -562,10 +562,10 @@ class VirialCSP(object):
                                                                                    Bs=Bs, dB_dTs=dB_dTs, d2B_dT2s=d2B_dT2s, d3B_dT3s=d3B_dT3s)
 
         return Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure
-    
+
     def _set_B_and_der_pure(self):
         Bs_pure, dB_dTs_pure, d2B_dT2s_pure, d3B_dT3s_pure = self.B_pures_at_T(self.T)
-        
+
         self.Bs_pure = Bs_pure
         self.dB_dTs_pure = dB_dTs_pure
         self.d2B_dT2s_pure = d2B_dT2s_pure
@@ -575,7 +575,7 @@ class VirialCSP(object):
     def B_pures(self):
         r'''Method to calculate and return the pure component virial coefficients
         at the specified temperature.
-        
+
         Returns
         -------
         B_pures : list[float]
@@ -584,15 +584,15 @@ class VirialCSP(object):
         if not self.pure_B_calculated:
             self._set_B_and_der_pure()
         return self.Bs_pure
-        
+
     def dB_dT_pures(self):
-        r'''Method to calculate and return the first temperature derivative of 
+        r'''Method to calculate and return the first temperature derivative of
         pure component virial coefficients at the specified temperature.
-        
+
         Returns
         -------
         dB_dT_pures : list[float]
-            Second temperature derivative of second `B` virial coefficients, 
+            Second temperature derivative of second `B` virial coefficients,
             [m^3/(mol*K)]
         '''
         if not self.pure_B_calculated:
@@ -600,13 +600,13 @@ class VirialCSP(object):
         return self.dB_dTs_pure
 
     def d2B_dT2_pures(self):
-        r'''Method to calculate and return the second temperature derivative of 
+        r'''Method to calculate and return the second temperature derivative of
         pure component virial coefficients at the specified temperature.
-        
+
         Returns
         -------
         d2B_dT2_pures : list[float]
-            Second temperature derivative of second `B` virial coefficients, 
+            Second temperature derivative of second `B` virial coefficients,
             [m^3/(mol*K^2)]
         '''
         if not self.pure_B_calculated:
@@ -614,23 +614,23 @@ class VirialCSP(object):
         return self.d2B_dT2s_pure
 
     def d3B_dT3_pures(self):
-        r'''Method to calculate and return the third temperature derivative of 
+        r'''Method to calculate and return the third temperature derivative of
         pure component virial coefficients at the specified temperature.
-        
+
         Returns
         -------
         d3B_dT3_pures : list[float]
-            Third temperature derivative of second `B` virial coefficients, 
+            Third temperature derivative of second `B` virial coefficients,
             [m^3/(mol*K^3)]
         '''
         if not self.pure_B_calculated:
             self._set_B_and_der_pure()
         return self.d3B_dT3s_pure
-    
+
     def B_interactions(self):
         r'''Method to calculate and return the matrix of interaction component
         virial coefficients at the specified temperature.
-        
+
         Returns
         -------
         B_interactions : list[list[float]]
@@ -639,49 +639,49 @@ class VirialCSP(object):
         if not self.cross_B_calculated:
             self._set_B_and_der_interactions()
         return self.Bs_interactions
-        
+
     def dB_dT_interactions(self):
-        r'''Method to calculate and return the first temperature derivative of 
+        r'''Method to calculate and return the first temperature derivative of
         the `B` virial interaction coefficients at the specified temperature.
-        
+
         Returns
         -------
         dB_dT_interactions : list[list[float]]
-            Second temperature derivative of second `B` virial interaction 
+            Second temperature derivative of second `B` virial interaction
             coefficients, [m^3/(mol*K)]
         '''
         if not self.cross_B_calculated:
             self._set_B_and_der_interactions()
         return self.dB_dTs_interactions
-    
+
     def d2B_dT2_interactions(self):
-        r'''Method to calculate and return the second temperature derivative of 
+        r'''Method to calculate and return the second temperature derivative of
         the `B` virial interaction coefficients at the specified temperature.
-        
+
         Returns
         -------
         d2B_dT2_interactions : list[list[float]]
-            Second temperature derivative of second `B` virial interaction 
+            Second temperature derivative of second `B` virial interaction
             coefficients, [m^3/(mol*K^2)]
         '''
         if not self.cross_B_calculated:
             self._set_B_and_der_interactions()
         return self.d2B_dT2s_interactions
-        
+
     def d3B_dT3_interactions(self):
-        r'''Method to calculate and return the third temperature derivative of 
+        r'''Method to calculate and return the third temperature derivative of
         the `B` virial interaction coefficients at the specified temperature.
-        
+
         Returns
         -------
         d3B_dT3_interactions : list[list[float]]
-            Third temperature derivative of second `B` virial interaction 
+            Third temperature derivative of second `B` virial interaction
             coefficients, [m^3/(mol*K^3)]
         '''
         if not self.cross_B_calculated:
             self._set_B_and_der_interactions()
         return self.d3B_dT3s_interactions
-    
+
     def C_interactions_at_T(self, T):
         N = self.N
         Tcijs, Pcijs, Vcijs, omegaijs = self.cross_C_model_Tcijs, self.cross_C_model_Pcijs, self.cross_C_model_Vcijs, self.cross_C_model_omegaijs
@@ -695,17 +695,17 @@ class VirialCSP(object):
             dC_dTs = zeros((N, N))
             d2C_dT2s = zeros((N, N))
             d3C_dT3s = zeros((N, N))
-            
+
         if self.C_model == VIRIAL_C_ZERO:
             return Cs, dC_dTs, d2C_dT2s, d3C_dT3s
-            
+
         elif self.C_model == VIRIAL_C_XIANG:
             Cs_interactions, dC_dTs_interactions, d2C_dT2s_interactions, d3C_dT3s_interactions = CVirial_Liu_Xiang_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, Vcs=Vcijs, omegas=omegaijs,
                                                                                    Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)
         elif self.C_model == VIRIAL_C_ORBEY_VERA:
             Cs_interactions, dC_dTs_interactions, d2C_dT2s_interactions, d3C_dT3s_interactions = CVirial_Orbey_Vera_mat(T=T, Tcs=Tcijs, Pcs=Pcijs, omegas=omegaijs,
-                                                                                   Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)        
-        
+                                                                                   Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)
+
         return Cs_interactions, dC_dTs_interactions, d2C_dT2s_interactions, d3C_dT3s_interactions
 
     def C_pures_at_T(self, T):
@@ -731,11 +731,11 @@ class VirialCSP(object):
             Cs_pure, dC_dTs_pure, d2C_dT2s_pure, d3C_dT3s_pure = CVirial_Orbey_Vera_vec(T=T, Tcs=Tcs, Pcs=Pcs, omegas=omegas,
                                                                                    Cs=Cs, dC_dTs=dC_dTs, d2C_dT2s=d2C_dT2s, d3C_dT3s=d3C_dT3s)
         return Cs_pure, dC_dTs_pure, d2C_dT2s_pure, d3C_dT3s_pure
-    
+
 
     def _set_C_and_der_pure(self):
         Cs_pure, dC_dTs_pure, d2C_dT2s_pure, d3C_dT3s_pure = self.C_pures_at_T(self.T)
-        
+
         self.Cs_pure = Cs_pure
         self.dC_dTs_pure = dC_dTs_pure
         self.d2C_dT2s_pure = d2C_dT2s_pure
@@ -744,7 +744,7 @@ class VirialCSP(object):
 
     def _set_C_and_der_interactions(self):
         Cs_interactions, dC_dTs_interactions, d2C_dT2s_interactions, d3C_dT3s_interactions = self.C_interactions_at_T(self.T)
-        
+
         self.Cs_interactions = Cs_interactions
         self.dC_dTs_interactions = dC_dTs_interactions
         self.d2C_dT2s_interactions = d2C_dT2s_interactions
@@ -752,9 +752,9 @@ class VirialCSP(object):
         self.cross_C_calculated = True
 
     def C_pures(self):
-        r'''Method to calculate and return the pure component third virial 
+        r'''Method to calculate and return the pure component third virial
         coefficients  at the specified temperature.
-        
+
         Returns
         -------
         C_pures : list[float]
@@ -763,15 +763,15 @@ class VirialCSP(object):
         if not self.pure_C_calculated:
             self._set_C_and_der_pure()
         return self.Cs_pure
-        
+
     def dC_dT_pures(self):
         r'''Method to calculate and return the first temperature derivative of
         pure component third virial coefficients at the specified temperature.
-        
+
         Returns
         -------
         dC_dT_pures : list[float]
-            First temperature derivative of third `C` virial coefficients, 
+            First temperature derivative of third `C` virial coefficients,
             [m^6/(mol^2*K)]
         '''
         if not self.pure_C_calculated:
@@ -781,11 +781,11 @@ class VirialCSP(object):
     def d2C_dT2_pures(self):
         r'''Method to calculate and return the second temperature derivative of
         pure component third virial coefficients at the specified temperature.
-        
+
         Returns
         -------
         d2C_dT2_pures : list[float]
-            Second temperature derivative of third `C` virial coefficients, 
+            Second temperature derivative of third `C` virial coefficients,
             [m^6/(mol^2*K^2)]
         '''
         if not self.pure_C_calculated:
@@ -795,11 +795,11 @@ class VirialCSP(object):
     def d3C_dT3_pures(self):
         r'''Method to calculate and return the third temperature derivative of
         pure component third virial coefficients at the specified temperature.
-        
+
         Returns
         -------
         d3C_dT3_pures : list[float]
-            Third temperature derivative of third `C` virial coefficients, 
+            Third temperature derivative of third `C` virial coefficients,
             [m^6/(mol^2*K^3)]
         '''
         if not self.pure_C_calculated:
@@ -807,9 +807,9 @@ class VirialCSP(object):
         return self.d3C_dT3s_pure
 
     def C_interactions(self):
-        r'''Method to calculate and return the matrix of interaction third  
+        r'''Method to calculate and return the matrix of interaction third
         virial coefficients at the specified temperature.
-        
+
         Returns
         -------
         C_interactions : list[list[float]]
@@ -818,67 +818,67 @@ class VirialCSP(object):
         if not self.cross_C_calculated:
             self._set_C_and_der_interactions()
         return self.Cs_interactions
-    
+
     def dC_dT_interactions(self):
-        r'''Method to calculate and return the matrix of first temperature 
-        derivatives of interaction third virial coefficients at the specified 
+        r'''Method to calculate and return the matrix of first temperature
+        derivatives of interaction third virial coefficients at the specified
         temperature.
-        
+
         Returns
         -------
         dC_dT_interactions : list[list[float]]
-            Interaction first temperature derivatives of third `C` virial 
+            Interaction first temperature derivatives of third `C` virial
             coefficients, [m^6/(mol^2*K)]
         '''
         if not self.cross_C_calculated:
             self._set_C_and_der_interactions()
         return self.dC_dTs_interactions
-    
+
     def d2C_dT2_interactions(self):
-        r'''Method to calculate and return the matrix of second temperature 
-        derivatives of interaction third virial coefficients at the specified 
+        r'''Method to calculate and return the matrix of second temperature
+        derivatives of interaction third virial coefficients at the specified
         temperature.
-        
+
         Returns
         -------
         d2C_dT2_interactions : list[list[float]]
-            Interaction second temperature derivatives of third `C` virial 
+            Interaction second temperature derivatives of third `C` virial
             coefficients, [m^6/(mol^2*K^2)]
         '''
         if not self.cross_C_calculated:
             self._set_C_and_der_interactions()
         return self.d2C_dT2s_interactions
-    
+
     def d3C_dT3_interactions(self):
-        r'''Method to calculate and return the matrix of third temperature 
-        derivatives of interaction third virial coefficients at the specified 
+        r'''Method to calculate and return the matrix of third temperature
+        derivatives of interaction third virial coefficients at the specified
         temperature.
-        
+
         Returns
         -------
         d3C_dT3_interactions : list[list[float]]
-            Interaction third temperature derivatives of third `C` virial 
+            Interaction third temperature derivatives of third `C` virial
             coefficients, [m^6/(mol^2*K^2)]
         '''
         if not self.cross_C_calculated:
             self._set_C_and_der_interactions()
         return self.d3C_dT3s_interactions
-    
+
 
 
 class VirialGas(IdealGasDeparturePhase):
     r'''Class for representing a real gas defined by the virial equation of
     state (density form), as a phase object. The equation includes the `B`
-    and `C` coefficients but not further coefficients as they cannot be 
+    and `C` coefficients but not further coefficients as they cannot be
     accurately estimated. Only limited experimental data for third virial
     coefficients is available.
-    
-    This model is generic, and allows any source of virial coefficients to be 
+
+    This model is generic, and allows any source of virial coefficients to be
     plugged it, so long as it provides the right methods. See :obj:`VirialCSP`.
 
     .. math::
-        Z = \frac{PV}{RT} = 1 + \frac{B}{V} + \frac{C}{V^2} 
-    
+        Z = \frac{PV}{RT} = 1 + \frac{B}{V} + \frac{C}{V^2}
+
     Parameters
     ----------
     model : object
@@ -899,16 +899,16 @@ class VirialGas(IdealGasDeparturePhase):
     zs : list[float], optional
         Mole fractions of each component, [-]
     cross_B_model : str, optional
-        The method used to combine the pure and/or interaction second `B` virial 
+        The method used to combine the pure and/or interaction second `B` virial
         coefficients into a single `B` coefficient.
-        
+
         * 'linear': :math:`B = \sum_i y_i B_i`
         * 'theory': :math:` B = \sum_i \sum_j y_i y_j B(T)`
     cross_C_model : str, optional
-        The method used to combine the pure and/or interaction third `C` virial 
+        The method used to combine the pure and/or interaction third `C` virial
         coefficients into a single `C` coefficient.
-        
-        * 'linear': :math:`C = \sum_i y_i C_i`; this is considerably faster 
+
+        * 'linear': :math:`C = \sum_i y_i C_i`; this is considerably faster
         * 'Orentlicher-Prausnitz': :math:`C = \sum_i \sum_j \sum_k y_i y_j y_k C_{ijk}(T)`
           where :math:`C_{ijk} = \left(C_{ij}C_{jk}C_{ik}\right)^{1/3}`
 
@@ -916,7 +916,7 @@ class VirialGas(IdealGasDeparturePhase):
     --------
     T-P initialization for nitrogen, oxygen, and argon, using Poling's polynomial heat
     capacities:
-    
+
     >>> Tcs=[126.2, 154.58, 150.8]
     >>> Pcs=[3394387.5, 5042945.25, 4873732.5]
     >>> Vcs=[8.95e-05, 7.34e-05, 7.49e-05]
@@ -943,26 +943,26 @@ class VirialGas(IdealGasDeparturePhase):
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'model',
                         'cross_B_model', 'cross_C_model') + pure_references
 
-    def __init__(self, model, HeatCapacityGases=None, Hfs=None, Gfs=None, 
+    def __init__(self, model, HeatCapacityGases=None, Hfs=None, Gfs=None,
                  T=None, P=None, zs=None,
                  cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz'):
         self.model = model.to(T=T)
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
         self.Gfs = Gfs
-        
+
         if cross_B_model not in ('theory', 'linear'):
             raise ValueError("Unsupported value for `cross_B_model`")
         if cross_C_model not in ('Orentlicher-Prausnitz', 'linear'):
             raise ValueError("Unsupported value for `cross_C_model`")
         self.cross_B_model = cross_B_model
         self.cross_C_model = cross_C_model
-        
+
         # Store the virial cross model as a boolean
         # It is likely additional `C` models will be published, the current one is emperical
         self.cross_B_coefficients = cross_B_model == 'theory'
         self.cross_C_coefficients = cross_C_model == 'Orentlicher-Prausnitz'
-        
+
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
         else:
@@ -983,7 +983,7 @@ class VirialGas(IdealGasDeparturePhase):
         if T is not None and P is not None and zs is not None:
             Z = Z_from_virial_density_form(T, P, self.B(), self.C())
             self._V = Z*self.R*T/P
-        
+
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with
         the goal of making it easy to obtain standalone code which reproduces
@@ -1014,26 +1014,26 @@ class VirialGas(IdealGasDeparturePhase):
         return base
 
 
-        
+
     def V(self):
         r'''Method to calculate and return the molar volume.
-        
+
         Returns
         -------
         V : float
             Molar volume [m^3/mol]
         '''
         return self._V
-    
+
     def dV_dzs(self):
-        r'''Method to calculate and return the first mole fraction derivatives 
-        of the molar volume. See :obj:`chemicals.virial.dV_dzs_virial` for 
+        r'''Method to calculate and return the first mole fraction derivatives
+        of the molar volume. See :obj:`chemicals.virial.dV_dzs_virial` for
         further details.
-        
+
         Returns
         -------
         dV_dzs : list[float]
-            First mole fraction derivatives of molar volume 
+            First mole fraction derivatives of molar volume
             [m^3/mol]
         '''
         try:
@@ -1054,14 +1054,14 @@ class VirialGas(IdealGasDeparturePhase):
         return dV_dzs
 
     def d2V_dzizjs(self):
-        r'''Method to calculate and return the second mole fraction derivatives 
-        of the molar volume. See :obj:`chemicals.virial.d2V_dzizjs_virial` for 
+        r'''Method to calculate and return the second mole fraction derivatives
+        of the molar volume. See :obj:`chemicals.virial.d2V_dzizjs_virial` for
         further details.
-        
+
         Returns
         -------
         d2V_dzizjs : list[float]
-            Second mole fraction derivatives of molar volume 
+            Second mole fraction derivatives of molar volume
             [m^3/mol]
         '''
         try:
@@ -1084,15 +1084,15 @@ class VirialGas(IdealGasDeparturePhase):
         self._d2V_dzizjs = d2V_dzizjs_virial(B=B, C=C, V=V, dB_dzs=dB_dzs, dC_dzs=dC_dzs, dV_dzs=dV_dzs,
                                              d2B_dzizjs=d2B_dzizjs, d2C_dzizjs=d2C_dzizjs, d2V_dzizjs=d2V_dzizjs)
         return d2V_dzizjs
-    
+
     def dG_dep_dzs(self):
-        r'''Method to calculate and return the first mole fraction derivatives 
-        of the departure Gibbs energy. 
-        
+        r'''Method to calculate and return the first mole fraction derivatives
+        of the departure Gibbs energy.
+
         Returns
         -------
         dG_dep_dzs : list[float]
-            First mole fraction derivatives of departure Gibbs energy 
+            First mole fraction derivatives of departure Gibbs energy
             [J/mol]
         '''
         try:
@@ -1133,7 +1133,7 @@ class VirialGas(IdealGasDeparturePhase):
                                     - x4*0.5 + x8*x9))
         # self._dG_dep_dzs = dG_dep_dzs_virial(B=B, C=C, V=V, dB_dzs=dB_dzs, dC_dzs=dC_dzs, dG_dep_dzs=dG_dep_dzs)
         return dG_dep_dzs
-    
+
     def dG_dep_dns(self):
         try:
             return self._dG_dep_dns
@@ -1145,10 +1145,10 @@ class VirialGas(IdealGasDeparturePhase):
         else:
             dG_dep_dns = zeros(N)
         self._dG_dep_dns = dG_dep_dns = dxs_to_dns(self.dG_dep_dzs(), self.zs, dG_dep_dns)
-        return dG_dep_dns 
+        return dG_dep_dns
 
-    
-        
+
+
     def dnG_dep_dns(self):
         try:
             return self._dnG_dep_dns
@@ -1159,9 +1159,9 @@ class VirialGas(IdealGasDeparturePhase):
             dnG_dep_dns = [0.0]*N
         else:
             dnG_dep_dns = zeros(N)
-        
+
         self._dnG_dep_dns = dnG_dep_dns = dxs_to_dn_partials(self.dG_dep_dzs(), self.zs, self.G_dep(), dnG_dep_dns)
-        return dnG_dep_dns 
+        return dnG_dep_dns
 
     def lnphi(self):
         return self.G_dep()/(R*self.T)
@@ -1169,11 +1169,11 @@ class VirialGas(IdealGasDeparturePhase):
     def lnphis(self):
         r'''Method to calculate and return the log fugacity coefficients of
         the phase.
-        
+
         Returns
         -------
         lnphis : list[float]
-            Log fugacity coefficients, [-] 
+            Log fugacity coefficients, [-]
         '''
         # working!
         zs = self.zs
@@ -1185,17 +1185,17 @@ class VirialGas(IdealGasDeparturePhase):
             dG_dep_dns_RT = [v*RT_inv for v in dG_dep_dns]
         else:
             dG_dep_dns_RT = RT_inv*dG_dep_dns
-        
+
         out = [0.0]*self.N if self.scalar else zeros(self.N)
         log_phis = dns_to_dn_partials(dG_dep_dns_RT, lnphi, out)
         return log_phis
 
-    
-    
+
+
     def dP_dT(self):
         r'''Method to calculate and return the first derivative of pressure
         with respect to temperature.
-        
+
         .. math::
             \left(\frac{\partial P}{\partial T}\right)_{V} = \frac{R \left(T
             \left(V \frac{d}{d T} B{\left(T \right)} + \frac{d}{d T} C{\left(T
@@ -1219,7 +1219,7 @@ class VirialGas(IdealGasDeparturePhase):
     def dP_dV(self):
         r'''Method to calculate and return the first derivative of pressure
         with respect to volume.
-        
+
         .. math::
             \left(\frac{\partial P}{\partial V}\right)_{T} =
             - \frac{R T \left(V^{2} + 2 V B{\left(T \right)} + 3 C{\left(T
@@ -1242,7 +1242,7 @@ class VirialGas(IdealGasDeparturePhase):
     def d2P_dTdV(self):
         r'''Method to calculate and return the second derivative of pressure
         with respect to volume and temperature.
-        
+
         .. math::
             \left(\frac{\partial^2 P}{\partial V\partial T}\right)_{T} =
             - \frac{R \left(2 T V \frac{d}{d T} B{\left(T \right)} + 3 T
@@ -1269,7 +1269,7 @@ class VirialGas(IdealGasDeparturePhase):
     def d2P_dV2(self):
         r'''Method to calculate and return the second derivative of pressure
         with respect to volume.
-        
+
         .. math::
             \left(\frac{\partial^2 P}{\partial V^2}\right)_{T} =
             \frac{2 R T \left(V^{2} + 3 V B{\left(T \right)}
@@ -1293,7 +1293,7 @@ class VirialGas(IdealGasDeparturePhase):
     def d2P_dT2(self):
         r'''Method to calculate and return the second derivative of pressure
         with respect to temperature.
-        
+
         .. math::
             \left(\frac{\partial^2 P}{\partial T^2}\right)_{V} =
             \frac{R \left(T \left(V \frac{d^{2}}{d T^{2}} B{\left(T \right)}
@@ -1318,7 +1318,7 @@ class VirialGas(IdealGasDeparturePhase):
 
     def H_dep(self):
         r'''Method to calculate and return the molar departure enthalpy.
-        
+
         .. math::
            H_{dep} = \frac{R T^{2} \left(2 V \frac{d}{d T} B{\left(T \right)}
            + \frac{d}{d T} C{\left(T \right)}\right)}{2 V^{2}} - R T \left(-1
@@ -1329,10 +1329,10 @@ class VirialGas(IdealGasDeparturePhase):
         -------
         H_dep : float
             Departure enthalpy [J/mol]
-            
+
         Notes
         -----
-        
+
         '''
         '''
         from sympy import *
@@ -1359,9 +1359,9 @@ class VirialGas(IdealGasDeparturePhase):
         return H_dep
 
     def dH_dep_dT(self):
-        r'''Method to calculate and return the first temperature derivative of  
+        r'''Method to calculate and return the first temperature derivative of
         molar departure enthalpy.
-        
+
         .. math::
            \frac{\partial H_{dep}}{\partial T} = \frac{R \left(2 T^{2} V
            \frac{d^{2}}{d T^{2}} B{\left(T \right)} + T^{2} \frac{d^{2}}{d T^{2}}
@@ -1372,7 +1372,7 @@ class VirialGas(IdealGasDeparturePhase):
         -------
         dH_dep_dT : float
             First temperature derivative of departure enthalpy [J/(mol*K)]
-        
+
         '''
         try:
             return self._dH_dep_dT
@@ -1387,31 +1387,31 @@ class VirialGas(IdealGasDeparturePhase):
         self._dH_dep_dT = dH_dep_dT = (self.R*(2.0*T*T*V*d2B_dT2 + T*T*d2C_dT2
             + 2.0*T*V*dB_dT - 2.0*V*B - 2.0*C)/(2.0*V*V))
         return dH_dep_dT
-    
+
     Cp_dep = dH_dep_dT
-    
+
     def dH_dep_dP_V(self):
-        r'''Method to calculate and return the first pressure derivative of  
+        r'''Method to calculate and return the first pressure derivative of
         molar departure enthalpy at constant volume.
-        
+
         .. math::
-           \left(\frac{\partial H_{dep}}{\partial P}\right)_{V} = 
+           \left(\frac{\partial H_{dep}}{\partial P}\right)_{V} =
            - R \left(-1 + \frac{V^{2} + V B{\left(P \right)} + C{\left(P \right)}}
            {V^{2}}\right) \frac{d}{d P} T{\left(P \right)} - \frac{R \left(- 2 V
            \operatorname{dB_{dT}}{\left(P \right)} - \operatorname{dC_{dT}}
-           {\left(P \right)}\right) T{\left(P \right)} \frac{d}{d P} T{\left(P 
-            \right)}}{V^{2}} - \frac{R \left(V \frac{d}{d P} B{\left(P \right)} 
-            + \frac{d}{d P} C{\left(P \right)}\right) T{\left(P \right)}}{V^{2}} 
+           {\left(P \right)}\right) T{\left(P \right)} \frac{d}{d P} T{\left(P
+            \right)}}{V^{2}} - \frac{R \left(V \frac{d}{d P} B{\left(P \right)}
+            + \frac{d}{d P} C{\left(P \right)}\right) T{\left(P \right)}}{V^{2}}
             - \frac{R \left(- 2 V \frac{d}{d P} \operatorname{dB_{dT}}
            {\left(P \right)} - \frac{d}{d P} \operatorname{dC_{dT}}{\left(P
             \right)}\right) T^{2}{\left(P \right)}}{2 V^{2}}
-           
+
         Returns
         -------
         dH_dep_dP_V : float
             First pressure derivative of departure enthalpy at constant volume
             [J/(mol*Pa)]
-        
+
         '''
         '''
         from sympy import *
@@ -1427,40 +1427,40 @@ class VirialGas(IdealGasDeparturePhase):
         dC_dT = self.dC_dT()
         dB_dP_V = self.dB_dP_V()
         dC_dP_V=self.dC_dP_V()
-        
+
         d2B_dTdP_V=self.d2B_dTdP_V()
         d2C_dTdP_V=self.d2C_dTdP_V()
         dT_dP_V = self.dT_dP_V()
 
         V2 = V*V
 
-        dH_dep_dP_V = (-R*(-1.0 + (V2 + V*B + C)/V2)*dT_dP_V - R*(-2.0*V*dB_dT - dC_dT)*T*dT_dP_V/V2 
+        dH_dep_dP_V = (-R*(-1.0 + (V2 + V*B + C)/V2)*dT_dP_V - R*(-2.0*V*dB_dT - dC_dT)*T*dT_dP_V/V2
                            - R*(V*dB_dP_V + dC_dP_V)*T/V2
                            - R*(-2.0*V*d2B_dTdP_V - d2C_dTdP_V)*T*T/(2.0*V2))
         return dH_dep_dP_V
-        
+
     def dS_dep_dP_V(self):
-        r'''Method to calculate and return the first pressure derivative of  
+        r'''Method to calculate and return the first pressure derivative of
         molar departure entropy at constant volume.
-        
+
         .. math::
-           \left(\frac{\partial S_{dep}}{\partial P}\right)_{V} = 
-           \frac{R \left(V \frac{d}{d P} B{\left(P \right)} + \frac{d}{d P} 
-           C{\left(P \right)}\right)}{V^{2} + V B{\left(P \right)} + C{\left(P \right)}} 
+           \left(\frac{\partial S_{dep}}{\partial P}\right)_{V} =
+           \frac{R \left(V \frac{d}{d P} B{\left(P \right)} + \frac{d}{d P}
+           C{\left(P \right)}\right)}{V^{2} + V B{\left(P \right)} + C{\left(P \right)}}
            + \frac{- R T{\left(P \right)} \frac{d}{d P} \operatorname{dC_{dT}}
           {\left(P \right)} - R \operatorname{dC_{dT}}{\left(P \right)}
-          \frac{d}{d P} T{\left(P \right)} - R \frac{d}{d P} C{\left(P \right)} 
+          \frac{d}{d P} T{\left(P \right)} - R \frac{d}{d P} C{\left(P \right)}
           + V \left(- 2 R T{\left(P \right)} \frac{d}{d P} \operatorname{dB_{dT}}
           {\left(P \right)} - 2 R \operatorname{dB_{dT}}{\left(P \right)}
           \frac{d}{d P} T{\left(P \right)} - 2 R \frac{d}{d P}
           B{\left(P \right)}\right)}{2 V^{2}}
-           
+
         Returns
         -------
         dS_dep_dP_V : float
             First pressure derivative of departure entropy at constant volume
             [J/(mol*Pa*K)]
-        
+
         '''
         T, V = self.T, self._V
         B = self.B()
@@ -1469,7 +1469,7 @@ class VirialGas(IdealGasDeparturePhase):
         dC_dT = self.dC_dT()
         dB_dP_V = self.dB_dP_V()
         dC_dP_V=self.dC_dP_V()
-        
+
         d2B_dTdP_V=self.d2B_dTdP_V()
         d2C_dTdP_V=self.d2C_dTdP_V()
         dT_dP_V = self.dT_dP_V()
@@ -1481,26 +1481,26 @@ class VirialGas(IdealGasDeparturePhase):
         return dS_dep_dP_V
 
     def dH_dep_dP_T(self):
-        r'''Method to calculate and return the first pressure derivative of  
+        r'''Method to calculate and return the first pressure derivative of
         molar departure enthalpy at constant temperature.
-        
+
         .. math::
-           \left(\frac{\partial H_{dep}}{\partial P}\right)_{T} = 
-           \frac{R T^{2} dB_{dT} \frac{d}{d P} V{\left(P \right)}}{V^{2}{\left(P 
-            \right)}} + \frac{R T^{2} \left(- 2 dB_{dT} V{\left(P \right)} 
-            - dC_{dT}\right) \frac{d}{d P} V{\left(P \right)}}{V^{3}{\left(P 
-            \right)}} - R T \left(\frac{B \frac{d}{d P} V{\left(P \right)} 
+           \left(\frac{\partial H_{dep}}{\partial P}\right)_{T} =
+           \frac{R T^{2} dB_{dT} \frac{d}{d P} V{\left(P \right)}}{V^{2}{\left(P
+            \right)}} + \frac{R T^{2} \left(- 2 dB_{dT} V{\left(P \right)}
+            - dC_{dT}\right) \frac{d}{d P} V{\left(P \right)}}{V^{3}{\left(P
+            \right)}} - R T \left(\frac{B \frac{d}{d P} V{\left(P \right)}
             + 2 V{\left(P \right)} \frac{d}{d P} V{\left(P \right)}}{V^{2}
             {\left(P \right)}} - \frac{2 \left(B V{\left(P \right)} + C + V^{2}
             {\left(P \right)}\right) \frac{d}{d P} V{\left(P \right)}}
             {V^{3}{\left(P \right)}}\right)
-           
+
         Returns
         -------
         dH_dep_dP_T : float
-            First pressure derivative of departure enthalpy at constant 
+            First pressure derivative of departure enthalpy at constant
             temperature [J/(mol*Pa)]
-        
+
         '''
         '''
         from sympy import *
@@ -1515,33 +1515,33 @@ class VirialGas(IdealGasDeparturePhase):
         dB_dT = self.dB_dT()
         dC_dT = self.dC_dT()
         dV_dP = self.dV_dP()
-        
+
         dH_dep_dP_T =(R*T**2*dB_dT*dV_dP/V**2 + R*T**2*(-2*dB_dT*V - dC_dT)*dV_dP/V**3 - R*T*((B*dV_dP + 2*V*dV_dP)/V**2 - 2*(B*V + C + V**2)*dV_dP/V**3))
         return dH_dep_dP_T
-    
+
     def dS_dep_dP_T(self):
-        r'''Method to calculate and return the first pressure derivative of  
+        r'''Method to calculate and return the first pressure derivative of
         molar departure entropy at constant temperature.
-        
+
         .. math::
-           \left(\frac{\partial S_{dep}}{\partial P}\right)_{T} = 
+           \left(\frac{\partial S_{dep}}{\partial P}\right)_{T} =
            \frac{R \left(\frac{B \frac{d}{d P} V{\left(P \right)}
             + 2 V{\left(P \right)} \frac{d}{d P} V{\left(P \right)}}{V^{2}
-            {\left(P \right)}} - \frac{2 \left(B V{\left(P \right)} + C 
+            {\left(P \right)}} - \frac{2 \left(B V{\left(P \right)} + C
             + V^{2}{\left(P \right)}\right) \frac{d}{d P} V{\left(P \right)}}
-            {V^{3}{\left(P \right)}}\right) V^{2}{\left(P \right)}}{B 
+            {V^{3}{\left(P \right)}}\right) V^{2}{\left(P \right)}}{B
             V{\left(P \right)} + C + V^{2}{\left(P \right)}} + \frac{\left(
             - 2 B R - 2 R T dB_{dT}\right) \frac{d}{d P} V{\left(P \right)}}
             {2 V^{2}{\left(P \right)}} - \frac{\left(- C R - R T dC_{dT}
-            + \left(- 2 B R - 2 R T dB_{dT}\right) V{\left(P \right)}\right) 
+            + \left(- 2 B R - 2 R T dB_{dT}\right) V{\left(P \right)}\right)
             \frac{d}{d P} V{\left(P \right)}}{V^{3}{\left(P \right)}}
-           
+
         Returns
         -------
         dS_dep_dP_T : float
-            First pressure derivative of departure entropy at constant 
+            First pressure derivative of departure entropy at constant
             temperature [J/(mol*Pa*K)]
-        
+
         '''
         '''
         from sympy import *
@@ -1556,27 +1556,27 @@ class VirialGas(IdealGasDeparturePhase):
         dB_dT = self.dB_dT()
         dC_dT = self.dC_dT()
         dV_dP = self.dV_dP()
-        
-        dS_dep_dP_T =(R*((B*dV_dP + 2*V*dV_dP)/V**2 - 2*(B*V + C + V**2)*dV_dP/V**3)*V**2/(B*V + C + V**2) 
+
+        dS_dep_dP_T =(R*((B*dV_dP + 2*V*dV_dP)/V**2 - 2*(B*V + C + V**2)*dV_dP/V**3)*V**2/(B*V + C + V**2)
                       + (-2*B*R - 2*R*T*dB_dT)*dV_dP/(2*V**2) - (-C*R - R*T*dC_dT + (-2*B*R - 2*R*T*dB_dT)*V)*dV_dP/V**3)
         return dS_dep_dP_T
 
     def dH_dep_dV_T(self):
-        r'''Method to calculate and return the first volume derivative of  
+        r'''Method to calculate and return the first volume derivative of
         molar departure enthalpy at constant temperature.
-        
+
         .. math::
-           \left(\frac{\partial H_{dep}}{\partial V}\right)_{T} = 
-           \frac{R T^{2} dB_{dT}}{V^{2}} + \frac{R T^{2} \left(- 2 V dB_{dT} 
-            - dC_{dT}\right)}{V^{3}} - R T \left(\frac{B + 2 V}{V^{2}} 
+           \left(\frac{\partial H_{dep}}{\partial V}\right)_{T} =
+           \frac{R T^{2} dB_{dT}}{V^{2}} + \frac{R T^{2} \left(- 2 V dB_{dT}
+            - dC_{dT}\right)}{V^{3}} - R T \left(\frac{B + 2 V}{V^{2}}
             - \frac{2 \left(B V + C + V^{2}\right)}{V^{3}}\right)
-           
+
         Returns
         -------
         dH_dep_dV_T : float
-            First volume derivative of departure enthalpy at constant 
+            First volume derivative of departure enthalpy at constant
             temperature [J/(m^3)]
-        
+
         '''
         '''
         from sympy import *
@@ -1594,22 +1594,22 @@ class VirialGas(IdealGasDeparturePhase):
 
 
     def dS_dep_dV_T(self):
-        r'''Method to calculate and return the first volume derivative of  
+        r'''Method to calculate and return the first volume derivative of
         molar departure entropy at constant temperature.
-        
+
         .. math::
-           \left(\frac{\partial S_{dep}}{\partial V}\right)_{T} = 
-           \frac{R V^{2} \left(\frac{B + 2 V}{V^{2}} - \frac{2 \left(B V + C 
-           + V^{2}\right)}{V^{3}}\right)}{B V + C + V^{2}} + \frac{- 2 B R 
+           \left(\frac{\partial S_{dep}}{\partial V}\right)_{T} =
+           \frac{R V^{2} \left(\frac{B + 2 V}{V^{2}} - \frac{2 \left(B V + C
+           + V^{2}\right)}{V^{3}}\right)}{B V + C + V^{2}} + \frac{- 2 B R
            - 2 R T dB_{dT}}{2 V^{2}} - \frac{- C R - R T dC_{dT} + V \left(
            - 2 B R - 2 R T dB_{dT}\right)}{V^{3}}
-           
+
         Returns
         -------
         dS_dep_dV_T : float
-            First volume derivative of departure entropy at constant 
+            First volume derivative of departure entropy at constant
             temperature [J/(m^3*K)]
-        
+
         '''
         '''
         from sympy import *
@@ -1627,32 +1627,32 @@ class VirialGas(IdealGasDeparturePhase):
                 + (-2*B*R - 2*R*T*dB_dT)/(2*V**2) - (-C*R - R*T*dC_dT + V*(-2*B*R - 2*R*T*dB_dT))/V**3)
 
     def dH_dep_dV_P(self):
-        r'''Method to calculate and return the first volume derivative of  
+        r'''Method to calculate and return the first volume derivative of
         molar departure enthalpy at constant pressure.
-        
+
         .. math::
-           \left(\frac{\partial H_{dep}}{\partial V}\right)_{P} = 
+           \left(\frac{\partial H_{dep}}{\partial V}\right)_{P} =
            - R \left(-1 + \frac{V^{2} + V B{\left(V \right)} + C{\left(V \right)}}
             {V^{2}}\right) \frac{d}{d V} T{\left(V \right)} - R \left(\frac{V
-            \frac{d}{d V} B{\left(V \right)} + 2 V + B{\left(V \right)} 
-           + \frac{d}{d V} C{\left(V \right)}}{V^{2}} - \frac{2 \left(V^{2} 
-           + V B{\left(V \right)} + C{\left(V \right)}\right)}{V^{3}}\right) 
+            \frac{d}{d V} B{\left(V \right)} + 2 V + B{\left(V \right)}
+           + \frac{d}{d V} C{\left(V \right)}}{V^{2}} - \frac{2 \left(V^{2}
+           + V B{\left(V \right)} + C{\left(V \right)}\right)}{V^{3}}\right)
             T{\left(V \right)} - \frac{R \left(- 2 V \operatorname{dB_{dT}}
            {\left(V \right)} - \operatorname{dC_{dT}}{\left(V \right)}\right)
-            T{\left(V \right)} \frac{d}{d V} T{\left(V \right)}}{V^{2}} 
-            - \frac{R \left(- 2 V \frac{d}{d V} \operatorname{dB_{dT}}{\left(V 
-            \right)} - 2 \operatorname{dB_{dT}}{\left(V \right)} 
-            - \frac{d}{d V} \operatorname{dC_{dT}}{\left(V \right)}\right) 
-            T^{2}{\left(V \right)}}{2 V^{2}} + \frac{R \left(- 2 V 
+            T{\left(V \right)} \frac{d}{d V} T{\left(V \right)}}{V^{2}}
+            - \frac{R \left(- 2 V \frac{d}{d V} \operatorname{dB_{dT}}{\left(V
+            \right)} - 2 \operatorname{dB_{dT}}{\left(V \right)}
+            - \frac{d}{d V} \operatorname{dC_{dT}}{\left(V \right)}\right)
+            T^{2}{\left(V \right)}}{2 V^{2}} + \frac{R \left(- 2 V
             \operatorname{dB_{dT}}{\left(V \right)} - \operatorname{dC_{dT}}
             {\left(V \right)}\right) T^{2}{\left(V \right)}}{V^{3}}
-           
+
         Returns
         -------
         dH_dep_dV_P : float
-            First volume derivative of departure enthalpy at constant 
+            First volume derivative of departure enthalpy at constant
             pressure [J/(m^3)]
-        
+
         '''
         '''
         from sympy import *
@@ -1671,39 +1671,39 @@ class VirialGas(IdealGasDeparturePhase):
         dC_dV_P = self.dC_dV_P()
         d2B_dTdV_P = self.d2B_dTdV_P()
         d2C_dTdV_P = self.d2C_dTdV_P()
-        return (-R*(-1 + (V**2 + V*B + C)/V**2)*dT_dV - R*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2 
+        return (-R*(-1 + (V**2 + V*B + C)/V**2)*dT_dV - R*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2
                 - 2*(V**2 + V*B + C)/V**3)*T - R*(-2*V*dB_dT - dC_dT)*T*dT_dV/V**2
             - R*(-2*V*d2B_dTdV_P - 2*dB_dT - d2C_dTdV_P)*T**2/(2*V**2) + R*(-2*V*dB_dT - dC_dT)*T**2/V**3)
 
     def dS_dep_dV_P(self):
-        r'''Method to calculate and return the first volume derivative of  
+        r'''Method to calculate and return the first volume derivative of
         molar departure entropy at constant pressure.
-        
+
         .. math::
-           \left(\frac{\partial S_{dep}}{\partial V}\right)_{P} = 
-           \frac{R V^{2} \left(\frac{V \frac{d}{d V} B{\left(V \right)} 
+           \left(\frac{\partial S_{dep}}{\partial V}\right)_{P} =
+           \frac{R V^{2} \left(\frac{V \frac{d}{d V} B{\left(V \right)}
             + 2 V + B{\left(V \right)} + \frac{d}{d V} C{\left(V \right)}}{V^{2}}
            - \frac{2 \left(V^{2} + V B{\left(V \right)} + C{\left(V \right)}
-            \right)}{V^{3}}\right)}{V^{2} + V B{\left(V \right)} + C{\left(V 
-            \right)}} + \frac{- 2 R B{\left(V \right)} - 2 R T{\left(V \right)} 
+            \right)}{V^{3}}\right)}{V^{2} + V B{\left(V \right)} + C{\left(V
+            \right)}} + \frac{- 2 R B{\left(V \right)} - 2 R T{\left(V \right)}
             \operatorname{dB_{dT}}{\left(V \right)} - R T{\left(V \right)}
             \frac{d}{d V} \operatorname{dC_{dT}}{\left(V \right)}
             - R \operatorname{dC_{dT}}{\left(V \right)} \frac{d}{d V} T{\left(V
             \right)} - R \frac{d}{d V} C{\left(V \right)} + V \left(- 2 R T
-            {\left(V \right)} \frac{d}{d V} \operatorname{dB_{dT}}{\left(V 
+            {\left(V \right)} \frac{d}{d V} \operatorname{dB_{dT}}{\left(V
             \right)} - 2 R \operatorname{dB_{dT}}{\left(V \right)} \frac{d}
             {d V} T{\left(V \right)} - 2 R \frac{d}{d V} B{\left(V \right)}
-            \right)}{2 V^{2}} - \frac{- R C{\left(V \right)} - R T{\left(V 
-            \right)} \operatorname{dC_{dT}}{\left(V \right)} + V \left(- 2 R 
+            \right)}{2 V^{2}} - \frac{- R C{\left(V \right)} - R T{\left(V
+            \right)} \operatorname{dC_{dT}}{\left(V \right)} + V \left(- 2 R
             B{\left(V \right)} - 2 R T{\left(V \right)} \operatorname{dB_{dT}}
             {\left(V \right)}\right)}{V^{3}}
-           
+
         Returns
         -------
         dS_dep_dV_P : float
-            First volume derivative of departure entropy at constant 
+            First volume derivative of departure entropy at constant
             pressure [J/(m^3)]
-        
+
         '''
         '''
         from sympy import *
@@ -1727,7 +1727,7 @@ class VirialGas(IdealGasDeparturePhase):
 
     def S_dep(self):
         r'''Method to calculate and return the molar departure entropy.
-        
+
         .. math::
            S_{dep} = \frac{R \left(- T \frac{d}{d T} C{\left(T \right)} + 2 V^{2}
            \ln{\left(\frac{V^{2} + V B{\left(T \right)} + C{\left(T \right)}}
@@ -1738,10 +1738,10 @@ class VirialGas(IdealGasDeparturePhase):
         -------
         S_dep : float
             Departure enthalpy [J/(mol*K)]
-            
+
         Notes
         -----
-        
+
         '''
         '''
         dP_dT = diff(P_sln, T)
@@ -1760,9 +1760,9 @@ class VirialGas(IdealGasDeparturePhase):
         return S_dep
 
     def dS_dep_dT(self):
-        r'''Method to calculate and return the first temperature derivative of 
+        r'''Method to calculate and return the first temperature derivative of
         molar departure entropy.
-        
+
         .. math::
            \frac{\partial S_{dep}}{\partial T} = \frac{R \left(2 V^{2} \left(V
            \frac{d}{d T} B{\left(T \right)} + \frac{d}{d T} C{\left(T \right)}
@@ -1777,7 +1777,7 @@ class VirialGas(IdealGasDeparturePhase):
         -------
         dS_dep_dT : float
             First temperature derivative of departure enthalpy [J/(mol*K^2)]
-            
+
         '''
         try:
             return self._dS_dep_dT
@@ -1789,7 +1789,7 @@ class VirialGas(IdealGasDeparturePhase):
         self._dS_dep_dT = dS_dep_dT = (self.R*(2.0*V2*(V*self.dB_dT() + self.dC_dT()) - (V2 + V*self.B() + self.C())*(T*self.d2C_dT2()
         + 2.0*V*(T*self.d2B_dT2() + 2.0*self.dB_dT()) + 2.0*self.dC_dT()))/(2.0*V2*(V2 + V*self.B() + self.C())))
         return dS_dep_dT
-    
+
     dS_dep_dT_P = dS_dep_dT
     dS_dep_dT_V = dS_dep_dT
 
@@ -1873,7 +1873,7 @@ class VirialGas(IdealGasDeparturePhase):
 
     def B(self):
         r'''Method to calculate and return the `B` second virial coefficient.
-        
+
         Returns
         -------
         B : float
@@ -1900,11 +1900,11 @@ class VirialGas(IdealGasDeparturePhase):
     def dB_dT(self):
         r'''Method to calculate and return the first temperature derivative of
         the `B` second virial coefficient.
-        
+
         Returns
         -------
         dB_dT : float
-            First temperature derivative of second molar virial coefficient 
+            First temperature derivative of second molar virial coefficient
             [m^3/(mol*K)]
         '''
         try:
@@ -1923,16 +1923,16 @@ class VirialGas(IdealGasDeparturePhase):
         self._dB_dT = dB_dT = float(BVirial_mixture(zs, dB_dT_interactions))
         return dB_dT
 
-        
+
 
     def d2B_dT2(self):
         r'''Method to calculate and return the second temperature derivative of
         the `B` second virial coefficient.
-        
+
         Returns
         -------
         d2B_dT2 : float
-            Second temperature derivative of second molar virial coefficient 
+            Second temperature derivative of second molar virial coefficient
             [m^3/(mol*K^2)]
         '''
         try:
@@ -1954,11 +1954,11 @@ class VirialGas(IdealGasDeparturePhase):
     def d3B_dT3(self):
         r'''Method to calculate and return the third temperature derivative of
         the `B` second virial coefficient.
-        
+
         Returns
         -------
         d3B_dT3 : float
-            Third temperature derivative of second molar virial coefficient 
+            Third temperature derivative of second molar virial coefficient
             [m^3/(mol*K^3)]
         '''
         try:
@@ -1969,7 +1969,7 @@ class VirialGas(IdealGasDeparturePhase):
         if N == 1:
             return self.model.d3B_dT3_pures()[0]
         zs = self.zs
-        
+
         if not self.cross_B_coefficients:
             Bs = self.model.d3B_dT3_pures()
             self._d3B_dT3 = d3B_dT3 = float(mixing_simple(zs, Bs))
@@ -1981,7 +1981,7 @@ class VirialGas(IdealGasDeparturePhase):
 
     def C(self):
         r'''Method to calculate and return the `C` third virial coefficient.
-        
+
         Returns
         -------
         C : float
@@ -2009,9 +2009,9 @@ class VirialGas(IdealGasDeparturePhase):
         return C
 
     def dC_dT(self):
-        r'''Method to calculate and return the first temperature derivative of 
+        r'''Method to calculate and return the first temperature derivative of
         the `C` third virial coefficient.
-        
+
         Returns
         -------
         dC_dT : float
@@ -2050,9 +2050,9 @@ class VirialGas(IdealGasDeparturePhase):
             return dC_dT
 
     def d2C_dT2(self):
-        r'''Method to calculate and return the second temperature derivative of 
+        r'''Method to calculate and return the second temperature derivative of
         the `C` third virial coefficient.
-        
+
         Returns
         -------
         d2C_dT2 : float
@@ -2083,11 +2083,11 @@ class VirialGas(IdealGasDeparturePhase):
             N = self.N
             self._d2C_dT2 = d2C_dT2 = float(d2CVirial_mixture_dT2_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs))
             return d2C_dT2
-    
+
     def d3C_dT3(self):
-        r'''Method to calculate and return the third temperature derivative of 
+        r'''Method to calculate and return the third temperature derivative of
         the `C` third virial coefficient.
-        
+
         Returns
         -------
         d3C_dT3 : float
@@ -2120,13 +2120,13 @@ class VirialGas(IdealGasDeparturePhase):
             return d3C_dT3
 
     def dB_dzs(self):
-        r'''Method to calculate and return the first mole fraction derivatives 
+        r'''Method to calculate and return the first mole fraction derivatives
         of the `B` second virial coefficient.
-        
+
         Returns
         -------
         dB_dzs : list[float]
-            First mole fraction derivatives of second molar virial coefficient 
+            First mole fraction derivatives of second molar virial coefficient
             [m^3/(mol)]
         '''
         try:
@@ -2151,9 +2151,9 @@ class VirialGas(IdealGasDeparturePhase):
 
     def d2B_dTdzs(self):
         r'''Method to calculate and return the temperature derivative of the
-        first mole fraction derivatives 
+        first mole fraction derivatives
         of the `B` second virial coefficient.
-        
+
         Returns
         -------
         d2B_dTdzs : list[float]
@@ -2182,9 +2182,9 @@ class VirialGas(IdealGasDeparturePhase):
 
     def d3B_dT2dzs(self):
         r'''Method to calculate and return the second temperature derivative of the
-        first mole fraction derivatives 
+        first mole fraction derivatives
         of the `B` second virial coefficient.
-        
+
         Returns
         -------
         d3B_dT2dzs : list[float]
@@ -2213,9 +2213,9 @@ class VirialGas(IdealGasDeparturePhase):
 
     def d4B_dT3dzs(self):
         r'''Method to calculate and return the third temperature derivative of the
-        first mole fraction derivatives 
+        first mole fraction derivatives
         of the `B` second virial coefficient.
-        
+
         Returns
         -------
         d4B_dT3dzs : list[float]
@@ -2243,13 +2243,13 @@ class VirialGas(IdealGasDeparturePhase):
         return d4B_dT3dzs
 
     def d2B_dzizjs(self):
-        r'''Method to calculate and return the second mole fraction derivatives 
+        r'''Method to calculate and return the second mole fraction derivatives
         of the `B` second virial coefficient.
-        
+
         Returns
         -------
         d2B_dzizjs : list[list[float]]
-            Second mole fraction derivatives of second molar virial coefficient 
+            Second mole fraction derivatives of second molar virial coefficient
             [m^3/(mol)]
         '''
         try:
@@ -2273,14 +2273,14 @@ class VirialGas(IdealGasDeparturePhase):
 
     def d3B_dTdzizjs(self):
         r'''Method to calculate and return the first temperature derivative of
-        the second mole fraction derivatives 
+        the second mole fraction derivatives
         of the `B` second virial coefficient.
-        
+
         Returns
         -------
         d3B_dTdzizjs : list[list[float]]
             First temperature derivative of second mole fraction derivatives of
-            second molar virial coefficient 
+            second molar virial coefficient
             [m^3/(mol*K)]
         '''
         try:
@@ -2304,14 +2304,14 @@ class VirialGas(IdealGasDeparturePhase):
 
     def d4B_dT2dzizjs(self):
         r'''Method to calculate and return the second temperature derivative of
-        the second mole fraction derivatives 
+        the second mole fraction derivatives
         of the `B` second virial coefficient.
-        
+
         Returns
         -------
         d4B_dT2dzizjs : list[list[float]]
             Second temperature derivative of second mole fraction derivatives of
-            second molar virial coefficient 
+            second molar virial coefficient
             [m^3/(mol*K^2)]
         '''
         try:
@@ -2334,13 +2334,13 @@ class VirialGas(IdealGasDeparturePhase):
         return d4B_dT2dzizjs
 
     def d3B_dzizjzks(self):
-        r'''Method to calculate and return the third mole fraction derivatives 
+        r'''Method to calculate and return the third mole fraction derivatives
         of the `B` second virial coefficient.
-        
+
         Returns
         -------
         d3B_dzizjzks : list[list[list[float]]]
-            Third mole fraction derivatives of second molar virial coefficient 
+            Third mole fraction derivatives of second molar virial coefficient
             [m^3/(mol)]
         '''
         try:
@@ -2361,19 +2361,19 @@ class VirialGas(IdealGasDeparturePhase):
         B_interactions = self.model.B_interactions()
         self._d3B_dzizjzks = d3B_dzizjzks = d3BVirial_mixture_dzizjzks(zs, B_interactions, d3B_dzizjzks)
         return d3B_dzizjzks
-    
+
     d4B_dTdzizjzks = d3B_dzizjzks
     d5B_dT2dzizjzks = d3B_dzizjzks
     d6B_dT3dzizjzks = d3B_dzizjzks
 
     def dB_dns(self):
-        r'''Method to calculate and return the first mole number derivatives 
+        r'''Method to calculate and return the first mole number derivatives
         of the `B` second virial coefficient.
-        
+
         Returns
         -------
         dB_dns : list[float]
-            First mole number derivatives of second molar virial coefficient 
+            First mole number derivatives of second molar virial coefficient
             [m^3/(mol^2)]
         '''
         try:
@@ -2386,12 +2386,12 @@ class VirialGas(IdealGasDeparturePhase):
         else:
             dB_dns = zeros(N)
         self._dB_dns = dB_dns = dxs_to_dns(self.dB_dzs(), self.zs, dB_dns)
-        return dB_dns 
-        
+        return dB_dns
+
     def dnB_dns(self):
-        r'''Method to calculate and return the first partial mole number  
+        r'''Method to calculate and return the first partial mole number
         derivatives of the `B` second virial coefficient.
-        
+
         Returns
         -------
         dnB_dns : list[float]
@@ -2407,18 +2407,18 @@ class VirialGas(IdealGasDeparturePhase):
             dnB_dns = [0.0]*N
         else:
             dnB_dns = zeros(N)
-        
+
         self._dnB_dns = dnB_dns = dxs_to_dn_partials(self.dB_dzs(), self.zs, self.B(), dnB_dns)
-        return dnB_dns 
+        return dnB_dns
 
     def dC_dzs(self):
-        r'''Method to calculate and return the first mole fraction derivatives 
+        r'''Method to calculate and return the first mole fraction derivatives
         of the `C` third virial coefficient.
-        
+
         Returns
         -------
         dC_dzs : list[float]
-            First mole fraction derivatives of third molar virial coefficient 
+            First mole fraction derivatives of third molar virial coefficient
             [m^6/(mol^2)]
         '''
         try:
@@ -2437,16 +2437,16 @@ class VirialGas(IdealGasDeparturePhase):
         else:
             dC_dzs = zeros(N)
         self._dC_dzs = dC_dzs
-            
+
         if not self.model.C_zero:
             C_interactions = self.model.C_interactions()
             dCVirial_mixture_Orentlicher_Prausnitz_dzs(zs, C_interactions, dC_dzs)
         return dC_dzs
-    
+
     def d2C_dTdzs(self):
         r'''Method to calculate and return the first temperature derivative of
         the first mole fraction derivatives of the `C` third virial coefficient.
-        
+
         Returns
         -------
         d2C_dTdzs : list[float]
@@ -2457,7 +2457,7 @@ class VirialGas(IdealGasDeparturePhase):
             return self._d2C_dTdzs
         except:
             pass
-    
+
         zs = self.zs
         if not self.cross_C_coefficients:
             self._d2C_dTdzs = d2C_dTdzs = self.model.dC_dT_pures()
@@ -2467,25 +2467,25 @@ class VirialGas(IdealGasDeparturePhase):
             d2C_dTdzs = [0.0]*N
         else:
             d2C_dTdzs = zeros(N)
-        
+
         self._d2C_dTdzs = d2C_dTdzs
         if not self.model.C_zero:
             C_interactions = self.model.C_interactions()
             dC_dT_interactions = self.model.dC_dT_interactions()
             d2CVirial_mixture_Orentlicher_Prausnitz_dTdzs(zs, C_interactions, dC_dT_interactions, d2C_dTdzs)
         return d2C_dTdzs
-    
 
 
-    
+
+
     def d2C_dzizjs(self):
-        r'''Method to calculate and return the second mole fraction derivatives 
+        r'''Method to calculate and return the second mole fraction derivatives
         of the `C` third virial coefficient.
-        
+
         Returns
         -------
         d2C_dzizjs : list[list[float]]
-            Second mole fraction derivatives of third molar virial coefficient 
+            Second mole fraction derivatives of third molar virial coefficient
             [m^6/(mol^2)]
         '''
         try:
@@ -2506,22 +2506,22 @@ class VirialGas(IdealGasDeparturePhase):
                 # d2C_dzizjs[i][i] = C
             self._d2C_dzizjs = d2C_dzizjs
             return d2C_dzizjs
-        
+
         self._d2C_dzizjs = d2C_dzizjs
         if not self.model.C_zero:
             C_interactions = self.model.C_interactions()
             d2CVirial_mixture_Orentlicher_Prausnitz_dzizjs(zs, C_interactions, d2C_dzizjs)
         return d2C_dzizjs
-        
-    
+
+
     def d3C_dzizjzks(self):
-        r'''Method to calculate and return the third mole fraction derivatives 
+        r'''Method to calculate and return the third mole fraction derivatives
         of the `C` third virial coefficient.
-        
+
         Returns
         -------
         d3C_dzizjzks : list[list[float]]
-            Third mole fraction derivatives of third molar virial coefficient 
+            Third mole fraction derivatives of third molar virial coefficient
             [m^6/(mol^2)]
         '''
         try:
@@ -2548,13 +2548,13 @@ class VirialGas(IdealGasDeparturePhase):
         return d3C_dzizjzks
 
     def dC_dns(self):
-        r'''Method to calculate and return the first mole number derivatives 
+        r'''Method to calculate and return the first mole number derivatives
         of the `C` third virial coefficient.
-        
+
         Returns
         -------
         dC_dns : list[float]
-            First mole number derivatives of third molar virial coefficient 
+            First mole number derivatives of third molar virial coefficient
             [m^6/(mol^3)]
         '''
         try:
@@ -2567,16 +2567,16 @@ class VirialGas(IdealGasDeparturePhase):
         else:
             dC_dns = zeros(N)
         self._dC_dns = dC_dns = dxs_to_dns(self.dC_dzs(), self.zs, dC_dns)
-        return dC_dns 
-        
+        return dC_dns
+
     def dnC_dns(self):
-        r'''Method to calculate and return the first partial mole number  
+        r'''Method to calculate and return the first partial mole number
         derivatives of the `C` third virial coefficient.
-        
+
         Returns
         -------
         dnC_dns : list[float]
-            First partial mole number derivatives of third molar virial coefficient 
+            First partial mole number derivatives of third molar virial coefficient
             [m^6/(mol^2)]
         '''
         try:
@@ -2588,65 +2588,65 @@ class VirialGas(IdealGasDeparturePhase):
             dnC_dns = [0.0]*N
         else:
             dnC_dns = zeros(N)
-        
+
         self._dnC_dns = dnC_dns = dxs_to_dn_partials(self.dC_dzs(), self.zs, self.C(), dnC_dns)
-        return dnC_dns 
-    
-    
+        return dnC_dns
+
+
     def dB_dP_V(self):
         return self.dB_dT()/self.dP_dT()
-    
+
     def dC_dP_V(self):
         return self.dC_dT()/self.dP_dT()
 
     def d2B_dTdP_V(self):
         return self.d2B_dT2()/self.dP_dT()
-    
+
     def d2C_dTdP_V(self):
         return self.d2C_dT2()/self.dP_dT()
 
     def d3B_dT2dP_V(self):
         return self.d3B_dT3()/self.dP_dT()
-    
+
     def d3C_dT2dP_V(self):
         return self.d3C_dT3()/self.dP_dT()
-    
+
     def dB_dV_P(self):
         return self.dB_dT()*self.dT_dV()
-    
+
     def dC_dV_P(self):
         return self.dC_dT()*self.dT_dV()
 
     def d2B_dTdV_P(self):
         return self.d2B_dT2()*self.dT_dV()
-    
+
     def d2C_dTdV_P(self):
         return self.d2C_dT2()*self.dT_dV()
 
     def d3B_dT2dV_P(self):
         return self.d3B_dT3()*self.dT_dV()
-    
+
     def d3C_dT2dV_P(self):
         return self.d3C_dT3()*self.dT_dV()
-    
+
     # Overrides for precision in regression to ideal gas
     def d2T_dV2(self):
         if self.model.C_zero and self.model.B_zero:
             return 0.0
         return super().d2T_dV2()
-    
+
     def d2T_dV2_P(self):
         if self.model.C_zero and self.model.B_zero:
             return 0.0
         return super().d2T_dV2_P()
-    
+
     def d2V_dT2(self):
         if self.model.C_zero and self.model.B_zero:
             return 0.0
         return super().d2V_dT2()
-    
+
     d2V_dT2_P = d2V_dT2
-    
+
 
     dP_dT_V = dP_dT
     dP_dV_T = dP_dV

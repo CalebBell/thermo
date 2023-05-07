@@ -106,7 +106,7 @@ def set_coolprop_constants():
         # zs should be a tuple, not a list
         if type(fluid) is list:
             fluid = '&'.join(fluid)
-        
+
         key = (backend, fluid, spec0, spec1, spec_set, phase, zs)
         if key in caching_states_CoolProp:
             AS = caching_states_CoolProp[key]
@@ -458,7 +458,7 @@ class CoolPropPhase(Phase):
 
     def dS_dP(self):
         return self.AS.first_partial_deriv(CPiSmolar, CPiP, CPiT)
-    
+
     dS_dP_T = dS_dP
 
     def dS_dT_V(self):

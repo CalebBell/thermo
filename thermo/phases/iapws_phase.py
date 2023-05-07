@@ -185,10 +185,10 @@ class IAPWS95Liquid(IAPWS95):
             return self._sigma
         except:
             pass
-        
+
         self._sigma = sigma_IAPWS(self.T)
         return self._sigma
-    
+
 class IAPWS97(Phase):
     model_name = 'iapws97'
     model_attributes = ('model_name',)

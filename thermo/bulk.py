@@ -371,9 +371,9 @@ class BulkSettings(object):
     .. [2] 14:00-17:00. "ISO 13443:1996." ISO. Accessed March 29, 2021.
        https://www.iso.org/cms/render/live/en/sites/isoorg/contents/data/standard/02/04/20461.html.
     '''
-    
+
     __full_path__ = "%s.%s" %(__module__, __qualname__)
-    
+
     def as_json(self):
         d = object_data(self)
         return d
@@ -532,7 +532,7 @@ class Bulk(Phase):
     bulk_phase_type = True
 
     __slots__ = ('phases', 'phase_fractions', 'phase_bulk', 'result', 'constants', 'correlations', 'flasher', 'settings')
-    
+
     def __init__(self, T, P, zs, phases, phase_fractions, phase_bulk=None):
         self.T = T
         self.P = P
@@ -1330,7 +1330,7 @@ class Bulk(Phase):
         elif dP_dT_method == EQUILIBRIUM_DERIVATIVE:
             return self._equilibrium_derivative(of='P', wrt='T', const='V')
         return self._property_mixing_rule(dP_dT_method, None, None, 'dP_dT')
-    
+
     dP_dT_V = dP_dT
 
     def dP_dV(self):
@@ -1348,7 +1348,7 @@ class Bulk(Phase):
         elif dP_dV_method == EQUILIBRIUM_DERIVATIVE:
             return self._equilibrium_derivative(of='P', wrt='V', const='T')
         return self._property_mixing_rule(dP_dV_method, None, None, 'dP_dV')
-    
+
     dP_dV_T = dP_dV
 
     def d2P_dT2(self):

@@ -222,19 +222,19 @@ MIN_LAMBDA_WILSON = 1e-20
 
 def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
     r'''Calculates activity coefficients at fixed `lambda` values for
-    a binary system at a series of mole fractions. This is used for 
+    a binary system at a series of mole fractions. This is used for
     regression of `lambda` parameters. This function is highly optimized,
     and operates on multiple points at a time.
-    
+
     .. math::
         \ln \gamma_1 = -\ln(x_1 + \Lambda_{12}x_2) + x_2\left(
-        \frac{\Lambda_{12}}{x_1 + \Lambda_{12}x_2} 
+        \frac{\Lambda_{12}}{x_1 + \Lambda_{12}x_2}
         - \frac{\Lambda_{21}}{x_2 + \Lambda_{21}x_1}
         \right)
 
     .. math::
         \ln \gamma_2 = -\ln(x_2 + \Lambda_{21}x_1) - x_1\left(
-        \frac{\Lambda_{12}}{x_1 + \Lambda_{12}x_2} 
+        \frac{\Lambda_{12}}{x_1 + \Lambda_{12}x_2}
         - \frac{\Lambda_{21}}{x_2 + \Lambda_{21}x_1}
         \right)
 
@@ -250,7 +250,7 @@ def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
     lambda21 : float
         `lambda` parameter for 21, [-]
     gammas : list[float], optional
-        Array to store the activity coefficient for each species in the liquid 
+        Array to store the activity coefficient for each species in the liquid
         mixture, indexed the same as `xs`; can be omitted or provided
         for slightly better performance [-]
 
@@ -265,7 +265,7 @@ def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
     The lambda values are hard-coded to replace values under zero which are
     mathematically impossible, with a very small number. This is helpful for
     regression which might try to make those values negative.
-    
+
     Examples
     --------
     >>> wilson_gammas_binaries([.1, .9, 0.3, 0.7, .85, .15], 0.1759, 0.7991)
@@ -276,7 +276,7 @@ def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
     if lambda21 < MIN_LAMBDA_WILSON:
         lambda21 = MIN_LAMBDA_WILSON
     pts = len(xs)//2 # Always even
-    
+
     if calc is None:
         allocate_size = (pts*2)
         calc = [0.0]*allocate_size
@@ -285,31 +285,31 @@ def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
         i2 = i*2
         x1 = xs[i2]
         x2 = 1.0 - x1
-        
+
         c0 = 1.0/(x1 + x2*lambda12)
         c1 = 1.0/(x2 + x1*lambda21)
         c3 = lambda12*c0 - lambda21*c1
-        
+
         calc[i2] = trunc_exp(c3*x2)*c0
         calc[i2 + 1] = trunc_exp(-c3*x1)*c1
     return calc
 
-    
+
 '''
 Actually readable expression of `wilson_gammas_binaries`:
-    
+
     if lambda12 < MIN_LAMBDA_WILSON:
         lambda12 = MIN_LAMBDA_WILSON
     if lambda21 < MIN_LAMBDA_WILSON:
         lambda21 = MIN_LAMBDA_WILSON
     pts = int(len(xs)/2) # Always even
     allocate_size = (pts*2)
-    
+
 #    lambdas = ones((2,2)) # numba: uncomment
     lambdas = [[1.0, 1.0], [1.0, 1.0]] # numba: delete
     lambdas[0][1] = lambda12
     lambdas[1][0] = lambda21
-    
+
     if calc is None:
         calc = [0.0]*allocate_size
 
@@ -322,7 +322,7 @@ Actually readable expression of `wilson_gammas_binaries`:
         i2 = i*2
         xs_pt[0] = xs[i2]
         xs_pt[1] = 1.0 - xs_pt[0]
-        
+
         xj_Lambda_ijs = wilson_xj_Lambda_ijs(xs_pt, lambdas, N=2, xj_Lambda_ijs=xj_Lambda_ijs_vec)
         xj_Lambda_ijs[0] = 1.0/xj_Lambda_ijs[0]
         xj_Lambda_ijs[1] = 1.0/xj_Lambda_ijs[1]
@@ -331,23 +331,23 @@ Actually readable expression of `wilson_gammas_binaries`:
         calc[i2 + 1] = gammas[1]
     return calc
 '''
-    
+
 def wilson_gammas_binaries_jac(xs, lambda12, lambda21, calc=None):
     if lambda12 < MIN_LAMBDA_WILSON:
         lambda12 = MIN_LAMBDA_WILSON
     if lambda21 < MIN_LAMBDA_WILSON:
         lambda21 = MIN_LAMBDA_WILSON
     pts = len(xs)//2 # Always even
-    
+
     if calc is None:
         allocate_size = (pts*2)
         calc = np.zeros((allocate_size, 2))
-    
+
     for i in range(pts):
         i2 = i*2
         x1 = xs[i2]
         x2 = 1.0 - x1
-        
+
         c0 = lambda12*x2
         c1 = c0 + x1
         c2 = 1.0/c1
@@ -371,8 +371,8 @@ class Wilson(GibbsExcess):
     by the Wilson equation. This model is capable of representing most
     nonideal liquids for vapor-liquid equilibria, but is not recommended for
     liquid-liquid equilibria.
-    
-    The two basic equations are as follows; all other properties are derived 
+
+    The two basic equations are as follows; all other properties are derived
     from these.
 
     .. math::
@@ -427,53 +427,53 @@ class Wilson(GibbsExcess):
         is common to only regress parameters for the most important components;
         set `lambda` parameters for other components to 0 to "ignore" them and
         treat them as ideal components.
-    
+
     This class works with python lists, numpy arrays, and can be accelerated
     with Numba or PyPy quite effectively.
 
     Examples
     --------
     **Example 1**
-    
+
     This object-oriented class provides access to many more thermodynamic
-    properties than :obj:`Wilson_gammas`, but it can also be used like that 
+    properties than :obj:`Wilson_gammas`, but it can also be used like that
     function. In the following example, `gammas` are calculated with both
     functions. The `lambdas` cannot be specified in this class; but fixed
     values can be converted with the `log` function so that fixed values will
     be obtained.
-    
+
     >>> Wilson_gammas([0.252, 0.748], [[1, 0.154], [0.888, 1]])
     [1.881492608717, 1.165577493112]
     >>> GE = Wilson(T=300.0, xs=[0.252, 0.748], lambda_as=[[0, log(0.154)], [log(0.888), 0]])
     >>> GE.gammas()
     [1.881492608717, 1.165577493112]
-    
+
     We can check that the same lambda values were computed as well, and that
     there is no temperature dependency:
-        
+
     >>> GE.lambdas()
     [[1.0, 0.154], [0.888, 1.0]]
     >>> GE.dlambdas_dT()
     [[0.0, 0.0], [0.0, 0.0]]
-    
+
     In this case, there is no temperature dependency in the Wilson model as the
     `lambda` values are fixed, so the excess enthalpy is always zero. Other
     properties are not always zero.
-    
+
     >>> GE.HE(), GE.CpE()
     (0.0, 0.0)
     >>> GE.GE(), GE.SE(), GE.dGE_dT()
     (683.165839398, -2.277219464, 2.2772194646)
-    
+
     **Example 2**
-    
+
     ChemSep is a (partially) free program for modeling distillation. Besides
     being a wonderful program, it also ships with a permissive license several
     sets of binary interaction parameters. The Wilson parameters in it can
     be accessed from Thermo as follows. In the following case, we compute
     activity coefficients of the ethanol-water system at mole fractions of
     [.252, 0.748].
-    
+
     >>> from thermo.interaction_parameters import IPDB
     >>> CAS1, CAS2 = '64-17-5', '7732-18-5'
     >>> lambda_as = IPDB.get_ip_asymmetric_matrix(name='ChemSep Wilson', CASs=[CAS1, CAS2], ip='aij')
@@ -483,34 +483,34 @@ class Wilson(GibbsExcess):
     [1.95733110, 1.1600677]
 
     In ChemSep, the form of the Wilson `lambda` equation is
-    
+
     .. math::
         \Lambda_{ij} = \frac{V_j}{V_i}\exp\left( \frac{-A_{ij}}{RT}\right)
-    
+
     The parameters were converted to the form used by Thermo as follows:
-        
+
     .. math::
         a_{ij} = \log\left(\frac{V_j}{V_i}\right)
-        
+
     .. math::
         b_{ij} = \frac{-A_{ij}}{R}= \frac{-A_{ij}}{ 1.9872042586408316}
-        
-    
+
+
     This system was chosen because there is also a sample problem for the same
     components from the DDBST which can be found here:
     http://chemthermo.ddbst.com/Problems_Solutions/Mathcad_Files/P05.01a%20VLE%20Behavior%20of%20Ethanol%20-%20Water%20Using%20Wilson.xps
-    
+
     In that example, with different data sets and parameters, they obtain at
     the same conditions activity coefficients of [1.881, 1.165]. Different
-    sources of parameters for the same system will generally have similar 
+    sources of parameters for the same system will generally have similar
     behavior if regressed in the same temperature range. As higher order
-    `lambda` parameters are added, models become more likely to behave 
+    `lambda` parameters are added, models become more likely to behave
     differently. It is recommended in [3]_ to regress the minimum number of
     parameters required.
-    
-    
+
+
     **Example 3**
-    
+
     The DDBST has published some sample problems which are fun to work with.
     Because the DDBST uses a different equation form for the coefficients than
     this model implements, we must initialize the :obj:`Wilson` object with
@@ -542,7 +542,7 @@ class Wilson(GibbsExcess):
 
 
     **Example 4**
-    
+
     A simple example is given in [1]_; other textbooks sample problems are
     normally in the same form as this - with only volumes and the `a` term
     specified. The system is 2-propanol/water at 353.15 K, and the mole
@@ -567,19 +567,19 @@ class Wilson(GibbsExcess):
     .. [1] Smith, H. C. Van Ness Joseph M. Introduction to Chemical Engineering
        Thermodynamics 4th Edition, Joseph M. Smith, H. C. Van
        Ness, 1987.
-    .. [2] Kooijman, Harry A., and Ross Taylor. The ChemSep Book. Books on 
+    .. [2] Kooijman, Harry A., and Ross Taylor. The ChemSep Book. Books on
        Demand Norderstedt, Germany, 2000.
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
     '''
-    
+
     model_id = 200
 
-    __slots__ = GibbsExcess.__slots__ + ('_d3GE_dxixjxks', 'lambda_as', '_xj_dLambda_dTijs', '_xj_Lambda_ijs', '_log_xj_Lambda_ijs', 
+    __slots__ = GibbsExcess.__slots__ + ('_d3GE_dxixjxks', 'lambda_as', '_xj_dLambda_dTijs', '_xj_Lambda_ijs', '_log_xj_Lambda_ijs',
                    '_dlambdas_dT', '_lambdas', 'lambda_ds', '_d3GE_dT3', 'lambda_fs', '_xj_d2Lambda_dT2ijs', 'lambda_cs', '_xj_Lambda_ijs_inv',
                    'lambda_coeffs_nonzero', 'lambda_es', '_d2lambdas_dT2', 'lambda_bs', '_d3lambdas_dT3', '_xj_d3Lambda_dT3ijs')
 
-    
+
     gammas_from_args = staticmethod(wilson_gammas_from_args)
     def gammas_args(self, T=None):
         if T is not None:
@@ -594,7 +594,7 @@ class Wilson(GibbsExcess):
         else:
             xj_Lambda_ijs, vec0 = zeros(N), zeros(N)
         return (N, lambdas, xj_Lambda_ijs, vec0)
-    
+
     @staticmethod
     def from_DDBST(Vi, Vj, a, b, c, d=0.0, e=0.0, f=0.0, unit_conversion=True):
         r'''Converts parameters for the wilson equation in the DDBST to the
@@ -668,7 +668,7 @@ class Wilson(GibbsExcess):
         return (a, b, c, d, e, f)
 
     @staticmethod
-    def from_DDBST_as_matrix(Vs, ais=None, bis=None, cis=None, dis=None, 
+    def from_DDBST_as_matrix(Vs, ais=None, bis=None, cis=None, dis=None,
                              eis=None, fis=None,
                              unit_conversion=True):
         r'''Converts parameters for the wilson equation in the DDBST to the
@@ -754,7 +754,7 @@ class Wilson(GibbsExcess):
         self.xs = xs
         self.scalar = scalar = type(xs) is list
         self.N = N = len(xs)
-        
+
         if ABCDEF is None:
             ABCDEF = (lambda_as, lambda_bs, lambda_cs, lambda_ds, lambda_es, lambda_fs)
         if lambda_coeffs is not None:
@@ -782,7 +782,7 @@ class Wilson(GibbsExcess):
                 self.lambda_cs = [[i[2] for i in l] for l in lambda_coeffs]
                 self.lambda_ds = [[i[3] for i in l] for l in lambda_coeffs]
                 self.lambda_es = [[i[4] for i in l] for l in lambda_coeffs]
-                self.lambda_fs = [[i[5] for i in l] for l in lambda_coeffs]                
+                self.lambda_fs = [[i[5] for i in l] for l in lambda_coeffs]
             else:
                 self.lambda_as = array(lambda_coeffs[:,:,0], order='C', copy=True)
                 self.lambda_bs = array(lambda_coeffs[:,:,1], order='C', copy=True)
@@ -816,7 +816,7 @@ class Wilson(GibbsExcess):
                 self.lambda_fs = zero_coeffs
             else:
                 self.lambda_fs = ABCDEF[5]
-        
+
         # Make an array of values identifying what coefficients are zero.
         # This may be useful for performance optimization in the future but is
         # especially important for reducing the size of the __repr__ string.
@@ -832,7 +832,7 @@ class Wilson(GibbsExcess):
                         break
                 if nonzero:
                     break
-                    
+
             lambda_coeffs_nonzero[k] = nonzero
 
 
@@ -840,7 +840,7 @@ class Wilson(GibbsExcess):
                         'lambda_ds', 'lambda_es', 'lambda_fs')
 
     def __repr__(self):
-        
+
         s = '%s(T=%s, xs=%s' %(self.__class__.__name__, repr(self.T), repr(self.xs))
         for i, attr in enumerate(self._model_attributes):
             if self.lambda_coeffs_nonzero[i]:
@@ -1630,7 +1630,7 @@ class Wilson(GibbsExcess):
         else:
             work_func = wilson_gammas_binaries
             jac_func = wilson_gammas_binaries_jac
-        
+
         # Allocate all working memory
         pts = len(xs)
         pts2 = pts*2
@@ -1639,10 +1639,10 @@ class Wilson(GibbsExcess):
         # Plain objective functions
         def fitting_func(xs, lambda12, lambda21):
             return work_func(xs, lambda12, lambda21, gammas_iter)
-            
+
         def analytical_jac(xs, lambda12, lambda21):
             return jac_func(xs, lambda12, lambda21, jac_iter)
-        
+
         # The extend calls has been tested to be the fastest compared to numpy and list comprehension
         xs_working = []
         for xsi in xs:
@@ -1650,10 +1650,10 @@ class Wilson(GibbsExcess):
         gammas_working = []
         for gammasi in gammas:
             gammas_working.extend(gammasi)
-            
+
         xs_working = array(xs_working)
         gammas_working = array(gammas_working)
-        
+
         # Objective functions for leastsq maximum speed
         def func_wrapped_for_leastsq(params):
             return work_func(xs_working, params[0], params[1], gammas_iter) - gammas_working
@@ -1661,7 +1661,7 @@ class Wilson(GibbsExcess):
         def jac_wrapped_for_leastsq(params):
             return jac_func(xs_working, params[0], params[1], jac_iter)
 
-        
+
         fit_parameters = ['lambda12', 'lambda21']
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
                                                       fit_parameters=fit_parameters,
@@ -1674,12 +1674,12 @@ class Wilson(GibbsExcess):
                                                       jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
                                                       **kwargs)
 
-    
+
     # Larger value on the right always
     _gamma_parameter_guesses = [{'lambda12': 1, 'lambda21': 1},
                                {'lambda12': 2.2, 'lambda21': 3.0},
                                {'lambda12': 0.015, 'lambda21': 37.0},
-                               {'lambda12': 0.5, 'lambda21': 40.0},                               
+                               {'lambda12': 0.5, 'lambda21': 40.0},
                                {'lambda12': 1e-7, 'lambda21': .5},
                                {'lambda12': 1e-12, 'lambda21': 1.9},
                                {'lambda12': 1e-12, 'lambda21': 10.0},

@@ -181,27 +181,27 @@ if not skip:
         # the binary file is newer
         json_mtime = os.path.getmtime(json_path)
         binary_mtime = os.path.getmtime(binary_path)
-    
+
         if binary_mtime > json_mtime and os.path.getsize(binary_path) > 10000:
             from_json = False
-    
-    
+
+
     full_data = {}
     marshal_rows = []
-    
-    
+
+
     if from_json:
         full_data = load_json_data(json_path)
         loaded_chemicals = loadChemicalConstants(full_data, rows=False)
-    
-    
+
+
     marshal_data = from_json
     if marshal_data:
         try:
             marshal_rows = marshal_json_data(full_data, binary_path)
         except:
             pass
-    
+
     if not from_json:
         marshal_rows = marshal.load(open(binary_path, 'rb'))
         loaded_chemicals = loadChemicalConstants(marshal_rows, rows=True)

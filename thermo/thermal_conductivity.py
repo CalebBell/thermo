@@ -314,7 +314,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
     custom_args = ('MW', 'Tm', 'Tb', 'Tc', 'Pc', 'omega', 'Hfus')
 
     def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
-                 omega=None, Hfus=None, extrapolation='linear', 
+                 omega=None, Hfus=None, extrapolation='linear',
                  extrapolation_min=1e-4,
                  **kwargs):
         self.CASRN = CASRN
@@ -381,7 +381,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
             # Works down to 0, has a nice limit at T = Tm+793.65 from Sympy
         if all([self.Tb, self.Pc, self.omega]):
             methods.append(GHARAGHEIZI_L)
-            Tmax = 10000. if self.Tc is None else self.Tc 
+            Tmax = 10000. if self.Tc is None else self.Tc
             T_limits[GHARAGHEIZI_L] = (self.Tb, Tmax)
             # Chosen as the model is weird
         if all([self.Tc, self.Pc, self.omega]):

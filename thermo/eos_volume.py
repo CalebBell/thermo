@@ -98,74 +98,74 @@ from fluids.constants import R, R_inv
 
 def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
     r'''Solution of this form of the cubic EOS in terms of volumes, using the
-    `sympy` mathematical library with real numbers. 
+    `sympy` mathematical library with real numbers.
 
-    This function is generally slow, and somehow still has more than desired 
+    This function is generally slow, and somehow still has more than desired
     error in the real and complex result.
-    
+
     .. math::
-        V_0 = - \frac{- \frac{3 \left(- P b \delta + P \epsilon - R T \delta 
+        V_0 = - \frac{- \frac{3 \left(- P b \delta + P \epsilon - R T \delta
         + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T\right)^{2}}
         {P^{2}}}{3 \sqrt[3]{\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta
-        + P \epsilon - R T \delta + a \alpha\right)}{P} + \frac{\left(- P b 
+        + P \epsilon - R T \delta + a \alpha\right)}{P} + \frac{\left(- P b
         + P \delta - R T\right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(
-        - P b \epsilon - R T \epsilon - a \alpha b\right)}{P} - \frac{9 
-        \left(- P b + P \delta - R T\right) \left(- P b \delta + P \epsilon 
+        - P b \epsilon - R T \epsilon - a \alpha b\right)}{P} - \frac{9
+        \left(- P b + P \delta - R T\right) \left(- P b \delta + P \epsilon
         - R T \delta + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta
         - R T\right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon
-        - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P \delta 
-        - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+        - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P \delta
+        - R T\right) \left(- P b \delta + P \epsilon - R T \delta
         + a \alpha\right)}{2 P^{2}} + \frac{\left(- P b + P \delta - R T\right)^{3}}
-        {P^{3}}}} - \frac{\sqrt[3]{\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta 
-        + P \epsilon - R T \delta + a \alpha\right)}{P} + \frac{\left(- P b 
+        {P^{3}}}} - \frac{\sqrt[3]{\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta
+        + P \epsilon - R T \delta + a \alpha\right)}{P} + \frac{\left(- P b
         + P \delta - R T\right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(
         - P b \epsilon - R T \epsilon - a \alpha b\right)}{P} - \frac{9 \left(
         - P b + P \delta - R T\right) \left(- P b \delta + P \epsilon - R T
-        \delta + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta - R 
-        T\right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon 
-        - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P 
-        \delta - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+        \delta + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta - R
+        T\right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon
+        - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P
+        \delta - R T\right) \left(- P b \delta + P \epsilon - R T \delta
         + a \alpha\right)}{2 P^{2}} + \frac{\left(- P b + P \delta - R T
         \right)^{3}}{P^{3}}}}{3} - \frac{- P b + P \delta - R T}{3 P}
-                                                  
+
     .. math::
         V_1 = - \frac{- \frac{3 \left(- P b \delta + P \epsilon - R T \delta
         + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T\right)^{2}}
        {P^{2}}}{3 \left(- \frac{1}{2} - \frac{\sqrt{3} i}{2}\right) \sqrt[3]
-       {\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta + P \epsilon - R T 
+       {\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta + P \epsilon - R T
         \delta + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T
        \right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(- P b \epsilon
-        - R T \epsilon - a \alpha b\right)}{P} - \frac{9 \left(- P b + P \delta 
-        - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+        - R T \epsilon - a \alpha b\right)}{P} - \frac{9 \left(- P b + P \delta
+        - R T\right) \left(- P b \delta + P \epsilon - R T \delta
         + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta - R T
-        \right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon 
+        \right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon
         - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P
-        \delta - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+        \delta - R T\right) \left(- P b \delta + P \epsilon - R T \delta
         + a \alpha\right)}{2 P^{2}} + \frac{\left(- P b + P \delta - R T
         \right)^{3}}{P^{3}}}} - \frac{\left(- \frac{1}{2} - \frac{\sqrt{3} i}
         {2}\right) \sqrt[3]{\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta
-        + P \epsilon - R T \delta + a \alpha\right)}{P} + \frac{\left(- P b 
+        + P \epsilon - R T \delta + a \alpha\right)}{P} + \frac{\left(- P b
         + P \delta - R T\right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(
         - P b \epsilon - R T \epsilon - a \alpha b\right)}{P} - \frac{9 \left(
         - P b + P \delta - R T\right) \left(- P b \delta + P \epsilon - R T
-        \delta + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta 
+        \delta + a \alpha\right)}{P^{2}} + \frac{2 \left(- P b + P \delta
         - R T\right)^{3}}{P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon
         - R T \epsilon - a \alpha b\right)}{2 P} - \frac{9 \left(- P b
-        + P \delta - R T\right) \left(- P b \delta + P \epsilon - R T \delta 
+        + P \delta - R T\right) \left(- P b \delta + P \epsilon - R T \delta
          + a \alpha\right)}{2 P^{2}} + \frac{\left(- P b + P \delta - R T
         \right)^{3}}{P^{3}}}}{3} - \frac{- P b + P \delta - R T}{3 P}
-                                                   
+
     .. math::
-        V_2 = - \frac{- \frac{3 \left(- P b \delta + P \epsilon - R T \delta 
+        V_2 = - \frac{- \frac{3 \left(- P b \delta + P \epsilon - R T \delta
         + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T\right)^{2}}
         {P^{2}}}{3 \left(- \frac{1}{2} + \frac{\sqrt{3} i}{2}\right) \sqrt[3]
-        {\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta + P \epsilon - R T 
+        {\frac{\sqrt{- 4 \left(- \frac{3 \left(- P b \delta + P \epsilon - R T
         \delta + a \alpha\right)}{P} + \frac{\left(- P b + P \delta - R T
         \right)^{2}}{P^{2}}\right)^{3} + \left(\frac{27 \left(- P b \epsilon
         - R T \epsilon - a \alpha b\right)}{P} - \frac{9 \left(- P b + P \delta
         - R T\right) \left(- P b \delta + P \epsilon - R T \delta + a \alpha
         \right)}{P^{2}} + \frac{2 \left(- P b + P \delta - R T\right)^{3}}
-        {P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon - R T \epsilon 
+        {P^{3}}\right)^{2}}}{2} + \frac{27 \left(- P b \epsilon - R T \epsilon
         - a \alpha b\right)}{2 P} - \frac{9 \left(- P b + P \delta - R T\right)
         \left(- P b \delta + P \epsilon - R T \delta + a \alpha\right)}{2 P^{2}}
         + \frac{\left(- P b + P \delta - R T\right)^{3}}{P^{3}}}} - \frac{\left(
@@ -177,9 +177,9 @@ def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
         \left(- P b \delta + P \epsilon - R T \delta + a \alpha\right)}{P^{2}}
         + \frac{2 \left(- P b + P \delta - R T\right)^{3}}{P^{3}}\right)^{2}}}
         {2} + \frac{27 \left(- P b \epsilon - R T \epsilon - a \alpha b\right)}
-        {2 P} - \frac{9 \left(- P b + P \delta - R T\right) \left(- P b \delta 
+        {2 P} - \frac{9 \left(- P b + P \delta - R T\right) \left(- P b \delta
         + P \epsilon - R T \delta + a \alpha\right)}{2 P^{2}} + \frac{\left(
-        - P b + P \delta - R T\right)^{3}}{P^{3}}}}{3} - \frac{- P b + P 
+        - P b + P \delta - R T\right)^{3}}{P^{3}}}}{3} - \frac{- P b + P
         \delta - R T}{3 P}
 
     Parameters
@@ -205,7 +205,7 @@ def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
     Notes
     -----
     The solution can be derived as follows:
-        
+
     >>> from sympy import * # doctest: +SKIP
     >>> P, T, V, R, b, delta, epsilon = symbols('P, T, V, R, b, delta, epsilon') # doctest: +SKIP
     >>> a_alpha = Symbol(r'a \alpha') # doctest: +SKIP
@@ -218,10 +218,10 @@ def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
     >>> Vs = volume_solutions_sympy(0.01, 1e-05, 2.5405184201558786e-05, 5.081036840311757e-05, -6.454233843151321e-10, 0.3872747173781095) # doctest: +SKIP
     >>> [complex(v) for v in Vs] # doctest: +SKIP
     [(2.540546e-05+2.402202278e-12j), (4.660380256-2.40354958e-12j), (8309.80218+1.348096981e-15j)]
-    
+
     References
     ----------
-    .. [1] Meurer, Aaron, Christopher P. Smith, Mateusz Paprocki, Ondřej 
+    .. [1] Meurer, Aaron, Christopher P. Smith, Mateusz Paprocki, Ondřej
        Čertík, Sergey B. Kirpichev, Matthew Rocklin, AMiT Kumar, Sergiu Ivanov,
        Jason K. Moore, and Sartaj Singh. "SymPy: Symbolic Computing in Python."
        PeerJ Computer Science 3 (2017): e103.
@@ -273,8 +273,8 @@ def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
     x24 = x23 + 1
     x25 = x19*x21
     x26 = 1 - x23
-    return (x0*x21/3 - x20/3 + x5/3, 
-            x20*x24/6 + x22/6 - x25/(6*x24), 
+    return (x0*x21/3 - x20/3 + x5/3,
+            x20*x24/6 + x22/6 - x25/(6*x24),
             x20*x26/6 + x22/6 - x25/(6*x26))
 
 def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
@@ -808,7 +808,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     to obtain the final solutions. This method does not calculate imaginary
     roots - they are set to zero on detection. This method has been rigorously
     tested over a wide range of conditions.
-    
+
     The method uses the standard combination of bisection to provide high
     and low boundaries as well, to keep the iteration always moving forward.
 
@@ -869,7 +869,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     c2 = (thetas + epsilons - deltas*(B + 1.0))
     d2 = -(epsilons*(B + 1.0) + thetas*etas)
     RT_P = RT*P_inv
-    
+
     low_V, high_V = b*(1.0+8e-16), -RT_P*d2/c2
     if high_V <= low_V:
         high_V = b*1.000001
@@ -1190,10 +1190,10 @@ def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha):
     Examples
     --------
     Numerical precision is always challenging and has edge cases. The following
-    results all havev imaginary components, but depending on the math 
+    results all havev imaginary components, but depending on the math
     library used by the compiler even the first complex digit may not match!
-    
-    
+
+
     >>> volume_solutions_a1(8837.07874361444, 216556124.0631852, 0.0003990176625589891, 0.0010590390565805598, -1.5069972655436541e-07, 7.20417995032918e-15) # doctest:+SKIP
     ((0.000738308-7.5337e-20j), (-0.001186094-6.52444e-20j), (0.000127055+6.52444e-20j))
     '''

@@ -216,9 +216,9 @@ class EquilibriumState(object):
     __full_path__ = "%s.%s" %(__module__, __qualname__)
 
     __slots__ = ('T', 'P', 'zs', 'N', 'gas_count', 'liquid_count', 'solid_count', 'phase_count', 'gas',
-                 'liquids', 'solids', 'phases', 'betas', 'gas_beta', 'liquids_betas', 'solids_betas', 
+                 'liquids', 'solids', 'phases', 'betas', 'gas_beta', 'liquids_betas', 'solids_betas',
                  'liquid_zs', #'liquid_bulk',
-                  'liquid0', 'liquid1', 'liquid2', 'bulk', 'flash_specs', 'flash_convergence', 
+                  'liquid0', 'liquid1', 'liquid2', 'bulk', 'flash_specs', 'flash_convergence',
                  'flasher', 'settings', 'constants', 'correlations', '__dict__')
 
     def __str__(self):
@@ -233,9 +233,9 @@ class EquilibriumState(object):
         s += ', solids=%s' %(self.solids)
         s += ')'
         return s
-    
+
     # __str__ = __repr__
-    
+
 
     def __init__(self, T, P, zs,
                  gas, liquids, solids, betas,
@@ -360,8 +360,8 @@ class EquilibriumState(object):
         if self.gas is not None:
             return self.betas[0]
         return 0.0 # No gas phase
-    
-    
+
+
     @property
     def LF(self):
         r'''Method to return the liquid fraction of the equilibrium state.
@@ -617,7 +617,7 @@ class EquilibriumState(object):
             return [betas[i]*MWs_phases[i]*tot_inv for i in phase_iter]
         else:
             return []
-    
+
     @property
     def betas_volume_liquids(self):
         r'''Method to calculate and return the fraction of the liquid phase
@@ -646,7 +646,7 @@ class EquilibriumState(object):
             return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
         else:
             return []
-    
+
     def V_liquids_ref(self):
         r'''Method to calculate and return the liquid reference molar volumes
         according to the temperature variable `T_liquid_volume_ref` of
@@ -745,7 +745,7 @@ class EquilibriumState(object):
                     things[atom] += zi*count
                 else:
                     things[atom] = zi*count
-        
+
         phase._atom_content = things
         return things
 
@@ -772,7 +772,7 @@ class EquilibriumState(object):
         tot_inv = 1.0/sum(things.values())
         phase._atom_fractions = {atom : value*tot_inv for atom, value in things.items()}
         return phase._atom_fractions
-    
+
     def atom_mass_fractions(self, phase=None):
         r'''Method to calculate and return the atomic mass fractions of the phase;
         returns a dictionary of atom fraction (by mass), containing only those
@@ -827,7 +827,7 @@ class EquilibriumState(object):
         n = phase.n
         phase._atom_flows = {k:v*n for k, v in atom_content.items()}
         return phase._atom_flows
-    
+
     def atom_count_flows(self, phase=None):
         r'''Method to calculate and return the atom count flow rates of the phase;
         returns a dictionary of atom count flows, containing only those
@@ -846,7 +846,7 @@ class EquilibriumState(object):
         atom_content = self.atom_content(phase)
         n = phase.n
         return {k:v*n*N_A for k, v in atom_content.items()}
-    
+
     def atom_mass_flows(self, phase=None):
         r'''Method to calculate and return the atomic mass flow rates of the phase;
         returns a dictionary of atom mass flows, containing only those
@@ -865,7 +865,7 @@ class EquilibriumState(object):
         atom_mass_fractions = self.atom_mass_fractions(phase)
         m = phase.m
         return {k:v*m for k, v in atom_mass_fractions.items()}
-    
+
 
     def ws(self, phase=None):
         r'''Method to calculate and return the mass fractions of the phase, [-]
@@ -1604,7 +1604,7 @@ class EquilibriumState(object):
         ideal-gas Gibbs free energy of this phase and the actual Gibbs free energy of the phase
         This method is only
         available when the phase is linked to an EquilibriumStream.
-        
+
         Returns
         -------
         G_dep_flow : float
@@ -2273,7 +2273,7 @@ class EquilibriumState(object):
         else:
             ws *= m
         return m
-    
+
     def phis(self, phase=None):
         if phase is not None:
             return phase.phis()
@@ -2638,7 +2638,7 @@ class EquilibriumState(object):
         r'''Method to calculate and return the pure-component vapor pressures
         of each species from the :obj:`thermo.vapor_pressure.VaporPressure`
         objects.
-        
+
 
         Returns
         -------
@@ -2666,7 +2666,7 @@ class EquilibriumState(object):
         r'''Method to calculate and return the pure-component sublimation
         of each species from the :obj:`thermo.vapor_pressure.SublimationPressure`
         objects.
-        
+
 
         Returns
         -------
@@ -2694,7 +2694,7 @@ class EquilibriumState(object):
         r'''Method to calculate and return the pure-component enthalpy of sublimation
         of each species from the :obj:`thermo.phase_change.EnthalpySublimation`
         objects.
-        
+
 
         Returns
         -------
@@ -2705,7 +2705,7 @@ class EquilibriumState(object):
         -----
         .. warning::
 
-            This is not necessarily consistent with the saturation 
+            This is not necessarily consistent with the saturation
             enthalpy change calculated by a flash algorithm.
         '''
         try:
@@ -2722,7 +2722,7 @@ class EquilibriumState(object):
         r'''Method to calculate and return the pure-component enthalpy of vaporization
         of each species from the :obj:`thermo.phase_change.EnthalpyVaporization`
         objects.
-        
+
 
         Returns
         -------
@@ -2733,7 +2733,7 @@ class EquilibriumState(object):
         -----
         .. warning::
 
-            This is not necessarily consistent with the saturation 
+            This is not necessarily consistent with the saturation
             enthalpy change calculated by a flash algorithm.
         '''
         try:
@@ -2750,7 +2750,7 @@ class EquilibriumState(object):
         r'''Method to calculate and return the pure-component surface tensions
         of each species from the :obj:`thermo.interface.SurfaceTension`
         objects.
-        
+
 
         Returns
         -------
@@ -2774,7 +2774,7 @@ class EquilibriumState(object):
         r'''Method to calculate and return the pure-component ideal gas heat capacities
         of each species from the :obj:`thermo.heat_capacity.HeatCapacityGas`
         objects.
-        
+
 
         Returns
         -------
@@ -2795,11 +2795,11 @@ class EquilibriumState(object):
         return self._Cpgs
 
     def Cpls(self):
-        r'''Method to calculate and return the pure-component liquid 
+        r'''Method to calculate and return the pure-component liquid
         temperature-dependent heat capacities
         of each species from the :obj:`thermo.heat_capacity.HeatCapacityLiquid`
         objects.
-        
+
         Note that some correlation methods for liquid heat capacity are at
         low pressure, and others are along the saturation line. There is a
         large difference in values.
@@ -2826,7 +2826,7 @@ class EquilibriumState(object):
         r'''Method to calculate and return the pure-component solid heat capacities
         of each species from the :obj:`thermo.heat_capacity.HeatCapacitySolid`
         objects.
-        
+
         Returns
         -------
         Cpss : list[float]
@@ -2847,11 +2847,11 @@ class EquilibriumState(object):
 
 
     def kls(self):
-        r'''Method to calculate and return the pure-component liquid 
+        r'''Method to calculate and return the pure-component liquid
         temperature-dependent thermal conductivity
         of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`
         objects.
-        
+
         These values are normally at low pressure, not along the saturation line.
 
         Returns
@@ -2874,17 +2874,17 @@ class EquilibriumState(object):
         return self._kls
 
     def kgs(self):
-        r'''Method to calculate and return the pure-component gas 
+        r'''Method to calculate and return the pure-component gas
         temperature-dependent thermal conductivity
         of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivityGas`
         objects.
-        
+
         These values are normally at low pressure, not along the saturation line.
 
         Returns
         -------
         kgs : list[float]
-            Pure component temperature dependent gas thermal conductivities, 
+            Pure component temperature dependent gas thermal conductivities,
             [W/(m*K)]
 
         Notes
@@ -2901,11 +2901,11 @@ class EquilibriumState(object):
         return self._kgs
 
     def muls(self):
-        r'''Method to calculate and return the pure-component liquid 
+        r'''Method to calculate and return the pure-component liquid
         temperature-dependent viscosity
         of each species from the :obj:`thermo.viscosity.ViscosityLiquid`
         objects.
-        
+
         These values are normally at low pressure, not along the saturation line.
 
         Returns
@@ -2927,11 +2927,11 @@ class EquilibriumState(object):
         return self._muls
 
     def mugs(self):
-        r'''Method to calculate and return the pure-component gas 
+        r'''Method to calculate and return the pure-component gas
         temperature-dependent viscosity
         of each species from the :obj:`thermo.viscosity.ViscosityGas`
         objects.
-        
+
         These values are normally at low pressure, not along the saturation line.
 
         Returns
@@ -2953,11 +2953,11 @@ class EquilibriumState(object):
         return self._mugs
 
     def Vls(self):
-        r'''Method to calculate and return the pure-component liquid 
+        r'''Method to calculate and return the pure-component liquid
         temperature-dependent molar volume
         of each species from the :obj:`thermo.volume.VolumeLiquid`
         objects.
-        
+
         These values are normally along the saturation line.
 
         Returns
@@ -2979,11 +2979,11 @@ class EquilibriumState(object):
         return self._Vls
 
     def Vss(self):
-        r'''Method to calculate and return the pure-component solid 
+        r'''Method to calculate and return the pure-component solid
         temperature-dependent molar volume
         of each species from the :obj:`thermo.volume.VolumeSolid`
         objects.
-        
+
         Returns
         -------
         Vss : list[float]
@@ -3180,7 +3180,7 @@ phases_properties_to_EquilibriumState = ['atom_content', 'atom_fractions', 'atom
                                          'atom_flows','atom_mass_flows', 'atom_count_flows', 'API',
                                          'Hc', 'Hc_mass', 'Hc_lower', 'Hc_lower_mass', 'SG', 'SG_gas',
                                          'pseudo_Tc', 'pseudo_Pc', 'pseudo_Vc', 'pseudo_Zc',
-                                         'pseudo_omega', 
+                                         'pseudo_omega',
                                          'V_gas_standard', 'V_gas_normal', 'V_gas',
                                          'Hc_normal', 'Hc_standard',
                                          'Hc_lower_normal', 'Hc_lower_standard',
@@ -3199,10 +3199,10 @@ phases_properties_to_EquilibriumState = ['atom_content', 'atom_fractions', 'atom
 for name in phases_properties_to_EquilibriumState:
     method = _make_getter_EquilibriumState(name)
     setattr(Phase, name, method)
-    
-    
+
+
 # things without any arguments
-phases_properties_argumentless_to_EquilibriumState = ['Psats','Psubs', 'Hvaps', 
+phases_properties_argumentless_to_EquilibriumState = ['Psats','Psubs', 'Hvaps',
                 'Hsubs', 'sigmas', 'Cpgs', 'Cpls', 'Cpss', 'kls', 'kgs',
                 'muls', 'mugs', 'Vls', 'Vss']
 for name in phases_properties_argumentless_to_EquilibriumState:
@@ -3213,7 +3213,7 @@ for name in phases_properties_argumentless_to_EquilibriumState:
 # EquilibriumState to get the property
 Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas',
        'V_ideal_gas', 'G_ideal_gas', 'U_ideal_gas',
-        'Cv_ideal_gas', 'Cp_Cv_ratio_ideal_gas', 
+        'Cv_ideal_gas', 'Cp_Cv_ratio_ideal_gas',
        'A_ideal_gas', 'H_formation_ideal_gas', 'S_formation_ideal_gas',
        'G_formation_ideal_gas', 'U_formation_ideal_gas', 'A_formation_ideal_gas',
        'H_dep', 'S_dep', 'Cp_dep', 'Cv_dep']
@@ -3241,8 +3241,8 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
               'Cp_dep_mass', 'Cp_ideal_gas_mass', 'Cv_dep_mass', 'G_min_criteria',
               'mu', 'k', 'sigma', 'Prandtl',
               'isentropic_exponent', 'isentropic_exponent_PV', 'isentropic_exponent_TV',
-              'isentropic_exponent_PT', 
-              
+              'isentropic_exponent_PT',
+
               'concentrations_mass', 'concentrations', 'Qls', 'ms', 'ns', 'Q', 'm', 'n',
               'nu', 'kinematic_viscosity', 'partial_pressures',
               ]
@@ -3307,8 +3307,8 @@ def _make_getter_atom_fraction(element_symbol):
 for ele in periodic_table:
     getter = _make_getter_atom_fraction(ele.symbol)
     name = '%s_atom_fraction' %(ele.name)
-    
-    _add_attrs_doc =  r'''Method to calculate and return the mole fraction that 
+
+    _add_attrs_doc =  r'''Method to calculate and return the mole fraction that
             is %s element, [-]
             ''' %(ele.name)
     getter.__doc__ = _add_attrs_doc
@@ -3331,8 +3331,8 @@ def _make_getter_atom_mass_fraction(element_symbol):
 for ele in periodic_table:
     getter = _make_getter_atom_mass_fraction(ele.symbol)
     name = '%s_atom_mass_fraction' %(ele.name)
-    
-    _add_attrs_doc =  r'''Method to calculate and return the mass fraction of the phase 
+
+    _add_attrs_doc =  r'''Method to calculate and return the mass fraction of the phase
             that is %s element, [-]
             ''' %(ele.name)
     getter.__doc__ = _add_attrs_doc
@@ -3351,11 +3351,11 @@ def _make_getter_atom_mass_flow(element_symbol):
         except KeyError:
             return 0.0
     return get_atom_mass_flow
-    
+
 for ele in periodic_table:
     getter = _make_getter_atom_mass_flow(ele.symbol)
     name = '%s_atom_mass_flow' %(ele.name)
-    
+
     _add_attrs_doc =  r'''Method to calculate and return the mass flow of atoms
             that are %s element, [kg/s]
             ''' %(ele.name)
@@ -3375,11 +3375,11 @@ def _make_getter_atom_flow(element_symbol):
         except KeyError:
             return 0.0
     return get_atom_flow
-    
+
 for ele in periodic_table:
     getter = _make_getter_atom_flow(ele.symbol)
     name = '%s_atom_flow' %(ele.name)
-    
+
     _add_attrs_doc =  r'''Method to calculate and return the mole flow that is
             %s, [mol/s]
             ''' %(ele.name)
@@ -3399,11 +3399,11 @@ def _make_getter_atom_count_flow(element_symbol):
         except KeyError:
             return 0.0
     return get_atom_count_flow
-    
+
 for ele in periodic_table:
     getter = _make_getter_atom_count_flow(ele.symbol)
     name = '%s_atom_count_flow' %(ele.name)
-    
+
     _add_attrs_doc =  r'''Method to calculate and return the number of atoms in the
             flow which are %s, [atoms/s]
             ''' %(ele.name)
@@ -3435,14 +3435,14 @@ def _make_getter_partial_pressure(CAS):
 for _name, _CAS in _comonent_specific_properties.items():
     getter = _make_getter_partial_pressure(_CAS)
     name = '%s_partial_pressure' %(_name)
-    
+
     _add_attrs_doc =  r'''Method to calculate and return the ideal partial pressure of %s, [Pa]
             ''' %(_name)
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
-    
-    
+
+
 def _make_getter_component_molar_weight(CAS):
     def get(self):
         try:
@@ -3457,11 +3457,11 @@ def _make_getter_component_molar_weight(CAS):
 for _name, _CAS in _comonent_specific_properties.items():
     getter = _make_getter_component_molar_weight(_CAS)
     name = '%s_molar_weight' %(_name)
-    
+
     _add_attrs_doc =  r'''Method to calculate and return the effective quantiy
     of %s in the phase as a molar weight, [g/mol].
-    
-    This is the molecular weight of the phase times the mass fraction of the 
+
+    This is the molecular weight of the phase times the mass fraction of the
     %s component.
             ''' %(_name, _name)
     getter.__doc__ = _add_attrs_doc

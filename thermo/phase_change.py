@@ -580,9 +580,9 @@ class EnthalpySublimation(TDependentProperty):
     -----
     To iterate over all methods, use the list stored in
     :obj:`enthalpy_sublimation_methods`.
-    
+
     **WEBBOOK_HSUB**:
-        Enthalpy of sublimation at a constant temperature of 298.15 K as given 
+        Enthalpy of sublimation at a constant temperature of 298.15 K as given
         in [3]_.
     **GHARAGHEIZI_HSUB_298**:
         Enthalpy of sublimation at a constant temperature of 298 K as given in
