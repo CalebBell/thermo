@@ -30,6 +30,7 @@ from thermo.eos import *
 from thermo.vapor_pressure import VaporPressure
 from thermo.heat_capacity import *
 from thermo.phase_change import *
+from thermo.flash.flash_utils import assert_stab_success_2P
 from thermo.property_package import StabilityTester
 
 

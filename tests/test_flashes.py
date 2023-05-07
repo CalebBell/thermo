@@ -37,7 +37,9 @@ from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage, BulkSe
 from chemicals.exceptions import PhaseCountReducedError, TrivialSolutionError
 from chemicals import flash_wilson
 from thermo.stream import StreamArgs
-
+from thermo.flash.flash_utils import (sequential_substitution_2P, dew_bubble_newton_zs, dew_bubble_Michelsen_Mollerup,
+ stability_iteration_Michelsen, existence_3P_Michelsen_Mollerup, nonlin_equilibrium_NP, solve_P_VF_IG_K_composition_independent, 
+ sequential_substitution_2P_functional, solve_T_VF_IG_K_composition_independent, sequential_substitution_NP)
 
 @pytest.mark.skip
 def test_minimize_gibbs_NP_transformed():

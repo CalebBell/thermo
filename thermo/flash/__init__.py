@@ -67,10 +67,10 @@ future, but reading their source code may be helpful for instructive purposes.
 '''
 from thermo.flash.flash_base import Flash
 from thermo.flash.flash_pure_vls import FlashPureVLS
-from thermo.flash.flash_utils import *
+# from thermo.flash.flash_utils import *
 from thermo.flash.flash_vl import FlashVL
 from thermo.flash.flash_vln import FlashVLN
 
-__all__ = flash_utils.__all__ + flash_base.__all__ + flash_vl.__all__ + flash_vln.__all__ + flash_pure_vls.__all__
+# __all__ = flash_utils.__all__ + flash_base.__all__ + flash_vl.__all__ + flash_vln.__all__ + flash_pure_vls.__all__
 
-# __all__ = ('Flash', 'FlashPureVLS', 'FlashVL', 'FlashVLN')
+__all__ = ('Flash', 'FlashPureVLS', 'FlashVL', 'FlashVLN')
