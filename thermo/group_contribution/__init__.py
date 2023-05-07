@@ -30,7 +30,6 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_
 
 
 '''
-from thermo.group_contribution import fedors, joback, wilson_jasperson
 from thermo.group_contribution.fedors import Fedors
 from thermo.group_contribution.joback import (Joback, J_BIGGS_JOBACK_SMARTS, J_BIGGS_JOBACK_SMARTS_id_dict)
 from thermo.group_contribution.wilson_jasperson import (Wilson_Jasperson, Wilson_Jasperson_Tc_increments,
