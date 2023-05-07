@@ -1526,7 +1526,7 @@ class Flash:
             else:
                 return res.T
 
-        import matplotlib
+        import matplotlib as mpl
         import matplotlib.pyplot as plt
         axes_colors = {'b': 'g', 'l': 'r', 'r':'b'}
         ticks = [round(i / float(10), 1) for i in range(10+1)]
@@ -1565,8 +1565,8 @@ class Flash:
         cb = plt.colorbar(sm, ax=ax[2])
         text = 'Pressure, [Pa]' if is_T_spec else 'Temperature, [K]'
         cb.set_label(text, rotation=270, ha='center', va='center')
-        cb.locator = matplotlib.ticker.LinearLocator(numticks=7)
-        cb.formatter = matplotlib.ticker.ScalarFormatter()
+        cb.locator = mpl.ticker.LinearLocator(numticks=7)
+        cb.formatter = mpl.ticker.ScalarFormatter()
         cb.formatter.set_powerlimits((0, 0))
         cb.update_ticks()
         # plt.tight_layout()
