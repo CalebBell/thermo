@@ -214,7 +214,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
     atom_rings = ri.AtomRings()
     Nr = len(atom_rings)
 
-    atoms = simple_formula_parser(Chem.rdMolDescriptors.CalcMolFormula(rdkitmol))
+    atoms = simple_formula_parser(rdMolDescriptors.CalcMolFormula(rdkitmol))
 
     group_contributions = {}
     OH_matches = rdkitmol.GetSubstructMatches(smarts_mol_cache(alcohol_smarts))
