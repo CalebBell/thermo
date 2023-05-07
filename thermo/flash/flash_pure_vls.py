@@ -898,19 +898,20 @@ class FlashPureVLS(Flash):
                 err = 0.0
                 flash_convergence['VF flash convergence'] = {'iterations': VL_iter, 'err': VL_err}
 
-        if G_SF < G_min:
-            try:
-                ls = [SF_flash.liquid0]
-                gas_phase = None
-            except:
-                ls = []
-                gas_phase = SF_flash.gas
-            ss = [SF_flash.solid0]
-            betas = [1.0 - SF, SF]
-            T = SF_flash.T
-            iterations = 0
-            err = 0.0
-            flash_convergence['SF flash convergence'] = SF_flash.flash_convergence
+        # TODO
+        # if G_SF < G_min:
+        #     try:
+        #         ls = [SF_flash.liquid0]
+        #         gas_phase = None
+        #     except:
+        #         ls = []
+        #         gas_phase = SF_flash.gas
+        #     ss = [SF_flash.solid0]
+        #     betas = [1.0 - SF, SF]
+        #     T = SF_flash.T
+        #     iterations = 0
+        #     err = 0.0
+        #     flash_convergence['SF flash convergence'] = SF_flash.flash_convergence
 
         if G_min == 1e100:
             """Calculate the values of val at minimum and maximum temperature
