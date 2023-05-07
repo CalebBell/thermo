@@ -17,6 +17,9 @@ extend-ignore = [
     "PGH003", # type ignoring makes sense for numba-related things
     "S102", # Yes, exec is dangerous but it can be quite useful as well
 
+    # chemicals specific
+    "E701", # lots of this here
+
     # Originally from astropy's pyproject.toml, see about removing many of them later
     
     "A00",
