@@ -249,8 +249,7 @@ if not numerics.is_micropython:
                   phases.iapws_phase, phases.ideal_gas, phases.petroleum,
                   phases.phase, phases.phase_utils, phases.virial_phase,
                   utils.functional, utils.mixture_property,
-                  utils.t_dependent_property, utils.tp_dependent_property,
-                  utils.multi_cheb_1d]
+                  utils.t_dependent_property, utils.tp_dependent_property]
 
     def complete_lazy_loading():
         import chemicals

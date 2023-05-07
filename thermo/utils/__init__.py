@@ -99,8 +99,6 @@ EOS = 'EOS'
 
 from . import functional
 from .functional import *
-from . import multi_cheb_1d
-from .multi_cheb_1d import *
 from . import t_dependent_property
 from .t_dependent_property import *
 from . import tp_dependent_property
@@ -110,7 +108,6 @@ from .mixture_property import *
 
 __all__ = (
     *functional.__all__,
-    *multi_cheb_1d.__all__,
     *t_dependent_property.__all__,
     *tp_dependent_property.__all__,
     *mixture_property.__all__,
