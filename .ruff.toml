@@ -21,6 +21,7 @@ extend-ignore = [
     "E701", # lots of this here
     
     "S302", # marshal is OK
+    "SIM116", # 3 if statements does not require a dict
     
     # maybe these
     "PLE0605",
