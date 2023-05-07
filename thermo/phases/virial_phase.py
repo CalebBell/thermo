@@ -186,7 +186,7 @@ class VirialCSP:
 
     References
     ----------
-    .. [1] O’Connell, J. P., and J. M. Prausnitz. "Empirical Correlation of
+    .. [1] O`Connell, J. P., and J. M. Prausnitz. "Empirical Correlation of
        Second Virial Coefficients for Vapor-Liquid Equilibrium Calculations."
        Industrial & Engineering Chemistry Process Design and Development 6,
        no. 2 (April 1, 1967): 245-50. https://doi.org/10.1021/i260022a016.

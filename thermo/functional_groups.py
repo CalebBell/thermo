@@ -316,7 +316,7 @@ amide_smarts_4 = '[*][CX3](=[OX1H0])[NX3]([*])([*])' # Doesn't match ones withou
 amide_smarts_collection = [amide_smarts_3, amide_smarts_2, amide_smarts_1, amide_smarts_4]
 def is_amide(mol):
     r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
-    molecule has a amide RC(=O)NR′R″ group.
+    molecule has a amide RC(=O)NR`R″ group.
 
     Parameters
     ----------

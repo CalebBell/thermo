@@ -762,7 +762,7 @@ class Flash:
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
         self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
         scalar = True
-        scalar_statuses = set(i.scalar for i in self.phases)
+        scalar_statuses = {i.scalar for i in self.phases}
         if len(scalar_statuses) > 1:
             raise ValueError("Can only perform flashes with all phases in a numpy basis or all phases in a pure Python basis")
         self.scalar = scalar_statuses.pop()

@@ -2603,7 +2603,7 @@ def load_group_assignments_DDBST():
         for line in f.readlines():
             key, valids, original, modified, PSRK = line.split('\t')
             # list of whether or not each method was correctly identified or not
-            valids = [True if i == '1' else False for i in valids.split(' ')]
+            valids = [i == '1' for i in valids.split(' ')]
             for groups, storage, valid in zip([original, modified, PSRK], _group_assignments, valids):
                 if valid:
                     groups = groups.rstrip().split(' ')
@@ -3006,7 +3006,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
        Mixtures." AIChE Journal 21, no. 6 (November 1, 1975): 1086-99.
        doi:10.1002/aic.690210607.
     .. [3] Jakob, Antje, Hans Grensemann, Jürgen Lohmann, and Jürgen Gmehling.
-       "Further Development of Modified UNIFAC (Dortmund):  Revision and
+       "Further Development of Modified UNIFAC (Dortmund):  Revision and
        Extension 5." Industrial & Engineering Chemistry Research 45, no. 23
        (November 1, 2006): 7924-33. doi:10.1021/ie060355c.
     .. [4] Kang, Jeong Won, Vladimir Diky, and Michael Frenkel. "New Modified
@@ -4372,7 +4372,7 @@ class UNIFAC(GibbsExcess):
 
     References
     ----------
-    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O`Connell. The
        Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
        Professional, 2000.
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.

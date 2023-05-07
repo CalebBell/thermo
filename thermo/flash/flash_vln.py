@@ -148,7 +148,7 @@ class FlashVLN(FlashVL):
     ----------
     .. [1] Michelsen, Michael L., and Jørgen M. Mollerup. Thermodynamic Models:
        Fundamentals & Computational Aspects. Tie-Line Publications, 2007.
-    .. [2] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+    .. [2] Poling, Bruce E., John M. Prausnitz, and John P. O`Connell. The
        Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
        Professional, 2000.
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
@@ -522,8 +522,7 @@ class FlashVLN(FlashVL):
         other_phase = gas_at_conditions if LL_solved else liquids[1]
 
         SWITCH_EXPECT_LIQ_Z = 0.25
-        expect_liquid = (True if (other_phase_flashed.Z() > SWITCH_EXPECT_LIQ_Z
-                                 or min_phase.Z() > SWITCH_EXPECT_LIQ_Z) else False)
+        expect_liquid = (bool(other_phase_flashed.Z() > SWITCH_EXPECT_LIQ_Z or min_phase.Z() > SWITCH_EXPECT_LIQ_Z))
         expect_aqueous = False
         if self.aqueous_check and self.water_index is not None and zs[self.water_index] > 1e-3:
             # Probably a water phase exists

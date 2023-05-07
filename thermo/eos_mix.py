@@ -8310,7 +8310,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
     References
     ----------
     .. [1] Pina-Martinez, Andrés, Romain Privat, Jean-Noël Jaubert, and
-       Ding-Yu Peng. "Updated Versions of the Generalized Soave α-Function
+       Ding-Yu Peng. "Updated Versions of the Generalized Soave a-Function
        Suitable for the Redlich-Kwong and Peng-Robinson Equations of State."
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.

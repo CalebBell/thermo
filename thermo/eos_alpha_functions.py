@@ -1414,7 +1414,7 @@ class Soave_1972_a_alpha(a_alpha_base):
            Kwong Equation of State." Chemical Engineering Science 27, no. 6
            (June 1972): 1197-1203. doi:10.1016/0009-2509(72)80096-4.
         .. [2] Young, André F., Fernando L. P. Pessoa, and Victor R. R. Ahón.
-           "Comparison of 20 Alpha Functions Applied in the Peng–Robinson
+           "Comparison of 20 Alpha Functions Applied in the Peng-Robinson
            Equation of State for Vapor Pressure Estimation." Industrial &
            Engineering Chemistry Research 55, no. 22 (June 8, 2016): 6506-16.
            doi:10.1021/acs.iecr.6b00721.
@@ -2113,7 +2113,7 @@ class Gasem_a_alpha(a_alpha_base):
         ----------
         .. [1] Gasem, K. A. M, W Gao, Z Pan, and R. L Robinson Jr. "A Modified
            Temperature Dependence for the Peng-Robinson Equation of State."
-           Fluid Phase Equilibria 181, no. 1–2 (May 25, 2001): 113-25.
+           Fluid Phase Equilibria 181, no. 1-2 (May 25, 2001): 113-25.
            doi:10.1016/S0378-3812(01)00488-5.
         '''
         c1, c2, c3 = self.alpha_coeffs
@@ -2142,7 +2142,7 @@ class Coquelet_a_alpha(a_alpha_base):
         References
         ----------
         .. [1] Coquelet, C., A. Chapoy, and D. Richon. "Development of a New
-           Alpha Function for the Peng–Robinson Equation of State: Comparative
+           Alpha Function for the Peng-Robinson Equation of State: Comparative
            Study of Alpha Function Models for Pure Gases (Natural Gas
            Components) and Water-Gas Systems." International Journal of
            Thermophysics 25, no. 1 (January 1, 2004): 133-58.
@@ -2232,7 +2232,7 @@ class Chen_Yang_a_alpha(a_alpha_base):
         References
         ----------
         .. [1] Chen, Zehua, and Daoyong Yang. "Optimization of the Reduced
-           Temperature Associated with Peng–Robinson Equation of State and
+           Temperature Associated with Peng-Robinson Equation of State and
            Soave-Redlich-Kwong Equation of State To Improve Vapor Pressure
            Prediction for Heavy Hydrocarbon Compounds." Journal of Chemical &
            Engineering Data, August 31, 2017. doi:10.1021/acs.jced.7b00496.

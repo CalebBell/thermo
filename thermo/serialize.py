@@ -98,7 +98,7 @@ def naive_lists_to_arrays(obj):
     elif t is tuple:
         return tuple(naive_lists_to_arrays(v) for v in obj)
     elif t is set:
-        return set(naive_lists_to_arrays(v) for v in obj)
+        return {naive_lists_to_arrays(v) for v in obj}
     elif t is list:
         if len(obj) >= 2 and type(obj[0]) is list:
             # Handle tuples of different sized arrays

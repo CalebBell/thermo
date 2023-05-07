@@ -504,7 +504,7 @@ class UNIQUAC(GibbsExcess):
 
     References
     ----------
-    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+    .. [1] Poling, Bruce E., John M. Prausnitz, and John P. O`Connell. The
        Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
        Professional, 2000.
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.

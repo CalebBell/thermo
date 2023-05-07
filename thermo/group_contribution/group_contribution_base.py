@@ -180,7 +180,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         H_counts_by_idx[at.GetIdx()] = at.GetTotalNumHs(includeNeighbors=True)
 
 
-    all_atom_idxs = set(i.GetIdx() for i in rdkitmol.GetAtoms())
+    all_atom_idxs = {i.GetIdx() for i in rdkitmol.GetAtoms()}
     atom_count = len(all_atom_idxs)
     status = 'OK'
     success = True

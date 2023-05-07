@@ -235,7 +235,7 @@ class FlashVL(Flash):
     ----------
     .. [1] Michelsen, Michael L., and Jørgen M. Mollerup. Thermodynamic Models:
        Fundamentals & Computational Aspects. Tie-Line Publications, 2007.
-    .. [2] Poling, Bruce E., John M. Prausnitz, and John P. O’Connell. The
+    .. [2] Poling, Bruce E., John M. Prausnitz, and John P. O`Connell. The
        Properties of Gases and Liquids. 5th edition. New York: McGraw-Hill
        Professional, 2000.
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.

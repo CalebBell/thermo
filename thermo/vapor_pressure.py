@@ -117,7 +117,7 @@ def Psat_beryllium_Arblaster_2016(T):
     '''Table 5 vapor pressure for liquid phase
 
     Arblaster, J. W. “Thermodynamic Properties of Beryllium.” Journal of
-    Phase Equilibria and Diffusion 37, no. 5 (October 1, 2016): 581–91.
+    Phase Equilibria and Diffusion 37, no. 5 (October 1, 2016): 581-91.
     https://doi.org/10.1007/s11669-016-0488-5.
     '''
     A, B, C, D, E = 18.14516, -0.512217, -37525.7, -1.54090910E-4, 2.18352910584E-9
