@@ -354,25 +354,26 @@ class ThermalConductivityLiquid(TPDependentProperty):
         self.all_methods = set()
         methods, methods_P = [], []
         self.T_limits = T_limits = {}
-        if load_data:
-            if self.CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'K (l)')
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            if CASRN in miscdata.VDI_saturation_dict:
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'K (l)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                 del self._method
-            if has_CoolProp() and self.CASRN in coolprop_dict:
-                CP_f = coolprop_fluids[self.CASRN]
+            if has_CoolProp() and CASRN in coolprop_dict:
+                CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_k:
                     self.CP_f = CP_f
                     methods.append(COOLPROP)
                     methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin*1.001, self.CP_f.Tc*0.9999)
-            if self.CASRN in thermal_conductivity.k_data_Perrys_8E_2_315.index:
+            if CASRN in thermal_conductivity.k_data_Perrys_8E_2_315.index:
                 methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = thermal_conductivity.k_values_Perrys_8E_2_315[thermal_conductivity.k_data_Perrys_8E_2_315.index.get_loc(self.CASRN)].tolist()
+                C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = thermal_conductivity.k_values_Perrys_8E_2_315[thermal_conductivity.k_data_Perrys_8E_2_315.index.get_loc(CASRN)].tolist()
                 self.Perrys2_315_coeffs = [C1, C2, C3, C4, C5]
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_315_Tmin, self.Perrys2_315_Tmax)
-            if self.CASRN in thermal_conductivity.k_data_VDI_PPDS_9.index:
-                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_9[thermal_conductivity.k_data_VDI_PPDS_9.index.get_loc(self.CASRN)].tolist()
+            if CASRN in thermal_conductivity.k_data_VDI_PPDS_9.index:
+                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_9[thermal_conductivity.k_data_VDI_PPDS_9.index.get_loc(CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D, E]
                 self.VDI_PPDS_coeffs.reverse()
                 methods.append(VDI_PPDS)
@@ -1020,25 +1021,26 @@ class ThermalConductivityGas(TPDependentProperty):
         self.all_methods = set()
         methods, methods_P = [], []
         self.T_limits = T_limits = {}
-        if load_data:
-            if self.CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'K (g)')
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            if CASRN in miscdata.VDI_saturation_dict:
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'K (g)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                 del self._method
-            if has_CoolProp() and self.CASRN in coolprop_dict:
-                CP_f = coolprop_fluids[self.CASRN]
+            if has_CoolProp() and CASRN in coolprop_dict:
+                CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_k:
                     self.CP_f = CP_f
                     methods.append(COOLPROP)
                     methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc*0.9999)
-            if self.CASRN in thermal_conductivity.k_data_Perrys_8E_2_314.index:
+            if CASRN in thermal_conductivity.k_data_Perrys_8E_2_314.index:
                 methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = thermal_conductivity.k_values_Perrys_8E_2_314[thermal_conductivity.k_data_Perrys_8E_2_314.index.get_loc(self.CASRN)].tolist()
+                C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = thermal_conductivity.k_values_Perrys_8E_2_314[thermal_conductivity.k_data_Perrys_8E_2_314.index.get_loc(CASRN)].tolist()
                 self.Perrys2_314_coeffs = [C1, C2, C3, C4]
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_314_Tmin, self.Perrys2_314_Tmax)
-            if self.CASRN in thermal_conductivity.k_data_VDI_PPDS_10.index:
-                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_10[thermal_conductivity.k_data_VDI_PPDS_10.index.get_loc(self.CASRN)].tolist()
+            if CASRN in thermal_conductivity.k_data_VDI_PPDS_10.index:
+                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_10[thermal_conductivity.k_data_VDI_PPDS_10.index.get_loc(CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D, E]
                 self.VDI_PPDS_coeffs.reverse()
                 methods.append(VDI_PPDS)

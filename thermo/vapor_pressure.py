@@ -378,8 +378,8 @@ class VaporPressure(TDependentProperty):
         self.T_limits = T_limits = {}
         self.all_methods = set()
         methods = []
-        if load_data:
-            CASRN = self.CASRN
+        CASRN = self.CASRN
+        if load_data and CASRN:
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
             df_wb = miscdata.webbook_data
             if CASRN == '7732-18-5':

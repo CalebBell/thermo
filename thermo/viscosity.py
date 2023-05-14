@@ -373,7 +373,7 @@ class ViscosityLiquid(TPDependentProperty):
         self.T_limits = T_limits = {}
         self.all_methods = set()
         CASRN = self.CASRN
-        if load_data:
+        if load_data and CASRN:
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
             jb_df = miscdata.joback_predictions
             if self.MW is not None and CASRN_int in jb_df.index:

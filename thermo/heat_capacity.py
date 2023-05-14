@@ -883,63 +883,64 @@ class HeatCapacityLiquid(TDependentProperty):
         methods = []
         self.all_methods = set()
         self.T_limits = T_limits = {}
-        if load_data:
-            if self.CASRN in heat_capacity.zabransky_dict_const_s:
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            if CASRN in heat_capacity.zabransky_dict_const_s:
                 methods.append(ZABRANSKY_SPLINE)
-                self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[self.CASRN]
+                self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[CASRN]
                 T_limits[ZABRANSKY_SPLINE] = (self.Zabransky_spline.Tmin, self.Zabransky_spline.Tmax)
-            if self.CASRN in heat_capacity.WebBook_Shomate_liquids:
+            if CASRN in heat_capacity.WebBook_Shomate_liquids:
                 methods.append(WEBBOOK_SHOMATE)
-                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_liquids[self.CASRN]
+                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_liquids[CASRN]
                 T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
-            if self.CASRN in heat_capacity.zabransky_dict_const_p:
+            if CASRN in heat_capacity.zabransky_dict_const_p:
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
-                self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[self.CASRN]
+                self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[CASRN]
                 T_limits[ZABRANSKY_QUASIPOLYNOMIAL] = (self.Zabransky_quasipolynomial.Tmin, self.Zabransky_quasipolynomial.Tmax)
-            if self.CASRN in heat_capacity.zabransky_dict_iso_s:
+            if CASRN in heat_capacity.zabransky_dict_iso_s:
                 methods.append(ZABRANSKY_SPLINE_C)
-                self.Zabransky_spline_iso = heat_capacity.zabransky_dict_iso_s[self.CASRN]
+                self.Zabransky_spline_iso = heat_capacity.zabransky_dict_iso_s[CASRN]
                 T_limits[ZABRANSKY_SPLINE_C] = (self.Zabransky_spline_iso.Tmin, self.Zabransky_spline_iso.Tmax)
-            if self.CASRN in heat_capacity.zabransky_dict_iso_p:
+            if CASRN in heat_capacity.zabransky_dict_iso_p:
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
-                self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[self.CASRN]
+                self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[CASRN]
                 T_limits[ZABRANSKY_QUASIPOLYNOMIAL_C] = (self.Zabransky_quasipolynomial_iso.Tmin, self.Zabransky_quasipolynomial_iso.Tmax)
 
 
-            if self.CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpl']):
+            if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl']):
                 methods.append(POLING_CONST)
                 self.POLING_T = 298.15
-                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[self.CASRN, 'Cpl'])
+                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl'])
                 T_limits[POLING_CONST] = (298.15-50.0, 298.15+50.0)
-            if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpl']):
+            if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']):
                 methods.append(CRCSTD)
                 self.CRCSTD_T = 298.15
-                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cpl'])
+                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl'])
                 T_limits[CRCSTD] = (298.15-50.0, 298.15+50.0)
             # Saturation functions
-            if self.CASRN in heat_capacity.zabransky_dict_sat_s:
+            if CASRN in heat_capacity.zabransky_dict_sat_s:
                 methods.append(ZABRANSKY_SPLINE_SAT)
-                self.Zabransky_spline_sat = heat_capacity.zabransky_dict_sat_s[self.CASRN]
+                self.Zabransky_spline_sat = heat_capacity.zabransky_dict_sat_s[CASRN]
                 T_limits[ZABRANSKY_SPLINE_SAT] = (self.Zabransky_spline_sat.Tmin, self.Zabransky_spline_sat.Tmax)
-            if self.CASRN in heat_capacity.zabransky_dict_sat_p:
+            if CASRN in heat_capacity.zabransky_dict_sat_p:
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
-                self.Zabransky_quasipolynomial_sat = heat_capacity.zabransky_dict_sat_p[self.CASRN]
+                self.Zabransky_quasipolynomial_sat = heat_capacity.zabransky_dict_sat_p[CASRN]
                 T_limits[ZABRANSKY_QUASIPOLYNOMIAL_SAT] = (self.Zabransky_quasipolynomial_sat.Tmin, self.Zabransky_quasipolynomial_sat.Tmax)
-            if self.CASRN in heat_capacity.Cp_dict_JANAF_liquid:
+            if CASRN in heat_capacity.Cp_dict_JANAF_liquid:
                 methods.append(miscdata.JANAF)
-                Ts, props = heat_capacity.Cp_dict_JANAF_liquid[self.CASRN]
+                Ts, props = heat_capacity.Cp_dict_JANAF_liquid[CASRN]
                 self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
                 del self._method
-            if self.CASRN in miscdata.VDI_saturation_dict:
+            if CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
                 # value
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Cp (l)')
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'Cp (l)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                 del self._method
-            if has_CoolProp() and self.CASRN in coolprop_dict:
+            if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
+                self.CP_f = coolprop_fluids[CASRN]
                 Tmin = max(self.CP_f.Tt, self.CP_f.Tmin)
                 Tmax = min(self.CP_f.Tc*.9999, self.CP_f.Tmax)
                 T_limits[COOLPROP] = (Tmin, Tmax)
@@ -1309,27 +1310,28 @@ class HeatCapacitySolid(TDependentProperty):
         methods = []
         self.T_limits = T_limits = {}
         self.all_methods = set()
-        if load_data:
-            if self.CASRN in heat_capacity.WebBook_Shomate_solids:
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            if CASRN in heat_capacity.WebBook_Shomate_solids:
                 methods.append(WEBBOOK_SHOMATE)
-                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_solids[self.CASRN]
+                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_solids[CASRN]
                 T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
-            if self.CASRN in heat_capacity.Cp_dict_JANAF_solid:
+            if CASRN in heat_capacity.Cp_dict_JANAF_solid:
                 methods.append(miscdata.JANAF)
-                Ts, props = heat_capacity.Cp_dict_JANAF_solid[self.CASRN]
+                Ts, props = heat_capacity.Cp_dict_JANAF_solid[CASRN]
                 self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
                 del self._method
-            if self.CASRN and self.CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[self.CASRN]:
-                self.PERRY151_Tmin = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] if heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmin'] else 0
-                self.PERRY151_Tmax = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmax'] if heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Tmax'] else 2000
-                self.PERRY151_const = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Const']
-                self.PERRY151_lin = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Lin']
-                self.PERRY151_quad = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Quad']
-                self.PERRY151_quadinv = heat_capacity.Cp_dict_PerryI[self.CASRN]['c']['Quadinv']
+            if CASRN and CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[CASRN]:
+                self.PERRY151_Tmin = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmin'] if heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmin'] else 0
+                self.PERRY151_Tmax = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmax'] if heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmax'] else 2000
+                self.PERRY151_const = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Const']
+                self.PERRY151_lin = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Lin']
+                self.PERRY151_quad = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Quad']
+                self.PERRY151_quadinv = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Quadinv']
                 methods.append(PERRY151)
                 T_limits[PERRY151] = (self.PERRY151_Tmin, self.PERRY151_Tmax)
-            if self.CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps']):
-                self.CRCSTD_Cp = float(heat_capacity.CRC_standard_data.at[self.CASRN, 'Cps'])
+            if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cps']):
+                self.CRCSTD_Cp = float(heat_capacity.CRC_standard_data.at[CASRN, 'Cps'])
                 methods.append(CRCSTD)
                 T_limits[CRCSTD] = (298.15, 298.15)
         if self.MW and self.similarity_variable:

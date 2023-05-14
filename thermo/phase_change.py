@@ -303,48 +303,49 @@ class EnthalpyVaporization(TDependentProperty):
         methods = []
         self.T_limits = T_limits = {}
         self.all_methods = set()
-        if load_data:
-            if has_CoolProp() and self.CASRN in coolprop_dict:
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
+                self.CP_f = coolprop_fluids[CASRN]
                 T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc*.9999)
-            if self.CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Hvap')
+            if CASRN in miscdata.VDI_saturation_dict:
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'Hvap')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                 del self._method
-            if self.CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
+            if CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
                 methods.append(ALIBAKHSHI)
-                self.Alibakhshi_C = float(phase_change.phase_change_data_Alibakhshi_Cs.at[self.CASRN, 'C'])
+                self.Alibakhshi_C = float(phase_change.phase_change_data_Alibakhshi_Cs.at[CASRN, 'C'])
                 T_limits[ALIBAKHSHI] = (self.Tc*.3, max(self.Tc-100., 0))
-            if self.CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[self.CASRN, 'HvapTb']):
+            if CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[CASRN, 'HvapTb']):
                 methods.append(CRC_HVAP_TB)
-                self.CRC_HVAP_TB_Tb = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'Tb'])
-                self.CRC_HVAP_TB_Hvap = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'HvapTb'])
+                self.CRC_HVAP_TB_Tb = float(phase_change.Hvap_data_CRC.at[CASRN, 'Tb'])
+                self.CRC_HVAP_TB_Hvap = float(phase_change.Hvap_data_CRC.at[CASRN, 'HvapTb'])
                 if self.Tc is not None:
                     T_limits[CRC_HVAP_TB] = (self.Tc*.001, self.Tc)
                 else:
                     T_limits[CRC_HVAP_TB] = (self.CRC_HVAP_TB_Tb, self.CRC_HVAP_TB_Tb)
-            if self.CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[self.CASRN, 'Hvap298']):
+            if CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[CASRN, 'Hvap298']):
                 methods.append(CRC_HVAP_298)
-                self.CRC_HVAP_298 = float(phase_change.Hvap_data_CRC.at[self.CASRN, 'Hvap298'])
+                self.CRC_HVAP_298 = float(phase_change.Hvap_data_CRC.at[CASRN, 'Hvap298'])
                 if self.Tc is not None:
                     T_limits[CRC_HVAP_298] = (self.Tc*.001, self.Tc)
                 else:
                     T_limits[CRC_HVAP_298] =  (298.15, 298.15)
-            if self.CASRN in phase_change.Hvap_data_Gharagheizi.index:
+            if CASRN in phase_change.Hvap_data_Gharagheizi.index:
                 methods.append(GHARAGHEIZI_HVAP_298)
-                self.GHARAGHEIZI_HVAP_298_Hvap = float(phase_change.Hvap_data_Gharagheizi.at[self.CASRN, 'Hvap298'])
+                self.GHARAGHEIZI_HVAP_298_Hvap = float(phase_change.Hvap_data_Gharagheizi.at[CASRN, 'Hvap298'])
                 if self.Tc is not None:
                     T_limits[GHARAGHEIZI_HVAP_298] = (self.Tc*.001, self.Tc)
                 else:
                     T_limits[GHARAGHEIZI_HVAP_298] =  (298.15, 298.15)
-            if self.CASRN in phase_change.phase_change_data_Perrys2_150.index:
+            if CASRN in phase_change.phase_change_data_Perrys2_150.index:
                 methods.append(DIPPR_PERRY_8E)
-                Tc, C1, C2, C3, C4, self.Perrys2_150_Tmin, self.Perrys2_150_Tmax = phase_change.phase_change_values_Perrys2_150[phase_change.phase_change_data_Perrys2_150.index.get_loc(self.CASRN)].tolist()
+                Tc, C1, C2, C3, C4, self.Perrys2_150_Tmin, self.Perrys2_150_Tmax = phase_change.phase_change_values_Perrys2_150[phase_change.phase_change_data_Perrys2_150.index.get_loc(CASRN)].tolist()
                 self.Perrys2_150_coeffs = [Tc, C1, C2, C3, C4]
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_150_Tmin, self.Perrys2_150_Tmax)
-            if self.CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
-                Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(self.CASRN)].tolist()
+            if CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
+                Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D, E]
                 self.VDI_PPDS_Tc = Tc
                 methods.append(VDI_PPDS)
@@ -654,7 +655,7 @@ class EnthalpySublimation(TDependentProperty):
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         CASRN_int = None if not CASRN else CAS_to_int(CASRN)
-        if load_data:
+        if load_data and CASRN:
             if CASRN_int in miscdata.webbook_data.index and not isnan(float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])):
                 methods.append(WEBBOOK_HSUB)
                 self.webbook_Hsub = float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])
@@ -663,15 +664,15 @@ class EnthalpySublimation(TDependentProperty):
                 else:
                     T_limits[WEBBOOK_HSUB] = (298.15, 298.15)
 
-            if self.CASRN in phase_change.Hsub_data_Gharagheizi.index:
+            if CASRN in phase_change.Hsub_data_Gharagheizi.index:
                 methods.append(GHARAGHEIZI_HSUB_298)
-                self.GHARAGHEIZI_Hsub = float(phase_change.Hsub_data_Gharagheizi.at[self.CASRN, 'Hsub'])
+                self.GHARAGHEIZI_Hsub = float(phase_change.Hsub_data_Gharagheizi.at[CASRN, 'Hsub'])
                 if self.Cpg is not None and self.Cps is not None:
                     methods.append(GHARAGHEIZI_HSUB)
                 T_limits[GHARAGHEIZI_HSUB_298] = (298.15, 298.15)
-            if self.CASRN in phase_change.Hfus_data_CRC.index:
+            if CASRN in phase_change.Hfus_data_CRC.index:
                 methods.append(CRC_HFUS_HVAP_TM)
-                self.CRC_Hfus = float(phase_change.Hfus_data_CRC.at[self.CASRN, 'Hfus'])
+                self.CRC_Hfus = float(phase_change.Hfus_data_CRC.at[CASRN, 'Hfus'])
                 if self.Tm is not None:
                     T_limits[CRC_HFUS_HVAP_TM] = (self.Tm, self.Tm)
                 else:

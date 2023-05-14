@@ -316,34 +316,35 @@ class SurfaceTension(TDependentProperty):
         methods = []
         self.all_methods = set()
         self.T_limits = T_limits = {}
-        if load_data:
-            if self.CASRN == '7732-18-5':
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            if CASRN == '7732-18-5':
                 methods.append(IAPWS)
                 T_limits[IAPWS] = (273.15-25.0, iapws95_Tc)
-            if self.CASRN in interface.sigma_data_Mulero_Cachadina.index:
+            if CASRN in interface.sigma_data_Mulero_Cachadina.index:
                 methods.append(STREFPROP)
-                sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = interface.sigma_values_Mulero_Cachadina[interface.sigma_data_Mulero_Cachadina.index.get_loc(self.CASRN)].tolist()
+                sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = interface.sigma_values_Mulero_Cachadina[interface.sigma_data_Mulero_Cachadina.index.get_loc(CASRN)].tolist()
                 self.STREFPROP_coeffs = [sigma0, n0, sigma1, n1, sigma2, n2, Tc]
                 T_limits[STREFPROP] = (self.STREFPROP_Tmin, self.STREFPROP_Tmax)
-            if self.CASRN in interface.sigma_data_Somayajulu2.index:
+            if CASRN in interface.sigma_data_Somayajulu2.index:
                 methods.append(SOMAYAJULU2)
-                self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = interface.sigma_values_Somayajulu2[interface.sigma_data_Somayajulu2.index.get_loc(self.CASRN)].tolist()
+                self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = interface.sigma_values_Somayajulu2[interface.sigma_data_Somayajulu2.index.get_loc(CASRN)].tolist()
                 self.SOMAYAJULU2_coeffs = [A, B, C]
                 T_limits[SOMAYAJULU2] = (self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc)
-            if self.CASRN in interface.sigma_data_Somayajulu.index:
+            if CASRN in interface.sigma_data_Somayajulu.index:
                 methods.append(SOMAYAJULU)
-                self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = interface.sigma_values_Somayajulu[interface.sigma_data_Somayajulu.index.get_loc(self.CASRN)].tolist()
+                self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = interface.sigma_values_Somayajulu[interface.sigma_data_Somayajulu.index.get_loc(CASRN)].tolist()
                 self.SOMAYAJULU_coeffs = [A, B, C]
                 T_limits[SOMAYAJULU] = (self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc)
-            if self.CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'sigma')
+            if CASRN in miscdata.VDI_saturation_dict:
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'sigma')
                 # mercury missing values
                 if Ts:
                     self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                     del self._method
-            if self.CASRN in interface.sigma_data_Jasper_Lange.index:
+            if CASRN in interface.sigma_data_Jasper_Lange.index:
                 methods.append(JASPER)
-                a, b, self.JASPER_Tmin, self.JASPER_Tmax = interface.sigma_values_Jasper_Lange[interface.sigma_data_Jasper_Lange.index.get_loc(self.CASRN)].tolist()
+                a, b, self.JASPER_Tmin, self.JASPER_Tmax = interface.sigma_values_Jasper_Lange[interface.sigma_data_Jasper_Lange.index.get_loc(CASRN)].tolist()
                 if isnan(self.JASPER_Tmax) or self.JASPER_Tmax == self.JASPER_Tmin:
                     # Some data is missing; and some is on a above the limit basis
                     self.JASPER_Tmax = a/b + 273.15
@@ -351,8 +352,8 @@ class SurfaceTension(TDependentProperty):
                     self.JASPER_Tmin = 0.0
                 self.JASPER_coeffs = [a, b]
                 T_limits[JASPER] = (self.JASPER_Tmin, self.JASPER_Tmax)
-            if self.CASRN in interface.sigma_data_VDI_PPDS_11.index:
-                Tm, Tc, A, B, C, D, E = interface.sigma_values_VDI_PPDS_11[interface.sigma_data_VDI_PPDS_11.index.get_loc(self.CASRN)].tolist()
+            if CASRN in interface.sigma_data_VDI_PPDS_11.index:
+                Tm, Tc, A, B, C, D, E = interface.sigma_values_VDI_PPDS_11[interface.sigma_data_VDI_PPDS_11.index.get_loc(CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D, E]
                 self.VDI_PPDS_Tc = Tc
                 self.VDI_PPDS_Tm = Tm
