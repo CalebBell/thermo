@@ -168,6 +168,7 @@ from fluids.numerics import (
     inf,
     interp,
     isnan,
+    isinf,
     linspace,
     log,
     polyder,
@@ -790,6 +791,7 @@ class TDependentProperty:
        'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E']},
       ),
+
     'polynomial': (['coeffs'],
       [],
       {'f': horner_backwards,
@@ -818,10 +820,54 @@ class TDependentProperty:
        'signature': 'array'},
       {'fit_params': []},
       ),
+
+    'stable_polynomial': (['coeffs'],
+      [],
+      {'f': None,
+      'signature': 'array'},
+      {'fit_params': []},
+      ),
     'exp_stable_polynomial': (['coeffs'],
       [],
       {'f': None,
       'signature': 'array'},
+      {'fit_params': []},
+      ),
+    'stable_polynomial_ln_tau': (['Tc', 'coeffs'],
+      [],
+      {'f': None,
+      'signature': 'array'},
+      {'fit_params': []},
+      ),
+    'exp_stable_polynomial_ln_tau': (['Tc', 'coeffs'],
+      [],
+      {'f': None,
+      'signature': 'array'},
+      {'fit_params': []},
+      ),
+
+    'chebyshev': (['coeffs'],
+      [],
+      {'f': None,
+       'signature': 'array'},
+      {'fit_params': []},
+      ),
+    'exp_chebyshev': (['coeffs'],
+      [],
+      {'f': None, 
+       'signature': 'array'},
+      {'fit_params': []},
+      ),
+    'chebyshev_ln_tau': (['Tc', 'coeffs'], 
+      [],
+      {'f': None,
+       'signature': 'array'},
+      {'fit_params': []},
+      ),
+    'exp_chebyshev_ln_tau': (['Tc', 'coeffs'],
+      [],
+      {'f': None,
+       'signature': 'array'},
       {'fit_params': []},
       ),
 
@@ -1529,7 +1575,7 @@ class TDependentProperty:
                     model_kwargs = kwargs.copy()
                     model_kwargs.pop('Tmin')
                     model_kwargs.pop('Tmax')
-                    correlations[model_name] = (call, model_kwargs, correlation_name)
+                    correlations[model_name] = (call, model_kwargs, correlation_name, None)
 
         d['extrapolation_coeffs'] = {}
 
@@ -2407,10 +2453,10 @@ class TDependentProperty:
             return exp_cheb(T, self.exp_cheb_fit_coeffs, self.exp_cheb_fit_offset, self.exp_cheb_fit_scale)
         elif method == CHEB_FIT_LN_TAU:
             return chebval_ln_tau(T, self.cheb_fit_ln_tau_Tc, self.cheb_fit_ln_tau_coeffs, self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale)
-        elif method == STABLEPOLY_FIT_LN_TAU:
-            return horner_stable_ln_tau(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)
         elif method == EXP_CHEB_FIT_LN_TAU:
             return exp_cheb_ln_tau(T, self.exp_cheb_fit_ln_tau_Tc, self.exp_cheb_fit_ln_tau_coeffs, self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale)
+        elif method == STABLEPOLY_FIT_LN_TAU:
+            return horner_stable_ln_tau(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)
         elif method == EXP_STABLEPOLY_FIT_LN_TAU:
             return exp_horner_stable_ln_tau(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)
         elif method in self.tabular_data:
@@ -2418,9 +2464,18 @@ class TDependentProperty:
         elif method in self.local_methods:
             return self.local_methods[method].f(T)
         elif method in self.correlations:
-            call, kwargs, model, *others = self.correlations[method]
+            call, kwargs, model, extra = self.correlations[method]
             if model == 'exp_stable_polynomial':
-                return exp_horner_stable(T, kwargs['coeffs'], others[0][0], others[0][1])
+                return exp_horner_stable(T, kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif method == 'chebyshev':
+                return chebval(T, kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif method == 'exp_chebyshev':
+                return exp_cheb(T, kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif method == 'chebyshev_ln_tau':
+                return chebval_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif method == 'exp_chebyshev_ln_tau':
+                return exp_cheb_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
+                
             return call(T, **kwargs)
         else:
             raise ValueError("Unknown method; methods are %s" %(self.all_methods))
@@ -2869,21 +2924,78 @@ class TDependentProperty:
         return float(prop)
 
 
-    correlation_extra_handling_models = frozenset(['exp_polynomial', 'exp_stable_polynomial'])
+    correlation_extra_handling_models = frozenset(['polynomial', 'exp_polynomial', 
+    'polynomial_ln_tau', 'exp_polynomial_ln_tau', 'stable_polynomial',
+    'exp_stable_polynomial', 'stable_polynomial_ln_tau','exp_stable_polynomial_ln_tau',
+     'chebyshev', 'exp_chebyshev', 'chebyshev_ln_tau', 'exp_chebyshev_ln_tau'])
 
     def _optimize_added_correlation(self, name, model):
         Tmin, Tmax = self.T_limits[name]
-        kwargs = self.correlations[name][1]
+        call, kwargs, model, _ = self.correlations[name]
+        coeffs = kwargs.get('coeffs', [])
+        for v in coeffs:
+            if v is None or isinf(v) or isnan(v):
+                raise ValueError("coeffs must contain only real numbers")
+
+        extra = {}
+        if model == 'polynomial':
+            extra['int_coeffs'] = polyint(coeffs)
+            extra['T_int_T_coeffs'], extra['log_coeff'] = polyint_over_x(coeffs)
+            d_coeffs = polyder(coeffs[::-1])
+            d2_coeffs = polyder(d_coeffs)
+            d2_coeffs.reverse()
+            d_coeffs.reverse()
+            extra['d_coeffs'] = d_coeffs
+            extra['d2_coeffs'] = d2_coeffs
+            _, Tmax_slope, Tmax_dT2 = horner_and_der2(coeffs, Tmax)
+            extra['Tmax_slope'] = Tmax_slope
+            extra['Tmax_dT2'] = Tmax_dT2
+
+            _, Tmin_slope, Tmin_dT2 = horner_and_der2(coeffs, Tmin)
+            extra['Tmin_slope'] = Tmin_slope
+            extra['Tmin_dT2'] = Tmin_dT2
+            
         if model == 'exp_polynomial':
-            coeffs = kwargs['coeffs']
+            # Not really used yet
             exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope, exp_poly_fit_Tmax_dT2 = exp_horner_backwards_and_der2(
                 Tmax, coeffs)
             exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope, exp_poly_fit_Tmin_dT2 = exp_horner_backwards_and_der2(
                 Tmin, coeffs)
-            self.correlations[name] = self.correlations[name] + ((exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope, exp_poly_fit_Tmax_dT2),) + ((exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope, exp_poly_fit_Tmin_dT2),)
+            extra['Tmax_slope'] = exp_poly_fit_Tmax_slope
+            extra['Tmax_dT2'] = exp_poly_fit_Tmax_dT2
+            extra['Tmin_slope'] = exp_poly_fit_Tmin_slope
+            extra['Tmin_dT2'] = exp_poly_fit_Tmin_dT2
+
+
+
+        
+        elif model == 'stable_polynomial':
+            extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
         elif model == 'exp_stable_polynomial':
-            exp_stablepoly_fit_offset, exp_stablepoly_fit_scale = polynomial_offset_scale(Tmin, Tmax)
-            self.correlations[name] = self.correlations[name] + ((exp_stablepoly_fit_offset, exp_stablepoly_fit_scale),)
+            extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
+        elif model == 'exp_stable_polynomial_ln_tau':
+            Tc = kwargs['Tc']
+            xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
+            extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(xmin, xmax)
+        elif model == 'stable_polynomial_ln_tau':
+            Tc = kwargs['Tc']
+            xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
+            extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(xmin, xmax)
+        
+        elif model in ('chebyshev', 'exp_chebyshev', 'chebyshev_ln_tau', 'exp_chebyshev_ln_tau'):
+            if model in ('chebyshev', 'exp_chebyshev'):
+                extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
+            else:
+                Tc = kwargs['Tc']
+                xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
+                extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(xmin, xmax)
+            extra['d1_coeffs'] = chebyshev_d1_coeffs = chebder(coeffs, m=1, scl=scale)
+            extra['d2_coeffs'] = chebyshev_d2_coeffs = chebder(chebyshev_d1_coeffs, m=1, scl=scale)
+            extra['d3_coeffs'] = chebyshev_d3_coeffs = chebder(chebyshev_d2_coeffs, m=1, scl=scale)
+            extra['d4_coeffs'] = chebyshev_d4_coeffs = chebder(chebyshev_d3_coeffs, m=1, scl=scale)
+            extra['int_coeffs'] = chebyshev_int_coeffs = chebint(coeffs, scl=1.0/scale)
+
+        self.correlations[name] = (call, kwargs, model, extra)
 
     def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
         r'''Method to add a new set of emperical fit equation coefficients to
@@ -2921,6 +3033,10 @@ class TDependentProperty:
                 kwargs[k] = v
             del kwargs['coefficients']
 
+        if Tmin is None or isnan(Tmin) or isinf(Tmin):
+            raise ValueError("Tmin is not a real number")
+        if Tmax is None or isnan(Tmax) or isinf(Tmax):
+            raise ValueError("Tmax is not a real number")
 
         if not all(k in kwargs and kwargs[k] is not None for k in model_data[0]):
             raise ValueError(f"Required arguments for this model are {model_data[0]}")
@@ -2946,7 +3062,7 @@ class TDependentProperty:
         self.all_methods.add(name)
 
         call = self.correlation_models[model][2]['f']
-        self.correlations[name] = (call, model_kwargs, model)
+        self.correlations[name] = (call, model_kwargs, model, None)
         if model in self.correlation_extra_handling_models:
             self._optimize_added_correlation(name, model)
         self.method = name
@@ -3194,7 +3310,7 @@ class TDependentProperty:
             Calculated derivative property, [`units/K^order`]
         '''
         if method in self.correlations:
-            _, model_kwargs, model, *_ = self.correlations[method]
+            _, model_kwargs, model, _ = self.correlations[method]
             calls = self.correlation_models[model][2]
             if order == 1 and 'f_der' in calls:
                 return calls['f_der'](T, **model_kwargs)
@@ -3202,6 +3318,7 @@ class TDependentProperty:
                 return calls['f_der2'](T, **model_kwargs)
             elif order == 3 and 'f_der3' in calls:
                 return calls['f_der3'](T, **model_kwargs)
+
         if method in self.local_methods:
             local_method = self.local_methods[method]
             if order == 1:
@@ -3390,7 +3507,7 @@ class TDependentProperty:
                 self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
                 self.poly_fit_Tmax_slope)
         if method in self.correlations:
-            _, model_kwargs, model = self.correlations[method]
+            _, model_kwargs, model, _ = self.correlations[method]
             calls = self.correlation_models[model][2]
             if 'f_int' in calls:
                 return calls['f_int'](T2, **model_kwargs) - calls['f_int'](T1, **model_kwargs)
@@ -3525,7 +3642,7 @@ class TDependentProperty:
                 self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
                 self.poly_fit_Tmax_slope)
         if method in self.correlations:
-            _, model_kwargs, model = self.correlations[method]
+            _, model_kwargs, model, _ = self.correlations[method]
             calls = self.correlation_models[model][2]
             if 'f_int_over_T' in calls:
                 return calls['f_int_over_T'](T2, **model_kwargs) - calls['f_int_over_T'](T1, **model_kwargs)
