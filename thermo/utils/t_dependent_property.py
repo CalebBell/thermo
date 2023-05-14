@@ -2435,7 +2435,29 @@ class TDependentProperty:
                   repr(self.exp_cheb_fit_ln_tau_coeffs))
 
     def _base_calculate(self, T, method):
-        if method == POLY_FIT:
+        if method in self.correlations:
+            call, kwargs, model, extra = self.correlations[method]
+            # the 4 base ones require no special handling
+            if model == 'stable_polynomial':
+                return horner_stable(T, kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif model == 'exp_stable_polynomial':
+                return exp_horner_stable(T, kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif model == 'stable_polynomial_ln_tau':
+                return horner_stable_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif model == 'exp_stable_polynomial_ln_tau':
+                return exp_horner_stable_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
+
+            elif method == 'chebyshev':
+                return chebval(T, kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif method == 'exp_chebyshev':
+                return exp_cheb(T, kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif method == 'chebyshev_ln_tau':
+                return chebval_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif method == 'exp_chebyshev_ln_tau':
+                return exp_cheb_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
+
+            return call(T, **kwargs)
+        elif method == POLY_FIT:
             return horner(self.poly_fit_coeffs, T)
         elif method == EXP_POLY_FIT:
             return exp_horner_backwards(T, self.exp_poly_fit_coeffs)
@@ -2466,28 +2488,6 @@ class TDependentProperty:
             return self.interpolate(T, method)
         elif method in self.local_methods:
             return self.local_methods[method].f(T)
-        elif method in self.correlations:
-            call, kwargs, model, extra = self.correlations[method]
-            # the 4 base ones require no special handling
-            if model == 'stable_polynomial':
-                return horner_stable(T, kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif model == 'exp_stable_polynomial':
-                return exp_horner_stable(T, kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif model == 'stable_polynomial_ln_tau':
-                return horner_stable_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif model == 'exp_stable_polynomial_ln_tau':
-                return exp_horner_stable_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
-
-            elif method == 'chebyshev':
-                return chebval(T, kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif method == 'exp_chebyshev':
-                return exp_cheb(T, kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif method == 'chebyshev_ln_tau':
-                return chebval_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif method == 'exp_chebyshev_ln_tau':
-                return exp_cheb_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
-                
-            return call(T, **kwargs)
         else:
             raise ValueError("Unknown method; methods are %s" %(self.all_methods))
 
@@ -4227,10 +4227,12 @@ class TDependentProperty:
         exp_stablepoly_fit_ln_tau = kwargs.pop('exp_stablepoly_fit_ln_tau', None)
 
         if kwargs:
-            for correlation_key in self.correlation_keys_to_parameters.keys():
-                if correlation_key in kwargs:
-                    correlation_name = self.correlation_keys_to_parameters[correlation_key]
-                    for corr_i, corr_kwargs in kwargs[correlation_key].items():
+            correlation_keys_to_parameters = self.correlation_keys_to_parameters
+            for key in list(kwargs.keys()):
+                if key in correlation_keys_to_parameters:
+                    correlation_dict = kwargs.pop(key)
+                    correlation_name = correlation_keys_to_parameters[key]
+                    for corr_i, corr_kwargs in correlation_dict.items():
                         self.add_correlation(name=corr_i, model=correlation_name,
                                              **corr_kwargs)
         try:

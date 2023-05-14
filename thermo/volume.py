@@ -457,45 +457,46 @@ class VolumeLiquid(TPDependentProperty):
         self.all_methods = set()
         methods = []
         methods_P = []
-        if load_data:
-            if has_CoolProp() and self.CASRN in coolprop_dict:
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 methods_P.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
+                self.CP_f = coolprop_fluids[CASRN]
                 T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc)
-            if self.CASRN in volume.rho_data_CRC_inorg_l.index:
+            if CASRN in volume.rho_data_CRC_inorg_l.index:
                 methods.append(CRC_INORG_L)
-                self.CRC_INORG_L_MW, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax = volume.rho_values_CRC_inorg_l[volume.rho_data_CRC_inorg_l.index.get_loc(self.CASRN)].tolist()
+                self.CRC_INORG_L_MW, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax = volume.rho_values_CRC_inorg_l[volume.rho_data_CRC_inorg_l.index.get_loc(CASRN)].tolist()
                 T_limits[CRC_INORG_L] = (self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax)
-            if self.CASRN in volume.rho_data_Perry_8E_105_l.index:
+            if CASRN in volume.rho_data_Perry_8E_105_l.index:
                 methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = volume.rho_values_Perry_8E_105_l[volume.rho_data_Perry_8E_105_l.index.get_loc(self.CASRN)].tolist()
+                C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = volume.rho_values_Perry_8E_105_l[volume.rho_data_Perry_8E_105_l.index.get_loc(CASRN)].tolist()
                 self.DIPPR_coeffs = [C1, C2, C3, C4]
                 T_limits[DIPPR_PERRY_8E] = (self.DIPPR_Tmin, self.DIPPR_Tmax)
-            if self.CASRN in volume.rho_data_VDI_PPDS_2.index:
+            if CASRN in volume.rho_data_VDI_PPDS_2.index:
                 methods.append(VDI_PPDS)
-                MW, Tc, rhoc, A, B, C, D = volume.rho_values_VDI_PPDS_2[volume.rho_data_VDI_PPDS_2.index.get_loc(self.CASRN)].tolist()
+                MW, Tc, rhoc, A, B, C, D = volume.rho_values_VDI_PPDS_2[volume.rho_data_VDI_PPDS_2.index.get_loc(CASRN)].tolist()
                 self.VDI_PPDS_coeffs = [A, B, C, D]
                 self.VDI_PPDS_MW = MW
                 self.VDI_PPDS_Tc = Tc
                 self.VDI_PPDS_rhoc = rhoc
                 T_limits[VDI_PPDS] = (0.3*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
-            if self.CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Volume (l)')
+            if CASRN in miscdata.VDI_saturation_dict:
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'Volume (l)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                 del self._method
-            if self.Tc and self.CASRN in volume.rho_data_COSTALD.index:
+            if self.Tc and CASRN in volume.rho_data_COSTALD.index:
                 methods.append(HTCOSTALDFIT)
-                self.COSTALD_Vchar = float(volume.rho_data_COSTALD.at[self.CASRN, 'Vchar'])
-                self.COSTALD_omega_SRK = float(volume.rho_data_COSTALD.at[self.CASRN, 'omega_SRK'])
+                self.COSTALD_Vchar = float(volume.rho_data_COSTALD.at[CASRN, 'Vchar'])
+                self.COSTALD_omega_SRK = float(volume.rho_data_COSTALD.at[CASRN, 'omega_SRK'])
                 T_limits[HTCOSTALDFIT] = (0.0, self.Tc)
-            if self.Tc and self.Pc and self.CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[self.CASRN, 'Z_RA']):
+            if self.Tc and self.Pc and CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']):
                 methods.append(RACKETTFIT)
-                self.RACKETT_Z_RA = float(volume.rho_data_COSTALD.at[self.CASRN, 'Z_RA'])
+                self.RACKETT_Z_RA = float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA'])
                 T_limits[RACKETTFIT] = (0.0, self.Tc)
-            if self.CASRN in volume.rho_data_CRC_inorg_l_const.index:
+            if CASRN in volume.rho_data_CRC_inorg_l_const.index:
                 methods.append(CRC_INORG_L_CONST)
-                self.CRC_INORG_L_CONST_Vm = float(volume.rho_data_CRC_inorg_l_const.at[self.CASRN, 'Vm'])
+                self.CRC_INORG_L_CONST_Vm = float(volume.rho_data_CRC_inorg_l_const.at[CASRN, 'Vm'])
                 T_limits[CRC_INORG_L_CONST] = (298.15, 298.15)
                 # Roughly data at STP; not guaranteed however; not used for Trange
         if all((self.Tc, self.Vc, self.Zc)):
@@ -512,9 +513,9 @@ class VolumeLiquid(TPDependentProperty):
             methods.append(TOWNSEND_HALES)
             methods.append(HTCOSTALD)
             methods.append(MMSNM0)
-            if load_data and self.CASRN in volume.rho_data_SNM0.index:
+            if load_data and CASRN in volume.rho_data_SNM0.index:
                 methods.append(MMSNM0FIT)
-                self.SNM0_delta_SRK = float(volume.rho_data_SNM0.at[self.CASRN, 'delta_SRK'])
+                self.SNM0_delta_SRK = float(volume.rho_data_SNM0.at[CASRN, 'delta_SRK'])
                 T_limits[MMSNM0FIT] = (0.0, self.Tc)
             T_limits[TOWNSEND_HALES] = T_limits[HTCOSTALD] = T_limits[MMSNM0] = (0.0, self.Tc)
         if all((self.Tc, self.Vc, self.omega, self.Tb, self.MW)):
@@ -1432,6 +1433,7 @@ class VolumeGas(TPDependentProperty):
         '''
         methods_P = [IDEAL]
         self.T_limits = T_limits = {}
+        CASRN = self.CASRN
         # no point in getting Tmin, Tmax
         if all((self.Tc, self.Pc, self.omega)):
             methods_P.extend([TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
@@ -1442,14 +1444,14 @@ class VolumeGas(TPDependentProperty):
             T_limits[TSONOPOULOS] = (1e-4, 1e5)
             T_limits[ABBOTT] = (1e-4, 1e5)
             T_limits[PITZER_CURL] = (1e-4, 1e5)
-        if load_data:
-            if self.CASRN in volume.rho_data_CRC_virial.index:
+        if load_data and CASRN:
+            if CASRN in volume.rho_data_CRC_virial.index:
                 methods_P.append(CRC_VIRIAL)
-                self.CRC_VIRIAL_coeffs = volume.rho_values_CRC_virial[volume.rho_data_CRC_virial.index.get_loc(self.CASRN)].tolist()
+                self.CRC_VIRIAL_coeffs = volume.rho_values_CRC_virial[volume.rho_data_CRC_virial.index.get_loc(CASRN)].tolist()
                 T_limits[CRC_VIRIAL] = (1e-4, 1e5)
-            if has_CoolProp() and self.CASRN in coolprop_dict:
+            if has_CoolProp() and CASRN in coolprop_dict:
                 methods_P.append(COOLPROP)
-                self.CP_f = coolprop_fluids[self.CASRN]
+                self.CP_f = coolprop_fluids[CASRN]
                 T_limits[CRC_VIRIAL] = (self.CP_f.Tmin, self.CP_f.Tmax)
         self.all_methods = set()
         self.all_methods_P = set(methods_P)
@@ -1841,10 +1843,11 @@ class VolumeSolid(TDependentProperty):
         '''
         methods = []
         self.T_limits = T_limits = {}
-        if load_data:
-            if self.CASRN in volume.rho_data_CRC_inorg_s_const.index:
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            if CASRN in volume.rho_data_CRC_inorg_s_const.index:
                 methods.append(CRC_INORG_S)
-                self.CRC_INORG_S_Vm = float(volume.rho_data_CRC_inorg_s_const.at[self.CASRN, 'Vm'])
+                self.CRC_INORG_S_Vm = float(volume.rho_data_CRC_inorg_s_const.at[CASRN, 'Vm'])
                 T_limits[CRC_INORG_S] = (1e-4, 1e4)
         if all((self.Tt, self.Vml_Tt, self.MW)):
             methods.append(GOODMAN)

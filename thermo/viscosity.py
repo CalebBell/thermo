@@ -867,27 +867,28 @@ class ViscosityGas(TPDependentProperty):
         methods, methods_P = [], []
         self.T_limits = T_limits = {}
         self.all_methods = set()
-        if load_data:
-            if self.CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(self.CASRN, 'Mu (g)')
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            if CASRN in miscdata.VDI_saturation_dict:
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (g)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                 del self._method
-            if has_CoolProp() and self.CASRN in coolprop_dict:
-                CP_f = coolprop_fluids[self.CASRN]
+            if has_CoolProp() and CASRN in coolprop_dict:
+                CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_mu:
                     self.CP_f = CP_f
                     methods.append(COOLPROP)
                     methods_P.append(COOLPROP)
 #                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax*.9999)
-            if self.CASRN in viscosity.mu_data_Perrys_8E_2_312.index:
+            if CASRN in viscosity.mu_data_Perrys_8E_2_312.index:
                 methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = viscosity.mu_values_Perrys_8E_2_312[viscosity.mu_data_Perrys_8E_2_312.index.get_loc(self.CASRN)].tolist()
+                C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = viscosity.mu_values_Perrys_8E_2_312[viscosity.mu_data_Perrys_8E_2_312.index.get_loc(CASRN)].tolist()
                 self.Perrys2_312_coeffs = [C1, C2, C3, C4]
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_312_Tmin, self.Perrys2_312_Tmax)
-            if self.CASRN in viscosity.mu_data_VDI_PPDS_8.index:
+            if CASRN in viscosity.mu_data_VDI_PPDS_8.index:
                 methods.append(VDI_PPDS)
-                self.VDI_PPDS_coeffs = viscosity.mu_values_PPDS_8[viscosity.mu_data_VDI_PPDS_8.index.get_loc(self.CASRN)].tolist()
+                self.VDI_PPDS_coeffs = viscosity.mu_values_PPDS_8[viscosity.mu_data_VDI_PPDS_8.index.get_loc(CASRN)].tolist()
                 self.VDI_PPDS_coeffs.reverse() # in format for horner's scheme
                 T_limits[VDI_PPDS] = (1e-3, 10000)
         if all([self.Tc, self.Pc, self.MW]):

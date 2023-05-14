@@ -394,13 +394,13 @@ class VaporPressure(TDependentProperty):
                 T_limits[ANTOINE_WEBBOOK] = (float(df_wb.at[CASRN_int, 'AntoineTmin']),float(df_wb.at[CASRN_int, 'AntoineTmax']))
             if CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
                 methods.append(WAGNER_MCGARRY)
-                A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(self.CASRN)].tolist()
+                A, B, C, D, self.WAGNER_MCGARRY_Pc, self.WAGNER_MCGARRY_Tc, self.WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(CASRN)].tolist()
                 self.WAGNER_MCGARRY_coefs = [A, B, C, D]
                 T_limits[WAGNER_MCGARRY] = (self.WAGNER_MCGARRY_Tmin, self.WAGNER_MCGARRY_Tc)
 
             if CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
                 methods.append(WAGNER_POLING)
-                A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(self.CASRN)].tolist()
+                A, B, C, D, self.WAGNER_POLING_Tc, self.WAGNER_POLING_Pc, Tmin, self.WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(CASRN)].tolist()
                 # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
                 Tmin = Tmin if not isnan(Tmin) else self.WAGNER_POLING_Tmax*0.1
                 self.WAGNER_POLING_Tmin = Tmin
@@ -409,19 +409,19 @@ class VaporPressure(TDependentProperty):
 
             if CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
                 methods.append(ANTOINE_EXTENDED_POLING)
-                A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(self.CASRN)].tolist()
+                A, B, C, Tc, to, n, E, F, self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(CASRN)].tolist()
                 self.ANTOINE_EXTENDED_POLING_coefs = [Tc, to, A, B, C, n, E, F]
                 T_limits[ANTOINE_EXTENDED_POLING] = (self.ANTOINE_EXTENDED_POLING_Tmin, self.ANTOINE_EXTENDED_POLING_Tmax)
 
             if CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
                 methods.append(ANTOINE_POLING)
-                A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(self.CASRN)].tolist()
+                A, B, C, self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(CASRN)].tolist()
                 self.ANTOINE_POLING_coefs = [A, B, C]
                 T_limits[ANTOINE_POLING] = (self.ANTOINE_POLING_Tmin, self.ANTOINE_POLING_Tmax)
 
             if CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
                 methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(self.CASRN)].tolist()
+                C1, C2, C3, C4, C5, self.Perrys2_8_Tmin, self.Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(CASRN)].tolist()
                 self.Perrys2_8_coeffs = [C1, C2, C3, C4, C5]
                 T_limits[DIPPR_PERRY_8E] = (self.Perrys2_8_Tmin, self.Perrys2_8_Tmax)
             if has_CoolProp() and CASRN in coolprop_dict:
@@ -435,7 +435,7 @@ class VaporPressure(TDependentProperty):
                 del self._method
             if CASRN in vapor_pressure.Psat_data_Alcock_elements.index:
                 methods.append(ALCOCK_ELEMENTS)
-                A, B, C, D, E, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psat_values_Alcock_elements[vapor_pressure.Psat_data_Alcock_elements.index.get_loc(self.CASRN)].tolist()
+                A, B, C, D, E, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psat_values_Alcock_elements[vapor_pressure.Psat_data_Alcock_elements.index.get_loc(CASRN)].tolist()
                 self.Alcock_coeffs = [A, B, C, D, E,]
                 T_limits[ALCOCK_ELEMENTS] = (Alcock_Tmin, Alcock_Tmax)
 
