@@ -795,7 +795,10 @@ class TDependentProperty:
     'polynomial': (['coeffs'],
       [],
       {'f': horner_backwards,
-       'signature': 'array'},
+      'f_der': lambda T, **kwargs: horner_and_der(T=T, **kwargs)[1],
+      'f_der2': lambda T, **kwargs: horner_and_der2(T=T, **kwargs)[2],
+      'f_der3': lambda T, **kwargs: horner_and_der3(T=T, **kwargs)[3],
+      'signature': 'array'},
       # Fitting is not supported for variable-length arrays
       {'fit_params': []},
       ),
@@ -811,12 +814,17 @@ class TDependentProperty:
     'polynomial_ln_tau': (['Tc', 'coeffs'], # For enthalpy of vaporization
       [],
       {'f': horner_backwards_ln_tau,
+      'f_der': lambda T, **kwargs: horner_backwards_ln_tau_and_der(T=T, **kwargs)[1],
+      'f_der2': lambda T, **kwargs: horner_backwards_ln_tau_and_der2(T=T, **kwargs)[2],
+      'f_der3': lambda T, **kwargs: horner_backwards_ln_tau_and_der3(T=T, **kwargs)[3],
        'signature': 'array'},
       {'fit_params': []},
       ),
     'exp_polynomial_ln_tau': (['Tc', 'coeffs'], # For surface tension
       [],
       {'f': exp_horner_backwards_ln_tau,
+      'f_der': lambda T, **kwargs: exp_horner_backwards_ln_tau_and_der(T=T, **kwargs)[1],
+      'f_der2': lambda T, **kwargs: exp_horner_backwards_ln_tau_and_der2(T=T, **kwargs)[2],
        'signature': 'array'},
       {'fit_params': []},
       ),
@@ -3323,14 +3331,75 @@ class TDependentProperty:
             Calculated derivative property, [`units/K^order`]
         '''
         if method in self.correlations:
-            _, model_kwargs, model, _ = self.correlations[method]
+            call, kwargs, model, extra = self.correlations[method]
+            # polynomial 4 work out of the box, others need a bit of work
+            if method == 'stable_polynomial':
+                if order == 1:
+                    return horner_stable_and_der(T, kwargs['coeffs'], extra['offset'], extra['scale'])[1]
+                if order == 2:
+                    return horner_stable_and_der2(T, kwargs['coeffs'], extra['offset'], extra['scale'])[2]
+                if order == 3:
+                    return horner_stable_and_der3(T, kwargs['coeffs'], extra['offset'], extra['scale'])[3]
+                if order == 4:
+                    return horner_stable_and_der4(T, kwargs['coeffs'], extra['offset'], extra['scale'])[4]
+            if method == 'exp_stable_polynomial':
+                if order == 1:
+                    return exp_horner_stable_and_der(T, kwargs['coeffs'], extra['offset'], extra['scale'])[1]
+                if order == 2:
+                    return exp_horner_stable_and_der2(T, kwargs['coeffs'], extra['offset'], extra['scale'])[2]
+                if order == 3:
+                    return exp_horner_stable_and_der3(T, kwargs['coeffs'], extra['offset'], extra['scale'])[3]
+            elif method == 'stable_polynomial_ln_tau':
+                if order == 1:
+                    return horner_stable_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[1]
+                if order == 2:
+                    return horner_stable_ln_tau_and_der2(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[2]
+                if order == 3:
+                    return horner_stable_ln_tau_and_der3(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[3]
+            elif method == 'exp_stable_polynomial_ln_tau':
+                if order == 1:
+                    return exp_horner_stable_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[1]
+                if order == 2:
+                    return exp_horner_stable_ln_tau_and_der2(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[2]
+
+            elif method == 'chebyshev':
+                if order == 1:
+                    return chebval(T, extra['d1_coeffs'], extra['offset'], extra['scale'])
+                if order == 2:
+                    return chebval(T, extra['d2_coeffs'], extra['offset'], extra['scale'])
+                if order == 3:
+                    return chebval(T, extra['d3_coeffs'], extra['offset'], extra['scale'])
+                if order == 4:
+                    return chebval(T, extra['d4_coeffs'], extra['offset'], extra['scale'])
+            elif method == 'exp_chebyshev':
+                if order == 1:
+                    return exp_cheb_and_der(T, kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
+                if order == 2:
+                    return exp_cheb_and_der2(T, kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['offset'], extra['scale'])[2]
+                if order == 3:
+                    return exp_cheb_and_der3(T, kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['d3_coeffs'], extra['offset'], extra['scale'])[3]
+            elif method == 'chebyshev_ln_tau':
+                if order == 1:
+                    return chebval_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
+                if order == 2:
+                    return chebval_ln_tau_and_der2(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['offset'], extra['scale'])[2]
+                if order == 3:
+                    return chebval_ln_tau_and_der3(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['d3_coeffs'], extra['offset'], extra['scale'])[3]
+
+            elif method == 'exp_chebyshev_ln_tau':
+                if order == 1:
+                    return exp_cheb_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
+                if order == 2:
+                    return exp_cheb_ln_tau_and_der2(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['offset'], extra['scale'])[2]
+
+
             calls = self.correlation_models[model][2]
             if order == 1 and 'f_der' in calls:
-                return calls['f_der'](T, **model_kwargs)
+                return calls['f_der'](T, **kwargs)
             elif order == 2 and 'f_der2' in calls:
-                return calls['f_der2'](T, **model_kwargs)
+                return calls['f_der2'](T, **kwargs)
             elif order == 3 and 'f_der3' in calls:
-                return calls['f_der3'](T, **model_kwargs)
+                return calls['f_der3'](T, **kwargs)
 
         if method in self.local_methods:
             local_method = self.local_methods[method]
@@ -3340,6 +3409,7 @@ class TDependentProperty:
                 if local_method.f_der2 is not None: return local_method.f_der2(T)
             elif order == 3:
                 if local_method.f_der3 is not None: return local_method.f_der3(T)
+
         if method == EXP_POLY_FIT_LN_TAU:
             if order == 1:
                 return exp_horner_backwards_ln_tau_and_der(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)[1]
@@ -3376,6 +3446,26 @@ class TDependentProperty:
                 return horner_stable_and_der3(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)[3]
             if order == 4:
                 return horner_stable_and_der4(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)[4]
+        if method == EXP_STABLEPOLY_FIT:
+            if order == 1:
+                return exp_horner_stable_and_der(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[1]
+            if order == 2:
+                return exp_horner_stable_and_der2(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[2]
+            if order == 3:
+                return exp_horner_stable_and_der3(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[3]
+        elif method == STABLEPOLY_FIT_LN_TAU:
+            if order == 1:
+                return horner_stable_ln_tau_and_der(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[1]
+            if order == 2:
+                return horner_stable_ln_tau_and_der2(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[2]
+            if order == 3:
+                return horner_stable_ln_tau_and_der3(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[3]
+        elif method == EXP_STABLEPOLY_FIT_LN_TAU:
+            if order == 1:
+                return exp_horner_stable_ln_tau_and_der(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)[1]
+            if order == 2:
+                return exp_horner_stable_ln_tau_and_der2(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)[2]
+
         if method == CHEB_FIT:
             if order == 1:
                 return chebval(T, self.cheb_fit_d1_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
@@ -3385,13 +3475,6 @@ class TDependentProperty:
                 return chebval(T, self.cheb_fit_d3_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
             if order == 4:
                 return chebval(T, self.cheb_fit_d4_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
-        if method == EXP_STABLEPOLY_FIT:
-            if order == 1:
-                return exp_horner_stable_and_der(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[1]
-            if order == 2:
-                return exp_horner_stable_and_der2(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[2]
-            if order == 3:
-                return exp_horner_stable_and_der3(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)[3]
         if method == EXP_CHEB_FIT:
             if order == 1:
                 return exp_cheb_and_der(T, self.exp_cheb_fit_coeffs, self.exp_cheb_fit_d1_coeffs, self.exp_cheb_fit_offset, self.exp_cheb_fit_scale)[1]
@@ -3407,23 +3490,11 @@ class TDependentProperty:
             if order == 3:
                 return chebval_ln_tau_and_der3(T, self.cheb_fit_ln_tau_Tc, self.cheb_fit_ln_tau_coeffs, self.cheb_fit_ln_tau_d1_coeffs, self.cheb_fit_ln_tau_d2_coeffs, self.cheb_fit_ln_tau_d3_coeffs, self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale)[3]
 
-        elif method == STABLEPOLY_FIT_LN_TAU:
-            if order == 1:
-                return horner_stable_ln_tau_and_der(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[1]
-            if order == 2:
-                return horner_stable_ln_tau_and_der2(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[2]
-            if order == 3:
-                return horner_stable_ln_tau_and_der3(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)[3]
         elif method == EXP_CHEB_FIT_LN_TAU:
             if order == 1:
                 return exp_cheb_ln_tau_and_der(T, self.exp_cheb_fit_ln_tau_Tc, self.exp_cheb_fit_ln_tau_coeffs, self.exp_cheb_fit_ln_tau_d1_coeffs, self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale)[1]
             if order == 2:
                 return exp_cheb_ln_tau_and_der2(T, self.exp_cheb_fit_ln_tau_Tc, self.exp_cheb_fit_ln_tau_coeffs, self.exp_cheb_fit_ln_tau_d1_coeffs, self.exp_cheb_fit_ln_tau_d2_coeffs, self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale)[2]
-        elif method == EXP_STABLEPOLY_FIT_LN_TAU:
-            if order == 1:
-                return exp_horner_stable_ln_tau_and_der(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)[1]
-            if order == 2:
-                return exp_horner_stable_ln_tau_and_der2(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)[2]
         pts = 1 + order*2
         dx = T*1e-6
         args = (method,)
