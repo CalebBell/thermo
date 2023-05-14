@@ -2443,10 +2443,16 @@ class TDependentProperty:
             return horner_backwards_ln_tau(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)
         elif method == EXP_POLY_FIT_LN_TAU:
             return exp_horner_backwards_ln_tau(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
+        
         elif method == STABLEPOLY_FIT:
             return horner_stable(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)
         elif method == EXP_STABLEPOLY_FIT:
             return exp_horner_stable(T, self.exp_stablepoly_fit_coeffs, self.exp_stablepoly_fit_offset, self.exp_stablepoly_fit_scale)
+        elif method == STABLEPOLY_FIT_LN_TAU:
+            return horner_stable_ln_tau(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)
+        elif method == EXP_STABLEPOLY_FIT_LN_TAU:
+            return exp_horner_stable_ln_tau(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)
+
         elif method == CHEB_FIT:
             return chebval(T, self.cheb_fit_coeffs, self.cheb_fit_offset, self.cheb_fit_scale)
         elif method == EXP_CHEB_FIT:
@@ -2455,18 +2461,23 @@ class TDependentProperty:
             return chebval_ln_tau(T, self.cheb_fit_ln_tau_Tc, self.cheb_fit_ln_tau_coeffs, self.cheb_fit_ln_tau_offset, self.cheb_fit_ln_tau_scale)
         elif method == EXP_CHEB_FIT_LN_TAU:
             return exp_cheb_ln_tau(T, self.exp_cheb_fit_ln_tau_Tc, self.exp_cheb_fit_ln_tau_coeffs, self.exp_cheb_fit_ln_tau_offset, self.exp_cheb_fit_ln_tau_scale)
-        elif method == STABLEPOLY_FIT_LN_TAU:
-            return horner_stable_ln_tau(T, self.stablepoly_fit_ln_tau_Tc, self.stablepoly_fit_ln_tau_coeffs, self.stablepoly_fit_ln_tau_offset, self.stablepoly_fit_ln_tau_scale)
-        elif method == EXP_STABLEPOLY_FIT_LN_TAU:
-            return exp_horner_stable_ln_tau(T, self.exp_stablepoly_fit_ln_tau_Tc, self.exp_stablepoly_fit_ln_tau_coeffs, self.exp_stablepoly_fit_offset_ln_tau, self.exp_stablepoly_fit_scale_ln_tau)
+
         elif method in self.tabular_data:
             return self.interpolate(T, method)
         elif method in self.local_methods:
             return self.local_methods[method].f(T)
         elif method in self.correlations:
             call, kwargs, model, extra = self.correlations[method]
-            if model == 'exp_stable_polynomial':
+            # the 4 base ones require no special handling
+            if model == 'stable_polynomial':
+                return horner_stable(T, kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif model == 'exp_stable_polynomial':
                 return exp_horner_stable(T, kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif model == 'stable_polynomial_ln_tau':
+                return horner_stable_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
+            elif model == 'exp_stable_polynomial_ln_tau':
+                return exp_horner_stable_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
+
             elif method == 'chebyshev':
                 return chebval(T, kwargs['coeffs'], extra['offset'], extra['scale'])
             elif method == 'exp_chebyshev':
