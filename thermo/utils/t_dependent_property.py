@@ -820,7 +820,8 @@ class TDependentProperty:
       ),
     'exp_stable_polynomial': (['coeffs'],
       [],
-      {'signature': 'array'},
+      {'f': None,
+      'signature': 'array'},
       {'fit_params': []},
       ),
 
@@ -2417,7 +2418,9 @@ class TDependentProperty:
         elif method in self.local_methods:
             return self.local_methods[method].f(T)
         elif method in self.correlations:
-            call, kwargs, *_ = self.correlations[method]
+            call, kwargs, model, *others = self.correlations[method]
+            if model == 'exp_stable_polynomial':
+                return exp_horner_stable(T, kwargs['coeffs'], others[0][0], others[0][1])
             return call(T, **kwargs)
         else:
             raise ValueError("Unknown method; methods are %s" %(self.all_methods))
@@ -2879,7 +2882,8 @@ class TDependentProperty:
                 Tmin, coeffs)
             self.correlations[name] = self.correlations[name] + ((exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope, exp_poly_fit_Tmax_dT2),) + ((exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope, exp_poly_fit_Tmin_dT2),)
         elif model == 'exp_stable_polynomial':
-            pass
+            exp_stablepoly_fit_offset, exp_stablepoly_fit_scale = polynomial_offset_scale(Tmin, Tmax)
+            self.correlations[name] = self.correlations[name] + ((exp_stablepoly_fit_offset, exp_stablepoly_fit_scale),)
 
     def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
         r'''Method to add a new set of emperical fit equation coefficients to
