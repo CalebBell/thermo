@@ -334,7 +334,7 @@ class CP_fluid_approximator:
 
 
 @mark_numba_incompatible
-def CoolProp_T_dependent_property(T, CASRN, prop, phase):
+def CoolProp_T_dependent_property(T, CASRN, prop, phase, Tc=None):
     r'''Calculates a property of a chemical in either the liquid or gas phase
     as a function of temperature only. This means that the property is
     either at 1 atm or along the saturation curve.
@@ -349,6 +349,8 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
         CoolProp string shortcut for desired property
     phase : str
         Either 'l' or 'g' for liquid or gas properties respectively
+    Tc : float or None
+      Optionally, the critical temperature can be provided [K]
 
     Returns
     -------
@@ -390,7 +392,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
     '''
     if not has_CoolProp:  # pragma: no cover
         raise Exception('CoolProp library is not installed')
-    if CASRN not in coolprop_dict:
+    if CASRN not in coolprop_dict and not 'REFPROP' in CASRN:
         raise Exception('CASRN not in list of supported fluids')
     if prop in ('CP0MOLAR', 'Cp0molar'):
       try:
@@ -400,7 +402,8 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase):
           # And some cases don't converge at high P
           return PropsSI('Cp0molar', 'T', T,'P', 101325.0, CASRN)
 
-    Tc = coolprop_fluids[CASRN].Tc
+    if Tc is None:
+        Tc = coolprop_fluids[CASRN].Tc
     T = float(T) # Do not allow custom objects here
     if phase == 'l':
         if T > Tc:

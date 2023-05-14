@@ -1529,6 +1529,12 @@ class TDependentProperty:
         new = cls.__new__(cls)
         new.__dict__ = d
         new.add_extra_correlations()
+
+        for name, params in new.correlations.items():
+            model = params[2]
+            if model in new.correlation_extra_handling_models:
+                new._optimize_added_correlation(name, model)
+
         return new
 
     @classmethod
@@ -2403,7 +2409,7 @@ class TDependentProperty:
         elif method in self.local_methods:
             return self.local_methods[method].f(T)
         elif method in self.correlations:
-            call, kwargs, _ = self.correlations[method]
+            call, kwargs, *_ = self.correlations[method]
             return call(T, **kwargs)
         else:
             raise ValueError("Unknown method; methods are %s" %(self.all_methods))
@@ -2852,6 +2858,20 @@ class TDependentProperty:
         return float(prop)
 
 
+    correlation_extra_handling_models = frozenset(['exp_polynomial'])
+
+    def _optimize_added_correlation(self, name, model):
+        Tmin, Tmax = self.T_limits[name]
+        kwargs = self.correlations[name][1]
+        if model == 'exp_polynomial':
+            coeffs = kwargs['coeffs']
+            exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope, exp_poly_fit_Tmax_dT2 = exp_horner_backwards_and_der2(
+                Tmax, coeffs)
+            exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope, exp_poly_fit_Tmin_dT2 = exp_horner_backwards_and_der2(
+                Tmin, coeffs)
+            self.correlations[name] = self.correlations[name] + ((exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope, exp_poly_fit_Tmax_dT2),) + ((exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope, exp_poly_fit_Tmin_dT2),)
+            # self.exp_polynomial_
+
     def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
         r'''Method to add a new set of emperical fit equation coefficients to
         the object and select it for future property calculations.
@@ -2914,6 +2934,8 @@ class TDependentProperty:
 
         call = self.correlation_models[model][2]['f']
         self.correlations[name] = (call, model_kwargs, model)
+        if model in self.correlation_extra_handling_models:
+            self._optimize_added_correlation(name, model)
         self.method = name
 
     try:
