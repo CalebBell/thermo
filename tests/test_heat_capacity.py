@@ -216,13 +216,14 @@ def test_HeatCapacityGas_cheb_fit():
     assert_close(obj.deriv(2)(300), fit_obj.T_dependent_property_derivative(300, order=2), rtol=1e-15)
     assert_close(obj.deriv(3)(300), fit_obj.T_dependent_property_derivative(300, order=3), rtol=1e-15)
     assert_close(obj.deriv(4)(300), fit_obj.T_dependent_property_derivative(300, order=4), rtol=1e-15)
-    
+    assert_close(obj.integ()(500) - obj.integ()(300), fit_obj.T_dependent_property_integral(300, 500), rtol=1e-15)
+
     
     assert_close(fit_obj.T_dependent_property_derivative(300, order=1), 0.36241217517888635, rtol=1e-13)
     assert_close(fit_obj.T_dependent_property_derivative(300, order=2), -6.445511348110282e-06, rtol=1e-13)
     assert_close(fit_obj.T_dependent_property_derivative(300, order=3), -8.804754988590911e-06, rtol=1e-13)
     assert_close(fit_obj.T_dependent_property_derivative(300, order=4), 1.2298003967617247e-07, rtol=1e-13)
-    
+    assert_close(fit_obj.T_dependent_property_integral(300, 500), 27791.638479021327, rtol=1e-13)
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_linear_extrapolation():
