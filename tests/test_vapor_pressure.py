@@ -531,6 +531,12 @@ def test_VaporPressure_generic_polynomial_exp_parameters():
     assert VaporPressure.from_json(obj_polynomial.as_json()) == obj_polynomial
     assert eval(str(obj_polynomial)) == obj_polynomial
 
+    T = 300.0
+
+    assert_close(obj_polynomial.T_dependent_property_derivative(T), 954.1652489206775, rtol=1e-14)
+    assert_close(obj_polynomial.T_dependent_property_derivative(T, order=2), 41.8787546283273, rtol=1e-14)
+    assert_close(obj_polynomial.T_dependent_property_derivative(T, order=3), 1.496803960985584, rtol=1e-13)
+
 @pytest.mark.meta_T_dept
 def test_VaporPressure_generic_polynomial_exp_parameters_complicated():
     coeffs = [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
@@ -545,7 +551,7 @@ def test_VaporPressure_generic_polynomial_exp_parameters_complicated():
     assert_close(obj2.T_dependent_property_derivative(T, order=2), 41.8787546283273, rtol=1e-14)
     assert_close(obj2.T_dependent_property_derivative(T, order=3), 1.496803960985584, rtol=1e-13)
     
-
+    
 @pytest.mark.meta_T_dept
 def test_VaporPressure_exp_stablepoly_fit():
     obj2 = VaporPressure(Tc=591.72, exp_stablepoly_fit=((309.0, 591.72, [0.008603558174828078, 0.007358688688856427, -0.016890323025782954, -0.005289197721114957, -0.0028824712174469625, 0.05130960832946553, -0.12709896610233662, 0.37774977659528036, -0.9595325030688526, 2.7931528759840174, 13.10149649770156])))
