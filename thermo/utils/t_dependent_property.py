@@ -800,6 +800,9 @@ class TDependentProperty:
     'exp_polynomial': (['coeffs'],
       [],
       {'f': exp_horner_backwards, # for mul, Psat, Psub
+      'f_der': lambda T, **kwargs: exp_horner_backwards_and_der(T, **kwargs)[1],
+      'f_der2': lambda T, **kwargs: exp_horner_backwards_and_der2(T, **kwargs)[2],
+      'f_der3': lambda T, **kwargs: exp_horner_backwards_and_der3(T, **kwargs)[3],
        'signature': 'array'},
       {'fit_params': []},
       ),
@@ -813,6 +816,11 @@ class TDependentProperty:
       [],
       {'f': exp_horner_backwards_ln_tau,
        'signature': 'array'},
+      {'fit_params': []},
+      ),
+    'exp_stable_polynomial': (['coeffs'],
+      [],
+      {'signature': 'array'},
       {'fit_params': []},
       ),
 
@@ -2858,7 +2866,7 @@ class TDependentProperty:
         return float(prop)
 
 
-    correlation_extra_handling_models = frozenset(['exp_polynomial'])
+    correlation_extra_handling_models = frozenset(['exp_polynomial', 'exp_stable_polynomial'])
 
     def _optimize_added_correlation(self, name, model):
         Tmin, Tmax = self.T_limits[name]
@@ -2870,7 +2878,8 @@ class TDependentProperty:
             exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope, exp_poly_fit_Tmin_dT2 = exp_horner_backwards_and_der2(
                 Tmin, coeffs)
             self.correlations[name] = self.correlations[name] + ((exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope, exp_poly_fit_Tmax_dT2),) + ((exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope, exp_poly_fit_Tmin_dT2),)
-            # self.exp_polynomial_
+        elif model == 'exp_stable_polynomial':
+            pass
 
     def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
         r'''Method to add a new set of emperical fit equation coefficients to
@@ -3181,7 +3190,7 @@ class TDependentProperty:
             Calculated derivative property, [`units/K^order`]
         '''
         if method in self.correlations:
-            _, model_kwargs, model = self.correlations[method]
+            _, model_kwargs, model, *_ = self.correlations[method]
             calls = self.correlation_models[model][2]
             if order == 1 and 'f_der' in calls:
                 return calls['f_der'](T, **model_kwargs)
