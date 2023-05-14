@@ -2958,11 +2958,13 @@ class TDependentProperty:
             d_coeffs.reverse()
             extra['d_coeffs'] = d_coeffs
             extra['d2_coeffs'] = d2_coeffs
-            _, Tmax_slope, Tmax_dT2 = horner_and_der2(coeffs, Tmax)
+            Tmax_value, Tmax_slope, Tmax_dT2 = horner_and_der2(coeffs, Tmax)
+            extra['Tmax_value'] = Tmax_value
             extra['Tmax_slope'] = Tmax_slope
             extra['Tmax_dT2'] = Tmax_dT2
 
-            _, Tmin_slope, Tmin_dT2 = horner_and_der2(coeffs, Tmin)
+            Tmin_value, Tmin_slope, Tmin_dT2 = horner_and_der2(coeffs, Tmin)
+            extra['Tmin_value'] = Tmin_value
             extra['Tmin_slope'] = Tmin_slope
             extra['Tmin_dT2'] = Tmin_dT2
             
@@ -3518,10 +3520,17 @@ class TDependentProperty:
                 self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
                 self.poly_fit_Tmax_slope)
         if method in self.correlations:
-            _, model_kwargs, model, _ = self.correlations[method]
+            call, kwargs, model, extra = self.correlations[method]
+            if model == 'polynomial':
+                Tmin, Tmax = self.T_limits[method]
+                return fit_integral_linear_extrapolation(T1, T2,
+                    extra['int_coeffs'], Tmin,
+                    Tmax, extra['Tmin_value'],
+                    extra['Tmax_value'], extra['Tmin_slope'],
+                    extra['Tmax_slope'])
             calls = self.correlation_models[model][2]
             if 'f_int' in calls:
-                return calls['f_int'](T2, **model_kwargs) - calls['f_int'](T1, **model_kwargs)
+                return calls['f_int'](T2, **kwargs) - calls['f_int'](T1, **kwargs)
         if method in self.local_methods:
             local_method = self.local_methods[method]
             if local_method.f_int is not None:
@@ -3653,10 +3662,19 @@ class TDependentProperty:
                 self.poly_fit_Tmax_value, self.poly_fit_Tmin_slope,
                 self.poly_fit_Tmax_slope)
         if method in self.correlations:
-            _, model_kwargs, model, _ = self.correlations[method]
+            call, kwargs, model, extra = self.correlations[method]
+            if model == 'polynomial':
+                Tmin, Tmax = self.T_limits[method]
+                return fit_integral_over_T_linear_extrapolation(T1, T2,
+                    extra['T_int_T_coeffs'], extra['log_coeff'],
+                    Tmin, Tmax,
+                    extra['Tmin_value'],
+                    extra['Tmax_value'], extra['Tmin_slope'],
+                    extra['Tmax_slope'])
             calls = self.correlation_models[model][2]
             if 'f_int_over_T' in calls:
-                return calls['f_int_over_T'](T2, **model_kwargs) - calls['f_int_over_T'](T1, **model_kwargs)
+                return calls['f_int_over_T'](T2, **kwargs) - calls['f_int_over_T'](T1, **kwargs)
+
         if method in self.local_methods:
             local_method = self.local_methods[method]
             if local_method.f_int_over_T is not None:
