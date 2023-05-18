@@ -206,7 +206,8 @@ def fit_polynomial(func, low, high, n,
             if method == FIT_NUMPY_STABLEPOLY:
                 return coeffs
             elif method == FIT_NUMPY_POLY:
-                return stable_poly_to_unstable(coeffs, low, high)
+                # sometimes the low/high bound will change becaues of the transformation, have to account for that
+                return stable_poly_to_unstable(coeffs, min(low, high), max(low, high))
 
 
 def data_fit_statistics(xs, actual_pts, calc_pts):
@@ -269,6 +270,8 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
         Lowest ratio of calc/actual in any found points, [-]
     max_ratio : float
         Highest ratio of calc/actual in any found points, [-]
+    calc : list[float]
+        The calculated values, [-]
 
     Notes
     -----
@@ -283,6 +286,8 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
     # Get the low, high, and x points in the transformed domain
     low, high = interpolation_x(low_orig), interpolation_x(high_orig)
     all_points = [interpolation_x(v) for v in all_points_orig]
+    # may have changed basis
+    low, high = min(low, high), max(low, high)
     offset, scale = polynomial_offset_scale(low, high)
 
     if method in FIT_METHOD_MAP:
@@ -307,18 +312,18 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
     ARDs = [(abs((i-j)/j) if j != 0 else 0.0) for i, j in zip(calc_pts, actual_pts)]
 
     err_avg = sum(ARDs)/pts
-    err_std = np.std(ARDs)
+    err_std = float(np.std(ARDs))
 
     actual_pts = np.array(actual_pts)
-    calc_pts = np.array(calc_pts)
+    calc_pts_np = np.array(calc_pts)
 
-    max_ratio, min_ratio = max(calc_pts/actual_pts), min(calc_pts/actual_pts)
-    return err_avg, err_std, min_ratio, max_ratio
+    max_ratio, min_ratio = float(max(calc_pts_np/actual_pts)), float(min(calc_pts_np/actual_pts))
+    return err_avg, err_std, min_ratio, max_ratio, calc_pts
 
 def select_index_from_stats(stats, ns):
     lowest_err_avg, lowest_err_std, lowest_err = 1e100, 1e100, 1e100
     lowest_err_avg_idx, lowest_err_std_idx, lowest_err_idx = None, None, None
-    for i, ((err_avg, err_std, min_ratio, max_ratio),n) in enumerate(zip(stats, ns)):
+    for i, ((err_avg, err_std, min_ratio, max_ratio, _),n) in enumerate(zip(stats, ns)):
         if err_avg < lowest_err_avg:
             lowest_err_avg = err_avg
             lowest_err_avg_idx = i
@@ -350,7 +355,7 @@ def fit_many_cheb_poly(func, low, high, ns, eval_pts=30,
                                 arg_func=arg_func, method=method)
 
         method2 = FIT_METHOD_MAP[method]
-        err_avg, err_std, min_ratio, max_ratio = poly_fit_statistics(func, coeffs, low, high, pts=eval_pts,
+        err_avg, err_std, min_ratio, max_ratio, calc_pts = poly_fit_statistics(func, coeffs, low, high, pts=eval_pts,
                                 interpolation_property_inv=interpolation_property_inv,
                                 interpolation_x=interpolation_x,
                                 arg_func=arg_func, method=method2)
@@ -360,10 +365,10 @@ def fit_many_cheb_poly(func, low, high, ns, eval_pts=30,
 
     for n in ns:
         try:
-            coeffs, err_avg, err_std, min_ratio, max_ratio = a_fit(n)
+            coeffs, err_avg, err_std, min_ratio, max_ratio, calc_pts = a_fit(n)
             worked_ns.append(n)
             worked_coeffs.append(coeffs)
-            worked_stats.append((err_avg, err_std, min_ratio, max_ratio))
+            worked_stats.append((err_avg, err_std, min_ratio, max_ratio, calc_pts))
         except:
             pass
     return worked_ns, worked_coeffs, worked_stats

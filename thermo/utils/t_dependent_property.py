@@ -2997,10 +2997,13 @@ class TDependentProperty:
         elif model == 'exp_stable_polynomial_ln_tau':
             Tc = kwargs['Tc']
             xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
+            # Transformation may flip the order of which is higher
+            xmin, xmax = min(xmin, xmax), max(xmin, xmax)
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(xmin, xmax)
         elif model == 'stable_polynomial_ln_tau':
             Tc = kwargs['Tc']
             xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
+            xmin, xmax = min(xmin, xmax), max(xmin, xmax)
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(xmin, xmax)
         
         elif model in ('chebyshev', 'exp_chebyshev', 'chebyshev_ln_tau', 'exp_chebyshev_ln_tau'):
@@ -3009,6 +3012,7 @@ class TDependentProperty:
             else:
                 Tc = kwargs['Tc']
                 xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
+                xmin, xmax = min(xmin, xmax), max(xmin, xmax)
                 extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(xmin, xmax)
             extra['d1_coeffs'] = chebyshev_d1_coeffs = chebder(coeffs, m=1, scl=scale)
             extra['d2_coeffs'] = chebyshev_d2_coeffs = chebder(chebyshev_d1_coeffs, m=1, scl=scale)
