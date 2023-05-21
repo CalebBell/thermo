@@ -71,48 +71,42 @@ Temperature, Pressure, and Composition Dependent
     :show-inheritance:
 
 '''
-NEGLIGIBLE = 'NEGLIGIBLE'
-LINEAR = 'LINEAR'
 
-POLY_FIT = 'POLY_FIT'
-EXP_POLY_FIT = 'EXP_POLY_FIT'
-POLY_FIT_LN_TAU = 'POLY_FIT_LN_TAU'
-EXP_POLY_FIT_LN_TAU = 'EXP_POLY_FIT_LN_TAU'
-
-STABLEPOLY_FIT = 'STABLEPOLY_FIT'
-EXP_STABLEPOLY_FIT = 'EXP_STABLEPOLY_FIT'
-STABLEPOLY_FIT_LN_TAU = 'STABLEPOLY_FIT_LN_TAU'
-EXP_STABLEPOLY_FIT_LN_TAU = 'EXP_STABLEPOLY_FIT_LN_TAU'
-
-CHEB_FIT = 'CHEB_FIT'
-EXP_CHEB_FIT = 'EXP_CHEB_FIT'
-CHEB_FIT_LN_TAU = 'CHEB_FIT_LN_TAU'
-EXP_CHEB_FIT_LN_TAU = 'EXP_CHEB_FIT_LN_TAU'
-
-IAPWS = 'IAPWS'
-DIPPR_PERRY_8E = 'DIPPR_PERRY_8E'
-VDI_TABULAR = 'VDI_TABULAR'
-VDI_PPDS = 'VDI_PPDS'
-COOLPROP = 'COOLPROP'
-EOS = 'EOS'
-
-
-from . import functional
+from . import functional, mixture_property, t_dependent_property, tp_dependent_property
 from .functional import *
-from . import t_dependent_property
-from .t_dependent_property import *
-from . import tp_dependent_property
-from .tp_dependent_property import *
-from . import mixture_property
 from .mixture_property import *
+from .names import (
+    CHEB_FIT,
+    CHEB_FIT_LN_TAU,
+    COOLPROP,
+    DIPPR_PERRY_8E,
+    EOS,
+    EXP_CHEB_FIT,
+    EXP_CHEB_FIT_LN_TAU,
+    EXP_POLY_FIT,
+    EXP_POLY_FIT_LN_TAU,
+    EXP_STABLEPOLY_FIT,
+    EXP_STABLEPOLY_FIT_LN_TAU,
+    IAPWS,
+    LINEAR,
+    NEGLIGIBLE,
+    POLY_FIT,
+    POLY_FIT_LN_TAU,
+    STABLEPOLY_FIT,
+    STABLEPOLY_FIT_LN_TAU,
+    VDI_PPDS,
+    VDI_TABULAR,
+)
+from .t_dependent_property import *
+from .tp_dependent_property import *
 
 __all__ = (
     *functional.__all__,
     *t_dependent_property.__all__,
     *tp_dependent_property.__all__,
     *mixture_property.__all__,
-    NEGLIGIBLE, LINEAR, POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU,
-    STABLEPOLY_FIT, EXP_STABLEPOLY_FIT, STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU,
-    CHEB_FIT, EXP_CHEB_FIT, CHEB_FIT_LN_TAU, EXP_CHEB_FIT_LN_TAU,
-    DIPPR_PERRY_8E, VDI_TABULAR, VDI_PPDS, COOLPROP, IAPWS,
+    'NEGLIGIBLE', 'LINEAR', 'POLY_FIT', 'EXP_POLY_FIT', 'POLY_FIT_LN_TAU', 'EXP_POLY_FIT_LN_TAU',
+    'STABLEPOLY_FIT', 'EXP_STABLEPOLY_FIT', 'STABLEPOLY_FIT_LN_TAU', 'EXP_STABLEPOLY_FIT_LN_TAU',
+    'CHEB_FIT', 'EXP_CHEB_FIT', 'CHEB_FIT_LN_TAU', 'EXP_CHEB_FIT_LN_TAU', 'IAPWS', 'DIPPR_PERRY_8E',
+    'VDI_TABULAR', 'VDI_PPDS', 'COOLPROP', 'EOS'
 )

@@ -27,7 +27,8 @@ from fluids.numerics import derivative, linspace
 from fluids.numerics import numpy as np
 
 from thermo.eos_mix import GCEOSMIX
-from thermo.utils import POLY_FIT, has_matplotlib
+from thermo.utils.names import POLY_FIT
+from thermo.utils.functional import has_matplotlib
 
 
 class MixtureProperty:

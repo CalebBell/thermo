@@ -167,8 +167,8 @@ from fluids.numerics import (
     horner_stable_ln_tau_and_der3,
     inf,
     interp,
-    isnan,
     isinf,
+    isnan,
     linspace,
     log,
     polyder,
@@ -210,7 +210,7 @@ from thermo.eos_alpha_functions import (
     Yu_Lu_alpha_pure,
 )
 from thermo.fitting import fit_customized
-from thermo.utils import (
+from thermo.utils.names import (
     CHEB_FIT,
     CHEB_FIT_LN_TAU,
     EXP_CHEB_FIT,
@@ -224,9 +224,8 @@ from thermo.utils import (
     STABLEPOLY_FIT,
     STABLEPOLY_FIT_LN_TAU,
     VDI_TABULAR,
-    has_matplotlib,
 )
-
+from thermo.utils.functional import has_matplotlib
 
 def generate_fitting_function(model,
                               param_order,
@@ -862,11 +861,11 @@ class TDependentProperty:
       ),
     'exp_chebyshev': (['coeffs'],
       [],
-      {'f': None, 
+      {'f': None,
        'signature': 'array'},
       {'fit_params': []},
       ),
-    'chebyshev_ln_tau': (['Tc', 'coeffs'], 
+    'chebyshev_ln_tau': (['Tc', 'coeffs'],
       [],
       {'f': None,
        'signature': 'array'},
@@ -2473,7 +2472,7 @@ class TDependentProperty:
             return horner_backwards_ln_tau(T, self.poly_fit_ln_tau_Tc, self.poly_fit_ln_tau_coeffs)
         elif method == EXP_POLY_FIT_LN_TAU:
             return exp_horner_backwards_ln_tau(T, self.exp_poly_fit_ln_tau_Tc, self.exp_poly_fit_ln_tau_coeffs)
-        
+
         elif method == STABLEPOLY_FIT:
             return horner_stable(T, self.stablepoly_fit_coeffs, self.stablepoly_fit_offset, self.stablepoly_fit_scale)
         elif method == EXP_STABLEPOLY_FIT:
@@ -2943,7 +2942,7 @@ class TDependentProperty:
         return float(prop)
 
 
-    correlation_extra_handling_models = frozenset(['polynomial', 'exp_polynomial', 
+    correlation_extra_handling_models = frozenset(['polynomial', 'exp_polynomial',
     'polynomial_ln_tau', 'exp_polynomial_ln_tau', 'stable_polynomial',
     'exp_stable_polynomial', 'stable_polynomial_ln_tau','exp_stable_polynomial_ln_tau',
      'chebyshev', 'exp_chebyshev', 'chebyshev_ln_tau', 'exp_chebyshev_ln_tau'])
@@ -2975,7 +2974,7 @@ class TDependentProperty:
             extra['Tmin_value'] = Tmin_value
             extra['Tmin_slope'] = Tmin_slope
             extra['Tmin_dT2'] = Tmin_dT2
-            
+
         if model == 'exp_polynomial':
             # Not really used yet
             exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope, exp_poly_fit_Tmax_dT2 = exp_horner_backwards_and_der2(
@@ -2989,7 +2988,7 @@ class TDependentProperty:
 
 
 
-        
+
         elif model == 'stable_polynomial':
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
         elif model == 'exp_stable_polynomial':
@@ -3005,7 +3004,7 @@ class TDependentProperty:
             xmin, xmax = trunc_log(1.0 - Tmin/Tc), trunc_log(1.0 - Tmax/Tc)
             xmin, xmax = min(xmin, xmax), max(xmin, xmax)
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(xmin, xmax)
-        
+
         elif model in ('chebyshev', 'exp_chebyshev', 'chebyshev_ln_tau', 'exp_chebyshev_ln_tau'):
             if model in ('chebyshev', 'exp_chebyshev'):
                 extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)

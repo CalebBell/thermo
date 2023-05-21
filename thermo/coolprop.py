@@ -392,7 +392,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase, Tc=None):
     '''
     if not has_CoolProp:  # pragma: no cover
         raise Exception('CoolProp library is not installed')
-    if CASRN not in coolprop_dict and not 'REFPROP' in CASRN:
+    if CASRN not in coolprop_dict and 'REFPROP' not in CASRN:
         raise Exception('CASRN not in list of supported fluids')
     if prop in ('CP0MOLAR', 'Cp0molar'):
       try:
@@ -409,6 +409,8 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase, Tc=None):
         if T > Tc:
             raise Exception('For liquid properties, must be under the critical temperature.')
         if PhaseSI('T', T, 'P', 101325, CASRN) in ['liquid', 'supercritical_liquid']:
+          # If under the vapor pressure curve e.g. water at STP, use 1 atm
+          # at the normal boiling point this switches to the saturation curve
             return PropsSI(prop, 'T', T, 'P', 101325, CASRN)
         else:
             return PropsSI(prop, 'T', T, 'Q', 0, CASRN)
