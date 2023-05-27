@@ -143,7 +143,7 @@ from fluids.numerics import exp, horner, horner_and_der2, isnan, linspace, np, p
 from thermo import electrochem
 from thermo.coolprop import CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_density
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, LINEAR, VDI_PPDS, VDI_TABULAR, HEOS_FIT, MixtureProperty, TDependentProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, LINEAR, VDI_PPDS, VDI_TABULAR, HEOS_FIT, NEGLECT_P, MixtureProperty, TDependentProperty, TPDependentProperty
 from thermo.vapor_pressure import VaporPressure
 
 
@@ -196,7 +196,7 @@ volume_liquid_methods = [HEOS_FIT, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT
 """Holds all low-pressure methods available for the :obj:`VolumeLiquid` class, for use
 in iterating over them."""
 
-volume_liquid_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS]
+volume_liquid_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS, NEGLECT_P]
 """Holds all high-pressure methods available for the :obj:`VolumeLiquid` class, for
 use in iterating over them."""
 
@@ -390,7 +390,7 @@ class VolumeLiquid(TPDependentProperty):
                       BHIRUD_NORMAL, TOWNSEND_HALES, CAMPBELL_THODOS, EOS]
     """Default rankings of the low-pressure methods."""
 
-    ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS]
+    ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
     obj_references = pure_references = ('Psat',)
@@ -459,7 +459,7 @@ class VolumeLiquid(TPDependentProperty):
         self.T_limits = T_limits = {}
         self.all_methods = set()
         methods = []
-        methods_P = []
+        methods_P = [NEGLECT_P]
         CASRN = self.CASRN
         if load_data and CASRN:
             if has_CoolProp() and CASRN in coolprop_dict:

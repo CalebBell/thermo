@@ -150,7 +150,7 @@ from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import thermal_conductivity_Magomedov
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, REFPROP_FIT, MixtureProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, REFPROP_FIT, NEGLECT_P, MixtureProperty, TPDependentProperty
 from thermo.viscosity import ViscosityGas
 from thermo.volume import VolumeGas
 
@@ -172,7 +172,7 @@ thermal_conductivity_liquid_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VD
 """Holds all low-pressure methods available for the :obj:`ThermalConductivityLiquid`
 class, for use in iterating over them."""
 
-thermal_conductivity_liquid_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
+thermal_conductivity_liquid_methods_P = [COOLPROP, DIPPR_9G, MISSENARD, NEGLECT_P]
 """Holds all high-pressure methods available for the :obj:`ThermalConductivityLiquid`
 class, for use in iterating over them."""
 
@@ -320,7 +320,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
                       GHARAGHEIZI_L, SHEFFY_JOHNSON, SATO_RIEDEL,
                       LAKSHMI_PRASAD, BAHADORI_L, NICOLA, NICOLA_ORIGINAL]
     """Default rankings of the low-pressure methods."""
-    ranked_methods_P = [COOLPROP, DIPPR_9G, MISSENARD]
+    ranked_methods_P = [COOLPROP, DIPPR_9G, MISSENARD, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
 
@@ -355,7 +355,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
         to reset the parameters.
         '''
         self.all_methods = set()
-        methods, methods_P = [], []
+        methods, methods_P = [], [NEGLECT_P]
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         if load_data and CASRN:
@@ -818,7 +818,7 @@ thermal_conductivity_gas_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_P
 """Holds all low-pressure methods available for the :obj:`ThermalConductivityGas`
 class, for use in iterating over them."""
 thermal_conductivity_gas_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
-                                      STIEL_THODOS_DENSE]
+                                      STIEL_THODOS_DENSE, NEGLECT_P]
 """Holds all high-pressure methods available for the :obj:`ThermalConductivityGas`
 class, for use in iterating over them."""
 
@@ -982,7 +982,7 @@ class ThermalConductivityGas(TPDependentProperty):
                       BAHADORI_G]
     """Default rankings of the low-pressure methods."""
     ranked_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
-                        STIEL_THODOS_DENSE]
+                        STIEL_THODOS_DENSE, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
     obj_references = pure_references = ('mug', 'Vmg', 'Cpgm')
@@ -1025,7 +1025,7 @@ class ThermalConductivityGas(TPDependentProperty):
         to reset the parameters.
         '''
         self.all_methods = set()
-        methods, methods_P = [], []
+        methods, methods_P = [], [NEGLECT_P]
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         if load_data and CASRN:

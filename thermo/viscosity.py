@@ -141,7 +141,7 @@ viscosity_liquid_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUT
                          VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
 """Holds all low-pressure methods available for the ViscosityLiquid class, for
 use in iterating over them."""
-viscosity_liquid_methods_P = [COOLPROP, LUCAS]
+viscosity_liquid_methods_P = [COOLPROP, LUCAS, NEGLECT_P]
 """Holds all high-pressure methods available for the ViscosityLiquid class, for
 use in iterating over them."""
 
@@ -335,7 +335,7 @@ class ViscosityLiquid(TPDependentProperty):
                       VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                       VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
     """Default rankings of the low-pressure methods."""
-    ranked_methods_P = [COOLPROP, LUCAS]
+    ranked_methods_P = [COOLPROP, LUCAS, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
     obj_references = pure_references = ('Psat', 'Vml')
@@ -372,7 +372,7 @@ class ViscosityLiquid(TPDependentProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods, methods_P = [], []
+        methods, methods_P = [], [NEGLECT_P]
         self.T_limits = T_limits = {}
         self.all_methods = set()
         CASRN = self.CASRN
@@ -396,7 +396,7 @@ class ViscosityLiquid(TPDependentProperty):
                     methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
             if CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (l)')
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (l)')    
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                 del self._method
             if CASRN in viscosity.mu_data_Dutt_Prasad.index:
