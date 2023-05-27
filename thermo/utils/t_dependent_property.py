@@ -226,6 +226,7 @@ from thermo.utils.names import (
     VDI_TABULAR,
     HEOS_FIT,
     REFPROP_FIT,
+    NEGLECT_P
 )
 from thermo.utils.functional import has_matplotlib
 
@@ -2123,7 +2124,7 @@ class TDependentProperty:
         validity : bool
             Whether or not a specifid method is valid
         '''
-        if isinstance(prop, complex):
+        if prop is None or isinstance(prop, complex):
             return False
         elif prop < self.property_min:
             return False
@@ -2561,6 +2562,8 @@ class TDependentProperty:
     def _base_calculate_P(self, T, P, method):
         if method in self.tabular_data_P:
             return self.interpolate_P(T, P, method)
+        elif method == NEGLECT_P:
+            return self.T_dependent_property(T)
         else:
             raise ValueError("Unknown method")
 

@@ -124,7 +124,7 @@ from fluids.numerics import brenth, exp, horner, isinf, isnan, log, trunc_log
 from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_viscosity
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, REFPROP_FIT, MixtureProperty, TPDependentProperty
+from thermo.utils import NEGLECT_P, COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, REFPROP_FIT, MixtureProperty, TPDependentProperty
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import VolumeGas, VolumeLiquid
 
@@ -697,7 +697,7 @@ viscosity_gas_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TA
                          STIEL_THODOS, LUCAS_GAS]
 """Holds all low-pressure methods available for the ViscosityGas
 class, for use in iterating over them."""
-viscosity_gas_methods_P = [COOLPROP]
+viscosity_gas_methods_P = [NEGLECT_P, COOLPROP]
 """Holds all high-pressure methods available for the ViscosityGas
 class, for use in iterating over them."""
 
@@ -837,7 +837,7 @@ class ViscosityGas(TPDependentProperty):
     ranked_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                       STIEL_THODOS, LUCAS_GAS]
     """Default rankings of the low-pressure methods."""
-    ranked_methods_P = [COOLPROP]
+    ranked_methods_P = [NEGLECT_P, COOLPROP]
     """Default rankings of the high-pressure methods."""
 
     obj_references = pure_references = ('Vmg',)
@@ -870,7 +870,7 @@ class ViscosityGas(TPDependentProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods, methods_P = [], []
+        methods, methods_P = [], [NEGLECT_P]
         self.T_limits = T_limits = {}
         self.all_methods = set()
         CASRN = self.CASRN

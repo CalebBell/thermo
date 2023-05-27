@@ -288,6 +288,7 @@ def test_H_Chemical():
 def test_all_chemicals():
     for i in pubchem_db.CAS_index.values():
         c = Chemical(i.CASs)
+        print(i.CASs)
 
         # T and P dependent properties - just test they can be called
         c.Psat

@@ -89,7 +89,7 @@ from .names import (
     EXP_STABLEPOLY_FIT_LN_TAU,
     IAPWS,
     LINEAR,
-    NEGLIGIBLE,
+    NEGLECT_P,
     POLY_FIT,
     POLY_FIT_LN_TAU,
     STABLEPOLY_FIT,
@@ -107,7 +107,7 @@ __all__ = (
     *t_dependent_property.__all__,
     *tp_dependent_property.__all__,
     *mixture_property.__all__,
-    'NEGLIGIBLE', 'LINEAR', 'POLY_FIT', 'EXP_POLY_FIT', 'POLY_FIT_LN_TAU', 'EXP_POLY_FIT_LN_TAU',
+    'NEGLECT_P', 'LINEAR', 'POLY_FIT', 'EXP_POLY_FIT', 'POLY_FIT_LN_TAU', 'EXP_POLY_FIT_LN_TAU',
     'STABLEPOLY_FIT', 'EXP_STABLEPOLY_FIT', 'STABLEPOLY_FIT_LN_TAU', 'EXP_STABLEPOLY_FIT_LN_TAU',
     'CHEB_FIT', 'EXP_CHEB_FIT', 'CHEB_FIT_LN_TAU', 'EXP_CHEB_FIT_LN_TAU', 'IAPWS', 'DIPPR_PERRY_8E',
     'VDI_TABULAR', 'VDI_PPDS', 'COOLPROP', 'EOS', 'HEOS_FIT', 'REFPROP_FIT'

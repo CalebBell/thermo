@@ -25,6 +25,7 @@ from fluids.numerics import numpy as np
 
 from thermo.utils.t_dependent_property import TDependentProperty
 from thermo.utils.functional import has_matplotlib
+from thermo.utils.names import NEGLECT_P
 
 __all__ = ['TPDependentProperty']
 
@@ -348,6 +349,8 @@ class TPDependentProperty(TDependentProperty):
             else:
                 Ts, Ps, properties = self.tabular_data_P[method]
                 validity = Ts[0] < T < Ts[-1] and Ps[0] < P < Ps[-1]
+        elif method == NEGLECT_P:
+            return self.test_method_validity(T, self._method) if self._method else False
         elif method in self.all_methods_P:
             Tmin, Tmax = self.T_limits[method]
             validity = Tmin < T < Tmax
