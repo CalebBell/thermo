@@ -149,7 +149,7 @@ from thermo.coolprop import (
     has_CoolProp,
 )
 from thermo.electrochem import Laliberte_heat_capacity
-from thermo.utils import COOLPROP, LINEAR, VDI_TABULAR, MixtureProperty, TDependentProperty
+from thermo.utils import COOLPROP, LINEAR, HEOS_FIT, REFPROP_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
 
 TRCIG = 'TRCIG'
 POLING_POLY = 'POLING_POLY'
@@ -157,7 +157,7 @@ POLING_CONST = 'POLING_CONST'
 CRCSTD = 'CRCSTD'
 LASTOVKA_SHAW = 'LASTOVKA_SHAW'
 WEBBOOK_SHOMATE = 'WEBBOOK_SHOMATE'
-heat_capacity_gas_methods = [COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
+heat_capacity_gas_methods = [HEOS_FIT, COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_POLY, LASTOVKA_SHAW, CRCSTD,
                              POLING_CONST, JOBACK, VDI_TABULAR]
 """Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them."""
@@ -225,6 +225,9 @@ class HeatCapacityGas(TDependentProperty):
         Shomate form coefficients from [6]_ for ~700 compounds.
     **JOBACK**:
         An estimation method for organic substances in [7]_
+    **HEOS_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        fundamental helmholtz equations of state as calculated with REFPROP
 
     See Also
     --------
@@ -239,7 +242,7 @@ class HeatCapacityGas(TDependentProperty):
     --------
     >>> CpGas = HeatCapacityGas(CASRN='142-82-5', MW=100.2, similarity_variable=0.2295)
     >>> CpGas(700)
-    317.244
+    317.305
 
     References
     ----------
@@ -282,7 +285,7 @@ class HeatCapacityGas(TDependentProperty):
     """Maximum valid of Heat capacity; arbitrarily set. For fluids very near
     the critical point, this value can be obscenely high."""
 
-    ranked_methods = [TRCIG, WEBBOOK_SHOMATE, miscdata.JANAF, POLING_POLY, COOLPROP, JOBACK,
+    ranked_methods = [HEOS_FIT, TRCIG, WEBBOOK_SHOMATE, miscdata.JANAF, POLING_POLY, COOLPROP, JOBACK,
                       LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     """Default rankings of the available methods."""
 
@@ -634,7 +637,7 @@ ROWLINSON_POLING = 'ROWLINSON_POLING'
 ROWLINSON_BONDI = 'ROWLINSON_BONDI'
 DADGOSTAR_SHAW = 'DADGOSTAR_SHAW'
 
-heat_capacity_liquid_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
+heat_capacity_liquid_methods = [HEOS_FIT, ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
                       WEBBOOK_SHOMATE, VDI_TABULAR, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
@@ -741,8 +744,13 @@ class HeatCapacityLiquid(TDependentProperty):
 
         Constant values tabulated in [4]_ at 298.15 K; data is available for 433
         liquids.
+
     **WEBBOOK_SHOMATE**:
         Shomate form coefficients from [6]_ for ~200 compounds.
+
+    **HEOS_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        fundamental helmholtz equations of state as calculated with REFPROP
 
     See Also
     --------
@@ -797,7 +805,7 @@ class HeatCapacityLiquid(TDependentProperty):
     the critical point, this value can be obscenely high."""
 
 
-    ranked_methods = [ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
+    ranked_methods = [HEOS_FIT, ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
                       WEBBOOK_SHOMATE, miscdata.JANAF, VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,

@@ -124,7 +124,7 @@ from fluids.numerics import brenth, exp, horner, isinf, isnan, log, trunc_log
 from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_viscosity
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, MixtureProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, REFPROP_FIT, MixtureProperty, TPDependentProperty
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import VolumeGas, VolumeLiquid
 
@@ -136,7 +136,7 @@ LETSOU_STIEL = 'LETSOU_STIEL'
 PRZEDZIECKI_SRIDHAR = 'PRZEDZIECKI_SRIDHAR'
 LUCAS = 'LUCAS'
 
-viscosity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
+viscosity_liquid_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                          VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
 """Holds all low-pressure methods available for the ViscosityLiquid class, for
@@ -241,6 +241,9 @@ class ViscosityLiquid(TPDependentProperty):
     **JOBACK**:
         An estimation method for organic substances in [5]_; this also requires
         molecular weight as an input.
+    **REFPROP_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        the equations implemented in REFPROP.
 
     High pressure methods:
 
@@ -328,7 +331,7 @@ class ViscosityLiquid(TPDependentProperty):
     """Maximum valid value of liquid viscosity. Generous limit, as
     the value is that of bitumen in a Pitch drop experiment."""
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
+    ranked_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                       VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                       VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
     """Default rankings of the low-pressure methods."""
@@ -690,7 +693,7 @@ YOON_THODOS = 'YOON_THODOS'
 STIEL_THODOS = 'STIEL_THODOS'
 LUCAS_GAS = 'LUCAS_GAS'
 
-viscosity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
+viscosity_gas_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                          STIEL_THODOS, LUCAS_GAS]
 """Holds all low-pressure methods available for the ViscosityGas
 class, for use in iterating over them."""
@@ -773,6 +776,9 @@ class ViscosityGas(TPDependentProperty):
     **VDI_TABULAR**:
         Tabular data in [2]_ along the saturation curve; interpolation is as
         set by the user or the default.
+    **REFPROP_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        the equations implemented in REFPROP.
 
     High pressure methods:
 
@@ -828,7 +834,7 @@ class ViscosityGas(TPDependentProperty):
     property_max = 1E-3
     """Maximum valid value of gas viscosity. Might be too high, or too low."""
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
+    ranked_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                       STIEL_THODOS, LUCAS_GAS]
     """Default rankings of the low-pressure methods."""
     ranked_methods_P = [COOLPROP]

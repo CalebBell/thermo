@@ -90,7 +90,7 @@ from chemicals.vapor_pressure import (
 from fluids.numerics import NoSolutionError, exp, isnan, log
 
 from thermo.coolprop import PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, IAPWS, VDI_PPDS, VDI_TABULAR, TDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, IAPWS, VDI_PPDS, VDI_TABULAR, HEOS_FIT, TDependentProperty
 
 """
 Move this to its own file?
@@ -158,7 +158,7 @@ AMBROSE_WALTON = 'AMBROSE_WALTON'
 SANJARI = 'SANJARI'
 EDALAT = 'EDALAT'
 
-vapor_pressure_methods = [IAPWS,
+vapor_pressure_methods = [IAPWS, HEOS_FIT,
                           WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                           ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
@@ -257,6 +257,9 @@ class VaporPressure(TDependentProperty):
     **ALCOCK_ELEMENTS**:
         A collection of vapor pressure data for metallic elements, in
         :obj:`chemicals.dippr.EQ101` form [7]_
+    **HEOS_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        fundamental helmholtz equations of state as calculated with REFPROP
 
     See Also
     --------
@@ -329,7 +332,7 @@ class VaporPressure(TDependentProperty):
     point estimated for Iridium; Mercury's 160 MPa critical point is the
     highest known."""
 
-    ranked_methods = [IAPWS, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
+    ranked_methods = [IAPWS, HEOS_FIT, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                       ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]

@@ -318,9 +318,10 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
     calc_pts_np = np.array(calc_pts)
 
     max_ratio, min_ratio = float(max(calc_pts_np/actual_pts)), float(min(calc_pts_np/actual_pts))
+    # max_ratio, min_ratio = max(ARDs), max(ARDs)
     return err_avg, err_std, min_ratio, max_ratio, calc_pts
 
-def select_index_from_stats(stats, ns):
+def select_index_from_stats(stats, ns, selection_criteria=None):
     lowest_err_avg, lowest_err_std, lowest_err = 1e100, 1e100, 1e100
     lowest_err_avg_idx, lowest_err_std_idx, lowest_err_idx = None, None, None
     for i, ((err_avg, err_std, min_ratio, max_ratio, _),n) in enumerate(zip(stats, ns)):
@@ -334,6 +335,10 @@ def select_index_from_stats(stats, ns):
         if lowest_err_here < lowest_err:
             lowest_err = lowest_err_here
             lowest_err_idx = i
+        if selection_criteria is not None and selection_criteria(*stats[i]):
+            return i
+    # return lowest_err_idx
+
     if lowest_err_avg_idx == lowest_err_std_idx == lowest_err_idx:
         return lowest_err_avg_idx
     elif lowest_err_avg_idx == lowest_err_std_idx:
@@ -346,20 +351,20 @@ def select_index_from_stats(stats, ns):
 def fit_many_cheb_poly(func, low, high, ns, eval_pts=30,
                   interpolation_property=None, interpolation_property_inv=None,
                   interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
-                  arg_func=None, method=FIT_CHEBTOOLS_POLY):
+                  arg_func=None, method=FIT_CHEBTOOLS_POLY, data=None):
 
     def a_fit(n, eval_pts=eval_pts):
         coeffs = fit_polynomial(func, low, high, n,
                                 interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
                                 interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
-                                arg_func=arg_func, method=method)
+                                arg_func=arg_func, method=method, data=data)
 
         method2 = FIT_METHOD_MAP[method]
         err_avg, err_std, min_ratio, max_ratio, calc_pts = poly_fit_statistics(func, coeffs, low, high, pts=eval_pts,
                                 interpolation_property_inv=interpolation_property_inv,
                                 interpolation_x=interpolation_x,
-                                arg_func=arg_func, method=method2)
-        return coeffs, err_avg, err_std, min_ratio, max_ratio
+                                arg_func=arg_func, method=method2, data=data)
+        return coeffs, err_avg, err_std, min_ratio, max_ratio, calc_pts
 
     worked_ns, worked_coeffs, worked_stats = [], [], []
 
@@ -377,12 +382,12 @@ def fit_many_cheb_poly(func, low, high, ns, eval_pts=30,
 def fit_cheb_poly_auto(func, low, high, start_n=3, max_n=20, eval_pts=100,
                   interpolation_property=None, interpolation_property_inv=None,
                   interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
-                  arg_func=None, method=FIT_CHEBTOOLS_POLY):
+                  arg_func=None, method=FIT_CHEBTOOLS_POLY, selection_criteria=None, data=None):
     worked_ns, worked_coeffs, worked_stats = fit_many_cheb_poly(func, low, high, ns=range(start_n, max_n+1),
                   interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
                   interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
-                  arg_func=arg_func, eval_pts=eval_pts, method=method)
-    idx = select_index_from_stats(worked_stats, worked_ns)
+                  arg_func=arg_func, eval_pts=eval_pts, method=method, data=data)
+    idx = select_index_from_stats(worked_stats, worked_ns, selection_criteria=selection_criteria)
 
     return worked_ns[idx], worked_coeffs[idx], worked_stats[idx]
 

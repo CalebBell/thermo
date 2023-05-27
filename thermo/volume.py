@@ -143,7 +143,7 @@ from fluids.numerics import exp, horner, horner_and_der2, isnan, linspace, np, p
 from thermo import electrochem
 from thermo.coolprop import CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_density
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, LINEAR, VDI_PPDS, VDI_TABULAR, MixtureProperty, TDependentProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, LINEAR, VDI_PPDS, VDI_TABULAR, HEOS_FIT, MixtureProperty, TDependentProperty, TPDependentProperty
 from thermo.vapor_pressure import VaporPressure
 
 
@@ -188,7 +188,7 @@ CAMPBELL_THODOS = 'CAMPBELL_THODOS'
 CRC_INORG_L = 'CRC_INORG_L'
 CRC_INORG_L_CONST = 'CRC_INORG_L_CONST'
 
-volume_liquid_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
+volume_liquid_methods = [HEOS_FIT, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                          HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
                          CRC_INORG_L_CONST, COMMON_CHEMISTRY, MMSNM0, HTCOSTALD,
                          YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,
@@ -306,6 +306,9 @@ class VolumeLiquid(TPDependentProperty):
         CoolProp external library; with select fluids from its library.
         Range is limited to that of the equations of state it uses, as
         described in [5]_. Very slow.
+    **HEOS_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        fundamental helmholtz equations of state as calculated with REFPROP
     **CRC_INORG_L_CONST**:
         Constant inorganic liquid densities, in [4]_.
     **VDI_TABULAR**:
@@ -380,7 +383,7 @@ class VolumeLiquid(TPDependentProperty):
     property_max = 2e-3
     """Maximum valid value of liquid molar volume. Generous limit."""
 
-    ranked_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
+    ranked_methods = [HEOS_FIT, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                       HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
                       CRC_INORG_L_CONST, COMMON_CHEMISTRY, MMSNM0, HTCOSTALD,
                       YEN_WOODS_SAT, RACKETT, YAMADA_GUNN,

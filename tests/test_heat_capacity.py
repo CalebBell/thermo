@@ -25,7 +25,7 @@ import pytest
 from chemicals.utils import ws_to_zs
 import json
 from thermo.heat_capacity import *
-from thermo.heat_capacity import TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW, ROWLINSON_BONDI, ZABRANSKY_QUASIPOLYNOMIAL_C, CRCSTD, ROWLINSON_POLING, POLING_CONST, ZABRANSKY_SPLINE_SAT, DADGOSTAR_SHAW, COOLPROP, ZABRANSKY_SPLINE_C, VDI_TABULAR, WEBBOOK_SHOMATE, JOBACK
+from thermo.heat_capacity import HEOS_FIT, TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW, ROWLINSON_BONDI, ZABRANSKY_QUASIPOLYNOMIAL_C, CRCSTD, ROWLINSON_POLING, POLING_CONST, ZABRANSKY_SPLINE_SAT, DADGOSTAR_SHAW, COOLPROP, ZABRANSKY_SPLINE_C, VDI_TABULAR, WEBBOOK_SHOMATE, JOBACK
 from random import uniform
 from math import *
 from fluids.numerics import linspace, logspace, NotBoundedError, assert_close, assert_close1d
@@ -56,7 +56,8 @@ def test_HeatCapacityGas():
                      POLING_CONST: 65.21,
                      CRCSTD: 65.6,
                      LASTOVKA_SHAW: 71.07236200126606,
-                     JOBACK: 65.74656180000001}
+                     JOBACK: 65.74656180000001,
+                     HEOS_FIT: 66.25906466813824}
 
     T = 305.0
     Cps_calc = {}

@@ -150,7 +150,7 @@ from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import thermal_conductivity_Magomedov
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, MixtureProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, REFPROP_FIT, MixtureProperty, TPDependentProperty
 from thermo.viscosity import ViscosityGas
 from thermo.volume import VolumeGas
 
@@ -164,7 +164,7 @@ LAKSHMI_PRASAD = 'LAKSHMI_PRASAD'
 MISSENARD = 'MISSENARD'
 DIPPR_9G = 'DIPPR_9G'
 
-thermal_conductivity_liquid_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS,
+thermal_conductivity_liquid_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS,
                                        VDI_TABULAR, GHARAGHEIZI_L,
                                        SHEFFY_JOHNSON, SATO_RIEDEL,
                                        LAKSHMI_PRASAD, BAHADORI_L,
@@ -256,6 +256,9 @@ class ThermalConductivityLiquid(TPDependentProperty):
     **VDI_TABULAR**:
         Tabular data in [2]_ along the saturation curve; interpolation is as
         set by the user or the default.
+    **REFPROP_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        the equations implemented in REFPROP.
 
     High pressure methods:
 
@@ -313,7 +316,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
     property_max = 10.0
     """Maximum valid value of liquid thermal conductivity. Generous limit."""
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,
+    ranked_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,
                       GHARAGHEIZI_L, SHEFFY_JOHNSON, SATO_RIEDEL,
                       LAKSHMI_PRASAD, BAHADORI_L, NICOLA, NICOLA_ORIGINAL]
     """Default rankings of the low-pressure methods."""
@@ -809,7 +812,7 @@ DIPPR_9B = 'DIPPR_9B'
 
 
 
-thermal_conductivity_gas_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_G,
+thermal_conductivity_gas_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI_G,
                                     DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
                                     EUCKEN, BAHADORI_G]
 """Holds all low-pressure methods available for the :obj:`ThermalConductivityGas`
@@ -910,6 +913,9 @@ class ThermalConductivityGas(TPDependentProperty):
     **VDI_TABULAR**:
         Tabular data in [2]_ along the saturation curve; interpolation is as
         set by the user or the default.
+    **REFPROP_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        the equations implemented in REFPROP.
 
     High pressure methods:
 
@@ -971,7 +977,7 @@ class ThermalConductivityGas(TPDependentProperty):
     property_max = 10
     """Maximum valid value of gas thermal conductivity. Generous limit."""
 
-    ranked_methods = [COOLPROP, VDI_PPDS, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, DIPPR_9B,
+    ranked_methods = [REFPROP_FIT, COOLPROP, VDI_PPDS, DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_G, DIPPR_9B,
                       CHUNG, ELI_HANLEY, EUCKEN_MOD, EUCKEN,
                       BAHADORI_G]
     """Default rankings of the low-pressure methods."""

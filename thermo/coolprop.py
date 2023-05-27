@@ -237,6 +237,7 @@ def store_coolprop_fluids():
 @mark_numba_incompatible
 def load_coolprop_fluids(depth=0):
     import json
+    1/0
 
     import CoolProp
     ver = CoolProp.__version__

@@ -224,8 +224,57 @@ from thermo.utils.names import (
     STABLEPOLY_FIT,
     STABLEPOLY_FIT_LN_TAU,
     VDI_TABULAR,
+    HEOS_FIT,
+    REFPROP_FIT,
 )
 from thermo.utils.functional import has_matplotlib
+
+
+'''This section is intended to be used in being able to add new data without
+changing code for each object.
+'''
+loaded_json_based_correlations = False
+
+def json_correlation_lookup(CAS, key):
+    if not loaded_json_based_correlations:
+        load_json_based_correlations()
+    
+    json_based_found = {}
+    
+    for db in json_based_correlation_data:
+        try:
+            found_stuff = db[CAS][key]
+            for k, v in found_stuff.items():
+                if k not in json_based_found:
+                    json_based_found[k] = v
+                else:
+                    json_based_found[k].update(v)
+        except KeyError:
+            continue
+    return json_based_found
+
+json_based_correlation_data = []
+json_based_correlation_paths = []
+
+def load_json_based_correlations():
+    global loaded_json_based_correlations
+    folder = os.path.join(source_path, 'Misc')
+    paths = [os.path.join(folder, 'refprop_correlations.json')]
+    json_based_correlation_data.clear()
+    json_based_correlation_paths.clear()
+    import json
+    for path in paths:
+        string = open(path)
+        regression_data = json.load(string)
+        string.close()
+        json_based_correlation_data.append(regression_data)
+        json_based_correlation_paths.append(path)
+    loaded_json_based_correlations = True
+
+
+
+
+
 
 def generate_fitting_function(model,
                               param_order,
@@ -1370,6 +1419,8 @@ class TDependentProperty:
 
         return ans
 
+    extra_correlations_internal = set([REFPROP_FIT, HEOS_FIT])
+
     def __repr__(self):
         r'''Create and return a string representation of the object. The design
         of the return string is such that it can be :obj:`eval`'d into itself.
@@ -1420,10 +1471,19 @@ class TDependentProperty:
             base += f'poly_fit_ln_tau=({self.poly_fit_ln_tau_Tmin}, {self.poly_fit_ln_tau_Tmax}, {self.poly_fit_ln_tau_Tc}, {self.poly_fit_ln_tau_coeffs}), '
             # if 'Tc=' not in base:
             #     base += 'Tc=%s, ' %(self.poly_fit_ln_tau_Tc)
+
+        
         for k in self.correlation_parameters.values():
             extra_model = getattr(self, k, None)
             if extra_model:
-                base += f'{k}={extra_model}, '
+                # Remove any internal models that happen to use the same infrastructure
+                extra_model = extra_model.copy()
+                for extra_added_corr in self.extra_correlations_internal:
+                    if extra_added_corr in extra_model:
+                        del extra_model[extra_added_corr]
+                if len(extra_model):
+                    # Only add the string if we still have anything
+                    base += f'{k}={extra_model}, '
 
 
         if base[-2:] == ', ':
@@ -1698,14 +1758,14 @@ class TDependentProperty:
         return self._generate_polynomial(func=func, low=low, high=high, n=n, start_n=start_n, max_n=max_n,
                                         eval_pts=eval_pts, fit_form=fit_form, fit_method=fit_method)
 
-    def polynomial_from_data(self, Ts, values, n, fit_form=POLY_FIT, fit_method=None):
+    def polynomial_from_data(self, Ts, values, n, start_n=None, max_n=None, fit_form=POLY_FIT, fit_method=None, selection_criteria=None):
         func = lambda T: interp(T, Ts, values)
         low = min(Ts)
         high = max(Ts)
-        return self._generate_polynomial(func=func, low=low, high=high, start_n=None, max_n=None,
-                                n=n, eval_pts=True, fit_form=fit_form, fit_method=fit_method, data=(Ts, values))
+        return self._generate_polynomial(func=func, low=low, high=high, start_n=start_n, max_n=max_n,
+                                n=n, eval_pts=True, fit_form=fit_form, fit_method=fit_method, data=(Ts, values), selection_criteria=selection_criteria)
 
-    def _generate_polynomial(self, func, low, high, n, start_n, max_n, eval_pts, fit_form, fit_method, data=None):
+    def _generate_polynomial(self, func, low, high, n, start_n, max_n, eval_pts, fit_form, fit_method, data=None, selection_criteria=None):
         # If data (Ts, values) is given do the stuff on those
         from thermo.fitting import FIT_CHEBTOOLS_POLY, fit_cheb_poly_auto, fit_polynomial, poly_fit_statistics
         interpolation_T = lambda x: x
@@ -1746,7 +1806,7 @@ class TDependentProperty:
                       interpolation_property_inv=interpolation_property_inv,
                       interpolation_x=interpolation_T,
                       interpolation_x_inv=interpolation_T_inv,
-                      start_n=start_n, max_n=max_n, eval_pts=eval_pts, method=fit_method)
+                      start_n=start_n, max_n=max_n, eval_pts=eval_pts, method=fit_method, selection_criteria=selection_criteria, data=data)
         else:
 
             coeffs = fit_polynomial(func, low=low, high=high, n=n,
@@ -4317,6 +4377,18 @@ class TDependentProperty:
         exp_stablepoly_fit = kwargs.pop('exp_stablepoly_fit', None)
         stablepoly_fit_ln_tau = kwargs.pop('stablepoly_fit_ln_tau', None)
         exp_stablepoly_fit_ln_tau = kwargs.pop('exp_stablepoly_fit_ln_tau', None)
+
+        try:
+            CASRN = self.CASRN
+        except AttributeError:
+            CASRN = '' # some tests don't have this
+        if CASRN:
+            something = json_correlation_lookup(CASRN, self.__class__.__name__)
+            for key, json_based_data in something.items():
+                if key in kwargs:
+                    kwargs[key].update(json_based_data)
+                else:
+                    kwargs[key] = json_based_data
 
         if kwargs:
             correlation_keys_to_parameters = self.correlation_keys_to_parameters

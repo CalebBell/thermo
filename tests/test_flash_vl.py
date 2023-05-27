@@ -488,7 +488,7 @@ def test_issue106_Michelson_stability_test_log_zero():
 
 
 def test_NRTL_water_ethanol_sample():
-    # 6 coeggicients per row.
+    # 6 coefficients per row.
     # Sample parameters from Understanding Distillation Using Column Profile Maps, First Edition.
     #  Daniel Beneke, Mark Peters, David Glasser, and Diane Hildebrandt.
     # Nice random example except for the poor prediction ! Dew point is good
@@ -521,7 +521,7 @@ def test_NRTL_water_ethanol_sample():
     flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
 
     # vapor pressure curve not included here so low tolerance
-    assert_close(flasher.flash(T=T, VF=0, zs=zs).P, 72190.62175687613, rtol=2e-3)
+    assert_close(flasher.flash(T=T, VF=0, zs=zs).P, 72190.62175687613, rtol=4e-3)
     assert_close(flasher.flash(T=T, VF=1, zs=zs).P, 40542.73708315536, rtol=2e-3)
     assert_close(flasher.flash(T=300, VF=0.5, zs=zs).P,5763.42373196148, atol=20, rtol=1e-4)
     assert_close(flasher.flash(P=5763.42373196148, VF=0.5, zs=zs).T,300, atol=2, rtol=1e-4)

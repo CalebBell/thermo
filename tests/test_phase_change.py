@@ -136,7 +136,7 @@ def test_EnthalpyVaporization_CoolProp():
     obj = EnthalpyVaporization(CASRN='7732-18-5', Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344,
                          similarity_variable=0.16652530518537598, Psat=3167, Zl=1.0, Zg=0.96,
                          extrapolation='Watson')
-    obj.method == COOLPROP
+    obj.method = COOLPROP
     assert 0 == obj(obj.Tc)
     assert_close(obj(1e-5), 54787.16649491286, rtol=1e-4)
 

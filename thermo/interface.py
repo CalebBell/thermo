@@ -84,7 +84,7 @@ from chemicals.utils import Vm_to_rho, mixing_simple, none_and_length_check, pro
 from fluids.numerics import isnan
 
 from thermo.heat_capacity import HeatCapacityLiquid
-from thermo.utils import IAPWS, LINEAR, VDI_TABULAR, MixtureProperty, TDependentProperty
+from thermo.utils import IAPWS, LINEAR, REFPROP_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
 from thermo.volume import VolumeLiquid
 
 STREFPROP = 'REFPROP'
@@ -101,7 +101,7 @@ ALEEM = 'Aleem'
 VDI_PPDS = 'VDI_PPDS'
 
 
-surface_tension_methods = [IAPWS, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
+surface_tension_methods = [IAPWS, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                            JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                            ZUO_STENBY, ALEEM]
 """Holds all methods available for the :obj:`SurfaceTension` class, for use in
@@ -191,6 +191,9 @@ class SurfaceTension(TDependentProperty):
     **VDI_TABULAR**:
         Tabular data in [6]_ along the saturation curve; interpolation is as
         set by the user or the default.
+    **REFPROP_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        the equations implemented in REFPROP.
 
     See Also
     --------
@@ -248,7 +251,7 @@ class SurfaceTension(TDependentProperty):
     """Whether or not the property is declining and reaching zero at the
     critical point."""
 
-    ranked_methods = [IAPWS, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
+    ranked_methods = [IAPWS, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                       JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                       ZUO_STENBY, ALEEM]
     """Default rankings of the available methods."""

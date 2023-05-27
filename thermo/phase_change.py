@@ -70,7 +70,7 @@ from fluids.numerics import isnan
 
 from thermo.coolprop import CoolProp_failing_PT_flashes, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacitySolid
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, TDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, HEOS_FIT, TDependentProperty
 
 CRC_HVAP_TB = 'CRC_HVAP_TB'
 CRC_HVAP_298 = 'CRC_HVAP_298'
@@ -87,7 +87,7 @@ CHEN = 'CHEN'
 LIU = 'LIU'
 VETERE = 'VETERE'
 
-enthalpy_vaporization_methods = [DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR,
+enthalpy_vaporization_methods = [HEOS_FIT, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR,
                                  MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, ALIBAKHSHI,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,
@@ -199,6 +199,9 @@ class EnthalpyVaporization(TDependentProperty):
         in [7]_, with constants for ~2000 chemicals from the DIPPR database.
         Valid up to 100 K below the critical point, and 50 K under the boiling
         point.
+    **HEOS_FIT**:
+        A series of higher-order polynomial fits to the calculated results from
+        fundamental helmholtz equations of state as calculated with REFPROP
 
     See Also
     --------
@@ -259,7 +262,7 @@ class EnthalpyVaporization(TDependentProperty):
     """Whether or not the property is declining and reaching zero at the
     critical point."""
 
-    ranked_methods = [COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, MORGAN_KOBAYASHI,
+    ranked_methods = [HEOS_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, VDI_TABULAR,
                       ALIBAKHSHI,
                       CRC_HVAP_TB, CRC_HVAP_298, GHARAGHEIZI_HVAP_298,

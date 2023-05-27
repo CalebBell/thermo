@@ -96,6 +96,8 @@ from .names import (
     STABLEPOLY_FIT_LN_TAU,
     VDI_PPDS,
     VDI_TABULAR,
+    HEOS_FIT,
+    REFPROP_FIT
 )
 from .t_dependent_property import *
 from .tp_dependent_property import *
@@ -108,5 +110,5 @@ __all__ = (
     'NEGLIGIBLE', 'LINEAR', 'POLY_FIT', 'EXP_POLY_FIT', 'POLY_FIT_LN_TAU', 'EXP_POLY_FIT_LN_TAU',
     'STABLEPOLY_FIT', 'EXP_STABLEPOLY_FIT', 'STABLEPOLY_FIT_LN_TAU', 'EXP_STABLEPOLY_FIT_LN_TAU',
     'CHEB_FIT', 'EXP_CHEB_FIT', 'CHEB_FIT_LN_TAU', 'EXP_CHEB_FIT_LN_TAU', 'IAPWS', 'DIPPR_PERRY_8E',
-    'VDI_TABULAR', 'VDI_PPDS', 'COOLPROP', 'EOS'
+    'VDI_TABULAR', 'VDI_PPDS', 'COOLPROP', 'EOS', 'HEOS_FIT', 'REFPROP_FIT'
 )
