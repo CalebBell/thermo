@@ -237,7 +237,7 @@ def set_user_chemical_property_databases(paths):
         loaded_user_dbs.append(regression_data)
         loaded_user_db_paths.append(path)
 
-class UserDatabaseContect:
+class UserDatabaseContext:
     def __init__(self, paths):
         self.old_loaded_user_dbs = loaded_user_dbs.copy()
         self.old_loaded_user_db_paths = loaded_user_db_paths.copy()
