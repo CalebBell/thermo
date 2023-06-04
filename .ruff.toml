@@ -26,6 +26,9 @@ extend-ignore = [
     # maybe these
     "PLE0605",
     "PLE0604",
+    
+    "TD002","TD003","TD004","TD005",
+
 
     # Originally from astropy's pyproject.toml, see about removing many of them later
     

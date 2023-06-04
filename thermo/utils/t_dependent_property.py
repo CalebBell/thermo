@@ -1864,7 +1864,7 @@ class TDependentProperty:
                           do_statistics=False, guesses=None,
                           solver_kwargs=None, objective='MeanSquareErr',
                           multiple_tries=False, multiple_tries_max_err=1e-5,
-                          multiple_tries_max_objective='MeanRelErr'):
+                          multiple_tries_max_objective='MeanRelErr', params_points_max=0):
         r'''Method to fit T-dependent property data to one of the available
         model correlations.
 
@@ -1918,6 +1918,10 @@ class TDependentProperty:
             with lower error than this, no further guesses are tried, [-]
         multiple_tries_max_objective : str
             The error criteria to use for minimization, [-]
+        params_points_max : int
+            When this is 0, a fit can be performed to a correlation with as
+            many points as correlation parameters. If this is 1, a correlation
+            can only be fit with points-1 parameters, and so on, [-]
 
         Returns
         -------
@@ -1955,10 +1959,14 @@ class TDependentProperty:
         initial_guesses = fit_data.get('initial_guesses', None)
         all_fit_parameters = fit_parameters
 
+        if pts <= 2:
+            # Allow linear fits from 2 points
+            params_points_max = 0
+
         use_fit_parameters = []
         for k in fit_parameters:
             if k not in model_kwargs:
-                if len(use_fit_parameters)< pts or k not in optional_args:
+                if (len(use_fit_parameters) + params_points_max) < pts or k not in optional_args:
                     use_fit_parameters.append(k)
         fit_parameters = use_fit_parameters
         # if len(fit_parameters) > pts:
