@@ -124,9 +124,7 @@ warn_chemicals_msg ="""`chemicals <https://github.com/CalebBell/chemicals>`_ is 
             as you would like, and you know of a better method or source,
             new methods and sources can be added to
             `chemicals <https://github.com/CalebBell/chemicals>`_
-            fairly easily once the data entry is complete.
-            It is not feasible to add individual components,
-            so please submit a complete table of data from the source."""
+            fairly easily once the data entry is complete."""
 
 
 class ChemicalConstantsPackage:

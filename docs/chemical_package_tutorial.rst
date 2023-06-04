@@ -77,13 +77,13 @@ A convenience method exists to load these constants from a different data files 
 
 >>> obj = ChemicalConstantsPackage.constants_from_IDs(['methanol', 'ethanol', 'isopropanol'])
 >>> obj.Tbs
-[337.65, 351.39, 355.36]
+[337.632, 351.570441659, 355.36]
 
 When working with a fixed set of components, it may be a good idea to take this generated package, select only those properties being used, convert it to a string, and then embed that new object in a program. This will remove the need to load various data files, and if `chemicals` updates data files, different results won't be obtained from your constants package.
 
 >>> small_obj = obj.subset(properties=('names', 'CASs', 'MWs', 'Tcs', 'Pcs', 'omegas', 'Tbs', 'Tms', 'atomss'))
 >>> small_obj
-ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4, 'O': 1}, {'C': 2, 'H': 6, 'O': 1}, {'C': 3, 'H': 8, 'O': 1}], CASs=['67-56-1', '64-17-5', '67-63-0'], MWs=[32.04186, 46.06844, 60.09502], names=['methanol', 'ethanol', 'isopropanol'], omegas=[0.559, 0.635, 0.665], Pcs=[8084000.0, 6137000.0, 4764000.0], Tbs=[337.65, 351.39, 355.36], Tcs=[512.5, 514.0, 508.3], Tms=[175.15, 159.05, 183.65])
+ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4, 'O': 1}, {'C': 2, 'H': 6, 'O': 1}, {'C': 3, 'H': 8, 'O': 1}], CASs=['67-56-1', '64-17-5', '67-63-0'], MWs=[32.04186, 46.06844, 60.09502], names=['methanol', 'ethanol', 'isopropanol'], omegas=[0.5625, 0.646, 0.665], Pcs=[8215850.0, 6268000.0, 4764000.0], Tbs=[337.632383296, 351.570441659, 355.36], Tcs=[513.38, 514.71, 508.3], Tms=[175.15, 159.05, 183.65])
 
 Once the object is printed, the generated text can be copy/pasted as valid Python into a program:
 
@@ -103,10 +103,7 @@ Once the object is printed, the generated text can be copy/pasted as valid Pytho
     as you would like, and you know of a better method or source,
     new methods and sources can be added to
     `chemicals <https://github.com/CalebBell/chemicals>`_
-    fairly easily once the data entry is complete.
-    It is not feasible to add individual components,
-    so please submit a complete table of data from the source.
-    
+    fairly easily once the data entry is complete.    
 
 Storing and Loading ChemicalConstantsPackage Objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
