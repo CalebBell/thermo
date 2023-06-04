@@ -53,12 +53,12 @@ Temperature-dependent Methods
 As many methods may be available, a single method is always selected automatically during initialization. This method can be inspected with the :obj:`method <thermo.utils.TDependentProperty.method>` property; if no methods are available, `method` will be None. `method` is also a valid parameter when constructing the object, but if the method specified is not available an exception will be raised.
 
 >>> ethanol_psat.method, useless_psat.method
-('WAGNER_MCGARRY', None)
+('HEOS_FIT', None)
 
 All available methods can be found by inspecting the :obj:`all_methods <thermo.utils.TDependentProperty.all_methods>`  attribute:
 
 >>> ethanol_psat.all_methods # doctest: +SKIP
-{'ANTOINE_POLING', 'EDALAT', 'WAGNER_POLING', 'SANJARI', 'COOLPROP', 'LEE_KESLER_PSAT', 'DIPPR_PERRY_8E', 'VDI_PPDS', 'WAGNER_MCGARRY', 'VDI_TABULAR', 'AMBROSE_WALTON', 'BOILING_CRITICAL'}
+{'HEOS_FIT', 'WAGNER_POLING', 'WAGNER_MCGARRY', 'LEE_KESLER_PSAT', 'ANTOINE_WEBBOOK', 'AMBROSE_WALTON', 'DIPPR_PERRY_8E', 'VDI_PPDS', 'ANTOINE_POLING', 'COOLPROP', 'EDALAT', 'VDI_TABULAR', 'SANJARI', 'BOILING_CRITICAL'}
 
 Changing the method is as easy as setting a new value to the attribute:
 
@@ -258,7 +258,7 @@ As an example, we can compare the default vapor pressure formulation for n-hexan
 >>> from thermo import *
 >>> obj = VaporPressure(CASRN= '110-54-3')
 >>> obj(200)
-20.742
+20.39
 >>> f = lambda T: Antoine(T=T, A=3.45604+5, B=1044.038, C=-53.893)
 >>> obj.add_method(f=f, name='WebBook', Tmin=177.70, Tmax=264.93)
 >>> obj.method
@@ -480,7 +480,7 @@ To better understand what methods are available, the :obj:`valid_methods_P <ther
 >>> water_mu.valid_methods_P(T=300, P=1e9) # doctest: +SKIP
 ['LUCAS', 'COOLPROP']
 >>> water_mu.valid_methods_P(T=300, P=1e10)
-['LUCAS']
+['LUCAS', 'NEGLECT_P']
 >>> water_mu.valid_methods_P(T=900, P=1e6)
 ['LUCAS']
 
