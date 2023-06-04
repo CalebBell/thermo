@@ -169,17 +169,13 @@ class ChemicalConstants:
 empty_chemical_constants = ChemicalConstants(None)
 
 
-_chemical_cache = {}
-
 property_lock = False
 
 def lock_properties(status):
     global property_lock
-    global _chemical_cache
     if property_lock == status:
         return True
     else:
-        _chemical_cache.clear()
         property_lock = status
         return True
 
@@ -379,21 +375,6 @@ class Chemical: # pragma: no cover
     >>> N2.VaporPressure.method = 'LEE_KESLER_PSAT'
     >>> N2.Psat
     134987.76815364443
-
-    For memory reduction, these objects are shared by all chemicals which are
-    the same; new instances will use the same specified methods.
-
-    >>> N2_2 = Chemical('nitrogen')
-    >>> N2_2.VaporPressure.user_methods
-    ['LEE_KESLER_PSAT']
-
-    To disable this behavior, set thermo.chemical.caching to False.
-
-    >>> import thermo
-    >>> thermo.chemical.caching = False
-    >>> N2_3 = Chemical('nitrogen')
-    >>> N2_3.VaporPressure.user_methods
-    []
 
     Properties may also be plotted via these objects:
 
@@ -781,36 +762,29 @@ class Chemical: # pragma: no cover
             self.ChemicalMetadata = search_chemical(ID)
             self.CAS = self.ChemicalMetadata.CASs
 
-        if self.CAS in _chemical_cache and caching:
-            self.__dict__.update(_chemical_cache[self.CAS].__dict__)
-            self.autocalc = autocalc
-            self.calculate(T, P)
-        else:
-            self.autocalc = autocalc
-            if not isinstance(ID, dict):
-                self.PubChem = self.ChemicalMetadata.pubchemid
-                self.formula = self.ChemicalMetadata.formula
-                self.MW = molecular_weight(simple_formula_parser(self.formula)) # self.ChemicalMetadata.MW
-                self.smiles = self.ChemicalMetadata.smiles
-                self.InChI = self.ChemicalMetadata.InChI
-                self.InChI_Key = self.ChemicalMetadata.InChI_key
-                self.IUPAC_name = self.ChemicalMetadata.iupac_name.lower()
-                self.name = self.ChemicalMetadata.common_name.lower()
-                self.synonyms = self.ChemicalMetadata.synonyms
+        self.autocalc = autocalc
+        if not isinstance(ID, dict):
+            self.PubChem = self.ChemicalMetadata.pubchemid
+            self.formula = self.ChemicalMetadata.formula
+            self.MW = molecular_weight(simple_formula_parser(self.formula)) # self.ChemicalMetadata.MW
+            self.smiles = self.ChemicalMetadata.smiles
+            self.InChI = self.ChemicalMetadata.InChI
+            self.InChI_Key = self.ChemicalMetadata.InChI_key
+            self.IUPAC_name = self.ChemicalMetadata.iupac_name.lower()
+            self.name = self.ChemicalMetadata.common_name.lower()
+            self.synonyms = self.ChemicalMetadata.synonyms
 
-            self.atoms = simple_formula_parser(self.formula)
-            self.similarity_variable = similarity_variable(self.atoms, self.MW)
+        self.atoms = simple_formula_parser(self.formula)
+        self.similarity_variable = similarity_variable(self.atoms, self.MW)
 
-            self.eos_in_a_box = []
-            self.set_constant_sources()
-            self.set_constants()
-            self.set_eos(T=T, P=P)
-            self.set_TP_sources()
-            if self.autocalc:
-                self.set_ref()
-            self.calculate(T, P)
-            if len(_chemical_cache) < 1000:
-                _chemical_cache[self.CAS] = self
+        self.eos_in_a_box = []
+        self.set_constant_sources()
+        self.set_constants()
+        self.set_eos(T=T, P=P)
+        self.set_TP_sources()
+        if self.autocalc:
+            self.set_ref()
+        self.calculate(T, P)
 
 
 
