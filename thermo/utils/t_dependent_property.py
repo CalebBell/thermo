@@ -260,7 +260,8 @@ json_based_correlation_paths = []
 def load_json_based_correlations():
     global loaded_json_based_correlations
     folder = os.path.join(source_path, 'Misc')
-    paths = [os.path.join(folder, 'refprop_correlations.json')]
+    paths = [os.path.join(folder, 'refprop_correlations.json'),
+             os.path.join(folder, 'elements.json')]
     json_based_correlation_data.clear()
     json_based_correlation_paths.clear()
     import json

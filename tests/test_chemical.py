@@ -102,6 +102,10 @@ def test_Chemical_properties():
     assert_close(benzene.conductivity, 7.6e-06)
     assert_close(benzene.RI, 1.5011)
 
+    # mercury https://github.com/CalebBell/thermo/issues/133
+    Hg = Chemical('Hg')
+    assert_close(Hg.rho, 13533, atol=5)
+
 
 
 @pytest.mark.deprecated

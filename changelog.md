@@ -15,3 +15,4 @@
 ### Changed
 - Code cleanup with ruff (experiment)
 - Add accurate fits to pure-component temperature-dependent properties derived using REFPROP. This is the preferred method where available. As part of this effort, a way of adding new data to thermo using json files is being experimented with.
+- Add liquid density and viscosity correlation for 8 elements (experiment)
