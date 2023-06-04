@@ -211,15 +211,15 @@ class FlashVL(Flash):
     >>> zs = [0.965, 0.018, 0.017]
     >>> PT = flasher.flash(T=110.0, P=1e5, zs=zs)
     >>> PT.VF, PT.gas.zs, PT.liquid0.zs
-    (0.10365, [0.881788, 2.6758e-05, 0.11818], [0.97462, 0.02007, 0.005298])
+    (0.0890, [0.8688, 2.5765e-05, 0.13115], [0.9744, 0.01975, 0.00584])
 
     A few more flashes with the same system to showcase the functionality
     of the :obj:`flash <Flash.flash>` interface:
 
     >>> flasher.flash(P=1e5, VF=1, zs=zs).T
-    133.6
+    133.8
     >>> flasher.flash(T=133, VF=0, zs=zs).P
-    518367.4
+    515029.6
     >>> flasher.flash(P=PT.P, H=PT.H(), zs=zs).T
     110.0
     >>> flasher.flash(P=PT.P, S=PT.S(), zs=zs).T

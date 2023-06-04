@@ -34,24 +34,24 @@ from fluids.constants import R
 def test_Chemical_properties():
     w = Chemical('water')
     assert_close(w.Tm, 273.15)
-    assert_close(w.Tb, 373.124)
+    assert_close(w.Tb, 373.124296)
 
-    assert_close(w.Tc, 647.14)
-    assert_close(w.Pc, 22048320.0)
-    assert_close(w.Vc, 5.6e-05)
-    assert_close(w.omega, 0.344)
+    assert_close(w.Tc, 647.096)
+    assert_close(w.Pc, 22064000.)
+    assert_close(w.Vc, 5.594804e-05)
+    assert_close(w.omega, 0.3443)
 
-    assert_close(w.Zc, 0.2294728175007233, rtol=1E-5)
-    assert_close(w.rhoc, 321.7014285714285, rtol=1E-4)
-    assert_close(w.rhocm, 17857.142857142855, rtol=1E-4)
+    assert_close(w.Zc, 0.22943845208106295, rtol=1E-5)
+    assert_close(w.rhoc, 322.00021448462513, rtol=1E-4)
+    assert_close(w.rhocm, 17873.727995602905, rtol=1E-4)
 
-    assert_close(w.StielPolar, 0.023677, rtol=1E-3)
+    assert_close(w.StielPolar, 0.023504366573307456, rtol=1E-3)
 
     pentane = Chemical('pentane')
     assert_close(pentane.Tt, 143.483967, atol=.02)
 
     # Vapor pressure correlation did not extend down far enough once made strict
-    assert_close(pentane.Pt, 0.078247, rtol=1e-3)
+    assert_close(pentane.Pt, 0.0780279474319, rtol=1e-3)
 
     assert_close(pentane.Hfus, 116426.08509804323, rtol=1E-3)
     assert_close(pentane.Hfusm, 8400.0, rtol=1E-3)

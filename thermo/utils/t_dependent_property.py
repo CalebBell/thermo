@@ -4393,7 +4393,7 @@ class TDependentProperty:
             CASRN = self.CASRN
         except AttributeError:
             CASRN = '' # some tests don't have this
-        if CASRN:
+        if CASRN and load_data:
             something = json_correlation_lookup(CASRN, self.__class__.__name__)
             for key, json_based_data in something.items():
                 if key in kwargs:
