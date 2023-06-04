@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', 'pypy-3.6'] # pandas won't build c extensions on 'pypy-3.7' right now
+        python-version: ['3.8', '3.9', '3.10', '3.11', 'pypy3.9']
         os: [windows-latest, ubuntu-latest, macos-latest]
         architecture: ['x86', 'x64']
         exclude:
@@ -21,15 +21,9 @@ jobs:
           # numpy.distutils.system_info.NotFoundError: No lapack/blas resources found.
           # even 32 bit pypy2 or pypy3 doesn't work
           - os: windows-latest
-            python-version: pypy-3.6
-          - os: windows-latest
-            python-version: pypy-3.7
-          # pypy2 Failure building pandas wheels
-          # pypy3  error: library mach has Fortran sources but no Fortran compiler found
+            python-version: pypy3.9
           - os: macos-latest
-            python-version: pypy-3.6
-          - os: macos-latest
-            python-version: pypy-3.7
+            python-version: pypy3.9
           # no python builds available on macos 32 bit
           - os: macos-latest
             architecture: x86
@@ -52,9 +46,9 @@ jobs:
           - os: ubuntu-latest
             python-version: 3.6
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
@@ -83,6 +77,12 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements_test.txt') }}
         restore-keys: |
           ${{ runner.os }}-${{ runner.architecture }}-${{ runner.python-version }}pip-
+    - name: Install Ubuntu dependencies
+      if: startsWith(runner.os, 'Linux')
+      run: |
+        # Taken from scipy
+        sudo apt-get update
+        sudo apt-get install -y libopenblas-dev libatlas-base-dev liblapack-dev gfortran libgmp-dev libmpfr-dev libsuitesparse-dev ccache libmpc-dev
 
     - name: Install dependencies
       run: |
@@ -98,7 +98,7 @@ jobs:
       run: |
         pip install .
     - name: Generate Files
-      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == 'pypy-3.6' }}
+      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == 'pypy3.9' }}
       run: |
         python dev/dump_UNIFAC_assignments_to_sqlite.py
     - name: Uninstall thermo
