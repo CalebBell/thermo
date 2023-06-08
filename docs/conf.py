@@ -357,6 +357,7 @@ plot_apply_rcparams = True  # if context option is used
         #print app, what, name, obj, skip, options
         #print(dir(app))
     #return False
+katex_prerender = True
 
 import thermo
 try:
