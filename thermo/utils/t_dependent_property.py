@@ -4404,10 +4404,12 @@ class TDependentProperty:
 
         if kwargs:
             correlation_keys_to_parameters = self.correlation_keys_to_parameters
-            for key in list(kwargs.keys()):
+            # Iterate over all the dictionaries in reverse such that the first one is left as the default
+            for key in reversed(list(kwargs.keys())):
                 if key in correlation_keys_to_parameters:
                     correlation_dict = kwargs.pop(key)
                     correlation_name = correlation_keys_to_parameters[key]
+                    # Probably need to reverse this too
                     for corr_i, corr_kwargs in correlation_dict.items():
                         self.add_correlation(name=corr_i, model=correlation_name,
                                              **corr_kwargs)

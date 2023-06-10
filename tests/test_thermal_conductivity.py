@@ -270,6 +270,17 @@ def test_ThermalConductivityGas():
 
     assert ThermalConductivityGas.from_json(EtOH.as_json()) == EtOH
 
+@pytest.mark.meta_T_dept
+def test_T_dep_method_order_on_user_method():
+    obj = ThermalConductivityLiquid(CASRN="7782-39-0", MW=4.028204, Tm=18.73, Tb=23.6613157163, Tc=38.34,
+                            Pc=1679600.0, omega=-0.136, extrapolation="linear",
+                            DIPPR100_parameters={'MyFit': {'A': -22.928002619841955, 'B': 5.320164075971668, 'C': -0.5064115609146465, 'D': 0.025428456134642802, 'E': -0.0007100372345064564, 'F': 1.0455054169072437e-05, 'G': -6.346527689422835e-08, 'Tmax': 38.0, 'Tmin': 19.0}}
+                            )
+
+    assert obj.method == 'MyFit'
+
+
+
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityGas_fitting0():
