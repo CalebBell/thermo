@@ -1979,13 +1979,13 @@ class TDependentProperty:
             all_fit_parameter_options = []
             all_model_kwargs = []
             # check if there is a way to fit that does not use any optional args
-            required_args_test = required_args.copy()
+            required_args_fitting = required_args.copy()
             for test_token in ('Tc', 'Vc', 'Pc', 'Tm', 'Tb', 'Tc'):
                 try:
-                    required_args_test.remove(test_token)
+                    required_args_fitting.remove(test_token)
                 except:
                     pass
-            start_idx = 0 if required_args_test else 1
+            start_idx = 0 if required_args_fitting else 1
 
             for i in range(start_idx, len(optional_args)+1):
                 all_fit_parameter_options.append(optional_args[0:i])
@@ -2005,7 +2005,7 @@ class TDependentProperty:
                 SSE = stats['calc'] - data
                 SSE *= SSE
                 SSE = SSE.sum()
-                used_fit_parameters = len(the_fit_parameters) + len(required_args)
+                used_fit_parameters = len(the_fit_parameters) + len(required_args_fitting)
                 aic = AICc(parameters=used_fit_parameters, observations=pts, SSE=SSE)
                 bic = BIC(parameters=used_fit_parameters, observations=pts, SSE=SSE)
                 all_fits.append((fit, stats, aic, bic, used_fit_parameters))
