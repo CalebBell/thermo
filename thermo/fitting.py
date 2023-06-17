@@ -61,6 +61,25 @@ try:
 except:
     pass
 
+from math import log, pi
+
+def AICc(parameters, observations, SSE):
+    # need about 200 data points to not use the correction
+    # n/k < 40
+    # SSE is sum of squared errors
+    k = parameters
+    n = observations
+    if n - k - 1 == 0:
+        return 1e200
+#     return n*log(SSE/n) + 2.0*k + 2.0*k*(k+1)/(n-k-1) + n*log(2*pi) + n
+    return n*log(SSE/n) + 2.0*k +(2.0*k*k + 2*k)/(n-k-1) + n*log(2*pi) + n
+
+def BIC(parameters, observations, SSE):
+    k = parameters
+    n = observations
+    return n*log(SSE/n) + k*log(n) + n*log(2*pi) + n
+
+
 ChebTools = None
 
 FIT_CHEBTOOLS_CHEB = 'ChebTools'
