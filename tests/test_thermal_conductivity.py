@@ -141,6 +141,13 @@ def test_ThermalConductivityLiquid():
     assert hash(EtOH) == hash0
     assert hash(EtOH2) == hash0
 
+@pytest.mark.meta_T_dept
+def test_ThermalConductivity_elements_loaded():
+    obj = ThermalConductivityGas(CASRN='7704-34-9')
+    assert_close(obj(300, None), 0.014754055466195258, rtol=0.05)
+
+    obj = ThermalConductivityLiquid(CASRN='7704-34-9')
+    assert_close(obj(500, None), 0.1594980732253415, rtol=0.05)
 
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityLiquid_extrapolation_polyfit():
