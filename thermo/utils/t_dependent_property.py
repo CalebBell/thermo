@@ -209,7 +209,7 @@ from thermo.eos_alpha_functions import (
     Twu91_alpha_pure,
     Yu_Lu_alpha_pure,
 )
-from thermo.fitting import fit_customized
+from thermo.fitting import fit_customized, AICc, BIC
 from thermo.utils.names import (
     CHEB_FIT,
     CHEB_FIT_LN_TAU,
@@ -1865,7 +1865,8 @@ class TDependentProperty:
                           do_statistics=False, guesses=None,
                           solver_kwargs=None, objective='MeanSquareErr',
                           multiple_tries=False, multiple_tries_max_err=1e-5,
-                          multiple_tries_max_objective='MeanRelErr', params_points_max=0):
+                          multiple_tries_max_objective='MeanRelErr', params_points_max=0,
+                          model_selection=None):
         r'''Method to fit T-dependent property data to one of the available
         model correlations.
 
@@ -1923,6 +1924,10 @@ class TDependentProperty:
             When this is 0, a fit can be performed to a correlation with as
             many points as correlation parameters. If this is 1, a correlation
             can only be fit with points-1 parameters, and so on, [-]
+        model_selection : None or str
+            One of (None, 'AICc', 'BIC', or 'min(BIC, AICc)'). If set fits
+            with different numbers of parameters will be tried (if applicable to 
+            the model) and the best statistical fit will be chosen [-]
 
         Returns
         -------
@@ -1970,10 +1975,64 @@ class TDependentProperty:
                 if (len(use_fit_parameters) + params_points_max) < pts or k not in optional_args:
                     use_fit_parameters.append(k)
         fit_parameters = use_fit_parameters
-        # if len(fit_parameters) > pts:
-        #     for param in optional_args:
-        #         pass
-        #
+        if model_selection and optional_args:
+            all_fit_parameter_options = []
+            all_model_kwargs = []
+            # check if there is a way to fit that does not use any optional args
+            required_args_test = required_args.copy()
+            for test_token in ('Tc', 'Vc', 'Pc', 'Tm', 'Tb', 'Tc'):
+                try:
+                    required_args_test.remove(test_token)
+                except:
+                    pass
+            start_idx = 0 if required_args_test else 1
+
+            for i in range(start_idx, len(optional_args)+1):
+                all_fit_parameter_options.append(optional_args[0:i])
+                a_model_kwargs = {k: 0.0 for k in optional_args[i:]}
+                a_model_kwargs.update(model_kwargs)
+                all_model_kwargs.append(a_model_kwargs)
+            all_fits = []
+            for the_fit_parameters, a_model_kwargs in zip(all_fit_parameter_options, all_model_kwargs):
+                fit, stats = cls.fit_data_to_model(Ts=Ts, data=data, model=model, model_kwargs=a_model_kwargs,
+                          fit_method=fit_method, sigma=sigma, use_numba=use_numba,
+                          do_statistics=True, guesses=guesses,
+                          solver_kwargs=solver_kwargs, objective=objective,
+                          multiple_tries=multiple_tries, multiple_tries_max_err=multiple_tries_max_err,
+                          multiple_tries_max_objective=multiple_tries_max_objective, params_points_max=params_points_max,
+                          model_selection=None)
+                # compute the sum of squared error
+                SSE = stats['calc'] - data
+                SSE *= SSE
+                SSE = SSE.sum()
+                used_fit_parameters = len(the_fit_parameters) + len(required_args)
+                aic = AICc(parameters=used_fit_parameters, observations=pts, SSE=SSE)
+                bic = BIC(parameters=used_fit_parameters, observations=pts, SSE=SSE)
+                all_fits.append((fit, stats, aic, bic, used_fit_parameters))
+            
+            if model_selection == 'AICc':
+                sel = lambda x: x[2]
+                best_fit, stats, aic, bic, _ = min(all_fits, key=sel)
+            elif model_selection == 'BIC':
+                sel = lambda x: x[3]
+                best_fit, stats, aic, bic, _ = min(all_fits, key=sel)
+            elif model_selection == 'min(BIC, AICc)':
+                sel = lambda x: x[2]
+                best_fit_aic, stats_aic, _, _, parameters_aic = min(all_fits, key=sel)
+                sel = lambda x: x[3]
+                best_fit_bic, stats_bic, _, _, parameters_bic = min(all_fits, key=sel)
+                if parameters_aic <= parameters_bic:
+                    best_fit, stats  = best_fit_aic, stats_aic
+                else:
+                    best_fit, stats  = best_fit_bic, stats_bic
+            else:
+                raise ValueError("Unrecognized method")
+
+
+            if do_statistics:
+                return best_fit, stats
+            return best_fit
+
         param_order = required_args + optional_args
         const_kwargs = {}
         model_function_name = functions['f'].__name__

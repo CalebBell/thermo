@@ -71,12 +71,16 @@ def AICc(parameters, observations, SSE):
     n = observations
     if n - k - 1 == 0:
         return 1e200
+    elif SSE == 0.0:
+        return -1e100
 #     return n*log(SSE/n) + 2.0*k + 2.0*k*(k+1)/(n-k-1) + n*log(2*pi) + n
     return n*log(SSE/n) + 2.0*k +(2.0*k*k + 2*k)/(n-k-1) + n*log(2*pi) + n
 
 def BIC(parameters, observations, SSE):
     k = parameters
     n = observations
+    if SSE == 0.0:
+        return -1e100
     return n*log(SSE/n) + k*log(n) + n*log(2*pi) + n
 
 

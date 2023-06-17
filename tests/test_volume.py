@@ -371,6 +371,12 @@ def test_VolumeSolid_fitting1():
                           do_statistics=True, use_numba=False)
     assert stats['MAE'] < 1e-8
 
+    # Do the same with dropping parameters
+    for model_selection in ('AICc', 'BIC', 'min(BIC, AICc)'):
+        res, stats = VolumeSolid.fit_data_to_model(Ts=ammonia_Ts, data=ammonia_Vms, model='DIPPR100',
+                            do_statistics=True, use_numba=False, model_selection=model_selection)
+        assert res['B']== 0.0
+
 
     # Case where number of parameters bad, needed to drop a parameter
     kwargs = {'Ts': [700.0, 750.0, 800.0, 850.0, 900.0, 950.0], 
