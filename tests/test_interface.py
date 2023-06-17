@@ -84,6 +84,14 @@ def test_SurfaceTension_water_iapws():
     assert water(3) is not None
     assert water(3) > 0
 
+@pytest.mark.meta_T_dept
+def test_SurfaceTension_fits_to_data_mercury():
+    obj = SurfaceTension(CASRN='7439-97-6', Tc=1735.0)
+    assert_close(obj(300), 0.4740500003730662, rtol=1e-5)
+
+    assert obj(1734.9999) < 1e-4
+    assert obj(obj.Tc) == 0.0
+    assert obj(1) > obj(200)
 
 
 @pytest.mark.meta_T_dept

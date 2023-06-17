@@ -313,8 +313,9 @@ class ThermalConductivityLiquid(TPDependentProperty):
     """Allow tabular extrapolation by default."""
     property_min = 0.0
     """Mimimum valid value of liquid thermal conductivity."""
-    property_max = 10.0
-    """Maximum valid value of liquid thermal conductivity. Generous limit."""
+    property_max = 200.0
+    """Maximum valid value of liquid thermal conductivity. Organics are normally well under 10, 
+    however liquid metals are much higher - cooper peaks at around 175."""
 
     ranked_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,
                       GHARAGHEIZI_L, SHEFFY_JOHNSON, SATO_RIEDEL,
