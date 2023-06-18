@@ -99,6 +99,10 @@ def test_SurfaceTension_fits_to_data_sulfur():
     obj = SurfaceTension(CASRN="7704-34-9")
     assert_close(obj(500), 0.05184181941716021, rtol=0.08)
 
+@pytest.mark.meta_T_dept
+def test_SurfaceTension_fits_to_data_H2O2():
+    obj = SurfaceTension(CASRN='7722-84-1')
+    assert_close(obj(280), 0.07776090102150693, rtol=0.08)
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTensionJasperMissingLimits():
