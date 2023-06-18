@@ -43,8 +43,8 @@ Pure Liquid Surface Tension
 
 .. autodata:: surface_tension_methods
 
-Mixture Liquid Heat Capacity
-============================
+Mixture Surface Tension
+=======================
 .. autoclass:: SurfaceTensionMixture
     :members: calculate, test_method_validity,
               name, property_max, property_min,
@@ -159,7 +159,7 @@ class SurfaceTension(TDependentProperty):
     To iterate over all methods, use the list stored in
     :obj:`surface_tension_methods`.
 
-    ***IAPWS**:
+    **IAPWS**:
         The IAPWS formulation for water,
         :obj:`REFPROP_sigma <chemicals.interface.sigma_IAPWS>`
     **STREFPROP**:

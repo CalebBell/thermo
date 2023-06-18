@@ -1493,6 +1493,21 @@
     }
   },
   "7704-34-9": {
+    "SurfaceTension": {
+      "REFPROP_sigma_parameters": {
+        "Fit 2023": {
+          "Tc": 1314.0,
+          "Tmax": 887.15,
+          "Tmin": 392.54999999999995,
+          "n0": 19.791482766233035,
+          "n1": 0.799844226090336,
+          "n2": 0.0,
+          "sigma0": 4.500400714534873,
+          "sigma1": 0.07553164439099966,
+          "sigma2": 0.0
+        }
+      }
+    },
     "ThermalConductivityGas": {
       "DIPPR100_parameters": {
         "Fit 2023": {

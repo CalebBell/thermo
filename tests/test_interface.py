@@ -93,6 +93,12 @@ def test_SurfaceTension_fits_to_data_mercury():
     assert obj(obj.Tc) == 0.0
     assert obj(1) > obj(200)
 
+@pytest.mark.meta_T_dept
+def test_SurfaceTension_fits_to_data_sulfur():
+    # Just check there is something there
+    obj = SurfaceTension(CASRN="7704-34-9")
+    assert_close(obj(500), 0.05184181941716021, rtol=0.08)
+
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTensionJasperMissingLimits():
