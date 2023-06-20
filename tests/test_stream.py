@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,24 +17,31 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from numpy.testing import assert_allclose
 from collections import OrderedDict
-import pytest
-from chemicals.exceptions import OverspeficiedError
-from thermo.chemical import Chemical
-from thermo.mixture import Mixture
-from thermo.stream import Stream, StreamArgs, mole_balance, EquilibriumStream
-import thermo
-from scipy.integrate import quad
 from math import *
-from fluids.constants import R
-from fluids.numerics import assert_close, assert_close1d
 
-from thermo import ChemicalConstantsPackage, HeatCapacityGas, PropertyCorrelationsPackage, CEOSLiquid,IdealGas, CEOSGas, PR78MIX, PRMIX, FlashPureVLS, VolumeLiquid
-from thermo import FlashVLN
+import pytest
 from chemicals import property_molar_to_mass
+from chemicals.exceptions import OverspeficiedError
+from fluids.numerics import assert_close, assert_close1d
+from numpy.testing import assert_allclose
+
+from thermo import (
+    PR78MIX,
+    CEOSGas,
+    CEOSLiquid,
+    ChemicalConstantsPackage,
+    FlashPureVLS,
+    FlashVLN,
+    HeatCapacityGas,
+    IdealGas,
+    PropertyCorrelationsPackage,
+    VolumeLiquid,
+)
+from thermo.stream import EquilibriumStream, Stream, StreamArgs, mole_balance
 
 
 @pytest.mark.deprecated
@@ -57,16 +63,16 @@ def test_Stream_inputs():
     inputs = {'m': 2.9236544, 'n': 100, 'Q': 0.0033317638037953824}
     flow_inputs = {'ns': [60.0, 40.0], 'ms': [1.0809168000000002, 1.8427376000000006],
                   'Qls': [0.0010846512497007257, 0.0023518130762336747], 'Qgs': [1.4966032712675834, 0.997735514178389]}
-    
-    
+
+
     # Test ordereddict input
     IDs = ['water', 'ethanol']
-    
+
     for key1, val1 in compositions.items():
         d = OrderedDict()
         for i, j in zip(IDs, val1):
             d.update({i: j})
-    
+
         for key2, val2 in inputs.items():
             m = Stream(T=300, P=1E5, **{key1:d, key2:val2})
             # Check the composition
@@ -74,7 +80,7 @@ def test_Stream_inputs():
             assert_close1d(m.zs, m.xs)
             assert_close1d(m.Vfls(), compositions['Vfls'], rtol=1E-5)
             assert_close1d(m.Vfgs(), compositions['Vfgs'], rtol=1E-5)
-    
+
             assert_close(m.n, inputs['n'])
             assert_close(m.m, inputs['m'])
             assert_close(m.Q, inputs['Q'], rtol=1e-5)
@@ -82,14 +88,14 @@ def test_Stream_inputs():
             assert_close1d(m.ms, flow_inputs['ms'])
             assert_close1d(m.Qls, flow_inputs['Qls'], rtol=1e-5)
             assert_close1d(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
-    
+
     # Test ordereddict input with flow rates being given as dicts
     for key, val in flow_inputs.items():
         other_tol = 1e-7 if key not in ('Qls', 'Qgs') else 1e-5
         d = OrderedDict()
         for i, j in zip(IDs, val):
             d.update({i: j})
-    
+
         m = Stream(T=300, P=1E5, **{key:d})
         assert_close(m.n, inputs['n'], rtol=other_tol)
         assert_close(m.m, inputs['m'], rtol=other_tol)
@@ -98,8 +104,8 @@ def test_Stream_inputs():
         assert_close1d(m.ms, flow_inputs['ms'], rtol=other_tol)
         assert_close1d(m.Qls, flow_inputs['Qls'], rtol=1e-5)
         assert_close1d(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
-    
-    
+
+
     with pytest.raises(Exception):
         # two compositions specified
         Stream(['water', 'ethanol'], ns=[6, 4], ws=[.4, .6], T=300, P=1E5)
@@ -112,7 +118,7 @@ def test_Stream_inputs():
     with pytest.raises(Exception):
         # no flow rate
         Stream(['water', 'ethanol'], zs=[.5, .5], T=300, P=1E5)
-    
+
     for key1, val1 in compositions.items():
         for key2, val2 in inputs.items():
             m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key1:val1, key2:val2})
@@ -123,7 +129,7 @@ def test_Stream_inputs():
             assert_close1d(m.ms, flow_inputs['ms'])
             assert_close1d(m.Qls, flow_inputs['Qls'], rtol=1e-5)
             assert_close1d(m.Qgs, flow_inputs['Qgs'], rtol=1e-5)
-    
+
     for key, val in flow_inputs.items():
         m = Stream(['water', 'ethanol'], T=300, P=1E5, **{key:val})
         other_tol = 1e-7 if key not in ('Qls', 'Qgs') else 1e-5
@@ -561,52 +567,52 @@ def test_mole_balance_backward():
     ns_expect = [10, None, None, 22]
     ns_now = [f0.n_calc, f1.n_calc, f2.n_calc, p0.n_calc]
     assert_close1d(ns_expect, ns_now)
-    
-    
+
+
 def test_EquilibriumStream_unusual_inputs():
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
     correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
-    
+
     P = 1e5
     T = 200
     liquid = CEOSLiquid(PR78MIX, T=T, P=P, zs=[1], **kwargs)
     gas = CEOSGas(PR78MIX, T=T, P=P, zs=[1], **kwargs)
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], []) #
-    
-    
+
+
     stream = EquilibriumStream(T=T, P=P, zs=[1], m=1, flasher=flasher)
-    
+
     check_base = EquilibriumStream(P=P, V=stream.V(), zs=[1], m=1, flasher=flasher)
     assert_close(stream.T, check_base.T)
-    
+
     check = EquilibriumStream(P=P, rho=stream.rho(), zs=[1], m=1, flasher=flasher)
     assert_close(stream.T, check.T)
-    
-    
+
+
     check = EquilibriumStream(P=P, rho_mass=stream.rho_mass(), zs=[1], m=1, flasher=flasher)
     assert_close(stream.T, check.T)
-    
+
     check = EquilibriumStream(P=P, H_mass=stream.H_mass(), zs=[1], m=1, flasher=flasher)
     assert_close(stream.T, check.T)
-    
+
     check = EquilibriumStream(P=P, S_mass=stream.S_mass(), zs=[1], m=1, flasher=flasher)
     assert_close(stream.T, check.T)
-    
+
     check = EquilibriumStream(P=P, U_mass=stream.U_mass(), zs=[1], m=1, flasher=flasher)
     assert_close(stream.T, check.T)
-    
+
     # Hit up the vapor fractions
     stream = EquilibriumStream(VF=.5, P=P, zs=[1], m=1, flasher=flasher)
-    
+
     check = EquilibriumStream(VF=stream.VF, A_mass=stream.A_mass(), zs=[1], m=1, flasher=flasher)
     assert_close(stream.T, check.T)
-    
+
     check = EquilibriumStream(VF=stream.VF, G_mass=stream.G_mass(), zs=[1], m=1, flasher=flasher)
     assert_close(stream.T, check.T)
-    
+
 def test_EquilibriumStream_different_input_sources():
     constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 1, 'H': 4}, {'C': 10, 'H': 22}], CASs=['7732-18-5', '74-82-8', '124-18-5'], Gfgs=[-228554.325, -50443.48000000001, 33414.534999999916], Hfgs=[-241822.0, -74534.0, -249500.0], MWs=[18.01528, 16.04246, 142.28168], names=['water', 'methane', 'decane'], omegas=[0.344, 0.008, 0.49], Pcs=[22048320.0, 4599000.0, 2110000.0], Sfgs=[-44.499999999999964, -80.79999999999997, -948.8999999999997], Tbs=[373.124, 111.65, 447.25], Tcs=[647.14, 190.564, 611.7], Vml_STPs=[1.8087205105724903e-05, 5.858784737690099e-05, 0.00019580845677748954], Vml_60Fs=[1.8036021352633123e-05, 5.858784737690099e-05, 0.00019404661845090487])
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
@@ -619,95 +625,95 @@ def test_EquilibriumStream_different_input_sources():
     VolumeLiquid(load_data=False, poly_fit=(243.51, 607.7, [1.0056823442253386e-22, -3.2166293088353376e-19, 4.442027873447809e-16, -3.4574825216883073e-13, 1.6583965814129937e-10, -5.018203505211133e-08, 9.353680499788552e-06, -0.0009817356348626736, 0.04459313654596568])),
     ],
     )
-    
+
     gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, zs=[.3, .3, .4], Hfs=constants.Hfgs, Gfs=constants.Gfgs, T=298.15, P=101325.0)
     flasher = FlashVLN(constants=constants, correlations=correlations, gas=gas, liquids=[])
-    
+
     state_flash = flasher.flash(T=300, P=1e5, zs=[.5, .3, .2])
-    
-    
+
+
     base = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], n=10, flasher=flasher)
     case_zs_m = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], m=base.m, flasher=flasher)
     case_zs_Ql = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], Ql=base.Ql, flasher=flasher)
     case_zs_Qg = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], Qg=base.Qg, flasher=flasher)
     case_zs_Q = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], Q=base.Q, flasher=flasher)
-    
+
     case_ws_n = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), n=10, flasher=flasher)
     case_ws_m = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), m=base.m, flasher=flasher)
     case_ws_Ql = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), Ql=base.Ql, flasher=flasher)
     case_ws_Qg = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), Qg=base.Qg, flasher=flasher)
     case_ws_Q = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), Q=base.Q, flasher=flasher)
-    
+
     case_Vfgs_n = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), n=10, flasher=flasher)
     case_Vfgs_m = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), m=base.m, flasher=flasher)
     case_Vfgs_Ql = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), Ql=base.Ql, flasher=flasher)
     case_Vfgs_Qg = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), Qg=base.Qg, flasher=flasher)
     case_Vfgs_Q = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), Q=base.Q, flasher=flasher)
-    
+
     case_Vfls_n = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), n=10, flasher=flasher)
     case_Vfls_m = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), m=base.m, flasher=flasher)
     case_Vfls_Ql = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), Ql=base.Ql, flasher=flasher)
     case_Vfls_Qg = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), Qg=base.Qg, flasher=flasher)
     case_Vfls_Q = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), Q=base.Q, flasher=flasher)
-    
+
     case_ns = EquilibriumStream(T=300.0, P=1e5, ns=base.ns, flasher=flasher)
     case_ms = EquilibriumStream(T=300.0, P=1e5, ms=base.ms, flasher=flasher)
     case_Qls = EquilibriumStream(T=300.0, P=1e5, Qls=base.Qls, flasher=flasher)
     case_Qgs = EquilibriumStream(T=300.0, P=1e5, Qgs=base.Qgs, flasher=flasher)
-    
+
     case_energy_ns = EquilibriumStream(energy=base.energy, P=1e5, ns=base.ns, flasher=flasher)
     case_energy_ms = EquilibriumStream(energy=base.energy, P=1e5, ms=base.ms, flasher=flasher)
     case_energy_Qls = EquilibriumStream(energy=base.energy, P=1e5, Qls=base.Qls, flasher=flasher)
     case_energy_Qgs = EquilibriumStream(energy=base.energy, P=1e5, Qgs=base.Qgs, flasher=flasher)
-    
+
     base_existing = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], n=10, flasher=flasher, existing_flash=state_flash)
     case_zs_m_existing = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], m=base.m, flasher=flasher, existing_flash=state_flash)
     case_zs_Ql_existing = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], Ql=base.Ql, flasher=flasher, existing_flash=state_flash)
     case_zs_Qg_existing = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], Qg=base.Qg, flasher=flasher, existing_flash=state_flash)
     case_zs_Q_existing = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], Q=base.Q, flasher=flasher, existing_flash=state_flash)
-    
+
     case_ws_n_existing = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), n=10, flasher=flasher, existing_flash=state_flash)
     case_ws_m_existing = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), m=base.m, flasher=flasher, existing_flash=state_flash)
     case_ws_Ql_existing = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), Ql=base.Ql, flasher=flasher, existing_flash=state_flash)
     case_ws_Qg_existing = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), Qg=base.Qg, flasher=flasher, existing_flash=state_flash)
     case_ws_Q_existing = EquilibriumStream(T=300.0, P=1e5, ws=base.ws(), Q=base.Q, flasher=flasher, existing_flash=state_flash)
-    
+
     case_Vfgs_n_existing = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), n=10, flasher=flasher, existing_flash=state_flash)
     case_Vfgs_m_existing = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), m=base.m, flasher=flasher, existing_flash=state_flash)
     case_Vfgs_Ql_existing = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), Ql=base.Ql, flasher=flasher, existing_flash=state_flash)
     case_Vfgs_Qg_existing = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), Qg=base.Qg, flasher=flasher, existing_flash=state_flash)
     case_Vfgs_Q_existing = EquilibriumStream(T=300.0, P=1e5, Vfgs=base.Vfgs(), Q=base.Q, flasher=flasher, existing_flash=state_flash)
-    
+
     case_Vfls_n_existing = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), n=10, flasher=flasher, existing_flash=state_flash)
     case_Vfls_m_existing = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), m=base.m, flasher=flasher, existing_flash=state_flash)
     case_Vfls_Ql_existing = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), Ql=base.Ql, flasher=flasher, existing_flash=state_flash)
     case_Vfls_Qg_existing = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), Qg=base.Qg, flasher=flasher, existing_flash=state_flash)
     case_Vfls_Q_existing = EquilibriumStream(T=300.0, P=1e5, Vfls=base.Vfls(), Q=base.Q, flasher=flasher, existing_flash=state_flash)
-    
+
     case_ns_existing = EquilibriumStream(T=300.0, P=1e5, ns=base.ns, flasher=flasher, existing_flash=state_flash)
     case_ms_existing = EquilibriumStream(T=300.0, P=1e5, ms=base.ms, flasher=flasher, existing_flash=state_flash)
     case_Qls_existing = EquilibriumStream(T=300.0, P=1e5, Qls=base.Qls, flasher=flasher, existing_flash=state_flash)
     case_Qgs_existing = EquilibriumStream(T=300.0, P=1e5, Qgs=base.Qgs, flasher=flasher, existing_flash=state_flash)
-    
+
     case_energy_ns_existing = EquilibriumStream(energy=base.energy, P=1e5, ns=base.ns, flasher=flasher, existing_flash=state_flash)
     case_energy_ms_existing = EquilibriumStream(energy=base.energy, P=1e5, ms=base.ms, flasher=flasher, existing_flash=state_flash)
     case_energy_Qls_existing = EquilibriumStream(energy=base.energy, P=1e5, Qls=base.Qls, flasher=flasher, existing_flash=state_flash)
     case_energy_Qgs_existing = EquilibriumStream(energy=base.energy, P=1e5, Qgs=base.Qgs, flasher=flasher, existing_flash=state_flash)
-    
+
     all_cases = [base, case_zs_m, case_zs_Ql, case_zs_Qg, case_zs_Q,
                  case_ws_n, case_ws_m, case_ws_Ql, case_ws_Qg, case_ws_Q,
                 case_Vfgs_n, case_Vfgs_m, case_Vfgs_Ql, case_Vfgs_Qg, case_Vfgs_Q,
                 case_Vfls_n, case_Vfls_m, case_Vfls_Ql, case_Vfls_Qg, case_Vfls_Q,
-                case_ns, case_ms, case_Qls, case_Qgs, 
+                case_ns, case_ms, case_Qls, case_Qgs,
                 case_energy_ns, case_energy_ms, case_energy_Qls, case_energy_Qgs,
                  base_existing, case_zs_m_existing, case_zs_Ql_existing, case_zs_Qg_existing, case_zs_Q_existing,
                  case_ws_n_existing, case_ws_m_existing, case_ws_Ql_existing, case_ws_Qg_existing, case_ws_Q_existing,
                 case_Vfgs_n_existing, case_Vfgs_m_existing, case_Vfgs_Ql_existing, case_Vfgs_Qg_existing, case_Vfgs_Q_existing,
                 case_Vfls_n_existing, case_Vfls_m_existing, case_Vfls_Ql_existing, case_Vfls_Qg_existing, case_Vfls_Q_existing,
-                case_ns_existing, case_ms_existing, case_Qls_existing, case_Qgs_existing, 
+                case_ns_existing, case_ms_existing, case_Qls_existing, case_Qgs_existing,
                 case_energy_ns_existing, case_energy_ms_existing, case_energy_Qls_existing, case_energy_Qgs_existing
                 ]
-    
+
     for i, case in enumerate(all_cases):
         assert_close1d(case.ns, [5.0, 3.0, 2.0], rtol=1e-13)
         assert_close1d(case.ms, [0.0900764, 0.04812738, 0.28456336], rtol=1e-13)
@@ -717,35 +723,35 @@ def test_EquilibriumStream_different_input_sources():
         assert_close(case.m, sum(case.ms), rtol=1e-13)
         assert_close(case.Ql, sum(case.Qls), rtol=1e-13)
         assert_close(case.Qg, sum(case.Qgs), rtol=1e-13)
-    
+
         assert_close(case.T, 300.0, rtol=1e-13)
         assert_close(case.P, 1e5, rtol=1e-13)
         assert_close(case.VF, 1, rtol=1e-8)
         assert_close(case.V(), 0.02494338785445972, rtol=1e-8)
         assert_close(case.rho(), 40.090785014242016, rtol=1e-8)
         assert_close(case.rho_mass(), 1.6949066520825955, rtol=1e-8)
-    
+
         assert_close(case.H(), 137.38678195289813, rtol=1e-8)
         assert_close(case.S(),  9.129827636854362, rtol=1e-8)
         assert_close(case.G(), -2601.56150910341, rtol=1e-8)
         assert_close(case.U(), -2356.952003493074 , rtol=1e-8)
         assert_close(case.A(), -5095.900294549382, rtol=1e-8)
-    
+
         assert_close(case.H_mass(), property_molar_to_mass(case.H(), case.MW()), rtol=1e-13)
         assert_close(case.S_mass(), property_molar_to_mass(case.S(), case.MW()), rtol=1e-13)
         assert_close(case.G_mass(), property_molar_to_mass(case.G(), case.MW()), rtol=1e-13)
         assert_close(case.U_mass(), property_molar_to_mass(case.U(), case.MW()), rtol=1e-13)
         assert_close(case.A_mass(), property_molar_to_mass(case.A(), case.MW()), rtol=1e-13)
-    
+
         assert_close(case.H_reactive(), -193033.81321804711, rtol=1e-8)
         assert_close(case.energy, case.H()*case.n, rtol=1e-13)
         assert_close(case.energy_reactive, case.H_reactive()*case.n, rtol=1e-13)
-    
+
         assert_close1d(case.zs, [.5, .3, .2], rtol=1e-13)
         assert_close1d(case.ws(), [0.21306386300505759, 0.11383898001154961, 0.6730971569833928], rtol=1e-13)
         assert_close1d(case.Vfls(), [0.13747911174509148, 0.26719236618433384, 0.5953285220705747], rtol=1e-13)
         assert_close1d(case.Vfgs(), [0.5, 0.3, 0.2], rtol=1e-13)
-    
+
         assert_close1d(case.ns, case.bulk.ns, rtol=1e-13)
         assert_close1d(case.ms, case.bulk.ms, rtol=1e-13)
         assert_close1d(case.Qls, case.bulk.Qls, rtol=1e-13)
@@ -754,7 +760,7 @@ def test_EquilibriumStream_different_input_sources():
         assert_close(case.m, case.bulk.m, rtol=1e-13)
         assert_close(case.Ql, case.bulk.Ql, rtol=1e-13)
         assert_close(case.Qg, case.bulk.Qg, rtol=1e-13)
-    
+
         assert_close1d(case.ns_calc, case.bulk.ns_calc, rtol=1e-13)
         assert_close1d(case.ms_calc, case.bulk.ms_calc, rtol=1e-13)
         assert_close1d(case.Qls_calc, case.bulk.Qls_calc, rtol=1e-13)
@@ -763,42 +769,42 @@ def test_EquilibriumStream_different_input_sources():
         assert_close(case.m_calc, case.bulk.m_calc, rtol=1e-13)
         assert_close(case.Ql_calc, case.bulk.Ql_calc, rtol=1e-13)
         assert_close(case.Qg_calc, case.bulk.Qg_calc, rtol=1e-13)
-    
-        
-        
+
+
+
         assert_close(case.T, case.bulk.T, rtol=1e-13)
         assert_close(case.P, case.bulk.P, rtol=1e-13)
         assert_close(case.VF, case.bulk.VF, rtol=1e-13)
         assert_close(case.energy, case.bulk.energy, rtol=1e-13)
         assert_close(case.energy_reactive, case.bulk.energy_reactive, rtol=1e-13)
-    
+
         assert_close(case.V(), case.bulk.V(), rtol=1e-8)
         assert_close(case.rho(), case.bulk.rho(), rtol=1e-13)
         assert_close(case.rho_mass(), case.bulk.rho_mass(), rtol=1e-13)
-    
+
         assert_close(case.H(), case.bulk.H(), rtol=1e-13)
         assert_close(case.S(), case.bulk.S(), rtol=1e-13)
         assert_close(case.G(), case.bulk.G(), rtol=1e-13)
         assert_close(case.U(), case.bulk.U(), rtol=1e-13)
         assert_close(case.A(), case.bulk.A(), rtol=1e-13)
-    
+
         assert_close(case.H_mass(), case.bulk.H_mass(), rtol=1e-13)
         assert_close(case.S_mass(), case.bulk.S_mass(), rtol=1e-13)
         assert_close(case.G_mass(), case.bulk.G_mass(), rtol=1e-13)
         assert_close(case.U_mass(), case.bulk.U_mass(), rtol=1e-13)
         assert_close(case.A_mass(), case.bulk.A_mass(), rtol=1e-13)
-    
+
         assert_close(case.H_reactive(), case.bulk.H_reactive(), rtol=1e-13)
-    
+
         assert_close1d(case.zs, case.bulk.zs, rtol=1e-13)
         assert_close1d(case.ws(), case.bulk.ws(), rtol=1e-13)
         assert_close1d(case.Vfls(), case.bulk.Vfls(), rtol=1e-13)
         assert_close1d(case.Vfgs(), case.bulk.Vfgs(), rtol=1e-13)
-    
+
         # Generic volume
         assert_close(case.Q, 0.2494338785445972, rtol=1e-9)
         assert_close(case.Q, case.bulk.Q)
-        
+
         assert_close(case.T_calc, case.bulk.T_calc, rtol=1e-13)
         assert_close(case.T_calc, case.T, rtol=1e-13)
         assert_close(case.P_calc, case.bulk.P_calc, rtol=1e-13)
@@ -811,7 +817,7 @@ def test_EquilibriumStream_different_input_sources():
         assert_close(case.energy_reactive_calc, case.energy_reactive, rtol=1e-13)
         assert_close(case.H_calc, case.bulk.H_calc, rtol=1e-13)
         assert_close(case.H_calc, case.H(), rtol=1e-13)
-    
+
         assert_close1d(case.zs, case.zs_calc, rtol=1e-13)
         assert_close1d(case.zs_calc, case.bulk.zs_calc, rtol=1e-13)
         assert_close1d(case.ws(), case.ws_calc, rtol=1e-13)
@@ -828,40 +834,40 @@ def test_EquilibriumStream_different_input_sources():
     case_zs_Ql = StreamArgs(T=300.0, P=1e5, zs=[.5, .3, .2], Ql=base.Ql, flasher=flasher)
     case_zs_Qg = StreamArgs(T=300.0, P=1e5, zs=[.5, .3, .2], Qg=base.Qg, flasher=flasher)
     case_zs_Q = StreamArgs(T=300.0, P=1e5, zs=[.5, .3, .2], Q=base.Q, flasher=flasher)
-    
+
     case_ws_n = StreamArgs(T=300.0, P=1e5, ws=base.ws(), n=10, flasher=flasher)
     case_ws_m = StreamArgs(T=300.0, P=1e5, ws=base.ws(), m=base.m, flasher=flasher)
     case_ws_Ql = StreamArgs(T=300.0, P=1e5, ws=base.ws(), Ql=base.Ql, flasher=flasher)
     case_ws_Qg = StreamArgs(T=300.0, P=1e5, ws=base.ws(), Qg=base.Qg, flasher=flasher)
     case_ws_Q = StreamArgs(T=300.0, P=1e5, ws=base.ws(), Q=base.Q, flasher=flasher)
-    
+
     case_Vfgs_n = StreamArgs(T=300.0, P=1e5, Vfgs=base.Vfgs(), n=10, flasher=flasher)
     case_Vfgs_m = StreamArgs(T=300.0, P=1e5, Vfgs=base.Vfgs(), m=base.m, flasher=flasher)
     case_Vfgs_Ql = StreamArgs(T=300.0, P=1e5, Vfgs=base.Vfgs(), Ql=base.Ql, flasher=flasher)
     case_Vfgs_Qg = StreamArgs(T=300.0, P=1e5, Vfgs=base.Vfgs(), Qg=base.Qg, flasher=flasher)
     case_Vfgs_Q = StreamArgs(T=300.0, P=1e5, Vfgs=base.Vfgs(), Q=base.Q, flasher=flasher)
-    
+
     case_Vfls_n = StreamArgs(T=300.0, P=1e5, Vfls=base.Vfls(), n=10, flasher=flasher)
     case_Vfls_m = StreamArgs(T=300.0, P=1e5, Vfls=base.Vfls(), m=base.m, flasher=flasher)
     case_Vfls_Ql = StreamArgs(T=300.0, P=1e5, Vfls=base.Vfls(), Ql=base.Ql, flasher=flasher)
     case_Vfls_Qg = StreamArgs(T=300.0, P=1e5, Vfls=base.Vfls(), Qg=base.Qg, flasher=flasher)
     case_Vfls_Q = StreamArgs(T=300.0, P=1e5, Vfls=base.Vfls(), Q=base.Q, flasher=flasher)
-    
+
     case_ns = StreamArgs(T=300.0, P=1e5, ns=base.ns, flasher=flasher)
     case_ms = StreamArgs(T=300.0, P=1e5, ms=base.ms, flasher=flasher)
     case_Qls = StreamArgs(T=300.0, P=1e5, Qls=base.Qls, flasher=flasher)
     case_Qgs = StreamArgs(T=300.0, P=1e5, Qgs=base.Qgs, flasher=flasher)
-    
+
     case_energy_ns = StreamArgs(energy=base.energy, P=1e5, ns=base.ns, flasher=flasher)
     case_energy_ms = StreamArgs(energy=base.energy, P=1e5, ms=base.ms, flasher=flasher)
     case_energy_Qls = StreamArgs(energy=base.energy, P=1e5, Qls=base.Qls, flasher=flasher)
     case_energy_Qgs = StreamArgs(energy=base.energy, P=1e5, Qgs=base.Qgs, flasher=flasher)
-    
+
     all_cases_args = [base_args, case_zs_m, case_zs_Ql, case_zs_Qg, case_zs_Q,
                 case_ws_n, case_ws_m, case_ws_Ql, case_ws_Qg, case_ws_Q,
                 case_Vfgs_n, case_Vfgs_m, case_Vfgs_Ql, case_Vfgs_Qg, case_Vfgs_Q,
                 case_Vfls_n, case_Vfls_m, case_Vfls_Ql, case_Vfls_Qg, case_Vfls_Q,
-                case_ns, case_ms, case_Qls, case_Qgs, 
+                case_ns, case_ms, case_Qls, case_Qgs,
                 case_energy_ns, case_energy_ms, case_energy_Qls, case_energy_Qgs
                 ]
     for i, case in enumerate(all_cases_args):
@@ -877,12 +883,12 @@ def test_EquilibriumStream_different_input_sources():
         assert_close(case.Ql_calc, sum(case.Qls_calc), rtol=1e-13)
         assert_close(case.Qg_calc, sum(case.Qgs_calc), rtol=1e-13)
     #     assert_close(case.Q_calc, sum(case.Q_calc), rtol=1e-13)
-        
+
         assert_close(case.T_calc, 300.0, rtol=1e-13)
         assert_close(case.P_calc, 1e5, rtol=1e-13)
         assert_close(case.VF_calc, 1, rtol=1e-8)
-        
-        
+
+
         assert case.composition_specified
         assert case.composition_spec
         assert not case.clean
@@ -893,7 +899,7 @@ def test_EquilibriumStream_different_input_sources():
         assert case.flow_spec
         assert case.specified_flow_vars == 1
         assert case.flow_specified
-        
+
         for new, do_flow in zip([case.flash(), case.stream, case.flash_state()], [True, True, False]):
     #         new = case.flash()
             assert_close(new.T, 300, rtol=1e-13)
@@ -901,5 +907,4 @@ def test_EquilibriumStream_different_input_sources():
             assert_close1d(new.zs, [.5, .3, .2], rtol=1e-13)
             if do_flow:
                 assert_close1d(new.ns, [5.0, 3.0, 2.0], rtol=1e-13)
-    
-        
+

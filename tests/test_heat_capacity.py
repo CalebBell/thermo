@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,20 +17,38 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
+
+import json
+from math import *
 
 import numpy as np
 import pytest
 from chemicals.utils import ws_to_zs
-import json
-from thermo.heat_capacity import *
-from thermo.heat_capacity import HEOS_FIT, TRCIG, POLING_POLY, CRCSTD, COOLPROP, POLING_CONST, VDI_TABULAR, LASTOVKA_SHAW, ROWLINSON_BONDI, ZABRANSKY_QUASIPOLYNOMIAL_C, CRCSTD, ROWLINSON_POLING, POLING_CONST, ZABRANSKY_SPLINE_SAT, DADGOSTAR_SHAW, COOLPROP, ZABRANSKY_SPLINE_C, VDI_TABULAR, WEBBOOK_SHOMATE, JOBACK
-from random import uniform
-from math import *
-from fluids.numerics import linspace, logspace, NotBoundedError, assert_close, assert_close1d
-from thermo.chemical import lock_properties, Chemical
+from fluids.numerics import assert_close, assert_close1d
 from scipy.integrate import quad
+
 from thermo.coolprop import has_CoolProp
+from thermo.heat_capacity import *
+from thermo.heat_capacity import (
+    COOLPROP,
+    CRCSTD,
+    DADGOSTAR_SHAW,
+    HEOS_FIT,
+    JOBACK,
+    LASTOVKA_SHAW,
+    POLING_CONST,
+    POLING_POLY,
+    ROWLINSON_BONDI,
+    ROWLINSON_POLING,
+    TRCIG,
+    VDI_TABULAR,
+    WEBBOOK_SHOMATE,
+    ZABRANSKY_QUASIPOLYNOMIAL_C,
+    ZABRANSKY_SPLINE_C,
+    ZABRANSKY_SPLINE_SAT,
+)
 
 
 @pytest.mark.meta_T_dept
@@ -84,8 +101,8 @@ def test_HeatCapacityGas():
     with pytest.raises(Exception):
         EtOH.test_method_validity('BADMETHOD', 300)
 
-    assert False == EtOH.test_property_validity(-1)
-    assert False == EtOH.test_property_validity(1.01E4)
+    assert False is EtOH.test_property_validity(-1)
+    assert False is EtOH.test_property_validity(10100.0)
 
 
     Ts = [200, 250, 300, 400, 450]
@@ -93,7 +110,7 @@ def test_HeatCapacityGas():
     EtOH.add_tabular_data(Ts=Ts, properties=props, name='test_set')
     assert_close(1.35441088517, EtOH.T_dependent_property(275), rtol=2E-4)
 
-    assert None == EtOH.T_dependent_property(5000)
+    assert None is EtOH.T_dependent_property(5000)
 
     new = HeatCapacityGas.from_json(EtOH.as_json())
     assert new == EtOH
@@ -117,11 +134,11 @@ def test_HeatCapacityGas_webbook():
     assert_close(obj.calculate(700, WEBBOOK_SHOMATE), 37.5018469222449)
     assert_close(obj.calculate(3000, WEBBOOK_SHOMATE), 55.74187422222222)
     assert_close(obj.calculate(6000, WEBBOOK_SHOMATE), 60.588267555555554)
-    
+
     assert_close(obj.calculate_integral(1, 700, WEBBOOK_SHOMATE), 105354.51298924106)
     assert_close(obj.calculate_integral(1, 3000, WEBBOOK_SHOMATE), 217713.25484195515)
     assert_close(obj.calculate_integral(1, 6000, WEBBOOK_SHOMATE), 393461.64992528845)
-    
+
     assert_close(obj.calculate_integral_over_T(1, 700, WEBBOOK_SHOMATE), 41272.70183405447)
     assert_close(obj.calculate_integral_over_T(1, 3000, WEBBOOK_SHOMATE), 41340.46968129815)
     assert_close(obj.calculate_integral_over_T(1, 6000, WEBBOOK_SHOMATE), 41380.892814134764)
@@ -138,15 +155,15 @@ def test_HeatCapacityGas_webbook():
     assert_close(obj.calculate(3000, WEBBOOK_SHOMATE), 128.73412366666665)
     assert_close(obj.calculate_integral(1, 700, WEBBOOK_SHOMATE), -387562.193149271)
     assert_close(obj.calculate_integral_over_T(1, 700, WEBBOOK_SHOMATE), -210822.6509202891)
-    
+
     assert_close(obj.T_dependent_property_integral(330, 700), 19434.50551451386)
     assert_close(obj.T_dependent_property_integral_over_T(330, 700), 38.902796756264706)
-    
+
     assert eval(str(obj)) == obj
     new = HeatCapacityGas.from_json(json.loads(json.dumps(obj.as_json())))
     assert new == obj
 
-    
+
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
@@ -177,14 +194,14 @@ def test_HeatCapacityGas_CoolProp():
     new = HeatCapacityGas.from_json(obj.as_json())
     assert new == obj
     assert_close(obj.calculate(obj.T_limits[COOLPROP][0], COOLPROP), 72.45489837498226, rtol=1e-7)
-    
+
     # issue # 120
     H2 = HeatCapacityGas(CASRN='1333-74-0')
     for T in [50, 100, 200, 500, 800, 1000, 2000]:
-    
+
         assert_close(H2.calculate(T, 'COOLPROP'),
                      PropsSI('Cp0molar', 'T', T,'P', 101325.0, 'hydrogen'), rtol=1e-13)
-    
+
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityGas_Joback():
@@ -194,11 +211,11 @@ def test_HeatCapacityGas_Joback():
     assert_close(obj.calculate(300, JOBACK), 236.04260000000002)
     assert_close(obj.T_dependent_property_integral(300, 400), 26820.025000000005)
     assert_close(obj.T_dependent_property_integral_over_T(300, 400), 76.72232911998739)
-    
+
     # Chemical for which  Joback did not work
     obj = HeatCapacityGas(CASRN='55-18-5')
     assert JOBACK not in obj.all_methods
-    
+
     # Chemical with no Tc
     obj = HeatCapacityGas(CASRN='23213-96-9')
     assert not isnan(obj.T_limits[JOBACK][1])
@@ -219,7 +236,7 @@ def test_HeatCapacityGas_cheb_fit():
     assert_close(obj.deriv(4)(300), fit_obj.T_dependent_property_derivative(300, order=4), rtol=1e-15)
     assert_close(obj.integ()(500) - obj.integ()(300), fit_obj.T_dependent_property_integral(300, 500), rtol=1e-15)
 
-    
+
     assert_close(fit_obj.T_dependent_property_derivative(300, order=1), 0.36241217517888635, rtol=1e-13)
     assert_close(fit_obj.T_dependent_property_derivative(300, order=2), -6.445511348110282e-06, rtol=1e-13)
     assert_close(fit_obj.T_dependent_property_derivative(300, order=3), -8.804754988590911e-06, rtol=1e-13)
@@ -309,8 +326,8 @@ def test_HeatCapacitySolid():
     with pytest.raises(Exception):
         NaCl.test_method_validity('BADMETHOD', 300)
 
-    assert False == NaCl.test_property_validity(-1)
-    assert False == NaCl.test_property_validity(1.01E5)
+    assert False is NaCl.test_property_validity(-1)
+    assert False is NaCl.test_property_validity(101000.0)
 
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
     Ts = [200, 300, 400, 500, 600]
@@ -331,13 +348,13 @@ def test_HeatCapacitySolid_BaBr2():
     BaBr2.extrapolation = 'nolimit'
     assert_close(BaBr2(200), 74.890978176)
     assert_close(BaBr2(400),79.216280568)
-    
+
     assert_close(BaBr2.calculate_integral(330, 450, WEBBOOK_SHOMATE), 9480.005596336567)
     assert_close(BaBr2.calculate_integral_over_T(330, 450, WEBBOOK_SHOMATE), 24.481487055089474)
-    
+
     assert_close(BaBr2.T_dependent_property_integral(330, 450), 9480.005596336567)
     assert_close(BaBr2.T_dependent_property_integral_over_T(330, 450), 24.481487055089474)
-    
+
     assert_close(BaBr2.T_dependent_property_integral(1, 10000), 1790167.9273896758)
     assert_close(BaBr2.T_dependent_property_integral_over_T(1, 10000), 832.6150719313177)
 
@@ -348,7 +365,7 @@ def test_HeatCapacitySolid_BaBr2():
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacitySolid_integrals():
-    from thermo.heat_capacity import LASTOVKA_S, PERRY151, CRCSTD
+    from thermo.heat_capacity import CRCSTD, LASTOVKA_S, PERRY151
     # Enthalpy integrals
     NaCl = HeatCapacitySolid(CASRN='7647-14-5', similarity_variable=0.0342215, MW=58.442769)
     dH1 = NaCl.calculate_integral(100, 150, LASTOVKA_S)
@@ -426,9 +443,9 @@ def test_HeatCapacityLiquid():
     with pytest.raises(Exception):
         tol.test_method_validity('BADMETHOD', 300)
 
-    assert False == tol.test_property_validity(-1)
-    assert False == tol.test_property_validity(1.01E5)
-    assert True == tol.test_property_validity(100)
+    assert False is tol.test_property_validity(-1)
+    assert False is tol.test_property_validity(101000.0)
+    assert True is tol.test_property_validity(100)
 
 
 
@@ -465,11 +482,11 @@ def test_HeatCapacityLiquid_webbook():
     assert_close(obj(340), 75.41380745425609)
     assert_close(obj.calculate(250, WEBBOOK_SHOMATE), 77.78926287500002)
     assert_close(obj.calculate(510, WEBBOOK_SHOMATE), 84.94628487578056)
-    
-    
+
+
     assert_close(obj.calculate_integral(330, 450, WEBBOOK_SHOMATE), 9202.213117294952)
     assert_close(obj.calculate_integral_over_T(330, 450, WEBBOOK_SHOMATE), 23.75523929492681)
-    
+
     assert_close(obj.T_dependent_property_integral(330, 450), 9202.213117294952)
     assert_close(obj.T_dependent_property_integral_over_T(330, 450), 23.75523929492681)
 
@@ -506,14 +523,18 @@ def test_HeatCapacityLiquid_Custom_parameters():
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquid_integrals():
-    from thermo.heat_capacity import (CRCSTD, COOLPROP, DADGOSTAR_SHAW,
-                                      ROWLINSON_POLING, ROWLINSON_BONDI,
-                                      ZABRANSKY_SPLINE,
-                                      ZABRANSKY_QUASIPOLYNOMIAL,
-                                      ZABRANSKY_SPLINE_SAT,
-                                      ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                                      ZABRANSKY_QUASIPOLYNOMIAL_C,
-                                      ZABRANSKY_SPLINE_C)
+    from thermo.heat_capacity import (
+        CRCSTD,
+        DADGOSTAR_SHAW,
+        ROWLINSON_BONDI,
+        ROWLINSON_POLING,
+        ZABRANSKY_QUASIPOLYNOMIAL,
+        ZABRANSKY_QUASIPOLYNOMIAL_C,
+        ZABRANSKY_QUASIPOLYNOMIAL_SAT,
+        ZABRANSKY_SPLINE,
+        ZABRANSKY_SPLINE_C,
+        ZABRANSKY_SPLINE_SAT,
+    )
     tol = HeatCapacityLiquid(CASRN='108-88-3', MW=92.13842, Tc=591.75,
           omega=0.257, Cpgm=115.30398669098454, similarity_variable=0.16279853724428964)
 
@@ -639,7 +660,7 @@ def test_HeatCapacityGasMixture():
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquidMixture_aqueous():
-    from thermo.heat_capacity import HeatCapacityLiquidMixture, LINEAR
+    from thermo.heat_capacity import LINEAR, HeatCapacityLiquidMixture
 
     HeatCapacityLiquids = [HeatCapacityLiquid(method='COOLPROP', CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, Tc=647.14, omega=0.344, extrapolation="linear"),
                            HeatCapacityLiquid(CASRN="7647-14-5", MW=58.44277, similarity_variable=0.034221512772238546, Tc=3400.0, omega=0.1894, extrapolation="linear", method="POLY_FIT", poly_fit=(1077.15, 3400.0, [-1.7104845836996866e-36, 3.0186209409101436e-32, -2.2964525212600158e-28, 9.82884046707168e-25, -2.585879179539946e-21, 4.276734025134063e-18, -0.00016783912672163547, 0.1862851719065294, -12.936804011905963]))]
@@ -685,10 +706,10 @@ def test_HeatCapacityGas_polynomial_input_forms():
     val1 = obj_polynomial.T_dependent_property(200)
     obj_bestfit = HeatCapacityGas(poly_fit=(177.7, 264.93, [1e-5, 2e-5, 4e-5][::-1]))
     val2 = obj_bestfit.T_dependent_property(200)
-    
+
     for v in (val0, val1, val2):
         assert_close(v, 1.60401, rtol=1e-13)
-    
+
     for o in (obj_basic, obj_polynomial, obj_bestfit):
         assert HeatCapacityGas.from_json(o.as_json()) == o
         assert eval(str(o)) == o
@@ -696,8 +717,8 @@ def test_HeatCapacityGas_polynomial_input_forms():
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral():
-    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, 
-                          extrapolation="linear", method="POLY_FIT", 
+    obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528,
+                          extrapolation="linear", method="POLY_FIT",
                           poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
     T1s = [1929.096, 1140.749, 3458.609, 2136.875, 1291.477, 603.78, 2566.611, 1815.559, 2487.887, 189.325]
     T2s = [994.916, 2341.203, 2094.687, 3626.799, 2680.001, 3435.09, 1105.486, 71.664, 1066.234, 3191.909]

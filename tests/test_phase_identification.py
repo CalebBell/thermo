@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,14 +17,12 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import numpy as np
-import pytest
+from fluids.numerics import assert_close, assert_close1d
+
 from thermo import *
-from fluids.constants import R
-from math import log, exp, sqrt, log10
-from fluids.numerics import linspace, derivative, logspace, assert_close, assert_close1d, assert_close2d, assert_close3d
 
 # TODO: add unit tests for solid phase identification and sorting
 
@@ -136,7 +133,7 @@ def test_identity_phase_states_basic():
             assert_close1d(sln[3], [0.6139152961492583, 0.35814538138772367, 0.027939322463018015])
 
 def test_sort_phases_liquids():
-    from thermo.phase_identification import VL_ID_METHODS, PROP_SORT, DENSITY_MASS, DENSITY, ISOTHERMAL_COMPRESSIBILITY, HEAT_CAPACITY
+    from thermo.phase_identification import DENSITY, DENSITY_MASS, HEAT_CAPACITY, ISOTHERMAL_COMPRESSIBILITY, PROP_SORT
     constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Vcs=[0.000274, 5.6e-05, 0.000168], Pcs=[4414000.0, 22048320.0, 6137000.0], omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844], CASs=['71-36-3', '7732-18-5', '64-17-5'])
     properties = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
                                              HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),

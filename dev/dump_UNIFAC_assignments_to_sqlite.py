@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -21,17 +20,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from thermo import *
-from chemicals import *
-from chemicals import data_reader
-from chemicals.identifiers import pubchem_db
-import pandas as pd
 import os
+
 import numpy as np
-import thermo
-from thermo import Chemical
+import pandas as pd
+from chemicals import *
 from chemicals.identifiers import pubchem_db
+
+import thermo
+from thermo import *
+from thermo import Chemical
 from thermo.group_contribution.group_contribution_base import group_assignment_to_str
+
 try:
     Chemical('asdfasdaf')
 except:
@@ -43,9 +43,9 @@ CASs = []
 UNIFACs = []
 MODFACs = []
 PSRKs = []
-all_InChIs = list(set((list(thermo.unifac.DDBST_UNIFAC_assignments.keys()) + 
-               list(thermo.unifac.DDBST_MODIFIED_UNIFAC_assignments.keys()) + 
-               list(thermo.unifac.DDBST_PSRK_assignments.keys()))))
+all_InChIs = list(set(list(thermo.unifac.DDBST_UNIFAC_assignments.keys()) +
+               list(thermo.unifac.DDBST_MODIFIED_UNIFAC_assignments.keys()) +
+               list(thermo.unifac.DDBST_PSRK_assignments.keys())))
 
 dev_folder = os.path.dirname(__file__)
 to_location = os.path.join(dev_folder, '..', 'thermo', 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite')
@@ -56,18 +56,18 @@ for inchi in all_InChIs:
     except:
         continue
     CASs.append(CASi)
-    
+
     groups = thermo.unifac.DDBST_UNIFAC_assignments.get(inchi, {})
     UNIFACs.append(group_assignment_to_str(groups))
 
-        
+
     groups = thermo.unifac.DDBST_MODIFIED_UNIFAC_assignments.get(inchi, {})
     MODFACs.append(group_assignment_to_str(groups))
 
     groups = thermo.unifac.DDBST_PSRK_assignments.get(inchi, {})
     PSRKs.append(group_assignment_to_str(groups))
-    
-    
+
+
 
 prop_array_T = np.array([UNIFACs, MODFACs,PSRKs]).T
 
@@ -78,10 +78,11 @@ assert len(CASs) == len(set(CASs))
 df = pd.DataFrame(prop_array_T, columns=['UNIFAC', 'MODIFIED_UNIFAC', 'PSRK'], index=CASs)
 
 # Does not save memory except when compressed and causes many test failures
-#df = df.fillna(value=np.nan).astype(np.float32) 
+#df = df.fillna(value=np.nan).astype(np.float32)
 df.sort_index(inplace=True)
 
 from sqlalchemy import create_engine
+
 engine = create_engine('sqlite:///' + to_location, echo=False)
 if os.path.exists(to_location):
     os.remove(to_location)

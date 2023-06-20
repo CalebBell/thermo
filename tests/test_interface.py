@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,21 +17,21 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
+
+import json
 
 import pytest
-import numpy as np
-import json
-import pandas as pd
-from thermo.interface import *
-from chemicals.utils import property_mass_to_molar, zs_to_ws
 from chemicals.dippr import EQ106
-from thermo.interface import VDI_TABULAR
-from chemicals.identifiers import check_CAS
-from fluids.numerics import assert_close, assert_close1d, linspace, derivative
-from thermo.volume import VolumeLiquid, VDI_PPDS
+from chemicals.utils import property_mass_to_molar, zs_to_ws
+from fluids.numerics import assert_close, assert_close1d, derivative, linspace
+
+from thermo.interface import *
+from thermo.interface import DIGUILIOTEJA, LINEAR, VDI_TABULAR, WINTERFELDSCRIVENDAVIS, SurfaceTensionMixture
 from thermo.utils import POLY_FIT
-from thermo.interface import SurfaceTensionMixture, DIGUILIOTEJA, LINEAR, WINTERFELDSCRIVENDAVIS
+from thermo.volume import VDI_PPDS, VolumeLiquid
+
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTension():
@@ -62,7 +61,7 @@ def test_SurfaceTension():
 
     EtOH.method = 'VDI_TABULAR'
     EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.T_dependent_property(700.)
+    assert None is EtOH.T_dependent_property(700.0)
 
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
@@ -80,7 +79,7 @@ def test_SurfaceTension_water_iapws():
     water = SurfaceTension(CASRN="7732-18-5", MW=18.01528, Tb=373.124, Tc=647.14, Pc=22048320.0, Vc=5.6e-05, Zc=0.229, omega=0.344, StielPolar=0.0232, Hvap_Tb=2256470., extrapolation="DIPPR106_AB", method="IAPWS")
     assert water.method == 'IAPWS'
     assert_close(water(400), 0.05357792640201927)
-    
+
     assert water(3) is not None
     assert water(3) > 0
 
@@ -125,7 +124,7 @@ def test_SurfaceTension_fitting0_yaws():
     props_calc = [EQ106(T, Tc, A, n, 0.0, 0.0, 0.0, 0) for T in Ts]
     res, stats = SurfaceTension.fit_data_to_model(Ts=Ts, data=props_calc, model='YawsSigma',
                           do_statistics=True, use_numba=False, model_kwargs={'Tc': Tc},
-                          fit_method='lm')        
+                          fit_method='lm')
     assert stats['MAE'] < 1e-5
 
 
@@ -137,7 +136,7 @@ def test_SurfaceTension_no_polyfit():
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTension_exp_poly_fit_ln_tau():
-    coeffs = [-1.2616237655927602e-05, -0.0004061873638525952, -0.005563382112542401, -0.04240531802937599, -0.19805733513004808, -0.5905741856310869, -1.1388001144550794, -0.1477584393673108, -2.401287527958821] 
+    coeffs = [-1.2616237655927602e-05, -0.0004061873638525952, -0.005563382112542401, -0.04240531802937599, -0.19805733513004808, -0.5905741856310869, -1.1388001144550794, -0.1477584393673108, -2.401287527958821]
     Tc = 647.096
     Tmin, Tmax = 233.22, 646.15
 
@@ -145,14 +144,14 @@ def test_SurfaceTension_exp_poly_fit_ln_tau():
     good_obj = SurfaceTension(Tc=Tc, exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs))
     expect = 0.07175344047522199
     assert_close(good_obj(300), expect, rtol=1e-12)
-    
+
     # Create an object with a CAS, check a value
     good_obj2 = SurfaceTension(Tc=Tc, CASRN='7732-18-5', exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs))
     assert_close(good_obj2(300), expect, rtol=1e-12)
 
     expect_der = -0.000154224581713238
     expect_der2 = -5.959538970287795e-07
-    
+
     assert_close(good_obj.T_dependent_property_derivative(300), expect_der, rtol=1e-13)
     assert_close(good_obj.T_dependent_property_derivative(300, order=2), expect_der2, rtol=1e-13)
 
@@ -161,11 +160,11 @@ def test_SurfaceTension_exp_poly_fit_ln_tau():
     assert SurfaceTension.from_json(good_obj.as_json()) == good_obj
     assert eval(str(good_obj2)) == good_obj2
     assert eval(str(good_obj)) == good_obj
-    
+
 @pytest.mark.meta_T_dept
 def test_SurfaceTension_exp_poly_ln_tau_extrapolate():
     coeffs = [1.1624065398371628, -1.9976745939643825]
-    
+
     Tc = 647.096
     Tmin, Tmax = 233.22, 646.15
     good_obj = SurfaceTension(Tc=Tc, exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs), extrapolation='EXP_POLY_LN_TAU2')
@@ -173,13 +172,13 @@ def test_SurfaceTension_exp_poly_ln_tau_extrapolate():
     assert_close(good_obj.calculate(647, good_obj.method), good_obj(647), rtol=1e-13)
 
     assert_close(derivative(good_obj, 50, dx=50*1e-7), good_obj.T_dependent_property_derivative(50))
-    
-    assert_close(derivative(good_obj.T_dependent_property_derivative, 190, dx=190*1e-6), 
+
+    assert_close(derivative(good_obj.T_dependent_property_derivative, 190, dx=190*1e-6),
                  good_obj.T_dependent_property_derivative(190, order=2), rtol=1e-7)
-    
+
     assert_close(good_obj.T_dependent_property_derivative(50), -0.0002405128589491164, rtol=1e-11)
     assert_close(good_obj.T_dependent_property_derivative(50, 2),6.541805875147306e-08, rtol=1e-11)
-    
+
     # Floating-point errors pile up in this one
     coeffs = [-0.02235848200899392,  1.0064575672832703,  -2.0629066032890777 ]
     good_obj = SurfaceTension(Tc=Tc, exp_poly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs), extrapolation='EXP_POLY_LN_TAU3')
@@ -187,33 +186,33 @@ def test_SurfaceTension_exp_poly_ln_tau_extrapolate():
     assert_close(good_obj.calculate(647, good_obj.method), good_obj(647), rtol=1e-7)
 
     assert_close(derivative(good_obj, 50, dx=50*1e-7), good_obj.T_dependent_property_derivative(50))
-    
-    assert_close(derivative(good_obj.T_dependent_property_derivative, 190, dx=190*1e-6), 
+
+    assert_close(derivative(good_obj.T_dependent_property_derivative, 190, dx=190*1e-6),
                  good_obj.T_dependent_property_derivative(190, order=2), rtol=1e-7)
-    
-    
+
+
     assert_close(good_obj.T_dependent_property_derivative(50), -0.00019823412229632575, rtol=1e-11)
     assert_close(good_obj.T_dependent_property_derivative(50, 2), -1.136037983710264e-08, rtol=1e-11)
-    
+
 @pytest.mark.meta_T_dept
 def test_SurfaceTension_exp_cheb_fit_ln_tau():
     coeffs = [-5.922664830406188, -3.6003367212635444, -0.0989717205896406, 0.05343895281736921, -0.02476759166597864, 0.010447569392539213, -0.004240542036664352, 0.0017273355647560718, -0.0007199858491173661, 0.00030714447101984343, -0.00013315510546685339, 5.832551964424226e-05, -2.5742454514671165e-05, 1.143577875153956e-05, -5.110008470393668e-06, 2.295229193177706e-06, -1.0355920205401548e-06, 4.690917226601865e-07, -2.1322112805921556e-07, 9.721709759435981e-08, -4.4448656630335925e-08, 2.0373327115630335e-08, -9.359475430792408e-09, 4.308620855930645e-09, -1.9872392620357004e-09, 9.181429297400179e-10, -4.2489342599871804e-10, 1.969051449668413e-10, -9.139573819982871e-11, 4.2452263926406886e-11, -1.9768853221080462e-11, 9.190537220149508e-12, -4.2949394041258415e-12, 1.9981863386142606e-12, -9.396025624219817e-13, 4.335282133283158e-13, -2.0410756418343112e-13, 1.0455525334407412e-13, -4.748978987834107e-14, 2.7630675525358583e-14]
     Tmin, Tmax, Tc = 233.22, 646.15, 647.096
-    
+
     obj2 = SurfaceTension(Tc=Tc, exp_cheb_fit_ln_tau=((Tmin, Tmax, Tc, coeffs)))
-    
+
     T = 500
     assert_close(obj2(T), 0.031264474019763455, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(T), -0.00023379922039411865, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(T, order=2), -1.0453010755999069e-07, rtol=1e-13)
-    
+
 @pytest.mark.meta_T_dept
 def test_SurfaceTension_exp_stablepoly_fit_ln_tau():
     coeffs = [0.011399360373616219, -0.014916568994522095, -0.06881296308711171, 0.0900153056718409, 0.19066633691545576, -0.24937350547406822, -0.3148389292182401, 0.41171834646956995, 0.3440581845934503, -0.44989947455906076, -0.2590532901358529, 0.33869134876113094, 0.1391329435696207, -0.18195230788023764, -0.050437145563137165, 0.06583166394466389, 0.01685157036382634, -0.022266583863000733, 0.003539388708205138, -0.005171064606571463, 0.012264455189935575, -0.018085676249990357, 0.026950795197264732, -0.04077120220662778, 0.05786417011592615, -0.07222889554773304, 0.07433570330647113, -0.05829288696590232, -3.7182636506596722, -5.844828481765601]
     Tmin, Tmax, Tc = 233.22, 646.15, 647.096
-    
+
     obj2 = SurfaceTension(Tc=Tc, exp_stablepoly_fit_ln_tau=(Tmin, Tmax, Tc, coeffs))
-    
+
     T = 500
     assert_close(obj2(T), 0.03126447402046822, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(T), -0.0002337992205182661, rtol=1e-13)
@@ -224,7 +223,7 @@ def test_SurfaceTension_EQ106_ABC_extrapolate():
     Tmin, Tc, A, B = 194.0, 592.5, 0.056, 1.32
     C = -0.01
     Tmax = 590.0
-    
+
     good_obj = SurfaceTension(Tc=Tc, DIPPR106_parameters={'Test': {'Tmin': Tmin,
                                 'Tmax': Tmax, 'Tc': Tc, 'A': A, 'B': B, 'C': C}},
                               extrapolation='DIPPR106_ABC')
@@ -233,13 +232,13 @@ def test_SurfaceTension_EQ106_ABC_extrapolate():
 
     # Three derivatives
     assert_close(derivative(good_obj, 50, dx=50*1e-7), good_obj.T_dependent_property_derivative(50))
-    
-    assert_close(derivative(good_obj.T_dependent_property_derivative, 190, dx=190*1e-6), 
+
+    assert_close(derivative(good_obj.T_dependent_property_derivative, 190, dx=190*1e-6),
                  good_obj.T_dependent_property_derivative(190, order=2), rtol=1e-7)
-    assert_close(derivative(lambda T:good_obj.T_dependent_property_derivative(T, 2), 190, dx=190*1e-6), 
+    assert_close(derivative(lambda T:good_obj.T_dependent_property_derivative(T, 2), 190, dx=190*1e-6),
                  good_obj.T_dependent_property_derivative(190, order=3), rtol=1e-7)
-    
-    
+
+
     assert_close(good_obj.T_dependent_property_derivative(50), -0.00012114625271322606, rtol=1e-11)
     assert_close(good_obj.T_dependent_property_derivative(50, 2), 7.405594884975754e-08, rtol=1e-11)
     assert_close(good_obj.T_dependent_property_derivative(50, 3), 7.578114176744999e-11, rtol=1e-11)
@@ -251,15 +250,15 @@ def test_SurfaceTension_EQ106_ABC_extrapolate():
                               extrapolation='DIPPR106_AB')
     assert_close(good_obj(591), good_obj.calculate(591, good_obj.method), rtol=1e-13)
     assert_close(good_obj(50), good_obj.calculate(50, good_obj.method), rtol=1e-13)
-    
+
     assert_close(derivative(good_obj, 50, dx=50*1e-7), good_obj.T_dependent_property_derivative(50))
-    
-    assert_close(derivative(good_obj.T_dependent_property_derivative, 190, dx=190*1e-6), 
+
+    assert_close(derivative(good_obj.T_dependent_property_derivative, 190, dx=190*1e-6),
                  good_obj.T_dependent_property_derivative(190, order=2), rtol=1e-7)
-    assert_close(derivative(lambda T:good_obj.T_dependent_property_derivative(T, 2), 190, dx=190*1e-6), 
+    assert_close(derivative(lambda T:good_obj.T_dependent_property_derivative(T, 2), 190, dx=190*1e-6),
                  good_obj.T_dependent_property_derivative(190, order=3), rtol=1e-7)
-    
-    
+
+
     assert_close(good_obj.T_dependent_property_derivative(50), -0.00012128895314509345, rtol=1e-11)
     assert_close(good_obj.T_dependent_property_derivative(50, 2), 7.154371429756683e-08, rtol=1e-11)
     assert_close(good_obj.T_dependent_property_derivative(50, 3), 8.967691377390834e-11, rtol=1e-11)

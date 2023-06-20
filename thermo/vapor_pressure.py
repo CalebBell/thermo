@@ -90,7 +90,7 @@ from chemicals.vapor_pressure import (
 from fluids.numerics import NoSolutionError, exp, isnan, log
 
 from thermo.coolprop import PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, IAPWS, VDI_PPDS, VDI_TABULAR, HEOS_FIT, TDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, HEOS_FIT, IAPWS, VDI_PPDS, VDI_TABULAR, TDependentProperty
 
 """
 Move this to its own file?

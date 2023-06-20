@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -21,18 +20,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from __future__ import division
-from thermo import *
-import thermo
 from math import *
 from random import random
-from fluids.constants import *
-from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
-from numpy.testing import assert_allclose
-from chemicals import normalize, Rackett_fit, Antoine
-from thermo.test_utils import check_np_output_activity
 
 import pytest
+from chemicals import Antoine, Rackett_fit, normalize
+from fluids.constants import *
+from fluids.numerics import assert_close, assert_close1d, assert_close2d
+
+import thermo
+from thermo import *
+from thermo.test_utils import check_np_output_activity
+
 try:
     import numba
     import numba.core
@@ -41,8 +40,9 @@ except:
 import numpy as np
 
 if numba is not None:
-    import thermo.numba
     import chemicals.numba
+
+    import thermo.numba
 
 
 
@@ -81,20 +81,21 @@ def test_EOSMIX_outputs_inputs_np():
                   kijs=[[0.0, -0.0059, 0.0119, 0.0289], [-0.0059, 0.0, 0.0011, 0.0533], [0.0119, 0.0011, 0.0, 0.0878], [0.0289, 0.0533, 0.0878, 0.0]])
     kwargs_np = {k:np.array(v) for k, v in kwargs.items()}
 
-    from thermo.numba import PRMIX as PRMIXNP, SRKMIX as SRKMIXNP
+    from thermo.numba import PRMIX as PRMIXNP
+    from thermo.numba import SRKMIX as SRKMIXNP
     plain = [PRMIX, SRKMIX]
     transformed = [PRMIXNP, SRKMIXNP]
-    
+
     for p, t in zip(plain, transformed):
 
         eos = p(T=200, P=1e5, **kwargs)
         eos_np = t(T=200, P=1e5, **kwargs_np)
-    
+
         base_vec_attrs = ['a_alphas', 'da_alpha_dTs', 'd2a_alpha_dT2s', 'a_alpha_roots', 'a_alpha_j_rows', 'da_alpha_dT_j_rows', 'lnphis_l', 'phis_l', 'fugacities_l', 'lnphis_g', 'phis_g', 'fugacities_g']
         extra_vec_attrs = ['db_dzs', 'db_dns', 'dnb_dns', 'd2b_dzizjs', 'd2b_dninjs', 'd3b_dzizjzks', 'd3b_dninjnks', 'd3epsilon_dzizjzks', 'da_alpha_dzs', 'da_alpha_dns', 'dna_alpha_dns', 'd2a_alpha_dzizjs']
         alpha_vec_attrs = ['_a_alpha_j_rows', '_da_alpha_dT_j_rows', 'a_alpha_ijs', 'da_alpha_dT_ijs', 'd2a_alpha_dT2_ijs']
         # TODO: _d2a_alpha_dT2_j_rows, and _a_alpha_j_rows', '_da_alpha_dT_j_rows with .to methods
-    
+
         for attr in base_vec_attrs + extra_vec_attrs + alpha_vec_attrs:
             assert_close1d(getattr(eos, attr), getattr(eos_np, attr), rtol=1e-14)
             assert type(getattr(eos, attr)) is list
@@ -261,13 +262,13 @@ def test_a_alpha_quadratic_terms_numba():
     a_alpha_expect, a_alpha_j_rows_expect = thermo.eos_mix_methods.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs)
     assert_close(a_alpha, a_alpha_expect, rtol=1e-13)
     assert_close1d(a_alpha_j_rows, a_alpha_j_rows_expect, rtol=1e-13)
-    
+
     a_alpha_j_rows = np.zeros(len(zs))
     vec0 = np.zeros(len(zs))
     a_alpha, a_alpha_j_rows = thermo.numba.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows, vec0)
     assert_close(a_alpha, a_alpha_expect, rtol=1e-13)
     assert_close1d(a_alpha_j_rows, a_alpha_j_rows_expect, rtol=1e-13)
-    
+
     a_alpha, a_alpha_j_rows = thermo.numba.a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs, a_alpha_j_rows)
     assert_close(a_alpha, a_alpha_expect, rtol=1e-13)
     assert_close1d(a_alpha_j_rows, a_alpha_j_rows_expect, rtol=1e-13)
@@ -299,7 +300,7 @@ def test_IAPWS95_numba():
     assert isinstance(thermo.numba.flash.iapws95_Psat, numba.core.registry.CPUDispatcher)
     assert isinstance(thermo.numba.phases.IAPWS95._d3Ar_ddeltadtau2_func, numba.core.registry.CPUDispatcher)
 
-    from thermo.numba import IAPWS95, IAPWS95Liquid, IAPWS95Gas, FlashPureVLS
+    from thermo.numba import FlashPureVLS, IAPWS95Gas, IAPWS95Liquid
 
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
     gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
@@ -354,9 +355,9 @@ def test_RegularSolution_gammas_numba():
      [0.00662, 0.0, 0.00774, 0.01966],
      [0.01601, 0.01022, 0.0, 0.00698],
      [0.0152, 0.00544, 0.02579, 0.0]]
-    
+
     GE = thermo.regular_solution.RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
-    assert_close1d(GE.gammas(), 
+    assert_close1d(GE.gammas(),
                thermo.numba.regular_solution.regular_solution_gammas(T=T, xs=np.array(xs), Vs=np.array(Vs), SPs=np.array(SPs), lambda_coeffs=np.array(lambda_coeffs), N=N), rtol=1e-12)
 
 
@@ -378,14 +379,18 @@ def test_volume_numba_solvers():
     assert_close(slns[0], 2.5908397553496098e-05, rtol=1e-15)
 
 from .test_eos_volume import hard_parameters, validate_volume
+
+
 @pytest.mark.parametrize("params", hard_parameters)
 @mark_as_numba
 def test_hard_default_solver_volumes_numba(params):
     # Particularly tough cases
-    validate_volume(params, thermo.numba.eos_volume.volume_solutions_halley, rtol=1e-14)    
+    validate_volume(params, thermo.numba.eos_volume.volume_solutions_halley, rtol=1e-14)
 
 
-from .test_flash_pure import test_V_error_plot, pure_fluids, eos_list
+from .test_flash_pure import eos_list, pure_fluids, test_V_error_plot
+
+
 @pytest.mark.slow
 @pytest.mark.plot
 @pytest.mark.parametric
@@ -396,7 +401,7 @@ from .test_flash_pure import test_V_error_plot, pure_fluids, eos_list
 def test_V_error_plot_numba(fluid, eos, P_range):
     return test_V_error_plot(fluid=fluid, eos=eos, P_range=P_range, solver=staticmethod(thermo.numba.eos_volume.volume_solutions_halley))
 
-    
+
 
 @mark_as_numba
 def test_numba_dri_air():
@@ -405,11 +410,11 @@ def test_numba_dri_air():
                            gas=gas, liquids=[], solids=[])
     res = flasher.flash(H=4000, P=1e6)
     assert_close(res.T, 146.94641220863562)
-    
+
 @mark_as_numba
 def test_lnphis_direct_works_at_all():
     zs = np.array([.5, .5])
-    eos_kwargs = {'Pcs': np.array([4872000.0, 3370000.0]), 'Tcs': np.array([305.32, 469.7]), 
+    eos_kwargs = {'Pcs': np.array([4872000.0, 3370000.0]), 'Tcs': np.array([305.32, 469.7]),
                   'omegas': np.array([0.098, 0.251])}
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=None, T=300.0, P=1e5, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=None, T=300.0, P=1e5, zs=zs)
@@ -429,15 +434,15 @@ def test_lnphis_direct_and_sequential_substitution_2P_functional():
                          HeatCapacityGas(poly_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866]))]
     correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases)
     zs = np.array([.5, .5])
-    
+
     eos_kwargs = {'Pcs': np.array(constants.Pcs), 'Tcs': np.array(constants.Tcs), 'omegas': np.array(constants.omegas)}
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     res_expect = flasher.flash(T=T, P=P, zs=zs.tolist())
     VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
-    
+
     _, _, VF, xs, ys = chemicals.numba.flash_wilson(zs=zs, Tcs=eos_kwargs['Tcs'], Pcs=eos_kwargs['Pcs'], omegas=eos_kwargs['omegas'], T=T, P=P)
     VF_calc, xs_calc, ys_calc, niter, err = thermo.numba.sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
                                    liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
@@ -446,8 +451,8 @@ def test_lnphis_direct_and_sequential_substitution_2P_functional():
     assert_close(VF_calc, VF_expect, rtol=1e-6)
     assert_close1d(xs_calc, xs_expect)
     assert_close1d(ys_calc, ys_expect)
-    
-    
+
+
 @mark_as_numba
 def test_fit_T_dep_numba_Rackett():
     Tc, rhoc, b, n, MW = 545.03, 739.99, 0.3, 0.28571, 105.921
@@ -467,13 +472,13 @@ def test_fit_T_dep_numba_Antoine_1():
                           do_statistics=True, use_numba=True, model_kwargs={'base':10.0},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
-    
+
 @mark_as_numba
 def test_fit_T_dep_numba_Antoine_2():
     from math import e
-    Ts = [80.0, 84.33333333333333, 88.66666666666666, 92.99999999999999, 97.33333333333331, 101.66666666666664, 105.99999999999997, 110.3333333333333, 114.66666666666663, 119.0] 
+    Ts = [80.0, 84.33333333333333, 88.66666666666666, 92.99999999999999, 97.33333333333331, 101.66666666666664, 105.99999999999997, 110.3333333333333, 114.66666666666663, 119.0]
     data = [117529.41043039897, 182563.197936732, 272219.9291192508, 391769.39009698987, 546647.2723936989, 742321.9818708885, 984172.0518229883, 1277378.6662114232, 1626835.7331915696, 2037078.3006621948]
-    
+
     res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=data, model='Antoine',
                           do_statistics=True, use_numba=True, fit_method='lm', model_kwargs={'base': e},
                                       multiple_tries=True, multiple_tries_max_err=1e-5)
@@ -481,4 +486,4 @@ def test_fit_T_dep_numba_Antoine_2():
     assert_close(res['A'], 20.72)
     assert_close(res['B'], 765.88)
     assert_close(res['C'], 4.6692)
-    
+

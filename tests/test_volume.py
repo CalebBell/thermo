@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,27 +17,50 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from fluids.numerics import assert_close, assert_close1d, assert_close2d, linspace
-import numpy as np
-import pytest
 import json
-import pandas as pd
-from thermo.volume import *
-from thermo.volume import VDI_TABULAR
-from thermo.eos import *
+
 import chemicals
+import pytest
 from chemicals.utils import Vm_to_rho, zs_to_ws
-from thermo.vapor_pressure import VaporPressure
-from thermo.utils import POLY_FIT, EXP_POLY_FIT
 from chemicals.volume import *
-from thermo.volume import LALIBERTE, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD_MIXTURE, LINEAR, RACKETT
-from thermo.volume import HTCOSTALD, COOLPROP, DIPPR_PERRY_8E, VDI_TABULAR, RACKETTFIT, YEN_WOODS_SAT, BHIRUD_NORMAL, VDI_PPDS, TOWNSEND_HALES, HTCOSTALDFIT, CAMPBELL_THODOS, MMSNM0, RACKETT, YAMADA_GUNN
-from thermo.volume import PITZER_CURL, EOS, TSONOPOULOS_EXTENDED, ABBOTT, COOLPROP, IDEAL, TSONOPOULOS, CRC_VIRIAL
-from thermo.volume import EOS, LINEAR, IDEAL
-from thermo.eos_mix import PRMIX
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, linspace
+
 from thermo.coolprop import has_CoolProp
+from thermo.eos import *
+from thermo.eos_mix import PRMIX
+from thermo.utils import EXP_POLY_FIT, POLY_FIT
+from thermo.vapor_pressure import VaporPressure
+from thermo.volume import *
+from thermo.volume import (
+    ABBOTT,
+    BHIRUD_NORMAL,
+    CAMPBELL_THODOS,
+    COOLPROP,
+    COSTALD_MIXTURE,
+    COSTALD_MIXTURE_FIT,
+    CRC_VIRIAL,
+    DIPPR_PERRY_8E,
+    EOS,
+    HTCOSTALD,
+    HTCOSTALDFIT,
+    IDEAL,
+    LINEAR,
+    MMSNM0,
+    PITZER_CURL,
+    RACKETT,
+    RACKETT_PARAMETERS,
+    RACKETTFIT,
+    TOWNSEND_HALES,
+    TSONOPOULOS_EXTENDED,
+    VDI_PPDS,
+    VDI_TABULAR,
+    YAMADA_GUNN,
+    YEN_WOODS_SAT,
+)
+
 
 @pytest.mark.CoolProp
 @pytest.mark.meta_T_dept
@@ -92,7 +114,7 @@ def test_VolumeGas():
 
     assert_close(EtOH.TP_dependent_property(300, 9E4), 0.06596765735649)
     EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.TP_dependent_property(300, 9E4)
+    assert None is EtOH.TP_dependent_property(300, 90000.0)
 
     # Test CRC Virial data
     H2 = VolumeGas(CASRN='1333-74-0')
@@ -225,11 +247,11 @@ def test_VolumeLiquid():
     # Get CRC Inorganic invalid
     U = VolumeLiquid(CASRN='7440-61-1')
     assert_close(U.T_dependent_property(1420), 1.3758901734104049e-05)
-    assert False == U.test_method_validity(1430, U.method)
+    assert False is U.test_method_validity(1430, U.method)
 
     # Test lower limit for BHIRUD_NORMAL
     fake = VolumeLiquid(Tc=1000)
-    assert False == fake.test_method_validity(349.5, 'BHIRUD_NORMAL')
+    assert False is fake.test_method_validity(349.5, 'BHIRUD_NORMAL')
 
 
 
@@ -244,7 +266,7 @@ def test_VolumeLiquid():
     EtOH.tabular_extrapolation_permitted = True
     assert_close(EtOH.TP_dependent_property(274, 9E4), 5.723868454722602e-05)
     EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.TP_dependent_property(300, 9E4)
+    assert None is EtOH.TP_dependent_property(300, 90000.0)
 
 
     with pytest.raises(Exception):
@@ -317,7 +339,7 @@ def test_VolumeSolid():
     Vm = VolumeSolid(CASRN='10022-31-8').T_dependent_property(300)
     assert_close(Vm, 8.06592592592592e-05)
 
-    assert None == VolumeSolid(CASRN='10022-31-8').T_dependent_property(-100)
+    assert None is VolumeSolid(CASRN='10022-31-8').T_dependent_property(-100)
 
     with pytest.raises(Exception):
         VolumeSolid(CASRN='10022-31-8').test_method_validity(200, 'BADMETHOD')
@@ -339,7 +361,7 @@ def test_VolumeSolid_fitting2():
     obj = VolumeSolid(CASRN='7782-44-7', load_data=False)
     Ts_gamma = [42.801, 44.0, 46.0, 48.0,
                50.0, 52.0, 54.0, 54.361]
-    
+
     Vms_gamma = [23.05e-6, 23.06e-6, 23.18e-6, 23.30e-6,
                 23.43e-6, 23.55e-6, 23.67e-6, 23.69e-6]
     obj.fit_add_model(Ts=Ts_gamma, data=Vms_gamma, model='DIPPR100', name='gamma')
@@ -351,7 +373,7 @@ def test_VolumeSolid_fitting_wrong_length():
     obj = VolumeSolid(CASRN='7782-44-7', load_data=False)
     Ts_gamma = [42.801, 44.0, 46.0, 48.0,
                50.0, 52.0, 54.0]
-    
+
     Vms_gamma = [23.05e-6, 23.06e-6, 23.18e-6, 23.30e-6,
                 23.43e-6, 23.55e-6, 23.67e-6, 23.69e-6]
     with pytest.raises(ValueError):
@@ -366,7 +388,7 @@ def test_VolumeSolid_fitting1():
     ammonia_Ts = [194.150, 194.650, 195.150, 195.650, 196.150, 196.650, 197.150, 197.650, 198.150, 198.650, 199.150, 199.650, 200.150, 200.650, 201.150, 201.650, 202.150, 202.650, 203.150, 203.650, 204.150]
     ammonia_Vms = [1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3, 1/47.9730E3]
     obj = VolumeSolid(CASRN='7664-41-7', load_data=False)
-    
+
     res, stats = VolumeSolid.fit_data_to_model(Ts=ammonia_Ts, data=ammonia_Vms, model='DIPPR100',
                           do_statistics=True, use_numba=False)
     assert stats['MAE'] < 1e-8
@@ -379,10 +401,10 @@ def test_VolumeSolid_fitting1():
 
 
     # Case where number of parameters bad, needed to drop a parameter
-    kwargs = {'Ts': [700.0, 750.0, 800.0, 850.0, 900.0, 950.0], 
+    kwargs = {'Ts': [700.0, 750.0, 800.0, 850.0, 900.0, 950.0],
     'data': [9.977109720738593e-06, 1.0046097111247695e-05, 1.0114480198019801e-05, 1.0183800623052959e-05, 1.0254077791718946e-05, 1.0325331648768161e-05],
-    'model': 'DIPPR100', 'model_kwargs': {}, 'do_statistics': True, 
-    'use_numba': False, 'multiple_tries': False, 
+    'model': 'DIPPR100', 'model_kwargs': {}, 'do_statistics': True,
+    'use_numba': False, 'multiple_tries': False,
     'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'} # lm
 
     params, res = VolumeSolid.fit_data_to_model(**kwargs)
@@ -396,30 +418,30 @@ def test_VolumeSolid_fitting1():
 def test_VolumeSolid_fitting0():
     Ts_alpha = [4.2, 18.5, 20, 22, 23.880]
     Vms_alpha = [20.75e-6, 20.75e-6, 20.75e-6, 20.78e-6, 20.82e-6]
-    
+
     Ts_beta = [23.880, 24, 26, 28,
                30, 32, 34, 36,
                38, 40, 42, 43.801]
     Vms_beta = [20.95e-6, 20.95e-6, 21.02e-6, 21.08e-6,
-                21.16e-6, 21.24e-6, 21.33e-6, 21.42e-6, 
+                21.16e-6, 21.24e-6, 21.33e-6, 21.42e-6,
                 21.52e-6, 21.63e-6, 21.75e-6, 21.87e-6]
-                
+
     Ts_gamma = [42.801, 44.0, 46.0, 48.0,
                50.0, 52.0, 54.0, 54.361]
-    
+
     Vms_gamma = [23.05e-6, 23.06e-6, 23.18e-6, 23.30e-6,
                 23.43e-6, 23.55e-6, 23.67e-6, 23.69e-6]
-    
+
     obj = VolumeSolid(CASRN='7782-44-7', load_data=False)
     # obj.add_tabular_data(Ts=Ts_alpha, properties=Vms_alpha, name='O2_alpha')
     # obj.add_tabular_data(Ts=Ts_beta, properties=Vms_beta, name='O2_beta')
     # obj.add_tabular_data(Ts=Ts_gamma, properties=Vms_gamma, name='O2_gamma')
-    
+
     fit_zeros_specified = obj.fit_data_to_model(Ts=Ts_gamma, data=Vms_gamma, model='DIPPR100', do_statistics=False, use_numba=False,
                      model_kwargs={'C': 0.0, 'D': 0.0, 'E': 0.0, 'F': 0.0, 'G': 0.0, 'B': 0.0})
     for l in ('B', 'C', 'D', 'E', 'F'):
         assert fit_zeros_specified[l] == 0.0
-        
+
     fit_constant = obj.fit_data_to_model(Ts=Ts_gamma, data=Vms_gamma, model='constant', do_statistics=False, use_numba=False)
     assert_close(fit_zeros_specified['A'], fit_constant['A'], rtol=1e-13)
 
@@ -436,18 +458,18 @@ def test_VolumeLiquid_fitting0():
                           do_statistics=True, use_numba=False,
                           guesses= {'A': 4.0518E3, 'B': 0.27129, 'C': 405.4,'D': 0.31349})
     assert stats['MAE'] < 1e-5
-    
+
 @pytest.mark.meta_T_dept
 @pytest.mark.fitting
 def test_VolumeLiquid_fitting1_dippr():
-    fit_check_CASs = ['124-38-9', '74-98-6', '1333-74-0', '630-08-0', 
+    fit_check_CASs = ['124-38-9', '74-98-6', '1333-74-0', '630-08-0',
                       '100-21-0', '624-92-0', '624-72-6', '74-86-2',
                       '115-07-1', '64-18-6']
     for CAS in fit_check_CASs:
         obj = VolumeLiquid(CASRN=CAS)
         Ts = linspace(obj.DIPPR_Tmin, obj.DIPPR_Tmax, 8)
         props_calc = [1.0/obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
-    
+
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR105',
                               do_statistics=True, use_numba=False, fit_method='lm')
         assert stats['MAE'] < 1e-5
@@ -461,9 +483,9 @@ def test_VolumeLiquid_fitting2_dippr_116_ppds():
         obj = VolumeLiquid(CASRN=CAS)
         Ts = linspace(obj.T_limits[VDI_PPDS][0], obj.T_limits[VDI_PPDS][1], 8)
         props_calc = [Vm_to_rho(obj.calculate(T, VDI_PPDS), obj.VDI_PPDS_MW) for T in Ts]
-        
+
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR116',
-                              do_statistics=True, use_numba=False, fit_method='lm', 
+                              do_statistics=True, use_numba=False, fit_method='lm',
                               model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'A': obj.VDI_PPDS_rhoc})
         assert stats['MAE'] < 1e-7
 
@@ -478,7 +500,7 @@ def test_VolumeLiquid_fitting3():
                           do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
-    
+
     # From yaws
     Tc, rhoc, b, n, MW = 1030.0, 1795.0521319999998, 0.96491407, 0.15872, 97.995
     Ts = linspace(315.51, 393.15, 10)

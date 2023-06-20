@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,19 +17,20 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import pytest
 from math import isinf, isnan
+
 from fluids.numerics import *
-from thermo.flash import *
-from thermo.phases import *
-from thermo.eos_mix import *
+
 from thermo.eos import *
-from thermo.vapor_pressure import VaporPressure
+from thermo.eos_mix import *
+from thermo.flash import *
+from thermo.flash.flash_utils import assert_stab_success_2P
 from thermo.heat_capacity import *
 from thermo.phase_change import *
-from thermo.flash.flash_utils import assert_stab_success_2P
+from thermo.phases import *
 from thermo.property_package import StabilityTester
 
 

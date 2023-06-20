@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,15 +17,12 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from math import exp, log
-import pytest
-import numpy as np
-import pandas as pd
-from fluids.constants import calorie, R
+from fluids.numerics import assert_close, assert_close2d, assert_close3d
+
 from thermo.interaction_parameters import IPDB
-from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
 
 
 def run_validate_db():
@@ -44,8 +40,8 @@ def test_basic_chemsep_PR():
 
     kij_missing = IPDB.get_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
     assert kij_missing == 0
-    assert False == IPDB.has_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
-    assert True == IPDB.has_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
+    assert False is IPDB.has_ip_specific('ChemSep PR', ['1249-38-9', '67-56-1'], 'kij')
+    assert True is IPDB.has_ip_specific('ChemSep PR', ['124-38-9', '67-56-1'], 'kij')
 
     assert IPDB.get_tables_with_type('PR kij') == ['ChemSep PR']
 
@@ -71,9 +67,9 @@ def test_basic_chemsep_NRTL():
     assert_close2d(alphas, alphas_known)
     alphas = IPDB.get_ip_symmetric_matrix('ChemSep NRTL', ['64-17-5', '7732-18-5', '67-56-1'], 'alphaij')
     assert_close2d(alphas, alphas_known)
-    
-    
-    
+
+
+
 def test_basic_chemsep_UNIQUAC():
     tausB = IPDB.get_ip_asymmetric_matrix(name='ChemSep UNIQUAC', CASs=['64-17-5', '7732-18-5'], ip='bij')
     assert_close2d(tausB, [[0.0, -87.46005814161899], [-55.288075960115854, 0.0]], rtol=1e-5)

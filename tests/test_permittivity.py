@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,15 +17,16 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from fluids.numerics import assert_close, assert_close1d, linspace
-import pytest
-import pandas as pd
 from math import isnan
-import numpy as np
-from thermo.permittivity import *
+
+import pytest
 from chemicals.permittivity import permittivity_data_CRC
+from fluids.numerics import assert_close, assert_close1d, linspace
+
+from thermo.permittivity import *
 
 
 @pytest.mark.meta_T_dept
@@ -40,13 +40,13 @@ def test_Permittivity_class():
 
     epsilon = water.T_dependent_property(298.15)
     assert_close(epsilon, 78.40540700004574)
-    assert PermittivityLiquid(CASRN='7732-18-5').all_methods == set(['CRC', 'CRC_CONSTANT', 'IAPWS'])
+    assert PermittivityLiquid(CASRN='7732-18-5').all_methods == {'CRC', 'CRC_CONSTANT', 'IAPWS'}
 
     assert PermittivityLiquid(CASRN='132451235-2151234-1234123').all_methods == set()
     assert PermittivityLiquid(CASRN='132451235-2151234-1234123').T_dependent_property(300) is None
 
-    assert False == PermittivityLiquid(CASRN='7732-18-5').test_method_validity(228.15, 'CRC_CONSTANT')
-    assert False == PermittivityLiquid(CASRN='7732-18-5').test_method_validity(228.15, 'CRC')
+    assert False is PermittivityLiquid(CASRN='7732-18-5').test_method_validity(228.15, 'CRC_CONSTANT')
+    assert False is PermittivityLiquid(CASRN='7732-18-5').test_method_validity(228.15, 'CRC')
 
 
 

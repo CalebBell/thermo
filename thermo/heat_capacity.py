@@ -149,7 +149,7 @@ from thermo.coolprop import (
     has_CoolProp,
 )
 from thermo.electrochem import Laliberte_heat_capacity
-from thermo.utils import COOLPROP, LINEAR, HEOS_FIT, REFPROP_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
+from thermo.utils import COOLPROP, HEOS_FIT, LINEAR, VDI_TABULAR, MixtureProperty, TDependentProperty
 
 TRCIG = 'TRCIG'
 POLING_POLY = 'POLING_POLY'

@@ -1,19 +1,18 @@
-import sys
 import platform
+import sys
+
 is_pypy = 'PyPy' in sys.version
 ver_tup = platform.python_version_tuple()[0:2]
 ver_tup = tuple(int(i) for i in ver_tup)
-import fluids, chemicals, thermo
-import numpy
 def pytest_ignore_collect(path):
     path = str(path)
     # Serious technical debt
-    if ((path.endswith('chemical.py') or path.endswith('mixture.py')  or path.endswith('stream.py') ) and not 'test' in path) or path.endswith('README.rst'):
+    if ((path.endswith(('chemical.py', 'mixture.py', 'stream.py')) ) and 'test' not in path) or path.endswith('README.rst'):
         return True
     if 'benchmark' in path or 'manual_runner' in path or 'make_test_stubs' in path or 'plot' in path or 'prerelease' in path or 'conf.py' in path:
         return True
     if 'dev' in path:
-        return True 
+        return True
     if 'conf.py' in path:
         return True
     if ver_tup < (3, 7) or ver_tup >= (3, 12) or is_pypy:
@@ -36,9 +35,8 @@ def pytest_ignore_collect(path):
         return True
 
 def pytest_configure(config):
-    import os
     #os._called_from_test = True
-    
+
     if sys.version[0] == '3':
         import pytest
         if pytest.__version__.split('.')[0] >= '6':

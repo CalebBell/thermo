@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,22 +17,27 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from numpy.testing import assert_allclose
-import pytest
-from chemicals.utils import normalize, hash_any_primitive
-from thermo.utils import TPD
-from thermo.eos import *
-from thermo.eos_mix import *
-from thermo.eos_alpha_functions import *
-from fluids.constants import R
-from fluids.numerics import jacobian, hessian, assert_close, assert_close1d, assert_close2d, assert_close3d, derivative
-from scipy.optimize import minimize, newton
-from math import log, exp, sqrt
+import json
+import pickle
+from math import exp, log
+
 import numpy as np
-import json, pickle
+import pytest
+from chemicals.utils import hash_any_primitive, normalize
+from fluids.constants import R
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d, derivative, hessian, jacobian
+from numpy.testing import assert_allclose
+from scipy.optimize import minimize, newton
+
 from thermo.coolprop import has_CoolProp
+from thermo.eos import *
+from thermo.eos_alpha_functions import *
+from thermo.eos_mix import *
+from thermo.utils import TPD
+
 
 def eos_Z_test_phase_stability(eos):
     try:
@@ -1544,8 +1548,8 @@ def test_fugacities_PR_vs_coolprop():
     kij = .0067
     kijs = [[0,kij],[kij,0]]
     c1, c2, c1R2_c2R, c2R = PRMIX.c1, PRMIX.c2, PRMIX.c1R2_c2R, PRMIX.c2R
-    
-    
+
+
 
     # match coolprop
     PRMIX.c1, PRMIX.c2 = 0.45724, 0.07780
@@ -1676,8 +1680,8 @@ def test_PR_d_lbphis_dT():
 @pytest.mark.sympy
 @pytest.mark.slow
 def test_PR_dlnphis_dT_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
+    from sympy import Derivative, Function, N, diff, log, sqrt, symbols
     T_num = 270.0
     P_num = 76E5
     Tcs = [126.2, 190.6, 305.4]
@@ -1760,8 +1764,8 @@ def test_SRK_dlnphis_dT():
 @pytest.mark.sympy
 @pytest.mark.slow
 def test_SRK_dlnphis_dT_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
+    from sympy import Derivative, Function, N, diff, log, symbols
     T_num = 270.0
     P_num = 76E5
     Tcs = [126.2, 190.6, 305.4]
@@ -1844,8 +1848,8 @@ def test_VDW_dlnphis_dT():
 @pytest.mark.sympy
 @pytest.mark.slow
 def test_VDW_dlnphis_dT_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
+    from sympy import Derivative, Function, N, diff, log, sqrt, symbols
     T_num = 280.0
     P_num = 76E5
     Tcs = [126.2, 190.6, 305.4]
@@ -1932,8 +1936,8 @@ def test_PR_dlnphis_dP():
 @pytest.mark.slow
 @pytest.mark.sympy
 def test_PR_dlnphis_dP_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
+    from sympy import Derivative, Function, N, diff, log, sqrt, symbols
     T_num = 270.0
     P_num = 76E5
     Tcs = [126.2, 190.6, 305.4]
@@ -1982,7 +1986,7 @@ def test_PR_dlnphis_dP_sympy():
         working = needed[i].subs(subs)
         working = working.subs(subs2)
 
-        sympy_diffs.append(float((N(working))))
+        sympy_diffs.append(float(N(working)))
     assert_close1d(sympy_diffs, diffs_implemented, rtol=1e-11)
 
 
@@ -2012,8 +2016,8 @@ def test_SRK_dlnphis_dP():
 @pytest.mark.slow
 @pytest.mark.sympy
 def test_SRK_dlnphis_dP_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
+    from sympy import Derivative, Function, N, diff, log, symbols
     T_num = 270.0
     P_num = 76E5
     Tcs = [126.2, 190.6, 305.4]
@@ -2060,7 +2064,7 @@ def test_SRK_dlnphis_dP_sympy():
         working = needed[i].subs(subs)
         working = working.subs(subs2)
 
-        sympy_diffs.append(float((N(working))))
+        sympy_diffs.append(float(N(working)))
     assert_close1d(sympy_diffs, diffs_implemented, rtol=1e-11)
 
 
@@ -2091,8 +2095,8 @@ def test_VDW_dlnphis_dP():
 @pytest.mark.sympy
 @pytest.mark.slow
 def test_VDW_dlnphis_dP_sympy():
-    from sympy import Derivative, symbols, sqrt, diff, log, N, Function
     from fluids.constants import R as R_num
+    from sympy import Derivative, Function, N, diff, log, sqrt, symbols
 
     T_num = 280.0
     P_num = 76E5
@@ -2332,7 +2336,7 @@ def test_d2b_d2nx(kwargs):
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3b_dnz_sympy(kwargs):
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
-    from sympy import symbols, diff
+    from sympy import diff, symbols
     zs = kwargs['zs']
 
     N = len(zs)
@@ -2404,10 +2408,11 @@ def test_d3b_dnz_sympy(kwargs):
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3delta_dnz_sympy(kwargs):
-    from thermo.eos_mix import PRMIXTranslated, SRKMIXTranslated
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
     # Covers everything but to validate new EOSs, have to add the delta function to the list
-    from sympy import symbols, diff
+    from sympy import diff, symbols
+
+    from thermo.eos_mix import PRMIXTranslated, SRKMIXTranslated
     zs = kwargs['zs']
 
     N = len(zs)
@@ -2460,7 +2465,7 @@ def test_d3delta_dnz_sympy(kwargs):
 
         for e in eos_mix_list:
             if e not in deltas:
-                raise ValueError("Update deltas for %s" %(e,))
+                raise ValueError(f"Update deltas for {e}")
             diffs = {}
             delta = deltas[e]
 
@@ -2507,7 +2512,8 @@ def test_d3delta_dnz_sympy(kwargs):
 @pytest.mark.sympy
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_d2delta_dnz_sympy(kwargs):
-    from sympy import symbols, diff
+    from sympy import diff, symbols
+
     from thermo.eos_mix import PRMIXTranslated
     zs = kwargs['zs']
 
@@ -2560,7 +2566,7 @@ def test_d2delta_dnz_sympy(kwargs):
 
         for e in eos_mix_list:
             if e not in deltas:
-                raise ValueError("Update deltas for %s" %(e,))
+                raise ValueError(f"Update deltas for {e}")
             diffs = {}
             delta = deltas[e]
 
@@ -2606,10 +2612,11 @@ def test_d2delta_dnz_sympy(kwargs):
 @pytest.mark.slow
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3epsilon_dnz_sympy(kwargs):
-    from thermo.eos_mix import PRMIXTranslated
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
     # Covers everything but to validate new EOSs, have to add the epsilon function to the list
-    from sympy import symbols, diff
+    from sympy import diff, symbols
+
+    from thermo.eos_mix import PRMIXTranslated
     zs = kwargs['zs']
 
     N = len(zs)
@@ -2662,7 +2669,7 @@ def test_d3epsilon_dnz_sympy(kwargs):
 
         for e in eos_mix_list:
             if e not in epsilons:
-                raise ValueError("Add new data for %s" %(e,))
+                raise ValueError(f"Add new data for {e}")
 
             diffs = {}
             epsilon = epsilons[e]
@@ -2710,8 +2717,9 @@ def test_d3epsilon_dnz_sympy(kwargs):
 @pytest.mark.slow
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_d2epsilon_dnz_sympy(kwargs):
+    from sympy import diff, symbols
+
     from thermo.eos_mix import PRMIXTranslated
-    from sympy import symbols, diff
     zs = kwargs['zs']
 
     N = len(zs)
@@ -2955,7 +2963,7 @@ def test_d2a_alpha_d2nx(kwargs):
 @pytest.mark.sympy
 @pytest.mark.slow
 def test_d3a_alpha_dninjnk():
-    from sympy import Function, symbols, diff, simplify
+    from sympy import Function, diff, simplify, symbols
     a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44 = symbols(
         'a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44',
     cls=Function)
@@ -3015,7 +3023,7 @@ def test_d2a_alpha_dT2_dnxpartial():
 @pytest.mark.slow
 @pytest.mark.sympy
 def test_d3a_alpha_dninjnks():
-    from sympy import symbols, Function, diff
+    from sympy import Function, diff, symbols
 
     a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44 = symbols(
         'a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44',
@@ -3453,7 +3461,7 @@ def test_dlnphis_dT_vs_Hdep_identity():
 
 
 
-'''
+"""
 from sympy import *
 a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44 = symbols(
     'a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44')
@@ -3482,7 +3490,7 @@ for i in range(N):
 
 simplify(diff(a_alpha, n2))
 # Top large term is actually a_alpha, so the expression simplifies quite a lot
-'''
+"""
 
 
 
@@ -4305,7 +4313,7 @@ def TV_PV_precision_issue():
 
 
 def test_PSRK_basic():
-    from thermo.unifac import UNIFAC, PSRKIP, PSRKSG
+    from thermo.unifac import PSRKIP, PSRKSG, UNIFAC
     # CO2, n-hexane
     Tcs = [304.2, 507.4]
     Pcs = [7.37646e6, 3.014419e6]
@@ -4330,7 +4338,7 @@ def test_PSRK_basic():
      [-0.0009796813317750766, -0.006767771602552934],
      [2.8906692884712426e-06, 2.5446078792139856e-05])
     assert_close2d(alphas_calcs, alphas_expect, rtol=1e-12)
-    
+
     a_alphas_call = eos.a_alphas_vectorized(T)
     assert_close1d(eos.a_alphas, a_alphas_call, rtol=1e-12)
 
@@ -4413,7 +4421,7 @@ def test_model_hash_gceosmix():
     Pcs=[3.369E6, 3.012E6, 2.736E6]
     T=322.29
     P=101325
-    existing_hashes = set([])
+    existing_hashes = set()
     for eos in eos_mix_no_coeffs_list:
         obj1 = eos(T=T, P=P, zs=zs, omegas=omegas, Tcs=Tcs, Pcs=Pcs, kijs=kijs)
         obj2 = eos(T=T, V=1.0, zs=zs, omegas=omegas, Tcs=Tcs, Pcs=Pcs, kijs=kijs)
@@ -4522,7 +4530,7 @@ def test_APISRKMIX_alpha_functions():
     ais = [0.1384531188470736, 0.23318192635290255]
     Tcs = [126.1, 190.6]
     T = 115.0
-    
+
 
     assert_close1d(APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s), a_alphas_expect, rtol=1e-14)
     res = APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s)
@@ -4533,7 +4541,7 @@ def test_APISRKMIX_alpha_functions():
 def test_APISRK_a_alphas_vectorized():
     res = APISRK_a_alphas_vectorized(T=430.0, Tcs=[514.0], ais=[1.2721974560809934],  S1s=[1.678665], S2s=[-0.216396])
     assert_close1d(res, [1.60465652994097], rtol=1e-13)
-    
+
     out = [0.0]
     res = APISRK_a_alphas_vectorized(T=430.0, Tcs=[514.0], ais=[1.2721974560809934],  S1s=[1.678665], S2s=[-0.216396], a_alphas=out)
     assert out is res
@@ -4548,8 +4556,8 @@ def test_SRK_a_alphas_vectorized():
     out = [0.0, 0.0, 0.]
     res = SRK_a_alphas_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms, a_alphas=out)
     assert res is out
-    
-    
+
+
     res =  SRK_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms)
     expect0 = [2.5494858145127983, 3.5865982452606167, 4.76614806648717]
     expect1 = [-0.004915469296196757, -0.007024101084234858, -0.00936320876945663]
@@ -4557,15 +4565,15 @@ def test_SRK_a_alphas_vectorized():
     assert_close1d(res[0], expect0, rtol=1e-13)
     assert_close1d(res[1], expect1, rtol=1e-13)
     assert_close1d(res[2], expect2, rtol=1e-13)
-    
+
     out0, out1, out2 = [0.0]*3, [0.0]*3, [0.0]*3
     res = SRK_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms, a_alphas=out0, da_alpha_dTs=out1, d2a_alpha_dT2s=out2)
     assert res[0] is out0
     assert res[1] is out1
     assert res[2] is out2
-    
-    
-    
+
+
+
 def test_a_alpha_vectorized():
     from thermo.eos_mix import eos_mix_list
     for e in eos_mix_list:
@@ -4593,7 +4601,7 @@ def test_eos_mix_Psat():
     Psat = eos.Psat(eos.T)
     # eos_new = eos.to(T=eos.T, P=Psat, zs=zs)
     # eos_new.fugacity_l/eos_new.fugacity_g
-    
+
 def test_IGMIX_numpy_not_modified_by_serialization():
     eos = IGMIX(T=115, P=1E6, Tcs=np.array([126.1, 190.6]), Pcs=np.array([33.94E5, 46.04E5]), omegas=np.array([0.04, .008]), zs=np.array([0.5, 0.5]))
     hash1 = hash(eos)
@@ -4650,13 +4658,13 @@ def test_eos_mix_translated_attribute_correct():
             assert e.translated
         else:
             assert not e.translated
-            
+
 def test_eos_mix_model_ids_no_duplicated():
     assert len(eos_mix_list) == len(set(eos_mix_list))
     model_ids = {}
     for k in eos_mix_list:
         if k.model_id in model_ids:
-            raise ValueError("Duplicate Model ID = %s, existing model is %s" %(k, model_ids[k.model_id]))
+            raise ValueError(f"Duplicate Model ID = {k}, existing model is {model_ids[k.model_id]}")
         model_ids[k.model_id] = k
 def test_eos_mix_one_minus_kijs():
     import pickle
@@ -4672,7 +4680,7 @@ def test_eos_mix_one_minus_kijs():
 
     assert_close2d(eos.to(T=303.34, P=1e5, zs=[1]).one_minus_kijs, [[1.0]])
     assert_close2d(eos.to_TP_zs_fast(T=303.34, P=1e5, zs=[1]).one_minus_kijs, [[1.0]])
-    
+
 
 
 def test_numpy_properties_all_eos_mix():
@@ -4682,7 +4690,7 @@ def test_numpy_properties_all_eos_mix():
     omegas = [0.04, 0.2252, 0.1]
     zs = [.7, .2, .1]
     kijs = [[0.0, -0.0122, 0.1652], [-0.0122, 0.0, 0.0967], [0.1652, 0.0967, 0.0]]
-    
+
     kwargs = dict(T=300.0, P=1e5,  Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs, zs=zs)
     def args(eos, numpy=False):
         ans = kwargs.copy()
@@ -4701,7 +4709,7 @@ def test_numpy_properties_all_eos_mix():
                 if type(v) is list:
                     ans[k] = np.array(v)
         return ans
-    
+
     for obj in eos_mix_list:
         kwargs_np = args(obj, True)
         eos_np_base = obj(**kwargs_np)
@@ -4808,11 +4816,11 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.lnphis_g, eos.lnphis_g, rtol=1e-14)
             assert isinstance(eos_np.lnphis_g, np.ndarray)
             assert isinstance(eos.lnphis_g, list)
-            
+
             assert_close2d(eos_np.a_alpha_ijs, eos.a_alpha_ijs, rtol=1e-13)
             assert isinstance(eos_np.a_alpha_ijs, np.ndarray)
             assert isinstance(eos.a_alpha_ijs, list)
-            
+
             # start
             assert_close1d(eos_np.a_alpha_j_rows, eos.a_alpha_j_rows, rtol=1e-13)
             assert isinstance(eos_np.a_alpha_j_rows, np.ndarray)
@@ -4821,12 +4829,12 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.a_alpha_roots, eos.a_alpha_roots, rtol=1e-13)
             assert isinstance(eos_np.a_alpha_roots, np.ndarray)
             assert isinstance(eos.a_alpha_roots, list)
-            
+
             if obj not in (IGMIX, VDWMIX):
                 assert_close2d(eos_np.d2A_dep_dninjs(eos_np.Z_g), eos.d2A_dep_dninjs(eos.Z_g), rtol=1e-12)
                 assert isinstance(eos_np.d2A_dep_dninjs(eos_np.Z_g), np.ndarray)
                 assert isinstance(eos.d2A_dep_dninjs(eos.Z_g), list)
-            
+
             if obj not in (IGMIX, VDWMIX):
                 assert_close2d(eos_np.d2A_dep_dninjs_Vt('g'), eos.d2A_dep_dninjs_Vt('g'), rtol=1e-10)
                 assert isinstance(eos_np.d2A_dep_dninjs_Vt('g'), np.ndarray)
@@ -4848,7 +4856,7 @@ def test_numpy_properties_all_eos_mix():
             assert_close2d(eos_np.d2P_dninjs_Vt('g'), eos.d2P_dninjs_Vt('g'), rtol=1e-13)
             assert isinstance(eos_np.d2P_dninjs_Vt('g'), np.ndarray)
             assert isinstance(eos.d2P_dninjs_Vt('g'), list)
-            
+
             assert_close2d(eos_np.d2Scomp_dninjs('g'), eos.d2Scomp_dninjs('g'), rtol=1e-13)
             assert isinstance(eos_np.d2Scomp_dninjs('g'), np.ndarray)
             assert isinstance(eos.d2Scomp_dninjs('g'), list)
@@ -4908,7 +4916,7 @@ def test_numpy_properties_all_eos_mix():
             assert_close2d(eos_np.d2epsilon_dzizjs, eos.d2epsilon_dzizjs, rtol=1e-13)
             assert isinstance(eos_np.d2epsilon_dzizjs, np.ndarray)
             assert isinstance(eos.d2epsilon_dzizjs, list)
-            
+
             assert_close2d(eos_np.d2lnphi_dninjs(eos_np.Z_g), eos.d2lnphi_dninjs(eos.Z_g), rtol=1e-12)
             assert isinstance(eos_np.d2lnphi_dninjs(eos_np.Z_g), np.ndarray)
             assert isinstance(eos.d2lnphi_dninjs(eos.Z_g), list)
@@ -4946,7 +4954,7 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.dS_dep_dns(eos_np.V_g), eos.dS_dep_dns(eos.V_g), rtol=1e-13)
             assert isinstance(eos_np.dS_dep_dns(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dS_dep_dns(eos.V_g), list)
-            
+
             assert_close1d(eos_np.dS_dep_dzs(eos_np.V_g), eos.dS_dep_dzs(eos.V_g), rtol=1e-13)
             assert isinstance(eos_np.dS_dep_dzs(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dS_dep_dzs(eos.V_g), list)
@@ -4954,11 +4962,11 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.dV_dns(eos_np.V_g), eos.dV_dns(eos.V_g), rtol=1e-13)
             assert isinstance(eos_np.dV_dns(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dV_dns(eos.V_g), list)
-            
+
             assert_close1d(eos_np.dV_dzs(eos_np.V_g), eos.dV_dzs(eos.V_g), rtol=1e-13)
             assert isinstance(eos_np.dV_dzs(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dV_dzs(eos.V_g), list)
-            
+
             assert_close1d(eos_np.dZ_dns(eos_np.V_g), eos.dZ_dns(eos.V_g), rtol=1e-13)
             assert isinstance(eos_np.dZ_dns(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dZ_dns(eos.V_g), list)
@@ -4970,7 +4978,7 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.dZ_dzs(eos_np.V_g), eos.dZ_dzs(eos.V_g), rtol=1e-13)
             assert isinstance(eos_np.dZ_dzs(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dZ_dzs(eos.V_g), list)
-            
+
             assert_close1d(eos_np.da_alpha_dT_dns, eos.da_alpha_dT_dns, rtol=1e-14)
             assert isinstance(eos_np.da_alpha_dT_dns, np.ndarray)
             assert isinstance(eos.da_alpha_dT_dns, list)
@@ -4978,7 +4986,7 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.da_alpha_dT_dzs, eos.da_alpha_dT_dzs, rtol=1e-14)
             assert isinstance(eos_np.da_alpha_dT_dzs, np.ndarray)
             assert isinstance(eos.da_alpha_dT_dzs, list)
-            
+
             assert_close2d(eos_np.da_alpha_dT_ijs, eos.da_alpha_dT_ijs, rtol=1e-13)
             assert isinstance(eos_np.da_alpha_dT_ijs, np.ndarray)
             assert isinstance(eos.da_alpha_dT_ijs, list)
@@ -4998,15 +5006,15 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.db_dns, eos.db_dns, rtol=1e-14)
             assert isinstance(eos_np.db_dns, np.ndarray)
             assert isinstance(eos.db_dns, list)
-            
+
             assert_close1d(eos_np.db_dzs, eos.db_dzs, rtol=1e-14)
             assert isinstance(eos_np.db_dzs, np.ndarray)
             assert isinstance(eos.db_dzs, list)
-            
+
             assert_close1d(eos_np.ddelta_dns, eos.ddelta_dns, rtol=1e-14)
             assert isinstance(eos_np.ddelta_dns, np.ndarray)
             assert isinstance(eos.ddelta_dns, list)
-            
+
             assert_close1d(eos_np.ddelta_dzs, eos.ddelta_dzs, rtol=1e-14)
             assert isinstance(eos_np.ddelta_dzs, np.ndarray)
             assert isinstance(eos.ddelta_dzs, list)
@@ -5014,7 +5022,7 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.depsilon_dns, eos.depsilon_dns, rtol=1e-14)
             assert isinstance(eos_np.depsilon_dns, np.ndarray)
             assert isinstance(eos.depsilon_dns, list)
-            
+
             assert_close1d(eos_np.depsilon_dzs, eos.depsilon_dzs, rtol=1e-14)
             assert isinstance(eos_np.depsilon_dzs, np.ndarray)
             assert isinstance(eos.depsilon_dzs, list)
@@ -5026,23 +5034,23 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.dlnphi_dzs(eos_np.V_g), eos.dlnphi_dzs(eos.V_g), rtol=1e-13)
             assert isinstance(eos_np.dlnphi_dzs(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dlnphi_dzs(eos.V_g), list)
-            
+
             assert_close1d(eos_np.dlnphis_dP('g'), eos.dlnphis_dP('g'), rtol=1e-12)
             assert isinstance(eos_np.dlnphis_dP('g'), np.ndarray)
             assert isinstance(eos.dlnphis_dP('g'), list)
-            
+
             assert_close1d(eos_np.dlnphis_dT('g'), eos.dlnphis_dT('g'), rtol=1e-12)
             assert isinstance(eos_np.dlnphis_dT('g'), np.ndarray)
             assert isinstance(eos.dlnphis_dT('g'), list)
-            
+
             assert_close2d(eos_np.dlnphis_dns(eos_np.Z_g), eos.dlnphis_dns(eos.Z_g), rtol=1e-12)
             assert isinstance(eos_np.dlnphis_dns(eos_np.Z_g), np.ndarray)
             assert isinstance(eos.dlnphis_dns(eos.Z_g), list)
-            
+
             assert_close2d(eos_np.dlnphis_dzs(eos_np.Z_g), eos.dlnphis_dzs(eos.Z_g), rtol=1e-12)
             assert isinstance(eos_np.dlnphis_dzs(eos_np.Z_g), np.ndarray)
             assert isinstance(eos.dlnphis_dzs(eos.Z_g), list)
-            
+
             assert_close1d(eos_np.dnG_dep_dns(eos_np.V_g), eos.dnG_dep_dns(eos.V_g), rtol=1e-12)
             assert isinstance(eos_np.dnG_dep_dns(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dnG_dep_dns(eos.V_g), list)
@@ -5050,7 +5058,7 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.dnH_dep_dns(eos_np.V_g), eos.dnH_dep_dns(eos.V_g), rtol=1e-12)
             assert isinstance(eos_np.dnH_dep_dns(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dnH_dep_dns(eos.V_g), list)
-            
+
             assert_close1d(eos_np.dnV_dns(eos_np.V_g), eos.dnV_dns(eos.V_g), rtol=1e-12)
             assert isinstance(eos_np.dnV_dns(eos_np.V_g), np.ndarray)
             assert isinstance(eos.dnV_dns(eos.V_g), list)
@@ -5062,7 +5070,7 @@ def test_numpy_properties_all_eos_mix():
             assert_close1d(eos_np.dna_alpha_dT_dns, eos.dna_alpha_dT_dns, rtol=1e-14)
             assert isinstance(eos_np.dna_alpha_dT_dns, np.ndarray)
             assert isinstance(eos.dna_alpha_dT_dns, list)
-            
+
             assert_close1d(eos_np.dna_alpha_dns, eos.dna_alpha_dns, rtol=1e-14)
             assert isinstance(eos_np.dna_alpha_dns, np.ndarray)
             assert isinstance(eos.dna_alpha_dns, list)
@@ -5086,23 +5094,23 @@ def test_numpy_properties_all_eos_mix():
             assert_close3d(eos_np.d3epsilon_dninjnks, eos.d3epsilon_dninjnks, rtol=1e-14)
             assert isinstance(eos_np.d3epsilon_dninjnks, np.ndarray)
             assert isinstance(eos.d3epsilon_dninjnks, list)
-            
+
             assert_close3d(eos_np.d3delta_dzizjzks, eos.d3delta_dzizjzks, rtol=1e-14)
             assert isinstance(eos_np.d3delta_dzizjzks, np.ndarray)
             assert isinstance(eos.d3delta_dzizjzks, list)
-            
+
             assert_close3d(eos_np.d3delta_dninjnks, eos.d3delta_dninjnks, rtol=1e-13)
             assert isinstance(eos_np.d3delta_dninjnks, np.ndarray)
             assert isinstance(eos.d3delta_dninjnks, list)
-            
+
             assert_close3d(eos_np.d3b_dzizjzks, eos.d3b_dzizjzks, rtol=1e-13)
             assert isinstance(eos_np.d3b_dzizjzks, np.ndarray)
             assert isinstance(eos.d3b_dzizjzks, list)
-            
+
             assert_close3d(eos_np.d3b_dninjnks, eos.d3b_dninjnks, rtol=1e-13)
             assert isinstance(eos_np.d3b_dninjnks, np.ndarray)
             assert isinstance(eos.d3b_dninjnks, list)
-            
+
             assert_close3d(eos_np.d3a_alpha_dzizjzks, eos.d3a_alpha_dzizjzks, rtol=1e-13)
             assert isinstance(eos_np.d3a_alpha_dzizjzks, np.ndarray)
             assert isinstance(eos.d3a_alpha_dzizjzks, list)
@@ -5114,7 +5122,7 @@ def test_numpy_properties_all_eos_mix():
             assert_close3d(eos_np.d3P_dninjnks_Vt('g'), eos.d3P_dninjnks_Vt('g'), rtol=1e-11)
             assert isinstance(eos_np.d3P_dninjnks_Vt('g'), np.ndarray)
             assert isinstance(eos.d3P_dninjnks_Vt('g'), list)
-            
+
             if obj not in (IGMIX, VDWMIX):
                 assert_close2d(eos_np.d2A_dninjs_Vt_another('g'), eos.d2A_dninjs_Vt_another('g'), rtol=1e-11)
                 assert isinstance(eos_np.d2A_dninjs_Vt_another('g'), np.ndarray)

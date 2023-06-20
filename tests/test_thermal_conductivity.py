@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,29 +17,52 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 import json
-import pytest
-from fluids.numerics import assert_close, assert_close1d, assert_close2d, linspace
-from fluids.constants import R
-from chemicals.utils import ws_to_zs
-import chemicals
-from thermo.thermal_conductivity import *
-from thermo.viscosity import ViscosityGas
-from thermo.mixture import Mixture
-from thermo.coolprop import has_CoolProp
-from thermo.thermal_conductivity import MAGOMEDOV, DIPPR_9H, FILIPPOV, LINEAR, ThermalConductivityLiquidMixture
-from thermo.thermal_conductivity import (GHARAGHEIZI_G, CHUNG, ELI_HANLEY, VDI_PPDS,
-                                        ELI_HANLEY_DENSE, CHUNG_DENSE,
-                                        EUCKEN_MOD, EUCKEN, BAHADORI_G,
-                                        STIEL_THODOS_DENSE, DIPPR_9B, COOLPROP,
-                                        DIPPR_PERRY_8E, VDI_TABULAR, GHARAGHEIZI_L,
-                                       SATO_RIEDEL, NICOLA, NICOLA_ORIGINAL,
-                                       SHEFFY_JOHNSON, BAHADORI_L,
-                                       LAKSHMI_PRASAD, DIPPR_9G, MISSENARD)
-from thermo.thermal_conductivity import ThermalConductivityGasMixture, LINDSAY_BROMLEY, LINEAR
 
+import chemicals
+import pytest
+from chemicals.utils import ws_to_zs
+from fluids.constants import R
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, linspace
+
+from thermo.coolprop import has_CoolProp
+from thermo.thermal_conductivity import *
+from thermo.thermal_conductivity import (
+    BAHADORI_G,
+    BAHADORI_L,
+    CHUNG,
+    CHUNG_DENSE,
+    COOLPROP,
+    DIPPR_9B,
+    DIPPR_9G,
+    DIPPR_9H,
+    DIPPR_PERRY_8E,
+    ELI_HANLEY,
+    ELI_HANLEY_DENSE,
+    EUCKEN,
+    EUCKEN_MOD,
+    FILIPPOV,
+    GHARAGHEIZI_G,
+    GHARAGHEIZI_L,
+    LAKSHMI_PRASAD,
+    LINDSAY_BROMLEY,
+    LINEAR,
+    MAGOMEDOV,
+    MISSENARD,
+    NICOLA,
+    NICOLA_ORIGINAL,
+    SATO_RIEDEL,
+    SHEFFY_JOHNSON,
+    STIEL_THODOS_DENSE,
+    VDI_PPDS,
+    VDI_TABULAR,
+    ThermalConductivityGasMixture,
+    ThermalConductivityLiquidMixture,
+)
+from thermo.viscosity import ViscosityGas
 
 
 @pytest.mark.CoolProp
@@ -93,7 +115,7 @@ def test_ThermalConductivityLiquid():
     EtOH.extrapolation = 'interp1d'
     assert_close(EtOH.T_dependent_property(600.), 0.040117737789202995)
     EtOH.extrapolation = None
-    assert None == EtOH.T_dependent_property(600.)
+    assert None is EtOH.T_dependent_property(600.0)
 
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
@@ -119,12 +141,12 @@ def test_ThermalConductivityLiquid():
 
     assert_close(EtOH.TP_dependent_property(274, 9E4), 0.16848555706973622)
     EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.TP_dependent_property(300, 9E4)
+    assert None is EtOH.TP_dependent_property(300, 90000.0)
 
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
 
-    assert False == EtOH.test_method_validity_P(-10, 1E5, DIPPR_9G)
+    assert False is EtOH.test_method_validity_P(-10, 100000.0, DIPPR_9G)
 
     assert ThermalConductivityLiquid.from_json(EtOH.as_json()) == EtOH
 
@@ -151,7 +173,7 @@ def test_ThermalConductivity_elements_loaded():
 
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityLiquid_extrapolation_polyfit():
-    
+
     obj = ThermalConductivityLiquid(extrapolation='linear', poly_fit=(175.61, 460.0, [-2.0427137654192538e-21, 5.397904343028161e-18, -6.3763077367349095e-15, 4.417686780434988e-12, -1.9632755240328655e-09, 5.709120910380979e-07, -0.00010549847813202652, 0.011071902367193028, -0.2719858296092696]))
     val, der = obj.T_dependent_property_derivative(obj.poly_fit_Tmax), obj.T_dependent_property(obj.poly_fit_Tmax)
     assert_close(obj.T_dependent_property(obj.poly_fit_Tmax+10), 0.1683192796177408, rtol=1e-10)
@@ -167,7 +189,7 @@ def test_ThermalConductivityLiquid_extrapolation_polyfit():
 def test_ThermalConductivityLiquid_fitting0():
     ammonia_Ts_kg = [200, 236.842, 239.82, 273.684, 310.526, 347.368, 384.211, 421.053, 457.895, 494.737, 531.579, 568.421, 605.263, 642.105, 678.947, 715.789, 752.632, 789.474, 826.316, 863.158, 900, ]
     ammonia_kgs = [0.0146228, 0.0182568, 0.0185644, 0.0221923, 0.0263847, 0.0308034, 0.0354254, 0.040233, 0.0452116, 0.0503493, 0.0556358, 0.0610625, 0.0666218, 0.072307, 0.0781123, 0.0840323, 0.0900624, 0.0961983, 0.102436, 0.108772, 0.115203]
-    
+
     # note: equation does not yet support numba
     fit, res = ThermalConductivityLiquid.fit_data_to_model(Ts=ammonia_Ts_kg, data=ammonia_kgs, model='DIPPR102',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -197,7 +219,7 @@ def test_ThermalConductivityGas_CoolProp():
     assert [True, False] == [EtOH.test_method_validity_P(300, P, COOLPROP) for P in (1E3, 1E5)]
     assert_close(EtOH.calculate_P(298.15, 1E2, COOLPROP), 0.015207849649231962)
 
-    assert False == EtOH.test_method_validity_P(100, 1E5, COOLPROP)
+    assert False is EtOH.test_method_validity_P(100, 100000.0, COOLPROP)
 
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityGas():
@@ -238,7 +260,7 @@ def test_ThermalConductivityGas():
     assert_close(EtOH.T_dependent_property(600.), 0.05755089974293061)
 
     EtOH.extrapolation = None
-    assert None == EtOH.T_dependent_property(600.)
+    assert None is EtOH.T_dependent_property(600.0)
 
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
@@ -270,7 +292,7 @@ def test_ThermalConductivityGas():
     EtOH.tabular_extrapolation_permitted = True
     assert_close(EtOH.TP_dependent_property(399, 9E3), 0.025825794817543015)
     EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.TP_dependent_property(399, 9E3)
+    assert None is EtOH.TP_dependent_property(399, 9000.0)
 
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
@@ -291,7 +313,7 @@ def test_T_dep_method_order_on_user_method():
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityGas_fitting0():
-    try_CASs_dippr = ['106-97-8', '142-29-0', '565-59-3', '74-83-9', '115-21-9', 
+    try_CASs_dippr = ['106-97-8', '142-29-0', '565-59-3', '74-83-9', '115-21-9',
                       '78-78-4', '111-27-3', '74-90-8', '64-17-5', '50-00-0', '74-98-6',
                       '7664-39-3', '107-21-1', '592-76-7', '115-07-1', '64-19-7']
     for CAS in try_CASs_dippr:
@@ -301,7 +323,7 @@ def test_ThermalConductivityGas_fitting0():
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR102', multiple_tries=True,
                               do_statistics=True, use_numba=False, fit_method='lm')
         assert stats['MAE'] < 1e-5
-    
+
 def test_ThermalConductivityGasMixture():
     T, P = 298.15, 101325.0
     MWs = [28.0134, 39.948, 31.9988]

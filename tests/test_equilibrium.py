@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,27 +17,26 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import pytest
-from fluids.numerics import derivative, assert_close, assert_close1d, assert_close2d
-
-from thermo import Chemical, Mixture
-from thermo.phases import *
-from thermo.eos_mix import *
 from chemicals.utils import *
-from thermo.eos import *
-from thermo.vapor_pressure import VaporPressure, SublimationPressure
-from thermo.interface import SurfaceTension
-from thermo.volume import *
-from thermo.heat_capacity import *
-from thermo.phase_change import *
+from fluids.numerics import assert_close, assert_close1d, assert_close2d
+
 from thermo import ChemicalConstantsPackage, PropertyCorrelationsPackage
-from thermo.flash import FlashPureVLS, FlashVLN, FlashVL
 from thermo.bulk import *
+from thermo.eos import *
+from thermo.eos_mix import *
 from thermo.equilibrium import EquilibriumState
-from thermo.thermal_conductivity import ThermalConductivityLiquid, ThermalConductivityGas
-from thermo.viscosity import ViscosityLiquid, ViscosityGas
+from thermo.flash import FlashPureVLS, FlashVL, FlashVLN
+from thermo.heat_capacity import *
+from thermo.interface import SurfaceTension
+from thermo.phase_change import *
+from thermo.phases import *
+from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityLiquid
+from thermo.vapor_pressure import SublimationPressure, VaporPressure
+from thermo.viscosity import ViscosityGas, ViscosityLiquid
+from thermo.volume import *
 
 
 def test_two_eos_pure_flash_all_properties():
@@ -76,7 +74,7 @@ def test_two_eos_pure_flash_all_properties():
                                                            9.987967202910477e-15, 1.4030825662633013e-11, 1.970935889948393e-08, 2.7686131179275174e-05])),]
 
     SurfaceTensions = [SurfaceTension(CASRN='67-56-1', method="SOMAYAJULU2")]
-    
+
     ThermalConductivityLiquids=[ThermalConductivityLiquid(poly_fit=(390.65, 558.9, [-1.7703926719478098e-31, 5.532831178371296e-28, -7.157706109850407e-25, 4.824017093238245e-22, -1.678132299010268e-19, 1.8560214447222824e-17, 6.274769714658382e-15, -0.00020340000228224661, 0.21360000021862866])),]
     ThermalConductivityGases=[ThermalConductivityGas(poly_fit=(390.65, 558.9, [1.303338742188738e-26, -5.948868042722525e-23, 1.2393384322893673e-19, -1.5901481819379786e-16, 1.4993659486913432e-13, -1.367840742416352e-10, 1.7997602278525846e-07, 3.5456258123020795e-06, -9.803647813554084e-05])),]
     ViscosityLiquids=[ViscosityLiquid(extrapolation_min=0, exp_poly_fit=(190.0, 391.9, [1.8379049563136273e-17, -4.5666126233131545e-14, 4.9414486397781785e-11, -3.042378423089263e-08, 1.166244931040138e-05, -0.0028523723735774113, 0.4352378275340892, -37.99358630363772, 1456.8338572042996])),]
@@ -86,7 +84,7 @@ def test_two_eos_pure_flash_all_properties():
                                                EnthalpyVaporizations=EnthalpyVaporizations, HeatCapacitySolids=HeatCapacitySolids, SublimationPressures=SublimationPressures,
                                                SurfaceTensions=SurfaceTensions,
                                                ViscosityLiquids=ViscosityLiquids, ViscosityGases=ViscosityGases,
-                                               ThermalConductivityGases=ThermalConductivityGases, ThermalConductivityLiquids=ThermalConductivityLiquids,                                               
+                                               ThermalConductivityGases=ThermalConductivityGases, ThermalConductivityLiquids=ThermalConductivityLiquids,
                                                EnthalpySublimations=EnthalpySublimations, VolumeSolids=VolumeSolids)
 
     eos_liquid = CEOSLiquid(PRMIX, dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas), HeatCapacityGases=HeatCapacityGases,
@@ -101,7 +99,7 @@ def test_two_eos_pure_flash_all_properties():
     # Test all the results
     T, VF = 300.0, 0.4
     eq = flasher.flash(T=T, VF=VF)
-    
+
     assert eq.VF == VF
     assert eq.LF == 1 - VF
 
@@ -206,24 +204,24 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.U_mass(), -783306.0663445955, rtol=1e-12)
     assert_close(eq.bulk.U_mass(), -783306.0663445955, rtol=1e-12)
     assert_close1d([i.U_mass() for i in eq.phases], [-75904.18285780508, -1254907.322002456], rtol=1e-12)
-    
+
     # mass HSGUA reactive
     assert_close(eq.H_reactive_mass(), property_molar_to_mass(eq.H_reactive(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.H_reactive_mass(), property_molar_to_mass(eq.bulk.H_reactive(), eq.MW()), rtol=1e-12)
     assert_close1d([i.H_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.H_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.S_reactive_mass(), property_molar_to_mass(eq.S_reactive(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.S_reactive_mass(), property_molar_to_mass(eq.bulk.S_reactive(), eq.MW()), rtol=1e-12)
     assert_close1d([i.S_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.S_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.G_reactive_mass(), property_molar_to_mass(eq.G_reactive(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.G_reactive_mass(), property_molar_to_mass(eq.bulk.G_reactive(), eq.MW()), rtol=1e-12)
     assert_close1d([i.G_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.G_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.U_reactive_mass(), property_molar_to_mass(eq.U_reactive(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.U_reactive_mass(), property_molar_to_mass(eq.bulk.U_reactive(), eq.MW()), rtol=1e-12)
     assert_close1d([i.U_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.U_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.A_reactive_mass(), property_molar_to_mass(eq.A_reactive(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.A_reactive_mass(), property_molar_to_mass(eq.bulk.A_reactive(), eq.MW()), rtol=1e-12)
     assert_close1d([i.A_reactive_mass() for i in eq.phases], [property_molar_to_mass(p.A_reactive(), p.MW()) for p in eq.phases], rtol=1e-12)
@@ -328,19 +326,19 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.H_ideal_gas_mass(), property_molar_to_mass(eq.H_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.H_ideal_gas_mass(), property_molar_to_mass(eq.bulk.H_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.H_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.H_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.S_ideal_gas_mass(), property_molar_to_mass(eq.S_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.S_ideal_gas_mass(), property_molar_to_mass(eq.bulk.S_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.S_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.S_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.G_ideal_gas_mass(), property_molar_to_mass(eq.G_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.G_ideal_gas_mass(), property_molar_to_mass(eq.bulk.G_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.G_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.G_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.U_ideal_gas_mass(), property_molar_to_mass(eq.U_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.U_ideal_gas_mass(), property_molar_to_mass(eq.bulk.U_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.U_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.U_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.A_ideal_gas_mass(), property_molar_to_mass(eq.A_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.A_ideal_gas_mass(), property_molar_to_mass(eq.bulk.A_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.A_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.A_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
@@ -372,25 +370,25 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.A_formation_ideal_gas(), -176326.22853759234, rtol=1e-12)
     assert_close(eq.bulk.A_formation_ideal_gas(), -176326.22853759234, rtol=1e-12)
     assert_close1d([i.A_formation_ideal_gas() for i in eq.phases], [-176326.22853759234]*2, rtol=1e-12)
-    
+
     # mass ideal gas formations
 
     assert_close(eq.H_formation_ideal_gas_mass(), property_molar_to_mass(eq.H_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.H_formation_ideal_gas_mass(), property_molar_to_mass(eq.bulk.H_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.H_formation_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.H_formation_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.S_formation_ideal_gas_mass(), property_molar_to_mass(eq.S_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.S_formation_ideal_gas_mass(), property_molar_to_mass(eq.bulk.S_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.S_formation_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.S_formation_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.G_formation_ideal_gas_mass(), property_molar_to_mass(eq.G_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.G_formation_ideal_gas_mass(), property_molar_to_mass(eq.bulk.G_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.G_formation_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.G_formation_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.U_formation_ideal_gas_mass(), property_molar_to_mass(eq.U_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.U_formation_ideal_gas_mass(), property_molar_to_mass(eq.bulk.U_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.U_formation_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.U_formation_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.A_formation_ideal_gas_mass(), property_molar_to_mass(eq.A_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.A_formation_ideal_gas_mass(), property_molar_to_mass(eq.bulk.A_formation_ideal_gas(), eq.MW()), rtol=1e-12)
     assert_close1d([i.A_formation_ideal_gas_mass() for i in eq.phases], [property_molar_to_mass(p.A_formation_ideal_gas(), p.MW()) for p in eq.phases], rtol=1e-12)
@@ -399,23 +397,23 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.H_dep_mass(), property_molar_to_mass(eq.H_dep(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.H_dep_mass(), property_molar_to_mass(eq.bulk.H_dep(), eq.MW()), rtol=1e-12)
     assert_close1d([i.H_dep_mass() for i in eq.phases], [property_molar_to_mass(p.H_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.S_dep_mass(), property_molar_to_mass(eq.S_dep(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.S_dep_mass(), property_molar_to_mass(eq.bulk.S_dep(), eq.MW()), rtol=1e-12)
     assert_close1d([i.S_dep_mass() for i in eq.phases], [property_molar_to_mass(p.S_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.G_dep_mass(), property_molar_to_mass(eq.G_dep(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.G_dep_mass(), property_molar_to_mass(eq.bulk.G_dep(), eq.MW()), rtol=1e-12)
     assert_close1d([i.G_dep_mass() for i in eq.phases], [property_molar_to_mass(p.G_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.U_dep_mass(), property_molar_to_mass(eq.U_dep(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.U_dep_mass(), property_molar_to_mass(eq.bulk.U_dep(), eq.MW()), rtol=1e-12)
     assert_close1d([i.U_dep_mass() for i in eq.phases], [property_molar_to_mass(p.U_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     assert_close(eq.A_dep_mass(), property_molar_to_mass(eq.A_dep(), eq.MW()), rtol=1e-12)
     assert_close(eq.bulk.A_dep_mass(), property_molar_to_mass(eq.bulk.A_dep(), eq.MW()), rtol=1e-12)
     assert_close1d([i.A_dep_mass() for i in eq.phases], [property_molar_to_mass(p.A_dep(), p.MW()) for p in eq.phases], rtol=1e-12)
-    
+
     # Pseudo critical properties
     assert_close(eq.pseudo_Tc(), constants.Tcs[0], rtol=1e-12)
     assert_close(eq.bulk.pseudo_Tc(), constants.Tcs[0], rtol=1e-12)
@@ -432,7 +430,7 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.pseudo_Zc(), constants.Zcs[0], rtol=1e-12)
     assert_close(eq.bulk.pseudo_Zc(), constants.Zcs[0], rtol=1e-12)
     assert_close1d([i.pseudo_Zc() for i in eq.phases], [constants.Zcs[0]]*2, rtol=1e-12)
-    
+
     assert_close(eq.pseudo_omega(), constants.omegas[0], rtol=1e-12)
     assert_close(eq.bulk.pseudo_omega(), constants.omegas[0], rtol=1e-12)
     assert_close1d([i.pseudo_omega() for i in eq.phases], [constants.omegas[0]]*2, rtol=1e-12)
@@ -649,7 +647,7 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.H_C_ratio_mass(), 0.3356806847227889, rtol=1e-12)
     assert_close(eq.bulk.H_C_ratio_mass(), 0.3356806847227889, rtol=1e-12)
     assert_close1d([i.H_C_ratio_mass() for i in eq.phases], [0.3356806847227889]*2, rtol=1e-12)
-    
+
     # T dependent Properties
     Psats_expect = [18601.061401014867]
     assert_close(eq.Psats(), Psats_expect, rtol=1e-12)
@@ -726,14 +724,14 @@ def test_two_eos_pure_flash_all_properties():
     assert [] == pure_gas.betas_liquids
     assert [] == pure_gas.betas_mass_liquids
     assert [] == pure_gas.betas_volume_liquids
-    
+
     assert_close(pure_gas.quality, 1, atol=0, rtol=0)
     assert_close(pure_gas.VF, 1, atol=0, rtol=0)
     assert_close(pure_gas.LF, 0, atol=0, rtol=0)
     assert_close1d(pure_gas.betas_mass, [1], atol=0, rtol=0)
     assert_close1d(pure_gas.betas_volume, [1], atol=0, rtol=0)
     assert_close1d(pure_gas.betas, [1], atol=0, rtol=0)
-    
+
     assert pure_gas.betas_liquids == []
     assert pure_gas.betas_mass_liquids == []
     assert pure_gas.betas_volume_liquids == []
@@ -746,18 +744,18 @@ def test_two_eos_pure_flash_all_properties():
     assert_close1d(pure_liquid.betas_mass, [1], atol=0, rtol=0)
     assert_close1d(pure_liquid.betas_volume, [1], atol=0, rtol=0)
     assert_close1d(pure_liquid.betas, [1], atol=0, rtol=0)
-    
+
     assert_close1d(pure_liquid.betas_liquids, [1], atol=0, rtol=0)
     assert_close1d(pure_liquid.betas_mass_liquids, [1], atol=0, rtol=0)
     assert_close1d(pure_liquid.betas_volume_liquids, [1], atol=0, rtol=0)
-    
+
 
     assert_close1d(pure_liquid.betas_states, [0, 1, 0], atol=0, rtol=1e-13)
     assert_close1d(pure_liquid.betas_mass_states, [0, 1, 0], atol=0, rtol=1e-13)
     assert_close1d(pure_liquid.betas_volume_states, [0, 1, 0], atol=0, rtol=1e-13)
-    
-    
-    
+
+
+
 
 
 def test_thermodynamic_derivatives_settings_with_flash():
@@ -1268,43 +1266,43 @@ def test_thermodynamic_derivatives_named_settings():
     assert_close(res.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.speed_of_sound(), v2)
-    
-    
+
+
 def test_equilibrium_ternary_air_PR():
     constants = ChemicalConstantsPackage(atomss=[{'O': 2}, {'N': 2}, {'H': 2, 'O': 1}], CASs=['7782-44-7', '7727-37-9', '7732-18-5'], Gfgs=[0.0, 0.0, -228554.325], Hfgs=[0.0, 0.0, -241822.0], MWs=[31.9988, 28.0134, 18.01528], names=['oxygen', 'nitrogen', 'water'], omegas=[0.021, 0.04, 0.344], Pcs=[5042945.25, 3394387.5, 22048320.0], Sfgs=[0.0, 0.0, -44.499999999999964], Tbs=[90.188, 77.355, 373.124], Tcs=[154.58, 126.2, 647.14], Tms=[54.36, 63.15, 273.15], Vcs=[7.34e-05, 8.95e-05, 5.6e-05])
-    
+
     HeatCapacityGases = [HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="TRCIG"),
      HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"),
      HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="TRCIG")]
-    
+
     properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kijs = [[0.0, -0.0159, 0], [-0.0159, 0.0, 0], [0, 0, 0.0]]
-    
+
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
     gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
-    
+
     zs = [.20669, .77755, 0.01576]
-    
+
     res = flasher.flash(T=300, P=1e5, zs=zs)
     assert_close(res.water_molar_weight(), 0.2839208128)
-                 
+
     assert_close(res.humidity_ratio(), 0.009998742813826613)
 
     assert_close(res.gas.humidity_ratio(), 0.009998742813826613)
     assert_close(res.bulk.humidity_ratio(), 0.009998742813826613)
-    
+
 def test_Phase_to_EquilibriumState():
     constants = ChemicalConstantsPackage(atomss=[{'O': 2}, {'N': 2}, {'H': 2, 'O': 1}], CASs=['7782-44-7', '7727-37-9', '7732-18-5'], Gfgs=[0.0, 0.0, -228554.325], Hfgs=[0.0, 0.0, -241822.0], MWs=[31.9988, 28.0134, 18.01528], names=['oxygen', 'nitrogen', 'water'], omegas=[0.021, 0.04, 0.344], Pcs=[5042945.25, 3394387.5, 22048320.0], Sfgs=[0.0, 0.0, -44.499999999999964], Tbs=[90.188, 77.355, 373.124], Tcs=[154.58, 126.2, 647.14], Tms=[54.36, 63.15, 273.15], Vcs=[7.34e-05, 8.95e-05, 5.6e-05])
-    
+
     HeatCapacityGases = [HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="TRCIG"),
      HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"),
      HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="TRCIG")]
-    
+
     properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kijs = [[0.0, -0.0159, 0], [-0.0159, 0.0, 0], [0, 0, 0.0]]
-    
+
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
     gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
@@ -1330,4 +1328,4 @@ def test_Phase_to_EquilibriumState():
         assert_close1d(state.dphis_dP(), phase.dphis_dP())
         assert_close1d(state.dfugacities_dP(), phase.dfugacities_dP())
         assert_close1d(state.dphis_dzs(), phase.dphis_dzs())
-        assert_close1d(state.dlnphis_dns(), phase.dlnphis_dns())    
+        assert_close1d(state.dlnphis_dns(), phase.dlnphis_dns())

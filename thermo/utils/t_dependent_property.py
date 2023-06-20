@@ -209,7 +209,8 @@ from thermo.eos_alpha_functions import (
     Twu91_alpha_pure,
     Yu_Lu_alpha_pure,
 )
-from thermo.fitting import fit_customized, AICc, BIC
+from thermo.fitting import BIC, AICc, fit_customized
+from thermo.utils.functional import has_matplotlib
 from thermo.utils.names import (
     CHEB_FIT,
     CHEB_FIT_LN_TAU,
@@ -219,29 +220,27 @@ from thermo.utils.names import (
     EXP_POLY_FIT_LN_TAU,
     EXP_STABLEPOLY_FIT,
     EXP_STABLEPOLY_FIT_LN_TAU,
+    HEOS_FIT,
+    NEGLECT_P,
     POLY_FIT,
     POLY_FIT_LN_TAU,
+    REFPROP_FIT,
     STABLEPOLY_FIT,
     STABLEPOLY_FIT_LN_TAU,
     VDI_TABULAR,
-    HEOS_FIT,
-    REFPROP_FIT,
-    NEGLECT_P
 )
-from thermo.utils.functional import has_matplotlib
 
-
-'''This section is intended to be used in being able to add new data without
+"""This section is intended to be used in being able to add new data without
 changing code for each object.
-'''
+"""
 loaded_json_based_correlations = False
 
 def json_correlation_lookup(CAS, key):
     if not loaded_json_based_correlations:
         load_json_based_correlations()
-    
+
     json_based_found = {}
-    
+
     for db in json_based_correlation_data:
         try:
             found_stuff = db[CAS][key]
@@ -1422,7 +1421,7 @@ class TDependentProperty:
 
         return ans
 
-    extra_correlations_internal = set([REFPROP_FIT, HEOS_FIT])
+    extra_correlations_internal = {REFPROP_FIT, HEOS_FIT}
 
     def __repr__(self):
         r'''Create and return a string representation of the object. The design
@@ -1475,7 +1474,7 @@ class TDependentProperty:
             # if 'Tc=' not in base:
             #     base += 'Tc=%s, ' %(self.poly_fit_ln_tau_Tc)
 
-        
+
         for k in self.correlation_parameters.values():
             extra_model = getattr(self, k, None)
             if extra_model:
@@ -1927,7 +1926,7 @@ class TDependentProperty:
             can only be fit with points-1 parameters, and so on, [-]
         model_selection : None or str
             One of (None, 'AICc', 'BIC', or 'min(BIC, AICc)'). If set fits
-            with different numbers of parameters will be tried (if applicable to 
+            with different numbers of parameters will be tried (if applicable to
             the model) and the best statistical fit will be chosen [-]
 
         Returns
@@ -2010,7 +2009,7 @@ class TDependentProperty:
                 aic = AICc(parameters=used_fit_parameters, observations=pts, SSE=SSE)
                 bic = BIC(parameters=used_fit_parameters, observations=pts, SSE=SSE)
                 all_fits.append((fit, stats, aic, bic, used_fit_parameters))
-            
+
             if model_selection == 'AICc':
                 sel = lambda x: x[2]
                 best_fit, stats, aic, bic, _ = min(all_fits, key=sel)

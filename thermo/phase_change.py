@@ -70,7 +70,7 @@ from fluids.numerics import isnan
 
 from thermo.coolprop import CoolProp_failing_PT_flashes, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacitySolid
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, HEOS_FIT, TDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, HEOS_FIT, VDI_PPDS, VDI_TABULAR, TDependentProperty
 
 CRC_HVAP_TB = 'CRC_HVAP_TB'
 CRC_HVAP_298 = 'CRC_HVAP_298'

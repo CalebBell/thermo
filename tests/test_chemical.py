@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,17 +17,20 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from fluids.numerics import assert_close, assert_close1d, assert_close2d
-import pytest
-from thermo.chemical import *
-from chemicals.elements import periodic_table
-import thermo
-from chemicals.identifiers import pubchem_db
-from scipy.integrate import quad
 from math import *
+
+import pytest
+from chemicals.elements import periodic_table
+from chemicals.identifiers import pubchem_db
 from fluids.constants import R
+from fluids.numerics import assert_close
+from scipy.integrate import quad
+
+from thermo.chemical import *
+
 
 @pytest.mark.deprecated
 def test_Chemical_properties():
@@ -374,7 +376,7 @@ def test_specific_chemical_failures():
 
     # Tc failure
     Chemical('132259-10-0')
-    
+
 def test_chemical_issue96():
     assert Chemical('neon', T=310.9277777777778, P=275790).rho is not None
 

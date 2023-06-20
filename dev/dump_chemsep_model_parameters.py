@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -21,9 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import os
 import json
-import xml.etree.cElementTree as ET
+import os
+import xml.etree.ElementTree as ET
+
 folder = os.path.dirname(__file__)
 tree = ET.parse(os.path.join(folder, 'ChemSep8.32.xml'))
 root = tree.getroot()
@@ -58,7 +58,7 @@ for child in root:
         tag = i.tag
         if tag in parameter_tags_set:
             parameter_dicts[tag][CAS] = float(i.attrib['value'] )
-            
+
             #        CAS = [i.attrib['value'] if  ][0]
 #        name = [i.attrib['value'] for i in child if i.tag ][0]
 #        smiles = [i.attrib['value'] for i in child if i.tag == ]
@@ -68,8 +68,8 @@ for child in root:
 folder = os.path.join(os.path.dirname(__file__), '..', 'thermo', 'Scalar Parameters')
 
 article_source = "ChemSep 8.26"
-'''
-'''
+"""
+"""
 PSRK_metadata = {
   "metadata": {
     "source": article_source,
@@ -81,7 +81,7 @@ PSRK_metadata = {
     }
   }
 }
-    
+
 data = {}
 for CAS in parameter_dicts['MatthiasCopemanC1'].keys():
     data[CAS] = {"name": CAS, "MCSRKC1": parameter_dicts['MatthiasCopemanC1'][CAS], "MCSRKC2": parameter_dicts['MatthiasCopemanC2'][CAS], "MCSRKC3": parameter_dicts['MatthiasCopemanC3'][CAS]}

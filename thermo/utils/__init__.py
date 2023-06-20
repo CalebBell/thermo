@@ -87,17 +87,17 @@ from .names import (
     EXP_POLY_FIT_LN_TAU,
     EXP_STABLEPOLY_FIT,
     EXP_STABLEPOLY_FIT_LN_TAU,
+    HEOS_FIT,
     IAPWS,
     LINEAR,
     NEGLECT_P,
     POLY_FIT,
     POLY_FIT_LN_TAU,
+    REFPROP_FIT,
     STABLEPOLY_FIT,
     STABLEPOLY_FIT_LN_TAU,
     VDI_PPDS,
     VDI_TABULAR,
-    HEOS_FIT,
-    REFPROP_FIT
 )
 from .t_dependent_property import *
 from .tp_dependent_property import *

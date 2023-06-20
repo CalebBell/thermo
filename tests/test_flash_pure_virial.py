@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,18 +17,21 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
+import os
+from math import *
+
+import numpy as np
 import pytest
+from fluids.numerics import *
+
 import thermo
 from thermo import *
 from thermo.coolprop import *
-from fluids.numerics import *
-from math import *
-import json
-import os
 from thermo.test_utils import mark_plot_unsupported
-import numpy as np
+
 try:
     import matplotlib.pyplot as plt
 except:
@@ -42,13 +44,13 @@ except:
 
 pure_fluids = ['water', 'methane', 'ethane', 'decane', 'ammonia', 'nitrogen', 'oxygen', 'methanol', 'eicosane', 'hydrogen']
 
-'''# Recreate the below with the following:
+"""# Recreate the below with the following:
 N = len(pure_fluids)
 m = Mixture(pure_fluids, zs=[1/N]*N, T=298.15, P=1e5)
 print(m.constants.make_str(delim=', \n', properties=('Tcs', 'Pcs', 'omegas', 'MWs', "CASs")))
 correlations = m.properties()
 print(correlations.as_poly_fit(['HeatCapacityGases']))
-'''
+"""
 constants = ChemicalConstantsPackage(Tcs=[647.14, 190.56400000000002, 305.32, 611.7, 405.6, 126.2, 154.58, 512.5,
                                           768.0,
                                           33.2
@@ -119,8 +121,8 @@ pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'virial')
                                        #'VTP',
                                        # 'PHT', 'PST', 'PUT',
                                        # 'VUT', 'VST', 'VHT',
-                                          # 'TSV', 
-                                            # 'THP', 'TUP', 
+                                          # 'TSV',
+                                            # 'THP', 'TUP',
                                        ])
 def test_plot_fluid_virial_pure(fluid, variables):
     spec0, spec1, check_prop = variables
@@ -132,11 +134,11 @@ def test_plot_fluid_virial_pure(fluid, variables):
     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
 
 
-    model = VirialCSP(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, Vcs=pure_const.Vcs, omegas=pure_const.omegas, 
+    model = VirialCSP(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, Vcs=pure_const.Vcs, omegas=pure_const.omegas,
                       B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ORBEY_VERA)
     gas = VirialGas(model, HeatCapacityGases=pure_props.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    
+
 
     flasher = FlashPureVLS(constants=pure_const, correlations=pure_props,
                        gas=gas, liquids=[], solids=[])
@@ -145,10 +147,10 @@ def test_plot_fluid_virial_pure(fluid, variables):
     # print(pure_props)
     # 1/0
     # flasher.TPV_HSGUA_xtol = 1e-14
-    
+
     inconsistent = frozenset([spec0, spec1]) in (frozenset(['T', 'H']), frozenset(['T', 'U']))
 
-    res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='P', 
+    res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='P',
                              check0=spec0, check1=spec1, prop0=check_prop,
                            trunc_err_low=1e-13,
                            trunc_err_high=1, color_map=cm_flash_tol(),
@@ -159,10 +161,10 @@ def test_plot_fluid_virial_pure(fluid, variables):
     path = os.path.join(pure_surfaces_dir, fluid, plot_name)
     if not os.path.exists(path):
         os.makedirs(path)
-        
+
     tol = 1e-13
 
-    key = '%s - %s - %s' %(plot_name, eos.__name__, fluid)
+    key = f'{plot_name} - {eos.__name__} - {fluid}'
 
     if inconsistent:
         spec_name = spec0 + spec1

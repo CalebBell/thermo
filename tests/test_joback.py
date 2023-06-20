@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,32 +17,29 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 import os
+
 import pytest
+from chemicals.identifiers import pubchem_db
 from fluids.numerics import assert_close, assert_close1d
+
 from thermo.group_contribution.joback import *
 from thermo.group_contribution.joback import J_BIGGS_JOBACK_SMARTS_id_dict
-
-from chemicals.identifiers import pubchem_db
 
 folder = os.path.join(os.path.dirname(__file__), 'Data')
 
 try:
     import rdkit
-    from rdkit import Chem
 except:
     rdkit = None
-from thermo import Chemical
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_Joback_acetone():
     from rdkit import Chem
-    from rdkit.Chem import Descriptors
-    from rdkit.Chem import AllChem
-    from rdkit.Chem import rdMolDescriptors
     for i in [Chem.MolFromSmiles('CC(=O)C'), 'CC(=O)C']:
         ex = Joback(i) # Acetone example
         assert_close(ex.Tb(ex.counts), 322.11)
@@ -89,9 +85,9 @@ def test_Joback_database():
         try:
             mol = Chem.MolFromSmiles(chem_info.smiles)
             parsed = smarts_fragment(rdkitmol=mol, catalog=catalog, deduplicate=False)
-            line = '%s\t%s\t%s\t%s\n' %(parsed[2], chem_info.CASs, chem_info.smiles, parsed[0])
+            line = f'{parsed[2]}\t{chem_info.CASs}\t{chem_info.smiles}\t{parsed[0]}\n'
         except Exception as e:
-            line = '%s\t%s\t%s\n' %(chem_info.CASs, chem_info.smiles, e)
+            line = f'{chem_info.CASs}\t{chem_info.smiles}\t{e}\n'
         lines.append(line)
 
     [f.write(line) for line in sorted(lines)]

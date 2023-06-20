@@ -150,7 +150,7 @@ from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import thermal_conductivity_Magomedov
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, REFPROP_FIT, NEGLECT_P, MixtureProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TPDependentProperty
 from thermo.viscosity import ViscosityGas
 from thermo.volume import VolumeGas
 
@@ -314,7 +314,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
     property_min = 0.0
     """Mimimum valid value of liquid thermal conductivity."""
     property_max = 200.0
-    """Maximum valid value of liquid thermal conductivity. Organics are normally well under 10, 
+    """Maximum valid value of liquid thermal conductivity. Organics are normally well under 10,
     however liquid metals are much higher - cooper peaks at around 175."""
 
     ranked_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR,

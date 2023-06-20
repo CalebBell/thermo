@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,19 +17,19 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
+
+import json
+from math import *
 
 import pytest
-import thermo
-from thermo import *
-import chemicals
 from chemicals import *
-from fluids.numerics import *
-from math import *
 from chemicals.utils import hash_any_primitive
-import json
-import os
-import numpy as np
+from fluids.numerics import *
+
+from thermo import *
+
 
 @pytest.mark.fuzz
 @pytest.mark.slow
@@ -55,7 +54,7 @@ def test_ChemicalConstantsPackage_from_json_as_json_large():
     assert hash(obj) == hash(obj2)
     assert obj == obj2
     assert id(obj) != id(obj2)
-    
+
     assert obj != int
     assert obj != float
 
@@ -119,7 +118,7 @@ def test_lemmon2000_package():
 def test_compound_index():
     obj = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'],
                              CASs=['7732-18-5', '108-38-3'],
-                             InChI_Keys=['XLYOFNOQVPJJNP-UHFFFAOYSA-N', 'IVSZLXZYQVIEFR-UHFFFAOYSA-N'], 
+                             InChI_Keys=['XLYOFNOQVPJJNP-UHFFFAOYSA-N', 'IVSZLXZYQVIEFR-UHFFFAOYSA-N'],
                              InChIs=['H2O/h1H2', 'C8H10/c1-7-4-3-5-8(2)6-7/h3-6H,1-2H3'],
                              smiless=['O', 'CC1=CC(=CC=C1)C'], PubChems=[962, 7929],)
     assert 0 == obj.compound_index(name='water')
@@ -129,20 +128,20 @@ def test_compound_index():
     assert 0 == obj.compound_index(CAS='7732-18-5')
     assert 0 == obj.compound_index(InChI='H2O/h1H2')
     assert 1 == obj.compound_index(InChI_Key='IVSZLXZYQVIEFR-UHFFFAOYSA-N')
-    
-    
+
+
 def test_add_ChemicalConstantsPackage():
     a = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane'])
     b = ChemicalConstantsPackage.constants_from_IDs(IDs=['toluene'])
     c = a + b
-    
+
     c_good = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane', 'toluene'])
     assert c == c_good
-    
+
 def test_add_PropertyCorrelationsPackage():
     a = ChemicalConstantsPackage.correlations_from_IDs(IDs=['water', 'hexane'])
     b = ChemicalConstantsPackage.correlations_from_IDs(IDs=['toluene'])
     c = a + b
-    
+
     c_good = ChemicalConstantsPackage.correlations_from_IDs(IDs=['water', 'hexane', 'toluene'])
     assert c == c_good

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,29 +17,32 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 import pytest
+
 from thermo.utils import TPDependentProperty
-    
+
+
 def test_tp_dependent_property_exceptions():
     BAD_METHOD = 'BAD_METHOD'
-    CRAZY_METHOD = 'CRAZY_METHOD' 
+    CRAZY_METHOD = 'CRAZY_METHOD'
     class MockHeatCapacity(TPDependentProperty):
         name = 'Heat capacity'
         units = 'J/mol'
         ranked_methods_P = [BAD_METHOD, CRAZY_METHOD]
-        
+
         def __init__(self, extrapolation, CASRN, **kwargs):
             self.CASRN = CASRN
-            super(MockHeatCapacity, self).__init__(extrapolation, **kwargs)
-        
+            super().__init__(extrapolation, **kwargs)
+
         def load_all_methods(self, load_data):
             if load_data:
                 self.T_limits = {BAD_METHOD: (300., 500.),
                                  CRAZY_METHOD: (300, 500)}
                 self.all_methods = set()
                 self.all_methods_P = {BAD_METHOD, CRAZY_METHOD}
-    
+
         def calculate_P(self, T, P, method):
             if method == BAD_METHOD:
                 raise Exception('BAD CALCULATION')
@@ -48,7 +50,7 @@ def test_tp_dependent_property_exceptions():
                 return -1e6
             else:
                 return self._base_calculate(T, method)
-    
+
     MVP = MockHeatCapacity(extrapolation='linear', CASRN='7732-18-5')
     MVP.RAISE_PROPERTY_CALCULATION_ERROR = True
     with pytest.raises(RuntimeError):
@@ -84,4 +86,3 @@ def test_tp_dependent_property_exceptions():
             assert str(error) == ("No pressure-dependent heat capacity method "
                                   "selected for component with CASRN '7732-18-5'")
             raise error
-    

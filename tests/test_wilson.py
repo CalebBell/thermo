@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,20 +17,22 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from math import log, exp
-import pytest
-from fluids.constants import R
-
-
-from thermo.activity import GibbsExcess
-from thermo import *
-import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d, linspace
-from chemicals.utils import object_data
-from thermo.test_utils import check_np_output_activity
 import pickle
+from math import exp, log
+
+import numpy as np
+import pytest
+from chemicals.utils import object_data
+from fluids.constants import R
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d, derivative, hessian, jacobian, linspace, normalize
+
+from thermo import *
+from thermo.activity import GibbsExcess
+from thermo.test_utils import check_np_output_activity
+
 
 def test_Wilson():
     # P05.01a VLE Behavior of Ethanol - Water Using Wilson
@@ -77,7 +78,7 @@ def test_DDBST_example():
     cs_ddbst = [[0.0, 7.91073e-3, 8.68371e-4], [-7.47788e-3, 0.0, 3.1e-5], [-1.24796e-3, 3e-5, 0.0]]
 
     dis = eis = fis = [[0.0]*N for _ in range(N)]
-    
+
     # Do a base test with no parameters just to check it works
     params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, unit_conversion=False)
     # Do a base test with optional parameters missing
@@ -375,10 +376,10 @@ def test_DDBST_example():
     assert_close2d(dgammas_dns_analytical, dgammas_dn_numerical, rtol=1e-5)
     assert_close2d(dgammas_dns_analytical, dgammas_dn_expect, rtol=1e-11)
 
-    '''# Using numdifftools, the result was confirmed to the four last decimal places (rtol=12-13).
+    """# Using numdifftools, the result was confirmed to the four last decimal places (rtol=12-13).
     from numdifftools import Jacobian
     (Jacobian(gammas_to_diff, step=1e-6, order=37)(xs)/dgammas_dns_analytical).tolist()
-    '''
+    """
 
     dgammas_dT_numerical = ((np.array(GE.to_T_xs(T+dT, xs).gammas()) - np.array(GE.gammas()))/dT)
     dgammas_dT_analytical = GE.dgammas_dT()
@@ -435,7 +436,7 @@ def test_wilson_parameter_different_inputs_errors():
     T = 353.15
     N = 2
     xs = [0.25, 0.75]
-    
+
     lamdasA = [[0.0, -1.4485128161164418], [1.448512816116442, 0.0]]
     lambdasB = lambdasC = lambdasD = lambdasE = lambdasF =  [[0.0, 0],[0, 0.0]]
 
@@ -443,31 +444,31 @@ def test_wilson_parameter_different_inputs_errors():
     ABCDEF = (lamdasA, lambdasB, lambdasC, lambdasD, lambdasE, lambdasF)
     obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
     assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
-    
+
     ABCDEF = (lamdasA, lambdasB, lambdasC, lambdasD, lambdasE)
     obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
     assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
-    
+
     ABCDEF = (lamdasA, lambdasB, lambdasC, lambdasD)
     obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
     assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
-    
+
     ABCDEF = (lamdasA, lambdasB, lambdasC)
     obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
     assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
-    
+
     ABCDEF = (lamdasA, lambdasB)
     obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
     assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
-    
+
     ABCDEF = (lamdasA,)
     obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
     assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
-    
+
     ABCDEF = (lamdasA, None, None, None, None, None)
     obj = Wilson(T=T, xs=xs, ABCDEF=ABCDEF)
     assert_close1d(obj.gammas(), gammas_expect, rtol=1e-13)
-    
+
     with pytest.raises(ValueError):
          Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None, []))
     with pytest.raises(ValueError):
@@ -478,7 +479,7 @@ def test_wilson_parameter_different_inputs_errors():
          Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None, [[0.0, 9.64e-8], [1.53e-7, 0.0, 1.11e-7], [7.9e-8, 2.276e-8, 0]]))
     with pytest.raises(ValueError):
          Wilson(T=T, xs=xs, ABCDEF=(lamdasA, None, None,  [[0.0, 9.64e-8, 8.94e-8], [1.53e-7, 0.0, 1.11e-7]]))
-    
+
     assert_close1d(Wilson(T=T, xs=xs).gammas(), [1, 1], rtol=1e-13)
 
     # No coefficients
@@ -590,7 +591,7 @@ def test_multicomnent_madeup():
 @pytest.mark.slow
 @pytest.mark.sympy
 def test_multicomponent_madeup_sympy():
-    from sympy import log, exp, diff, symbols
+    from sympy import diff, exp, log, symbols
     A, B, C, D, E, F, T = symbols('A, B, C, D, E, F, T')
 
     N = 7
@@ -696,6 +697,7 @@ def test_lambdas_performance_np():
 def test_lambdas_performance_py():
     return # not used yet
     from random import random
+
     import thermo
     N = 3
     A = [[random() for _ in range(N)] for _ in range(N)]
@@ -833,13 +835,13 @@ def test_wilson_gammas_binaries():
     lambdas = GE.lambdas()
     lambda12 = lambdas[0][1]
     lambda21 = lambdas[1][0]
-    
+
     xs = []
     gammas_object = []
     for x in linspace(0, 1, 5):
         xs.append(x)
         xs.append(1-x)
         gammas_object.extend(GE.to_T_xs(T=GE.T, xs=xs[-2:]).gammas())
-    
+
     all_gammas = wilson_gammas_binaries(xs, lambda12, lambda21)
     assert_close1d(all_gammas, gammas_object, rtol=1e-13)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,20 +17,21 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from fluids.numerics import assert_close, assert_close1d, linspace, horner
-import pytest
-from thermo import fitting
-from thermo.fitting import *
 import os
+from math import exp, log
+
 import pandas as pd
-from math import log, exp
-
-
-from thermo.eos import PR
+import pytest
 from chemicals import SMK
-from thermo.fitting import FIT_CHEBTOOLS_CHEB, FIT_CHEBTOOLS_POLY, FIT_CHEBTOOLS_STABLEPOLY, FIT_NUMPY_POLY, FIT_NUMPY_STABLEPOLY
+from fluids.numerics import assert_close, assert_close1d, horner, linspace
+
+from thermo import fitting
+from thermo.eos import PR
+from thermo.fitting import *
+from thermo.fitting import FIT_CHEBTOOLS_POLY
 
 try:
     import ChebTools
@@ -41,8 +41,8 @@ except:
 
 
 def test_poly_fit_statistics():
-    
-    
+
+
     eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400., P=1E6)
     coeffs_linear_short = [4.237517714500429e-17, -1.6220845282077796e-13, 2.767061931081117e-10, -2.7334899251582114e-07, 0.00017109676992782628, -0.06958709998929116, 18.296622011252442, -3000.9526306002426, 279584.4945619958, -11321565.153797101]
     calc = poly_fit_statistics(eos.Psat, coeffs_linear_short, 350, 370, pts=20)

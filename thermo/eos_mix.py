@@ -416,11 +416,11 @@ class GCEOSMIX(GCEOS):
 
         s += 'zs=%s, ' %(repr(self.zs))
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            s += f'P={repr(self.P)}, V={repr(self.V)}'
+            s += f'P={self.P!r}, V={repr(self.V)}'
         elif self.V is not None:
-            s += f'T={repr(self.T)}, V={repr(self.V)}'
+            s += f'T={self.T!r}, V={repr(self.V)}'
         else:
-            s += f'T={repr(self.T)}, P={repr(self.P)}'
+            s += f'T={self.T!r}, P={repr(self.P)}'
         s += ')'
         return s
 

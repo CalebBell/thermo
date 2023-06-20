@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,14 +17,14 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import pytest
-import os
-import thermo
-from thermo import ChemicalConstantsPackage, HeatCapacityGas, VaporPressure, PropertyCorrelationsPackage, PRMIX, CEOSGas, CEOSLiquid, FlashVL, FlashVLN
-from fluids.numerics import assert_close, assert_close1d, normalize
+from fluids.numerics import assert_close, normalize
+
+from thermo import PRMIX, CEOSGas, CEOSLiquid, ChemicalConstantsPackage, FlashVLN, HeatCapacityGas, PropertyCorrelationsPackage, VaporPressure
 from thermo.flash.flash_utils import generate_pure_phase_boolean_check
+
 
 def test_water_C1_C8_water_formation_temperature():
     T = 298.15
@@ -36,7 +35,7 @@ def test_water_C1_C8_water_formation_temperature():
     kijs=[[0,0, 0],[0,0, 0.0496], [0,0.0496,0]]
     zs = [1.0/3.0]*3
     N = len(zs)
-    
+
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                          HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                          HeatCapacityGas(poly_fit=(200.0, 1000.0, [-1.069661592422583e-22, -1.2992882995593864e-18, 8.808066659263286e-15, -2.1690080247294972e-11, 2.8519221306107026e-08, -2.187775092823544e-05, 0.009432620102532702, -1.5719488702446165, 217.60587499269303]))]
@@ -44,58 +43,58 @@ def test_water_C1_C8_water_formation_temperature():
                                          CASs=['7732-18-5', '74-82-8', '111-65-9'])
     properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases)
     eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
-    
+
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
-    
+
+
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
-    
+
     # find some temperatures and pressures at which water forms a phase
     check = generate_pure_phase_boolean_check(idx=0, required_zi=.5)
-    
+
     # temperature
     res = flashN.flash_phase_boundary(zs=zs, P=5e5, phase_frac_check=check)
     assert_close(res.T, 393.23623952686864, rtol=3e-5)
-    
+
     res = flashN.flash_phase_boundary(zs=zs, P=1e7, phase_frac_check=check)
     assert_close(res.T, 479.5159347779361, rtol=3e-5)
     # pressure
     res = flashN.flash_phase_boundary(zs=zs, T=400, phase_frac_check=check)
     assert_close(res.P, 624775.8877570137, rtol=3e-5)
-    
+
     res = flashN.flash_phase_boundary(zs=zs, T=300, phase_frac_check=check)
     assert_close(res.P, 8240.1808789621, rtol=3e-5)
-    
+
     res = flashN.flash_phase_boundary(zs=zs, T=265, phase_frac_check=check)
     assert_close(res.P, 762.2869779418065, rtol=3e-5)
-    
+
     res = flashN.flash_phase_boundary(zs=zs, T=230, phase_frac_check=check)
     assert_close(res.P, 27.55802639091696, rtol=3e-5)
-    
+
     # find some temperatures and pressures at which C8 forms a phase
     check = generate_pure_phase_boolean_check(idx=2, required_zi=.3)
     zs = [.5, .4, .1]
 
-    
+
     T_expect_1e5 = 340.99952412066443
     res = flashN.flash_phase_boundary(zs=zs, P=1e5, phase_frac_check=check)
     assert_close(res.T, T_expect_1e5, rtol=3e-5)
-    
+
     # do one with H/S/U, on the same point as before
     res = flashN.flash_phase_boundary(zs=zs, H=res.H(), phase_frac_check=check)
     assert_close(res.T, T_expect_1e5, rtol=3e-5)
-    
+
     res = flashN.flash_phase_boundary(zs=zs, S=res.S(), phase_frac_check=check)
     assert_close(res.T, T_expect_1e5, rtol=3e-5)
-    
+
     res = flashN.flash_phase_boundary(zs=zs, U=res.U(), phase_frac_check=check)
     assert_close(res.T, T_expect_1e5, rtol=3e-5)
 
     # do a few more points
     res = flashN.flash_phase_boundary(zs=zs, P=1243, phase_frac_check=check)
     assert_close(res.T, 262.4209165306811, rtol=3e-5)
-    
+
     res = flashN.flash_phase_boundary(zs=zs, P=47, phase_frac_check=check)
     assert_close(res.T, 225.7589560802028, rtol=3e-5)
 
@@ -105,14 +104,14 @@ def test_water_C1_C8_water_formation_temperature():
 
 
 def test_water_natural_gas_formation_temperature():
-    
+
     # constants, properties = ChemicalConstantsPackage.from_IDs(['nitrogen', 'methane', 'ethane', 'propane',
     #                                                            'n-butane', 'n-pentane','isopentane', 'hexane',
     #                                                            'decane', 'hydrogen sulfide', 'CO2', 'water',
     #                                                            'oxygen', 'argon'])
-    
+
     constants = ChemicalConstantsPackage(atomss=[{'N': 2}, {'C': 1, 'H': 4}, {'C': 2, 'H': 6}, {'C': 3, 'H': 8}, {'C': 4, 'H': 10}, {'C': 5, 'H': 12}, {'C': 5, 'H': 12}, {'C': 6, 'H': 14}, {'C': 10, 'H': 22}, {'H': 2, 'S': 1}, {'C': 1, 'O': 2}, {'H': 2, 'O': 1}, {'O': 2}, {'Ar': 1}], CASs=['7727-37-9', '74-82-8', '74-84-0', '74-98-6', '106-97-8', '109-66-0', '78-78-4', '110-54-3', '124-18-5', '7783-06-4', '124-38-9', '7732-18-5', '7782-44-7', '7440-37-1'], MWs=[28.0134, 16.04246, 30.06904, 44.09562, 58.1222, 72.14878, 72.14878, 86.17536, 142.28168, 34.08088, 44.0095, 18.01528, 31.9988, 39.948], names=['nitrogen', 'methane', 'ethane', 'propane', 'butane', 'pentane', '2-methylbutane', 'hexane', 'decane', 'hydrogen sulfide', 'carbon dioxide', 'water', 'oxygen', 'argon'], omegas=[0.04, 0.008, 0.098, 0.152, 0.193, 0.251, 0.227, 0.2975, 0.49, 0.1, 0.2252, 0.344, 0.021, -0.004], Pcs=[3394387.5, 4599000.0, 4872000.0, 4248000.0, 3796000.0, 3370000.0, 3380000.0, 3025000.0, 2110000.0, 8936865.0, 7376460.0, 22048320.0, 5042945.25, 4873732.5], Tbs=[77.355, 111.65, 184.55, 231.04, 272.65, 309.21, 300.98, 341.87, 447.25, 213.6, 194.67, 373.124, 90.188, 87.302], Tcs=[126.2, 190.564, 305.32, 369.83, 425.12, 469.7, 460.4, 507.6, 611.7, 373.2, 304.2, 647.14, 154.58, 150.8], Tms=[63.15, 90.75, 90.3, 85.5, 135.05, 143.15, 113.15, 178.075, 243.225, 187.65, 216.65, 273.15, 54.36, 83.81], Vcs=[8.95e-05, 9.86e-05, 0.0001455, 0.0002, 0.000255, 0.000311, 0.000306, 0.000368, 0.000624, 9.85e-05, 9.4e-05, 5.6e-05, 7.34e-05, 7.49e-05])
-    
+
     HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
      HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
      HeatCapacityGas(CASRN="74-84-0", MW=30.06904, similarity_variable=0.26605438683775734, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228])),
@@ -127,7 +126,7 @@ def test_water_natural_gas_formation_temperature():
      HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
      HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
      HeatCapacityGas(CASRN="7440-37-1", MW=39.948, similarity_variable=0.025032542304996495, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-1.0939921922581918e-31, 4.144146614006628e-28, -6.289942296644484e-25, 4.873620648503505e-22, -2.0309301195845294e-19, 4.3863747689727484e-17, -4.29308508081826e-15, 20.786156545383236]))]
-    
+
     VaporPressures = [VaporPressure(CASRN="7727-37-9", Tb=77.355, Tc=126.2, Pc=3394387.5, omega=0.04, extrapolation="AntoineAB|DIPPR101_ABC", method="POLY_FIT", poly_fit=(63.2, 126.18199999999999, [5.490876411024536e-15, -3.709517805130509e-12, 1.0593254238679989e-09, -1.6344291780087318e-07, 1.4129990091975526e-05, -0.0005776268289835264, -0.004489180523814208, 1.511854256824242, -36.95425216567675])),
      VaporPressure(CASRN="74-82-8", Tb=111.65, Tc=190.564, Pc=4599000.0, omega=0.008, extrapolation="AntoineAB|DIPPR101_ABC", method="POLY_FIT", poly_fit=(90.8, 190.554, [1.2367137894255505e-16, -1.1665115522755316e-13, 4.4703690477414014e-11, -8.405199647262538e-09, 5.966277509881474e-07, 5.895879890001534e-05, -0.016577129223752325, 1.502408290283573, -42.86926854012409])),
      VaporPressure(CASRN="74-84-0", Tb=184.55, Tc=305.32, Pc=4872000.0, omega=0.098, extrapolation="AntoineAB|DIPPR101_ABC", method="POLY_FIT", poly_fit=(90.4, 305.312, [-1.1908381885079786e-17, 2.1355746620587145e-14, -1.66363909858873e-11, 7.380706042464946e-09, -2.052789573477409e-06, 0.00037073086909253047, -0.04336716238170919, 3.1418840094903784, -102.75040650505277])),
@@ -142,28 +141,28 @@ def test_water_natural_gas_formation_temperature():
      VaporPressure(CASRN="7732-18-5", Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, extrapolation="AntoineAB|DIPPR101_ABC", method="POLY_FIT", poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317])),
      VaporPressure(CASRN="7782-44-7", Tb=90.188, Tc=154.58, Pc=5042945.25, omega=0.021, extrapolation="AntoineAB|DIPPR101_ABC", method="POLY_FIT", poly_fit=(54.370999999999995, 154.57100000000003, [-9.865296960381724e-16, 9.716055729011619e-13, -4.163287834047883e-10, 1.0193358930366495e-07, -1.57202974507404e-05, 0.0015832482627752501, -0.10389607830776562, 4.24779829961549, -74.89465804494587])),
      VaporPressure(CASRN="7440-37-1", Tb=87.302, Tc=150.8, Pc=4873732.5, omega=-0.004, extrapolation="AntoineAB|DIPPR101_ABC", method="POLY_FIT", poly_fit=(83.816, 150.67700000000002, [3.156255133278695e-15, -2.788016448186089e-12, 1.065580375727257e-09, -2.2940542608809444e-07, 3.024735996501385e-05, -0.0024702132398995436, 0.11819673125756014, -2.684020790786307, 20.312746972164785]))]
-    
-    
+
+
     properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, VaporPressures=VaporPressures, skip_missing=True)
-    
+
     kijs = [[0.0, 0.0289, 0.0533, 0.0878, 0.0711, 0.1, 0.0922, 0.1496, 0.1122, 0.1652, -0.0122, 0, -0.0159, -0.0004], [0.0289, 0.0, -0.0059, 0.0119, 0.0185, 0.023, -0.0056, 0.04, 0.0411, 0, 0.0978, 0, 0, 0.0152], [0.0533, -0.0059, 0.0, 0.0011, 0.0089, 0.0078, 0, -0.04, 0.0144, 0.0952, 0.13, 0, 0, 0], [0.0878, 0.0119, 0.0011, 0.0, 0.0033, 0.0267, 0.0111, 0.0007, 0.0, 0.0878, 0.1315, 0, 0, 0], [0.0711, 0.0185, 0.0089, 0.0033, 0.0, 0.0174, 0, -0.0056, 0.0078, 0, 0.1352, 0, 0, 0], [0.1, 0.023, 0.0078, 0.0267, 0.0174, 0.0, 0, 0, 0, 0.063, 0.1252, 0, 0, 0], [0.0922, -0.0056, 0, 0.0111, 0, 0, 0.0, 0, 0, 0, 0.1219, 0, 0, 0], [0.1496, 0.04, -0.04, 0.0007, -0.0056, 0, 0, 0.0, 0, 0, 0.11, 0, 0, 0], [0.1122, 0.0411, 0.0144, 0.0, 0.0078, 0, 0, 0, 0.0, 0.0333, 0.1141, 0, 0, 0], [0.1652, 0, 0.0952, 0.0878, 0, 0.063, 0, 0, 0.0333, 0.0, 0.0967, 0.0394, 0, 0], [-0.0122, 0.0978, 0.13, 0.1315, 0.1352, 0.1252, 0.1219, 0.11, 0.1141, 0.0967, 0.0, 0.0952, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0394, 0.0952, 0.0, 0, 0], [-0.0159, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0089], [-0.0004, 0.0152, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0089, 0.0]]
-    
+
     check = generate_pure_phase_boolean_check(idx=11, required_zi=.5)
-    
-    
+
+
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
     gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     flasher = FlashVLN(constants, properties, liquids=[liquid, liquid], gas=gas)
-    
+
     zs =      [.03, .816, .05, .03,
               .01, .0123, .01204, .00653,
               .0053, .01, .004224, 1e-2,
               .0012, .012306]
     zs = normalize(zs)
-    
+
     res = flasher.flash_phase_boundary(zs=zs, P=1.1e5, phase_frac_check=check)
     assert_close(res.T, 284.12615204391284, atol=.2)
-    
+
     res = flasher.flash_phase_boundary(zs=zs, P=1e7, phase_frac_check=check)
     assert_close(res.T, 350.5751004412331, rtol=1e-4)

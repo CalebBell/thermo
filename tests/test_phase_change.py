@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,17 +17,35 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import pytest
-
-from fluids.numerics import assert_close, assert_close1d, linspace
-from thermo.phase_change import *
-from chemicals.miscdata import CRC_inorganic_data, CRC_organic_data
-from chemicals.identifiers import check_CAS
-from thermo.coolprop import has_CoolProp
 import chemicals
-from thermo.phase_change import COOLPROP, VDI_PPDS, CLAPEYRON, LIU, ALIBAKHSHI, MORGAN_KOBAYASHI, VELASCO, PITZER, RIEDEL, SIVARAMAN_MAGEE_KOBAYASHI, CHEN, CRC_HVAP_TB, DIPPR_PERRY_8E, VETERE, CRC_HVAP_298, VDI_TABULAR, GHARAGHEIZI_HVAP_298
+import pytest
+from fluids.numerics import assert_close, assert_close1d, linspace
+
+from thermo.coolprop import has_CoolProp
+from thermo.phase_change import *
+from thermo.phase_change import (
+    ALIBAKHSHI,
+    CHEN,
+    CLAPEYRON,
+    COOLPROP,
+    CRC_HVAP_298,
+    CRC_HVAP_TB,
+    DIPPR_PERRY_8E,
+    GHARAGHEIZI_HVAP_298,
+    LIU,
+    MORGAN_KOBAYASHI,
+    PITZER,
+    RIEDEL,
+    SIVARAMAN_MAGEE_KOBAYASHI,
+    VDI_PPDS,
+    VDI_TABULAR,
+    VELASCO,
+    VETERE,
+)
+
 
 @pytest.mark.meta_T_dept
 def test_EnthalpyVaporization():
@@ -103,7 +120,7 @@ def test_EnthalpyVaporization():
     assert_close(43499.47575887933, EtOH.T_dependent_property(275), rtol=1E-4)
 
     EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.T_dependent_property(5000)
+    assert None is EtOH.T_dependent_property(5000)
 
     with pytest.raises(Exception):
         EtOH.test_method_validity('BADMETHOD', 300)
@@ -121,7 +138,7 @@ def test_EnthalpyVaporization():
 @pytest.mark.meta_T_dept
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 def test_EnthalpyVaporization_CoolProp():
-    EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954, 
+    EtOH = EnthalpyVaporization(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, similarity_variable=0.1954,
                                 Psat=7872.2, Zg=0.9633, Zl=0.0024, CASRN='64-17-5')
 
     EtOH.method = COOLPROP
@@ -176,16 +193,16 @@ def test_EnthalpyVaporization_cheb_fit_ln_tau():
     assert_close(obj2.T_dependent_property_derivative(T), -100.77476795241955, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(T, order=2), -0.6838185834436981, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(T, order=3), -0.012093191904152178, rtol=1e-13)
-    
-    
+
+
 @pytest.mark.meta_T_dept
 def test_EnthalpyVaporization_stablepoly_fit_ln_tau():
     coeffs = [-0.00854738149791956, 0.05600738152861595, -0.30758192972280085, 1.6848304651211947, -8.432931053161155, 37.83695791102946, -150.87603890354512, 526.4891248463246, -1574.7593541151946, 3925.149223414621, -7826.869059381197, 11705.265444382389, -11670.331914006258, 5817.751307862842]
     obj2 = EnthalpyVaporization(Tc=591.75, stablepoly_fit_ln_tau=((178.18, 591.74, 591.75, coeffs)))
-    
+
     T = 500
     assert_close(obj2(T), 24498.131947494512, rtol=1e-13)
-    
+
     assert_close(obj2.T_dependent_property_derivative(T), -100.77476796035525, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(T, order=2), -0.6838185833621794, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(T, order=3), -0.012093191888904656, rtol=1e-13)
@@ -196,16 +213,16 @@ def test_EnthalpyVaporization_stablepoly_fit_ln_tau():
 def test_EnthalpyVaporization_polynomial_ln_tau_parameters():
     coeffs = [9.661381155485653, 224.16316385569456, 2195.419519751738, 11801.26111760343, 37883.05110910901, 74020.46380982929, 87244.40329893673, 69254.45831263301, 61780.155823216155]
     Tc = 591.75
-    
+
     obj_polynomial = EnthalpyVaporization(Tc=Tc, polynomial_ln_tau_parameters={'test': {'coeffs': coeffs,
                                                         'Tmin': 178.01, 'Tmax': 586.749, 'Tc': Tc}})
-    
+
     assert EnthalpyVaporization.from_json(obj_polynomial.as_json()) == obj_polynomial
 
-    vals = obj_polynomial(500), 
+    vals = obj_polynomial(500),
     for v in vals:
         assert_close(v, 24168.867169087476, rtol=1e-13)
-    
+
 @pytest.mark.meta_T_dept
 def test_EnthalpyVaporization_poly_fit_ln_tau():
     coeffs = [9.661381155485653, 224.16316385569456, 2195.419519751738, 11801.26111760343, 37883.05110910901, 74020.46380982929, 87244.40329893673, 69254.45831263301, 61780.155823216155]
@@ -213,7 +230,7 @@ def test_EnthalpyVaporization_poly_fit_ln_tau():
     T = 300.0
     obj2 = EnthalpyVaporization(Tc=Tc, poly_fit_ln_tau=(178.01, 586.749, Tc, coeffs))
     assert_close(obj2(T), 37900.38881665646, rtol=1e-13)
-    
+
     assert_close(obj2.T_dependent_property_derivative(T), -54.63227984184944, rtol=1e-14)
     assert_close(obj2.T_dependent_property_derivative(T, order=2), 0.037847046150971016, rtol=1e-14)
     assert_close(obj2.T_dependent_property_derivative(T, order=3), -0.001920502581912092, rtol=1e-13)
@@ -237,18 +254,18 @@ def test_EnthalpyVaporization_fitting0():
     ammonia_Ts_Hvaps = [195.41, 206.344, 217.277, 228.211, 239.145, 239.82, 250.078, 261.012, 271.946, 282.879, 293.813, 304.747, 315.681, 326.614, 337.548, 348.482, 359.415, 370.349, 381.283, 392.216, 403.15]
     ammonia_Hvaps = [25286.1, 24832.3, 24359.1, 23866.9, 23354.6, 23322.3, 22820.1, 22259.6, 21667.7, 21037.4, 20359.5, 19622.7, 18812.8, 17912.4, 16899.8, 15747, 14416.3, 12852.3, 10958.8, 8510.62, 4311.94]
     obj = EnthalpyVaporization(CASRN='7664-41-7', load_data=False)
-    
+
     with pytest.raises(ValueError):
         # Tc needs to be specified
         obj.fit_data_to_model(Ts=ammonia_Ts_Hvaps, data=ammonia_Hvaps, model='DIPPR106',
                               do_statistics=True, use_numba=False, fit_method='lm')
-        
+
     fit, res = obj.fit_data_to_model(Ts=ammonia_Ts_Hvaps, data=ammonia_Hvaps, model='DIPPR106',
                       do_statistics=True, use_numba=False, model_kwargs={'Tc': 405.400},
                       fit_method='lm'
                      )
     assert res['MAE'] < 1e-5
-    
+
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_EnthalpyVaporization_fitting1_dippr_106():
@@ -259,7 +276,7 @@ def test_EnthalpyVaporization_fitting1_dippr_106():
         Ts = linspace(obj.Perrys2_150_Tmin, obj.Perrys2_150_Tmax, 8)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR106',
-                              do_statistics=True, use_numba=False, fit_method='lm', 
+                              do_statistics=True, use_numba=False, fit_method='lm',
                                            model_kwargs={'Tc': obj.Perrys2_150_coeffs[0]})
         assert stats['MAE'] < 1e-7
 
@@ -274,7 +291,7 @@ def test_EnthalpyVaporization_fitting2_dippr_106():
         Ts = linspace(obj.T_limits[VDI_PPDS][0], obj.T_limits[VDI_PPDS][1], 8)
         props_calc = [obj.calculate(T, VDI_PPDS) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='PPDS12',
-                              do_statistics=True, use_numba=False, fit_method='lm', 
+                              do_statistics=True, use_numba=False, fit_method='lm',
                                            model_kwargs={'Tc': obj.VDI_PPDS_Tc})
         assert stats['MAE'] < 1e-7
 
@@ -288,6 +305,6 @@ def test_EnthalpyVaporization_fitting3_dippr_106_full():
         Ts = linspace(obj.Perrys2_150_Tmin, obj.Perrys2_150_Tmax, 8)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR106',
-                              do_statistics=True, use_numba=False, fit_method='lm', 
+                              do_statistics=True, use_numba=False, fit_method='lm',
                                            model_kwargs={'Tc': obj.Perrys2_150_coeffs[0]})
         assert stats['MAE'] < 1e-7

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,21 +17,24 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
+import pickle
 from math import exp, log
-import pytest
+from random import random
+
 import numpy as np
-from fluids.constants import calorie, R
+import pytest
 from chemicals.rachford_rice import *
 from chemicals.utils import object_data
-from thermo.uniquac import UNIQUAC
-from random import random
+from fluids.constants import R
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d, derivative, hessian, jacobian, linspace, normalize
+
 from thermo import *
-import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, assert_close3d, linspace
 from thermo.test_utils import check_np_output_activity
-import pickle
+from thermo.uniquac import UNIQUAC
+
 
 def test_UNIQUAC_functional():
     # P05.01c VLE Behavior of Ethanol - Water Using UNIQUAC
@@ -118,7 +120,7 @@ def test_UNIQUAC_no_coefficients():
     rs = [2.1055, 0.9200]
     qs = [1.972, 1.400]
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=tuple())
-    
+
     # Gammas ARE NOT equal to 1!
     # assert_close1d(GE.gammas(), [1, 1], rtol=1e-13)
 
@@ -139,7 +141,7 @@ def test_UNIQUAC_madeup_ternary():
     ABCDEF = (tausA, tausB, tausC, tausD, tausE, tausF)
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=ABCDEF)
     assert eval(str(GE)).GE() == GE.GE()
-    
+
     with pytest.raises(ValueError):
          UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, ABCDEF=(tausA, None, None, []))
     with pytest.raises(ValueError):
@@ -275,7 +277,7 @@ def test_UNIQUAC_no_parameters():
     xs = [0.7273, 0.0909, 0.1818]
     rs = [.92, 2.1055, 3.1878]
     qs = [1.4, 1.972, 2.4]
-    
+
     # Bad idea but it's a thing you actually do
     GE = UNIQUAC(T=300.0, xs=xs, rs=rs, qs=qs)
 
@@ -371,7 +373,7 @@ def test_Uniquac_numpy_output_correct_array_internal_ownership():
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata
-        
+
 @pytest.mark.fitting
 def test_UNIQUAC_fitting_gamma_1_success_cases():
     pts = 10
@@ -381,8 +383,8 @@ def test_UNIQUAC_fitting_gamma_1_success_cases():
     gammas = [[1, 1] for i in range(pts)]
     coeffs, stats = UNIQUAC.regress_binary_parameters(gammas, xs, rs, qs)
     assert stats['MAE'] < 1e-5
-    
-    
+
+
 def test_UNIQUAC_chemsep():
     from thermo.interaction_parameters import IPDB
     xs = [0.252, 0.748]
@@ -398,7 +400,7 @@ def test_UNIQUAC_chemsep():
     gammas = GE.gammas()
     # Checked against ChemSep TPxy plot/data table - shows 5 decimal places
     assert_close1d(gammas, gammas_expect, rtol=1e-12)
-    
+
     # Partial inputs
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, tau_bs=tausB)
     assert_close1d(GE.gammas(), gammas_expect, rtol=1e-12)
@@ -407,9 +409,9 @@ def test_UNIQUAC_chemsep():
 
 def test_UNIQUAC_one_component():
     GE = UNIQUAC(T=300, xs=[1], rs=[1], qs=[1], ABCDEF=([[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]]))
-    
+
     # d2GE_dTdxs, d2GE_dxixjs, dGE_dxs, dSE_dxs all do not have to be zero because the equation can be evaluated with x != 0.
-    
+
     for s in GE._point_properties:
         if hasattr(GE, s):
             res = getattr(GE, s)()

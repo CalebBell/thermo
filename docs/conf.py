@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # thermo documentation build configuration file, created by
 # sphinx-quickstart on Sat Jan  2 17:15:23 2016.
@@ -12,7 +11,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
 import os
 import time
 
@@ -65,7 +63,7 @@ extensions = [
 katex_css_path = \
     'https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css'
 katex_js_path = 'katex.min.js'
-katex_autorender_path = 'auto-render.min.js'    
+katex_autorender_path = 'auto-render.min.js'
 
 nbsphinx_requirejs_path = '' # fixes katex not working
 
@@ -88,12 +86,13 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Thermo'
+project = 'Thermo'
 import datetime
+
 build_date = datetime.datetime.utcfromtimestamp(
     int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
 )
-copyright = u'2016 - %s, Caleb Bell and contributors' %build_date.year
+copyright = '2016 - %s, Caleb Bell and contributors' %build_date.year
 
 
 
@@ -250,8 +249,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'thermo.tex', u'thermo Documentation',
-   u'Caleb Bell', 'manual'),
+  ('index', 'thermo.tex', 'thermo Documentation',
+   'Caleb Bell', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -280,8 +279,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'thermo', u'thermo Documentation',
-     [u'Caleb Bell'], 1)
+    ('index', 'thermo', 'thermo Documentation',
+     ['Caleb Bell'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -294,8 +293,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'thermo', u'thermo Documentation',
-   u'Caleb Bell', 'thermo', 'One line description of project.',
+  ('index', 'thermo', 'thermo Documentation',
+   'Caleb Bell', 'thermo', 'One line description of project.',
    'Miscellaneous'),
 ]
 
@@ -337,7 +336,7 @@ plot_apply_rcparams = True  # if context option is used
 #autodoc_default_flags = ['members', 'private-members', 'special-members',
 #                         #'undoc-members',
 #                         'show-inheritance']
-                         
+
 #def autodoc_skip_member(app, what, name, obj, skip, options):
 #    #exclusions = ('__doc__', '__module__', '__dict__')
 #    if hasattr(obj, 'doc') and 'Chemical Engineering Design Library' in obj.doc:
@@ -351,20 +350,22 @@ plot_apply_rcparams = True  # if context option is used
 
 #def maybe_skip_member(app, what, name, obj, skip,
                                   #options):
-    #if name == 'Chemical':               
+    #if name == 'Chemical':
         #print('hi3', dir(options['members']))
-        #print('hi2', app.config, dir(app.config) )        
+        #print('hi2', app.config, dir(app.config) )
         #print app, what, name, obj, skip, options
         #print(dir(app))
     #return False
 katex_prerender = True
 
 import thermo
+
 try:
     import thermo.numba
 except:
     pass
 from sphinx.ext.autodoc import between
+
 
 def setup(app):
     # Register a sphinx.ext.autodoc.between listener to ignore everything

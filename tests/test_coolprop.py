@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,14 +17,16 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 import pytest
-from fluids.numerics import assert_close, assert_close1d, derivative
-from thermo.coolprop import *
 from chemicals.identifiers import check_CAS
+from fluids.numerics import assert_close, derivative
+
+from thermo.coolprop import *
 from thermo.coolprop import has_CoolProp
-import thermo
+
 
 @pytest.mark.CoolProp
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
@@ -39,7 +40,7 @@ def test_fluid_props():
 
     assert len(coolprop_fluids) == len(coolprop_dict)
     assert len(coolprop_dict) == 105
-    assert all([check_CAS(i) for i in coolprop_dict])
+    assert all(check_CAS(i) for i in coolprop_dict)
 
 
 
@@ -95,9 +96,9 @@ def test_CoolProp_T_dependent_property():
 
 def test_Helmholtz_A0_water():
     # Water
-    A0_kwargs = {'IdealGasHelmholtzLead_a1': -8.3204464837497, 'IdealGasHelmholtzLead_a2': 6.6832105275932, 
-                 'IdealGasHelmholtzLogTau_a': 3.00632, 
-                 'IdealGasHelmholtzPlanckEinstein_ns': [0.012436, 0.97315, 1.2795, 0.96956, 0.24873], 
+    A0_kwargs = {'IdealGasHelmholtzLead_a1': -8.3204464837497, 'IdealGasHelmholtzLead_a2': 6.6832105275932,
+                 'IdealGasHelmholtzLogTau_a': 3.00632,
+                 'IdealGasHelmholtzPlanckEinstein_ns': [0.012436, 0.97315, 1.2795, 0.96956, 0.24873],
                  'IdealGasHelmholtzPlanckEinstein_ts': [1.28728967, 3.53734222, 7.74073708, 9.24437796, 27.5075105]}
     T = 400
     Tc_A0 = 647.096
@@ -133,7 +134,7 @@ def test_Helmholtz_A0_water():
     # tau_sym = symbols('tau')
     # thermo.coolprop.log = log
     # thermo.coolprop.exp = exp
-    
+
     # A0_symbolic = Helmholtz_A0(tau_sym, delta, **A0_kwargs)
     # dA0 = N(diff(A0_symbolic, tau_sym, 3).subs(tau_sym, tau), 20)
     # print(dA0)
@@ -155,10 +156,10 @@ def test_Helmholtz_A0_CO2():
 
 def test_Helmholtz_A0_methanol():
 
-    A0_kwargs = {'IdealGasHelmholtzLead_a1': 13.9864114647, 'IdealGasHelmholtzLead_a2': 3200.6369296, 
+    A0_kwargs = {'IdealGasHelmholtzLead_a1': 13.9864114647, 'IdealGasHelmholtzLead_a2': 3200.6369296,
                  'IdealGasHelmholtzLogTau_a': 3.1950423807804,
                  'IdealGasHelmholtzPower_ns': [-0.585735321498174, -0.06899642310301084, 0.008650264506162275],
-                 'IdealGasHelmholtzPower_ts': [-1, -2, -3], 
+                 'IdealGasHelmholtzPower_ts': [-1, -2, -3],
                  'IdealGasHelmholtzPlanckEinstein_ns': [4.70118076896145],
                  'IdealGasHelmholtzPlanckEinstein_ts': [3.7664265756]}
     T = 400
@@ -175,10 +176,10 @@ def test_Helmholtz_A0_fluorine():
 
     A0_kwargs = {'IdealGasHelmholtzPower_ns': [3.0717001e-06, -5.2985762e-05, -16.372517, 3.6884682e-05, 4.3887271],
                  'IdealGasHelmholtzPower_ts': [-4, -3, 1, 2, 0],
-                 'IdealGasHelmholtzLogTau_a': 2.5011231, 
-                 'IdealGasHelmholtzPlanckEinsteinGeneralized_ns': [1.012767], 
+                 'IdealGasHelmholtzLogTau_a': 2.5011231,
+                 'IdealGasHelmholtzPlanckEinsteinGeneralized_ns': [1.012767],
                  'IdealGasHelmholtzPlanckEinsteinGeneralized_ts': [-8.9057501],
-                 'IdealGasHelmholtzPlanckEinsteinGeneralized_cs': [1], 
+                 'IdealGasHelmholtzPlanckEinsteinGeneralized_cs': [1],
                  'IdealGasHelmholtzPlanckEinsteinGeneralized_ds': [-1],
                  'IdealGasHelmholtzLead_a1': 0, 'IdealGasHelmholtzLead_a2': 0}
     T = 400
@@ -189,7 +190,7 @@ def test_Helmholtz_A0_fluorine():
     A0 = Helmholtz_A0(tau, delta, **A0_kwargs)
     A0_expect = -4.017544722732779
     assert_close(A0, A0_expect, rtol=1e-13)
-    
+
     A0_kwargs2 = A0_kwargs.copy()
     A0_kwargs2['delta'] = delta
     dA0_numerical = derivative(Helmholtz_A0, tau, dx=tau*8e-8, kwargs=A0_kwargs2)
@@ -197,7 +198,7 @@ def test_Helmholtz_A0_fluorine():
     dA0_expect = -9.0602725221550990398 # with sympy
     assert_close(dA0, dA0_expect, rtol=1e-13)
     assert_close(dA0, dA0_numerical, rtol=1e-8)
-    
+
 
     d2A0_numerical = derivative(Helmholtz_dA0_dtau, tau, dx=tau*2e-7, kwargs=A0_kwargs2)
     d2A0 = Helmholtz_d2A0_dtau2(tau, delta, **A0_kwargs)
@@ -215,7 +216,7 @@ def test_Helmholtz_A0_fluorine():
     # tau_sym = symbols('tau')
     # thermo.coolprop.log = log
     # thermo.coolprop.exp = exp
-    
+
     # A0_symbolic = Helmholtz_A0(tau_sym, delta, **A0_kwargs)
     # dA0 = N(diff(A0_symbolic, tau_sym, 3).subs(tau_sym, tau), 20)
     # print(dA0)

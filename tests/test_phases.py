@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,58 +17,58 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import pytest
-from fluids.numerics import derivative, assert_close, jacobian, hessian, assert_close1d, assert_close2d, assert_close3d, normalize
-import numpy as np
-from copy import deepcopy, copy
-from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage
-from thermo import Chemical, Mixture
-from thermo import EXP_POLY_FIT
-from math import *
-from thermo.equilibrium import *
-from thermo.bulk import *
-from thermo.utils import LINEAR
-from chemicals.utils import rho_to_Vm, Vm_to_rho
-from chemicals.virial import Meng_Duan_2005_virial_CSP_kijs
-from thermo.phases import *
-from thermo.eos_mix import *
-from thermo.phases.phase_utils import lnphis_direct, fugacities_direct
-from thermo.eos import *
-from thermo.vapor_pressure import VaporPressure
-from thermo.volume import *
-from thermo.viscosity import *
-from thermo.interface import *
-from thermo.thermal_conductivity import *
-from thermo.heat_capacity import *
-from thermo.phase_change import *
-from thermo.unifac import UNIFAC, UFSG, UFIP, DOUFIP2016, DOUFSG, PSRKIP, PSRKSG, VTPRSG, VTPRIP
-from thermo.regular_solution import RegularSolution
-from thermo.uniquac import UNIQUAC
-from thermo.wilson import Wilson
-from thermo.coolprop import PropsSI
-import pickle
 import json
+import pickle
+from math import *
+
+import numpy as np
+import pytest
+from chemicals.utils import rho_to_Vm
 from fluids.constants import *
-from thermo.coolprop import has_CoolProp
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d, derivative, hessian, jacobian, normalize
+
+from thermo import EXP_POLY_FIT
+from thermo.bulk import *
+from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage
+from thermo.coolprop import PropsSI, has_CoolProp
+from thermo.eos import *
+from thermo.eos_mix import *
+from thermo.equilibrium import *
+from thermo.heat_capacity import *
+from thermo.interface import *
+from thermo.phase_change import *
+from thermo.phases import *
+from thermo.phases.phase_utils import fugacities_direct, lnphis_direct
+from thermo.regular_solution import RegularSolution
+from thermo.thermal_conductivity import *
+from thermo.unifac import DOUFIP2016, DOUFSG, PSRKIP, PSRKSG, UFIP, UFSG, UNIFAC, VTPRIP, VTPRSG
+from thermo.uniquac import UNIQUAC
+from thermo.utils import LINEAR
+from thermo.vapor_pressure import VaporPressure
+from thermo.viscosity import *
+from thermo.volume import *
+from thermo.wilson import Wilson
+
 
 def test_CEOS_low_T_high_P_fug_infinity():
     # Ideally we would have good numerical behavior here
     from math import isinf
-    
+
     a_phase = CEOSLiquid(eos_class=PRMIXTranslatedConsistent,
                eos_kwargs={"Pcs": [3394387.5, 5042945.25, 4873732.5], "Tcs": [126.2, 154.58, 150.8],
                            "omegas": [0.04, 0.021, -0.004],
-                           "kijs": [[0.0, -0.0159, -0.0004], [-0.0159, 0.0, 0.0089], [-0.0004, 0.0089, 0.0]], 
-                           "cs": [-3.643e-06, -2.762e-06, -3.293e-06], 
-                           "alpha_coeffs": [(0.1243, 0.8898, 2.0129), (0.2339, 0.8896, 1.3053), (0.1227, 0.9045, 1.8541)]}, 
-               HeatCapacityGases=[HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"), 
-                                  HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="TRCIG"), 
-                                  HeatCapacityGas(CASRN="7440-37-1", MW=39.948, similarity_variable=0.025032542304996495, extrapolation="linear", method="WEBBOOK_SHOMATE")], 
+                           "kijs": [[0.0, -0.0159, -0.0004], [-0.0159, 0.0, 0.0089], [-0.0004, 0.0089, 0.0]],
+                           "cs": [-3.643e-06, -2.762e-06, -3.293e-06],
+                           "alpha_coeffs": [(0.1243, 0.8898, 2.0129), (0.2339, 0.8896, 1.3053), (0.1227, 0.9045, 1.8541)]},
+               HeatCapacityGases=[HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"),
+                                  HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="TRCIG"),
+                                  HeatCapacityGas(CASRN="7440-37-1", MW=39.948, similarity_variable=0.025032542304996495, extrapolation="linear", method="WEBBOOK_SHOMATE")],
                T=0.001, P=200000.0, zs=[0.781112444977991, 0.20958383353341334, 0.009303721488595438])
-    assert isinf(a_phase.fugacities()[1])    
-    
+    assert isinf(a_phase.fugacities()[1])
+
 def test_GibbbsExcessLiquid_VaporPressure():
     # Binary ethanol-water
     VaporPressures = [VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(159.11, 514.7, [-2.3617526481119e-19, 7.318686894378096e-16, -9.835941684445551e-13, 7.518263303343784e-10, -3.598426432676194e-07, 0.00011171481063640762, -0.022458952185007635, 2.802615041941912, -166.43524219017118])),
@@ -796,7 +795,7 @@ def test_GibbsExcessLiquid_HS_from_Hvap_pure():
 
 def test_GibbsExcessLiquid_lnPsats():
     T, P, zs = 100.0, 1e5, [1.0]
-    constants = ChemicalConstantsPackage(Tms=[179.2], Tbs=[383.75], Tcs=[591.75], Pcs=[4108000.0], omegas=[0.257], MWs=[92.13842], CASs=['108-88-3'], names=[u'toluene'])
+    constants = ChemicalConstantsPackage(Tms=[179.2], Tbs=[383.75], Tcs=[591.75], Pcs=[4108000.0], omegas=[0.257], MWs=[92.13842], CASs=['108-88-3'], names=['toluene'])
     VaporPressures1 = [VaporPressure(extrapolation='DIPPR101_ABC|DIPPR101_ABC', exp_poly_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))]
 
     VaporPressures2 = [VaporPressure(extrapolation='AntoineAB|AntoineAB', exp_poly_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))]
@@ -872,7 +871,7 @@ def test_GibbsExcessLiquid_lnPsats():
 
 def test_GibbsExcessLiquid_dHS_dT_low():
     T, P, zs = 100.0, 1e5, [1.0]
-    constants = ChemicalConstantsPackage(Tms=[179.2], Tbs=[383.75], Tcs=[591.75], Pcs=[4108000.0], omegas=[0.257], MWs=[92.13842], CASs=['108-88-3'], names=[u'toluene'])
+    constants = ChemicalConstantsPackage(Tms=[179.2], Tbs=[383.75], Tcs=[591.75], Pcs=[4108000.0], omegas=[0.257], MWs=[92.13842], CASs=['108-88-3'], names=['toluene'])
     VaporPressures = [VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [-9.48396765770823e-21, 4.444060985512694e-17, -8.628480671647472e-14, 8.883982004570444e-11, -5.0893293251198045e-08, 1.4947108372371731e-05, -0.0015271248410402886, 0.19186172941013854, 30.797883940134057]))]
     VolumeLiquids = [VolumeLiquid(poly_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))]
@@ -1138,19 +1137,19 @@ def test_CEOS_phis():
 
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     gas_liquid = gas.to(T=100, P=1e5, zs=zs) # only has V_l
     liquid_gas = liquid.to(T=500, P=1e5, zs=zs) # only has V_g
 
-    assert eval((gas.__repr__())).state_hash() == gas.state_hash()
-    assert eval((liquid.__repr__())).state_hash() == liquid.state_hash()
-    assert eval((gas_liquid.__repr__())).state_hash() == gas_liquid.state_hash()
-    assert eval((liquid_gas.__repr__())).state_hash() == liquid_gas.state_hash()
+    assert eval(gas.__repr__()).state_hash() == gas.state_hash()
+    assert eval(liquid.__repr__()).state_hash() == liquid.state_hash()
+    assert eval(gas_liquid.__repr__()).state_hash() == gas_liquid.state_hash()
+    assert eval(liquid_gas.__repr__()).state_hash() == liquid_gas.state_hash()
 
     lnphis_expect = lnphis_expect_gas = [-0.02360432649642419, -0.024402271514780954, -0.016769813943198587]
     assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-12)
     assert_close1d(gas.lnphis_lowest_Gibbs(), lnphis_expect, rtol=1e-12)
-    
+
     lnphis_expect = [0.8253284443531399, 0.11977973815900889, 0.10965732949863494]
     assert_close1d(liquid.lnphis(), lnphis_expect, rtol=1e-12)
     assert_close1d(liquid.lnphis_lowest_Gibbs(), lnphis_expect_gas, rtol=1e-12)
@@ -1226,7 +1225,7 @@ def test_CEOS_phis():
     analytical_dphis_dzs = liquid.dphis_dzs()
     numerical_dphis_dzs = jacobian(lambda zs: liquid.to(T=T, P=P, zs=zs).phis(), zs, scalar=False, perturbation=5e-7)
     assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=2e-6)
-    
+
     analytical_dphis_dzs = gas_liquid.dphis_dzs()
     numerical_dphis_dzs = jacobian(lambda zs: gas_liquid.to(T=gas_liquid.T, P=gas_liquid.P, zs=zs).phis(), zs, scalar=False, perturbation=5e-7)
     assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=2e-6)
@@ -1238,7 +1237,7 @@ def test_CEOS_phis():
     def to_jac(ns, obj):
         zs = normalize(ns)
         return obj.to(T=obj.T, P=obj.P, zs=zs).lnphis()
-    
+
     analytical_dlnphis_dns = gas.dlnphis_dns()
     numerical_dlnphis_dns = jacobian(to_jac, zs, scalar=False, perturbation=1e-7, args=(gas,))
     analytical_dlnphis_dns = liquid.dlnphis_dns()
@@ -1256,8 +1255,8 @@ def test_CEOS_phis():
     assert_close(gas.dH_dP(), -0.0017158255316092434, rtol=1e-12)
     assert_close(gas.dS_dT(), 0.17726291337892383, rtol=1e-12)
     assert_close(gas.dS_dP(), -9.480886482495667e-05, rtol=1e-12)
-    
-    
+
+
     assert_close(liquid.H(), -30543.21665080462, rtol=1e-12)
     assert_close(liquid.S(), -85.33768319131639, rtol=1e-12)
     assert_close(liquid.Cp(), 114.73501353272819, rtol=1e-12)
@@ -1314,7 +1313,7 @@ def test_CEOS_phis():
     assert_close(liquid.d2V_dT2(), 9.03561456890459e-10, rtol=1e-12)
     assert_close(gas_liquid.d2V_dT2(), 1.2517126115725623e-10, rtol=1e-12)
     assert_close(liquid_gas.d2V_dT2(), -6.12354679984025e-09, rtol=1e-12)
-    
+
     # not fully implemented, change answers later
     assert_close(gas.d2H_dep_dT2(), -0.005152154534022128, rtol=1e-3)
     assert_close(liquid.d2H_dep_dT2(), 0.10497212232734983, rtol=1e-3)
@@ -1362,7 +1361,7 @@ def test_CEOS_phis():
     assert_close1d(gas.dH_dzs(), dH_dzs_expect, rtol=1e-12)
     dS_dzs_expect = [11.452747620043832, 12.611417881165302, 0.2036373977480378]
     assert_close1d(gas.dS_dzs(), dS_dzs_expect, rtol=1e-12)
-    
+
     dH_dzs_expect = [-27493.790837492666, -30397.549320841797, -39119.62412792998]
     assert_close1d(liquid.dH_dzs(), dH_dzs_expect, rtol=1e-12)
     dS_dzs_expect = [-20.79523368000522, -21.50796960808049, -58.045799265074926]
@@ -1496,7 +1495,7 @@ def test_CEOS_phis():
     assert_close1d(liquid.dnV_dns(), [8.978842423911006e-05, 8.130448916666431e-05, 4.990596654537502e-05], rtol=1e-12)
     assert_close1d(gas_liquid.dnV_dns(), [7.242174773516578e-05, 6.73381560205843e-05, 4.205973249121094e-05], rtol=1e-12)
     assert_close1d(liquid_gas.dnV_dns(), [0.041252544690570124, 0.04122017300895129, 0.041366932264116044], rtol=1e-12)
-    
+
     assert_close1d(gas.dH_dep_dzs(), [-344.1196331217192, -342.82935851167326, -299.85186981600106], rtol=1e-12)
     assert_close1d(liquid.dH_dep_dzs(), [-30065.583108430503, -32626.510812364337, -40629.63916087929], rtol=1e-12)
     assert_close1d(gas_liquid.dH_dep_dzs(), [-35405.208439565475, -36288.35998281319, -52462.02709274337], rtol=1e-12)
@@ -1527,7 +1526,7 @@ def test_CEOS_phis():
     assert_close1d(liquid.lnphis_G_min(), [-0.02360432649642427, -0.02440227151478101, -0.016769813943198538], rtol=1e-12)
     assert_close1d(gas_liquid.lnphis_G_min(), [-26.257643489591743, -28.123302577785182, -39.391352729666025], rtol=1e-12)
     assert_close1d(liquid_gas.lnphis_G_min(), [-0.0076796355290965155, -0.008453288415352122, -0.004934801579277686], rtol=1e-12)
-    
+
 def test_GibbsExcessLiquid_RegularSolution():
     T = 300.0
     P = 1e5
@@ -1698,7 +1697,7 @@ def test_chemical_potential():
     mu_r_exp = [-188705.73988392908, -97907.9761772734, -193308.17514525697]
     mu_r_calc = liquid.chemical_potential()
     assert_close1d(mu_r_exp, mu_r_calc, rtol=1e-9)
-    '''#Derived with:
+    """#Derived with:
     from sympy import *
     T = symbols('T')
     zs = z0, z1, z2 = symbols('z0, z1, z2')
@@ -1715,7 +1714,7 @@ def test_chemical_potential():
 
     G = Hbase - T*Sbase
     diff(G, z0)
-    '''
+    """
 
 
 
@@ -1991,8 +1990,8 @@ def test_ideal_gas_speed_of_sound():
     phase.constants = constants
     assert_close(phase.speed_of_sound_mass(), phase.speed_of_sound_ideal_gas_mass())
     assert_close(phase.speed_of_sound_ideal_gas(), phase.speed_of_sound())
-    
-    
+
+
 
 
 
@@ -3245,15 +3244,15 @@ def test_DryAirLemmon():
 
     # Thermal conductivity calls
     gas = DryAirLemmon(T=100.0, P=1e5)
-    
+
     g0 = gas.to(T=100, V=1/(28000), zs=[1.0])
     assert_close(g0.k()*1e3, 119.221, atol=.0005)
     assert_close(g0.mu()*1e6, 107.923, atol=.0005)
-    
+
     g0 = gas.to(T=200, V=1/(10000), zs=[1.0])
     assert_close(g0.k()*1e3, 35.3185, atol=.00005)
     assert_close(g0.mu()*1e6, 21.1392, atol=.00005)
-    
+
     g0 = gas.to(T=300, V=1/(5000.0), zs=[1.0])
     assert_close(g0.k()*1e3, 32.6062, atol=.00005)
     assert_close(g0.mu()*1e6, 21.3241, atol=.00005)
@@ -3265,32 +3264,32 @@ def test_DryAirLemmon():
 
     # Isentropic exponents
     phase = gas.to(T=300.0, P=1000e5, zs=[1])
-    
+
     assert_close(phase.isentropic_exponent(), 4.100576762582646, rtol=1e-12)
     assert_close(phase.isentropic_exponent_PV(), 4.100576762582646, rtol=1e-12)
-    
+
     assert_close(phase.isentropic_exponent_PT(), 1.3248727035044343, rtol=1e-12)
     assert_close(phase.isentropic_exponent_TV(), 2.0055044950839136, rtol=1e-12)
 
 def test_lnphis_at_zs_eos_mix():
     # Acetone, chloroform, methanol
     T, P, zs = 331.42, 90923,  [0.229, 0.175, 0.596]
-    
+
     eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
      'Tcs': [508.1, 536.2, 512.5],
      'omegas': [0.309, 0.21600000000000003, 0.5589999999999999],
      'kijs': [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]],
     #  'cs': [-3.4317958608704207e-07, -1.8595690933459835e-06, 2.407946643713126e-06]
     }
-    
+
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(200.0, 1000.0, [-1.3320002425347943e-21, 6.4063345232664645e-18, -1.251025808150141e-14, 1.2265314167534311e-11, -5.535306305509636e-09, -4.32538332013644e-08, 0.0010438724775716248, -0.19650919978971002, 63.84239495676709])),
      HeatCapacityGas(poly_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
      HeatCapacityGas(poly_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
-    
+
     # Peng-Robinson
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
     assert_close1d(fugacities_direct(zs, *gas.lnphis_args()), gas.fugacities(), rtol=1e-13)
@@ -3301,96 +3300,96 @@ def test_lnphis_at_zs_eos_mix():
     # PR78
     gas = CEOSGas(PR78MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PR78MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
 
     # TWUPR
     gas = CEOSGas(TWUPRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(TWUPRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
 
 
-    
+
     # VDW
     gas = CEOSGas(VDWMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(VDWMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     # SRK
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     # Twu SRK
     gas = CEOSGas(TWUSRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(TWUSRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
 
     # RK
     gas = CEOSGas(RKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(RKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     # Ideal
     gas = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
 
     # PRSVMIX
     eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
@@ -3401,16 +3400,16 @@ def test_lnphis_at_zs_eos_mix():
     }
     gas = CEOSGas(PRSVMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRSVMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     # PRSVMIX2
     eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
      'Tcs': [508.1, 536.2, 512.5],
@@ -3422,13 +3421,13 @@ def test_lnphis_at_zs_eos_mix():
     }
     gas = CEOSGas(PRSV2MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRSV2MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
 
@@ -3442,16 +3441,16 @@ def test_lnphis_at_zs_eos_mix():
     }
     gas = CEOSGas(APISRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(APISRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     # PRMIXTranslated
     eos_kwargs = {'Pcs': [4700000.0, 5330000.0, 8084000.0],
      'Tcs': [508.1, 536.2, 512.5],
@@ -3459,128 +3458,128 @@ def test_lnphis_at_zs_eos_mix():
      'kijs': [[0, 0.038, 0.08], [0.038, 0, 0.021], [0.08, 0.021, 0]],
      'cs': [-3.4317958608704207e-07, -1.8595690933459835e-06, 2.407946643713126e-06]
     }
-    
+
     gas = CEOSGas(PRMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
 
     # PRMIXTranslatedConsistent
     gas = CEOSGas(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     # PRMIXTranslatedPPJP
     gas = CEOSGas(PRMIXTranslatedPPJP, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRMIXTranslatedPPJP, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     # SRKMIXTranslated
     gas = CEOSGas(SRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(SRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     # SRKMIXTranslatedConsistent
     gas = CEOSGas(SRKMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(SRKMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
 
     # MSRKMIXTranslated
     gas = CEOSGas(MSRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(MSRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
+
     assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
     assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
+
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
-    
-    
-    
+
+
+
 @pytest.mark.skip
 def test_UNIFAC_lnphis_direct():
     # Not working anymore
-    from thermo.unifac import UFIP, UFSG, VTPRIP, VTPRSG, NISTKTUFIP, NISTKTUFSG, LUFIP, LUFSG, DOUFIP2016, DOUFSG, PSRKIP, PSRKSG
     from thermo.phases.phase_utils import lnphis_direct
+    from thermo.unifac import DOUFIP2016, DOUFSG, LUFIP, LUFSG, NISTKTUFIP, NISTKTUFSG, PSRKIP, PSRKSG, UFIP, UFSG, VTPRIP, VTPRSG
     T = 400.0
     P = 1e6
     zs = [.4, .6]
     xs2 = [.3, .7]
-    
+
     MWs = [18.01528, 46.06844]
     Tcs = [647.14, 514.0]
     Pcs = [22048320.0, 6137000.0]
     omegas = [0.344, 0.635]
-    
+
     eoss = [PR(Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0], T=T, P=P),
             PR(Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1], T=T, P=P)]
-    
+
     # Cover all the varianrs of UNIFAC that are implemented
     # Note: chemgroups do not always match the components,
     # as that doesn't impact the tests
     GE0 = UNIFAC.from_subgroups(T, zs, chemgroups=[{16: 1}, {1: 1, 2: 1, 14: 1}], subgroups=UFSG,
                            interaction_data=UFIP, version=0)
-    
+
     GE1 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1:1, 18:1}, {1:1, 2:1, 14:1}], version=1,
                                interaction_data=DOUFIP2016, subgroups=DOUFSG)
-    
+
     GE2 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{117: 1}, {1:2, 2:4}], version=2,
                                interaction_data=PSRKIP, subgroups=PSRKSG)
-    
+
     GE3 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}], version=3,
                                interaction_data=VTPRIP, subgroups=VTPRSG)
-    
+
     GE4 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 2: 1, 12: 1}, {1: 2, 2: 3}], version=4,
                                interaction_data=LUFIP, subgroups=LUFSG)
-    
+
     GE5 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1:1, 15:5, 19:1}, {15:4, 18:2}] , version=5,
                                interaction_data=NISTKTUFIP, subgroups=NISTKTUFSG)
-    
+
     GEs = [GE0, GE1, GE2, GE3, GE4, GE5]
-    
+
     VaporPressures = [VaporPressure(exp_poly_fit=(159.11, 514.7, [-2.3617526481119e-19, 7.318686894378096e-16, -9.835941684445551e-13, 7.518263303343784e-10, -3.598426432676194e-07, 0.00011171481063640762, -0.022458952185007635, 2.802615041941912, -166.43524219017118])),
                       VaporPressure(exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
@@ -3589,7 +3588,7 @@ def test_UNIFAC_lnphis_direct():
                                   Psat=VaporPressures[0], Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0]),
                      VolumeLiquid(poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
                                   Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
-    
+
     for GE in GEs:
         for basis in ('Psat', 'Poynting', 'PhiSat', 'Poynting&PhiSat'):
             liquid_base = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
@@ -3598,11 +3597,11 @@ def test_UNIFAC_lnphis_direct():
                                        equilibrium_basis=basis, caloric_basis=basis,
                                        eos_pure_instances=eoss, T=T, P=P, zs=zs)
             args = liquid_base.lnphis_args()
-            
+
             assert_close1d(lnphis_direct(xs2, *args), liquid_base.to(T=T, P=P, zs=xs2).lnphis(), rtol=1e-12)
-            
-            
-            
+
+
+
 def test_virial_phase_pure_B_only_pitzer_curl():
     Tcs = [190.564]
     Pcs = [4599000.0]
@@ -3612,11 +3611,11 @@ def test_virial_phase_pure_B_only_pitzer_curl():
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
     zs = [1]
     PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs)
-    
+
     assert_close(PT.rho(), 40.159125929164205, rtol=1e-13)
     assert_close(PT.V(), 0.02490094036817131, rtol=1e-13)
     assert_close(PT.B(), -4.2375251149270624e-05, rtol=1e-14)
-    
+
     assert_close(PT.dB_dT(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).B(), PT.T, PT.T*3e-7), rtol=1e-7)
     assert_close(PT.d2B_dT2(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).dB_dT(), PT.T, PT.T*3e-7), rtol=1e-7)
     assert_close(PT.d3B_dT3(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).d2B_dT2(), PT.T, PT.T*3e-7), rtol=1e-7)
@@ -3626,43 +3625,43 @@ def test_virial_phase_pure_B_only_pitzer_curl():
 
 
     assert_close(PT.to_TP_zs(T=PT.T, P=PT.P, zs=[1]).V(), PT.V())
-    
+
     TV = PT.to(T=PT.T, V=PT.V(), zs=[1])
     assert_close(TV.P, PT.P, rtol=1e-13)
-    
+
     PV = PT.to(P=PT.P, V=PT.V(), zs=[1])
     assert_close(PV.T, 300, rtol=1e-13)
-    
+
     PT2 = PT.to(P=PT.P, T=PT.T, zs=[1])
     assert_close(PT2.V(), 0.02490094036817131, rtol=1e-13)
     assert_close(PT2.B(), -4.2375251149270624e-05, rtol=1e-14)
-    
+
     assert_close(PT.dP_dT(), 334.86796331728914, rtol=1e-13)
     assert_close(PT.dP_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).P, PT.T, PT.T*1e-7), rtol=1e-10)
-    
+
     assert_close(PT.dP_dV(), -4009066.851663165, rtol=1e-13)
     assert_close(PT.dP_dV(), derivative(lambda V: PT.to(T=PT.T, V=V, zs=[1]).P, PT.V(), PT.V()*1e-7), rtol=1e-8)
-    
+
     assert_close(PT.d2P_dTdV(), -13486.814969771252, rtol=1e-13)
     assert_close(PT.d2P_dTdV(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dV(), PT.T, PT.T*1e-7), rtol=1e-9)
-    
+
     assert_close(PT.d2P_dV2(), 321451403.1386218, rtol=1e-13)
     assert_close(PT.d2P_dV2(), derivative(lambda V: PT.to(T=PT.T, V=V, zs=[1]).dP_dV(), PT.V(), PT.V()*1e-7), rtol=1e-8)
-    
+
     assert_close(PT.d2P_dT2(), -0.0020770847374848075, rtol=1e-13)
     assert_close(PT.d2P_dT2(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dT(), PT.T, PT.T*8e-7), rtol=1e-6)
-    
+
     assert_close(PT.H_dep(), 15.708867544147836, rtol=1e-13)
     H_dep_Poling = (-(PT.B() - PT.T*PT.dB_dT())/PT.V())*R*PT.T
     assert_close(PT.H_dep(), H_dep_Poling, rtol=1e-13)
-    
+
     assert_close(PT.dH_dep_dT(), -0.03958097657787867, rtol=1e-13)
     assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
-    
+
     S_dep_Poling = -((PT.B() + PT.T*PT.dB_dT())/PT.V()- log(PT.Z()))*R
     assert_close(PT.S_dep(), -0.03822578258348812, rtol=1e-13)
     assert_close(PT.S_dep(), S_dep_Poling, rtol=1e-13)
-    
+
     assert_close(PT.dS_dep_dT(), 0.0001793175995307205, rtol=1e-13)
     assert_close(PT.dS_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).S_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
 
@@ -3678,7 +3677,7 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     omegas = [0.04, 0.008, 0.2252]
     omegas_np = np.array(omegas)
     N = 3
-    
+
     HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
      HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
      HeatCapacityGas(CASRN="124-38-9", MW=44.0095, similarity_variable=0.0681671002851657, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))]
@@ -3686,14 +3685,14 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
-    
+
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
-                                  B_model=VIRIAL_B_ABBOTT, 
+                                  B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
     model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
-                              B_model=VIRIAL_B_ABBOTT, 
+                              B_model=VIRIAL_B_ABBOTT,
                               cross_B_model=VIRIAL_B_ABBOTT,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ZERO)
@@ -3710,7 +3709,7 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
                     cross_B_model='theory',
                 T=T, P=P, zs=zs_np)
 
-    
+
     # Test some basics
     B, dB, d2B, d3B =  -4.413104126753512e-05, 3.9664296537847194e-07,  -3.488354169403768e-09,  4.274046794787785e-11
     assert_close(gas.B(), B, rtol=1e-13)
@@ -3721,8 +3720,8 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     assert_close(gas_np.dB_dT(), dB, rtol=1e-13)
     assert_close(gas_np.d2B_dT2(), d2B, rtol=1e-13)
     assert_close(gas_np.d3B_dT3(), d3B, rtol=1e-13)
-    
-    
+
+
     for val in (gas.B(), gas.dB_dT(), gas.d2B_dT2(), gas.d3B_dT3(),
                 gas_np.B(), gas_np.dB_dT(), gas_np.d2B_dT2(), gas_np.d3B_dT3()):
         assert type(val) is float
@@ -3732,12 +3731,12 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
                 gas_np.C(), gas_np.dC_dT(), gas_np.d2C_dT2(), gas_np.d3C_dT3()):
         assert val == 0.0
         assert type(val) is float
-    
+
     V = 0.024899178456922296
     assert_close(gas.V(), V, rtol=1e-13)
     assert_close(gas_np.V(), V, rtol=1e-13)
 
-    
+
     # Check the B and T derivatives
     assert_close(gas.dB_dT(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).B(), gas.T, gas.T*3e-7), rtol=1e-7)
     assert_close(gas.d2B_dT2(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).dB_dT(), gas.T, gas.T*3e-7), rtol=1e-7)
@@ -3751,8 +3750,8 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     assert_close(gas_np.dC_dT(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).C(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
     assert_close(gas_np.d2C_dT2(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).dC_dT(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
     assert_close(gas_np.d3C_dT3(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).d2C_dT2(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
-    
-    
+
+
     # Mole fraction derivatives of B, including its temperature derivatives
     dB_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).B(), zs, perturbation=1e-7)
     dB_dzs_expect = [-4.1226874244236366e-05, -8.550397384968317e-05, -0.0001462314851412832]
@@ -3781,8 +3780,8 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     assert_close1d(gas_np.d4B_dT3dzs(), d4B_dT3dzs_expect, rtol=1e-13)
     assert isinstance(gas_np.d4B_dT3dzs(), np.ndarray)
     assert_close1d(d4B_dT3dzs, gas.d4B_dT3dzs())
-    
-    
+
+
     # Second mole fraction derivatives
     d2B_dzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).B(), zs, perturbation=125e-5)
     d2B_dzizjs_expect = [[-1.0639357784985337e-05, -3.966321845899801e-05, -7.53987684376414e-05], [-3.966321845899801e-05, -8.286257232134107e-05, -0.00014128571574782375], [-7.53987684376414e-05, -0.00014128571574782375, -0.00024567752140887547]]
@@ -3804,14 +3803,14 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     assert_close1d(gas_np.d4B_dT2dzizjs(), d4B_dT2dzizjs_expect, rtol=1e-13)
     assert_close2d(d4B_dT2dzizjs, gas.d4B_dT2dzizjs(), rtol=1e-6)
     assert isinstance(gas_np.d4B_dT2dzizjs(), np.ndarray)
-    
+
     # Third mole fraction derivatives
     d3B_dzizjzks_expect = [[[0.0]*N for _ in range(N)] for _ in range(N)]
     assert_close3d(d3B_dzizjzks_expect, gas.d3B_dzizjzks(), atol=0)
     assert_close3d(d3B_dzizjzks_expect, gas.d4B_dTdzizjzks(), atol=0)
     assert_close3d(d3B_dzizjzks_expect, gas.d5B_dT2dzizjzks(), atol=0)
     assert_close3d(d3B_dzizjzks_expect, gas.d6B_dT3dzizjzks(), atol=0)
-    
+
     assert_close3d(d3B_dzizjzks_expect, gas_np.d3B_dzizjzks(), atol=0)
     assert isinstance(gas_np.d3B_dzizjzks(), np.ndarray)
     assert_close3d(d3B_dzizjzks_expect, gas_np.d4B_dTdzizjzks(), atol=0)
@@ -3820,8 +3819,8 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     assert isinstance(gas_np.d5B_dT2dzizjzks(), np.ndarray)
     assert_close3d(d3B_dzizjzks_expect, gas_np.d6B_dT3dzizjzks(), atol=0)
     assert isinstance(gas_np.d6B_dT3dzizjzks(), np.ndarray)
-    
-    
+
+
     # Mole number derivatives
     def dB_dns_to_jac(ns):
         zs = normalize(ns)
@@ -3852,7 +3851,7 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     omegas = [0.04, 0.008, 0.2252]
     omegas_np = np.array(omegas)
     N = 3
-    
+
     HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
      HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
      HeatCapacityGas(CASRN="124-38-9", MW=44.0095, similarity_variable=0.0681671002851657, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))]
@@ -3860,14 +3859,14 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
-    
+
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
-                                  B_model=VIRIAL_B_ABBOTT, 
+                                  B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
     model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
-                              B_model=VIRIAL_B_ABBOTT, 
+                              B_model=VIRIAL_B_ABBOTT,
                               cross_B_model=VIRIAL_B_ABBOTT,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ZERO)
@@ -3884,7 +3883,7 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
                     cross_B_model='linear',
                 T=T, P=P, zs=zs_np)
 
-    
+
     # Test some basics
     B, dB, d2B, d3B = (-4.559350248793301e-05, 4.0870609295718214e-07, -3.6526254783551437e-09, 4.574694317862753e-11)
     assert_close(gas.B(), B, rtol=1e-13)
@@ -3895,8 +3894,8 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     assert_close(gas_np.dB_dT(), dB, rtol=1e-13)
     assert_close(gas_np.d2B_dT2(), d2B, rtol=1e-13)
     assert_close(gas_np.d3B_dT3(), d3B, rtol=1e-13)
-    
-    
+
+
     for val in (gas.B(), gas.dB_dT(), gas.d2B_dT2(), gas.d3B_dT3(),
                 gas_np.B(), gas_np.dB_dT(), gas_np.d2B_dT2(), gas_np.d3B_dT3()):
         assert type(val) is float
@@ -3906,12 +3905,12 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
                 gas_np.C(), gas_np.dC_dT(), gas_np.d2C_dT2(), gas_np.d3C_dT3()):
         assert val == 0.0
         assert type(val) is float
-    
+
     V = 0.024897710706483875
     assert_close(gas.V(), V, rtol=1e-13)
     assert_close(gas_np.V(), V, rtol=1e-13)
 
-    
+
     # Check the B and T derivatives
     assert_close(gas.dB_dT(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).B(), gas.T, gas.T*3e-7), rtol=1e-7)
     assert_close(gas.d2B_dT2(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).dB_dT(), gas.T, gas.T*3e-7), rtol=1e-7)
@@ -3925,8 +3924,8 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     assert_close(gas_np.dC_dT(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).C(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
     assert_close(gas_np.d2C_dT2(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).dC_dT(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
     assert_close(gas_np.d3C_dT3(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).d2C_dT2(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
-    
-    
+
+
     # Mole fraction derivatives of B, including its temperature derivatives
     dB_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).B(), zs, perturbation=1e-7)
     dB_dzs_expect =  [-5.3196788924926625e-06, -4.143128616067054e-05, -0.00012283876070443773]
@@ -3955,8 +3954,8 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     assert_close1d(gas_np.d4B_dT3dzs(), d4B_dT3dzs_expect, rtol=1e-13)
     assert isinstance(gas_np.d4B_dT3dzs(), np.ndarray)
     assert_close1d(d4B_dT3dzs, gas.d4B_dT3dzs())
-    
-    
+
+
     # Second mole fraction derivatives
     d2B_dzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).B(), zs, perturbation=125e-5)
     d2B_dzizjs_expect = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
@@ -3978,14 +3977,14 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     assert_close1d(gas_np.d4B_dT2dzizjs(), d4B_dT2dzizjs_expect, rtol=1e-13)
     assert_close2d(d4B_dT2dzizjs, gas.d4B_dT2dzizjs(), atol=1e-6)
     assert isinstance(gas_np.d4B_dT2dzizjs(), np.ndarray)
-    
+
     # Third mole fraction derivatives
     d3B_dzizjzks_expect = [[[0.0]*N for _ in range(N)] for _ in range(N)]
     assert_close3d(d3B_dzizjzks_expect, gas.d3B_dzizjzks(), atol=0)
     assert_close3d(d3B_dzizjzks_expect, gas.d4B_dTdzizjzks(), atol=0)
     assert_close3d(d3B_dzizjzks_expect, gas.d5B_dT2dzizjzks(), atol=0)
     assert_close3d(d3B_dzizjzks_expect, gas.d6B_dT3dzizjzks(), atol=0)
-    
+
     assert_close3d(d3B_dzizjzks_expect, gas_np.d3B_dzizjzks(), atol=0)
     assert isinstance(gas_np.d3B_dzizjzks(), np.ndarray)
     assert_close3d(d3B_dzizjzks_expect, gas_np.d4B_dTdzizjzks(), atol=0)
@@ -3994,8 +3993,8 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     assert isinstance(gas_np.d5B_dT2dzizjzks(), np.ndarray)
     assert_close3d(d3B_dzizjzks_expect, gas_np.d6B_dT3dzizjzks(), atol=0)
     assert isinstance(gas_np.d6B_dT3dzizjzks(), np.ndarray)
-    
-    
+
+
     # Mole number derivatives
     def dB_dns_to_jac(ns):
         zs = normalize(ns)
@@ -4023,12 +4022,12 @@ def test_virial_phase_pure_BC_pitzer_curl_orbey_vera():
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ORBEY_VERA)
     zs = [1]
     gas = PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
-    
+
     assert_close(PT.rho(), 40.15896568252847, rtol=1e-13)
     assert_close(PT.V(), 0.02490103973058896, rtol=1e-13)
     assert_close(PT.B(), -4.2375251149270624e-05, rtol=1e-14)
     assert_close(PT.C(), 2.4658163172184193e-09, rtol=1e-14)
-    
+
     assert_close(PT.dB_dT(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).B(), PT.T, PT.T*3e-7), rtol=1e-7)
     assert_close(PT.d2B_dT2(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).dB_dT(), PT.T, PT.T*3e-7), rtol=1e-7)
     assert_close(PT.d3B_dT3(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=zs).d2B_dT2(), PT.T, PT.T*3e-7), rtol=1e-7)
@@ -4038,12 +4037,12 @@ def test_virial_phase_pure_BC_pitzer_curl_orbey_vera():
 
 
     assert_close(PT.to_TP_zs(T=PT.T, P=PT.P, zs=[1]).V(), PT.V())
-    
+
     TV = PT.to(T=PT.T, V=PT.V(), zs=[1])
     assert_close(TV.P, PT.P, rtol=1e-13)
     assert_close(TV.B(), PT.B(), rtol=1e-13)
     assert_close(TV.C(), PT.C(), rtol=1e-13)
-    
+
     PV = PT.to(P=PT.P, V=PT.V(), zs=[1])
     assert_close(PV.T, 300, rtol=1e-13)
     assert_close(PV.B(), PT.B(), rtol=1e-13)
@@ -4058,26 +4057,26 @@ def test_virial_phase_pure_BC_pitzer_curl_orbey_vera():
 
     assert_close(PT.dP_dT(), 334.8667253234988, rtol=1e-13)
     assert_close(PT.dP_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).P, PT.T, PT.T*1e-7), rtol=1e-7)
-    
+
     assert_close(PT.dP_dV(), -4009082.903515464, rtol=1e-13)
     assert_close(PT.dP_dV(), derivative(lambda V: PT.to(T=PT.T, V=V, zs=[1]).P, PT.V(), PT.V()*1e-7), rtol=1e-8)
-    
+
     assert_close(PT.d2P_dTdV(), -13486.719326292223, rtol=1e-13)
     assert_close(PT.d2P_dTdV(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dV(), PT.T, PT.T*1e-7), rtol=1e-7)
-    
+
     assert_close(PT.d2P_dV2(), 321455270.893362, rtol=1e-13)
     assert_close(PT.d2P_dV2(), derivative(lambda V: PT.to(T=PT.T, V=V, zs=[1]).dP_dV(), PT.V(), PT.V()*1e-7), rtol=1e-8)
-    
+
     assert_close(PT.d2P_dT2(), -0.0020701719078863546, rtol=1e-13)
     assert_close(PT.d2P_dT2(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dT(), PT.T, PT.T*8e-7), rtol=1e-6)
-    
+
     assert_close(PT.H_dep(), 15.694307202591004, rtol=1e-13)
-    
+
     assert_close(PT.dH_dep_dT(), -0.03955760203920011, rtol=1e-13)
     assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
-    
+
     assert_close(PT.S_dep(), -0.03819378035089749, rtol=1e-13)
-    
+
     assert_close(PT.dS_dep_dT(), 0.00017912859867798742, rtol=1e-13)
     assert_close(PT.dS_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).S_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
 
@@ -4094,7 +4093,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     omegas = [0.04, 0.008, 0.2252]
     omegas_np = np.array(omegas)
     N = 3
-    
+
     HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
      HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
      HeatCapacityGas(CASRN="124-38-9", MW=44.0095, similarity_variable=0.0681671002851657, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))]
@@ -4102,14 +4101,14 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
-    
+
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
-                                  B_model=VIRIAL_B_ABBOTT, 
+                                  B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ORBEY_VERA)
     model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
-                              B_model=VIRIAL_B_ABBOTT, 
+                              B_model=VIRIAL_B_ABBOTT,
                               cross_B_model=VIRIAL_B_ABBOTT,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ORBEY_VERA)
@@ -4125,14 +4124,14 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     gas_np = VirialGas(model=model_np, HeatCapacityGases=HeatCapacityGases,
                     cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs_np)
-    
+
     with pytest.raises(ValueError):
         gas.to(T=T, zs=zs)
     with pytest.raises(ValueError):
         gas.to(P=P, zs=zs)
     with pytest.raises(ValueError):
         gas.to(V=gas.V(), zs=zs)
-    
+
     # Test some basics
     B, dB, d2B, d3B =  -4.413104126753512e-05, 3.9664296537847194e-07,  -3.488354169403768e-09,  4.274046794787785e-11
     assert_close(gas.B(), B, rtol=1e-13)
@@ -4143,8 +4142,8 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close(gas_np.dB_dT(), dB, rtol=1e-13)
     assert_close(gas_np.d2B_dT2(), d2B, rtol=1e-13)
     assert_close(gas_np.d3B_dT3(), d3B, rtol=1e-13)
-    
-    
+
+
     for val in (gas.B(), gas.dB_dT(), gas.d2B_dT2(), gas.d3B_dT3(),
                 gas_np.B(), gas_np.dB_dT(), gas_np.d2B_dT2(), gas_np.d3B_dT3()):
         assert type(val) is float
@@ -4153,12 +4152,12 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     for val in (gas.C(), gas.dC_dT(), gas.d2C_dT2(), gas.d3C_dT3(),
                 gas_np.C(), gas_np.dC_dT(), gas_np.d2C_dT2(), gas_np.d3C_dT3()):
         assert type(val) is float
-    
+
     V = 0.0248992803360438
     assert_close(gas.V(), V, rtol=1e-13)
     assert_close(gas_np.V(), V, rtol=1e-13)
 
-    
+
     # Check the B and T derivatives
     assert_close(gas.dB_dT(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).B(), gas.T, gas.T*3e-7), rtol=1e-7)
     assert_close(gas.d2B_dT2(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).dB_dT(), gas.T, gas.T*3e-7), rtol=1e-7)
@@ -4172,14 +4171,14 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close(gas_np.dC_dT(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).C(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
     assert_close(gas_np.d2C_dT2(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).dC_dT(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
     assert_close(gas_np.d3C_dT3(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).d2C_dT2(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
-    
+
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
 
     assert_close(gas.d2T_dV2(), 6030.193454056163, rtol=1e-11)
     assert_close(gas.d2T_dV2_P(), 6030.193454056163, rtol=1e-11)
     assert_close(gas.d2V_dT2(), -3.5160077601372554e-09, rtol=1e-11)
-    
+
     # Mole fraction derivatives of B, including its temperature derivatives
     dC_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).C(), zs, perturbation=1e-7)
     dC_dzs_expect = [6.196410187720199e-09, 7.51935295282256e-09, 9.02453803131555e-09]
@@ -4187,8 +4186,8 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas_np.dC_dzs(), dC_dzs_expect, rtol=1e-13)
     assert isinstance(gas_np.dC_dzs(), np.ndarray)
     assert_close1d(dC_dzs, gas.dC_dzs())
-    
-    
+
+
     # Second mole fraction derivatives
     d2C_dzizjs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).dC_dzs(), zs, scalar=False, perturbation=1e-7)
     d2C_dzizjs_expect = [[1.0334498744432369e-08, 1.232601605536606e-08, 1.4103260493582947e-08], [1.232601605536606e-08, 1.4914908015449092e-08, 1.7841170172077197e-08], [1.4103260493582947e-08, 1.7841170172077197e-08, 2.255223824080701e-08]]
@@ -4196,7 +4195,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas_np.d2C_dzizjs(), d2C_dzizjs_expect, rtol=1e-13)
     assert_close2d(d2C_dzizjs, gas.d2C_dzizjs(), rtol=1e-5)
     assert isinstance(gas_np.d2C_dzizjs(), np.ndarray)
-    
+
     # Third mole fraction derivatives
     d3C_dzizjzks = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).dC_dzs(), zs, scalar=False, perturbation=3e-5)
     d3C_dzizjzks_expect = [[[8.791135059452836e-09, 1.0308422318043785e-08, 1.1248791844050504e-08], [1.0308422318043785e-08, 1.2261620654600401e-08, 1.3985943446213539e-08], [1.1248791844050504e-08, 1.3985943446213539e-08, 1.685361143642469e-08]], [[1.0308422318043785e-08, 1.2261620654600401e-08, 1.3985943446213539e-08], [1.2261620654600401e-08, 1.4794897903310516e-08, 1.7639492188523473e-08], [1.3985943446213539e-08, 1.7639492188523473e-08, 2.2218641495188888e-08]], [[1.1248791844050504e-08, 1.3985943446213539e-08, 1.685361143642469e-08], [1.3985943446213539e-08, 1.7639492188523473e-08, 2.2218641495188888e-08], [1.685361143642469e-08, 2.2218641495188888e-08, 2.9566930608412272e-08]]]
@@ -4204,7 +4203,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas_np.d3C_dzizjzks(), d3C_dzizjzks_expect, rtol=1e-13)
     assert_close2d(d3C_dzizjzks, gas.d3C_dzizjzks(), rtol=1e-5)
     assert isinstance(gas_np.d3C_dzizjzks(), np.ndarray)
-    
+
     # Mole number derivatives
     def dC_dns_to_jac(ns):
         zs = normalize(ns)
@@ -4222,7 +4221,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas.dnC_dns(), dnC_dns_expect, rtol=1e-13)
     assert_close1d(gas_np.dnC_dns(), dnC_dns_expect, rtol=1e-13)
     assert isinstance(gas_np.dnC_dns(), np.ndarray)
-    
+
     dnG_dep_dns_expect = [7.425792779612475, 26.6956451946272, 58.85973416020387]
     assert_close1d(gas.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
     assert_close1d(gas_np.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
@@ -4236,12 +4235,12 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas_np.dV_dzs(), dV_dzs_expect, rtol=1e-13)
     assert isinstance(gas_np.dV_dzs(), np.ndarray)
     assert_close1d(dV_dzs, gas.dV_dzs(), rtol=5e-6)
-    
+
     d2V_dzizjs_expect = [[-1.039580364021386e-05, -3.958861196399791e-05, -7.55799645242824e-05], [-3.958861196399791e-05, -8.314138850953133e-05, -0.00014207163186822304], [-7.55799645242824e-05, -0.00014207163186822304, -0.0002473595232182522]]
     assert_close1d(gas.d2V_dzizjs(), d2V_dzizjs_expect, rtol=1e-13)
     assert_close1d(gas_np.d2V_dzizjs(), d2V_dzizjs_expect, rtol=1e-13)
     assert isinstance(gas_np.d2V_dzizjs(), np.ndarray)
-    
+
     # Gibbs composition derivative
     dG_dep_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).G_dep(), zs, perturbation=3e-6)
     dG_dep_dzs_expect = [35.74825427120366, 55.01810668621839, 87.18219565179506]
@@ -4260,8 +4259,8 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas_np.lnphis(), lnphis_expect, rtol=1e-13)
     assert isinstance(gas_np.lnphis(), np.ndarray)
     assert_close1d(lnphis, gas.lnphis(), rtol=5e-7)
-    
-    
+
+
     # B and C pressure derivatives at constant volume
     dB_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).B(), gas.P, dx=gas.P*1e-6)
     assert_close(gas.dB_dP_V(), 1.1842641665356751e-09, rtol=1e-11)
@@ -4270,7 +4269,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     d2B_dTdP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).dB_dT(), gas.P, dx=gas.P*1e-6)
     assert_close(gas.d2B_dTdP_V(), -1.04152429353394e-11, rtol=1e-11)
     assert_close(gas.d2B_dTdP_V(), d2B_dTdP_V)
-    
+
     d3B_dT2dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).d2B_dT2(), gas.P, dx=gas.P*1e-6)
     assert_close(gas.d3B_dT2dP_V(), 1.2761099797481876e-13, rtol=1e-11)
     assert_close(gas.d3B_dT2dP_V(), d3B_dT2dP_V)
@@ -4282,11 +4281,11 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     d2C_dTdP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).dC_dT(), gas.P, dx=gas.P*1e-6)
     assert_close(gas.d2C_dTdP_V(), 2.9635255492502356e-16, rtol=1e-11)
     assert_close(gas.d2C_dTdP_V(), d2C_dTdP_V)
-    
+
     d3C_dT2dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).d2C_dT2(), gas.P, dx=gas.P*1e-6)
     assert_close(gas.d3C_dT2dP_V(),-3.891861385232169e-18, rtol=1e-11)
     assert_close(gas.d3C_dT2dP_V(), d3C_dT2dP_V)
-    
+
     # B and C volume derivatives at constant pressure
     dB_dV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).B(), gas.V(), dx=gas.V()*1e-6)
     assert_close(gas.dB_dV_P(), 0.00474781253771208, rtol=1e-11)
@@ -4295,7 +4294,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     d2B_dTdV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).dB_dT(), gas.V(), dx=gas.V()*1e-6)
     assert_close(gas.d2B_dTdV_P(),-4.175556635845567e-05, rtol=1e-11)
     assert_close(gas.d2B_dTdV_P(), d2B_dTdV_P)
-    
+
     d3B_dT2dV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).d2B_dT2(), gas.V(), dx=gas.V()*1e-6)
     assert_close(gas.d3B_dT2dV_P(), 5.116029964050627e-07, rtol=1e-11)
     assert_close(gas.d3B_dT2dV_P(), d3B_dT2dV_P)
@@ -4307,7 +4306,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     d2C_dTdV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).dC_dT(), gas.V(), dx=gas.V()*1e-6)
     assert_close(gas.d2C_dTdV_P(), 1.1881017897991506e-09, rtol=1e-11)
     assert_close(gas.d2C_dTdV_P(), d2C_dTdV_P)
-    
+
     d3C_dT2dV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).d2C_dT2(), gas.V(), dx=gas.V()*1e-6)
     assert_close(gas.d3C_dT2dV_P(), -1.5602792689316894e-11, rtol=1e-11)
     assert_close(gas.d3C_dT2dV_P(), d3C_dT2dV_P)
@@ -4315,7 +4314,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
 
 
     # Enthalpy extra derivatives
-    
+
     dH_dep_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).H_dep(), gas.P, dx=gas.P*1e-6)
     assert_close(gas.dH_dep_dP_V(), -0.000150298196047701, rtol=1e-11)
     assert_close(gas.dH_dep_dP_V(), dH_dep_dP_V)
@@ -4347,9 +4346,9 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     dH_dV_P = derivative(lambda V: gas.to(P=gas.P, V=V, zs=gas.zs).H(), gas.V(), dx=gas.V()*6e-7)
     assert_close(gas.dH_dV_P(), 427649.25865266385, rtol=1e-11)
     assert_close(gas.dH_dV_P(), dH_dV_P)
-    
+
     # entropy special derivatives
-    
+
     dS_dep_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).S_dep(), gas.P, dx=gas.P*1e-6)
     assert_close(gas.dS_dep_dP_V(), 6.480190482120792e-07, rtol=1e-11)
     assert_close(gas.dS_dep_dP_V(), dS_dep_dP_V)
@@ -4407,7 +4406,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     omegas = [0.04, 0.008, 0.2252]
     omegas_np = np.array(omegas)
     N = 3
-    
+
     HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
      HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
      HeatCapacityGas(CASRN="124-38-9", MW=44.0095, similarity_variable=0.0681671002851657, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))]
@@ -4415,14 +4414,14 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
-    
+
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
-                                  B_model=VIRIAL_B_ABBOTT, 
+                                  B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ORBEY_VERA)
     model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
-                              B_model=VIRIAL_B_ABBOTT, 
+                              B_model=VIRIAL_B_ABBOTT,
                               cross_B_model=VIRIAL_B_ABBOTT,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ORBEY_VERA)
@@ -4453,8 +4452,8 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
 
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
-    
-    
+
+
     for val in (gas.B(), gas.dB_dT(), gas.d2B_dT2(), gas.d3B_dT3(),
                 gas_np.B(), gas_np.dB_dT(), gas_np.d2B_dT2(), gas_np.d3B_dT3()):
         assert type(val) is float
@@ -4463,12 +4462,12 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     for val in (gas.C(), gas.dC_dT(), gas.d2C_dT2(), gas.d3C_dT3(),
                 gas_np.C(), gas_np.dC_dT(), gas_np.d2C_dT2(), gas_np.d3C_dT3()):
         assert type(val) is float
-    
+
     V = 0.0248978152556876
     assert_close(gas.V(), V, rtol=1e-13)
     assert_close(gas_np.V(), V, rtol=1e-13)
 
-    
+
     # Check the B and T derivatives
     assert_close(gas.dB_dT(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).B(), gas.T, gas.T*3e-7), rtol=1e-7)
     assert_close(gas.d2B_dT2(), derivative(lambda T: gas.to(T=T, P=P, zs=zs).dB_dT(), gas.T, gas.T*3e-7), rtol=1e-7)
@@ -4482,8 +4481,8 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     assert_close(gas_np.dC_dT(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).C(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
     assert_close(gas_np.d2C_dT2(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).dC_dT(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
     assert_close(gas_np.d3C_dT3(), derivative(lambda T: gas_np.to(T=T, P=P, zs=zs).d2C_dT2(), gas_np.T, gas_np.T*3e-7), rtol=1e-7)
-    
-    
+
+
     # Mole fraction derivatives of C
     dC_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).C(), zs, perturbation=1e-7)
     dC_dzs_expect =  [1.4651891765754702e-09, 2.4658163172184143e-09, 4.927821768068704e-09]
@@ -4492,7 +4491,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     assert isinstance(gas_np.dC_dzs(), np.ndarray)
     assert_close1d(dC_dzs, gas.dC_dzs())
 
-    
+
     # Second mole fraction derivatives
     d2C_dzizjs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).dC_dzs(), zs, scalar=False, perturbation=125e-5)
     d2C_dzizjs_expect = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
@@ -4501,12 +4500,12 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     assert_close2d(d2C_dzizjs, gas.d2C_dzizjs(), rtol=1e-6)
     assert isinstance(gas_np.d2C_dzizjs(), np.ndarray)
 
-    
+
     # Third mole fraction derivatives
     d3C_dzizjzks_expect = [[[0.0]*N for _ in range(N)] for _ in range(N)]
     assert_close3d(d3C_dzizjzks_expect, gas.d3C_dzizjzks(), atol=0)
-    
-    
+
+
     # Mole number derivatives
     def dC_dns_to_jac(ns):
         zs = normalize(ns)
@@ -4561,9 +4560,9 @@ def test_ternary_virial_phase_hashing_repr():
                          HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
                          HeatCapacityGas(poly_fit=(50.0, 1000.0, [0,0,0,0, R*2.5]))]
     phase = VirialGas(model=model, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
-    
-    
-    
+
+
+
     model2 = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
     phase2 = VirialGas(model=model2, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
 
@@ -4587,7 +4586,7 @@ def test_ternary_virial_phase_hashing_repr():
     phased5 = VirialGas(model=modeld0, T=300, P=1e6, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
     phased6 = VirialGas(model=modeld0, T=300, P=1e5, zs=[.77, .22, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
     phased7 = VirialGas(model=modeld0, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='linear', cross_C_model='Orentlicher-Prausnitz')
-    
+
 
     assert model.state_hash() == model2.state_hash()
     assert model == model2
@@ -4613,7 +4612,7 @@ def test_ternary_virial_phase_hashing_repr():
         assert not phase.state_hash() == p.state_hash()
         assert not phase == p
         assert not hash(phase) == hash(p)
-        
+
 # test_ternary_virial_phase_hashing_repr()
 
 
@@ -4624,154 +4623,154 @@ def test_virial_ternary_vs_ideal_gas():
                         HeatCapacityGas(poly_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
                         HeatCapacityGas(poly_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases)
-    
-    
+
+
     T, P = 350.0, 1e6
     zs = [0.2, 0.3, 0.5]
     N = len(zs)
     phase = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
-    
+
     model = VirialCSP(Tcs=constants.Tcs, Pcs=constants.Pcs, Vcs=constants.Vcs, omegas=constants.omegas, B_model=VIRIAL_B_ZERO, C_model=VIRIAL_C_ZERO)
     phase_EOS = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    
-    
+
+
     ### Copy specs
     TV = phase.to(T=T, V=phase.V(), zs=zs)
     assert_close(TV.P, phase.P, rtol=1e-12)
     PV = phase.to(P=P, V=phase.V(), zs=zs)
     assert_close(TV.T, phase.T, rtol=1e-12)
-    
+
     new = phase.to_TP_zs(T=350.0, P=1e6, zs=zs)
     assert new.T == phase.T
     assert new.P == phase.P
-    
+
     new = phase.to(P=P, T=T, zs=zs)
     assert new.T == phase.T
     assert new.P == phase.P
     with pytest.raises(Exception):
         phase.to(P=P, zs=zs)
-        
+
     B_mat = phase_EOS.model.B_interactions()
     assert_close1d(phase_EOS.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
     C_mat = phase_EOS.model.C_interactions()
     assert_close1d(phase_EOS.model.C_pures(), [C_mat[i][i] for i in range(N)], rtol=1e-13)
-        
+
     assert_close(phase.V(), phase_EOS.V(), rtol=1e-11)
     assert_close(phase.PIP(), phase_EOS.PIP(), rtol=1e-11)
-    
+
     ### Derivatives of volume
     assert_close(phase.dV_dT(), phase_EOS.dV_dT(), rtol=1e-11)
     assert_close(phase.dV_dT_P(), phase_EOS.dV_dT_P(), rtol=1e-11)
-    
+
     assert_close(phase.dV_dP(), phase_EOS.dV_dP(), rtol=1e-11)
     assert_close(phase.dV_dP_T(), phase_EOS.dV_dP_T(), rtol=1e-11)
-    
+
     assert_close(phase.d2V_dT2(), phase_EOS.d2V_dT2(), rtol=1e-11)
     assert_close(phase.d2V_dT2_P(), phase_EOS.d2V_dT2_P(), rtol=1e-11)
-    
+
     assert_close(phase.d2V_dP2(), phase_EOS.d2V_dP2(), rtol=1e-11)
     assert_close(phase.d2V_dP2_T(), phase_EOS.d2V_dP2_T(), rtol=1e-11)
-    
+
     assert_close(phase.d2V_dTdP(), phase_EOS.d2V_dTdP(), rtol=1e-11)
     assert_close(phase.d2V_dPdT(), phase_EOS.d2V_dPdT(), rtol=1e-11)
-    
+
     assert phase.dZ_dT() == 0.0
     assert phase.dZ_dP() == 0.0
-    
+
     assert_close1d(phase_EOS.dV_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
     assert_close1d(phase_EOS.dZ_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
     assert_close1d(phase_EOS.dV_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
     assert_close1d(phase_EOS.dZ_dzs(), [0.0, 0.0, 0.0], atol=0.0, rtol=0.0)
-    
-    
+
+
     ### Derivatives of pressure
     assert_close(phase.dP_dV(), phase_EOS.dP_dV(), rtol=1e-11)
     assert_close(phase.dP_dV_T(), phase_EOS.dP_dV_T(), rtol=1e-11)
-    
+
     assert_close(phase.dP_dT(), phase_EOS.dP_dT(), rtol=1e-11)
     assert_close(phase.dP_dT_V(), phase_EOS.dP_dT_V(), rtol=1e-11)
-    
+
     assert_close(phase.d2P_dV2(), phase_EOS.d2P_dV2(), rtol=1e-11)
     assert_close(phase.d2P_dV2_T(), phase_EOS.d2P_dV2_T(), rtol=1e-11)
-    
+
     assert_close(phase.d2P_dT2(), phase_EOS.d2P_dT2(), rtol=1e-11)
     assert_close(phase.d2P_dT2_V(), phase_EOS.d2P_dT2_V(), rtol=1e-11)
-    
+
     assert_close(phase.d2P_dVdT(), phase_EOS.d2P_dVdT(), rtol=1e-11)
     assert_close(phase.d2P_dTdV(), phase_EOS.d2P_dTdV(), rtol=1e-11)
-    
+
     ### Derivatives of Temperature
     assert_close(phase.dT_dV(), phase_EOS.dT_dV(), rtol=1e-11)
     assert_close(phase.dT_dV_P(), phase_EOS.dT_dV_P(), rtol=1e-11)
-    
+
     assert_close(phase.dT_dP(), phase_EOS.dT_dP(), rtol=1e-11)
     assert_close(phase.dT_dP_V(), phase_EOS.dT_dP_V(), rtol=1e-11)
-    
+
     assert_close(phase.d2T_dV2(), phase_EOS.d2T_dV2(), rtol=1e-11)
     assert_close(phase.d2T_dV2_P(), phase_EOS.d2T_dV2_P(), rtol=1e-11)
-    
+
     assert_close(phase.d2T_dP2(), phase_EOS.d2T_dP2(), rtol=1e-11)
     assert_close(phase.d2T_dP2_V(), phase_EOS.d2T_dP2_V(), rtol=1e-11)
-    
+
     assert_close(phase.d2T_dVdP(), phase_EOS.d2T_dVdP(), rtol=1e-11)
     assert_close(phase.d2T_dPdV(), phase_EOS.d2T_dPdV(), rtol=1e-11)
-    
-    
+
+
     ### Phis and derivatives
     assert_close1d(phase.phis(), phase_EOS.phis(), rtol=1e-11)
     assert_close1d(phase.lnphis(), phase_EOS.lnphis(), rtol=1e-11)
     assert_close1d(phase.fugacities(), phase_EOS.fugacities(), rtol=1e-11)
-    
+
     # Basic thermodynamic quantities
     assert_close(phase.H(), phase_EOS.H(), rtol=1e-11)
     assert_close(phase.S(), phase_EOS.S(), rtol=1e-11)
     assert_close(phase.G(), phase_EOS.G(), rtol=1e-11)
     assert_close(phase.U(), phase_EOS.U(), rtol=1e-11)
     assert_close(phase.A(), phase_EOS.A(), rtol=1e-11)
-    
+
     ### First temperature derivative
-    
+
     assert_close(phase.dH_dT(), phase_EOS.dH_dT(), rtol=1e-11)
     assert_close(phase.dS_dT(), phase_EOS.dS_dT(), rtol=1e-11)
     assert_close(phase.dG_dT(), phase_EOS.dG_dT(), rtol=1e-11)
     assert_close(phase.dU_dT(), phase_EOS.dU_dT(), rtol=1e-11)
     assert_close(phase.dA_dT(), phase_EOS.dA_dT(), rtol=1e-11)
-    
+
     assert_close(phase.dH_dT_P(), phase_EOS.dH_dT_P(), rtol=1e-11)
     assert_close(phase.dS_dT_P(), phase_EOS.dS_dT_P(), rtol=1e-11)
     assert_close(phase.dG_dT_P(), phase_EOS.dG_dT_P(), rtol=1e-11)
     assert_close(phase.dU_dT_P(), phase_EOS.dU_dT_P(), rtol=1e-11)
     assert_close(phase.dA_dT_P(), phase_EOS.dA_dT_P(), rtol=1e-11)
-    
+
     assert_close(phase.dH_dT_V(), phase_EOS.dH_dT_V(), rtol=1e-11)
     assert_close(phase.dS_dT_V(), phase_EOS.dS_dT_V(), rtol=1e-11)
     assert_close(phase.dG_dT_V(), phase_EOS.dG_dT_V(), rtol=1e-11)
     assert_close(phase.dU_dT_V(), phase_EOS.dU_dT_V(), rtol=1e-11)
     assert_close(phase.dA_dT_V(), phase_EOS.dA_dT_V(), rtol=1e-11)
-    
+
     ### First pressure derivative
     assert_close(phase.dH_dP(), phase_EOS.dH_dP(), rtol=1e-11, atol=1e-16)
     assert_close(phase.dS_dP(), phase_EOS.dS_dP(), rtol=1e-11)
     assert_close(phase.dG_dP(), phase_EOS.dG_dP(), rtol=1e-11)
     assert_close(phase.dU_dP(), phase_EOS.dU_dP(), rtol=1e-11, atol=1e-16)
     assert_close(phase.dA_dP(), phase_EOS.dA_dP(), rtol=1e-11)
-    
+
     assert_close(phase.dH_dP_T(), phase_EOS.dH_dP_T(), rtol=1e-11, atol=1e-16)
     assert_close(phase.dS_dP_T(), phase_EOS.dS_dP_T(), rtol=1e-11)
     assert_close(phase.dG_dP_T(), phase_EOS.dG_dP_T(), rtol=1e-11)
     assert_close(phase.dU_dP_T(), phase_EOS.dU_dP_T(), rtol=1e-11, atol=1e-16)
     assert_close(phase.dA_dP_T(), phase_EOS.dA_dP_T(), rtol=1e-11)
-    
+
     assert_close(phase.dH_dP_V(), phase_EOS.dH_dP_V(), rtol=1e-11)
     assert_close(phase.dS_dP_V(), phase_EOS.dS_dP_V(), rtol=1e-11)
     assert_close(phase.dG_dP_V(), phase_EOS.dG_dP_V(), rtol=1e-11)
     assert_close(phase.dU_dP_V(), phase_EOS.dU_dP_V(), rtol=1e-11, atol=1e-16)
     assert_close(phase.dA_dP_V(), phase_EOS.dA_dP_V(), rtol=1e-11)
-    
+
     assert_close(phase.dH_dV_T(), phase_EOS.dH_dV_T(), rtol=1e-11)
     assert_close(phase.dS_dV_T(), phase_EOS.dS_dV_T(), rtol=1e-11)
     assert_close(phase.dG_dV_T(), phase_EOS.dG_dV_T(), rtol=1e-11)
-    
+
     assert phase_EOS.H_dep() == 0
     assert phase_EOS.S_dep() == 0
     assert phase_EOS.G_dep() == 0
@@ -4788,18 +4787,18 @@ def test_virial_easy_B_C_models():
     Vcs = [8.95e-05, 9.86e-05, 9.4e-05]
     omegas = [0.04, 0.008, 0.2252]
     N = 3
-    
+
     HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
      HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
      HeatCapacityGas(CASRN="124-38-9", MW=44.0095, similarity_variable=0.0681671002851657, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-3.1115474168865828e-21, 1.39156078498805e-17, -2.5430881416264243e-14, 2.4175307893014295e-11, -1.2437314771044867e-08, 3.1251954264658904e-06, -0.00021220221928610925, 0.000884685506352987, 29.266811602924644]))]
-    
+
     kijs = [[0.0, 0.024878043016556484, 0.0],
      [0.024878043016556484, 0.0, 0.04313694538361394],
      [0.0, 0.04313694538361394, 0.0]]
-    
+
     # Get VIRIAL_B_TSONOPOULOS and VIRIAL_C_XIANG
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
-                                  B_model=VIRIAL_B_TSONOPOULOS, 
+                                  B_model=VIRIAL_B_TSONOPOULOS,
                                   cross_B_model=VIRIAL_B_TSONOPOULOS,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_XIANG)
@@ -4814,29 +4813,29 @@ def test_virial_easy_B_C_models():
     assert_close(gas.dB_dT(), dB, rtol=1e-13)
     assert_close(gas.d2B_dT2(), d2B, rtol=1e-13)
     assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
-    
+
     C, dC, d2C, d3C = (2.3672028792220187e-09, -8.499704687487288e-12, 1.014506083545108e-13, -1.3762462745837535e-15)
     assert_close(gas.C(), C, rtol=1e-13)
     assert_close(gas.dC_dT(), dC, rtol=1e-13)
     assert_close(gas.d2C_dT2(), d2C, rtol=1e-13)
     assert_close(gas.d3C_dT3(), d3C, rtol=1e-13)
-    
+
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
     C_mat = gas.model.C_interactions()
     assert_close1d(gas.model.C_pures(), [C_mat[i][i] for i in range(N)], rtol=1e-13)
 
     # VIRIAL_B_OCONNELL_PRAUSNITZ
-    
+
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
-                                  B_model=VIRIAL_B_OCONNELL_PRAUSNITZ, 
+                                  B_model=VIRIAL_B_OCONNELL_PRAUSNITZ,
                                   cross_B_model=VIRIAL_B_OCONNELL_PRAUSNITZ,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
                     cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs)
-    
+
     B, dB, d2B, d3B = -4.4070589761655625e-05, 3.9458357396975057e-07, -3.265768989707745e-09, 4.069493510858296e-11
     assert_close(gas.B(), B, rtol=1e-13)
     assert_close(gas.dB_dT(), dB, rtol=1e-13)
@@ -4845,16 +4844,16 @@ def test_virial_easy_B_C_models():
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
 
-    
+
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
-                                  B_model=VIRIAL_B_XIANG, 
+                                  B_model=VIRIAL_B_XIANG,
                                   cross_B_model=VIRIAL_B_XIANG,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
                     cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs)
-    
+
     # VIRIAL_B_XIANG
     B, dB, d2B, d3B = -4.558372700762532e-05, 3.8023980103500797e-07, -2.9686366447752638e-09, 3.4864810676267165e-11
     assert_close(gas.B(), B, rtol=1e-13)
@@ -4863,8 +4862,8 @@ def test_virial_easy_B_C_models():
     assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
-    
-    
+
+
     # VIRIAL_B_MENG
     # Made up numbers to get a value of `a`
     dipoles = [[1e-5, 1e-3, 2e-2], [1e-3, 1e-6, 1e-2], [2e-2, 1e-2, 1e-8]]
@@ -4874,7 +4873,7 @@ def test_virial_easy_B_C_models():
     Meng_virial_as = [[Meng_virial_a(Tcijs[i][j], Pcijs[i][j], dipole=dipoles[i][j]) for j in range(N)]
                                      for i in range(N)]
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
-                                  B_model=VIRIAL_B_MENG, 
+                                  B_model=VIRIAL_B_MENG,
                                   cross_B_model=VIRIAL_B_MENG,
                                   cross_B_model_kijs=kijs,
                                   B_model_Meng_as=Meng_virial_as,
@@ -4882,7 +4881,7 @@ def test_virial_easy_B_C_models():
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
                     cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs)
-    
+
     B, dB, d2B, d3B = (-4.4032087141036684e-05, 3.8809438374191875e-07, -3.195223834343181e-09, 3.857289293387547e-11)
     assert_close(gas.B(), B, rtol=1e-13)
     assert_close(gas.dB_dT(), dB, rtol=1e-13)
@@ -4890,7 +4889,7 @@ def test_virial_easy_B_C_models():
     assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
-    
+
     # VIRIAL_B_TSONOPOULOS_EXTENDED
     # Made up parameters
     # These should always be symmetric
@@ -4898,12 +4897,12 @@ def test_virial_easy_B_C_models():
     BVirial_Tsonopoulos_extended_as = [[-0.0109, 0.0878, -6787.3],
      [0.0878, 0.5, 0.3],
      [-6787.3, .3, -5000.0]]
-    
+
     BVirial_Tsonopoulos_extended_bs = [[1e-5, 1e-6, 1e-7], [1e-6, .25, 1e-8], [1e-7, 1e-8, .343]]
-    
-    
+
+
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
-                                  B_model=VIRIAL_B_TSONOPOULOS_EXTENDED, 
+                                  B_model=VIRIAL_B_TSONOPOULOS_EXTENDED,
                                   cross_B_model=VIRIAL_B_TSONOPOULOS_EXTENDED,
                                   cross_B_model_kijs=kijs,
                                  B_model_Tsonopoulos_extended_as=BVirial_Tsonopoulos_extended_as,
@@ -4912,16 +4911,16 @@ def test_virial_easy_B_C_models():
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
                     cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
                 T=T, P=1e4, zs=zs)
-    
+
     B, dB, d2B, d3B = (-0.007155125156828212, 0.00014262531996979625, -3.3223750860211125e-06, 8.85625680727924e-08)
     assert_close(gas.B(), B, rtol=1e-13)
     assert_close(gas.dB_dT(), dB, rtol=1e-13)
     assert_close(gas.d2B_dT2(), d2B, rtol=1e-13)
     assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
-    
+
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
-    
+
 def test_CEOS_float_scalar_returns():
     constants = ChemicalConstantsPackage(atom_fractions=[{'C': 0.2, 'H': 0.8}, {'C': 0.25, 'H': 0.75}, {'N': 1.0}], atomss=[{'C': 1, 'H': 4}, {'C': 2, 'H': 6}, {'N': 2}], Carcinogens=[{'International Agency for Research on Cancer': 'Unlisted', 'National Toxicology Program 13th Report on Carcinogens': 'Unlisted'}, {'International Agency for Research on Cancer': 'Unlisted', 'National Toxicology Program 13th Report on Carcinogens': 'Unlisted'}, {'International Agency for Research on Cancer': 'Unlisted', 'National Toxicology Program 13th Report on Carcinogens': 'Unlisted'}], CASs=['74-82-8', '74-84-0', '7727-37-9'], charges=[0, 0, 0], dipoles=[0.0, 0.0, 0.0], formulas=['CH4', 'C2H6', 'N2'], Gfgs=[-50443.48000000001, -31812.45500000001, 0.0], Gfgs_mass=[-3144373.1198332435, -1057980.4011035939, 0.0], GWPs=[84.0, None, None], Hcs=[-890590.0, -1560643.0, 0.0], Hcs_lower=[-802567.008, -1428608.512, 0.0], Hcs_lower_mass=[-50027677.0520232, -47510945.21142012, 0.0], Hcs_mass=[-55514553.25430141, -51901989.55470477, 0.0], Hfgs=[-74534.0, -83780.0, 0.0], Hfgs_mass=[-4646045.556604162, -2786254.566158414, 0.0], Hfus_Tms=[940.0, 2720.0, 710.0], Hfus_Tms_mass=[58594.50483279996, 90458.4915248375, 25345.013457845173], Hsub_Tts=[9669.293756722396, 20607.084758698762, 6747.408965565415], Hsub_Tts_mass=[602731.3614447159, 685325.6624986618, 240863.6211800572], Hvap_298s=[0.0, 5046.4723417249625, 0.0], Hvap_298s_mass=[0.0, 167829.51307141705, 0.0], Hvap_Tbs=[8195.035755115405, 14714.495861923642, 5579.162961175631], Hvap_Tbs_mass=[510834.10867880646, 489357.0217713516, 199160.50751339112], InChI_Keys=['VNWKTOKETHGBQD-UHFFFAOYSA-N', 'OTMSDBZUPAUEDD-UHFFFAOYSA-N', 'IJGRMHOSHXDMSA-UHFFFAOYSA-N'], InChIs=['CH4/h1H4', 'C2H6/c1-2/h1-2H3', 'N2/c1-2'], LFLs=[0.044, 0.024, None], logPs=[1.09, 1.81, 0.67], molecular_diameters=[3.58484, 4.17587, 3.798], MWs=[16.04246, 30.06904, 28.0134], names=['methane', 'ethane', 'nitrogen'], aliases=['methane', 'ethane', 'nitrogen'], omegas=[0.008, 0.098, 0.04], Parachors=[0.0, 1.3583923818817533e-05, 0.0], Pcs=[4599000.0, 4872000.0, 3394387.5], phase_STPs=['g', 'g', 'g'], Psat_298s=[88244896.93274347, 4187706.774463568, 1482500850.2055671], PSRK_groups=[{}, {1: 2}, {}], Pts=[11691.0384868421, 1.1, 12526.9697368421], PubChems=[297, 6324, 947], rhocs=[10141.987829614605, 6872.852233676976, 11173.1843575419], rhocs_mass=[162.7024340770791, 206.66006872852233, 312.9988826815643], rhol_STPs=[17068.386103467983, 10956.94837227306, 20241.159654801213], rhol_STPs_mass=[273.81890132944096, 329.4649188838136, 567.0237018738082], S0gs=[186.3, 229.2, 191.6], S0gs_mass=[11612.932181224078, 7622.458182901749, 6839.583913412866], Sfgs=[-80.79999999999997, -174.29999999999998, 0.0], Sfgs_mass=[-5036.634032436421, -5796.659953227638, 0.0], similarity_variables=[0.3116728980468083, 0.26605438683775734, 0.07139440410660612], Skins=[False, False, False], smiless=['C', 'CC', 'N#N'], StielPolars=[0.0029487754559869295, 0.005340433807338174, 0.009668068349140135], Stockmayers=[167.15, 213.99, 71.4], Tautoignitions=[873.15, 788.15, None], Tbs=[111.65, 184.55, 77.355], Tcs=[190.564, 305.32, 126.2], Tflashs=[None, 244.15, None], Tms=[90.75, 90.3, 63.15], Tts=[90.698, 90.358, 63.154106], TWAs=[(1000.0, 'ppm'), (1000.0, 'ppm'), None], UFLs=[0.17, 0.155, None], UNIFAC_Dortmund_groups=[{}, {1: 2}, {}], UNIFAC_groups=[{}, {1: 2}, {}], Van_der_Waals_areas=[0.0, 424000.0, 0.0], Van_der_Waals_volumes=[0.0, 2.7339374e-05, 0.0], Vcs=[9.86e-05, 0.0001455, 8.95e-05], Vml_STPs=[5.858784737690099e-05, 9.126628747567478e-05, 4.940428399628771e-05], Vml_Tms=[3.554064235691736e-05, 4.615138659130489e-05, 3.2304358441888077e-05], Zcs=[0.2861971332411768, 0.27924206063561996, 0.2895282296391198], UNIFAC_Rs=[0.0, 1.8022, 0.0], UNIFAC_Qs=[0.0, 1.696, 0.0], rhos_Tms=[31553.328003198352, 24239.540703698214, 34791.22154167482], Vms_Tms=[3.1692378055926036e-05, 4.1254907105043886e-05, 2.8742882706838718e-05], rhos_Tms_mass=[506.1930023581894, 728.8597190011299, 974.6204055355536], solubility_parameters=[None, 5303.9732955537775, None], Vml_60Fs=[5.858784737690099e-05, 8.451132407099178e-05, 4.940428399628771e-05], rhol_60Fs=[17068.386103467983, 11832.733790325818, 20241.159654801213], rhol_60Fs_mass=[273.81890132944096, 355.7989456506586, 567.0237018738082], Vmg_STPs=[0.024465403697038125, 0.024465403697038125, 0.024465403697038125], rhog_STPs=[40.87404452357612, 40.87404452357612, 40.87404452357612], rhog_STPs_mass=[0.6557202243076888, 1.2290432797411912, 1.145020958856747], sigma_STPs=[0.0, 0.0004834670555698062, 0.0], sigma_Tms=[0.017051675305804113, 0.03167471378415052, 0.012205391433051088], sigma_Tbs=[0.012924382826948695, 0.016194855330337782, 0.008879611306475167], Hf_STPs=[-74534.0, -83780.0, 0.0], Hf_STPs_mass=[-4646045.556604162, -2786254.566158414, 0.0])
     kijs = [[0.0, -0.0059, 0.0289], [-0.0059, 0.0, 0.0533], [0.0289, 0.0533, 0.0]]
@@ -4943,7 +4942,7 @@ def test_CEOS_float_scalar_returns():
 
     bad_names = ['__dict__', 'constants', 'HeatCapacityGases', 'P_transitions', 'T_transitions', 'eos_class', 'eos_mix'] + dir(constants)
     for attr in dir(gas):
-        if attr.startswith('__') or attr.startswith('_'):
+        if attr.startswith(("__", "_")):
             continue
         if attr in bad_names:
             continue
@@ -4966,9 +4965,9 @@ def test_IdealGas_lnphis_low_P_T_almost_pure():
     assert obj.lnphis() == obj.lnphis_lowest_Gibbs()
     assert_close1d(obj.lnphis(), [0, 0], atol=0, rtol=0)
     assert_close1d(obj.lnphis_at_zs(obj.zs), [0, 0], atol=0, rtol=0)
-    
 
-    
+
+
 def test_IdealSolution_lnphis_direct():
     constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 1, 'O': 2}, {'O': 2}, {'N': 2}, {'C': 1}], CASs=['7732-18-5', '124-38-9', '7782-44-7', '7727-37-9', '7440-44-0'], Gfgs=[-228554.325, -394338.635, 0.0, 0.0, 671434.94], Hfgs=[-241822.0, -393474.0, 0.0, 0.0, 716873.0], MWs=[18.01528, 44.0095, 31.9988, 28.0134, 12.0107], names=['water', 'carbon dioxide', 'oxygen', 'nitrogen', 'carbon'], omegas=[0.344, 0.2252, 0.021, 0.04, 0.3268], Pcs=[22048320.0, 7376460.0, 5042945.25, 3394387.5, 796719000.0], Tbs=[373.124, 194.67, 90.188, 77.355, 4273.15], Tcs=[647.14, 304.2, 154.58, 126.2, 7020.5], Tms=[273.15, 216.65, 54.36, 63.15, 3823.15], Vcs=[5.6e-05, 9.4e-05, 7.34e-05, 8.95e-05, 2.662e-05])
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
@@ -4986,7 +4985,7 @@ def test_IdealSolution_lnphis_direct():
     ],
     )
     liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, VolumeLiquids=correlations.VolumeLiquids,
-                HeatCapacityGases=correlations.HeatCapacityGases, equilibrium_basis='Psat', 
+                HeatCapacityGases=correlations.HeatCapacityGases, equilibrium_basis='Psat',
                 Hfs=constants.Hfgs, Gfs=constants.Gfgs)
     zs_test = [0.1, 0.15, 0.2, 0.35, .2]
     liq = liquid.to(T=300, P=1e5, zs=zs_test)
@@ -5017,7 +5016,7 @@ def test_first_henry_pure_solvent_phase_properties():
     T = 300.0
     zs = [0.8, 0.15, 0.05]
     henry_params = ([[0.0, 0.0, 0.0], [349.743, 0.0, 0.0], [198.51, 0.0, 0.0]], [[0.0, 0.0, 0.0], [-13282.1, 0.0, 0.0], [-8544.73, 0.0, 0.0]], [[0.0, 0.0, 0.0], [-51.9144, 0.0, 0.0], [-26.35, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0425831, 0.0, 0.0], [0.0083538, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
-    liquid = GibbsExcessLiquid(VaporPressures=properties.VaporPressures, 
+    liquid = GibbsExcessLiquid(VaporPressures=properties.VaporPressures,
                             HeatCapacityGases=properties.HeatCapacityGases,
                             VolumeLiquids=properties.VolumeLiquids,
                             henry_as=henry_params[0],henry_bs=henry_params[1],

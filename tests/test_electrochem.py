@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,23 +17,32 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import pytest
-import numpy as np
-from fluids.numerics import linspace, assert_close, assert_close1d
-import pandas as pd
-from chemicals.elements import charge_from_formula, nested_formula_parser
-from thermo.electrochem import *
-from chemicals.identifiers import check_CAS, CAS_from_any, pubchem_db, serialize_formula
-from math import log10
-from chemicals.iapws import iapws95_Psat, iapws95_rhol_sat, iapws95_rho
-from thermo.electrochem import cond_data_Lange, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond, CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions, cond_data_McCleskey, cond_data_Lange, Laliberte_data
-
-from thermo.electrochem import electrolyte_dissociation_reactions as df
 from collections import Counter
+from math import log10
+
+import numpy as np
+import pandas as pd
+import pytest
+from chemicals.elements import charge_from_formula, nested_formula_parser
+from chemicals.iapws import iapws95_Psat, iapws95_rho, iapws95_rhol_sat
+from chemicals.identifiers import CAS_from_any, check_CAS, pubchem_db, serialize_formula
+from fluids.numerics import assert_close, assert_close1d, linspace
 
 import thermo
+from thermo.electrochem import *
+from thermo.electrochem import (
+    CRC_aqueous_thermodynamics,
+    CRC_ion_conductivities,
+    Magomedovk_thermal_cond,
+    Marcus_ion_conductivities,
+    cond_data_Lange,
+    cond_data_McCleskey,
+)
+from thermo.electrochem import electrolyte_dissociation_reactions as df
+
 thermo.complete_lazy_loading()
 
 def test_Laliberte_viscosity_w():
@@ -193,7 +201,7 @@ def test_conductivity():
 
 def test_Marcus_ion_conductivities():
     # Check the CAS numbers are the "canonical" ones
-    assert all([CAS_from_any(i) == i for i in Marcus_ion_conductivities.index])
+    assert all(CAS_from_any(i) == i for i in Marcus_ion_conductivities.index)
 
     # Check the charges match up
     for v, CAS in zip(Marcus_ion_conductivities['Charge'], Marcus_ion_conductivities.index):
@@ -216,10 +224,10 @@ def test_CRC_ion_conductivities():
 
 
 def test_CRC_aqueous_thermodynamics():
-    assert all([check_CAS(i) for i in CRC_aqueous_thermodynamics.index])
+    assert all(check_CAS(i) for i in CRC_aqueous_thermodynamics.index)
 
     # Check CASs match up
-    assert all([CAS_from_any(i) == i for i in CRC_aqueous_thermodynamics.index])
+    assert all(CAS_from_any(i) == i for i in CRC_aqueous_thermodynamics.index)
 
     # Check search by formula matches up
     for formula, CAS in zip(CRC_aqueous_thermodynamics['Formula'], CRC_aqueous_thermodynamics.index):
@@ -299,7 +307,7 @@ def test_Kweq_Arcis_Tremaine_Bandura_Lvov():
     test_Psats = [iapws95_Psat(T) for T in test_Ts[:-2]]
     test_Ps = [5e6, 10e6, 15e6, 20e6, 25e6, 30e6]
     expect_saturation_Kweqs = [14.945, 13.996, 13.263, 12.687, 12.234, 11.884, 11.621, 11.436, 11.318, 11.262, 11.263, 11.320, 11.434, 11.613, 11.895]
-    
+
     expect_Kweqs = [[14.889, 14.832, 14.775, 14.719, 14.663, 14.608],
     [13.948, 13.899, 13.851, 13.802, 13.754, 13.707],
     [13.219, 13.173, 13.128, 13.083, 13.039, 12.995],
@@ -317,15 +325,15 @@ def test_Kweq_Arcis_Tremaine_Bandura_Lvov():
     [23.150, 19.283, 16.618, 11.698, 11.495, 11.335],
     [23.006, 19.266, 16.920, 14.909, 11.998, 11.659],
     [22.867, 19.210, 17.009, 15.350, 13.883, 12.419]]
-    
-    
+
+
     for i in range(len(test_Psats)):
         # Saturation density is likely not quite as accurate in original paper
         T = test_Ts[i]
         rho_w = iapws95_rhol_sat(T)
         calc = -log10(Kweq_Arcis_Tremaine_Bandura_Lvov(T, rho_w))
         assert_close(calc, expect_saturation_Kweqs[i], atol=.0015)
-    
+
     # These results match exactly
     for i in range(len(test_Ts)):
         T = test_Ts[i]

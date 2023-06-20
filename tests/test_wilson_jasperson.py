@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,18 +17,19 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import os
 import pytest
-from fluids.numerics import assert_close, assert_close1d
+from fluids.numerics import assert_close
+
 try:
     import rdkit
-    from rdkit import Chem
 except:
     rdkit = None
 from thermo import Chemical
 from thermo.group_contribution import Wilson_Jasperson
+
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
@@ -37,24 +37,24 @@ def test_Wilson_Jasperson():
     # Two points in Poling et al.
     Tc, Pc, _, _ = Wilson_Jasperson('CCC1=CC=CC=C1O', Tb=477.67, second_order=True)
     assert_close(Tc, 693.5671723593391)
-    assert_close(Pc, 3743819.6667063655)    
-    
+    assert_close(Pc, 3743819.6667063655)
+
     Tc, Pc, _, _ = Wilson_Jasperson('CCC1=CC=CC=C1O', Tb=477.67, second_order=False)
-    
+
     assert_close(Tc, 702.8831365703206)
     assert_close(Pc, 3794106.4902720796)
-    
+
     # Had a bug identifying an amine group here
     c = Chemical('aniline')
     Tc, Pc, _, _ = Wilson_Jasperson(c.rdkitmol, Tb=457.4)
     assert_close(Tc, 705.7480487320958)
     assert_close(Pc, 5247025.774965471)
-    
+
     c = Chemical('tetramethylthiuram disulfide')
     Tc, Pc, _, _ = Wilson_Jasperson(c.rdkitmol, Tb=580.6)
     assert_close(Tc, 807.2810024378236)
     assert_close(Pc, 2555268.114365961)
-    
+
     # Osmium - can't work as a pure component
     c = Chemical('7440-04-2')
     Tc, Pc, missing_Tc_increments, missing_Pc_increments = Wilson_Jasperson(c.rdkitmol, Tb=5281.15)
@@ -64,8 +64,8 @@ def test_Wilson_Jasperson():
 
     # Can't make it match no matter what I do, but nothing looks like an issue
     # c = Chemical('acetic acid')
-    # Wilson_Jasperson_first_order(c.rdkitmol, Tb=391.2),584.6 
-    
+    # Wilson_Jasperson_first_order(c.rdkitmol, Tb=391.2),584.6
+
     # c = Chemical('2-nonanone')
     # Wilson_Jasperson_first_order(c.rdkitmol, Tb=467.7),651.8
 
@@ -78,7 +78,7 @@ def test_Wilson_Jasperson_paper():
     expect_Tcs = [304.3, 408.1, 368.9, 406.2, 423.6, 512, 428.7, 469.1, 456.8, 547.2, 533.4, 491.8, 499.5, 479.4, 495, 507.7, 568.8, 565, 592, 523.1, 515.1, 513.2, 541.1, 528.9, 533.9, 528.6, 531.5, 515.7, 627, 580.5, 556.3, 560.4, 560.1, 554.8, 551, 548, 553.1, 570.6, 559.1, 532.8, 559.1, 547, 543.7, 561, 559.3, 556.3, 547.4, 600.3, 581.9, 583.6, 586.2, 559, 571.8, 571.4, 556.6, 596.7, 690.6, 677.9, 599.7, 620.3, 594.6, 568.8, 640.6, 660.7, 676.6, 693.8, 709.2, 722.5, 735.9, 746.7, 283.1, 390.8, 364.5, 426.6, 430.4, 434.7, 418.6, 418.9, 509.9, 474.6, 477.1, 464.4, 564, 556.2, 504.1, 596.3, 537.9, 640.7, 633.4, 625.3, 620.9, 624.1, 568.3, 696.7, 645.9, 642, 666.9, 649.9, 656.9, 631.6, 594.4, 755.3, 725.5, 683.7, 655.5, 649.2, 664.5, 665.1, 660.7, 638.4, 650.6, 619.7, 772.9, 778, 784.1, 792.2, 755.6, 660, 856.8, 321.7, 409.1, 342.8, 306.2, 386.8, 469.4, 550.9, 415.8, 375.7, 453.8, 535.4, 310.5, 510.4, 365.3, 414.9, 326, 384, 356.1, 483.3, 312.2, 298, 404.2, 401.5, 460.9, 462.4, 347.6, 433.9, 390.4, 385.5, 414.1, 477.2, 357.1, 564.3, 523, 397.9, 500.3, 460.6, 381.4, 452.4, 346.9, 379.1, 417.9, 384.2, 606.5, 569.4, 536.5, 500.3, 482, 398.8, 385.4, 433.3, 520.5, 536.7, 417.4, 568.8, 534.8, 527.9, 445.2, 541, 553.1, 687.6, 553.5, 562.5, 570.4, 633.4, 562.4, 597.4, 544.6, 478.7, 483.6, 597.2, 489.9, 645.2, 513.4, 522.7, 544, 518.5, 540.1, 654.6, 570.4, 559.9, 545.7, 509.5, 533.8, 704, 623.2, 596.9, 544.8, 569.7, 587.5, 583.5, 564.4, 559.4, 606.7, 656.3, 687.8, 639.9, 581.7, 576.6, 613.7, 563.7, 563.9, 588.6, 606.5, 600.8, 570.4, 624.9, 649.3, 687, 703.6, 703.1, 630.6, 603.2, 607.4, 601.1, 614.2, 667.6, 696.2, 712.3, 690.7, 688.5, 714.4, 701.6, 713.1, 716.4, 725.3, 702.2, 626.8, 592.5, 631, 647.7, 590.8, 681.2, 663.8, 635.4, 642.8, 679.2, 649.3, 688.1, 707.9, 483.6, 398.1, 505.1, 436.8, 480.5, 497.1, 473.8, 539.7, 581.7, 474, 467.9, 462.1, 533.5, 533.4, 561.8, 547.1, 559.5, 488.2, 500.3, 510.7, 539.5, 524.4, 504.7, 498, 530, 543.2, 539.9, 648.8, 585, 845.5, 775, 516.4, 539.4, 629.6, 549, 561.1, 560.8, 652.4, 595, 586.7, 581.2, 570.3, 599.9, 605.1, 609.9, 710.5, 620.8, 620.9, 631.3, 651.8, 642.5, 642.1, 642.5, 654.9, 657.7, 667, 656.7, 676.5, 683.2, 677.8, 695.8, 833, 469, 499, 527.1, 557.3, 584.4, 610.5, 621.8, 656, 584.6, 606.7, 614.6, 627.3, 649.6, 635.4, 665.2, 681.1, 692, 678.5, 705.5, 715.8, 474.4, 507.6, 497, 547.4, 519.6, 750.2, 530.1, 526.5, 526.3, 548, 532.7, 553.1, 551.7, 538, 563.9, 569.1, 576.9, 572.3, 611.4, 597.6, 591.3, 578.2, 599.1, 580.4, 582.6, 593.3, 589.2, 643.1, 652.7, 671.6, 435.7, 459.6, 444.3, 599, 641.7, 497.3, 426.6, 471.5, 650, 566.6, 506.9, 495.3, 478.4, 528.8, 582.4, 705.7, 517.3, 554.3, 524.8, 689.2, 577.5, 606.7, 664.2, 610.6, 639, 616.8, 641, 625.1, 666.7, 650.7, 677.5, 646.3, 644.2, 551.8, 536.9, 562.5, 580.8, 603.2, 624.1, 689.4, 659.7, 468.2, 503, 499.6, 536.6, 590.7, 584.7, 635.5, 560.3, 569.2, 781.6, 922.8, 360.5, 502.4, 368.8, 372.7, 374.4, 396.4, 471.6, 435, 412.3, 545.5, 459, 399.7, 392.3, 443, 454.2, 447.9, 458.5, 425.7, 439.6, 437.3, 554.2, 464.4, 453.5, 568.4, 582.8, ]
     missed = 0
     wrong = 0
-    
+
     for name, Tb, expect in zip(chemical_names, NBPs, expect_Tcs):
         try:
             c = Chemical(name)

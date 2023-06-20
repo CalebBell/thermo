@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,20 +17,22 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
+
+import os
+from math import *
 
 import pytest
+from fluids.numerics import *
+from fluids.numerics import assert_close
+
 import thermo
 from thermo import *
 from thermo.coolprop import *
 from thermo.coolprop import has_CoolProp
 from thermo.phases import CoolPropGas, CoolPropLiquid
-from fluids.numerics import assert_close
-from fluids.numerics import *
-from math import *
-import json
-import os
-import numpy as np
+
 try:
     import matplotlib.pyplot as plt
 except:
@@ -94,7 +95,7 @@ def test_CoolProp_basic_flashes():
     flasher.flash(T=300, VF=0)
     flasher.flash(P=1e5, VF=0)
     flasher.flash(P=1e5, H=100)
-    
+
     # One phase
     assert 1 == flasher.flash(P=1e5, S=10).phase_count
     assert 2 == flasher.flash(P=1e5, S=100).phase_count
@@ -137,7 +138,7 @@ def test_PV_plot(fluid, backend):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s' %('PV', backend, fluid)
+    key = '{} - {} - {}'.format('PV', backend, fluid)
 
     plot_fig.savefig(os.path.join(path, key + '.png'))
     # TODO log the max error to a file
@@ -195,7 +196,7 @@ def test_TV_plot_CoolProp(fluid, backend):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s' %('TV', backend, fluid)
+    key = '{} - {} - {}'.format('TV', backend, fluid)
 
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
@@ -285,7 +286,7 @@ def test_three_phase_flash_CoolProp():
     zs = [.8, .15, .05]
     names = ['methane', 'decane', 'water']
     constants, properties = ChemicalConstantsPackage.from_IDs(names)
-    
+
     CPP_gas = CoolPropGas('HEOS', names, T=T, P=P, zs=zs)
     CPP_gas.constants = constants
     CPP_liq = CoolPropLiquid('HEOS', names, T=T, P=P, zs=zs)
@@ -302,8 +303,8 @@ def test_PVF_parametric_binary_zs_vs_CoolProp():
     # constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
     # constants.subset(properties=['Tcs', 'Pcs', 'omegas', 'MWs', 'Vcs'])
 
-    constants = ChemicalConstantsPackage(MWs=[30.06904, 100.20194000000001], omegas=[0.099, 0.349], 
-                                        Pcs=[4872200.0, 2736000.0], Tcs=[305.322, 540.13], 
+    constants = ChemicalConstantsPackage(MWs=[30.06904, 100.20194000000001], omegas=[0.099, 0.349],
+                                        Pcs=[4872200.0, 2736000.0], Tcs=[305.322, 540.13],
                                         Vcs=[0.0001455, 0.000428])
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
     HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1500.0, [-1.0480862560578738e-22, 6.795933556773635e-19, -1.752330995156058e-15, 2.1941287956874937e-12, -1.1560515172055718e-09, -1.8163596179818727e-07, 0.00044831921501838854, -0.038785639211185385, 34.10970704595796])),
@@ -336,7 +337,7 @@ def test_PVF_parametric_binary_zs_vs_CoolProp():
             VFs = [0.0, 1.0, .01, .99]#, .25, .75]#linspace(0, 1, 4)
             for VF in VFs:
                 AS.set_mole_fractions(zs)
-                AS.update(CP.PQ_INPUTS, P, VF);
+                AS.update(CP.PQ_INPUTS, P, VF)
                 CP_T = AS.T()
                 res = flasher.flash(VF=VF, P=P, zs=zs)
                 # Doesn't match exacrly because of c1 c2

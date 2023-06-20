@@ -2381,9 +2381,9 @@ energy_types = {'LP_STEAM': 'Steam 50 psi',
                 'DC_ELECTRICITY': 'DC Electricity'}
 for freq in residential_power_frequencies:
     for voltage in voltages_1_phase_residential:
-        energy_types[f'AC_ELECTRICITY_1_PHASE_{str(voltage)}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 1 PHASE {str(voltage)} V {str(freq)} Hz'
+        energy_types[f'AC_ELECTRICITY_1_PHASE_{voltage!s}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 1 PHASE {voltage!s} V {str(freq)} Hz'
     for voltage in voltages_3_phase:
-        energy_types[f'AC_ELECTRICITY_3_PHASE_{str(voltage)}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 3 PHASE {str(voltage)} V {str(freq)} Hz'
+        energy_types[f'AC_ELECTRICITY_3_PHASE_{voltage!s}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 3 PHASE {voltage!s} V {str(freq)} Hz'
 
 
 class EnergyStream:

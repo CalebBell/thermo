@@ -1,8 +1,9 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from thermo import *
-from fluids.numerics import logspace
 from math import log10
+
+import matplotlib.pyplot as plt
+from fluids.numerics import logspace
+
+from thermo import *
 
 thing = PR(P=1e5, T=460, Tc=658.0, Pc=1820000.0, omega=0.9)
 

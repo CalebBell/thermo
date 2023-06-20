@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,19 +17,18 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from math import exp, log
-import pytest
-import numpy as np
-from fluids.constants import calorie, R
-from thermo.activity import GibbsExcess, IdealSolution
-from random import random
-import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d
-from thermo.test_utils import check_np_output_activity
-import pickle
 import json
+import pickle
+
+import numpy as np
+from fluids.numerics import assert_close
+
+from thermo.activity import IdealSolution
+from thermo.test_utils import check_np_output_activity
+
 
 def test_IdealSolution():
     GE = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,20 +17,20 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import pytest
-from fluids.core import C2K
-import thermo
-from chemicals.utils import *
-from thermo import *
-from fluids.numerics import *
 from math import *
-import json
-import os
+
 import numpy as np
+from chemicals.utils import *
+from fluids.core import C2K
+from fluids.numerics import *
+
+from thermo import *
 from thermo.phases.phase_utils import lnphis_direct
-from thermo.unifac  import UFIP, DOUFIP2006
+from thermo.unifac import DOUFIP2006, UFIP
+
 
 def test_C2_C5_PR():
     T, P = 300, 3e6
@@ -426,10 +425,10 @@ def test_PRTranslated_air_two_phase():
     HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"),
      HeatCapacityGas(CASRN="7782-44-7", MW=31.9988, similarity_variable=0.06250234383789392, extrapolation="linear", method="TRCIG"),
      HeatCapacityGas(CASRN="7440-37-1", MW=39.948, similarity_variable=0.025032542304996495, extrapolation="linear", method="WEBBOOK_SHOMATE")]
-    
+
     constants = ChemicalConstantsPackage(atom_fractions=[{'N': 1.0}, {'O': 1.0}, {'Ar': 1.0}], atomss=[{'N': 2}, {'O': 2}, {'Ar': 1}], MWs=[28.0134, 31.9988, 39.948], omegas=[0.04, 0.021, -0.004], Pcs=[3394387.5, 5042945.25, 4873732.5], phase_STPs=['g', 'g', 'g'], rhocs=[11173.1843575419, 13623.978201634878, 13351.134846461948], similarity_variables=[0.07139440410660612, 0.06250234383789392, 0.025032542304996495], Tbs=[77.355, 90.188, 87.302], Tcs=[126.2, 154.58, 150.8], Tms=[63.15, 54.36, 83.81], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], Zcs=[0.2895282296391198, 0.2880002236716698, 0.29114409080360165])
     properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases)
-    
+
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': [[0.0, -0.0159, -0.0004],
       [-0.0159, 0.0, 0.0089],
       [-0.0004, 0.0089, 0.0]],
@@ -437,21 +436,21 @@ def test_PRTranslated_air_two_phase():
      'alpha_coeffs': [(0.1243, 0.8898, 2.0129),
       (0.2339, 0.8896, 1.3053),
       (0.1227, 0.9045, 1.8541)]}
-    
+
     gas = CEOSGas(PRMIXTranslatedConsistent, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     liquid = CEOSLiquid(PRMIXTranslatedConsistent, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
     zs = normalize([78.08, 20.95, .93])
-    
+
     # This test case was finding some infinities in fugacities, very nasty
     res = flasher.flash(P=200000, T=1e-3, zs=zs)
     assert res.phase_count == 1
     assert res.liquid0 is not None
-    
+
     res = flasher.flash(P=200000, H=-11909.90990990991, zs=zs)
     assert_close(res.gas_beta, 0.0010452858012690303, rtol=1e-5)
-    
-    
+
+
 def test_issue106_Michelson_stability_test_log_zero():
     T = 500
     P = 1e12
@@ -462,7 +461,7 @@ def test_issue106_Michelson_stability_test_log_zero():
     kijs = [[0.0, 0, 0, 0, 0], [0, 0.0, 0, 0, 0], [0, 0, 0.0, 0, 0], [0, 0, 0, 0.0, -0.0044], [0, 0, 0, -0.0044, 0.0]]
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas, 'kijs': kijs}
     gas = CEOSGas(PRMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
-    
+
     liquid = GibbsExcessLiquid(
         VaporPressures=properties.VaporPressures,
         HeatCapacityGases=properties.HeatCapacityGases,
@@ -470,7 +469,7 @@ def test_issue106_Michelson_stability_test_log_zero():
         GibbsExcessModel=activity_model,
         equilibrium_basis='Psat', caloric_basis='Psat',
         T=T, P=P, zs=zs)
-    
+
     conditions = {'T': 500, 'P': 1e12}
     flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
     assert liquid.to(T=T, P=P, zs=zs).G() < gas.to(T=T, P=P, zs=zs).G()
@@ -658,7 +657,7 @@ def test_case_air_Odhran_2022_09_24():
     HeatCapacityGas(load_data=False, poly_fit=(298.0, 6000.0, [-3.314740108347415e-34, 9.351547491936385e-30, -1.1038315945910408e-25, 7.065840421054809e-22, -2.65775666980227e-18, 5.9597846928676876e-15, -7.7937356614881e-12, 5.408021118723734e-09, 20.785998601382207])),
     ],
     )
-    
+
     eos_kwargs = {'Pcs': [3394387.5, 5042945.25, 4873732.5], 'Tcs': [126.2, 154.58, 150.8], 'omegas': [0.04, 0.021, -0.004], 'kijs': [[0.0, -0.0159, -0.0004], [-0.0159, 0.0, 0.0089], [-0.0004, 0.0089, 0.0]]}
     gas = CEOSGas(PRMIXTranslatedConsistent, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
     liquid = CEOSLiquid(PRMIXTranslatedConsistent, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
@@ -670,14 +669,14 @@ def test_case_air_Odhran_2022_09_24():
     # was going to 0
     res = flasher.flash(zs=zs, T=0.46078924591519266,  P=3000000.0)
     assert_close(res.G(), -26018.476463001498)
-    
+
     # Test using another flasher
     flasher_gas = FlashVLN(constants, correlations, liquids=[], gas=gas)
     res = flasher_gas.flash(T=130, P=3328741.8516244013*2, zs=zs)
     res2 = flasher_gas.flash(P=res.P, H=res.H(), zs=zs)
-    
+
     assert_close(res2.flash_convergence['err'], 0, atol=1e-2)
-    
+
 def test_case_water_sodium_and_zeros():
     constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'Na': 1}, {'H': 2}, {'H': 1, 'Na': 1, 'O': 1}], CASs=['7732-18-5', '7440-23-5', '1333-74-0', '1310-73-2'], Gfgs=[-228554.325, 76969.44, 0.0, -193906.9625], Hfgs=[-241822.0, 107500.0, 0.0, -191000.0], MWs=[18.01528, 22.98977, 2.01588, 39.99711], names=['water', 'sodium', 'hydrogen', 'sodium hydroxide'], omegas=[0.344, -0.1055, -0.22, 0.477], Pcs=[22048320.0, 35464000.0, 1296960.0, 25000000.0], Tbs=[373.124, 1156.09, 20.271, 1661.15], Tcs=[647.14, 2573.0, 33.2, 2820.0], Tms=[273.15, 370.944, 13.99, 596.15], Vcs=[5.6e-05, 0.000116, 6.5e-05, 0.0002])
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
@@ -692,14 +691,14 @@ def test_case_water_sodium_and_zeros():
     VaporPressure(load_data=False, exp_poly_fit=(0.01, 2820.0, [-9.530401777801152e-23, 1.229909552121622e-18, -6.607515020735929e-15, 1.9131201752275348e-11, -3.230815306030239e-08, 3.221745270067264e-05, -0.018383895361035442, 5.569322257601897, -744.4957633056008])),
     ],
     )
-    
+
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(IGMIX, Hfs=constants.Hfgs, Gfs=constants.Gfgs, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
-    
+
     liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, VolumeLiquids=correlations.VolumeLiquids,
                      HeatCapacityGases=correlations.HeatCapacityGases, equilibrium_basis='Psat',
                               Hfs=constants.Hfgs, Gfs=constants.Gfgs)
-    
+
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
     res = flasher.flash(zs=[.9, .1, 0, 0], T=296.85585149700563, P=1e5)
     assert res.phase_count == 1
@@ -734,7 +733,7 @@ def test_first_henry_pure_solvent():
     henry_params = ([[0.0, 0.0, 0.0], [349.743, 0.0, 0.0], [198.51, 0.0, 0.0]], [[0.0, 0.0, 0.0], [-13282.1, 0.0, 0.0], [-8544.73, 0.0, 0.0]], [[0.0, 0.0, 0.0], [-51.9144, 0.0, 0.0], [-26.35, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0425831, 0.0, 0.0], [0.0083538, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
 
 
-    liquid = GibbsExcessLiquid(VaporPressures=properties.VaporPressures, 
+    liquid = GibbsExcessLiquid(VaporPressures=properties.VaporPressures,
                             HeatCapacityGases=properties.HeatCapacityGases,
                             VolumeLiquids=properties.VolumeLiquids,
                             henry_as=henry_params[0],henry_bs=henry_params[1],
@@ -782,7 +781,7 @@ def test_henry_water_ethanol_solvent_only_water_parameters():
     henry_params = ([[0.0, 0.0, 0.0, 0.0], [349.743, 0.0, 0.0, 0.0], [198.51, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [-13282.1, 0.0, 0.0, 0.0], [-8544.73, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [-51.9144, 0.0, 0.0, 0.0], [-26.35, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0425831, 0.0, 0.0, 0.0], [0.0083538, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]])
 
 
-    liquid = GibbsExcessLiquid(VaporPressures=properties.VaporPressures, 
+    liquid = GibbsExcessLiquid(VaporPressures=properties.VaporPressures,
                             HeatCapacityGases=properties.HeatCapacityGases,
                             VolumeLiquids=properties.VolumeLiquids,
                             henry_as=henry_params[0],henry_bs=henry_params[1],
@@ -846,8 +845,8 @@ def test_PRMIX_basics_H_S():
     # constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
     # constants.subset(properties=['Tcs', 'Pcs', 'omegas', 'MWs', 'Vcs'])
 
-    constants = ChemicalConstantsPackage(MWs=[30.06904, 100.20194000000001], omegas=[0.099, 0.349], 
-                                        Pcs=[4872200.0, 2736000.0], Tcs=[305.322, 540.13], 
+    constants = ChemicalConstantsPackage(MWs=[30.06904, 100.20194000000001], omegas=[0.099, 0.349],
+                                        Pcs=[4872200.0, 2736000.0], Tcs=[305.322, 540.13],
                                         Vcs=[0.0001455, 0.000428])
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
     HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1500.0, [-1.0480862560578738e-22, 6.795933556773635e-19, -1.752330995156058e-15, 2.1941287956874937e-12, -1.1560515172055718e-09, -1.8163596179818727e-07, 0.00044831921501838854, -0.038785639211185385, 34.10970704595796])),

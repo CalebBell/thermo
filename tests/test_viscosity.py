@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,31 +17,41 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from random import uniform
-import pytest
-from math import log, log10
-import numpy as np
 import json
-import pandas as pd
-from fluids.numerics import assert_close, assert_close1d, assert_close2d, linspace
-from fluids.constants import psi, atm, foot, lb
-from fluids.core import R2K, F2K
-from chemicals.utils import normalize, mixing_simple, zs_to_ws
+
+import pytest
+from chemicals.utils import zs_to_ws
 from chemicals.viscosity import *
-from thermo.viscosity import *
-from chemicals.identifiers import check_CAS
-from thermo.viscosity import COOLPROP, LUCAS, JOBACK
-from thermo.mixture import Mixture
-from thermo.eos import PR
-from thermo.volume import VolumeGas
-from thermo.coolprop import has_CoolProp
-from thermo.viscosity import LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, BROKAW, HERNING_ZIPPERER, WILKE, LINEAR
-from thermo.viscosity import (COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
-                         VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
-                         VDI_TABULAR, LETSOU_STIEL, PRZEDZIECKI_SRIDHAR)
+from fluids.numerics import assert_close, assert_close2d, linspace
+
 from thermo import VaporPressure, VolumeLiquid
+from thermo.coolprop import has_CoolProp
+from thermo.eos import PR
+from thermo.mixture import Mixture
+from thermo.viscosity import *
+from thermo.viscosity import (
+    BROKAW,
+    COOLPROP,
+    DIPPR_PERRY_8E,
+    DUTT_PRASAD,
+    HERNING_ZIPPERER,
+    JOBACK,
+    LALIBERTE_MU,
+    LETSOU_STIEL,
+    LINEAR,
+    LUCAS,
+    MIXING_LOG_MOLAR,
+    PRZEDZIECKI_SRIDHAR,
+    VDI_PPDS,
+    VDI_TABULAR,
+    VISWANATH_NATARAJAN_2E,
+    VISWANATH_NATARAJAN_3,
+    WILKE,
+)
+from thermo.volume import VolumeGas
 
 
 @pytest.mark.CoolProp
@@ -118,7 +127,7 @@ def test_ViscosityLiquid():
     # Test Viswanath_Natarajan_2 with boron trichloride
     mu = ViscosityLiquid(CASRN='10294-34-5').T_dependent_property(250)
     assert_close(mu, 0.0003389255178814321)
-    assert None == ViscosityLiquid(CASRN='10294-34-5', extrapolation=None).T_dependent_property(350)
+    assert None is ViscosityLiquid(CASRN='10294-34-5', extrapolation=None).T_dependent_property(350)
 
 
     # Ethanol compressed
@@ -144,7 +153,7 @@ def test_ViscosityLiquid():
 
 
     EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.TP_dependent_property(300, 9E4)
+    assert None is EtOH.TP_dependent_property(300, 90000.0)
     EtOH.tabular_extrapolation_permitted = True
     assert_close(EtOH.TP_dependent_property(300, 9E4), 0.0010445175985089377)
 
@@ -159,7 +168,7 @@ def test_ViscosityLiquid():
                         Vml=VolumeLiquid(CASRN="67-56-1", MW=32.04186, Tb=337.65, Tc=512.5, Pc=8084000.0, Vc=0.000117,
                                         Zc=0.22196480200068586, omega=0.559, dipole=1.7,
                                         Psat=VaporPressure(CASRN="67-56-1",
-                                Tb=337.65, Tc=512.5, Pc=8084000.0, omega=0.559, 
+                                Tb=337.65, Tc=512.5, Pc=8084000.0, omega=0.559,
                             extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY"),
                                 extrapolation="constant", method="DIPPR_PERRY_8E"), extrapolation="linear")
     res = obj.calculate(230, PRZEDZIECKI_SRIDHAR)
@@ -189,7 +198,7 @@ def test_ViscosityLiquid_derivative_exp_poly_fit():
 def test_ViscosityLiquid_fitting0():
     ammonia_Ts_mul = [195.41, 206.081, 216.751, 227.422, 238.092, 239.82, 248.763, 259.433, 270.104, 280.774, 291.445, 302.115, 312.786, 323.456, 334.127, 344.797, 355.468, 366.139, 376.809, 387.48, 398.15]
     ammonia_muls = [0.000526102, 0.000427438, 0.000355131, 0.000300457, 0.00025797, 0.000251978, 0.00022415, 0.00019665, 0.000173865, 0.000154667, 0.000138254, 0.000124039, 0.000111591, 0.000100584, 9.07738E-05, 8.19706E-05, 7.4028E-05, 6.68311E-05, 6.02885E-05, 5.43268E-05, 4.88864E-05]
-    
+
     fit, res = ViscosityLiquid.fit_data_to_model(Ts=ammonia_Ts_mul, data=ammonia_muls, model='DIPPR101',
                           do_statistics=True, use_numba=False,
                           fit_method='lm')
@@ -205,7 +214,7 @@ def test_ViscosityLiquid_fitting1():
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert stats['MAE'] < 1e-6
-    
+
     # benzamide
     obj = ViscosityLiquid(CASRN='55-21-0')
     Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
@@ -213,7 +222,7 @@ def test_ViscosityLiquid_fitting1():
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert stats['MAE'] < 1e-6
-    
+
     # acetamide
     obj = ViscosityLiquid(CASRN='60-35-5')
     Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
@@ -237,7 +246,7 @@ def test_ViscosityLiquid_fitting1():
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert stats['MAE'] < 1e-6
-    
+
     # butane
     obj = ViscosityLiquid(CASRN='106-97-8')
     Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
@@ -245,7 +254,7 @@ def test_ViscosityLiquid_fitting1():
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert stats['MAE'] < 1e-6
-    
+
     #  1-chloropropane
     obj = ViscosityLiquid(CASRN='540-54-5')
     Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
@@ -405,7 +414,7 @@ def test_ViscosityLiquid_fitting1():
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
     assert stats['MAE'] < 1e-6
-    
+
     # 1,2-propanediol
     obj = ViscosityLiquid(CASRN='57-55-6')
     Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
@@ -526,7 +535,7 @@ def test_ViscosityGas():
     assert_close2d(TP_data, recalc_pts)
 
     EtOH.tabular_extrapolation_permitted = False
-    assert None == EtOH.TP_dependent_property(300, 9E4)
+    assert None is EtOH.TP_dependent_property(300, 90000.0)
     EtOH.tabular_extrapolation_permitted = True
     assert_close(EtOH.TP_dependent_property(300, 9E4), 1.1854259955707653e-05)
 
@@ -540,7 +549,7 @@ def test_ViscosityGas_fitting0():
     # ammonia chemsep
     ammonia_Ts_mug = [194.6, 236.989, 239.82, 279.379, 321.768, 364.158, 406.547, 448.937, 491.326, 533.716, 576.105, 618.495, 660.884, 703.274, 745.663, 788.053, 830.442, 872.831, 915.221, 957.61, 1000]
     ammonia_mugs = [6.45166E-06, 7.95475E-06, 8.05584E-06, 9.47483E-06, 1.10043E-05, 1.25388E-05, 1.40761E-05, 1.56145E-05, 1.7153E-05, 1.86911E-05, 2.02283E-05, 2.17643E-05, 2.3299E-05, 2.48323E-05, 2.6364E-05, 2.78941E-05, 2.94227E-05, 3.09497E-05, 3.24751E-05, 3.39989E-05, 3.55212E-05]
-    
+
     fit, res = ViscosityGas.fit_data_to_model(Ts=ammonia_Ts_mug, data=ammonia_mugs, model='DIPPR102',
                           do_statistics=True, use_numba=False,
                           fit_method='lm')

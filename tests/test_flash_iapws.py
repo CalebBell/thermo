@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,21 +17,24 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
+import os
+from math import *
+
+import numpy as np
 import pytest
+from chemicals.iapws import iapws95_Pc, iapws95_Tc
+from fluids.numerics import *
+
 import thermo
 from thermo import *
+from thermo.chemical_package import iapws_correlations
 from thermo.coolprop import *
 from thermo.phases import IAPWS95Gas, IAPWS95Liquid
-from thermo.chemical_package import iapws_correlations
-from fluids.numerics import *
-from chemicals.iapws import iapws95_Tc, iapws95_Pc
 from thermo.test_utils import mark_plot_unsupported
-from math import *
-import json
-import os
-import numpy as np
+
 try:
     import matplotlib.pyplot as plt
 except:
@@ -75,15 +77,15 @@ def test_iapws95_basic_flash():
     stage_1 = flasher.flash(P=P1, T=T1)
     stage_2 = flasher.flash(P=P2, S=stage_1.S())
     assert_close(stage_2.VF, 0.7666960540476834)
-    
+
     # point where phase ID was wrong
-    PT = flasher.flash(T=300, P=1e5) 
+    PT = flasher.flash(T=300, P=1e5)
     H = PT.H()
-    PH = flasher.flash(H=H, P=1e5) 
+    PH = flasher.flash(H=H, P=1e5)
     assert PH.gas is None
 
-    
-    
+
+
 def test_iapws95_basic_flashes_no_hacks():
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
     gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
@@ -107,7 +109,7 @@ def test_iapws95_basic_flashes_no_hacks():
     assert_close(PS.T, 300)
 
     assert_close(flasher.flash(P=1e5, H=flasher.flash(T=273.15, P=1e5).H()).T, 273.15, rtol=1e-10)
-    
+
     # Case where the density solution was failing
     T = 250.49894958453197
     P = 10595.601792776019
@@ -137,7 +139,7 @@ def test_plot_IAPWS95(variables):
     flasher = FlashPureVLS(constants=iapws_constants, correlations=iapws_correlations,
                        gas=gas, liquids=[], solids=[])
     flasher.TPV_HSGUA_xtol = 1e-13
-    
+
     flash_spec = frozenset([spec0, spec1])
     inconsistent = flash_spec in (frozenset(['T', 'H']), frozenset(['T', 'U']),
                                   frozenset(['T', 'S']), # blip issues
@@ -146,7 +148,7 @@ def test_plot_IAPWS95(variables):
                                   frozenset(['V', 'U']), # Fun
                                   )
 
-    res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='P', 
+    res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='P',
                              check0=spec0, check1=spec1, prop0=check_prop,
                            trunc_err_low=1e-13,
                            trunc_err_high=1, color_map=cm_flash_tol(),
@@ -157,10 +159,10 @@ def test_plot_IAPWS95(variables):
     path = os.path.join(pure_surfaces_dir, fluid, plot_name)
     if not os.path.exists(path):
         os.makedirs(path)
-        
+
     tol = 5e-12
 
-    key = '%s - %s - %s' %(plot_name, eos.__name__, fluid)
+    key = f'{plot_name} - {eos.__name__} - {fluid}'
 
     if inconsistent:
         spec_name = spec0 + spec1
@@ -195,7 +197,7 @@ def test_plot_IAPWS95_VF(variables):
     flasher = FlashPureVLS(constants=iapws_constants, correlations=iapws_correlations,
                        gas=gas, liquids=[liquid], solids=[])
     flasher.TPV_HSGUA_xtol = 1e-13
-    
+
     flash_spec = frozenset([spec0, spec1])
     res = flasher.TPV_inputs(zs=[1.0], pts=200, spec0='T', spec1='VF',
                              check0=spec0, check1=spec1, prop0=check_prop,
@@ -210,10 +212,10 @@ def test_plot_IAPWS95_VF(variables):
     path = os.path.join(pure_surfaces_dir, fluid, plot_name)
     if not os.path.exists(path):
         os.makedirs(path)
-        
+
     tol = 5e-10
 
-    key = '%s - %s - %s' %(plot_name, eos.__name__, fluid)
+    key = f'{plot_name} - {eos.__name__} - {fluid}'
 
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()

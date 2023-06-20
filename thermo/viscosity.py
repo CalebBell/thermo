@@ -124,7 +124,7 @@ from fluids.numerics import brenth, exp, horner, isinf, isnan, log, trunc_log
 from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_viscosity
-from thermo.utils import NEGLECT_P, COOLPROP, DIPPR_PERRY_8E, LINEAR, VDI_PPDS, VDI_TABULAR, REFPROP_FIT, MixtureProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TPDependentProperty
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import VolumeGas, VolumeLiquid
 
@@ -396,7 +396,7 @@ class ViscosityLiquid(TPDependentProperty):
                     methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
             if CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (l)')    
+                Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (l)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
                 del self._method
             if CASRN in viscosity.mu_data_Dutt_Prasad.index:

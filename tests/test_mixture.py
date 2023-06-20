@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,18 +17,19 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
+
+from collections import OrderedDict
+from math import *
 
 import numpy as np
 import pytest
-from fluids.numerics import assert_close, assert_close1d, assert_close2d
-from collections import OrderedDict
+from fluids.numerics import assert_close, assert_close1d
+
 from thermo.chemical import *
 from thermo.mixture import Mixture
-import thermo
-from scipy.integrate import quad
-from math import *
-from fluids.constants import R
+
 
 @pytest.mark.deprecated
 def test_Mixture():
@@ -162,7 +162,7 @@ def test_Mixture_calculated_Vfs():
 
 @pytest.mark.deprecated
 def test_Mixture_predefined():
-    for name in ['Air', 'air', u'Air', ['air']]:
+    for name in ['Air', 'air', 'Air', ['air']]:
         air = Mixture(name)
         assert air.CASs == ['7727-37-9', '7440-37-1', '7782-44-7']
         assert_close1d(air.zs, [0.7811979754734807, 0.009206322604387548, 0.20959570192213187], rtol=1E-4)
@@ -202,7 +202,8 @@ def test_mixtures_from_property_calcs():
 @pytest.mark.deprecated
 def test_bubble_at_P_with_ideal_mixing():
     '''Check to see if the bubble pressure calculated from the temperature
-    matches the temperature calculated by the test function'''
+    matches the temperature calculated by the test function
+    '''
     from chemicals.flash_basic import flash_ideal
 
     test_mix = Mixture(['ethylene oxide',

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,16 +17,17 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 import pytest
-from thermo.law import *
 from chemicals.identifiers import check_CAS, int_to_CAS
+
+from thermo.law import *
 
 load_law_data()
 load_economic_data()
-from thermo.law import DSL_data, TSCA_data, EINECS_data, SPIN_data, NLP_data
-from thermo.law import HPV_data, _EPACDRDict, _ECHATonnageDict
+from thermo.law import DSL_data, EINECS_data, HPV_data, NLP_data, SPIN_data, TSCA_data
 
 
 @pytest.mark.slow
@@ -36,7 +36,7 @@ def test_DSL_data():
     assert DSL_data['Registry'].sum() == 48363
     assert DSL_data.shape == (73036, 1)
 
-    assert all([check_CAS(int_to_CAS(i)) for i in DSL_data.index])
+    assert all(check_CAS(int_to_CAS(i)) for i in DSL_data.index)
 
 
 @pytest.mark.slow
@@ -48,7 +48,7 @@ def test_TSCA_data():
     assert TSCA_data.index.is_unique
     assert TSCA_data.shape == (67635, 13)
 
-    assert all([check_CAS(int_to_CAS(i)) for i in TSCA_data.index])
+    assert all(check_CAS(int_to_CAS(i)) for i in TSCA_data.index)
 
 
 @pytest.mark.slow
@@ -57,7 +57,7 @@ def test_EINECS_data():
     assert EINECS_data.shape == (100203, 0)
     assert sum(list(EINECS_data.index))  == 4497611272838
 
-    assert all([check_CAS(int_to_CAS(i)) for i in EINECS_data.index])
+    assert all(check_CAS(int_to_CAS(i)) for i in EINECS_data.index)
 
 
 @pytest.mark.slow
@@ -66,7 +66,7 @@ def test_SPIN_data():
     assert SPIN_data.shape == (26023, 0)
     assert sum(list(SPIN_data.index)) == 1666688770043
 
-    assert all([check_CAS(int_to_CAS(i)) for i in SPIN_data.index])
+    assert all(check_CAS(int_to_CAS(i)) for i in SPIN_data.index)
 
 
 def test_NLP_data():
@@ -74,7 +74,7 @@ def test_NLP_data():
     assert NLP_data.shape == (698, 0)
     assert sum(list(NLP_data.index)) == 83268755392
 
-    assert all([check_CAS(int_to_CAS(i)) for i in NLP_data.index])
+    assert all(check_CAS(int_to_CAS(i)) for i in NLP_data.index)
 
 
 def test_HPV_data():

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,28 +17,28 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
+
+from math import atanh as catanh
+from math import exp, log, log10, sqrt
 
 import numpy as np
 import pytest
-from thermo import eos
+from fluids.constants import R
+from fluids.numerics import assert_close, assert_close1d, derivative, linspace, logspace
+
 from thermo.eos import *
 from thermo.eos import eos_2P_list
-from thermo.utils import allclose_variable
-from fluids.constants import R
-from math import log, exp, sqrt, log10
-from fluids.numerics import linspace, derivative, logspace, assert_close, assert_close1d, assert_close2d, assert_close3d
 from thermo.eos_alpha_functions import *
-from math import atanh as catanh
 
-    
 
 @pytest.mark.slow
 @pytest.mark.sympy
 def test_PR_with_sympy():
     return
     # Test with hexane
-    from sympy import Rational, symbols, sqrt, solve, diff, integrate, N, nsolve
+    from sympy import Rational, diff, nsolve, sqrt, symbols
 
     P, T, V = symbols('P, T, V')
     Tc = Rational('507.6')
@@ -362,7 +361,7 @@ def test_PR_density_derivatives():
     # TODO speed up big time - takes 2 seconds!
     '''
     '''
-    '''Sympy expressions:
+    """Sympy expressions:
 
     >>> f = 1/x
     >>> f
@@ -381,7 +380,7 @@ def test_PR_density_derivatives():
 
     >>> diff(diff(1/f(x, y), x), y)
     -Derivative(f(x, y), x, y)/f(x, y)**2 + 2*Derivative(f(x, y), x)*Derivative(f(x, y), y)/f(x, y)**3
-    '''
+    """
     # Test solution for molar volumes
     T = 400
     P = 1E6
@@ -1043,7 +1042,7 @@ def test_TWUPR_quick():
     eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.007371700581036866, P=1E6)
     assert_close(eos.T, 900)
 
-    assert None == TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301755417057077, P=1E6).P_max_at_V(.0001301755417057077)
+    assert None is TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301755417057077, P=1000000.0).P_max_at_V(0.0001301755417057077)
 
 
 
@@ -1104,7 +1103,7 @@ def test_TWUSRK_quick():
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.007422212960199866, P=1E6)
     assert_close(eos.T, 900)
 
-    assert None == TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301755417057077, P=1E6).P_max_at_V(.0001301755417057077)
+    assert None is TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, V=0.0001301755417057077, P=1000000.0).P_max_at_V(0.0001301755417057077)
 
 
 def test_PRTranslatedConsistent():
@@ -1522,7 +1521,7 @@ def test_Psat_issues():
     # The exact precision of the answer can only be obtained with mpmath
     eos = PR(Tc=647.086, Pc=22048320.0, omega=0.344, T=230.0, P=100000.0)
     assert_close(eos.Psat(eos.Tc*(1-1e-13), polish=True), 22048319.99998073, rtol=1e-10)
-    
+
     e = PRTranslatedConsistent(Tc=512.5, Pc=8084000.0, omega=0.559, c=2.4079466437131265e-06, alpha_coeffs=(0.46559014900000006, 0.798056656, 2.0), T=298.15, P=101325.0)
     assert_close(e.Psat(26.5928527253961065, polish=True), 3.4793909343216283e-152)
 
@@ -2109,8 +2108,9 @@ def test_dphi_sat_dT():
 
 
 def test_PRTranslatedTwu():
-    from thermo.eos import PRTranslated, PRTranslatedTwu, PR
     from fluids.numerics import linspace
+
+    from thermo.eos import PR, PRTranslatedTwu
     alpha_coeffs = (0.694911381318495, 0.919907783415812, 1.70412689631515)
 
     kwargs = dict(Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=alpha_coeffs, c=0.0)
@@ -2398,9 +2398,9 @@ def test_eos_lnphi():
     G_dep = H_dep - T*S_dep
     lnphi = G_dep/(R*T)
     '''
-    # The numerical issues remaining should be resolved by using 
+    # The numerical issues remaining should be resolved by using
     # doubledoubles to calculate Z - 1 and V - b very accurately
-    # This might be worth doing throughout the code base for the extra 
+    # This might be worth doing throughout the code base for the extra
     # accuracy anyway.
     from thermo.eos import eos_list
     for e in eos_list:
@@ -2423,22 +2423,22 @@ def test_eos_lnphi():
 def test_eos_alpha_fit_points_Soave_79():
     class PR_Soave_1979_a_alpha(Soave_1979_a_alpha, PRTranslatedConsistent):
         pass
-    
+
     thing = PR_Soave_1979_a_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=(0.5849794002807407, 0.25051549485231517))
     T = 350
     alphas = thing.a_alpha_and_derivatives(T)
     assert_close1d(alphas, (3.485011425444313, -0.00589750979615976, 1.597012282695055e-05), rtol=1e-13)
     assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
-    
+
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
     assert_close(der, alphas[1], rtol=1e-8)
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
     assert_close(der, alphas[2], rtol=1e-8)
-    
+
 def test_eos_alpha_fit_points_poly():
     class Poly_a_alpha_a_alpha(Poly_a_alpha, PRTranslatedConsistent):
         pass
-    
+
     alpha_coeffs = [-3.906465871220931e-16, 8.495103891984518e-13, -7.689734475356654e-10, 3.656679901684145e-07, -9.189406258038927e-05, 0.008182202041062563, 1.80505316719085]
     thing = Poly_a_alpha_a_alpha(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6, c=0, alpha_coeffs=alpha_coeffs)
     T = 400
@@ -2526,19 +2526,19 @@ def test_eos_alpha_fit_points_Mathias_Copeman_untruncated():
     assert_close(der, alphas[1], rtol=1e-8)
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
     assert_close(der, alphas[2], rtol=1e-8)
-    
+
     T = 600
     alphas = thing.a_alpha_and_derivatives(T)
     assert_close1d(alphas, (2.2787927206607583, -0.004452129801722897, -1.1908672049648982e-07), rtol=1e-13)
     assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
-    
+
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
     assert_close(der, alphas[1], rtol=1e-8)
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*6e-6)
     assert_close(der, alphas[2], rtol=1e-8)
-    
 
-    
+
+
 def test_eos_alpha_fit_points_Mathias_Copeman():
     class Mathias_Copeman_alpha(Mathias_Copeman_a_alpha, PRTranslatedConsistent):
         pass
@@ -2558,7 +2558,7 @@ def test_eos_alpha_fit_points_Mathias_Copeman():
     alphas = thing.a_alpha_and_derivatives(T)
     assert_close1d(alphas, (2.3055223835040035, -0.003862467782020772, 6.454141179696056e-06), rtol=1e-13)
     assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
-    
+
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
     assert_close(der, alphas[1], rtol=1e-8)
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)
@@ -2583,7 +2583,7 @@ def test_eos_alpha_fit_points_Mathias_Copeman_poly():
     alphas = thing.a_alpha_and_derivatives(T)
     assert_close1d(alphas, (2.3055223835040035, -0.003862467782020772, 6.454141179696056e-06), rtol=1e-13)
     assert_close(alphas[0], thing.a_alpha_pure(T), rtol=1e-13)
-    
+
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[0], T, dx=T*3e-8)
     assert_close(der, alphas[1], rtol=1e-8)
     der = derivative(lambda T: thing.a_alpha_and_derivatives(T)[1], T, dx=T*3e-8)

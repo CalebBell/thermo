@@ -63,6 +63,7 @@ except:
 
 from math import log, pi
 
+
 def AICc(parameters, observations, SSE):
     # need about 200 data points to not use the correction
     # n/k < 40

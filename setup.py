@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2020, 2021, 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,7 +17,8 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 from setuptools import setup
 
@@ -84,6 +84,6 @@ setup(
   'flash/*', 'phases/*', 'utils/*','group_contribution/*',
   'Scalar Parameters/*',
   'Interaction Parameters/ChemSep/*',
-  'Vapor Pressure/*', 'Viscosity/*']}  
+  'Vapor Pressure/*', 'Viscosity/*']}
 )
 

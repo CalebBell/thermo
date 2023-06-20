@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,19 +17,17 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from __future__ import division
-import pint
-import types
 import numpy as np
+import pint
 import pytest
-import fluids
-import thermo
-from thermo.units import *
-import thermo.units
 from fluids.numerics import assert_close, assert_close1d, assert_close2d
 
+import thermo
+import thermo.units
+from thermo.units import *
 
 
 def assert_pint_allclose(value, magnitude, units, rtol=1e-7, atol=0):
@@ -122,17 +119,17 @@ def test_wrap_UNIFAC_classmethod():
     chemgroups = [{9: 6}, {78: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}]
     GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1, interaction_data=DOUFIP2006, subgroups=DOUFSG)
     assert_pint_allclose(GE.GE(), 1292.0910446403327, u.J/u.mol)
-    
-    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs',
                       'd2nGE_dTdns', 'd2nGE_dninjs',
                       'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
-                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns',
                       'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution']
     for prop in get_properties:
         res = getattr(GE, prop)()
         assert isinstance(res, pint.Quantity)
-        
-        
+
+
 def test_ChemicalConstantsPackage_units():
     obj = ChemicalConstantsPackage(MWs=[18.01528, 106.165]*u.g/u.mol, names=['water', 'm-xylene'],
                              CASs=['7732-18-5', '108-38-3'],
@@ -156,17 +153,17 @@ def test_RegularSolution_units():
     for i in range(2):
         assert_pint_allclose(gammas_infinite[i], gammas_infinite_expect[i], u.dimensionless)
 
-    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs',
                       'd2nGE_dTdns', 'd2nGE_dninjs', 'd3GE_dT3', 'd3GE_dxixjxks',
                       'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
-                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns',
                       'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution']
     for prop in get_properties:
         res = getattr(GE, prop)()
         assert isinstance(res, pint.Quantity)
-    
+
     # Another example
-    GE2 = RegularSolution(T=353*u.K, xs=np.array([.01, .99])*u.dimensionless, Vs=np.array([89, 109])*u.cm**3/u.mol, 
+    GE2 = RegularSolution(T=353*u.K, xs=np.array([.01, .99])*u.dimensionless, Vs=np.array([89, 109])*u.cm**3/u.mol,
                 SPs=np.array([9.2, 8.2])*u("(cal/ml)**0.5"))
     GE.gammas()
 
@@ -180,16 +177,16 @@ def test_UNIQUAC_units_1():
     tau_bs = np.array([[0, -526.02, -309.64], [318.06, 0, 91.532], [-1325.1, -302.57, 0]])
     GE = UNIQUAC(T=T, xs=xs, rs=rs, qs=qs, tau_as=tau_as*u.dimensionless, tau_bs=tau_bs*u.K,
                  tau_cs=tau_cs*u.dimensionless, tau_ds=tau_ds/u.K, tau_es=tau_es*u.K**2, tau_fs=tau_fs/u.K**2)
-    
+
     gammas_expect = [1.5703933283666178, 0.29482416148177104, 18.114329048355312]
     gammas = GE.gammas()
     for i in range(3):
         assert_pint_allclose(gammas[i], gammas_expect[i], u.dimensionless, rtol=1e-10)
-    
-    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs',
                       'd2nGE_dTdns', 'd2nGE_dninjs',
                       'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
-                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns',
                       'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution']
     for prop in get_properties:
         res = getattr(GE, prop)()
@@ -203,39 +200,39 @@ def test_NRTL_units_1():
     alpha_cs = np.array([[0, 0.2974],[.2974, 0]])*u.dimensionless
     GE = NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs)
 
-    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs',
                       'd2nGE_dTdns', 'd2nGE_dninjs',
                       'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
-                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns',
                       'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution']
     for prop in get_properties:
         res = getattr(GE, prop)()
         assert isinstance(res, pint.Quantity)
-    
+
 
 def test_Wilson_units_1():
     '''All the time taken by this function is in pint. Yes, all of it.
     '''
     T = 331.42
     N = 3
-    
+
     A = [[0.0, 3.870101271243586, 0.07939943395502425],
                  [-6.491263271243587, 0.0, -3.276991837288562],
                  [0.8542855660449756, 6.906801837288562, 0.0]]
-    
+
     B = [[0.0, -375.2835, -31.1208],
                  [1722.58, 0.0, 1140.79],
                  [-747.217, -3596.17, -0.0]]
     D = [[-0.0, -0.00791073, -0.000868371],
                  [0.00747788, -0.0, -3.1e-05],
                  [0.00124796, -3e-05, -0.0]]
-    
+
     C = E = F = [[0.0]*N for _ in range(N)]
-    
+
     xs = [0.229, 0.175, 0.596]
-    
+
     lambda_coeffs = [[[A[i][j], B[i][j], C[i][j], D[i][j], E[i][j], F[i][j]] for j in range(N)] for i in range(N)]
-    
+
     model_ABD = Wilson(T=T*u.K, xs=np.array(xs)*u.dimensionless, lambda_as=np.array(A)*u.dimensionless,
                       lambda_bs=np.array(B)*u.K, lambda_ds=np.array(D)/u.K)
     GE_expect = 480.2639266306882
@@ -252,7 +249,7 @@ def test_Wilson_units_1():
     params = Wilson.from_DDBST_as_matrix(Vs=Vs_ddbst, ais=as_ddbst, bis=bs_ddbst, cis=cs_ddbst, unit_conversion=False)
     xs = np.array([0.229, 0.175, 0.596])*u.dimensionless
     model_from_DDBST = Wilson(T=T, xs=xs, lambda_as=params[0], lambda_bs=params[1], lambda_cs=params[2], lambda_ds=params[3], lambda_es=params[4], lambda_fs=params[5])
-    
+
 
     model_lambda_coeffs = Wilson(T=T, xs=xs, lambda_coeffs=np.array(lambda_coeffs)*u.dimensionless)
 
@@ -264,11 +261,11 @@ def test_Wilson_units_1():
         for i in range(3):
             assert_pint_allclose(dGE_dxs[i], dGE_dxs_expect[i], u.J/u.mol)
             assert_pint_allclose(gammas[i], gammas_expect[i], u.dimensionless)
-            
-    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs', 
+
+    get_properties = ['CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns', 'd2GE_dTdxs', 'd2GE_dxixjs',
                       'd2lambdas_dT2', 'd2nGE_dTdns', 'd2nGE_dninjs', 'd3GE_dT3', 'd3GE_dxixjxks',
                       'd3lambdas_dT3', 'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
-                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 'dlambdas_dT', 
+                      'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns', 'dlambdas_dT',
                       'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas', 'gammas_infinite_dilution', 'lambdas']
     for model in (model_ABD, model_from_DDBST, model_lambda_coeffs):
         for prop in get_properties:

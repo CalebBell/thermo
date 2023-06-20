@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,22 +17,38 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import pytest
-import numpy as np
-import pandas as pd
 import json
-from math import isnan
-from fluids.numerics import linspace, assert_close, derivative, assert_close1d
-from chemicals.vapor_pressure import *
-from thermo.vapor_pressure import *
-from thermo.vapor_pressure import SANJARI, EDALAT, AMBROSE_WALTON, LEE_KESLER_PSAT, BOILING_CRITICAL, COOLPROP, VDI_PPDS, VDI_TABULAR, WAGNER_MCGARRY, ANTOINE_EXTENDED_POLING, ANTOINE_POLING, WAGNER_POLING, DIPPR_PERRY_8E, ANTOINE_WEBBOOK
-from thermo.utils import TDependentProperty
-from chemicals.identifiers import check_CAS
-import chemicals
-from thermo.coolprop import has_CoolProp
 from math import *
+from math import isnan
+
+import chemicals
+import numpy as np
+import pytest
+from chemicals.vapor_pressure import *
+from fluids.numerics import assert_close, assert_close1d, derivative, linspace
+
+from thermo.coolprop import has_CoolProp
+from thermo.utils import TDependentProperty
+from thermo.vapor_pressure import *
+from thermo.vapor_pressure import (
+    AMBROSE_WALTON,
+    ANTOINE_EXTENDED_POLING,
+    ANTOINE_POLING,
+    ANTOINE_WEBBOOK,
+    BOILING_CRITICAL,
+    COOLPROP,
+    DIPPR_PERRY_8E,
+    EDALAT,
+    LEE_KESLER_PSAT,
+    SANJARI,
+    VDI_PPDS,
+    VDI_TABULAR,
+    WAGNER_MCGARRY,
+    WAGNER_POLING,
+)
 
 
 @pytest.mark.CoolProp
@@ -47,30 +62,30 @@ def test_VaporPressure_CoolProp():
 def test_VaporPressure_ethanol():
     # Ethanol, test as many methods asa possible at once
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
-    
+
     # Check that assigning a bad method does not change the object and raises a ValueERror
     h0 = hash(EtOH)
     with pytest.raises(ValueError):
         EtOH.method = 'NOTAMETHOD'
     assert hash(EtOH) == h0
-    
+
     # Check valid_methods call
     assert set(EtOH.valid_methods()) == EtOH.all_methods
     # For Ethanol, all methods are valid around 300 K
     assert EtOH.valid_methods(365) == EtOH.valid_methods()
-    
+
     # Check test_property_validity
     assert not EtOH.test_property_validity(1j)
-    
+
     # Check can't calculate with a bad method
     with pytest.raises(ValueError):
         EtOH.calculate(300, 'NOTAMETHOD')
-    
+
     methods = list(EtOH.all_methods)
     methods.remove(VDI_TABULAR)
     if COOLPROP in methods:
         methods.remove(COOLPROP)
-        
+
     EtOH.extrapolation = 'nolimit'
 
     Psats_expected = {WAGNER_MCGARRY: 11579.634014300127,
@@ -144,7 +159,7 @@ def test_VaporPressure_water():
     assert_close(w.T_dependent_property(305.), 4715.122890601165)
     w.extrapolation = 'interp1d'
     assert_close(w.T_dependent_property(200.), 0.5364148240126076)
-    
+
     Ts_bad = [300, 325, 350]
     Ps_bad = [1, -1, 1j]
     with pytest.raises(ValueError):
@@ -161,7 +176,7 @@ def test_VaporPressure_cycloheptane():
     cycloheptane.method = ('ANTOINE_EXTENDED_POLING')
     cycloheptane.extrapolation = None
     assert_close(cycloheptane.T_dependent_property(410), 161647.35219882353)
-    assert None == cycloheptane.T_dependent_property(400)
+    assert None is cycloheptane.T_dependent_property(400)
 
     with pytest.raises(Exception):
         cycloheptane.test_method_validity(300, 'BADMETHOD')
@@ -194,7 +209,7 @@ def test_VaporPressure_fitting0():
                           do_statistics=True, use_numba=False, model_kwargs={'base':10.0},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
-    
+
     # Fit with very low range and no C
     Ts = linspace(374, 377.0, 5)
     props_calc = [Antoine(T, A=12.852103, B=2942.98, C=0.0) for T in Ts]
@@ -257,7 +272,7 @@ def test_VaporPressure_fitting4_WagnerPoling():
                               do_statistics=True, use_numba=False,
                               fit_method='lm', model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc})
         assert stats['MAE'] < 1e-7
-    
+
 @pytest.mark.slow
 @pytest.mark.fuzz
 @pytest.mark.fitting
@@ -286,7 +301,7 @@ def test_VaporPressure_fitting6_VDI_PPDS():
                               do_statistics=True, use_numba=False,
                               fit_method='lm', model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'Pc': obj.VDI_PPDS_Pc})
         assert stats['MAE'] < 1e-7
-    
+
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_VaporPressure_fitting7_reduced_fit_params_with_jac():
@@ -320,7 +335,7 @@ def test_VaporPressure_fitting8_TRC_AntoineExtended():
         props_calc = [obj.calculate(T, ANTOINE_EXTENDED_POLING) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='TRC_Antoine_extended',
                               do_statistics=True, use_numba=False, multiple_tries=CAS in hard_CASs,# multiple_tries_max_err=1e-4,
-                              fit_method='lm', model_kwargs={'Tc': obj.ANTOINE_EXTENDED_POLING_coefs[0], 
+                              fit_method='lm', model_kwargs={'Tc': obj.ANTOINE_EXTENDED_POLING_coefs[0],
                                                              'to': obj.ANTOINE_EXTENDED_POLING_coefs[1]})
         assert stats['MAE'] < 1e-4
 
@@ -331,8 +346,8 @@ def test_VaporPressure_fitting9_Yaws_Psat():
     Ts = linspace(Tmin, Tmax, 10)
     props_calc = [Yaws_Psat(T, A, B, C, D, E) for T in Ts]
     res, stats = VaporPressure.fit_data_to_model(Ts=Ts, data=props_calc, model='Yaws_Psat',
-                          do_statistics=True, use_numba=False, 
-                          fit_method='lm')        
+                          do_statistics=True, use_numba=False,
+                          fit_method='lm')
     assert stats['MAE'] < 1e-5
 
 
@@ -487,12 +502,12 @@ def test_VaporPressure_extrapolation_AB():
 # @pytest.mark.meta_T_dept
 # def test_VaporPressure_fast_Psat_poly_fit():
 #     corr = VaporPressure(exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
-    
+
 #     # Low transition
 #     P_trans = corr.exp_poly_fit_Tmin_value
 #     assert_close(corr.solve_property(P_trans), corr.solve_property_exp_poly_fit(P_trans), rtol=1e-10)
 #     assert_close(corr.solve_property(P_trans + 1e-7), corr.solve_property_exp_poly_fit(P_trans + 1e-7), rtol=1e-10)
-    
+
 #     # High transition
 #     P_trans = corr.exp_poly_fit_Tmax_value
 #     assert_close(corr.solve_property(P_trans), corr.solve_property_exp_poly_fit(P_trans), rtol=1e-10)
@@ -526,12 +541,12 @@ def test_VaporPressure_extrapolation_AB():
 def test_VaporPressure_generic_polynomial_exp_parameters():
     coeffs = [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
                                                 -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]
-    
+
     obj_bestfit = VaporPressure(exp_poly_fit=(175.7, 512.49, coeffs))
     obj_polynomial = VaporPressure(exp_polynomial_parameters={'test': {'coeffs': coeffs,
                                                         'Tmin': 175.7, 'Tmax': 512.49}})
     assert_close(obj_bestfit.T_dependent_property(300), 18601.061401014867, rtol=1e-11)
-    
+
     assert_close(obj_polynomial(300), obj_bestfit.T_dependent_property(300), rtol=1e-13)
 
     assert VaporPressure.from_json(obj_bestfit.as_json()) == obj_bestfit
@@ -551,22 +566,22 @@ def test_VaporPressure_generic_polynomial_exp_parameters_complicated():
     coeffs = [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10,
     -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]
     T = 300.0
-    
+
     obj2 = VaporPressure(exp_poly_fit=(175.7, 512.49, coeffs))
     assert_close(obj2(T), 18601.061401014867, rtol=1e-13)
-    
+
     # All derivatives/integrals are numerical with the generic form
     assert_close(obj2.T_dependent_property_derivative(T), 954.1652489206775, rtol=1e-14)
     assert_close(obj2.T_dependent_property_derivative(T, order=2), 41.8787546283273, rtol=1e-14)
     assert_close(obj2.T_dependent_property_derivative(T, order=3), 1.496803960985584, rtol=1e-13)
-    
-    
+
+
 @pytest.mark.meta_T_dept
 def test_VaporPressure_exp_stablepoly_fit():
     obj2 = VaporPressure(Tc=591.72, exp_stablepoly_fit=((309.0, 591.72, [0.008603558174828078, 0.007358688688856427, -0.016890323025782954, -0.005289197721114957, -0.0028824712174469625, 0.05130960832946553, -0.12709896610233662, 0.37774977659528036, -0.9595325030688526, 2.7931528759840174, 13.10149649770156])))
     assert_close(obj2(400), 157191.01706242564, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(400, order=1), 4056.436943642117, rtol=1e-13)
-    
+
     assert_close(obj2.T_dependent_property_derivative(400, order=2), 81.32645570045084, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(400, order=3), 1.103603650822488, rtol=1e-13)
 
@@ -574,12 +589,12 @@ def test_VaporPressure_exp_stablepoly_fit():
 def test_VaporPressure_exp_cheb_fit():
     obj2 = VaporPressure(Tc=591.72, exp_cheb_fit=((309.0, 591.72, [12.570668791524573, 3.1092695610681673, -0.5485217707981505, 0.11115875762247596, -0.01809803938553478, 0.003674911307077089, -0.00037626163070525465, 0.0001962813915017403, 6.120764548889213e-05, 3.602752453735203e-05])))
     assert_close(obj2(300), 4186.189338463003, rtol=1e-13)
-    
+
     assert_close(obj2.T_dependent_property_derivative(400, order=1), 4056.277312107932, rtol=1e-13)
-    
+
     assert_close(obj2.T_dependent_property_derivative(400, order=2), 81.34302144188977, rtol=1e-13)
     assert_close(obj2.T_dependent_property_derivative(400, order=3),1.105438780935656, rtol=1e-13)
-    
+
 @pytest.mark.meta_T_dept
 def test_VaporPressure_extrapolation_no_validation():
     N2 = VaporPressure(CASRN='7727-37-9', extrapolation='DIPPR101_ABC')
@@ -621,15 +636,15 @@ def test_VaporPressure_Antoine_inputs():
     obj2 = VaporPressure(Antoine_parameters={'WebBook': {'A': 8.45604, 'B': 1044.038, 'C': -53.893, 'Tmin': 177.7, 'Tmax': 264.93}})
     assert_close(obj2(200), 20.432980367117192, rtol=1e-12)
     assert obj == obj2
-    
+
     with pytest.raises(ValueError):
         obj.add_correlation(name='WebBook2', model='Antoine', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038)
     with pytest.raises(ValueError):
         obj.add_correlation(name='WebBook', model='Antoine', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038, C=-53.893)
     with pytest.raises(ValueError):
         obj.add_correlation(name='WebBook4', model='NOTAMODEL', Tmin=177.70, Tmax=264.93,  A=3.45604+5, B=1044.038, C=-53.893)
-        
-    
+
+
     # Test with the new 'coefficients' input method
     obj = VaporPressure(Antoine_parameters={'WebBook': {'coefficients': [8.45604, 1044.038, -53.893],
                                                     'Tmin': 177.7, 'Tmax': 264.93}})
@@ -664,29 +679,29 @@ def test_VaporPressure_extrapolate_derivatives():
     assert_close(obj.T_dependent_property_derivative(230), 1.4571835115958078, rtol=1e-11)
     assert_close(obj.T_dependent_property_derivative(230, order=2), 0.14109259717547848, rtol=1e-11)
     assert_close(obj.T_dependent_property_derivative(230, order=3), 0.012236116569167774, rtol=1e-11)
-    
+
     assert_close(obj.T_dependent_property_derivative(700, order=1), 403088.9468522063, rtol=1e-8)
     assert_close(obj.T_dependent_property_derivative(700, order=2), 2957.4520772886904, rtol=1e-8)
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_weird_signatures():
-    from thermo.utils import PROPERTY_TRANSFORM_LN, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_D2_X
+    from thermo.utils import PROPERTY_TRANSFORM_D2_X, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_LN
 
     obj = VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
-    
+
     # Within range
     assert_close(obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_LN),
                  log(obj.T_dependent_property(300)))
-    
+
     assert_close(obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D_X),
                  obj.T_dependent_property_derivative(300)/obj.T_dependent_property(300))
-    
+
     assert_close(obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D2_X),
                  obj.T_dependent_property_derivative(300, 2)/obj.T_dependent_property(300))
-    
+
     dln = derivative(lambda T: log(obj(T)), 300, dx=300*1e-6)
     assert_close(dln, obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_DLN))
-    
+
     dln = derivative(lambda T: log(obj(T)), 300, n=2, dx=300*1e-5)
     assert_close(dln, obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D2LN), rtol=1e-5)
 
@@ -696,43 +711,43 @@ def test_VaporPressure_weird_signatures():
         for T in (100, 1000):
             assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN),
                          log(obj.T_dependent_property(T)))
-        
+
             assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D_X),
                          obj.T_dependent_property_derivative(T)/obj.T_dependent_property(T))
-        
+
             assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2_X),
                          obj.T_dependent_property_derivative(T, 2)/obj.T_dependent_property(T))
-        
+
             dln = derivative(lambda T: log(obj(T)), T, dx=T*1e-6)
             assert_close(dln, obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_DLN))
-        
+
             dln = derivative(lambda T: log(obj(T)), T, n=2, dx=T*1e-5)
             assert_close(dln, obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2LN), rtol=4e-4)
-    
+
 @pytest.mark.meta_T_dept
 def test_VaporPressure_WebBook():
     obj = VaporPressure(CASRN='7440-57-5')
     obj.method = 'ANTOINE_WEBBOOK'
     assert_close(obj(3000), 36784.98996094166, rtol=1e-13)
-    
+
 @pytest.mark.meta_T_dept
 def test_VaporPressure_IAPWS95():
 
-    water = VaporPressure(CASRN="7732-18-5", Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344, 
+    water = VaporPressure(CASRN="7732-18-5", Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344,
                           extrapolation="AntoineAB|DIPPR101_ABC", method="IAPWS")
     assert water(3000) is not None
-    assert water(2000) > water(600) 
-    
-    assert water(20) > water(10) 
-    assert water(10) > water(4) 
+    assert water(2000) > water(600)
+
+    assert water(20) > water(10)
+    assert water(10) > water(4)
     assert_close(water(400), 245769.3455657166, rtol=1e-10)
-    
+
 
 @pytest.mark.meta_T_dept
 def test_accurate_vapor_pressure_mercury():
     obj = VaporPressure(CASRN='7439-97-6')
     assert_close(obj(333.15), 3.508170, rtol=1e-7)
-    
+
     new = VaporPressure.from_json(json.loads(json.dumps(obj.as_json())))
     assert new == obj
 

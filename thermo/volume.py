@@ -143,7 +143,19 @@ from fluids.numerics import exp, horner, horner_and_der2, isnan, linspace, np, p
 from thermo import electrochem
 from thermo.coolprop import CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_density
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, LINEAR, VDI_PPDS, VDI_TABULAR, HEOS_FIT, NEGLECT_P, MixtureProperty, TDependentProperty, TPDependentProperty
+from thermo.utils import (
+    COOLPROP,
+    DIPPR_PERRY_8E,
+    EOS,
+    HEOS_FIT,
+    LINEAR,
+    NEGLECT_P,
+    VDI_PPDS,
+    VDI_TABULAR,
+    MixtureProperty,
+    TDependentProperty,
+    TPDependentProperty,
+)
 from thermo.vapor_pressure import VaporPressure
 
 

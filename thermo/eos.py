@@ -1000,11 +1000,11 @@ class GCEOS:
             s += f'{k}={v}, '
 
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            s += f'P={repr(self.P)}, V={repr(self.V)}'
+            s += f'P={self.P!r}, V={repr(self.V)}'
         elif self.V is not None:
-            s += f'T={repr(self.T)}, V={repr(self.V)}'
+            s += f'T={self.T!r}, V={repr(self.V)}'
         else:
-            s += f'T={repr(self.T)}, P={repr(self.P)}'
+            s += f'T={self.T!r}, P={repr(self.P)}'
         s += ')'
         return s
 
@@ -1285,7 +1285,7 @@ class GCEOS:
                 extra = ', zs is %s' %(self.zs)
             else:
                 extra = ''
-            raise ValueError(f'No acceptable roots were found; the roots are {str(Vs)}, T is {str(self.T)} K, P is {str(self.P)} Pa, a_alpha is {str([self.a_alpha])}, b is {str([self.b])}{extra}')
+            raise ValueError(f'No acceptable roots were found; the roots are {Vs!s}, T is {str(self.T)} K, P is {str(self.P)} Pa, a_alpha is {str([self.a_alpha])}, b is {str([self.b])}{extra}')
 
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha,

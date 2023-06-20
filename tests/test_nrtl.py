@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,22 +17,23 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-from math import exp, log
-import pytest
+import pickle
+from math import exp
+from random import random
+
 import numpy as np
-from fluids.constants import calorie, R
+import pytest
 from chemicals.rachford_rice import *
 from chemicals.utils import object_data
-from thermo.mixture import Mixture
-from thermo.nrtl import NRTL
-from random import random
+from fluids.constants import R, calorie
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, derivative, hessian, jacobian, linspace, normalize
+
 from thermo import *
-import numpy as np
-from fluids.numerics import jacobian, hessian, derivative, normalize, assert_close, assert_close1d, assert_close2d, linspace
+from thermo.nrtl import NRTL
 from thermo.test_utils import check_np_output_activity
-import pickle
 
 
 def test_NRTL_gammas():
@@ -420,7 +420,8 @@ def test_NRTL_numpy_output():
 
 def test_NRTL_numpy_output_correct_array_internal_ownership():
     '''Without the array calls and the order bit, performance was probably bad
-    and pypy gave a different object hash.'''
+    and pypy gave a different object hash.
+    '''
     alphas = [[[0.0, 2e-05], [0.2937, 7e-05], [0.2999, 0.0001]],
      [[0.2937, 1e-05], [0.0, 4e-05], [0.3009, 8e-05]],
      [[0.2999, 1e-05], [0.3009, 3e-05], [0.0, 5e-05]]]
@@ -467,7 +468,7 @@ def test_NRTL_missing_inputs():
     xs = [.2, .3, .5]
     GE = NRTL(T, xs, tau_coeffs=taus)
     assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
-    
+
     GE = NRTL(T, xs, taus)
     assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
 
@@ -486,7 +487,7 @@ def test_NRTL_chemsep():
     GE = NRTL(T=T, xs=xs, ABEFGHCD=ABEFGHCD)
     gammas = GE.gammas()
     assert_close1d(gammas, [1.985383485664009, 1.146380779201308], rtol=1e-7)
-    
+
     # Table of values right from ChemSep
     gammas_ethanol = [5.66232, 4.283, 3.3749, 2.75365, 2.31475, 1.99622, 1.75984, 1.58121, 1.44425, 1.33807, 1.25512, 1.19003, 1.13894, 1.09896, 1.06796, 1.0443, 1.02671, 1.0142, 1.00598, 1.00142, 1]
     gammas_water = [1, 1.00705, 1.02657, 1.05673, 1.09626, 1.14429, 1.20021, 1.26357, 1.33405, 1.41139, 1.49541, 1.58593, 1.68281, 1.78591, 1.89509, 2.0102, 2.1311, 2.25761, 2.38956, 2.52675, 2.66895]
@@ -497,7 +498,7 @@ def test_NRTL_chemsep():
         gammas = GE2.gammas()
         assert_close(gammas[0], gammas_ethanol[i], rtol=1e-5)
         assert_close(gammas[1], gammas_water[i], rtol=1e-5)
-    
+
 def test_NRTL_partial_inputs():
     from fluids.constants import R, calorie
     N = 2
@@ -508,7 +509,7 @@ def test_NRTL_partial_inputs():
     GE = NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs)
     gammas_expect = [1.936051651447544, 1.1536630452052914]
     assert_close1d(GE.gammas(), gammas_expect, rtol=1e-13)
-    
+
     # String tests
     s = str(GE)
     assert 'tau_cs' not in s
@@ -516,97 +517,97 @@ def test_NRTL_partial_inputs():
 
     with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, alpha_ds=[[0],[.2974, 0]])
-        
+
     with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, tau_es=[[0],[.2974, 0]])
 
-    with pytest.raises(ValueError):        
+    with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, tau_es=[[0, 3]])
-        
-    with pytest.raises(ValueError):        
+
+    with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, tau_es=[None, 3])
-        
+
     with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, ABEFGHCD=(tau_bs,))
-        
+
 def test_NRTL_ideal_ones():
     T = 70.0 + 273.15
     xs = [0.252, 0.748]
     GE = NRTL(T=T, xs=xs)
     assert_close1d(GE.gammas(), [1.0, 1.0], rtol=1e-13)
-    
+
 def test_NRTL_asymmetric_alpha():
-    GE = NRTL(T=343.15, xs=[0.252, 0.748], tau_bs=[[0, -61.02497992981518], [673.2359767158717, 0]], 
+    GE = NRTL(T=343.15, xs=[0.252, 0.748], tau_bs=[[0, -61.02497992981518], [673.2359767158717, 0]],
           alpha_cs=[[0, 0.2974], [0.35, 0]])
     assert_close1d(GE.gammas(), [1.8254928709184535, 1.1578302838386516], rtol=1e-12)
-    
+
 def test_NRTL_gammas_binaries():
     gammas_calc = NRTL_gammas_binaries([0.252, 0.748, .7, .3, 1e-10, 1-1e-10], -0.1778376218266507, 1.9619291176333142, .2974, .35)
     gammas_expect = [1.825492870918453, 1.1578302838386514, 1.0471700487668791, 1.782792759735783, 5.896934778222999, 1.0]
     assert_close1d(gammas_calc, gammas_expect, rtol=1e-13)
-    
+
     # Test providing the output array
     gammas_calc_dup = NRTL_gammas_binaries([0.1, 0.9, .2, .8, .5, .5], -0.1778376218266507, 1.9619291176333142, .2974, .35)
     gammas_calc_same_array = NRTL_gammas_binaries([0.1, 0.9, .2, .8, .5, .5], -0.1778376218266507, 1.9619291176333142, .2974, .35, gammas_calc)
     assert_close1d(gammas_calc_dup, gammas_calc_same_array, rtol=1e-13)
     assert gammas_calc is gammas_calc_same_array
-    
+
 def test_NRTL_gammas_binaries_vs_object():
-    GE = NRTL(T=343.15, xs=[.2, .8], tau_bs=[[0, -61.02497992981518], [673.2359767158717, 0]], 
+    GE = NRTL(T=343.15, xs=[.2, .8], tau_bs=[[0, -61.02497992981518], [673.2359767158717, 0]],
           alpha_cs=[[0, 0.2974], [0.35, 0]])
     gammas_calc = NRTL_gammas_binaries(GE.xs, GE.taus()[0][1], GE.taus()[1][0], GE.alphas()[0][1], GE.alphas()[1][0])
     assert_close1d(gammas_calc, GE.gammas(), rtol=1e-13)
-    
-    
+
+
 def test_NRTL_gammas_binaries_jac():
     expect = [[1.1789916307339643, -0.26111310616433153, -3.3538119188199227, -6.741171640572135], [0.028442736322554146, 0.12389510256475463, -0.4669633093241108, -0.24619435634886436], [0.6880803492773255, -0.1604580514041915, -1.2421051941611734, -3.0460013493889275], [0.07924102114006676, 0.14519919300123013, -0.9799779542489997, -0.9023280256735463]]
     jac_calc = NRTL_gammas_binaries_jac([.3, .7, .4, .6], 2, 3, .2, .4)
     assert_close2d(expect, jac_calc, rtol=1e-12)
-    
+
     # The optimized code was generated as follows with sympy
-    '''
+    """
     from sympy import *
     tau01, tau10, alpha01, alpha10, x0, x1 = symbols('tau01, tau10, alpha01, alpha10, x0, x1')
-    
+
     G01 = exp(-alpha01*tau01)
     G10 = exp(-alpha10*tau10)
-    
+
     gamma0 = exp(x1**2*(tau10*(G10/(x0+x1*G10))**2 + G01*tau01/(x1+x0*G01)**2))
     gamma1 = exp(x0**2*(tau01*(G01/(x1+x0*G01))**2 + G10*tau10/(x0+x1*G10)**2))
-    
+
     outs, mains  = cse([gamma0, gamma1], optimizations='basic')
-    
+
     gammas = [simplify(gamma0), simplify(gamma1)]
     to_diff_on = [tau01, tau10, alpha01, alpha10]
-    
+
     to_cse = [diff(g, v) for v in to_diff_on for g in gammas]
     outs, mains  = cse(to_cse, optimizations='basic')
     for k, v in outs:
         print("%s = %s" %(k, v))
     print(mains)
-    '''
-    
-    
+    """
+
+
 def test_NRTL_regression_basics():
     # ethanol-water
     GE = UNIFAC.from_subgroups(T=298.15, xs=[.9, .1], chemgroups=[{1: 1, 2: 1, 14: 1}, {16: 1}])
     pts = 10
     xs_points = [[xi, 1-xi] for xi in linspace(0.01, 0.99, pts)]
     many_gammas_expect = [GE.to_T_xs(T=GE.T, xs=xs_points[i]).gammas() for i in range(pts)]
-    
+
     res, stats = NRTL.regress_binary_parameters(gammas=many_gammas_expect, xs=xs_points, use_numba=False,
                                                 symmetric_alphas=True, multiple_tries=False)
-    
+
     assert_close(res['tau12'], 0.38703486403040827)
     assert_close(res['tau21'], 1.7353246253228976)
     assert_close(res['alpha12'], 0.64618267549806)
     assert stats['MAE'] < 0.01
-    
+
 
     # Regression without symmetry
     res, stats = NRTL.regress_binary_parameters(gammas=many_gammas_expect, xs=xs_points, use_numba=False,
                                                 symmetric_alphas=False, multiple_tries=False)
-    
+
     assert_close(res['tau12'], 0.229234995043471)
     assert_close(res['tau21'], 1.974654718742523)
     assert_close(res['alpha12'], 6.207804509017788)

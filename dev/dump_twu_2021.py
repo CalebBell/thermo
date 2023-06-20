@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2021, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -20,9 +19,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-import pandas as pd
 import json
 import os
+
+import pandas as pd
+
 file_name = 'Use of 300,000 pseudo-experimental data over 1800 pure fluids to assess the performance of four cubic equations of state parameters.xlsx'
 df2 = pd.read_excel(file_name, sheet_name='export', index_col='CAS')
 
@@ -53,7 +54,7 @@ PR_C_metadata = {
     }
   }
 }
-    
+
 SRK_Twu_metadata = {
   "metadata": {
     "source": article_source,

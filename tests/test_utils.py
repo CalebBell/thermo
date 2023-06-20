@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,14 +17,15 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 import pytest
-import numpy as np
 from chemicals.utils import *
-from thermo.utils import *
+
 from thermo.stream import Stream
-from fluids.numerics import assert_close, assert_close1d, assert_close2d
+from thermo.utils import *
+
 
 def test_allclose_variable():
     x = [2.7244322249597719e-08, 3.0105683900110473e-10, 2.7244124924802327e-08, 3.0105259397637556e-10, 2.7243929226310193e-08, 3.0104990272770901e-10, 2.7243666849384451e-08, 3.0104101821236015e-10, 2.7243433745917367e-08, 3.0103707421519949e-10]
@@ -52,11 +52,11 @@ def test_allclose_variable():
 
 def test_phase_select_property():
     assert 150 == phase_select_property(phase='s', s=150, l=10)
-    assert None == phase_select_property(phase='s', l=1560.14)
+    assert None is phase_select_property(phase='s', l=1560.14)
     assert 3312 == phase_select_property(phase='g', l=1560.14, g=3312.)
     assert 1560.14 == phase_select_property(phase='l', l=1560.14, g=3312.)
-    assert None == phase_select_property(phase='two-phase', l=1560.14, g=12421.0)
-    assert None == phase_select_property(phase=None, l=1560.14, g=12421.0)
+    assert None is phase_select_property(phase='two-phase', l=1560.14, g=12421.0)
+    assert None is phase_select_property(phase=None, l=1560.14, g=12421.0)
     with pytest.raises(Exception):
         phase_select_property(phase='notalphase', l=1560.14, g=12421.0)
 
@@ -76,7 +76,7 @@ def test_identify_phase():
     assert 's' == identify_phase(T=250, P=100, Tm=273.15)
 
     # No data, returns None
-    assert None == identify_phase(T=500, P=101325)
+    assert None is identify_phase(T=500, P=101325)
 
     # No Tm, under Tb, at normal atmospheric pressure
     assert 'l' == identify_phase(T=200, P=101325, Tb=373.15)
@@ -93,7 +93,7 @@ def test_identify_phase():
     assert 'g' == identify_phase(T=400, P=101325, Tb=373.15)
 
     # Above Tb, 1 MPa == None - don't try to guess
-    assert None == identify_phase(T=400, P=1E6, Tb=373.15)
+    assert None is identify_phase(T=400, P=1000000.0, Tb=373.15)
 
     # Another wrong point - at 1 GPa, should actually be a solid as well
     assert 'l' == identify_phase(T=371, P=1E9, Tb=373.15)

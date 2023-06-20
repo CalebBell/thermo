@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,19 +17,21 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
 from random import uniform
-from numpy.testing import assert_allclose
-import pytest
-import pandas as pd
+
 import numpy as np
-from thermo.property_package import *
-from thermo.eos import *
-from thermo.eos_mix import *
+import pytest
+from numpy.testing import assert_allclose
 
 from thermo.chemical import Chemical
+from thermo.eos import *
+from thermo.eos_mix import *
 from thermo.mixture import Mixture
+from thermo.property_package import *
+
 
 @pytest.mark.deprecated
 def test_Ideal():
@@ -139,7 +140,7 @@ def test_Ideal_single_component():
     xs_expect = None
     ys_expect = [1]
     assert phase == 'g'
-    assert xs == None
+    assert xs is None
     assert_allclose(ys, ys_expect)
     assert_allclose(V_over_F, V_over_F_expect)
 
@@ -148,7 +149,7 @@ def test_Ideal_single_component():
     xs_expect = [1]
     ys_expect = None
     assert phase == 'l'
-    assert ys == None
+    assert ys is None
     assert_allclose(xs, xs_expect)
     assert_allclose(V_over_F, V_over_F_expect)
 
@@ -346,7 +347,7 @@ def test_IdealCaloric_binary_H():
             pkg_calc = pkg.enthalpy_Cpg_Hvap()
 
             # bad hack as the behavior changed after
-            if pkg.xs == None:
+            if pkg.xs is None:
                 pkg.xs = pkg.zs
 
             hand_calc =(-(1 - VF)*(pkg.xs[0]*m.EnthalpyVaporizations[0](T) + pkg.xs[1]*m.EnthalpyVaporizations[1](T))

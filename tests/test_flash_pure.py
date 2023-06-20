@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,22 +17,25 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
+import os
+import sys
+from math import *
+
+import numpy as np
 import pytest
+from chemicals.exceptions import PhaseExistenceImpossible
+from fluids.numerics import *
+from fluids.numerics import assert_close, assert_close1d
+
 import thermo
 from thermo import *
-from fluids.numerics import assert_close, assert_close1d, assert_close2d
-from fluids.numerics import *
-from math import *
-import json
-import os
-import numpy as np
-from thermo.test_utils import *
-from chemicals.exceptions import PhaseExistenceImpossible
-import sys
-from thermo.test_utils import plot_unsupported
 from thermo import eos_volume
+from thermo.test_utils import *
+from thermo.test_utils import plot_unsupported
+
 try:
     import matplotlib.pyplot as plt
 except:
@@ -44,13 +46,13 @@ pure_surfaces_dir = os.path.join(thermo.thermo_dir, '..', 'surfaces', 'pure')
 
 pure_fluids = ['water', 'methane', 'ethane', 'decane', 'ammonia', 'nitrogen', 'oxygen', 'methanol', 'eicosane', 'hydrogen']
 
-'''# Recreate the below with the following:
+"""# Recreate the below with the following:
 N = len(pure_fluids)
 m = Mixture(pure_fluids, zs=[1/N]*N, T=298.15, P=1e5)
 print(m.constants.make_str(delim=', \n', properties=('Tcs', 'Pcs', 'omegas', 'MWs', "CASs")))
 correlations = m.properties()
 print(correlations.as_poly_fit(['HeatCapacityGases']))
-'''
+"""
 constants = ChemicalConstantsPackage(Tcs=[647.14, 190.56400000000002, 305.32, 611.7, 405.6, 126.2, 154.58, 512.5,
                                           768.0,
                                           33.2
@@ -111,10 +113,6 @@ correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=Tru
 from thermo.eos_mix import eos_mix_list
 
 
-
-
-
-
 @pytest.mark.plot
 @pytest.mark.slow
 @pytest.mark.parametric
@@ -134,12 +132,12 @@ def test_PV_plot(fluid, eos, auto_range):
 
     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
 
-    '''
+    """
     m = Mixture([fluid], zs=zs, T=T, P=P)
     pure_const = m.constants
     HeatCapacityGases = m.HeatCapacityGases
     pure_props = PropertyCorrelationsPackage(pure_const, HeatCapacityGases=HeatCapacityGases)
-    '''
+    """
     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
                   HeatCapacityGases=pure_props.HeatCapacityGases)
 
@@ -161,7 +159,7 @@ def test_PV_plot(fluid, eos, auto_range):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s - %s' %('PV', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('PV', eos.__name__, auto_range, fluid)
 
     plot_fig.savefig(os.path.join(path, key + '.png'))
     # TODO log the max error to a file
@@ -221,7 +219,7 @@ def test_TV_plot(fluid, eos, auto_range):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s - %s' %('TV', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('TV', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
@@ -252,7 +250,7 @@ def test_PS_plot(fluid, eos, auto_range):
     path = os.path.join(pure_surfaces_dir, fluid, "PS")
     if not os.path.exists(path):
         os.makedirs(path)
-    key = '%s - %s - %s - %s' %('PS', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('PS', eos.__name__, auto_range, fluid)
 
 
     if eos in (TWUPRMIX, TWUSRKMIX):
@@ -309,7 +307,7 @@ def test_PH_plot(fluid, eos, auto_range):
     path = os.path.join(pure_surfaces_dir, fluid, "PH")
     if not os.path.exists(path):
         os.makedirs(path)
-    key = '%s - %s - %s - %s' %('PH', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('PH', eos.__name__, auto_range, fluid)
 
     if eos in (TWUPRMIX, TWUSRKMIX):
         msg = None
@@ -368,7 +366,7 @@ def test_PU_plot(fluid, eos, auto_range):
     path = os.path.join(pure_surfaces_dir, fluid, "PU")
     if not os.path.exists(path):
         os.makedirs(path)
-    key = '%s - %s - %s - %s' %('PU', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('PU', eos.__name__, auto_range, fluid)
 
     if eos in (TWUPRMIX, TWUSRKMIX):
         msg = None
@@ -451,7 +449,7 @@ def test_VU_plot(fluid, eos, auto_range):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s - %s' %('VU', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('VU', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
@@ -478,7 +476,6 @@ def test_VS_plot(fluid, eos, auto_range):
 
     RKMIX fails because a_alpha gets to be ~10000 and all the entropy is excess.
     '''
-
     if eos in (TWUPRMIX, TWUSRKMIX, RKMIX) and auto_range == 'physical':
         return
     T, P = 298.15, 101325.0
@@ -505,7 +502,7 @@ def test_VS_plot(fluid, eos, auto_range):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s - %s' %('VS', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('VS', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
@@ -555,7 +552,7 @@ def test_VH_plot(fluid, eos, auto_range):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s - %s' %('VH', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('VH', eos.__name__, auto_range, fluid)
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
 
@@ -584,7 +581,7 @@ def test_TS_plot(fluid, eos, auto_range):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s - %s' %('TS', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('TS', eos.__name__, auto_range, fluid)
 
     if eos in (IGMIX,):
         plot_fig = plot_unsupported('Ideal gas has no pressure dependence of entropy', color='g')
@@ -642,7 +639,7 @@ def test_TH_plot(fluid, eos, auto_range):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s - %s' %('TH', eos.__name__, auto_range, fluid)
+    key = '{} - {} - {} - {}'.format('TH', eos.__name__, auto_range, fluid)
     if eos in (IGMIX,):
         plot_fig = plot_unsupported('Ideal gas has no pressure dependence of enthalpy', color='g')
         plot_fig.savefig(os.path.join(path, key + '.png'), bbox_inches='tight')
@@ -722,7 +719,7 @@ def test_TP_VF_points_with_HSU_VF0(fluid, eos):
             resolve = flasher.flash(VF=VF, **{s: val})
             assert_close(p.T, resolve.T, rtol=rtol)
             assert_close(p.P, resolve.P, rtol=rtol)
-        
+
         for P in Ps:
             p = flasher.flash(P=P, VF=VF)
             val = getattr(p, s)()
@@ -764,7 +761,7 @@ def test_V_G_min_plot(fluid, eos):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s' %('V_G_min', eos.__name__, fluid)
+    key = '{} - {} - {}'.format('V_G_min', eos.__name__, fluid)
 
     plot_fig.savefig(os.path.join(path, key + '.png'))
     plt.close()
@@ -783,7 +780,7 @@ def test_a_alpha_plot(fluid, eos):
     path = os.path.join(pure_surfaces_dir, fluid, "a_alpha")
     if not os.path.exists(path):
         os.makedirs(path)
-    key = '%s - %s - %s' %('a_alpha', eos.__name__, fluid)
+    key = '{} - {} - {}'.format('a_alpha', eos.__name__, fluid)
 
     if eos in (IG,):
         plot_fig = plot_unsupported('Ideal gas has a_alpha of zero', color='g')
@@ -815,7 +812,7 @@ def test_Psat_plot(fluid, eos):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    key = '%s - %s - %s' %('Psat', eos.__name__, fluid)
+    key = '{} - {} - {}'.format('Psat', eos.__name__, fluid)
 
     if eos in (IG,):
         plot_fig = plot_unsupported('Ideal gas cannot have a liquid phase', color='g')
@@ -874,7 +871,7 @@ def test_V_error_plot(fluid, eos, P_range, solver):
     path = os.path.join(pure_surfaces_dir, fluid, "V_error")
     if not os.path.exists(path):
         os.makedirs(path)
-    key = '%s - %s - %s - %s' %('V_error', eos.__name__, fluid, P_range)
+    key = '{} - {} - {} - {}'.format('V_error', eos.__name__, fluid, P_range)
 
     if eos in (IG,):
         plot_fig = plot_unsupported('Ideal gas has only one volume solution', color='g')
@@ -989,7 +986,7 @@ def test_P_H_plot_ideal_Poy(fluid):
     path = os.path.join(pure_surfaces_dir, fluid, "PH")
     if not os.path.exists(path):
         os.makedirs(path)
-    key = '%s - %s - %s - %s' %('PH', "idealPoynting", "physical", fluid)
+    key = '{} - {} - {} - {}'.format('PH', "idealPoynting", "physical", fluid)
 
     T, P = 298.15, 101325.0
     zs = [1.0]
@@ -1089,7 +1086,6 @@ def test_PS_1P_vs_VL_issue0(hacks):
     '''Made me think there was something wrong with enthalpy maximization.
     However, it was just a root issue.
     '''
-
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
     correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
@@ -1939,17 +1935,17 @@ def test_methanol_inconsistent_full_example():
 
 def test_VF_SF_spec_bound_0_1_and_negative_TPV():
     from thermo.heat_capacity import POLING_POLY
-    
+
     CpObj = HeatCapacityGas(CASRN='67-56-1')
     CpObj.method = POLING_POLY
     constants = ChemicalConstantsPackage(Tcs=[512.5], Pcs=[8084000.0], omegas=[0.559], MWs=[32.04186], CASs=['67-56-1'])
     HeatCapacityGases = [CpObj]
-    
+
     correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
     liquid = CEOSLiquid(PRMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
     gas = CEOSGas(PRMIX, HeatCapacityGases=HeatCapacityGases, eos_kwargs=eos_kwargs)
-    
+
     flasher = FlashPureVLS(constants, correlations, gas=gas, liquids=[liquid], solids=[])
     for VF in (-1, 2, 1.1, 1.0000000000001, -1e-200, 100, -1e-100, 1e200):
         with pytest.raises(ValueError):
@@ -1964,72 +1960,72 @@ def test_VF_SF_spec_bound_0_1_and_negative_TPV():
             with pytest.raises(ValueError):
                 kwargs = {s: 10.0, 'VF': VF}
                 res = flasher.flash(**kwargs)
-    
+
             with pytest.raises(ValueError):
                 kwargs = {s: 10.0, 'SF': VF}
                 res = flasher.flash(**kwargs)
-                
-    with pytest.raises(ValueError):              
-        flasher.flash(T=300.0, V=-2)
-        
-    with pytest.raises(ValueError):              
-        flasher.flash(T=300.0, P=-2)
-        
-    with pytest.raises(ValueError):              
+
+    with pytest.raises(ValueError):
         flasher.flash(T=300.0, V=-2)
 
-    with pytest.raises(ValueError):              
+    with pytest.raises(ValueError):
+        flasher.flash(T=300.0, P=-2)
+
+    with pytest.raises(ValueError):
+        flasher.flash(T=300.0, V=-2)
+
+    with pytest.raises(ValueError):
         flasher.flash(T=300.0, V=0)
-        
-    with pytest.raises(ValueError):              
+
+    with pytest.raises(ValueError):
         flasher.flash(T=300.0, P=0)
-        
-    with pytest.raises(ValueError):              
+
+    with pytest.raises(ValueError):
         flasher.flash(T=300.0, V=0)
-        
-        
+
+
 def test_mass_inputs_flash_and_rho():
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))]
     correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     kwargs = dict(eos_kwargs=dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas),
                  HeatCapacityGases=HeatCapacityGases)
-    
+
     P = 1e5
     T = 200
     liquid = CEOSLiquid(PR78MIX, T=T, P=P, zs=[1], **kwargs)
     gas = CEOSGas(PR78MIX, T=T, P=P, zs=[1], **kwargs)
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], []) #
-    
+
     res = flasher.flash(T=T, P=P, zs=[1])
-    
+
     check_base = flasher.flash(P=P, V=res.V())
     assert_close(res.T, check_base.T)
-    
+
     check_rho = flasher.flash(P=P, rho=res.rho())
     assert_close(res.T, check_rho.T)
-    
+
     check_rho_mass = flasher.flash(P=P, rho_mass=res.rho_mass())
     assert_close(res.T, check_rho_mass.T)
-    
-    
+
+
     check_H_mass = flasher.flash(P=P, H_mass=res.H_mass())
     assert_close(res.T, check_H_mass.T)
-    
-    
+
+
     check_S_mass = flasher.flash(P=P, S_mass=res.S_mass())
     assert_close(res.T, check_S_mass.T)
-    
-    
+
+
     check_U_mass = flasher.flash(P=P, U_mass=res.U_mass())
     assert_close(res.T, check_U_mass.T)
-    
-    
+
+
     # Hit up the vapor fractions
     res = flasher.flash(VF=.5, P=P, zs=[1])
-    
+
     check_A_mass = flasher.flash(VF=res.VF, A_mass=res.A_mass())
     assert_close(res.T, check_A_mass.T)
-    
+
     check_G_mass = flasher.flash(VF=res.VF, G_mass=res.G_mass())
     assert_close(res.T, check_G_mass.T)

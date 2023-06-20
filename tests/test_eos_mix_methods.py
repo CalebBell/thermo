@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -18,18 +17,17 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.'''
+SOFTWARE.
+'''
 
-import pytest
-from thermo.eos import *
-from thermo.eos_mix import *
-from thermo.eos_alpha_functions import *
-from thermo.eos_mix_methods import *
-from fluids.constants import R
-from fluids.numerics import jacobian, hessian, assert_close, assert_close1d, assert_close2d, assert_close3d, derivative
-from math import log, exp, sqrt
 import numpy as np
-from thermo.eos_mix_methods import a_alpha_quadratic_terms, a_alpha_and_derivatives_quadratic_terms
+from fluids.numerics import assert_close, assert_close1d, assert_close2d
+
+from thermo.eos import *
+from thermo.eos_alpha_functions import *
+from thermo.eos_mix import *
+from thermo.eos_mix_methods import *
+from thermo.eos_mix_methods import a_alpha_and_derivatives_quadratic_terms, a_alpha_quadratic_terms
 
 
 def test_a_alpha_quadratic_terms():

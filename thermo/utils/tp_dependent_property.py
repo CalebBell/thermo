@@ -23,9 +23,9 @@ SOFTWARE.
 from fluids.numerics import derivative, linspace
 from fluids.numerics import numpy as np
 
-from thermo.utils.t_dependent_property import TDependentProperty
 from thermo.utils.functional import has_matplotlib
 from thermo.utils.names import NEGLECT_P
+from thermo.utils.t_dependent_property import TDependentProperty
 
 __all__ = ['TPDependentProperty']
 
