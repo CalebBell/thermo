@@ -354,7 +354,7 @@ def test_VaporPressure_fitting9_Yaws_Psat():
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_VaporPressure_mandatory_arguments_for_all():
-    kwargs = {'Ts': [293.12, 303.13, 313.16, 323.08, 333.13, 343.1, 353.14, 363.17, 373.14, 383.21, 393.11, 403.1, 413.14, 423.14, 433.06, 443.01, 454.15], 'data': [102100.0, 145300.0, 202100.0, 274700.0, 368700.0, 487100.0, 636400.0, 822200.0, 1048500.0, 1327100.0, 1659300.0, 2060200.0, 2541300.0, 3111500.0, 3778100.0, 4566000.0, 5611600.0], 'model': 'Wagner', 'model_kwargs': {'Tc': 461.0, 'Pc': 6484800.0}, 'params_points_max': 2, 'model_selection': 'min(BIC, AICc)', 'do_statistics': True, 'use_numba': True, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+    kwargs = {'Ts': [293.12, 303.13, 313.16, 323.08, 333.13, 343.1, 353.14, 363.17, 373.14, 383.21, 393.11, 403.1, 413.14, 423.14, 433.06, 443.01, 454.15], 'data': [102100.0, 145300.0, 202100.0, 274700.0, 368700.0, 487100.0, 636400.0, 822200.0, 1048500.0, 1327100.0, 1659300.0, 2060200.0, 2541300.0, 3111500.0, 3778100.0, 4566000.0, 5611600.0], 'model': 'Wagner', 'model_kwargs': {'Tc': 461.0, 'Pc': 6484800.0}, 'params_points_max': 2, 'model_selection': 'min(BIC, AICc)', 'do_statistics': True, 'use_numba': False, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
     VaporPressure.fit_data_to_model(**kwargs)
 
 
