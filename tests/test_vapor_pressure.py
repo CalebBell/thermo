@@ -402,6 +402,35 @@ def test_VaporPressure_fitting_K_fold():
     assert res['B'] == 0
     assert len(res) == 7
 
+    # Another case a single point was returned instead of a linear fit
+    kwargs = {'Ts': [281.15, 287.15, 293.15, 292.95, 319.04999999999995], 
+            'data': [0.017215, 0.016550000000000002, 0.015880000000000002, 0.014199999999999999, 0.01137], 
+            'model': 'DIPPR100', 'model_kwargs': {}, 'params_points_max': 2, 
+            'model_selection': 'min(BIC, AICc, KFold(5))', 'do_statistics': True, 
+            'use_numba': False, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+    res, stats = TDependentProperty.fit_data_to_model(**kwargs)
+    res
+
+    res, stats = TDependentProperty.fit_data_to_model(**kwargs)
+    assert res['C'] == 0
+    assert_close(res['A'], 0.06072849925273897, rtol=1e-3)
+    assert_close(res['B'], -0.00015502901100344948, rtol=1e-3)
+
+    # aic and bic went to three parameters but only 2 are justified
+    # Implemented rounding to make this one work
+    kwargs = {'Ts': [196.34999999999997, 208.45, 215.95, 223.14999999999998, 227.64999999999998],
+            'data': [0.02639, 0.02384, 0.0228, 0.021570000000000002, 0.02077], 
+            'model': 'DIPPR100', 'model_kwargs': {}, 'params_points_max': 2, 
+            'model_selection': 'min(BIC, AICc, KFold(5))', 'do_statistics': True, 
+            'use_numba': False, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+
+    res, stats = TDependentProperty.fit_data_to_model(**kwargs)
+    assert res['C'] == 0
+    assert_close(res['A'], 0.06084909088165748, rtol=1e-3)
+    assert_close(res['B'], -0.00017626378088590118, rtol=1e-3)
+
+
+
 
 
 

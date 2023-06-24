@@ -210,7 +210,7 @@ from thermo.eos_alpha_functions import (
     Twu91_alpha_pure,
     Yu_Lu_alpha_pure,
 )
-from thermo.fitting import BIC, AICc, fit_customized, assemble_fit_test_groups, split_data
+from thermo.fitting import BIC, AICc, fit_customized, assemble_fit_test_groups, split_data, round_to_digits
 from thermo.utils.functional import has_matplotlib
 from thermo.utils.names import (
     CHEB_FIT,
@@ -2009,7 +2009,6 @@ class TDependentProperty:
                     a_model_kwargs.update(model_kwargs)
                     all_model_kwargs.append(a_model_kwargs)
             all_fits = []
-            mae_log = False
             for the_fit_parameters, a_model_kwargs in zip(all_fit_parameter_options, all_model_kwargs):
                 fitting_all_kwargs = dict(Ts=Ts, data=data, model=model, model_kwargs=a_model_kwargs,
                           fit_method=fit_method, sigma=sigma, use_numba=use_numba,
@@ -2020,15 +2019,15 @@ class TDependentProperty:
                           model_selection=None)
                 fit, stats = cls.fit_data_to_model(**fitting_all_kwargs)
                 # compute the sum of squared error
-                if mae_log:
-                    SSE = np.log(stats['calc']) - np.log(data)
-                else:
-                    SSE = stats['calc'] - data
+                SSE = stats['calc'] - data
                 SSE *= SSE
                 SSE = float(SSE.sum())
                 used_fit_parameters = len(the_fit_parameters) + len(required_args_fitting)
                 aic = AICc(parameters=used_fit_parameters, observations=pts, SSE=SSE)
                 bic = BIC(parameters=used_fit_parameters, observations=pts, SSE=SSE)
+
+                aic = round_to_digits(aic, 5)
+                bic = round_to_digits(bic, 5)
                 if do_K_fold:
                     func_call = functions['f']
                     K_fold_maes = []
@@ -2040,16 +2039,12 @@ class TDependentProperty:
                         fitting_all_kwargs['data'] = train_data_groups[fold_idx]
                         fold_fit, fold_stats = cls.fit_data_to_model(**fitting_all_kwargs)
                         cross_calc_pts = [func_call(T, **fold_fit) for T in test_T_groups[fold_idx]]
-                        if mae_log:
-                            mae = mean_squared_error(np.log(cross_calc_pts), np.log(test_data_groups[fold_idx]))
-                        else:
-                            mae = mean_squared_error(cross_calc_pts, test_data_groups[fold_idx])
+                        mae = mean_squared_error(cross_calc_pts, test_data_groups[fold_idx])
                         K_fold_maes.append(mae)
                     k_fold_mae = sum(K_fold_maes)/K_fold_count
                 else:
                     k_fold_mae = SSE
-
-
+                k_fold_mae = round_to_digits(k_fold_mae, 5)
 
 
                 all_fits.append((fit, stats, aic, bic, used_fit_parameters, k_fold_mae))

@@ -80,7 +80,7 @@ def split_data(x, y, folds=5, seed=42):
         fold_ys[l].append(y[i])
     
     return fold_xs, fold_ys
-    
+
 def assemble_fit_test_groups(x_groups, y_groups):
     folds = len(x_groups)
     train_x_groups = []
@@ -123,6 +123,10 @@ def BIC(parameters, observations, SSE):
     if SSE == 0.0:
         return -1e100
     return n*log(SSE/n) + k*log(n) + n*log(2*pi) + n
+
+def round_to_digits(number, n=7):
+    # TODO move this to fluids numerics
+    return float(f'{number:.{n}g}')
 
 
 ChebTools = None
