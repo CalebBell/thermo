@@ -454,9 +454,7 @@ PROPERTY_TRANSFORM_D2LN = 'd2lnxdT2'
 PROPERTY_TRANSFORM_D_X = 'dxdToverx'
 PROPERTY_TRANSFORM_D2_X = 'd2xdT2overx'
 
-
-
-
+skipped_parameter_combinations = {'REFPROP_sigma': set([('sigma1',), ('sigma1', 'n1', 'sigma2')])}
 
 
 class TDependentProperty:
@@ -2001,13 +1999,21 @@ class TDependentProperty:
                 else:
                     do_K_fold = False
 
+
+            model_skipped_parameter_combinations = skipped_parameter_combinations.get(model, None)
+
             for i in range(start_idx, len(optional_args)+1):
                 our_fit_parameters = optional_args[0:i]
-                if len(our_fit_parameters) <= pts:
+                if (len(our_fit_parameters)+params_points_max) <= (pts):
+                    if model_skipped_parameter_combinations is not None and tuple(our_fit_parameters) in model_skipped_parameter_combinations:
+                        continue
+
                     all_fit_parameter_options.append(our_fit_parameters)
                     a_model_kwargs = {k: 0.0 for k in optional_args[i:]}
                     a_model_kwargs.update(model_kwargs)
                     all_model_kwargs.append(a_model_kwargs)
+                else:
+                    break
             all_fits = []
             for the_fit_parameters, a_model_kwargs in zip(all_fit_parameter_options, all_model_kwargs):
                 fitting_all_kwargs = dict(Ts=Ts, data=data, model=model, model_kwargs=a_model_kwargs,
@@ -2034,10 +2040,11 @@ class TDependentProperty:
                     fitting_all_kwargs['guesses'] = fit
                     # Always for K fold use 1 try
                     fitting_all_kwargs['multiple_tries'] = False
+                    fitting_all_kwargs['do_statistics'] = False
                     for fold_idx in range(K_fold_count):
                         fitting_all_kwargs['Ts'] = train_T_groups[fold_idx]
                         fitting_all_kwargs['data'] = train_data_groups[fold_idx]
-                        fold_fit, fold_stats = cls.fit_data_to_model(**fitting_all_kwargs)
+                        fold_fit = cls.fit_data_to_model(**fitting_all_kwargs)
                         cross_calc_pts = [func_call(T, **fold_fit) for T in test_T_groups[fold_idx]]
                         mae = mean_squared_error(cross_calc_pts, test_data_groups[fold_idx])
                         K_fold_maes.append(mae)
@@ -2068,23 +2075,27 @@ class TDependentProperty:
                     best_fit, stats  = best_fit_bic, stats_bic
             elif model_selection.startswith('min(BIC, AICc, KFold'):
                 sel = lambda x: x[2]
-                best_fit_aic, stats_aic, _, _, parameters_aic, _ = min(all_fits, key=sel)
+                best_fit_aic, stats_aic, aic_aic, _, parameters_aic, _ = min(all_fits, key=sel)
                 sel = lambda x: x[3]
-                best_fit_bic, stats_bic, _, _, parameters_bic, _ = min(all_fits, key=sel)
-                if parameters_aic <= parameters_bic:
+                best_fit_bic, stats_bic, _, bic_bic, parameters_bic, _ = min(all_fits, key=sel)
+                if parameters_aic <= parameters_bic and not (1e200 in [v[2] for v in all_fits]) and not parameters_aic == 1:
+                    # aic score is unreliable for points = parameters + 1
                     best_fit, stats  = best_fit_aic, stats_aic
                 else:
                     best_fit, stats  = best_fit_bic, stats_bic
-                sel = lambda x: x[5]
-                best_fit_kf, stats_kf, _, _, parameters_kf, _ = min(all_fits, key=sel)
-                if parameters_kf < min(parameters_aic, parameters_bic):
-                    if parameters_kf == 1 and (min(parameters_aic, parameters_bic) > 1):
-                        # do not allow K fold to remove any fit
-                        # force it to be at least 2 parameters
-                        # Of course this only works if one of the other methods selected a higher degree
-                        best_fit, stats = all_fits[1][0], all_fits[1][1]
-                    else:
-                        best_fit, stats  = best_fit_kf, stats_kf
+                if do_K_fold:
+                    sel = lambda x: x[5]
+                    best_fit_kf, stats_kf, _, _, parameters_kf, _ = min(all_fits, key=sel)
+                    if parameters_kf < min(parameters_aic, parameters_bic) or parameters_kf == 2:
+                        # Let the K fold validation force the fit to be linear
+                        if parameters_kf == 1 and (min(parameters_aic, parameters_bic) > 1):
+                            # do not allow K fold to remove any fit
+                            # force it to be at least 2 parameters
+                            # Of course this only works if one of the other methods selected a higher degree
+                            best_fit, stats = all_fits[1][0], all_fits[1][1]
+                        else:
+                            best_fit, stats  = best_fit_kf, stats_kf
+
             elif 'KFold' in model_selection:
                 sel = lambda x: x[5]
                 best_fit, stats, aic, bic, parameters, k_fold_mae = min(all_fits, key=sel)

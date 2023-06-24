@@ -429,6 +429,32 @@ def test_VaporPressure_fitting_K_fold():
     assert_close(res['A'], 0.06084909088165748, rtol=1e-3)
     assert_close(res['B'], -0.00017626378088590118, rtol=1e-3)
 
+    # aic numerical problem was causing one parameter
+    kwargs = {'Ts': [158.84999999999997, 168.64999999999998, 178.84999999999997],
+            'data': [0.029500000000000002, 0.027600000000000003, 0.0257],
+            'model': 'DIPPR100', 'model_kwargs': {}, 'params_points_max': 1, 
+            'model_selection': 'min(BIC, AICc, KFold(5))', 'do_statistics': True,
+            'use_numba': False, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+
+    res, stats = TDependentProperty.fit_data_to_model(**kwargs)
+    assert res['C'] == 0
+    assert_close(res['A'], 0.059664558032730346, rtol=1e-3)
+    assert_close(res['B'], -0.0001899746698887944, rtol=1e-3)
+
+    # aic not working was causing the wrong choice
+    kwargs = {'Ts': [300.0, 313.149993896484, 293.149993896484, 303.149993896484],
+    'data': [0.155, 0.14644, 0.15774, 0.15983], 'model': 'DIPPR100', 'model_kwargs': {},
+    'params_points_max': 2, 'model_selection': 'min(BIC, AICc, KFold(5))', 'do_statistics': True,
+    'use_numba': False, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+
+
+    res, stats = TDependentProperty.fit_data_to_model(**kwargs)
+    assert res['C'] == 0
+    assert_close(res['A'], 0.3205950796110783, rtol=1e-3)
+    assert_close(res['B'], -0.000548489254194966, rtol=1e-3)
+
+
+
 
 
 
