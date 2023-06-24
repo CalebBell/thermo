@@ -2029,6 +2029,9 @@ class TDependentProperty:
                 if do_K_fold:
                     func_call = functions['f']
                     K_fold_maes = []
+                    fitting_all_kwargs['guesses'] = fit
+                    # Always for K fold use 1 try
+                    fitting_all_kwargs['multiple_tries'] = False
                     for fold_idx in range(K_fold_count):
                         fitting_all_kwargs['Ts'] = train_T_groups[fold_idx]
                         fitting_all_kwargs['data'] = train_data_groups[fold_idx]
@@ -2077,7 +2080,12 @@ class TDependentProperty:
                 sel = lambda x: x[5]
                 best_fit_kf, stats_kf, _, _, parameters_kf, _ = min(all_fits, key=sel)
                 if parameters_kf <= min(parameters_aic, parameters_bic):
-                    best_fit, stats  = best_fit_kf, stats_kf
+                    if parameters_kf == 1:
+                        # do not allow K fold to remove any fit
+                        # force it to be at least 2 parameters
+                        best_fit, stats = all_fits[1][0], all_fits[1][1]
+                    else:
+                        best_fit, stats  = best_fit_kf, stats_kf
             elif 'KFold' in model_selection:
                 sel = lambda x: x[5]
                 best_fit, stats, aic, bic, parameters, k_fold_mae = min(all_fits, key=sel)

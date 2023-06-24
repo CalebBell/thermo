@@ -361,9 +361,9 @@ def test_VaporPressure_mandatory_arguments_for_all():
 @pytest.mark.meta_T_dept
 def test_VaporPressure_fitting_K_fold():
     kwargs = {'Ts': [223.149993896484, 223.149993896484, 273.149993896484], 
- 'data': [0.1637, 0.1622, 0.1453], 'model': 'DIPPR100', 'model_kwargs': {}, 
- 'params_points_max': 1, 'model_selection': 'KFold(3)', 'do_statistics': True, 
- 'use_numba': False, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+            'data': [0.1637, 0.1622, 0.1453], 'model': 'DIPPR100', 'model_kwargs': {}, 
+            'params_points_max': 1, 'model_selection': 'KFold(3)', 'do_statistics': True, 
+            'use_numba': False, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
 
     res, stats = TDependentProperty.fit_data_to_model(**kwargs)
     assert res['C'] == 0
@@ -379,6 +379,18 @@ def test_VaporPressure_fitting_K_fold():
     assert res['C'] == 0
     assert_close(res['A'], 0.17557973443592295, rtol=1e-3)
     assert_close(res['B'],-0.0002249933993404257, rtol=1e-3)
+
+    # Another case where only A was returned
+    kwargs = {'Ts': [288.15, 293.15, 303.15, 293.15, 298.15], 
+          'data': [0.03286, 0.03232, 0.03127, 0.032100000000000004, 0.0314], 
+          'model': 'DIPPR100', 'model_kwargs': {}, 'params_points_max': 2, 
+          'model_selection': 'min(BIC, AICc, KFold(5))', 'do_statistics': True, 'use_numba': False, 
+          'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+    res, stats = TDependentProperty.fit_data_to_model(**kwargs)
+    assert res['C'] == 0
+    assert_close(res['A'], 0.06491057692331224, rtol=1e-3)
+    assert_close(res['B'], -0.0001115384615387056, rtol=1e-3)
+
 
 
 @pytest.mark.fitting
