@@ -57,11 +57,51 @@ try:
 except:
     pass
 try:
-    from random import uniform
+    from random import uniform, Random
 except:
     pass
 
 from math import log, pi
+
+def split_data(x, y, folds=5, seed=42):
+    pts = len(x)
+    if pts != len(y):
+        raise ValueError("Wrong size")
+    z = list(range(pts))
+    
+    Random(seed).shuffle(z)
+    # go one by one and assign data to each group
+    
+    fold_xs = [[] for _ in range(folds)]
+    fold_ys = [[] for _ in range(folds)]
+    for i in range(pts):
+        l = i%folds
+        fold_xs[l].append(x[i])
+        fold_ys[l].append(y[i])
+    
+    return fold_xs, fold_ys
+    
+def assemble_fit_test_groups(x_groups, y_groups):
+    folds = len(x_groups)
+    train_x_groups = []
+    test_x_groups = []
+    train_y_groups = []
+    test_y_groups = []
+    for i in range(folds):
+        x_test = x_groups[i]
+        y_test = y_groups[i]
+        test_x_groups.append(x_test)
+        test_y_groups.append(y_test)
+        x_train = []
+        y_train = []
+        for j in range(folds):
+            if j != i:
+                x_train.extend(x_groups[j])
+                y_train.extend(y_groups[j])
+        
+        train_x_groups.append(x_train)
+        train_y_groups.append(y_train)
+    return (train_x_groups, test_x_groups, train_y_groups, test_y_groups)
 
 
 def AICc(parameters, observations, SSE):

@@ -357,6 +357,28 @@ def test_VaporPressure_mandatory_arguments_for_all():
     kwargs = {'Ts': [293.12, 303.13, 313.16, 323.08, 333.13, 343.1, 353.14, 363.17, 373.14, 383.21, 393.11, 403.1, 413.14, 423.14, 433.06, 443.01, 454.15], 'data': [102100.0, 145300.0, 202100.0, 274700.0, 368700.0, 487100.0, 636400.0, 822200.0, 1048500.0, 1327100.0, 1659300.0, 2060200.0, 2541300.0, 3111500.0, 3778100.0, 4566000.0, 5611600.0], 'model': 'Wagner', 'model_kwargs': {'Tc': 461.0, 'Pc': 6484800.0}, 'params_points_max': 2, 'model_selection': 'min(BIC, AICc)', 'do_statistics': True, 'use_numba': False, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
     VaporPressure.fit_data_to_model(**kwargs)
 
+@pytest.mark.fitting
+@pytest.mark.meta_T_dept
+def test_VaporPressure_fitting_K_fold():
+    kwargs = {'Ts': [223.149993896484, 223.149993896484, 273.149993896484], 
+ 'data': [0.1637, 0.1622, 0.1453], 'model': 'DIPPR100', 'model_kwargs': {}, 
+ 'params_points_max': 1, 'model_selection': 'KFold(3)', 'do_statistics': True, 
+ 'use_numba': False, 'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+
+    res, stats = TDependentProperty.fit_data_to_model(**kwargs)
+    assert res['C'] == 0
+    assert_close(res['A'], 0.24172194784598627, rtol=1e-3)
+    assert_close(res['B'], -0.00035300000000077007, rtol=1e-3)
+
+    # Case wheer only A was being returned
+    kwargs = {'Ts': [278.149993896484, 283.149993896484, 298.149993896484, 323.149993896484, 343.149993896484], 
+          'data': [0.113, 0.11187, 0.1085, 0.10287, 0.098375], 'model': 'DIPPR100', 'model_kwargs': {}, 
+          'params_points_max': 2, 'model_selection': 'KFold(5)', 'do_statistics': True, 'use_numba': False, 
+          'multiple_tries': False, 'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+    res, stats = TDependentProperty.fit_data_to_model(**kwargs)
+    assert res['C'] == 0
+    assert_close(res['A'], 0.17557973443592295, rtol=1e-3)
+    assert_close(res['B'],-0.0002249933993404257, rtol=1e-3)
 
 
 @pytest.mark.fitting

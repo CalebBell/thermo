@@ -23,15 +23,16 @@ SOFTWARE.
 import os
 from math import exp, log
 
+import numpy as np
 import pandas as pd
 import pytest
 from chemicals import SMK
-from fluids.numerics import assert_close, assert_close1d, horner, linspace
+from fluids.numerics import assert_close, assert_close1d, assert_close2d, horner, linspace
 
 from thermo import fitting
 from thermo.eos import PR
 from thermo.fitting import *
-from thermo.fitting import FIT_CHEBTOOLS_POLY
+from thermo.fitting import FIT_CHEBTOOLS_POLY, split_data,assemble_fit_test_groups
 
 try:
     import ChebTools
@@ -39,6 +40,23 @@ try:
 except:
     has_ChebTools = False
 
+    
+def test_split_data():
+    x = (.1*np.arange(10)).tolist()
+    y = (1000*np.arange(10)).tolist()
+    part1, part2 = split_data(x, y)
+    assert_close2d(part1, [[0.0, 0.5], [0.1, 0.6000000000000001], [0.2, 0.7000000000000001], [0.30000000000000004, 0.8], [0.4, 0.9]])
+    assert_close2d(part2, [[0, 5000], [1000, 6000], [2000, 7000], [3000, 8000], [4000, 9000]])
+
+def test_assemble_fit_test_groups():
+    x = (.1*np.arange(10)).tolist()
+    y = (1000*np.arange(10)).tolist()
+    part0, part1, part2, part3 = assemble_fit_test_groups(*split_data(x, y))
+
+    assert_close2d(part0, [[0.1, 0.6000000000000001, 0.2, 0.7000000000000001, 0.30000000000000004, 0.8, 0.4, 0.9], [0.0, 0.5, 0.2, 0.7000000000000001, 0.30000000000000004, 0.8, 0.4, 0.9], [0.0, 0.5, 0.1, 0.6000000000000001, 0.30000000000000004, 0.8, 0.4, 0.9], [0.0, 0.5, 0.1, 0.6000000000000001, 0.2, 0.7000000000000001, 0.4, 0.9], [0.0, 0.5, 0.1, 0.6000000000000001, 0.2, 0.7000000000000001, 0.30000000000000004, 0.8]])
+    assert_close2d(part1, [[0.0, 0.5], [0.1, 0.6000000000000001], [0.2, 0.7000000000000001], [0.30000000000000004, 0.8], [0.4, 0.9]])
+    assert_close2d(part2, [[1000, 6000, 2000, 7000, 3000, 8000, 4000, 9000], [0, 5000, 2000, 7000, 3000, 8000, 4000, 9000], [0, 5000, 1000, 6000, 3000, 8000, 4000, 9000], [0, 5000, 1000, 6000, 2000, 7000, 4000, 9000], [0, 5000, 1000, 6000, 2000, 7000, 3000, 8000]])
+    assert_close2d(part3,[[0, 5000], [1000, 6000], [2000, 7000], [3000, 8000], [4000, 9000]])
 
 def test_poly_fit_statistics():
 

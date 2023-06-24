@@ -158,6 +158,7 @@ from fluids.numerics import (
     horner_backwards_ln_tau_and_der3,
     horner_stable,
     horner_stable_and_der,
+    mean_squared_error,
     horner_stable_and_der2,
     horner_stable_and_der3,
     horner_stable_and_der4,
@@ -209,7 +210,7 @@ from thermo.eos_alpha_functions import (
     Twu91_alpha_pure,
     Yu_Lu_alpha_pure,
 )
-from thermo.fitting import BIC, AICc, fit_customized
+from thermo.fitting import BIC, AICc, fit_customized, assemble_fit_test_groups, split_data
 from thermo.utils.functional import has_matplotlib
 from thermo.utils.names import (
     CHEB_FIT,
@@ -1987,44 +1988,99 @@ class TDependentProperty:
                     pass
             start_idx = 0 if required_args_fitting else 1
 
+            do_K_fold = 'KFold' in model_selection
+            k_fold_mae = 1e300
+            if do_K_fold:
+                K_fold_count = int(model_selection.split('KFold(', 1)[1].split(')', 1)[0])
+                # Enforce at least 2 pts per group
+                K_fold_count = min(int(pts/2), K_fold_count)
+
+                if K_fold_count > 1:
+                    train_T_groups, test_T_groups, train_data_groups, test_data_groups = assemble_fit_test_groups(*split_data(Ts, data, folds=K_fold_count))
+                else:
+                    do_K_fold = False
+
             for i in range(start_idx, len(optional_args)+1):
                 all_fit_parameter_options.append(optional_args[0:i])
                 a_model_kwargs = {k: 0.0 for k in optional_args[i:]}
                 a_model_kwargs.update(model_kwargs)
                 all_model_kwargs.append(a_model_kwargs)
             all_fits = []
+            mae_log = False
             for the_fit_parameters, a_model_kwargs in zip(all_fit_parameter_options, all_model_kwargs):
-                fit, stats = cls.fit_data_to_model(Ts=Ts, data=data, model=model, model_kwargs=a_model_kwargs,
+                fitting_all_kwargs = dict(Ts=Ts, data=data, model=model, model_kwargs=a_model_kwargs,
                           fit_method=fit_method, sigma=sigma, use_numba=use_numba,
                           do_statistics=True, guesses=guesses,
                           solver_kwargs=solver_kwargs, objective=objective,
                           multiple_tries=multiple_tries, multiple_tries_max_err=multiple_tries_max_err,
                           multiple_tries_max_objective=multiple_tries_max_objective, params_points_max=params_points_max,
                           model_selection=None)
+                fit, stats = cls.fit_data_to_model(**fitting_all_kwargs)
                 # compute the sum of squared error
-                SSE = stats['calc'] - data
+                if mae_log:
+                    SSE = np.log(stats['calc']) - np.log(data)
+                else:
+                    SSE = stats['calc'] - data
                 SSE *= SSE
-                SSE = SSE.sum()
+                SSE = float(SSE.sum())
                 used_fit_parameters = len(the_fit_parameters) + len(required_args_fitting)
                 aic = AICc(parameters=used_fit_parameters, observations=pts, SSE=SSE)
                 bic = BIC(parameters=used_fit_parameters, observations=pts, SSE=SSE)
-                all_fits.append((fit, stats, aic, bic, used_fit_parameters))
+                if do_K_fold:
+                    func_call = functions['f']
+                    K_fold_maes = []
+                    for fold_idx in range(K_fold_count):
+                        fitting_all_kwargs['Ts'] = train_T_groups[fold_idx]
+                        fitting_all_kwargs['data'] = train_data_groups[fold_idx]
+                        fold_fit, fold_stats = cls.fit_data_to_model(**fitting_all_kwargs)
+                        cross_calc_pts = [func_call(T, **fold_fit) for T in test_T_groups[fold_idx]]
+                        if mae_log:
+                            mae = mean_squared_error(np.log(cross_calc_pts), np.log(test_data_groups[fold_idx]))
+                        else:
+                            mae = mean_squared_error(cross_calc_pts, test_data_groups[fold_idx])
+                        K_fold_maes.append(mae)
+                    k_fold_mae = sum(K_fold_maes)/K_fold_count
+                else:
+                    k_fold_mae = SSE
+
+
+
+
+                all_fits.append((fit, stats, aic, bic, used_fit_parameters, k_fold_mae))
+
+
 
             if model_selection == 'AICc':
                 sel = lambda x: x[2]
-                best_fit, stats, aic, bic, _ = min(all_fits, key=sel)
+                best_fit, stats, aic, bic, _, _ = min(all_fits, key=sel)
             elif model_selection == 'BIC':
                 sel = lambda x: x[3]
-                best_fit, stats, aic, bic, _ = min(all_fits, key=sel)
+                best_fit, stats, aic, bic, _, _ = min(all_fits, key=sel)
             elif model_selection == 'min(BIC, AICc)':
                 sel = lambda x: x[2]
-                best_fit_aic, stats_aic, _, _, parameters_aic = min(all_fits, key=sel)
+                best_fit_aic, stats_aic, _, _, parameters_aic, _ = min(all_fits, key=sel)
                 sel = lambda x: x[3]
-                best_fit_bic, stats_bic, _, _, parameters_bic = min(all_fits, key=sel)
+                best_fit_bic, stats_bic, _, _, parameters_bic, _ = min(all_fits, key=sel)
                 if parameters_aic <= parameters_bic:
                     best_fit, stats  = best_fit_aic, stats_aic
                 else:
                     best_fit, stats  = best_fit_bic, stats_bic
+            elif model_selection.startswith('min(BIC, AICc, KFold'):
+                sel = lambda x: x[2]
+                best_fit_aic, stats_aic, _, _, parameters_aic, _ = min(all_fits, key=sel)
+                sel = lambda x: x[3]
+                best_fit_bic, stats_bic, _, _, parameters_bic, _ = min(all_fits, key=sel)
+                if parameters_aic <= parameters_bic:
+                    best_fit, stats  = best_fit_aic, stats_aic
+                else:
+                    best_fit, stats  = best_fit_bic, stats_bic
+                sel = lambda x: x[5]
+                best_fit_kf, stats_kf, _, _, parameters_kf, _ = min(all_fits, key=sel)
+                if parameters_kf <= min(parameters_aic, parameters_bic):
+                    best_fit, stats  = best_fit_kf, stats_kf
+            elif 'KFold' in model_selection:
+                sel = lambda x: x[5]
+                best_fit, stats, aic, bic, parameters, k_fold_mae = min(all_fits, key=sel)
             else:
                 raise ValueError("Unrecognized method")
 
