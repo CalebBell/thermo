@@ -391,6 +391,18 @@ def test_VaporPressure_fitting_K_fold():
     assert_close(res['A'], 0.06491057692331224, rtol=1e-3)
     assert_close(res['B'], -0.0001115384615387056, rtol=1e-3)
 
+    # Case with one point, check it fits to one
+    kwargs = {'Ts': [623.150024414063], 'data': [0.35564], 'model': 'DIPPR100',
+          'model_kwargs': {}, 'params_points_max': 2, 'model_selection': 'min(BIC, AICc, KFold(5))',
+          'do_statistics': True, 'use_numba': False, 'multiple_tries': False,
+          'multiple_tries_max_err': 1e-05, 'fit_method': 'lm'}
+
+    res, stats = TDependentProperty.fit_data_to_model(**kwargs)
+    assert_close(res['A'], 0.35564, rtol=1e-5)
+    assert res['B'] == 0
+    assert len(res) == 7
+
+
 
 
 @pytest.mark.fitting

@@ -262,7 +262,8 @@ def load_json_based_correlations():
     folder = os.path.join(source_path, 'Misc')
     paths = [os.path.join(folder, 'refprop_correlations.json'),
              os.path.join(folder, 'elements.json'),
-             os.path.join(folder, 'inorganic_correlations.json')]
+             os.path.join(folder, 'inorganic_correlations.json'),
+             ]
     json_based_correlation_data.clear()
     json_based_correlation_paths.clear()
     import json
@@ -2001,10 +2002,12 @@ class TDependentProperty:
                     do_K_fold = False
 
             for i in range(start_idx, len(optional_args)+1):
-                all_fit_parameter_options.append(optional_args[0:i])
-                a_model_kwargs = {k: 0.0 for k in optional_args[i:]}
-                a_model_kwargs.update(model_kwargs)
-                all_model_kwargs.append(a_model_kwargs)
+                our_fit_parameters = optional_args[0:i]
+                if len(our_fit_parameters) <= pts:
+                    all_fit_parameter_options.append(our_fit_parameters)
+                    a_model_kwargs = {k: 0.0 for k in optional_args[i:]}
+                    a_model_kwargs.update(model_kwargs)
+                    all_model_kwargs.append(a_model_kwargs)
             all_fits = []
             mae_log = False
             for the_fit_parameters, a_model_kwargs in zip(all_fit_parameter_options, all_model_kwargs):
@@ -2079,10 +2082,11 @@ class TDependentProperty:
                     best_fit, stats  = best_fit_bic, stats_bic
                 sel = lambda x: x[5]
                 best_fit_kf, stats_kf, _, _, parameters_kf, _ = min(all_fits, key=sel)
-                if parameters_kf <= min(parameters_aic, parameters_bic):
-                    if parameters_kf == 1:
+                if parameters_kf < min(parameters_aic, parameters_bic):
+                    if parameters_kf == 1 and (min(parameters_aic, parameters_bic) > 1):
                         # do not allow K fold to remove any fit
                         # force it to be at least 2 parameters
+                        # Of course this only works if one of the other methods selected a higher degree
                         best_fit, stats = all_fits[1][0], all_fits[1][1]
                     else:
                         best_fit, stats  = best_fit_kf, stats_kf
