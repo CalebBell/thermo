@@ -848,7 +848,12 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         statistics['STDEV'] = float(stats[1])
         statistics['min_ratio'] = float(stats[2])
         statistics['max_ratio'] = float(stats[3])
-        statistics['pcov'] = float(pcov) if pcov is not None else None
+        try:
+            pcov = float(pcov) 
+        except:
+            # ndarray or None
+            pass
+        statistics['pcov'] = pcov
         return out_kwargs, statistics
 
 
