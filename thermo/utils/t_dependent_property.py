@@ -2071,7 +2071,11 @@ class TDependentProperty:
                 sel = lambda x: x[3]
                 best_fit_bic, stats_bic, _, _, parameters_bic, _ = min(all_fits, key=sel)
                 if parameters_aic <= parameters_bic:
-                    best_fit, stats  = best_fit_aic, stats_aic
+                    # If the bic is very substantially better of a fit (and the fit is also poor), allow using it
+                    if stats_aic['MAE'] > 0.1 and stats_bic['MAE']/stats_aic['MAE'] < 1.0/3.0:
+                        best_fit, stats = best_fit_bic, stats_bic
+                    else:
+                        best_fit, stats  = best_fit_aic, stats_aic
                 else:
                     best_fit, stats  = best_fit_bic, stats_bic
             elif model_selection.startswith('min(BIC, AICc, KFold'):
