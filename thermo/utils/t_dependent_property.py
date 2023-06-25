@@ -263,6 +263,7 @@ def load_json_based_correlations():
     paths = [os.path.join(folder, 'refprop_correlations.json'),
              os.path.join(folder, 'elements.json'),
              os.path.join(folder, 'inorganic_correlations.json'),
+             os.path.join(folder, 'organic_correlations.json'),
              ]
     json_based_correlation_data.clear()
     json_based_correlation_paths.clear()
