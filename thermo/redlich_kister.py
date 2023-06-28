@@ -1,0 +1,162 @@
+'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+Copyright (C) 2023 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+This module contains a class :obj:`NRTL` for performing activity coefficient
+calculations with the NRTL model. An older, functional calculation for
+activity coefficients only is also present, :obj:`NRTL_gammas`.
+
+For reporting bugs, adding feature requests, or submitting pull requests,
+please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
+
+.. contents:: :local:
+'''
+
+__all__ = ['redlich_kister_reverse', 'redlich_kister_excess_inner',
+'redlich_kister_build_structure']
+
+
+def redlich_kister_reverse(data_1d):
+    data_1d = data_1d.copy()
+    params = len(data_1d)
+    for i, k in enumerate(range(params)):
+        if k%2 == 1:
+            data_1d[i] = -data_1d[i]
+    return data_1d
+
+
+def redlich_kister_excess_inner(N, N_terms, a_tensor, xs):
+    r'''Calculate the excess property for a given set of composition
+    and temperature-independent constants.
+
+    .. math::
+        E = 0.5 \sum_i^N \sum_j^N \sum_k^{N_terms} \A_{ijk} x_i x_j (x_i - x_j)^k
+
+    Parameters
+    ----------
+    N : int
+        The number of components in the mixture, [-]
+    N_terms : int
+        The number of terms in the redlich-kister expansion. This must
+        be the same for each component interaction; pad with zeros, [-]
+    a_tensor : list[list[list[float]]]
+        RK parameters, indexed by [i][j][k], [-]
+    xs : list[float]
+        Mole fractions, [-]
+
+    Returns
+    -------
+    excess : float
+        The calculated excess value; in some cases this is
+        dimensionless and multiplied by a constant like `R*T`
+        or `1000 kg/m^3` to obtain its dimensionality and
+        in other cases it has the dimensions of the property
+        being calculated like `N/m` or `Pa*s`, [-]
+
+    Notes
+    -----
+    Temperature dependent constants should be calculated
+    in an outer function.
+
+    '''
+    excess = 0.0
+    for i in range(N):
+        outer = 0.0
+        for j in range(N):
+#             if i ==j:
+#                 continue
+            inner = 0.0
+            inner += a_tensor[i][j][0]
+            diff_orig = diff = (xs[i] - xs[j])
+            for k in range(1, N_terms):
+                inner += a_tensor[i][j][k]*diff
+                diff *= diff_orig
+            outer += inner*xs[j]
+        excess += outer*xs[i]
+    return excess*0.5
+
+def redlich_kister_build_structure(N, shape, data, indexes):
+    r'''Builds a redlich-kister compatible
+    tensor (data structure) from pairs of indexes, and
+    the coefficients associated with those indexes. 
+    This is especially important because of the asymmetry
+    of the model.
+
+    Parameters
+    ----------
+    N : int
+        The number of components in the mixture, [-]
+    shape : tuple(int,) of dimensionality desired
+        The parameter to specify the shape of each of the
+        [i][j] component data structures, [-]
+    data : list[float] or list[list[float]]
+        The coefficients regressed or from literature, [various]
+    indexes : list[tuple(int, int)]
+        A list of index pairs. This is used to determine
+        which components are associated with what data.
+        Order matters! (i,j) != (j, i)
+
+    Returns
+    -------
+    structure : list[list[data]] of shape [N, N, *shape]
+        Output structure
+
+    Notes
+    -----
+    This is a fairly computationally intensive calculation
+    and should be cached
+    '''
+    first_element = data[0]
+    out = []
+    
+    if len(shape) == 1:
+        one_d = True
+        two_d = False
+    elif len(shape) == 2:
+        one_d = False
+        two_d = True
+    else:
+        raise ValueError("Shape must be provided")
+        
+    if len(indexes) != len(data):
+        raise ValueError("Index and data length must be the same")
+        
+    data_dict = {idx: d for idx, d in zip(indexes, data)}
+        
+    for i in range(N):
+        l = []
+        for j in range(N):
+            if one_d:
+                l.append([0.0]*shape[0])
+            else:
+                l.append([[0.0]*shape[1] for _ in range(shape[0])])
+        out.append(l)
+        
+    for i in range(N):
+        for j in range(N):
+            if (i, j) in data_dict:
+                thing = data_dict[(i, j)]
+                out[i][j] = thing
+            elif (j, i) in data_dict:
+                thing = data_dict[(j, i)]
+                thing = redlich_kister_reverse(thing)
+                out[i][j] = thing
+    return out
+
