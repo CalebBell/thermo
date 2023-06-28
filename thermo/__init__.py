@@ -107,6 +107,7 @@ if not numerics.is_micropython:
         viscosity,
         volume,
         wilson,
+        redlich_kister,
     )
     from .activity import *  # noqa: F403
     from .bulk import *  # noqa: F403
@@ -147,6 +148,7 @@ if not numerics.is_micropython:
     from .viscosity import *  # noqa: F403
     from .volume import *  # noqa: F403
     from .wilson import *  # noqa: F403
+    from .redlich_kister import * # noqa: F403
 
     #from chemicals import *
 
@@ -163,7 +165,7 @@ if not numerics.is_micropython:
      'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
      'equilibrium', 'phase_identification', 'temperature', 'fitting',
      'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods', 'activity',
-     'functional_groups']
+     'functional_groups', 'redlich_kister']
 
     __all__.extend(eos_volume.__all__)
     __all__.extend(eos_alpha_functions.__all__)
@@ -223,7 +225,7 @@ if not numerics.is_micropython:
     __all__.extend(activity.__all__)
     __all__.extend(fitting.__all__)
     __all__.extend(functional_groups.__all__)
-
+    __all__.extend(redlich_kister.__all__)
 
     # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
     try:
@@ -249,7 +251,8 @@ if not numerics.is_micropython:
                   phases.iapws_phase, phases.ideal_gas, phases.petroleum,
                   phases.phase, phases.phase_utils, phases.virial_phase,
                   utils.functional, utils.mixture_property,
-                  utils.t_dependent_property, utils.tp_dependent_property]
+                  utils.t_dependent_property, utils.tp_dependent_property,
+                  redlich_kister]
 
     def complete_lazy_loading():
         import chemicals
