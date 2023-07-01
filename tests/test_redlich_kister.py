@@ -180,5 +180,5 @@ def test_redlich_kister_excess_inner_binary():
 def test_redlich_kister_excess_binary():
     As_binary_test = [-79.56, 102.76, -55.68, -30.06, -164.43, 213.01]
     # run the test with 1 T dep term and it should still work
-    excess = redlich_kister_excess_binary(As_binary_test, T=298.15, xs=[.3, .7], N_T=1, N_terms=6)
+    excess = redlich_kister_excess_binary(As_binary_test, T=298.15, x0=.3, N_T=1, N_terms=6)
     assert_close(excess, -28.148313983999994, rtol=1e-13)

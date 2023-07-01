@@ -267,12 +267,12 @@ def redlich_kister_excess_inner_binary(ais, xs):
         factor *= x_diff
     return GE
 
-def redlich_kister_excess_binary(coefficients, xs, T, N_T, N_terms):
+def redlich_kister_excess_binary(coefficients, x0, T, N_T, N_terms):
     T2 = T*T
     Tinv = 1.0/T
     T2inv = Tinv*Tinv
     logT = log(T)
-    x0, x1 = xs
+    x1 = 1.0 - x0
     x_diff = (x0 - x1)
     x_product = x0*x1
     GE = 0.0
