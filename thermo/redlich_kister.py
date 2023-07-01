@@ -30,7 +30,8 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 '''
 
 __all__ = ['redlich_kister_reverse','redlich_kister_reverse_2d', 'redlich_kister_excess_inner',
-'redlich_kister_build_structure']
+'redlich_kister_build_structure', 'redlich_kister_T_dependence']
+from math import log
 
 def redlich_kister_reverse_2d(data_2d):
     data_2d = [d.copy() for d in data_2d]
@@ -173,3 +174,48 @@ def redlich_kister_build_structure(N, shape, data, indexes):
                 out[i][j] = thing
     return out
 
+
+def redlich_kister_T_dependence(structure, T, N, N_terms, N_T):
+    r'''Compute a redlich-kister set of A coefficients from
+    a temperature-dependent data struture with number
+    of temperature-dependent terms `N_T`. Essentially
+    this takes a 4d array and returns a 3d one.
+
+    Parameters
+    ----------
+    structure : list[list[list[float]]] of shape [N, N, N_terms, N_T]
+        Input structure with temperature dependence coefficients, [various]
+    T : float
+        Temperature, [K]
+    N : int
+        The number of components in the mixture, [-]
+    N_terms : int
+        The number of terms in the expansion, [-]
+    N_T : int
+        The number of terms in the temperature expansion, [-]
+
+    Returns
+    -------
+    structure : list[list[data]] of shape [N, N, N_terms]
+        Output structure
+
+    Notes
+    -----
+    '''
+    T2 = T*T
+    Tinv = 1.0/T
+    T2inv = Tinv*Tinv
+    logT = log(T)
+    out = [[[0.0]*N_terms for _ in range(N)] for _ in range(N)]
+
+    if N_T == 3:
+        for i in range(N):
+            out_2d = out[i]
+            in_3d = structure[i]
+            for j in range(N):
+                out_1d = out_2d[j]
+                in_2d = in_3d[j]
+                for k in range(N_terms):
+                    in_1d = in_2d[k]
+                    out_1d[k] = in_1d[0] + in_1d[1]*Tinv + in_1d[2]*logT# + in_1d[3]*T + in_1d[4]*T2inv + in_1d[5]*T2
+    return out
