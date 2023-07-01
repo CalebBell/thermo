@@ -29,8 +29,18 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 .. contents:: :local:
 '''
 
-__all__ = ['redlich_kister_reverse', 'redlich_kister_excess_inner',
+__all__ = ['redlich_kister_reverse','redlich_kister_reverse_2d', 'redlich_kister_excess_inner',
 'redlich_kister_build_structure']
+
+def redlich_kister_reverse_2d(data_2d):
+    data_2d = [d.copy() for d in data_2d]
+    params = len(data_2d)
+    T_dep_params = len(data_2d[0])
+    for i, k in enumerate(range(params)):
+        if k%2 == 1:
+            for j in range(T_dep_params):
+                data_2d[i][j] = -data_2d[i][j]
+    return data_2d
 
 
 def redlich_kister_reverse(data_1d):
@@ -116,7 +126,7 @@ def redlich_kister_build_structure(N, shape, data, indexes):
     Returns
     -------
     structure : list[list[data]] of shape [N, N, *shape]
-        Output structure
+        Output structurez
 
     Notes
     -----
@@ -156,7 +166,10 @@ def redlich_kister_build_structure(N, shape, data, indexes):
                 out[i][j] = thing
             elif (j, i) in data_dict:
                 thing = data_dict[(j, i)]
-                thing = redlich_kister_reverse(thing)
+                if one_d:
+                    thing = redlich_kister_reverse(thing)
+                else:
+                    thing = redlich_kister_reverse_2d(thing)
                 out[i][j] = thing
     return out
 
