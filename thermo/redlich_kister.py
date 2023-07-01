@@ -235,7 +235,10 @@ def redlich_kister_T_dependence(structure, T, N, N_terms, N_T):
 
 def redlich_kister_excess_inner_binary(ais, xs):
     r'''Compute the redlich-kister excess for a binary
-    system. This calculation is optimized. 
+    system. This calculation is optimized. This works
+    with the same values of coefficients as `redlich_kister_excess_inner`
+    but without the excess dimensionality of the input
+    data. 
 
     Parameters
     ----------
@@ -257,7 +260,8 @@ def redlich_kister_excess_inner_binary(ais, xs):
     x_product = x0*x1
     terms = len(ais)
     GE = 0.0
+    factor = 1.0
     for i in range(terms):
-        thing = ais[i]*x_product*(x_diff)**i
-        GE += thing
+        GE += ais[i]*x_product*factor
+        factor *= x_diff
     return GE
