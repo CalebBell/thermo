@@ -217,5 +217,17 @@ def redlich_kister_T_dependence(structure, T, N, N_terms, N_T):
                 in_2d = in_3d[j]
                 for k in range(N_terms):
                     in_1d = in_2d[k]
-                    out_1d[k] = in_1d[0] + in_1d[1]*Tinv + in_1d[2]*logT# + in_1d[3]*T + in_1d[4]*T2inv + in_1d[5]*T2
+                    out_1d[k] = in_1d[0] + in_1d[1]*Tinv + in_1d[2]*logT
+    elif N_T == 6:
+        for i in range(N):
+            out_2d = out[i]
+            in_3d = structure[i]
+            for j in range(N):
+                out_1d = out_2d[j]
+                in_2d = in_3d[j]
+                for k in range(N_terms):
+                    in_1d = in_2d[k]
+                    out_1d[k] = in_1d[0] + in_1d[1]*Tinv + in_1d[2]*logT + in_1d[3]*T + in_1d[4]*T2inv + in_1d[5]*T2
+    else:
+        raise ValueError("Unsupported number of terms")
     return out
