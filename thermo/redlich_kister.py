@@ -282,13 +282,13 @@ def redlich_kister_excess_binary(coefficients, x0, T, N_T, N_terms):
         ai = coefficients[offset] 
         if N_T >= 2:
             ai +=  coefficients[offset+1]*Tinv
-        elif N_T >= 3:
+        if N_T >= 3:
             ai += coefficients[offset+2]*logT
-        elif N_T >= 4:
+        if N_T >= 4:
             ai +=  coefficients[offset+3]*T
-        elif N_T >= 5:
+        if N_T >= 5:
             ai += coefficients[offset+4]*T2inv
-        elif N_T >= 6:
+        if N_T >= 6:
             ai += coefficients[offset+5]*T2
         GE += ai*x_product*factor
         factor *= x_diff
