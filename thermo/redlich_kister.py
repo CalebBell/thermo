@@ -30,7 +30,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 '''
 
 __all__ = ['redlich_kister_reverse','redlich_kister_reverse_2d', 'redlich_kister_excess_inner',
-'redlich_kister_build_structure', 'redlich_kister_T_dependence']
+'redlich_kister_build_structure', 'redlich_kister_T_dependence', 'redlich_kister_excess_inner_binary']
 from math import log
 
 def redlich_kister_reverse_2d(data_2d):
@@ -231,3 +231,33 @@ def redlich_kister_T_dependence(structure, T, N, N_terms, N_T):
     else:
         raise ValueError("Unsupported number of terms")
     return out
+
+
+def redlich_kister_excess_inner_binary(ais, xs):
+    r'''Compute the redlich-kister excess for a binary
+    system. This calculation is optimized. 
+
+    Parameters
+    ----------
+    ais : list[float] of size N_terms
+        `A` coefficients`, [-]
+    xs : list[float]
+        Binary mole fractions, [-]
+
+    Returns
+    -------
+    excess : float
+        The calculated excess value [-]
+
+    Notes
+    -----
+    '''
+    x0, x1 = xs
+    x_diff = (x0 - x1)
+    x_product = x0*x1
+    terms = len(ais)
+    GE = 0.0
+    for i in range(terms):
+        thing = ais[i]*x_product*(x_diff)**i
+        GE += thing
+    return GE
