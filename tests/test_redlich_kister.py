@@ -23,7 +23,7 @@ import pytest
 from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d, linspace
 
 from thermo.redlich_kister import (redlich_kister_reverse, redlich_kister_excess_inner, redlich_kister_build_structure, 
-redlich_kister_T_dependence, redlich_kister_excess_inner_binary)
+redlich_kister_T_dependence, redlich_kister_excess_inner_binary, redlich_kister_excess_binary)
 import numpy as np
 from chemicals import mixing_simple
 
@@ -171,6 +171,14 @@ def test_redlich_kister_T_dependence_6th():
     assert_close(out, -0.0036937598363436623, rtol=1e-13)
 
 def test_redlich_kister_excess_inner_binary():
+    # from Surface tension of non-ideal binary and ternary liquid mixtures at various temperatures and p=81.5kPa
     As_binary_test = [-79.56, 102.76, -55.68, -30.06, -164.43, 213.01]
     excess = redlich_kister_excess_inner_binary(As_binary_test, [.3, .7])
+    assert_close(excess, -28.148313983999994, rtol=1e-13)
+
+
+def test_redlich_kister_excess_binary():
+    As_binary_test = [-79.56, 102.76, -55.68, -30.06, -164.43, 213.01]
+    # run the test with 1 T dep term and it should still work
+    excess = redlich_kister_excess_binary(As_binary_test, T=298.15, xs=[.3, .7], N_T=1, N_terms=6)
     assert_close(excess, -28.148313983999994, rtol=1e-13)

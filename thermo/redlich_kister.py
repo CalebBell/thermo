@@ -30,7 +30,8 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 '''
 
 __all__ = ['redlich_kister_reverse','redlich_kister_reverse_2d', 'redlich_kister_excess_inner',
-'redlich_kister_build_structure', 'redlich_kister_T_dependence', 'redlich_kister_excess_inner_binary']
+'redlich_kister_build_structure', 'redlich_kister_T_dependence', 'redlich_kister_excess_inner_binary',
+'redlich_kister_excess_binary']
 from math import log
 
 def redlich_kister_reverse_2d(data_2d):
@@ -263,5 +264,32 @@ def redlich_kister_excess_inner_binary(ais, xs):
     factor = 1.0
     for i in range(terms):
         GE += ais[i]*x_product*factor
+        factor *= x_diff
+    return GE
+
+def redlich_kister_excess_binary(coefficients, xs, T, N_T, N_terms):
+    T2 = T*T
+    Tinv = 1.0/T
+    T2inv = Tinv*Tinv
+    logT = log(T)
+    x0, x1 = xs
+    x_diff = (x0 - x1)
+    x_product = x0*x1
+    GE = 0.0
+    factor = 1.0
+    for i in range(N_terms):
+        offset = i*N_T
+        ai = coefficients[offset] 
+        if N_T >= 2:
+            ai +=  coefficients[offset+1]*Tinv
+        elif N_T >= 3:
+            ai += coefficients[offset+2]*logT
+        elif N_T >= 4:
+            ai +=  coefficients[offset+3]*T
+        elif N_T >= 5:
+            ai += coefficients[offset+4]*T2inv
+        elif N_T >= 6:
+            ai += coefficients[offset+5]*T2
+        GE += ai*x_product*factor
         factor *= x_diff
     return GE
