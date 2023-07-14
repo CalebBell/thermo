@@ -578,7 +578,8 @@ class SurfaceTensionMixture(MixtureProperty):
     pure_references = ('SurfaceTensions', 'VolumeLiquids')
     pure_reference_types = (SurfaceTension, VolumeLiquid)
 
-    custom_args = ('MWs', 'Tbs', 'Tcs')
+    pure_constants = ('MWs', 'Tbs', 'Tcs')
+    custom_args = pure_constants
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[],
                  VolumeLiquids=[], correct_pressure_pure=False, **kwargs):
@@ -602,18 +603,14 @@ class SurfaceTensionMixture(MixtureProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = []
-        methods.append(LINEAR) # Needs sigma
-        methods.append(WINTERFELDSCRIVENDAVIS) # Nothing to load, needs rhoms, sigma
-        if none_and_length_check((self.Tbs, self.Tcs)):
+        methods = set()
+        methods.add(LINEAR) # Needs sigma
+        methods.add(WINTERFELDSCRIVENDAVIS) # Nothing to load, needs rhoms, sigma
+        if none_and_length_check([self.Tbs, self.Tcs]):
             self.sigmas_Tb = [i(Tb) for i, Tb in zip(self.SurfaceTensions, self.Tbs)]
             if none_and_length_check([self.sigmas_Tb]):
-                methods.append(DIGUILIOTEJA)
-        self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
+                methods.add(DIGUILIOTEJA)
+        self.all_methods = methods
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate surface tension of a liquid mixture at
@@ -659,8 +656,7 @@ class SurfaceTensionMixture(MixtureProperty):
             else:
                 rhoms = [1./i.T_dependent_property(T) for i in self.VolumeLiquids]
             return Winterfeld_Scriven_Davis(zs, sigmas, rhoms)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given

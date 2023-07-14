@@ -673,7 +673,8 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     pure_references = ('ThermalConductivityLiquids',)
     pure_reference_types = (ThermalConductivityLiquid,)
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
                  **kwargs):
@@ -711,10 +712,6 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate thermal conductivity of a liquid mixture at
@@ -1334,7 +1331,8 @@ class ThermalConductivityGasMixture(MixtureProperty):
     pure_references = ('ViscosityGases', 'ThermalConductivityGases')
     pure_reference_types = (ViscosityGas, ThermalConductivityGas)
 
-    custom_args = ('MWs', 'Tbs', )
+    pure_constants = ('MWs', 'Tbs', )
+    custom_args = pure_constants
 
     def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[],
                  ViscosityGases=[],  **kwargs):
@@ -1370,10 +1368,6 @@ class ThermalConductivityGasMixture(MixtureProperty):
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate thermal conductivity of a gas mixture at

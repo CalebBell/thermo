@@ -1116,7 +1116,8 @@ class VolumeLiquidMixture(MixtureProperty):
     pure_references = ('VolumeLiquids',)
     pure_reference_types = (VolumeLiquid, )
 
-    custom_args = ('MWs', 'Tcs', 'Pcs', 'Vcs', 'Zcs', 'omegas')
+    pure_constants = ('MWs', 'Tcs', 'Pcs', 'Vcs', 'Zcs', 'omegas')
+    custom_args = pure_constants
 
     def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[],
                  CASs=[], VolumeLiquids=[], **kwargs):
@@ -1194,10 +1195,6 @@ class VolumeLiquidMixture(MixtureProperty):
                 self.index_w = self.CASs.index('7732-18-5')
 
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a liquid mixture at
@@ -1652,6 +1649,7 @@ class VolumeGasMixture(MixtureProperty):
     pure_references = ('VolumeGases',)
     pure_reference_types = (VolumeGas, )
 
+    pure_constants = ('MWs', )
     custom_args = ('MWs', 'eos')
 
     def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[], **kwargs):
@@ -1677,10 +1675,6 @@ class VolumeGasMixture(MixtureProperty):
         if self.eos:
             methods.append(EOS)
         self.all_methods = all_methods =  set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a gas mixture at
@@ -1978,7 +1972,8 @@ class VolumeSolidMixture(MixtureProperty):
     pure_references = ('VolumeSolids',)
     pure_reference_types = (VolumeSolid, )
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
     def __init__(self, CASs=[], VolumeSolids=[], MWs=[], **kwargs):
         self.CASs = CASs
@@ -2003,10 +1998,6 @@ class VolumeSolidMixture(MixtureProperty):
         '''
         methods = [LINEAR]
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a solid mixture at

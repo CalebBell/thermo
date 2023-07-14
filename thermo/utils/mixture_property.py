@@ -26,6 +26,7 @@ from chemicals.utils import hash_any_primitive, normalize, ws_to_zs, zs_to_ws
 from fluids.numerics import derivative, linspace
 from fluids.numerics import numpy as np
 
+from thermo.redlich_kister import redlich_kister_T_dependence, redlich_kister_excess_inner
 from thermo.eos_mix import GCEOSMIX
 from thermo.utils.functional import has_matplotlib
 from thermo.utils.names import POLY_FIT
@@ -101,6 +102,14 @@ class MixtureProperty:
         return getattr(self, self.pure_references[0])
 
     def __init__(self, **kwargs):
+        if self.CASs:
+            self.N = len(self.CASs)
+        else:
+            for attr in self.pure_constants:
+                value = getattr(self, attr)
+                if value:
+                    self.N = len(value)
+
         self._correct_pressure_pure = kwargs.get('correct_pressure_pure', self._correct_pressure_pure)
 
         self.Tmin = None
@@ -110,14 +119,64 @@ class MixtureProperty:
         """Maximum temperature at which no method can calculate the
         property above."""
 
+        self.mixture_correlations = {}
+        """Dictionary containing lookups for coefficient-based mixture excess models."""
+
         self.all_methods = set()
         """Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`."""
         self.load_all_methods()
 
         self.set_poly_fit_coeffs()
+        if kwargs:
+            mixture_excess_models = set(['redlick_kister_parameters'])
+            # Iterate over all the dictionaries in reverse such that the first one is left as the default
+            for key in reversed(list(kwargs.keys())):
+                if key in mixture_excess_models:
+                    correlation_name = key.replace('_parameters', '')
+                    correlation_dict = kwargs[key]
+                    for corr_i, corr_kwargs in correlation_dict.items():
+                        self.add_excess_correlation(name=corr_i, model=correlation_name, **corr_kwargs)
 
-        if 'method' in kwargs: self.method = kwargs['method']
+        try:
+            method = kwargs['method']
+        except:
+            try:
+                method = self._method
+            except:
+                method = None
+
+        if method is None:
+            all_methods = self.all_methods
+            for i in self.ranked_methods:
+                if i in all_methods:
+                    method = i
+                    break
+        self.method = method
+
+
+    def add_excess_correlation(self, name, model, **kwargs):
+        d = getattr(self, model + '_parameters', None)
+        if d is None:
+            d = {}
+            setattr(self, model + '_parameters', d)
+
+        full_kwargs = kwargs.copy()
+        d[name] = full_kwargs
+        self.all_methods.add(name)
+        self.method = name
+
+        args = (kwargs['coeffs'], kwargs['N_terms'], kwargs['N_T'])
+
+        self.mixture_correlations[name] = args
+
+    def calculate(self, T, P, zs, ws, method):
+        if method in self.mixture_correlations:
+            rk_struct, N_terms, N_T = self.mixture_correlations[method]
+            Ais_matrix_for_calc = redlich_kister_T_dependence(rk_struct, T=T, N=len(zs), N_T=N_T, N_terms=N_terms)
+            excess = redlich_kister_excess_inner(N_T, N_terms, Ais_matrix_for_calc, zs)
+        raise ValueError("Unknown method; methods are %s" %(self.all_methods))
+
 
     def as_json(self, references=1):
         r'''Method to create a JSON serialization of the mixture property

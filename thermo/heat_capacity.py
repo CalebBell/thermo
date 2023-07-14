@@ -1552,31 +1552,15 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     ranked_methods = [LALIBERTE, LINEAR]
     pure_references = ('HeatCapacityLiquids',)
     pure_reference_types = (HeatCapacityLiquid,)
+    
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
-    custom_args = ('MWs', )
-
-    def __init__(self, MWs=[], CASs=[], HeatCapacityLiquids=[]):
+    def __init__(self, MWs=[], CASs=[], HeatCapacityLiquids=[], **kwargs):
         self.MWs = MWs
         self.CASs = CASs
         self.HeatCapacityLiquids = HeatCapacityLiquids
-
-        self.Tmin = None
-        """Minimum temperature at which no method can calculate the
-        heat capacity under."""
-        self.Tmax = None
-        """Maximum temperature at which no method can calculate the
-        heat capacity above."""
-
-        self.sorted_valid_methods = []
-        """sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.user_methods = []
-        """user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.all_methods = set()
-        """Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`."""
-        self.load_all_methods()
+        super().__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1626,10 +1610,6 @@ class HeatCapacityLiquidMixture(MixtureProperty):
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a liquid mixture at
@@ -1734,30 +1714,14 @@ class HeatCapacitySolidMixture(MixtureProperty):
     pure_references = ('HeatCapacitySolids',)
     pure_reference_types = (HeatCapacitySolid,)
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
-    def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[]):
+    def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[], **kwargs):
         self.CASs = CASs
         self.HeatCapacitySolids = HeatCapacitySolids
         self.MWs = MWs
-
-        self.Tmin = None
-        """Minimum temperature at which no method can calculate the
-        heat capacity under."""
-        self.Tmax = None
-        """Maximum temperature at which no method can calculate the
-        heat capacity above."""
-
-        self.sorted_valid_methods = []
-        """sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.user_methods = []
-        """user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.all_methods = set()
-        """Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`."""
-        self.load_all_methods()
+        super().__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1773,10 +1737,6 @@ class HeatCapacitySolidMixture(MixtureProperty):
         '''
         methods = [LINEAR]
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a solid mixture at
@@ -1874,30 +1834,14 @@ class HeatCapacityGasMixture(MixtureProperty):
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
-    def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[]):
+    def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[], **kwargs):
         self.CASs = CASs
         self.HeatCapacityGases = HeatCapacityGases
         self.MWs = MWs
-
-        self.Tmin = None
-        """Minimum temperature at which no method can calculate the
-        heat capacity under."""
-        self.Tmax = None
-        """Maximum temperature at which no method can calculate the
-        heat capacity above."""
-
-        self.sorted_valid_methods = []
-        """sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.user_methods = []
-        """user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.all_methods = set()
-        """Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`."""
-        self.load_all_methods()
+        super().__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1913,10 +1857,6 @@ class HeatCapacityGasMixture(MixtureProperty):
         '''
         methods = [LINEAR]
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a gas mixture at

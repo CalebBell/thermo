@@ -23,7 +23,8 @@ import pytest
 from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d, linspace
 
 from thermo.redlich_kister import (redlich_kister_reverse, redlich_kister_excess_inner, redlich_kister_build_structure, 
-redlich_kister_T_dependence, redlich_kister_excess_inner_binary, redlich_kister_excess_binary)
+redlich_kister_T_dependence, redlich_kister_excess_inner_binary, redlich_kister_excess_binary,
+redlich_kister_fitting_to_use)
 import numpy as np
 from chemicals import mixing_simple
 
@@ -182,3 +183,12 @@ def test_redlich_kister_excess_binary():
     # run the test with 1 T dep term and it should still work
     excess = redlich_kister_excess_binary(As_binary_test, T=298.15, x0=.3, N_T=1, N_terms=6)
     assert_close(excess, -28.148313983999994, rtol=1e-13)
+
+
+def test_redlich_kister_fitting_to_use():
+    coeffs = [-0.001524469890834797, 1.0054473481826371, 0.011306977309368058, -3.260062182048661, 0.015341200351987746, -4.484565752157498, -0.030368567453463967, 8.99609823333603]
+    out = redlich_kister_fitting_to_use(coeffs, N_terms=4, N_T=2)
+    assert_close2d(out, [[-0.001524469890834797, 1.0054473481826371],
+    [0.011306977309368058, -3.260062182048661],
+    [0.015341200351987746, -4.484565752157498],
+    [-0.030368567453463967, 8.99609823333603]], rtol=1e-16)

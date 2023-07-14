@@ -1435,6 +1435,9 @@ class TDependentProperty:
         repr : str
             String representation, [-]
         '''
+        return self.as_string()
+
+    def as_string(self, tabular=True, references=True, json_parameters=False):
         clsname = self.__class__.__name__
         base = '%s(' % (clsname)
         if self.CASRN:
@@ -1442,6 +1445,8 @@ class TDependentProperty:
         for k in self.custom_args:
             v = getattr(self, k)
             if v is not None:
+                if not references and isinstance(v, TDependentProperty):
+                    continue
                 base += f'{k}={v}, '
 
         extrap_str = '"%s"' %(self.extrapolation) if self.extrapolation is not None else 'None'
@@ -1449,16 +1454,16 @@ class TDependentProperty:
 
         method_str = '"%s"' %(self.method) if self.method is not None else 'None'
         base += 'method=%s, ' %(method_str)
-        if self.tabular_data:
+        if self.tabular_data and tabular:
             if not (len(self.tabular_data) == 1 and VDI_TABULAR in self.tabular_data):
                 base += 'tabular_data=%s, ' %(self.tabular_data)
 
         if self.P_dependent:
             method_P_str = '"%s"' %(self.method_P) if self.method_P is not None else 'None'
             base += 'method_P=%s, ' %(method_P_str)
-            if self.tabular_data_P:
+            if self.tabular_data_P and tabular:
                 base += 'tabular_data_P=%s, ' %(self.tabular_data_P)
-            if 'tabular_extrapolation_permitted' in self.__dict__:
+            if 'tabular_extrapolation_permitted' in self.__dict__ and tabular:
                 base += 'tabular_extrapolation_permitted=%s, ' %(self.tabular_extrapolation_permitted)
 
 
@@ -1481,9 +1486,10 @@ class TDependentProperty:
             if extra_model:
                 # Remove any internal models that happen to use the same infrastructure
                 extra_model = extra_model.copy()
-                for extra_added_corr in self.extra_correlations_internal:
-                    if extra_added_corr in extra_model:
-                        del extra_model[extra_added_corr]
+                if not json_parameters:
+                    for extra_added_corr in self.extra_correlations_internal:
+                        if extra_added_corr in extra_model:
+                            del extra_model[extra_added_corr]
                 if len(extra_model):
                     # Only add the string if we still have anything
                     base += f'{k}={extra_model}, '
