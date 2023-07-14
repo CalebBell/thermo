@@ -1140,7 +1140,8 @@ class ViscosityLiquidMixture(MixtureProperty):
     pure_references = ('ViscosityLiquids',)
     pure_reference_types = (ViscosityLiquid, )
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
     def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[], **kwargs):
         self.CASs = CASs
@@ -1202,10 +1203,6 @@ class ViscosityLiquidMixture(MixtureProperty):
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate viscosity of a liquid mixture at
@@ -1385,7 +1382,8 @@ class ViscosityGasMixture(MixtureProperty):
     pure_references = ('ViscosityGases',)
     pure_reference_types = (ViscosityGas, )
 
-    custom_args = ('MWs', 'molecular_diameters', 'Stockmayers')
+    pure_constants = ('MWs', 'molecular_diameters', 'Stockmayers')
+    custom_args = pure_constants
 
     def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[],
                  ViscosityGases=[], **kwargs):
@@ -1427,10 +1425,6 @@ class ViscosityGasMixture(MixtureProperty):
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate viscosity of a gas mixture at

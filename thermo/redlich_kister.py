@@ -31,7 +31,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 __all__ = ['redlich_kister_reverse','redlich_kister_reverse_2d', 'redlich_kister_excess_inner',
 'redlich_kister_build_structure', 'redlich_kister_T_dependence', 'redlich_kister_excess_inner_binary',
-'redlich_kister_excess_binary']
+'redlich_kister_excess_binary', 'redlich_kister_fitting_to_use']
 from math import log
 
 def redlich_kister_reverse_2d(data_2d):
@@ -209,7 +209,17 @@ def redlich_kister_T_dependence(structure, T, N, N_terms, N_T):
     logT = log(T)
     out = [[[0.0]*N_terms for _ in range(N)] for _ in range(N)]
 
-    if N_T == 3:
+    if N_T == 2:
+        for i in range(N):
+            out_2d = out[i]
+            in_3d = structure[i]
+            for j in range(N):
+                out_1d = out_2d[j]
+                in_2d = in_3d[j]
+                for k in range(N_terms):
+                    in_1d = in_2d[k]
+                    out_1d[k] = in_1d[0] + in_1d[1]*Tinv
+    elif N_T == 3:
         for i in range(N):
             out_2d = out[i]
             in_3d = structure[i]
@@ -293,3 +303,12 @@ def redlich_kister_excess_binary(coefficients, x0, T, N_T, N_terms):
         GE += ai*x_product*factor
         factor *= x_diff
     return GE
+
+def redlich_kister_fitting_to_use(coeffs, N_terms, N_T):
+    out = []
+    for i in range(N_terms):
+        l = []
+        for j in range(N_T):
+            l.append(coeffs[i*N_T + j])
+        out.append(l)
+    return out
