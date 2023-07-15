@@ -96,6 +96,9 @@ class TPDependentProperty(TDependentProperty):
 
         super().__init__(extrapolation, **kwargs)
 
+        self.P_limits = {}
+        '''Pressure limits on a per-component basis. Not currently used.'''
+
 
         self.tabular_extrapolation_permitted = kwargs.get('tabular_extrapolation_permitted', True)
 
@@ -671,7 +674,7 @@ class TPDependentProperty(TDependentProperty):
         Ts = np.linspace(Tmin, Tmax, pts)
         Ts_mesh, Ps_mesh = np.meshgrid(Ts, Ps)
         fig = plt.figure()
-        ax = fig.gca(projection='3d')
+        ax = fig.add_subplot(1,1,1,projection="3d")
 
         handles = []
         for method_P in methods_P:
@@ -692,7 +695,7 @@ class TPDependentProperty(TDependentProperty):
                         else:
                             T_props.append(None)
                     properties.append(T_props)
-                properties = ma.masked_invalid(np.array(properties, dtype=np.float).T)
+                properties = ma.masked_invalid(np.array(properties, dtype=np.float64).T)
                 handles.append(ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5))
             else:
                 properties = np.array([[self.calculate_P(T, P, method_P) for T in Ts] for P in Ps])
@@ -706,10 +709,6 @@ class TPDependentProperty(TDependentProperty):
         ax.set_zlabel(self.name + ', ' + self.units)
         plt.title(self.name + ' of ' + self.CASRN)
         plt.show(block=False)
-        # The below is a workaround for a matplotlib bug
-        ax.legend(handles, methods_P)
-        plt.show(block=False)
-
 
     def calculate_derivative_T(self, T, P, method, order=1):
         r'''Method to calculate a derivative of a temperature and pressure

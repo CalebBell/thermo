@@ -1249,40 +1249,16 @@ class VolumeLiquidMixture(MixtureProperty):
             return Rackett_mixture(T, zs, self.MWs, self.Tcs, self.Pcs, self.Zcs)
         elif method == RACKETT_PARAMETERS:
             return Rackett_mixture(T, zs, self.MWs, self.Tcs, self.Pcs, self.Z_RAs)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if LALIBERTE in self.all_methods:
             # If everything is an electrolyte, accept only it as a method
             if method in self.all_methods:
                 return method == LALIBERTE
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 #PR = 'PR'
@@ -1717,36 +1693,12 @@ class VolumeGasMixture(MixtureProperty):
         elif method == EOS:
             self.eos[0] = self.eos[0].to_TP_zs(T=T, P=P, zs=zs)
             return self.eos[0].V_g
-        else:
-            raise ValueError('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 
@@ -2026,36 +1978,9 @@ class VolumeSolidMixture(MixtureProperty):
             Molar volume of the solid mixture at the given conditions,
             [m^3/mol]
         '''
-        if method == LINEAR:
-            Vms = [i(T, P) for i in self.VolumeSolids]
-            return mixing_simple(zs, Vms)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)

@@ -2306,43 +2306,43 @@ def test_viscosity_bulk():
 
     settings = BulkSettings(mu_VL='Beattie Whalley', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect =  9.411770734983076e-05
+    mu_expect = 9.444973170122925e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='McAdams', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0002036661410653679
+    mu_expect = 0.00020740600899307388
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Cicchitti', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004498838091208372
+    mu_expect = 0.0004498945147517062
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Lin Kwok', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.00035231645076735013
+    mu_expect = 0.00035505884302088227
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Fourar Bories', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 6.711304514284185e-05
+    mu_expect = 6.79588952470955e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Duckler', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 3.516224626001169e-05
+    mu_expect = 3.5494270611410175e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=AS_ONE_GAS, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 1.0935521242505785e-05
+    mu_expect = 1.1303475347160652e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
@@ -2354,55 +2354,55 @@ def test_viscosity_bulk():
 
     settings = BulkSettings(mu_VL=MOLE_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.00045104828084961045
+    mu_expect = 0.00045105808426897304
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=MASS_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004498838091208372
+    mu_expect = 0.0004498945147517062
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=VOLUME_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 3.582321366162159e-05
+    mu_expect = 3.615472590750443e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=LOG_PROP_MOLE_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004174877255632339
+    mu_expect = 0.00041786007301121934
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=LOG_PROP_MASS_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004134734397320772
+    mu_expect = 0.0004138761612074623
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=LOG_PROP_VOLUME_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 1.3317065001179692e-05
+    mu_expect = 1.3724636873530997e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=POWER_PROP_MOLE_WEIGHTED, mu_VL_power_exponent=0.6, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004445359080052111
+    mu_expect = 0.00044457896440451653
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=POWER_PROP_MASS_WEIGHTED, mu_VL_power_exponent=0.6, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004427883876785026
+    mu_expect = 0.00044283533263468454
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=POWER_PROP_VOLUME_WEIGHTED, mu_VL_power_exponent=0.6, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 2.0589999375854145e-05
+    mu_expect = 2.1017800744379754e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
@@ -2414,7 +2414,7 @@ def test_viscosity_bulk():
 
     settings = BulkSettings(mu_VL=MINIMUM_PHASE_PROP, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 1.0822296297706245e-05
+    mu_expect = 1.1173178799439836e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 

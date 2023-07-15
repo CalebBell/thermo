@@ -23,13 +23,19 @@ SOFTWARE.
 __all__ = ['MixtureProperty']
 
 from chemicals.utils import hash_any_primitive, normalize, ws_to_zs, zs_to_ws
-from fluids.numerics import derivative, linspace
+from fluids.numerics import derivative, linspace, trunc_log, trunc_exp
 from fluids.numerics import numpy as np
 
-from thermo.redlich_kister import redlich_kister_T_dependence, redlich_kister_excess_inner
+from chemicals.utils import mixing_simple
+from thermo.redlich_kister import redlich_kister_T_dependence, redlich_kister_excess_inner, redlich_kister_build_structure
 from thermo.eos_mix import GCEOSMIX
 from thermo.utils.functional import has_matplotlib
-from thermo.utils.names import POLY_FIT
+from thermo.utils.names import POLY_FIT, LINEAR, MIXING_LOG_MOLAR, MIXING_LOG_MASS
+from thermo.utils.t_dependent_property import json_mixture_correlation_lookup, ENABLE_MIXTURE_JSON
+try:
+    from itertools import product
+except:
+    pass
 
 
 class MixtureProperty:
@@ -41,7 +47,6 @@ class MixtureProperty:
     ranked_methods = []
     TP_zs_ws_cached = (None, None, None, None)
     prop_cached = None
-    all_poly_fit = False
     _correct_pressure_pure = True
     _method = None
 
@@ -58,19 +63,6 @@ class MixtureProperty:
 
     def __init_subclass__(cls):
         cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
-
-    def set_poly_fit_coeffs(self):
-        pure_objs = self.pure_objs()
-        if all(i.method == POLY_FIT for i in pure_objs):
-            self.all_poly_fit = True
-            self.poly_fit_data = [[i.poly_fit_Tmin for i in pure_objs],
-                               [i.poly_fit_Tmin_slope for i in pure_objs],
-                               [i.poly_fit_Tmin_value for i in pure_objs],
-                               [i.poly_fit_Tmax for i in pure_objs],
-                               [i.poly_fit_Tmax_slope for i in pure_objs],
-                               [i.poly_fit_Tmax_value for i in pure_objs],
-                               [i.poly_fit_coeffs for i in pure_objs]]
-
 
     def __repr__(self):
         clsname = self.__class__.__name__
@@ -103,12 +95,16 @@ class MixtureProperty:
 
     def __init__(self, **kwargs):
         if self.CASs:
-            self.N = len(self.CASs)
+            self.N = N = len(self.CASs)
         else:
             for attr in self.pure_constants:
                 value = getattr(self, attr)
                 if value:
-                    self.N = len(value)
+                    self.N = N = len(value)
+                    break
+
+        self.T_limits = T_limits = {}
+        self.P_limits = P_limits = {}
 
         self._correct_pressure_pure = kwargs.get('correct_pressure_pure', self._correct_pressure_pure)
 
@@ -127,7 +123,47 @@ class MixtureProperty:
         filled by :obj:`load_all_methods`."""
         self.load_all_methods()
 
-        self.set_poly_fit_coeffs()
+        # Attempt to load json data
+        CASs = self.CASs
+        if CASs and not None in CASs and ENABLE_MIXTURE_JSON:
+            cls_name = self.__class__.__name__
+            outer = []
+            for CAS1 in CASs:
+                row = []
+                for CAS2 in CASs:
+                    found = json_mixture_correlation_lookup(CAS1, CAS2, cls_name)
+                    row.append(found)
+                outer.append(row)
+            # Load method by method and see if we have the data we need
+            redlich_kister_coeffs = []
+            redlich_kister_indexes = []
+            N_T = 1
+            N_terms = 1
+
+            for i in range(N):
+                for j in range(N):
+                    rk_dicts_ij = outer[i][j].get('redlick_kister_parameters', {})
+                    if rk_dicts_ij:
+                        # What to do about other data sets?
+                        first_data = list(rk_dicts_ij.values())[0]
+                        if first_data['N_T'] > N_T:
+                            N_T = first_data['N_T']
+                        if first_data['N_terms'] > N_terms:
+                            N_terms = first_data['N_terms']
+                        redlich_kister_coeffs.append(first_data['coeffs'])
+                        # TODO figure out order of storing i,j with data
+                        if j > i:
+                            redlich_kister_indexes.append((i,j))
+                        else:
+                            redlich_kister_indexes.append((j,i))
+            # assemble the parameters
+            # Only add them if anyone had them
+            if redlich_kister_coeffs:
+                rk_struct = redlich_kister_build_structure(N, (N_terms, N_T), redlich_kister_coeffs, redlich_kister_indexes)
+                if 'redlick_kister_parameters' not in kwargs:
+                    kwargs['redlick_kister_parameters']= {}
+                kwargs['redlick_kister_parameters']['Combined Json'] = {'N_T': N_T, 'N_terms': N_terms, 'coeffs': rk_struct}
+
         if kwargs:
             mixture_excess_models = set(['redlick_kister_parameters'])
             # Iterate over all the dictionaries in reverse such that the first one is left as the default
@@ -135,7 +171,9 @@ class MixtureProperty:
                 if key in mixture_excess_models:
                     correlation_name = key.replace('_parameters', '')
                     correlation_dict = kwargs[key]
-                    for corr_i, corr_kwargs in correlation_dict.items():
+                    for corr_i in reversed(list(correlation_dict.keys())):
+                        corr_kwargs = correlation_dict[corr_i]
+                    # for corr_i, corr_kwargs in correlation_dict.items():
                         self.add_excess_correlation(name=corr_i, model=correlation_name, **corr_kwargs)
 
         try:
@@ -171,12 +209,87 @@ class MixtureProperty:
         self.mixture_correlations[name] = args
 
     def calculate(self, T, P, zs, ws, method):
+        pure_props = self.calculate_pures_corrected(T, P, fallback=True)
+        if method == LINEAR:
+            return mixing_simple(zs, pure_props)
+        if method == MIXING_LOG_MOLAR:
+            ln_prop = 0.0
+            for i in range(len(zs)):
+                ln_prop += zs[i]*trunc_log(pure_props[i])
+            return trunc_exp(ln_prop)
+        elif method == MIXING_LOG_MASS:
+            ln_prop = 0.0
+            for i in range(len(ws)):
+                ln_prop += ws[i]*trunc_log(pure_props[i])
+            return trunc_exp(ln_prop)
         if method in self.mixture_correlations:
             rk_struct, N_terms, N_T = self.mixture_correlations[method]
             Ais_matrix_for_calc = redlich_kister_T_dependence(rk_struct, T=T, N=len(zs), N_T=N_T, N_terms=N_terms)
             excess = redlich_kister_excess_inner(N_T, N_terms, Ais_matrix_for_calc, zs)
+            base_property = mixing_simple(zs, pure_props)
+            return base_property + excess
         raise ValueError("Unknown method; methods are %s" %(self.all_methods))
 
+    def calculate_pures_corrected(self, T, P, fallback=False, objs=None):
+        if self._correct_pressure_pure:
+            pure_props = self.calculate_pures_P(T, P, fallback, objs=objs)
+        else:
+            pure_props = self.calculate_pures(T, objs=objs)
+        return pure_props
+
+    def calculate_pures(self, T, objs=None):
+        objs = getattr(self, self.pure_references[0]) if objs is None else objs
+        values = [i.T_dependent_property(T) for i in objs]
+        return values
+
+    def calculate_pures_P(self, T, P, fallback=False, objs=None):
+        objs = getattr(self, self.pure_references[0]) if objs is None else objs
+        if objs[0].P_dependent:
+            values = []
+            for o in objs:
+                v = o.TP_dependent_property(T, P)
+                if v is None and fallback:
+                    v = o.T_dependent_property(T)
+                values.append(v)
+        else:
+            values = [i(T) for i in objs]
+        return values
+
+    def test_method_validity(self, T, P, zs, ws, method):
+        r'''Method to test the validity of a specified method for the given
+        conditions.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to check method validity, [K]
+        P : float
+            Pressure at which to check method validity, [Pa]
+        zs : list[float]
+            Mole fractions of all species in the mixture, [-]
+        ws : list[float]
+            Weight fractions of all species in the mixture, [-]
+        method : str
+            Method name to use
+
+        Returns
+        -------
+        validity : bool
+            Whether or not a specifid method is valid
+        '''
+        T_low, T_high = self.T_limits.get(method, (None, None))
+        P_low, P_high = self.P_limits.get(method, (None, None))
+        if T_low is not None and T < T_low:
+            return False
+        if P_low is not None and P < P_low:
+            return False
+        if T_high is not None and T > T_high:
+            return False
+        if P_high is not None and P > P_high:
+            return False
+        if method in self.mixture_correlations:
+            return True
+        raise ValueError("No check implemented for sepcified method")
 
     def as_json(self, references=1):
         r'''Method to create a JSON serialization of the mixture property
@@ -399,6 +512,16 @@ class MixtureProperty:
         elif self.RAISE_PROPERTY_CALCULATION_ERROR:
             raise RuntimeError(f"{self.name} method '{method}' is not valid at T={T} K and P={P} Pa")
 
+    def calculate_excess_property(self, T, P, zs, ws, method):
+        N = len(zs)
+        prop = self.calculate(T, P, zs, ws, method)
+        tot = 0.0
+        for i in range(N):
+            zs2, ws2 = [0.0]*N, [0.0]*N
+            zs2[i], ws2[i] = 1.0, 1.0
+            tot += zs[i]*self.calculate(T, P, zs2, ws2, method)
+        return prop - tot
+
     def excess_property(self, T, P, zs=None, ws=None):
         r'''Method to calculate the excess property with sanity checking and
         without specifying a specific method. This requires the calculation of
@@ -426,14 +549,7 @@ class MixtureProperty:
         '''
         if zs is None or ws is None:
             zs, ws = self._complete_zs_ws(zs, ws)
-        N = len(zs)
-        prop = self.mixture_property(T, P, zs, ws)
-        tot = 0.0
-        for i in range(N):
-            zs2, ws2 = [0.0]*N, [0.0]*N
-            zs2[i], ws2[i] = 1.0, 1.0
-            tot += zs[i]*self.mixture_property(T, P, zs2, ws2)
-        return prop - tot
+        return self.calculate_excess_property(T, P, zs, ws, self._method)
 
     def partial_property(self, T, P, i, zs=None, ws=None):
         r'''Method to calculate the partial molar property with sanity checking
@@ -755,12 +871,12 @@ class MixtureProperty:
             if self.Tmin is not None:
                 Tmin = self.Tmin
             else:
-                raise Exception('Minimum pressure could not be auto-detected; please provide it')
+                raise Exception('Minimum temperature could not be auto-detected; please provide it')
         if Tmax is None:
             if self.Tmax is not None:
                 Tmax = self.Tmax
             else:
-                raise Exception('Maximum pressure could not be auto-detected; please provide it')
+                raise Exception('Maximum temperature could not be auto-detected; please provide it')
 
         if not methods:
             methods = [self._method]
@@ -788,6 +904,64 @@ class MixtureProperty:
                   + ' at mole fractions of ' + ', '.join(str(round(i, 4)) for i in zs) + '.')
         plt.show()
 
+    def plot_isobaric_isothermal(self, T, P, methods=[], pts=50, only_valid=True,
+                                 plot='property'):  # pragma: no cover
+        if has_matplotlib():
+            import matplotlib.pyplot as plt
+        else:
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        if not methods:
+            methods = [self._method]
+        if self.N != 2:
+            raise ValueError("Only binary systems are supported")
+
+        if plot is None or plot == 'property':
+            func = self.calculate
+            prop_name = self.name
+        elif plot == 'excess':
+            func = self.calculate_excess_property
+            only_valid = False
+            prop_name = 'Excess ' + self.name
+        if isinstance(T, (tuple, list, np.ndarray)):
+            iter_Ts = T
+        else:
+            iter_Ts = [T]
+        if isinstance(P, (tuple, list, np.ndarray)):
+            iter_Ps = P
+        else:
+            iter_Ps = [P]
+        if len(iter_Ps) != len(iter_Ts):
+            # Create a product of the lists of they are not the same size
+            combined = list(product(iter_Ts, iter_Ps))
+            iter_Ts = [T for T, _ in combined]
+            iter_Ps = [P for _, P in combined]
+        
+
+        xs = linspace(0, 1, pts)
+        for T, P in zip(iter_Ts, iter_Ps):
+            for method in methods:
+                if only_valid:
+                    properties = []
+                    xs_plot = []
+                    for x0 in xs:
+                        comp = [x0, 1.0 - x0]
+                        if self.test_method_validity(T, P, comp, None, method):
+                            try:
+                                p = func(T, P, comp, None, method)
+                                if self.test_property_validity(p):
+                                    properties.append(p)
+                                    xs_plot.append(x0)
+                            except:
+                                pass
+                    plt.plot(xs_plot, properties, label=method + ' at %g K and %g Pa' %(T, P) )
+                else:
+                    properties = [func(T, P, [x0, 1.0 - x0], None, method) for x0 in xs]
+                    plt.plot(xs, properties, label=method + ' at %g K and %g Pa' %(T, P))
+        plt.legend(loc='best')
+        plt.ylabel(prop_name + ', ' + self.units)
+        plt.xlabel('Mole fraction x0')
+        plt.title(prop_name + ' of a mixture of ' + ', '.join(self.CASs))
+        plt.show()
 
     def plot_property(self, zs=None, ws=None, Tmin=None, Tmax=None, Pmin=1E5,
                       Pmax=1E6, methods=[], pts=15, only_valid=True):  # pragma: no cover
@@ -826,10 +1000,11 @@ class MixtureProperty:
             and handle errors; if False, attempt calculation without any
             checking and use methods outside their bounds
         '''
-        if has_matplotlib():
+        if not has_matplotlib():
             raise Exception('Optional dependency matplotlib is required for plotting')
         else:
             import matplotlib.pyplot as plt
+            from mpl_toolkits.mplot3d import Axes3D
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
         if zs is None or ws is None:
@@ -861,7 +1036,7 @@ class MixtureProperty:
         Ts = np.linspace(Tmin, Tmax, pts)
         Ts_mesh, Ps_mesh = np.meshgrid(Ts, Ps)
         fig = plt.figure()
-        ax = fig.gca(projection='3d')
+        ax = fig.add_subplot(1,1,1,projection="3d")
 
         handles = []
         for method in methods:
@@ -882,7 +1057,7 @@ class MixtureProperty:
                         else:
                             T_props.append(None)
                     properties.append(T_props)
-                properties = ma.masked_invalid(np.array(properties, dtype=np.float).T)
+                properties = ma.masked_invalid(np.array(properties, dtype=np.float64).T)
                 handles.append(ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5))
             else:
                 properties = [[self.calculate(T, P, zs, ws, method) for P in Ps] for T in Ts]
@@ -897,6 +1072,90 @@ class MixtureProperty:
         plt.title(self.name + ' of a mixture of ' + ', '.join(self.CASs)
                   + ' at mole fractions of ' + ', '.join(str(round(i, 4)) for i in zs) + '.')
         plt.show(block=False)
-        # The below is a workaround for a matplotlib bug
-        ax.legend(handles, methods)
+
+
+    def plot_binary(self, P=None, T=None, pts=30, Tmin=None, Tmax=None, Pmin=1E5,
+                    Pmax=1E6, methods=[], only_valid=True): # pragma: no cover
+        if not has_matplotlib():
+            raise Exception('Optional dependency matplotlib is required for plotting')
+        else:
+            import matplotlib.pyplot as plt
+            from mpl_toolkits.mplot3d import Axes3D
+        from matplotlib.ticker import FormatStrFormatter
+        from numpy import ma
+
+        
+
+        if T is None:
+            # vary T
+            if Tmin is None:
+                if self.Tmin is not None:
+                    Tmin = self.Tmin
+                else:
+                    raise Exception('Minimum temperature could not be auto-detected; please provide it')
+            if Tmax is None:
+                if self.Tmax is not None:
+                    Tmax = self.Tmax
+                else:
+                    raise Exception('Maximum temperature could not be auto-detected; please provide it')
+            vary = Ts = linspace(Tmin, Tmax, pts)
+        if P is None:
+            if Pmin is None:
+                if self.Pmin is not None:
+                    Pmin = self.Pmin
+                else:
+                    raise Exception('Minimum pressure could not be auto-detected; please provide it')
+            if Pmax is None:
+                if self.Pmax is not None:
+                    Pmax = self.Pmax
+                else:
+                    raise Exception('Maximum pressure could not be auto-detected; please provide it')
+            vary = Ps = linspace(Pmin, Pmax, pts)
+        if not methods:
+            methods = [self._method]
+
+        xs = linspace(0, 1, pts)
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1,projection="3d")
+
+        vary_mesh, xs_mesh = np.meshgrid(vary, xs)
+        handles = []
+        for method in methods:
+            if only_valid:
+                properties = []
+                for v in vary:
+                    v_props = []
+                    T_set, P_set = (T, v) if T is not None else (v, P)
+                    for x0 in xs:
+                        if self.test_method_validity(T_set, P_set, [x0, 1.0 - x0], None, method):
+                            try:
+                                p = self.calculate(T_set, P_set, [x0, 1.0 - x0], None, method)
+                                if self.test_property_validity(p):
+                                    v_props.append(p)
+                                else:
+                                    v_props.append(None)
+                            except:
+                                v_props.append(None)
+                        else:
+                            v_props.append(None)
+                    properties.append(v_props)
+                properties = ma.masked_invalid(np.array(properties, dtype=np.float64).T)
+                handles.append(ax.plot_surface(vary_mesh, xs_mesh, properties, cstride=1, rstride=1, alpha=0.5))
+            else:
+                properties = []
+                for v in vary:
+                    row = []
+                    for x0 in xs:
+                        T_set, P_set = (T, v) if T is not None else (v, P)
+                        row.append(self.calculate(T_set, P_set, [x0, 1.0-x0], None, method))
+                    properties.append(row)
+                handles.append(ax.plot_surface(vary_mesh, xs_mesh, np.array(properties).T, cstride=1, rstride=1, alpha=0.5))
+
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%.4g'))
+        ax.zaxis.set_major_formatter(FormatStrFormatter('%.4g'))
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%.4g'))
+        ax.set_xlabel('Temperature, K' if T is None else 'Pressure, Pa')
+        ax.set_ylabel('Mole Fraction x0')
+        ax.set_zlabel(self.name + ', ' + self.units)
+        plt.title(self.name + ' binary system of ' + ', '.join(self.CASs))
         plt.show(block=False)

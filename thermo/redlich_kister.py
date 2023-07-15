@@ -135,7 +135,6 @@ def redlich_kister_build_structure(N, shape, data, indexes):
     This is a fairly computationally intensive calculation
     and should be cached
     '''
-    first_element = data[0]
     out = []
     
     if len(shape) == 1:

@@ -1638,45 +1638,18 @@ class HeatCapacityLiquidMixture(MixtureProperty):
             Molar heat capacity of the liquid mixture at the given conditions,
             [J/mol]
         '''
-        if method == LINEAR:
-            Cplms = [i(T) for i in self.HeatCapacityLiquids]
-            return mixing_simple(zs, Cplms)
-        elif method == LALIBERTE:
+        if method == LALIBERTE:
             ws = list(ws)
             ws.pop(self.index_w)
             Cpl = Laliberte_heat_capacity(T, ws, self.wCASs)
             MW = mixing_simple(zs, self.MWs)
             return property_mass_to_molar(Cpl, MW)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 
@@ -1764,39 +1737,12 @@ class HeatCapacitySolidMixture(MixtureProperty):
         Cpsm : float
             Molar heat capacity of the solid mixture at the given conditions, [J/mol]
         '''
-        if method == LINEAR:
-            Cpsms = [i(T) for i in self.HeatCapacitySolids]
-            return mixing_simple(zs, Cpsms)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 class HeatCapacityGasMixture(MixtureProperty):
@@ -1885,37 +1831,10 @@ class HeatCapacityGasMixture(MixtureProperty):
             Molar heat capacity of the gas mixture at the given conditions,
             [J/mol]
         '''
-        if method == LINEAR:
-            Cpgms = [i(T) for i in self.HeatCapacityGases]
-            return mixing_simple(zs, Cpgms)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 

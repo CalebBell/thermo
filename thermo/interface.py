@@ -638,54 +638,22 @@ class SurfaceTensionMixture(MixtureProperty):
         sigma : float
             Surface tension of the liquid at given conditions, [N/m]
         '''
-        if method == LINEAR:
-            sigmas = [i(T) for i in self.SurfaceTensions]
-            return mixing_simple(zs, sigmas)
-        elif method == DIGUILIOTEJA:
+        if method == DIGUILIOTEJA:
             return Diguilio_Teja(T=T, xs=zs, sigmas_Tb=self.sigmas_Tb,
                                  Tbs=self.Tbs, Tcs=self.Tcs)
         elif method == WINTERFELDSCRIVENDAVIS:
-            sigmas = [i(T) for i in self.SurfaceTensions]
-            if self._correct_pressure_pure:
-                rhoms = []
-                for obj in self.VolumeLiquids:
-                    rho = obj.TP_dependent_property(T, P)
-#                    if rho is None:
-#                        rho = obj.T_dependent_property(T)
-                    rhoms.append(1.0/rho)
-            else:
-                rhoms = [1./i.T_dependent_property(T) for i in self.VolumeLiquids]
+            sigmas = self.calculate_pures(T)
+            Vms = self.calculate_pures_corrected(T, P, fallback=False, objs=self.VolumeLiquids)
+            rhoms = [1.0/v for v in Vms]
             return Winterfeld_Scriven_Davis(zs, sigmas, rhoms)
         return super().calculate(T, P, zs, ws, method)
 
+
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         # LINEAR and WINTERFELDSCRIVENDAVIS need to calculate sigma for pure
         # species - doesn't work above Tc for any compound.
         # DIGUILIOTEJA needs Tcs, not sure.
         if method in [LINEAR, DIGUILIOTEJA, WINTERFELDSCRIVENDAVIS]:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 

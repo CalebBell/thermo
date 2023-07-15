@@ -744,25 +744,13 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
             ws = list(ws)
             ws.pop(self.index_w)
             return thermal_conductivity_Magomedov(T, P, ws, self.wCASs, k_w)
-
-        if self._correct_pressure_pure:
-            ks = []
-            for obj in self.ThermalConductivityLiquids:
-                k = obj.TP_dependent_property(T, P)
-                if k is None:
-                    k = obj.T_dependent_property(T)
-                ks.append(k)
-        else:
-            ks = [i.T_dependent_property(T) for i in self.ThermalConductivityLiquids]
-
-        if method == LINEAR:
-            return mixing_simple(zs, ks)
-        elif method == DIPPR_9H:
+        if method == DIPPR_9H:
+            ks = self.calculate_pures_corrected(T, P, fallback=True)
             return DIPPR9H(ws, ks)
         elif method == FILIPPOV:
+            ks = self.calculate_pures_corrected(T, P, fallback=True)
             return Filippov(ws, ks)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
@@ -793,8 +781,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
                 return method == MAGOMEDOV
         if method in [LINEAR, DIPPR_9H, FILIPPOV]:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 GHARAGHEIZI_G = 'GHARAGHEIZI_G'
@@ -1328,8 +1315,8 @@ class ThermalConductivityGasMixture(MixtureProperty):
 
     ranked_methods = [LINDSAY_BROMLEY, LINEAR]
 
-    pure_references = ('ViscosityGases', 'ThermalConductivityGases')
-    pure_reference_types = (ViscosityGas, ThermalConductivityGas)
+    pure_references = ('ThermalConductivityGases', 'ViscosityGases', )
+    pure_reference_types = (ThermalConductivityGas, ViscosityGas)
 
     pure_constants = ('MWs', 'Tbs', )
     custom_args = pure_constants
@@ -1395,57 +1382,14 @@ class ThermalConductivityGasMixture(MixtureProperty):
         kg : float
             Thermal conductivity of gas mixture, [W/m/K]
         '''
-        if self._correct_pressure_pure:
-            ks = []
-            for obj in self.ThermalConductivityGases:
-                k = obj.TP_dependent_property(T, P)
-                if k is None:
-                    k = obj.T_dependent_property(T)
-                ks.append(k)
-        else:
-            ks = [i.T_dependent_property(T) for i in self.ThermalConductivityGases]
-
-        if method == LINEAR:
-            return mixing_simple(zs, ks)
-        elif method == LINDSAY_BROMLEY:
-            if self._correct_pressure_pure:
-                mus = []
-                for obj in self.ViscosityGases:
-                    mu = obj.TP_dependent_property(T, P)
-                    if mu is None:
-                        mu = obj.T_dependent_property(T)
-                    mus.append(mu)
-            else:
-                mus = [i.T_dependent_property(T) for i in self.ViscosityGases]
+        if method == LINDSAY_BROMLEY:
+            ks = self.calculate_pures_corrected(T, P, fallback=True)
+            mus = self.calculate_pures_corrected(T, P, fallback=True, objs=self.ViscosityGases)
             return Lindsay_Bromley(T=T, ys=zs, ks=ks, mus=mus, Tbs=self.Tbs, MWs=self.MWs)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in [LINEAR, LINDSAY_BROMLEY]:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
