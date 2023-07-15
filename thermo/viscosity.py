@@ -124,7 +124,8 @@ from fluids.numerics import brenth, exp, horner, isinf, isnan, log, trunc_log
 from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_viscosity
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TPDependentProperty
+from thermo.utils import (COOLPROP, DIPPR_PERRY_8E, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR,
+                          MIXING_LOG_MOLAR, MIXING_LOG_MASS, MixtureProperty, TPDependentProperty)
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import VolumeGas, VolumeLiquid
 
@@ -1070,8 +1071,6 @@ class ViscosityGas(TPDependentProperty):
 
 
 LALIBERTE_MU = 'Laliberte'
-MIXING_LOG_MOLAR = 'Logarithmic mixing, molar'
-MIXING_LOG_MASS = 'Logarithmic mixing, mass'
 
 viscosity_liquid_mixture_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, LINEAR]
 """Holds all mixing rules available for the :obj:`ViscosityLiquidMixture`
@@ -1234,48 +1233,7 @@ class ViscosityLiquidMixture(MixtureProperty):
             ws = list(ws)
             ws.pop(self.index_w)
             return Laliberte_viscosity(T, ws, self.wCASs)
-
-        if self._correct_pressure_pure:
-            mus = []
-            for obj in self.ViscosityLiquids:
-                mu = obj.TP_dependent_property(T, P)
-                if mu is None:
-                    mu = obj.T_dependent_property(T)
-                mus.append(mu)
-        else:
-            if self.all_poly_fit:
-                poly_fit_data = self.poly_fit_data
-                Tmins, Tmaxs, coeffs = poly_fit_data[0], poly_fit_data[3], poly_fit_data[6]
-                mus = []
-                for i in range(len(zs)):
-                    if T < Tmins[i]:
-                        mu = (T - Tmins[i])*poly_fit_data[1][i] + poly_fit_data[2][i]
-                    elif T > Tmaxs[i]:
-                        mu = (T - Tmaxs[i])*poly_fit_data[4][i] + poly_fit_data[5][i]
-                    else:
-                        mu = 0.0
-                        for c in coeffs[i]:
-                            mu = mu*T + c
-                    mus.append(exp(mu))
-            else:
-                mus = [i.T_dependent_property(T) for i in self.ViscosityLiquids]
-        if method == MIXING_LOG_MOLAR:
-            ln_mu = 0.0
-            for i in range(len(zs)):
-                ln_mu += zs[i]*trunc_log(mus[i])
-            return exp(ln_mu)
-        elif method == MIXING_LOG_MASS:
-            ln_mu = 0.0
-            for i in range(len(ws)):
-                ln_mu += ws[i]*log(mus[i])
-            return exp(ln_mu)
-        elif method == LINEAR:
-            mu = 0.0
-            for i in range(len(zs)):
-                mu += zs[i]*mus[i]
-            return mu
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
@@ -1307,8 +1265,7 @@ class ViscosityLiquidMixture(MixtureProperty):
                 return method == LALIBERTE_MU
         if method in self.all_methods:
             return True
-        else:
-            raise ValueError('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 BROKAW = 'BROKAW'
 HERNING_ZIPPERER = 'HERNING_ZIPPERER'
@@ -1452,67 +1409,19 @@ class ViscosityGasMixture(MixtureProperty):
         mu : float
             Viscosity of gas mixture, [Pa*s]
         '''
-        if self._correct_pressure_pure:
-            mus = []
-            for obj in self.ViscosityGases:
-                mu = obj.TP_dependent_property(T, P)
-                if mu is None:
-                    mu = obj.T_dependent_property(T)
-                mus.append(mu)
-        else:
-            if self.all_poly_fit:
-                poly_fit_data = self.poly_fit_data
-                Tmins, Tmaxs, coeffs = poly_fit_data[0], poly_fit_data[3], poly_fit_data[6]
-                mus = []
-                for i in range(len(zs)):
-                    if T < Tmins[i]:
-                        mu = (T - Tmins[i])*poly_fit_data[1][i] + poly_fit_data[2][i]
-                    elif T > Tmaxs[i]:
-                        mu = (T - Tmaxs[i])*poly_fit_data[4][i] + poly_fit_data[5][i]
-                    else:
-                        mu = 0.0
-                        for c in coeffs[i]:
-                            mu = mu*T + c
-                    mus.append(mu)
-            else:
-                mus = [i.T_dependent_property(T) for i in self.ViscosityGases]
-
-        if method == LINEAR:
-            return mixing_simple(zs, mus)
-        elif method == HERNING_ZIPPERER:
+        if method == HERNING_ZIPPERER:
+            mus = self.calculate_pures_corrected(T, P, fallback=True)
             return Herning_Zipperer(zs, mus, None, self.MW_roots)
         elif method == WILKE:
+            mus = self.calculate_pures_corrected(T, P, fallback=True)
             return Wilke_prefactored(zs, mus, self.Wilke_t0s, self.Wilke_t1s, self.Wilke_t2s)
         elif method == BROKAW:
+            mus = self.calculate_pures_corrected(T, P, fallback=True)
             return Brokaw(T, zs, mus, self.MWs, self.molecular_diameters, self.Stockmayers)
-        else:
-            raise ValueError('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise ValueError('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 

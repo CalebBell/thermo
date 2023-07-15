@@ -69,6 +69,7 @@ from chemicals.heat_capacity import (
     Zabransky_quasi_polynomial_integral,
     Zabransky_quasi_polynomial_integral_over_T,
 )
+from chemicals.identifiers import sorted_CAS_key
 from chemicals.interface import PPDS14, ISTExpansion, Jasper, REFPROP_sigma, Somayajulu, Watson_sigma
 from chemicals.phase_change import PPDS12, Alibakhshi, Watson, Watson_n
 from chemicals.thermal_conductivity import PPDS3, PPDS8, Chemsep_16
@@ -236,6 +237,8 @@ changing code for each object.
 """
 loaded_json_based_correlations = False
 
+ENABLE_MIXTURE_JSON = True
+
 def json_correlation_lookup(CAS, key):
     if not loaded_json_based_correlations:
         load_json_based_correlations()
@@ -245,6 +248,23 @@ def json_correlation_lookup(CAS, key):
     for db in json_based_correlation_data:
         try:
             found_stuff = db[CAS][key]
+            for k, v in found_stuff.items():
+                if k not in json_based_found:
+                    json_based_found[k] = v
+                else:
+                    json_based_found[k].update(v)
+        except KeyError:
+            continue
+    return json_based_found
+
+def json_mixture_correlation_lookup(CAS1, CAS2, key):
+    if not loaded_json_based_correlations:
+        load_json_based_correlations()
+    CAS_key = ' '.join(sorted_CAS_key([CAS1, CAS2]))
+    json_based_found = {}
+    for db in json_based_correlation_data:
+        try:
+            found_stuff = db[CAS_key][key]
             for k, v in found_stuff.items():
                 if k not in json_based_found:
                     json_based_found[k] = v
@@ -265,6 +285,9 @@ def load_json_based_correlations():
              os.path.join(folder, 'inorganic_correlations.json'),
              os.path.join(folder, 'organic_correlations.json'),
              ]
+    if ENABLE_MIXTURE_JSON:
+        paths.extend([os.path.join(folder, 'mixture_correlations.json'),
+                    ])
     json_based_correlation_data.clear()
     json_based_correlation_paths.clear()
     import json

@@ -46,3 +46,6 @@ HEOS_FIT = 'HEOS_FIT'
 REFPROP_FIT = 'REFPROP_FIT'
 EOS = 'EOS'
 
+MIXING_LOG_MOLAR = 'Logarithmic mixing, molar'
+MIXING_LOG_MASS = 'Logarithmic mixing, mass'
+
