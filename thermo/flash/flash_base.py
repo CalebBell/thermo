@@ -276,9 +276,9 @@ class Flash:
         if T_spec:
             T = float(T)
             flash_specs['T'] = T
-            if T < self.T_MIN_FLASH:
+            if T < self.T_MIN_FLASH_ANY:
                 raise ValueError("Specified temperature ({} K) is below the minimum temeprature ({} K) "
-                                 "supported by the provided phases".format(T, self.T_MIN_FLASH))
+                                 "supported by any of the provided phases".format(T, self.T_MIN_FLASH_ANY))
             # if T <= 0.0:
             #     raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
         if P_spec:
@@ -769,6 +769,8 @@ class Flash:
     def _finish_initialization_base(self):
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
         self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
+        self.T_MIN_FLASH_ANY = min(p.T_MIN_FLASH for p in self.phases)
+        self.T_MAX_FLASH_ANY = max(p.T_MAX_FLASH for p in self.phases)
         scalar = True
         scalar_statuses = {i.scalar for i in self.phases}
         if len(scalar_statuses) > 1:
