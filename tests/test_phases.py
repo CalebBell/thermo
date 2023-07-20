@@ -5092,3 +5092,67 @@ def test_Tr_167_Prtranslated_alpha_function():
     liquid = CEOSLiquid(eos_class=PRMIXTranslatedConsistent, eos_kwargs={"Pcs": [114497.25, 5930000.0], "Tcs": [3.309, 694.2], "omegas": [-0.4715, 0.44], "kijs": [[0.0, 0], [0, 0.0]]}, HeatCapacityGases=[HeatCapacityGas(CASRN="14762-55-1", MW=4.002602, similarity_variable=0.2498374807187924, extrapolation="linear", method="POLING_POLY"), HeatCapacityGas(CASRN="108-95-2", MW=94.11124, similarity_variable=0.13813440349951825, extrapolation="linear", method="TRCIG")], T=298.15, P=101325.0, zs=[0.5, 0.5])
     new_liquid = liquid.to(zs=[1e-07, 0.9999999], P=851222.128878439,T=553.4386787878783)
     assert_close(new_liquid.eos_mix.a_alpha, 3.146979305113219)
+
+
+def test_iapws06_phase():
+    obj = IAPWS06(T=250, P=2e8)
+
+    assert_close(obj.to(T=obj.T, V=obj.V(), zs=[1]).P,obj.P)
+
+    assert_close(obj.to(P=obj.P, V=obj.V(), zs=[1]).T, obj.T)
+
+
+
+    point3 = IAPWS06(T=100, P=100e6)
+    assert_close(point3.G_mass(), -0.222296513088E6, rtol=1e-10)
+    assert_close(point3.dG_mass_dP(), 0.106193389260E-2, rtol=1e-10)
+    assert_close(point3.dG_mass_dT(), 0.261195122589E4, rtol=1e-10)
+    assert_close(point3.d2G_mass_dP2(), -0.941807981761E-13, rtol=1e-10)
+    assert_close(point3.d2G_mass_dPdT(), 0.274505162488E-7, rtol=1e-10)
+    assert_close(point3.d2G_mass_dT2(), -0.866333195517E1, rtol=1e-10)
+
+    assert_close(point3.H_mass(), -0.483491635676E6, rtol=1e-10)
+    assert_close(point3.A_mass(), -0.328489902347E6, rtol=1e-10)
+    assert_close(point3.U_mass(), -0.589685024936E6, rtol=1e-10)
+    assert_close(point3.S_mass(), -0.261195122589E4, rtol=1e-10)
+    assert_close(point3.Cp_mass(), 0.866333195517E3, rtol=1e-10)
+    assert_close(point3.rho_mass(), 0.941678203297E3, rtol=1e-10)
+
+    point2 = IAPWS06(T=273.152519, P=101325.0)
+    assert_close(point2.G_mass(), 0.10134274069E3, rtol=1e-10)
+    assert_close(point2.dG_mass_dP(), 0.109084388214E-2, rtol=1e-10)
+    assert_close(point2.dG_mass_dT(), 0.122076932550E4, rtol=1e-10)
+    assert_close(point2.d2G_mass_dP2(), -0.128485364928E-12, rtol=1e-10)
+    assert_close(point2.d2G_mass_dPdT(), 0.174362219972E-6, rtol=1e-10)
+    assert_close(point2.d2G_mass_dT2(), -0.767598233365E1, rtol=1e-10)
+
+    assert_close(point2.H_mass(), -0.333354873637E6, rtol=1e-10)
+    assert_close(point2.A_mass(), -0.918701567E1, rtol=1e-10)
+    assert_close(point2.U_mass(), -0.333465403393E6, rtol=1e-10)
+    assert_close(point2.S_mass(),-0.122076932550E4, rtol=1e-10)
+    assert_close(point2.Cp_mass(), 0.209671391024E4, rtol=1e-10)
+    assert_close(point2.rho_mass(), 0.916721463419E3, rtol=1e-10)
+
+
+
+
+    point1 = IAPWS06(T=273.16, P=611.657)
+    assert_close(point1.G_mass(), 0.611784135, rtol=1e-9)
+    assert_close(point1.dG_mass_dP(), 0.109085812737E-2, rtol=1e-10)
+    assert_close(point1.dG_mass_dT(), 0.122069433940E4, rtol=1e-10)
+    assert_close(point1.d2G_mass_dP2(), -0.128495941571E-12, rtol=1e-10)
+    assert_close(point1.d2G_mass_dPdT(), 0.174387964700E-6, rtol=1e-10)
+    assert_close(point1.d2G_mass_dT2(), -0.767602985875E1, rtol=1e-10)
+
+    assert_close(point1.H_mass(), -0.333444253966E6, rtol=1e-10)
+    assert_close(point1.A_mass(), -0.55446875E-1, rtol=1e-9)
+    assert_close(point1.U_mass(), -0.333444921197E6, rtol=1e-10)
+    assert_close(point1.S_mass(), -0.122069433940E4, rtol=1e-10)
+    assert_close(point1.Cp_mass(), 0.209678431622E4, rtol=1e-10)
+    assert_close(point1.rho_mass(), 0.916709492200E3, rtol=1e-10)
+
+    assert_close(point1.V(), 1.9652101514483845e-05)
+
+    assert_close(point1.isobaric_expansion(), 0.159863102566E-3) # alpha
+    assert_close(point1.dP_dT_V(), 0.135714764659E7) # beta
+    assert_close(point1.isothermal_compressibility(), 0.117793449348E-9) # kT

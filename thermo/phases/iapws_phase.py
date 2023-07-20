@@ -646,6 +646,7 @@ class IAPWS97(Phase):
 
 class IAPWS06(GibbsEOS):
     T_MAX_FLASH = T_MAX_FIXED = 273.16 # Above this ice does not form
+    force_phase = 's'
 
     model_name = 'iapws06'
     model_attributes = ('model_name',)
@@ -706,6 +707,7 @@ class IAPWS06(GibbsEOS):
         if T is not None:
             new.T = T
             if P is not None:
+                new.P = P
                 new._set_core()
             elif V is not None:
                 def V_err(P):
