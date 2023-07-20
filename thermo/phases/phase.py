@@ -6071,7 +6071,12 @@ derivatives_thermodynamic = ['dA_dP', 'dA_dP_T', 'dA_dP_V', 'dA_dT', 'dA_dT_P', 
              'dG_dV_P', 'dG_dV_T', 'dH_dP', 'dH_dP_T', 'dH_dP_V', 'dH_dT', 'dH_dT_P', 'dH_dT_V',
              'dH_dV_P', 'dH_dV_T', 'dS_dP', 'dS_dP_T', 'dS_dP_V', 'dS_dT', 'dS_dT_P', 'dS_dT_V',
              'dS_dV_P', 'dS_dV_T', 'dU_dP', 'dU_dP_T', 'dU_dP_V', 'dU_dT', 'dU_dT_P', 'dU_dT_V',
-             'dU_dV_P', 'dU_dV_T']
+             'dU_dV_P', 'dU_dV_T',
+             # These will probably need their doc fixed
+             'd2G_dP2', 'd2G_dT2',
+             'd2G_dPdT', 'd2G_dTdP',
+             
+             ]
 derivatives_thermodynamic_mass = []
 
 prop_names = {'A' : 'Helmholtz energy',
@@ -6102,20 +6107,23 @@ for attr in derivatives_thermodynamic:
         at_constant = 'T' if diff_by == 'P' else 'P'
     s = f'{base}_mass_{end}'
 
-    doc = r"""Method to calculate and return the {} derivative of mass {} of the phase at constant {}.
+    if not '2' in attr:
+        # TODO docs for second mass derivatives
 
-    .. math::
-        \left(\frac{{\partial {}_{{\text{{mass}}}}}}{{\partial {}}}\right)_{{{}}}
+        doc = r"""Method to calculate and return the {} derivative of mass {} of the phase at constant {}.
 
-Returns
--------
-{} : float
-    The {} derivative of mass {} of the phase at constant {}, [{}/{}]
-""".format(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
-    try:
-        _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
-    except:
-        pass
+        .. math::
+            \left(\frac{{\partial {}_{{\text{{mass}}}}}}{{\partial {}}}\right)_{{{}}}
+
+    Returns
+    -------
+    {} : float
+        The {} derivative of mass {} of the phase at constant {}, [{}/{}]
+    """.format(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
+        try:
+            _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
+        except:
+            pass
     setattr(Phase, s, _der)
     derivatives_thermodynamic_mass.append(s)
 del prop_names, prop_units

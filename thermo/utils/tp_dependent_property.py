@@ -81,6 +81,14 @@ class TPDependentProperty(TDependentProperty):
     P_dependent = True
     interpolation_P = None
 
+    P_correlation_models = {
+        'Tait': {'custom': True},
+    }
+    available_P_correlations = frozenset(P_correlation_models.keys())
+
+    P_correlation_parameters = {k: k + '_parameters' for k in P_correlation_models.keys()}
+    P_correlation_keys_to_parameters = {v: k for k, v in P_correlation_parameters.items()}
+
     def __init__(self, extrapolation, **kwargs):
         self.tabular_data_P = {}
         """tabular_data_P, dict: Stored (Ts, Ps, properties) for any
@@ -94,11 +102,24 @@ class TPDependentProperty(TDependentProperty):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used."""
 
+        self.P_correlations = {}
+
         super().__init__(extrapolation, **kwargs)
 
         self.P_limits = {}
         '''Pressure limits on a per-component basis. Not currently used.'''
 
+        if kwargs:
+            P_correlation_keys_to_parameters = self.P_correlation_keys_to_parameters
+            # Iterate over all the dictionaries in reverse such that the first one is left as the default
+            for key in reversed(list(kwargs.keys())):
+                if key in P_correlation_keys_to_parameters:
+                    P_correlation_dict = kwargs.pop(key)
+                    P_correlation_name = P_correlation_keys_to_parameters[key]
+                    # Probably need to reverse this too
+                    for corr_i, corr_kwargs in P_correlation_dict.items():
+                        self.add_P_correlation(name=corr_i, model=P_correlation_name,
+                                             **corr_kwargs)
 
         self.tabular_extrapolation_permitted = kwargs.get('tabular_extrapolation_permitted', True)
 
@@ -123,6 +144,21 @@ class TPDependentProperty(TDependentProperty):
         self.all_methods = set()
         """Set of all P-dependent methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`."""
+
+    def add_P_correlation(self, name, model, **kwargs):
+        d = getattr(self, model + '_parameters', None)
+        if d is None:
+            d = {}
+            setattr(self, model + '_parameters', d)
+
+        full_kwargs = kwargs.copy()
+        d[name] = full_kwargs
+        self.all_methods.add(name)
+        self.method = name
+
+        args = (kwargs['coeffs'], kwargs['N_terms'], kwargs['N_T'])
+
+        self.P_correlations[name] = args
 
     @property
     def method_P(self):
