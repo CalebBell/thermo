@@ -364,8 +364,6 @@ class FlashPureVLS(Flash):
             self.unique_phases += solids
         self.unique_phase_count = (1 if gas is not None else 0) + self.unique_liquid_count + len(solids)
         self.unique_liquid_hashes = unique_liquid_hashes
-        self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
-        self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
         self._finish_initialization_base()
 
 
@@ -457,7 +455,7 @@ class FlashPureVLS(Flash):
                     return None, [l], [], betas, None
                 # TODO more logic
 
-        if self.gas_count:
+        if self.gas_count and (T is None or T > self.gas.T_MIN_FLASH):
             gas = self.gas.to(zs=zs, T=T, P=P, V=V)
             G_min, lowest_phase = fun(gas), gas
         else:
@@ -466,10 +464,16 @@ class FlashPureVLS(Flash):
 
         liquids = []
         for l in self.liquids:
+            if T is not None and T < l.T_MIN_FLASH:
+                continue
             l = l.to(zs=zs, T=T, P=P, V=V)
             G = fun(l)
             if G < G_min:
                 G_min, lowest_phase = G, l
+            elif G == G_min and gas is not None:
+                # Did we find a vapor solution earlier? Set lowest to liquid if the density is above ideal
+                if l.Z() < 0.25:
+                    G_min, lowest_phase = G, l
             liquids.append(l)
 
 
