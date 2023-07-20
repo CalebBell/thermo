@@ -1416,7 +1416,6 @@ class TDependentProperty:
     correlation_keys_to_parameters = {v: k for k, v in correlation_parameters.items()}
 
 
-
     def __copy__(self):
         return self
 
