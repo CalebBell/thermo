@@ -184,7 +184,7 @@ from thermo.phases.combined import CombinedPhase
 from thermo.phases.coolprop_phase import CoolPropGas, CoolPropLiquid, CoolPropPhase
 from thermo.phases.gibbs_excess import GibbsExcessLiquid, GibbsExcessSolid
 from thermo.phases.helmholtz_eos import HelmholtzEOS
-from thermo.phases.iapws_phase import IAPWS95, IAPWS97, IAPWS95Gas, IAPWS95Liquid
+from thermo.phases.iapws_phase import IAPWS95, IAPWS97, IAPWS95Gas, IAPWS95Liquid, IAPWS06
 from thermo.phases.ideal_gas import IdealGas
 from thermo.phases.petroleum import ChaoSeader, GraysonStreed
 from thermo.phases.phase import IdealGasDeparturePhase, Phase, derivatives_jacobian, derivatives_thermodynamic, derivatives_thermodynamic_mass
@@ -210,7 +210,7 @@ __all__ = ('air_phase', 'ceos', 'combined', 'coolprop_phase', 'gibbs_excess',
 'helmholtz_eos', 'iapws_phase', 'ideal_gas', 'petroleum', 'phase', 'virial_phase',
  'DryAirLemmon', 'HumidAirRP1485', 'CEOSLiquid', 'CEOSGas', 'CombinedPhase', 'CoolPropPhase',
  'CoolPropLiquid', 'CoolPropGas', 'GibbsExcessLiquid', 'GibbsExcessSolid', 'HelmholtzEOS', 'IAPWS95',
- 'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97', 'IdealGas', 'GraysonStreed', 'ChaoSeader', 'Phase',
+ 'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97', 'IAPWS06', 'IdealGas', 'GraysonStreed', 'ChaoSeader', 'Phase',
  'IdealGasDeparturePhase', 'derivatives_thermodynamic', 'derivatives_thermodynamic_mass',
  'derivatives_jacobian', 'VirialCSP', 'VirialGas',
 
@@ -234,6 +234,7 @@ liquid_phases = (
     IAPWS95Liquid
 )
 solid_phases = (
+   IAPWS06,
     GibbsExcessSolid,
 )
 many_phases = (
