@@ -868,3 +868,32 @@ def test_vapor_pressure_element_metals():
 def test_accurate_vapor_pressure_H2O2():
     obj = VaporPressure(CASRN="7722-84-1")
     assert_close(obj(160+273.15), 124484.67628951524, rtol=0.005)
+
+@pytest.mark.meta_T_dept
+def test_sublimation_pressure_iapws():
+    obj = SublimationPressure(CASRN="7732-18-5", Tt=273.16, Pt=611.654771008, Hsub_t=51065.16012541218, extrapolation="linear", method="IAPWS")
+    assert_close(obj(240), 27.26684427485674, rtol=1e-13)
+    assert obj.T_limits['IAPWS'][0] == 50
+    assert obj.T_limits['IAPWS'][1] == 273.16
+
+@pytest.mark.meta_T_dept
+def test_sublimation_pressure_alcock():
+    obj = SublimationPressure(CASRN="7440-62-2", Tt=2183.15, Pt=3.008394450145412, Hsub_t=190913.3611650746, extrapolation="linear", method="ALCOCK_ELEMENTS")
+    assert_close(obj(1018), 2.7958216156724275e-14, rtol=1e-12)
+
+@pytest.mark.meta_T_dept
+def test_sublimation_pressure_custom_fit():
+    kwargs = {"DIPPR101_parameters": {
+        "New Fit": {
+          "A": 166.01402981804137,
+          "B": -6239.149610239025,
+          "C": -23.9237938633523,
+          "D": 0.00004603892300585473,
+          "E": 2.1411178524601593,
+          "Tmax": 216.56,
+          "Tmin": 194.225
+        }
+      }}
+    # first custom fit for sublimation data
+    obj = SublimationPressure(**kwargs)
+    assert_close(obj(205),227135.9050298131)
