@@ -64,7 +64,7 @@ from math import e, inf
 
 from chemicals import miscdata, vapor_pressure
 from chemicals.dippr import EQ101
-from chemicals.iapws import iapws95_dPsat_dT, iapws95_Psat, iapws95_Tc
+from chemicals.iapws import iapws95_dPsat_dT, iapws95_Psat, iapws95_Tc, iapws11_Psub, iapws95_Tt
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals.vapor_pressure import (
@@ -635,14 +635,14 @@ class VaporPressure(TDependentProperty):
 
 PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'
 
-sublimation_pressure_methods = [PSUB_CLAPEYRON]
+sublimation_pressure_methods = [PSUB_CLAPEYRON, ALCOCK_ELEMENTS, IAPWS]
 """Holds all methods available for the SublimationPressure class, for use in
 iterating over them."""
 
 
 class SublimationPressure(TDependentProperty):
     '''Class for dealing with sublimation pressure as a function of temperature.
-    Consists of one estimation method.
+    Consists of one estimation method, IAPWS for ice, and solid metal data.
 
     Parameters
     ----------
@@ -674,10 +674,17 @@ class SublimationPressure(TDependentProperty):
 
     **PSUB_CLAPEYRON**:
         Clapeyron thermodynamic identity, :obj:`Psub_Clapeyron <chemicals.vapor_pressure.Psub_Clapeyron>`
+    **IAPWS**:
+        IAPWS formulation for sublimation pressure of ice,
+        :obj:`iapws11_Psub <chemicals.iapws.iapws11_Psub>`
+    **ALCOCK_ELEMENTS**:
+        A collection of sublimation pressure data for metallic elements, in
+        :obj:`chemicals.dippr.EQ101` form [2]_
 
     See Also
     --------
     chemicals.vapor_pressure.Psub_Clapeyron
+    chemicals.iapws.iapws11_Psub
 
     References
     ----------
@@ -686,6 +693,10 @@ class SublimationPressure(TDependentProperty):
        Solid Vapor Pressure and Heat of Sublimation of Organic Compounds."
        International Journal of Thermophysics 25, no. 2 (March 1, 2004):
        337-50. https://doi.org/10.1023/B:IJOT.0000028471.77933.80.
+    .. [2] Alcock, C. B., V. P. Itkin, and M. K. Horrigan. "Vapour Pressure
+        Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
+        Quarterly 23, no. 3 (July 1, 1984): 309-13.
+        https://doi.org/10.1179/cmq.1984.23.3.309.
     '''
 
     name = 'Sublimation pressure'
@@ -699,10 +710,10 @@ class SublimationPressure(TDependentProperty):
     """Disallow tabular extrapolation by default."""
     property_min = 1e-300
     """Mimimum valid value of sublimation pressure."""
-    property_max = 1e5
-    """Maximum valid value of sublimation pressure. Set to 1 bar tentatively."""
+    property_max = 1e6
+    """Maximum valid value of sublimation pressure. Set to 1 MPa tentatively."""
 
-    ranked_methods = [PSUB_CLAPEYRON]
+    ranked_methods = [IAPWS, ALCOCK_ELEMENTS, PSUB_CLAPEYRON]
     """Default rankings of the available methods."""
 
     custom_args = ('Tt', 'Pt', 'Hsub_t')
@@ -726,11 +737,20 @@ class SublimationPressure(TDependentProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
+        CASRN = self.CASRN
         methods = []
         self.T_limits = T_limits = {}
         if all((self.Tt, self.Pt, self.Hsub_t)):
             methods.append(PSUB_CLAPEYRON)
             T_limits[PSUB_CLAPEYRON] = (1.0, self.Tt*1.5)
+        if CASRN is not None and CASRN == '7732-18-5':
+            methods.append(IAPWS)
+            T_limits[IAPWS] = (50.0, iapws95_Tt)
+        if CASRN is not None and CASRN in vapor_pressure.Psub_data_Alcock_elements.index:
+            methods.append(ALCOCK_ELEMENTS)
+            A, B, C, D, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psub_values_Alcock_elements[vapor_pressure.Psub_data_Alcock_elements.index.get_loc(CASRN)].tolist()
+            self.Alcock_coeffs = [A, B, C, D, 1.0]
+            T_limits[ALCOCK_ELEMENTS] = (Alcock_Tmin, Alcock_Tmax)
         self.all_methods = set(methods)
 
     @staticmethod
@@ -762,6 +782,10 @@ class SublimationPressure(TDependentProperty):
         '''
         if method == PSUB_CLAPEYRON:
             Psub = max(Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t), 1e-200)
+        elif method == IAPWS:
+            Psub = iapws11_Psub(T)
+        elif method == ALCOCK_ELEMENTS:
+            Psub = EQ101(T, *self.Alcock_coeffs)
         else:
             return self._base_calculate(T, method)
         return Psub
@@ -793,4 +817,4 @@ class SublimationPressure(TDependentProperty):
             return True
             # No lower limit
         else:
-            return super(VaporPressure, self).test_method_validity(T, method)
+            return super().test_method_validity(T, method)
