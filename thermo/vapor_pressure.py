@@ -150,6 +150,7 @@ ANTOINE_POLING = 'ANTOINE_POLING'
 ANTOINE_WEBBOOK = 'ANTOINE_WEBBOOK'
 ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
 ALCOCK_ELEMENTS = 'ALCOCK_ELEMENTS'
+LANDOLT = 'LANDOLT'
 
 
 BOILING_CRITICAL = 'BOILING_CRITICAL'
@@ -635,14 +636,15 @@ class VaporPressure(TDependentProperty):
 
 PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'
 
-sublimation_pressure_methods = [PSUB_CLAPEYRON, ALCOCK_ELEMENTS, IAPWS]
+sublimation_pressure_methods = [PSUB_CLAPEYRON, ALCOCK_ELEMENTS, IAPWS, LANDOLT]
 """Holds all methods available for the SublimationPressure class, for use in
 iterating over them."""
 
 
 class SublimationPressure(TDependentProperty):
     '''Class for dealing with sublimation pressure as a function of temperature.
-    Consists of one estimation method, IAPWS for ice, and solid metal data.
+    Consists of one estimation method, IAPWS for ice, metallic element data,
+    and some data for organic species.
 
     Parameters
     ----------
@@ -680,6 +682,9 @@ class SublimationPressure(TDependentProperty):
     **ALCOCK_ELEMENTS**:
         A collection of sublimation pressure data for metallic elements, in
         :obj:`chemicals.dippr.EQ101` form [2]_
+    **LANDOLT**:
+        Antoine coefficients in [3]_ for organic species
+
 
     See Also
     --------
@@ -697,6 +702,8 @@ class SublimationPressure(TDependentProperty):
         Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
         Quarterly 23, no. 3 (July 1, 1984): 309-13.
         https://doi.org/10.1179/cmq.1984.23.3.309.
+    .. [3] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons, 
+        and S, Se, Te, and Halogen Containing Organic Compounds. Springer, 1999.
     '''
 
     name = 'Sublimation pressure'
@@ -713,7 +720,7 @@ class SublimationPressure(TDependentProperty):
     property_max = 1e6
     """Maximum valid value of sublimation pressure. Set to 1 MPa tentatively."""
 
-    ranked_methods = [IAPWS, ALCOCK_ELEMENTS, PSUB_CLAPEYRON]
+    ranked_methods = [IAPWS, ALCOCK_ELEMENTS, LANDOLT, PSUB_CLAPEYRON]
     """Default rankings of the available methods."""
 
     custom_args = ('Tt', 'Pt', 'Hsub_t')
@@ -751,6 +758,11 @@ class SublimationPressure(TDependentProperty):
             A, B, C, D, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psub_values_Alcock_elements[vapor_pressure.Psub_data_Alcock_elements.index.get_loc(CASRN)].tolist()
             self.Alcock_coeffs = [A, B, C, D, 1.0]
             T_limits[ALCOCK_ELEMENTS] = (Alcock_Tmin, Alcock_Tmax)
+        if CASRN is not None and CASRN in vapor_pressure.Psub_data_Landolt_Antoine.index:
+            methods.append(LANDOLT)
+            A, B, C, Tmin, Tmax = vapor_pressure.Psub_values_Landolt_Antoine[vapor_pressure.Psub_data_Landolt_Antoine.index.get_loc(CASRN)].tolist()
+            self.LANDOLT_coefs = [A, B, C]
+            T_limits[LANDOLT] = (Tmin, Tmax)
         self.all_methods = set(methods)
 
     @staticmethod
@@ -786,6 +798,8 @@ class SublimationPressure(TDependentProperty):
             Psub = iapws11_Psub(T)
         elif method == ALCOCK_ELEMENTS:
             Psub = EQ101(T, *self.Alcock_coeffs)
+        elif method == LANDOLT:
+            return Antoine(T, *self.LANDOLT_coefs, base=e)
         else:
             return self._base_calculate(T, method)
         return Psub
