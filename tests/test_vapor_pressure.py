@@ -897,3 +897,9 @@ def test_sublimation_pressure_custom_fit():
     # first custom fit for sublimation data
     obj = SublimationPressure(**kwargs)
     assert_close(obj(205),227135.9050298131)
+
+@pytest.mark.meta_T_dept
+def test_sublimation_pressure_landolt():
+    obj = SublimationPressure(CASRN="74-82-8", Tt=90.6941, Pt=11696.0641152, Hsub_t=9669.32184157482, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(80), 2113.6314607955483, rtol=1e-12)
+
