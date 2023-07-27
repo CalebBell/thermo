@@ -455,6 +455,11 @@ class FlashPureVLS(Flash):
                     return None, [l], [], betas, None
                 # TODO more logic
 
+
+        # if not self.ideal_gas_basis:
+        #     # Cannot use Gibbs, need to solve for phase boundaries and decide
+        #     pass
+
         if self.gas_count and (T is None or T > self.gas.T_MIN_FLASH):
             gas = self.gas.to(zs=zs, T=T, P=P, V=V)
             G_min, lowest_phase = fun(gas), gas

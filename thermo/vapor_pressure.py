@@ -683,7 +683,7 @@ class SublimationPressure(TDependentProperty):
         A collection of sublimation pressure data for metallic elements, in
         :obj:`chemicals.dippr.EQ101` form [2]_
     **LANDOLT**:
-        Antoine coefficients in [3]_ for organic species
+        Antoine coefficients in [3]_, [4]_, and [5]_ for organic species
 
 
     See Also
@@ -704,6 +704,12 @@ class SublimationPressure(TDependentProperty):
         https://doi.org/10.1179/cmq.1984.23.3.309.
     .. [3] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons, 
         and S, Se, Te, and Halogen Containing Organic Compounds. Springer, 1999.
+    .. [4] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons, 
+    and S, Se, Te, and Halogen Containing Organic Compounds. Springer, 1999.
+    .. [5] Dykyj, J., and K. R. Hall. "Vapor Pressure and Antoine Constants for
+        Oxygen Containing Organic Compounds". 2000.
+    .. [6] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen 
+    Containing Organic Compounds. Springer, 2001.
     '''
 
     name = 'Sublimation pressure'
@@ -753,12 +759,12 @@ class SublimationPressure(TDependentProperty):
         if CASRN is not None and CASRN == '7732-18-5':
             methods.append(IAPWS)
             T_limits[IAPWS] = (50.0, iapws95_Tt)
-        if CASRN is not None and CASRN in vapor_pressure.Psub_data_Alcock_elements.index:
+        if load_data and CASRN is not None and CASRN in vapor_pressure.Psub_data_Alcock_elements.index:
             methods.append(ALCOCK_ELEMENTS)
             A, B, C, D, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psub_values_Alcock_elements[vapor_pressure.Psub_data_Alcock_elements.index.get_loc(CASRN)].tolist()
             self.Alcock_coeffs = [A, B, C, D, 1.0]
             T_limits[ALCOCK_ELEMENTS] = (Alcock_Tmin, Alcock_Tmax)
-        if CASRN is not None and CASRN in vapor_pressure.Psub_data_Landolt_Antoine.index:
+        if load_data and CASRN is not None and CASRN in vapor_pressure.Psub_data_Landolt_Antoine.index:
             methods.append(LANDOLT)
             A, B, C, Tmin, Tmax = vapor_pressure.Psub_values_Landolt_Antoine[vapor_pressure.Psub_data_Landolt_Antoine.index.get_loc(CASRN)].tolist()
             self.LANDOLT_coefs = [A, B, C]

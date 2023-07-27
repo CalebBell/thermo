@@ -1864,12 +1864,13 @@ class PropertyCorrelationsPackage:
 
 # Values except for omega from IAPWS; heat capacity isn't official.
 iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],
-                                           Pcs=[22064000.0], Tcs=[647.096])
+                                           Pcs=[22064000.0], Tcs=[647.096], Tts=[273.16], Pts=[611.654771008])
 """:obj:`ChemicalConstantsPackage` : Object intended to hold the IAPWS-95 water constants
 for use with the :obj:`thermo.phases.IAPWS95` phase object.
 """
 
 iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip_missing=True,
+                                                SublimationPressures=[SublimationPressure(CASRN="7732-18-5", method="IAPWS", load_data=False)],
                                                  SurfaceTensions=[SurfaceTension(load_data=False, Tc=647.14, exp_poly_fit_ln_tau=(248.14999999999998, 643.9043, 647.14,
                                                     [-2.8494246663280267e-05, -0.0007642770215779117, -0.0087879657158058, -0.056840919106152674, -0.22915223013722677, -0.607083777358256,
                                                      -1.0946692428934923, -0.08982641235684152, -2.383855224250596]))],

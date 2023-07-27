@@ -647,6 +647,10 @@ class IAPWS97(Phase):
 class IAPWS06(GibbsEOS):
     T_MAX_FLASH = T_MAX_FIXED = 273.16 # Above this ice does not form
     force_phase = 's'
+    phase = 's'
+    is_gas = False
+    is_liquid = False
+    is_solid = True
 
     model_name = 'iapws06'
     model_attributes = ('model_name',)

@@ -900,6 +900,23 @@ def test_sublimation_pressure_custom_fit():
 
 @pytest.mark.meta_T_dept
 def test_sublimation_pressure_landolt():
+    # methane
     obj = SublimationPressure(CASRN="74-82-8", Tt=90.6941, Pt=11696.0641152, Hsub_t=9669.32184157482, extrapolation="linear", method="LANDOLT")
     assert_close(obj(80), 2113.6314607955483, rtol=1e-12)
 
+    # benzene
+    obj = SublimationPressure(CASRN="71-43-2", Tt=278.674, Pt=4784.60513165, Hsub_t=44400.0, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(270), 2573.7097987788748)
+
+
+    # 2-bromonapthalene
+    obj = SublimationPressure(CASRN="580-13-2", Tt=328.15, Pt=14.95627484078953, Hsub_t=75656.084, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(280), 0.5126876513974122)
+
+    # Dinitrogen oxide (Nitrous oxide)
+    obj = SublimationPressure(CASRN="10024-97-2", Tt=182.33, Pt=87837.3103401, Hsub_t=23128.43978202224, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(150), 2945.2163686099707)
+
+    # 9-Methylcarbazole
+    obj = SublimationPressure(CASRN="1484-12-4", Tt=362.485, Pt=7.4604138453786435, Hsub_t=95500.0, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(320), 0.1177826093493645, rtol=1e-12)
