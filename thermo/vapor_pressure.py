@@ -162,7 +162,8 @@ EDALAT = 'EDALAT'
 vapor_pressure_methods = [IAPWS, HEOS_FIT,
                           WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
-                          ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
+                          ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, LANDOLT,
+                          AMBROSE_WALTON,
                           LEE_KESLER_PSAT, EDALAT, EOS, BOILING_CRITICAL, SANJARI]
 """Holds all methods available for the VaporPressure class, for use in
 iterating over them."""
@@ -170,7 +171,7 @@ iterating over them."""
 
 class VaporPressure(TDependentProperty):
     '''Class for dealing with vapor pressure as a function of temperature.
-    Consists of five coefficient-based methods and four data sources, one
+    Consists of six coefficient-based methods and five data sources, one
     source of tabular information, four corresponding-states estimators,
     any provided equation of state, the external library CoolProp,
     and one substance-specific formulation.
@@ -261,6 +262,8 @@ class VaporPressure(TDependentProperty):
     **HEOS_FIT**:
         A series of higher-order polynomial fits to the calculated results from
         fundamental helmholtz equations of state as calculated with REFPROP
+    **LANDOLT**:
+        Antoine coefficients in [8]_, [9]_, and [10]_ for organic species
 
     See Also
     --------
@@ -295,9 +298,15 @@ class VaporPressure(TDependentProperty):
     .. [6] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
     .. [7] Alcock, C. B., V. P. Itkin, and M. K. Horrigan. "Vapour Pressure
-        Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
-        Quarterly 23, no. 3 (July 1, 1984): 309-13.
-        https://doi.org/10.1179/cmq.1984.23.3.309.
+       Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
+       Quarterly 23, no. 3 (July 1, 1984): 309-13.
+       https://doi.org/10.1179/cmq.1984.23.3.309.
+    .. [8] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons, 
+       and S, Se, Te, and Halogen Containing Organic Compounds. Springer, 1999.
+    .. [9] Dykyj, J., and K. R. Hall. "Vapor Pressure and Antoine Constants for
+       Oxygen Containing Organic Compounds". 2000.
+    .. [10] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen 
+       Containing Organic Compounds. Springer, 2001.
     '''
 
     name = 'Vapor pressure'
@@ -335,7 +344,7 @@ class VaporPressure(TDependentProperty):
 
     ranked_methods = [IAPWS, HEOS_FIT, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
-                      ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, AMBROSE_WALTON,
+                      ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, LANDOLT, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     """Default rankings of the available methods."""
 
@@ -451,6 +460,11 @@ class VaporPressure(TDependentProperty):
                 self.VDI_PPDS_Pc = Pc
                 methods.append(VDI_PPDS)
                 T_limits[VDI_PPDS] = (self.VDI_PPDS_Tm, self.VDI_PPDS_Tc)
+            if CASRN in vapor_pressure.Psat_data_Landolt_Antoine.index:
+                methods.append(LANDOLT)
+                A, B, C, Tmin, Tmax = vapor_pressure.Psat_values_Landolt_Antoine[vapor_pressure.Psat_data_Landolt_Antoine.index.get_loc(CASRN)].tolist()
+                self.LANDOLT_coefs = [A, B, C]
+                T_limits[LANDOLT] = (Tmin, Tmax)
         if all((self.Tb, self.Tc, self.Pc)):
             methods.append(BOILING_CRITICAL)
             T_limits[BOILING_CRITICAL] = (0.01, self.Tc)
@@ -496,6 +510,8 @@ class VaporPressure(TDependentProperty):
         elif method == ANTOINE_WEBBOOK:
             A, B, C = self.ANTOINE_WEBBOOK_coefs
             Psat = Antoine(T, A, B, C, base=e)
+        elif method == LANDOLT:
+            return Antoine(T, *self.LANDOLT_coefs, base=e)
         elif method == DIPPR_PERRY_8E:
             Psat = EQ101(T, *self.Perrys2_8_coeffs)
         elif method == ALCOCK_ELEMENTS:
@@ -699,17 +715,15 @@ class SublimationPressure(TDependentProperty):
        International Journal of Thermophysics 25, no. 2 (March 1, 2004):
        337-50. https://doi.org/10.1023/B:IJOT.0000028471.77933.80.
     .. [2] Alcock, C. B., V. P. Itkin, and M. K. Horrigan. "Vapour Pressure
-        Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
-        Quarterly 23, no. 3 (July 1, 1984): 309-13.
-        https://doi.org/10.1179/cmq.1984.23.3.309.
+       Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
+       Quarterly 23, no. 3 (July 1, 1984): 309-13.
+       https://doi.org/10.1179/cmq.1984.23.3.309.
     .. [3] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons, 
-        and S, Se, Te, and Halogen Containing Organic Compounds. Springer, 1999.
-    .. [4] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons, 
-    and S, Se, Te, and Halogen Containing Organic Compounds. Springer, 1999.
-    .. [5] Dykyj, J., and K. R. Hall. "Vapor Pressure and Antoine Constants for
-        Oxygen Containing Organic Compounds". 2000.
-    .. [6] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen 
-    Containing Organic Compounds. Springer, 2001.
+       and S, Se, Te, and Halogen Containing Organic Compounds. Springer, 1999.
+    .. [4] Dykyj, J., and K. R. Hall. "Vapor Pressure and Antoine Constants for
+       Oxygen Containing Organic Compounds". 2000.
+    .. [5] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen 
+       Containing Organic Compounds. Springer, 2001.
     '''
 
     name = 'Sublimation pressure'
