@@ -48,6 +48,7 @@ from thermo.vapor_pressure import (
     VDI_TABULAR,
     WAGNER_MCGARRY,
     WAGNER_POLING,
+    LANDOLT
 )
 
 
@@ -92,6 +93,7 @@ def test_VaporPressure_ethanol():
                      WAGNER_POLING: 11590.408779316374,
                      ANTOINE_POLING: 11593.661615921257,
                      DIPPR_PERRY_8E: 11659.154222044575,
+                     LANDOLT: 11366.66757231785,
                      VDI_PPDS: 11698.02742876088,
                      BOILING_CRITICAL: 14088.453409816764,
                      LEE_KESLER_PSAT: 11350.156640503357,
@@ -107,7 +109,7 @@ def test_VaporPressure_ethanol():
         EtOH.method = i
         Psat_calcs[i] = EtOH.T_dependent_property(T)
         Tmin, Tmax = EtOH.T_limits[i]
-        if i not in (ANTOINE_WEBBOOK,):
+        if i not in (ANTOINE_WEBBOOK, LANDOLT):
             assert Tmin < T < Tmax
 
     for k, v in Psats_expected.items():
@@ -133,7 +135,7 @@ def test_VaporPressure_ethanol():
 @pytest.mark.meta_T_dept
 def test_VaporPressure_extended_poling():
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
-    a = VaporPressure(CASRN='589-81-1')
+    a = VaporPressure(CASRN='589-81-1', extrapolation="AntoineAB|DIPPR101_ABC")
 
     Psat_calcs = []
     for i in list(a.all_methods):
@@ -141,7 +143,7 @@ def test_VaporPressure_extended_poling():
         Psat_calcs.append(a.T_dependent_property(410))
 
 
-    Psat_exp = [162944.82134710113, 162870.44794192078, 170508.47471278594, 162865.5380455795]
+    Psat_exp = [162944.82134710113, 162870.44794192078, 170508.47471278594, 162865.5380455795, 162865.44152809016]
     assert_close1d(sorted(Psat_calcs), sorted(Psat_exp))
 
     s = a.as_json()
@@ -920,3 +922,20 @@ def test_sublimation_pressure_landolt():
     # 9-Methylcarbazole
     obj = SublimationPressure(CASRN="1484-12-4", Tt=362.485, Pt=7.4604138453786435, Hsub_t=95500.0, extrapolation="linear", method="LANDOLT")
     assert_close(obj(320), 0.1177826093493645, rtol=1e-12)
+
+@pytest.mark.meta_T_dept
+def test_vapor_pressure_landolt():
+    # Volume A
+    obj = VaporPressure(CASRN="7647-01-0", Tb=188.172607605, Tc=324.68, Pc=8313500.0, omega=0.129,
+                        extrapolation="AntoineAB|DIPPR101_ABC", method="LANDOLT")
+    assert_close(obj(180), 62353.92510216071, rtol=1e-12)
+
+    # Volume B
+    obj = VaporPressure(CASRN="143-08-8", Tb=486.85, Tc=670.7, Pc=2528000.0, omega=0.6177, 
+                        extrapolation="AntoineAB|DIPPR101_ABC", method="LANDOLT")
+    assert_close(obj(400), 4925.021091045397, rtol=1e-12)
+
+    # Volume C
+    obj = VaporPressure(CASRN="62-53-3", Tb=457.25, Tc=705.0, Pc=5630000.0, omega=0.382,
+                        extrapolation="AntoineAB|DIPPR101_ABC", method="LANDOLT")
+    assert_close(obj(400), 17243.29241464641, rtol=1e-12)
