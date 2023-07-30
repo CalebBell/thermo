@@ -200,6 +200,7 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
                 dH_ele += gas_obj.T_dependent_property_integral(Tb_Si, T)
                 dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_Si, T)
         elif ele == 'P':
+            # White phosphorus is the basis here
             T_alpha_beta_P = 195.400
             Htrans_alpha_beta_P = 521.0 # 525.5104 reported in 
             # The thermodynamic properties of elementary phosphorus The heat capacities of two crystalline modifications of red phosphorus, of α and β white phosphorus, and of black phosphorus from 15 to 300 K
