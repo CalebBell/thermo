@@ -169,27 +169,53 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
         solid_obj = HeatCapacitySolid(CASRN=element_obj.CAS_standard)
         liquid_obj = HeatCapacityLiquid(CASRN=element_obj.CAS_standard)
         gas_obj = HeatCapacityGas(CASRN=element_obj.CAS_standard)
-        if ele in ('H', 'O', 'N', 'F'):
+        if ele in ('H', 'O', 'N', 'F', 'P'):
             gas_obj.method = 'WEBBOOK_SHOMATE'
         if ele == 'Br':
             # https://janaf.nist.gov/tables/Br-038.html
             # 265.9 K ish crystal to liquid
             # 332.5 K - ish transition from liquid to ideal gas
-            pass
+            raise NotImplementedError
+        elif ele == 'Si':
+            solid_obj.method = 'JANAF'
+            Tm_Si = 1687.15
+            Tb_Si = 3504.616
+            Hfus_Si = 50210.0
+            Hvap_Si = 384548.0
+            Tm_solid_int = min(T, Tm_Si)
+            Tm_liquid_int = min(T, Tb_Si)
+            dH_ele = solid_obj.T_dependent_property_integral(T_ref, Tm_solid_int)
+            dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, Tm_solid_int)
+            if T > Tm_Si:
+                dH_ele += Hfus_Si
+                dS_ele += Hfus_Si/Tm_Si
+                dH_ele += liquid_obj.T_dependent_property_integral(Tm_Si, Tm_liquid_int)
+                dS_ele += liquid_obj.T_dependent_property_integral_over_T(Tm_Si, Tm_liquid_int)
+            if T > Tb_Si:
+                dH_ele += Hvap_Si
+                dS_ele += Hvap_Si/Tb_Si
+                dH_ele += gas_obj.T_dependent_property_integral(Tb_Si, T)
+                dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_Si, T)
+            
         elif ele == 'S':
             # CRystal II to Crystal 1 at 368 K
             # crystal I to liquid at 388 K
             # 432 K liquid-liquid lambda transition
             # 882 K liquid to ideal gas transition
-            pass
+            raise NotImplementedError
         elif ele == 'I':
             # 386.7 K ish crystal to liquid
             # 457.6 K - ish transition from liquid to ideal gas
-            pass
+            raise NotImplementedError
         elif ele == 'Hg':
             # https://janaf.nist.gov/tables/Hg-001.html
-            pass
-        if ele in solid_ele:
+            raise NotImplementedError
+        elif ele == 'P':
+            # https://janaf.nist.gov/tables/P-001.html
+            # ALPHA <--> BETA 195.4 K, BETA <--> LIQUID 317.3 K, LIQUID <--> IDEAL GAS 1180.008 K
+            raise NotImplementedError
+        
+        elif ele in solid_ele:
             dH_ele = solid_obj.T_dependent_property_integral(T_ref, T)
             dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T)
         elif ele in liquid_ele:
