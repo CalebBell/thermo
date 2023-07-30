@@ -21,10 +21,12 @@ SOFTWARE.
 '''
 
 
-__all__ = ['standard_entropy', 'S0_basis_converter']
+__all__ = ['standard_entropy', 'S0_basis_converter', 'standard_state_ideal_gas_formation']
 
 from fluids.numerics import quad
-
+from chemicals.reaction import standard_formation_reaction
+from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityLiquid, HeatCapacityGas
+from chemicals.elements import periodic_table
 
 def standard_entropy(c=None, dS_trans_s=None, dH_trans_s=None, T_trans_s=None,
                      Cp_s_fun=None,
@@ -142,3 +144,63 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
         dS += c.HeatCapacityGas.T_dependent_property_integral_over_T(c.Tb, T_ref)
         return S0_liq + dS
 
+
+def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
+    # Whatever the compound is, it is assumed to be in the standard state
+    # not that this should not be called on elements
+    # Can check against JANAF
+    Hf_ref = Hf if Hf is not None else c.Hfgm
+    Sf_ref = Sf if Sf is not None else c.Sfgm
+    atoms = c.atoms
+    reactant_coeff, elemental_counts, elemental_composition = standard_formation_reaction(atoms)
+    
+    dH_compound = c.HeatCapacityGas.T_dependent_property_integral(T_ref, T)
+    dS_compound = c.HeatCapacityGas.T_dependent_property_integral_over_T(T_ref, T)
+    
+    H_calc = reactant_coeff*Hf_ref + reactant_coeff*dH_compound
+    S_calc = reactant_coeff*Sf_ref + reactant_coeff*dS_compound
+    solid_ele = set(['C'])
+    liquid_ele = set([''])
+    
+    for coeff, ele_data in zip(elemental_counts, elemental_composition):
+        ele = list(ele_data.keys())[0]
+        element_obj = periodic_table[ele]
+#         element = Chemical(element_obj.CAS_standard)
+        solid_obj = HeatCapacitySolid(CASRN=element_obj.CAS_standard)
+        liquid_obj = HeatCapacityLiquid(CASRN=element_obj.CAS_standard)
+        gas_obj = HeatCapacityGas(CASRN=element_obj.CAS_standard)
+        
+        if ele == 'Br':
+            # https://janaf.nist.gov/tables/Br-038.html
+            # 265.9 K ish crystal to liquid
+            # 332.5 K - ish transition from liquid to ideal gas
+            pass
+        elif ele == 'S':
+            # CRystal II to Crystal 1 at 368 K
+            # crystal I to liquid at 388 K
+            # 432 K liquid-liquid lambda transition
+            # 882 K liquid to ideal gas transition
+            pass
+        elif ele == 'I':
+            # 386.7 K ish crystal to liquid
+            # 457.6 K - ish transition from liquid to ideal gas
+            pass
+        elif ele == 'Hg':
+            # https://janaf.nist.gov/tables/Hg-001.html
+            pass
+        if ele in solid_ele:
+            dH_ele = solid_obj.T_dependent_property_integral(T_ref, T)
+            dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T)
+        elif ele in liquid_ele:
+            dH_ele = liquid_obj.T_dependent_property_integral(T_ref, T)
+            dS_ele = liquid_obj.T_dependent_property_integral_over_T(T_ref, T)
+        else:
+            dH_ele = gas_obj.T_dependent_property_integral(T_ref, T)
+            dS_ele = gas_obj.T_dependent_property_integral_over_T(T_ref, T)
+        H_calc -= coeff*dH_ele
+        S_calc -= coeff*dS_ele
+    G_calc = H_calc - T*S_calc
+    
+    H_calc, S_calc, G_calc = H_calc/reactant_coeff, S_calc/reactant_coeff, G_calc/reactant_coeff
+    
+    return H_calc, S_calc, G_calc
