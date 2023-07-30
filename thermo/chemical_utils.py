@@ -169,7 +169,8 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
         solid_obj = HeatCapacitySolid(CASRN=element_obj.CAS_standard)
         liquid_obj = HeatCapacityLiquid(CASRN=element_obj.CAS_standard)
         gas_obj = HeatCapacityGas(CASRN=element_obj.CAS_standard)
-        
+        if ele in ('H', 'O', 'N', 'F'):
+            gas_obj.method = 'WEBBOOK_SHOMATE'
         if ele == 'Br':
             # https://janaf.nist.gov/tables/Br-038.html
             # 265.9 K ish crystal to liquid
