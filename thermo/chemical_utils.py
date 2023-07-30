@@ -171,6 +171,7 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
         gas_obj = HeatCapacityGas(CASRN=element_obj.CAS_standard)
         if ele in ('H', 'O', 'N', 'F', 'P'):
             gas_obj.method = 'WEBBOOK_SHOMATE'
+        
         if ele == 'Br':
             # https://janaf.nist.gov/tables/Br-038.html
             # 265.9 K ish crystal to liquid
@@ -198,6 +199,40 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
                 dS_ele += Hvap_Si/Tb_Si
                 dH_ele += gas_obj.T_dependent_property_integral(Tb_Si, T)
                 dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_Si, T)
+        elif ele == 'P':
+            T_alpha_beta_P = 195.400
+            Htrans_alpha_beta_P = 521.0 # 525.5104 reported in 
+            # The thermodynamic properties of elementary phosphorus The heat capacities of two crystalline modifications of red phosphorus, of α and β white phosphorus, and of black phosphorus from 15 to 300 K
+            Tm_P = 317.300
+            Hfus_P = 659
+            Tb_P = 1180.008
+            Hvap_P = 63728.0
+            # https://janaf.nist.gov/tables/P-001.html
+            # ALPHA <--> BETA 195.4 K, BETA <--> LIQUID 317.3 K, LIQUID <--> IDEAL GAS 1180.008 K
+            T_solid_int0 = min(T, T_alpha_beta_P)
+            T_solid_int1 = min(T, Tm_P)
+            T_liquid_int = min(T, Tb_P)
+            if T < T_alpha_beta_P:
+                dH_ele = solid_obj.T_dependent_property_integral(T_ref, T)
+                dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T)
+
+                dH_ele -= Htrans_alpha_beta_P
+                dS_ele -= Htrans_alpha_beta_P/T_alpha_beta_P
+                # dH_ele -= solid_obj.T_dependent_property_integral(T_alpha_beta_P, T_liquid_int)
+                # dS_ele -= solid_obj.T_dependent_property_integral_over_T(Tm_P, T_liquid_int)
+            else:
+                dH_ele = solid_obj.T_dependent_property_integral(T_ref, T_solid_int1)
+                dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T_solid_int1)
+                if T > Tm_P:
+                    dH_ele += Hfus_P
+                    dS_ele += Hfus_P/Tm_P
+                    dH_ele += liquid_obj.T_dependent_property_integral(Tm_P, T_liquid_int)
+                    dS_ele += liquid_obj.T_dependent_property_integral_over_T(Tm_P, T_liquid_int)
+                if T > Tb_P:
+                    dH_ele += Hvap_P
+                    dS_ele += Hvap_P/Tb_P
+                    dH_ele += gas_obj.T_dependent_property_integral(Tb_P, T)
+                    dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_P, T)
             
         elif ele == 'S':
             # CRystal II to Crystal 1 at 368 K
@@ -212,23 +247,6 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
         elif ele == 'Hg':
             # https://janaf.nist.gov/tables/Hg-001.html
             raise NotImplementedError
-        elif ele == 'P':
-            raise NotImplementedError
-            T_alpha_beta_P = 195.400
-            Htrans_alpha_beta_P = 521.0 # 525.5104 reported in 
-            # The thermodynamic properties of elementary phosphorus The heat capacities of two crystalline modifications of red phosphorus, of α and β white phosphorus, and of black phosphorus from 15 to 300 K
-            Tm_P = 317.300
-            Hfus_P = 659
-            Tb_P = 1180.008
-            Hvap_P = 63728.0
-            # https://janaf.nist.gov/tables/P-001.html
-            # ALPHA <--> BETA 195.4 K, BETA <--> LIQUID 317.3 K, LIQUID <--> IDEAL GAS 1180.008 K
-            T_solid_int0 = min(T, T_alpha_beta_P)
-            T_solid_int1 = min(T, Tm_P)
-            T_liquid_int = min(T, Tb_P)
-            
-            dH_ele = solid_obj.T_dependent_property_integral(T_ref, Tm_solid_int)
-            dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, Tm_solid_int)
 
 
         elif ele in solid_ele:
