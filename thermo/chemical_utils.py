@@ -169,15 +169,10 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
         solid_obj = HeatCapacitySolid(CASRN=element_obj.CAS_standard)
         liquid_obj = HeatCapacityLiquid(CASRN=element_obj.CAS_standard)
         gas_obj = HeatCapacityGas(CASRN=element_obj.CAS_standard)
-        if ele in ('H', 'O', 'N', 'F', 'P'):
+        if ele in ('H', 'O', 'N', 'F', 'P', 'Cl'):
             gas_obj.method = 'WEBBOOK_SHOMATE'
         
-        if ele == 'Br':
-            # https://janaf.nist.gov/tables/Br-038.html
-            # 265.9 K ish crystal to liquid
-            # 332.5 K - ish transition from liquid to ideal gas
-            raise NotImplementedError
-        elif ele == 'Si':
+        if ele == 'Si':
             solid_obj.method = 'JANAF'
             liquid_obj.method = 'JANAF'
             gas_obj.method = 'JANAF'
@@ -235,15 +230,20 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
                     dH_ele += gas_obj.T_dependent_property_integral(Tb_P, T)
                     dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_P, T)
             
+        elif ele == 'I':
+            # 386.7 K ish crystal to liquid
+            # 457.6 K - ish transition from liquid to ideal gas
+            raise NotImplementedError
+        elif ele == 'Br':
+            # https://janaf.nist.gov/tables/Br-038.html
+            # 265.9 K ish crystal to liquid
+            # 332.5 K - ish transition from liquid to ideal gas
+            raise NotImplementedError
         elif ele == 'S':
             # CRystal II to Crystal 1 at 368 K
             # crystal I to liquid at 388 K
             # 432 K liquid-liquid lambda transition
             # 882 K liquid to ideal gas transition
-            raise NotImplementedError
-        elif ele == 'I':
-            # 386.7 K ish crystal to liquid
-            # 457.6 K - ish transition from liquid to ideal gas
             raise NotImplementedError
         elif ele == 'Hg':
             # https://janaf.nist.gov/tables/Hg-001.html
