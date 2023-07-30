@@ -284,6 +284,7 @@ def load_json_based_correlations():
              os.path.join(folder, 'elements.json'),
              os.path.join(folder, 'inorganic_correlations.json'),
              os.path.join(folder, 'organic_correlations.json'),
+             os.path.join(folder, 'phosphorus_correlations.json'), # TODO include in elements
              ]
     if ENABLE_MIXTURE_JSON:
         paths.extend([os.path.join(folder, 'mixture_correlations.json'),
