@@ -248,7 +248,19 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
         elif ele == 'Hg':
             # https://janaf.nist.gov/tables/Hg-001.html
             raise NotImplementedError
+        elif ele == 'B':
+            # https://janaf.nist.gov/tables/B-001.html
+            raise NotImplementedError
 
+        # Need to do all the metals with no fancy phases at once generically
+        # https://janaf.nist.gov/tables/Pb-001.html
+        # https://janaf.nist.gov/tables/Mg-001.html
+        # https://janaf.nist.gov/tables/Ni-001.html
+        # https://janaf.nist.gov/tables/Cu-001.html
+        # https://janaf.nist.gov/tables/Zn-001.html
+        # https://janaf.nist.gov/tables/Hg-001.html
+        # https://janaf.nist.gov/tables/I-023.html
+        # https://janaf.nist.gov/tables/Br-038.html
 
         elif ele in solid_ele:
             dH_ele = solid_obj.T_dependent_property_integral(T_ref, T)
