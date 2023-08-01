@@ -145,6 +145,12 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
         return S0_liq + dS
 
 
+standard_state_transitions = {
+    'Si': {'Tm': 1687.15, 'Tb': 3504.616, 'Hfus': 50210.0, 'Hvap': 384548.0},
+    'Br': {'Tm': 265.900, 'Tb': 332.503, 'Hfus': 15507, 'Hvap': 29563},
+    
+    }
+
 def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
     # Whatever the compound is, it is assumed to be in the standard state
     # not that this should not be called on elements
@@ -171,29 +177,31 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
         gas_obj = HeatCapacityGas(CASRN=element_obj.CAS_standard)
         if ele in ('H', 'O', 'N', 'F', 'P', 'Cl'):
             gas_obj.method = 'WEBBOOK_SHOMATE'
-        
-        if ele == 'Si':
+        elif ele == 'Si':
             solid_obj.method = 'JANAF'
             liquid_obj.method = 'JANAF'
             gas_obj.method = 'JANAF'
-            Tm_Si = 1687.15
-            Tb_Si = 3504.616
-            Hfus_Si = 50210.0
-            Hvap_Si = 384548.0
-            Tm_solid_int = min(T, Tm_Si)
-            T_liquid_int = min(T, Tb_Si)
+
+        if ele in standard_state_transitions:
+            dat = standard_state_transitions[ele]
+            Tm = dat['Tm']
+            Tb = dat['Tb']
+            Hfus = dat['Hfus']
+            Hvap = dat['Hvap']
+            Tm_solid_int = min(T, Tm)
+            T_liquid_int = min(T, Tb)
             dH_ele = solid_obj.T_dependent_property_integral(T_ref, Tm_solid_int)
             dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, Tm_solid_int)
-            if T > Tm_Si:
-                dH_ele += Hfus_Si
-                dS_ele += Hfus_Si/Tm_Si
-                dH_ele += liquid_obj.T_dependent_property_integral(Tm_Si, T_liquid_int)
-                dS_ele += liquid_obj.T_dependent_property_integral_over_T(Tm_Si, T_liquid_int)
-            if T > Tb_Si:
-                dH_ele += Hvap_Si
-                dS_ele += Hvap_Si/Tb_Si
-                dH_ele += gas_obj.T_dependent_property_integral(Tb_Si, T)
-                dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_Si, T)
+            if T > Tm:
+                dH_ele += Hfus
+                dS_ele += Hfus/Tm
+                dH_ele += liquid_obj.T_dependent_property_integral(Tm, T_liquid_int)
+                dS_ele += liquid_obj.T_dependent_property_integral_over_T(Tm, T_liquid_int)
+            if T > Tb:
+                dH_ele += Hvap
+                dS_ele += Hvap/Tb
+                dH_ele += gas_obj.T_dependent_property_integral(Tb, T)
+                dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb, T)
         elif ele == 'P':
             # White phosphorus is the basis here
             T_alpha_beta_P = 195.400
