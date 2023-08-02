@@ -147,7 +147,24 @@ def S0_basis_converter(c, S0_liq=None, S0_gas=None, T_ref=298.15):
 
 standard_state_transitions = {
     'Si': {'Tm': 1687.15, 'Tb': 3504.616, 'Hfus': 50210.0, 'Hvap': 384548.0},
-    'Br': {'Tm': 265.900, 'Tb': 332.503, 'Hfus': 15507, 'Hvap': 29563},
+    'Br': {'Tm': 265.900, 'Tb': 332.503, 'Hfus': 10571, 'Hvap': 29563},
+    'I': {'Tm': 386.750, 'Tb': 457.666, 'Hfus': 15517, 'Hvap': 41960},
+    'B': {'Tm': 2350.000, 'Tb': 4139.449, 'Hfus': 50208, 'Hvap': 480509},
+    'Mg': {'Tm': 923.000, 'Tb': 1366.104, 'Hfus': 8477, 'Hvap': 127867},
+    'Hg': {'Tm': 234.290, 'Tb': 629.839, 'Hfus': 2295, 'Hvap': 59205},
+    'Pb': {'Tm': 600.600, 'Tb': 2019.022, 'Hfus': 4774, 'Hvap': 177582},
+    'Li': {'Tm': 453.690, 'Tb': 1620.120, 'Hfus': 3000, 'Hvap': 145843},
+    'Na': {'Tm': 370.980, 'Tb': 1170.525, 'Hfus': 2603, 'Hvap': 97022},
+    'Al': {'Tm': 933.450, 'Tb': 2790.812, 'Hfus': 10711, 'Hvap': 294002},
+    'K': {'Tm': 336.350, 'Tb': 1039.540, 'Hfus': 2334, 'Hvap': 79556},
+    'V': {'Tm': 2190.000, 'Tb': 3690.080, 'Hfus': 22845, 'Hvap': 446977},
+    'Cr': {'Tm': 2130.000, 'Tb': 2952.078, 'Hfus': 20502, 'Hvap': 339537},
+    # 'Mn': {'Tm': 1519.000, 'Tb': 2334.526, 'Hfus': 12058, 'Hvap': 225980,  'solid_T_trans': [980.000, 1361.000, 1412.000], 'solid_H_trans': [2226, 2122, 1879]}, # Double TODO,
+    # 'Ti': {'Tm': 1939.000, 'Tb': 3630.956, 'Hfus': 14146, 'Hvap': 409984,  'solid_T_trans': [1166.000], 'solid_H_trans': [4172]}, # TODO
+    # 'Ca': {'Tm': 1115.000, 'Tb': 1773.658, 'Hfus': 8540, 'Hvap': 149047,  'solid_T_trans': [716.000], 'solid_H_trans': [930]}, # TODO
+    # 'S': {'Tm': 388.360, 'Tb': 882.117, 'Hfus': 1721, 'Hvap': 53326,  'solid_T_trans': [368.300], 'solid_H_trans': [401]}, # TODO
+    # 'Be': {'Tm': 1560.000, 'Tb': 2741.437, 'Hfus': 7895, 'Hvap': 291572, 'solid_T_trans': [1527.000], 'solid_H_trans': [6849]}, # TODO
+    # 'Fe': {'Tm': 3133.345, 'Hfus': 349585, 'solid_T_trans': [1184.000, 1665.000], 'solid_H_trans': [900, 837]}, # TODO
     
     }
 
@@ -165,6 +182,8 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
     
     H_calc = reactant_coeff*Hf_ref + reactant_coeff*dH_compound
     S_calc = reactant_coeff*Sf_ref + reactant_coeff*dS_compound
+    # if the compound is an element it will need special handling to go from solid liquid to gas if needed
+
     solid_ele = set(['C'])
     liquid_ele = set([''])
     
@@ -175,7 +194,7 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
         solid_obj = HeatCapacitySolid(CASRN=element_obj.CAS_standard)
         liquid_obj = HeatCapacityLiquid(CASRN=element_obj.CAS_standard)
         gas_obj = HeatCapacityGas(CASRN=element_obj.CAS_standard)
-        if ele in ('H', 'O', 'N', 'F', 'P', 'Cl'):
+        if ele in ('H', 'O', 'N', 'F', 'P', 'Cl', 'Br', 'I', 'Mg', 'B', 'Pb', 'Li', 'Na', 'Al', 'K', 'V', 'Cr'):
             gas_obj.method = 'WEBBOOK_SHOMATE'
         elif ele == 'Si':
             solid_obj.method = 'JANAF'
@@ -237,38 +256,16 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
                     dS_ele += Hvap_P/Tb_P
                     dH_ele += gas_obj.T_dependent_property_integral(Tb_P, T)
                     dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_P, T)
-            
-        elif ele == 'I':
-            # 386.7 K ish crystal to liquid
-            # 457.6 K - ish transition from liquid to ideal gas
-            raise NotImplementedError
-        elif ele == 'Br':
-            # https://janaf.nist.gov/tables/Br-038.html
-            # 265.9 K ish crystal to liquid
-            # 332.5 K - ish transition from liquid to ideal gas
-            raise NotImplementedError
         elif ele == 'S':
             # CRystal II to Crystal 1 at 368 K
             # crystal I to liquid at 388 K
             # 432 K liquid-liquid lambda transition
             # 882 K liquid to ideal gas transition
             raise NotImplementedError
-        elif ele == 'Hg':
-            # https://janaf.nist.gov/tables/Hg-001.html
-            raise NotImplementedError
-        elif ele == 'B':
-            # https://janaf.nist.gov/tables/B-001.html
-            raise NotImplementedError
-
         # Need to do all the metals with no fancy phases at once generically
-        # https://janaf.nist.gov/tables/Pb-001.html
-        # https://janaf.nist.gov/tables/Mg-001.html
         # https://janaf.nist.gov/tables/Ni-001.html
         # https://janaf.nist.gov/tables/Cu-001.html
         # https://janaf.nist.gov/tables/Zn-001.html
-        # https://janaf.nist.gov/tables/Hg-001.html
-        # https://janaf.nist.gov/tables/I-023.html
-        # https://janaf.nist.gov/tables/Br-038.html
 
         elif ele in solid_ele:
             dH_ele = solid_obj.T_dependent_property_integral(T_ref, T)

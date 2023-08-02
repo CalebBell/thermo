@@ -714,6 +714,20 @@ def test_HeatCapacityGas_polynomial_input_forms():
         assert HeatCapacityGas.from_json(o.as_json()) == o
         assert eval(str(o)) == o
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacitySolid_titanium_custom():
+    # First test case with customized CAS and literature data
+    # alpha
+    obj = HeatCapacitySolid(CASRN="2099571000-00-0")
+    assert_close(obj(300), 25.809979690958304, rtol=.005)
+
+    # beta
+    obj = HeatCapacitySolid(CASRN="2099555000-00-0")
+    assert_close(obj(1800), 35.667417599655764, rtol=.005)
+
+
+
+
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral():
