@@ -1179,7 +1179,6 @@ heat_capacity_solid_methods = [WEBBOOK_SHOMATE, PERRY151, CRCSTD, LASTOVKA_S]
 """Holds all methods available for the :obj:`HeatCapacitySolid` class, for use in
 iterating over them."""
 
-
 class HeatCapacitySolid(TDependentProperty):
     r'''Class for dealing with solid heat capacity as a function of temperature.
     Consists of two temperature-dependent expressions, one constant
