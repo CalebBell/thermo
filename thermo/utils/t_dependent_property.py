@@ -35,7 +35,7 @@ from math import e
 
 import chemicals
 import fluids
-from chemicals.elements import solid_allotrope_map
+from chemicals.elements import solid_allotrope_map, allotrope_CAS_to_name
 from chemicals.dippr import (
     EQ100,
     EQ101,
@@ -483,6 +483,7 @@ PROPERTY_TRANSFORM_D2_X = 'd2xdT2overx'
 
 skipped_parameter_combinations = {'REFPROP_sigma': set([('sigma1',), ('sigma1', 'n1', 'sigma2')])}
 
+DEFAULT_PHASE_TRANSITIONS = 'Default phase transitions'
 
 class TDependentProperty:
     r'''Class for calculating temperature-dependent chemical properties.
@@ -1518,6 +1519,10 @@ class TDependentProperty:
                 if len(extra_model):
                     # Only add the string if we still have anything
                     base += f'{k}={extra_model}, '
+        if hasattr(self, 'piecewise_methods'):
+            piecewise_methods = self.piecewise_methods.copy()
+            piecewise_methods.pop(DEFAULT_PHASE_TRANSITIONS, None)
+            base += 'piecewise_methods=%s, ' %({k: {'methods': v[0], 'T_ranges': v[1]} for k, v in piecewise_methods.items()})
 
 
         if base[-2:] == ', ':
@@ -1684,7 +1689,7 @@ class TDependentProperty:
         del d["json_version"]
         new = cls.__new__(cls)
         new.__dict__ = d
-        new.add_extra_correlations()
+        new._add_extra_correlations()
 
         for name, params in new.correlations.items():
             model = params[2]
@@ -2734,6 +2739,12 @@ class TDependentProperty:
             return self.interpolate(T, method)
         elif method in self.local_methods:
             return self.local_methods[method].f(T)
+        elif hasattr(self, 'piecewise_methods') and method in self.piecewise_methods:
+            method_names, _, T_iter = self.piecewise_methods[method]
+            for a_method, a_Tmax in zip(method_names, T_iter):
+                if T <= a_Tmax:
+                    return self.calculate(T, a_method)
+            return self.calculate(T, method_names[-1])
         else:
             raise ValueError("Unknown method; methods are %s" %(self.all_methods))
 
@@ -3261,6 +3272,46 @@ class TDependentProperty:
             extra['int_coeffs'] = chebyshev_int_coeffs = chebint(coeffs, scl=1.0/scale)
 
         self.correlations[name] = (call, kwargs, model, extra)
+
+    def add_piecewise_method(self, name, method_names, T_ranges):
+        r'''Method to add a piecewise method made of already added other methods.
+        This can be useful in the event of multiple solid phases.
+        However, if the methods are not continuous at the transitions,
+        there will be discontinuities!
+
+        Parameters
+        ----------
+        name : str
+            The name of method, [-]
+        method_names : list[str]
+            Each of the existing methods, [-]
+        T_ranges : list[float]
+            A list of temperatures consisting of [Tmin, T_transition1, ..., Tmax]; 
+            this is size len(method_names) + 1, [K]
+
+        Notes
+        -----
+        '''
+        for m in method_names:
+            if m not in self.all_methods:
+                raise ValueError(f"The provided method `{m}` was not found; methods are {self.all_methods}")
+        if name in self.all_methods:
+            raise ValueError("Method already exists")
+        if not len(method_names) + 1 == len(T_ranges):
+            raise ValueError("Method name and temperature ranges are inconsistent")
+        if not T_ranges == list(sorted(T_ranges)):
+            raise ValueError("Temperature ranges should be sorted assending")
+        Tmin = T_ranges[0]
+        Tmax = T_ranges[-1]
+        d = getattr(self, 'piecewise_methods', None)
+        if d is None:
+            d = {}
+            self.piecewise_methods = d
+        d[name] = (method_names, T_ranges, T_ranges[1:])
+        self.T_limits[name] = (Tmin, Tmax)
+        self.all_methods.add(name)
+        self.method = name
+
 
     def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
         r'''Method to add a new set of emperical fit equation coefficients to
@@ -4563,6 +4614,7 @@ class TDependentProperty:
             CASRN = self.CASRN
         except AttributeError:
             CASRN = '' # some tests don't have this
+        found_allotropes = False
         if CASRN and load_data:
             something = json_correlation_lookup(CASRN, self.__class__.__name__)
             for key, json_based_data in something.items():
@@ -4570,6 +4622,42 @@ class TDependentProperty:
                     kwargs[key].update(json_based_data)
                 else:
                     kwargs[key] = json_based_data
+
+            if CASRN in solid_allotrope_map:
+                do_not_set_methods = set()
+                # Load all the allotropes
+                solid_allotrope_mapping = solid_allotrope_map[CASRN]
+                CASs_transitions = solid_allotrope_mapping['CASs_transitions']
+                allotrope_phase_count = len(CASs_transitions)
+                auto_transition_names = [None]*allotrope_phase_count
+                T_transitions = list(solid_allotrope_mapping['T_transitions'])
+                for CASRN_allotrope in solid_allotrope_map[CASRN]['all_CASs']:
+                    something = json_correlation_lookup(CASRN_allotrope, self.__class__.__name__)
+                    allotrope_name = allotrope_CAS_to_name[CASRN_allotrope]
+                    try:
+                        auto_CAS_idx = CASs_transitions.index(CASRN_allotrope)
+                    except:
+                        auto_CAS_idx = None
+
+                    for key, json_based_data in something.items():
+                        json_based_data_copy = {}
+                        for k, v in json_based_data.items():
+                            found_allotropes = True
+                            new_allotrope_method_name = k + ' ' + allotrope_name
+                            json_based_data_copy[new_allotrope_method_name] = v
+                            do_not_set_methods.add(new_allotrope_method_name)
+                            if auto_CAS_idx is not None:
+                                auto_transition_names[auto_CAS_idx] = new_allotrope_method_name
+                                if auto_CAS_idx == 0:
+                                    T_transitions.insert(0, v['Tmin'])
+                                elif auto_CAS_idx == allotrope_phase_count-1:
+                                    T_transitions.append(v['Tmax'])
+                        json_based_data = json_based_data_copy
+                        if key in kwargs:
+                            kwargs[key].update(json_based_data)
+                        else:
+                            kwargs[key] = json_based_data
+
 
         if kwargs:
             correlation_keys_to_parameters = self.correlation_keys_to_parameters
@@ -4582,6 +4670,17 @@ class TDependentProperty:
                     for corr_i, corr_kwargs in correlation_dict.items():
                         self.add_correlation(name=corr_i, model=correlation_name,
                                              **corr_kwargs)
+        if found_allotropes:
+            # Try to add a generic range based method that handles the transitions
+            if None not in auto_transition_names:
+                self.add_piecewise_method(DEFAULT_PHASE_TRANSITIONS, method_names=auto_transition_names,
+                                          T_ranges=T_transitions)
+
+        if 'piecewise_methods' in kwargs:
+            piecewise_methods = kwargs['piecewise_methods']
+            for name, data in piecewise_methods.items():
+                self.add_piecewise_method(name=name, method_names=data['methods'], T_ranges=data['T_ranges'])
+        
         try:
             method = kwargs['method']
         except:
@@ -4641,9 +4740,11 @@ class TDependentProperty:
             method = EXP_CHEB_FIT_LN_TAU
             self.all_methods.add(EXP_CHEB_FIT_LN_TAU)
 
-        self.add_extra_correlations()
+        self._add_extra_correlations()
 
-        if method is None:
+
+
+        if method is None or (found_allotropes and method in do_not_set_methods):
             all_methods = self.all_methods
             for i in self.ranked_methods:
                 if i in all_methods:
@@ -4651,7 +4752,7 @@ class TDependentProperty:
                     break
         self.method = method
 
-    def add_extra_correlations(self):
+    def _add_extra_correlations(self):
         # Load any component specific methods
         if hasattr(self, 'CASRN'):
             CASRN = self.CASRN
