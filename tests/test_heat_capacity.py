@@ -725,6 +725,17 @@ def test_HeatCapacitySolid_titanium_custom():
     obj = HeatCapacitySolid(CASRN="2099555000-00-0")
     assert_close(obj(1800), 35.667417599655764, rtol=.005)
 
+    # Test we can add a method that combines them
+    obj = HeatCapacitySolid(CASRN="7440-32-6")
+    a, b = 'New Fit alpha titanium', 'New Fit beta titanium'
+    obj.add_piecewise_method('auto', method_names=[a,b], T_ranges=[*obj.T_limits[a], obj.T_limits[b][1]])
+    assert_close(obj(1500), 31.89694904655883)
+    assert_close(obj(200), 22.149215492789644)
+
+    # Did we break storing and representation?
+    assert HeatCapacitySolid.from_json(obj.as_json()) == obj
+    assert eval(str(obj)) == obj
+
 
 
 
