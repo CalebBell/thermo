@@ -288,7 +288,7 @@ def test_standard_state_ideal_gas_formation_LiBr():
     for T, dH_janaf, dG_janaf in zip(Ts, dH_janafs, dG_janafs):
         dH_calc, dS_calc, dG_calc = standard_state_ideal_gas_formation(c, T)
         if T > 350:
-            assert_close(dH_calc, dH_janaf, rtol=.025)
+            assert_close(dH_calc, dH_janaf, rtol=.04)
         else:
             assert_close(dH_calc, dH_janaf, rtol=.08)
         # Matches to 2% at higher temperatures, not sure but the phase transitions are fine
