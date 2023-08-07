@@ -168,17 +168,75 @@ standard_state_transitions = {
     
     }
 
+shomate_gas_elements = ('H', 'O', 'N', 'F', 'P', 'Cl', 'Br', 'I', 'Mg', 'B', 'Pb', 'Li', 'Na', 'Al', 'K', 'V', 'Cr')
+standard_state_supported_elements = shomate_gas_elements + ('C', 'Si', 'Hg')
+standard_state_supported_elements_set = set(standard_state_supported_elements)
+
 def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
+    r'''This function calculates the standard state ideal-gas heat of formation
+    of a compound at a specified from first principles. The entropy change and
+    Gibbs free energy change of formation are also returned. 
+    This special condition is usually tabulated in thermodynamic tables, and
+    this function is intended to be consistent with the standard conventions.
+
+    The values returned depend on:
+    
+    * The heat of formation as an ideal gas of the compound at 298.15 K (must be measured experimentally)
+    * The ideal gas absolute entropy of the compound at 298.15 K (calculated from heat capacity and phase transitions of the compound and its various phases)
+    * The chosen reference states of the elements (convention, but hardcoded)
+    * The heat capacity and phase transitions of the constituent elements of the compound in various phases
+
+    Parameters
+    ----------
+    c : Chemical
+        Chemical object, [-]
+    T : float
+        The temperature to perform the calculation at
+    Hf : float, optional
+        Standard enthalpy of formation of the compound in the gas phase [J/mol]
+    Sf : float, optional
+        Standard entropy of formation of the compound in the gas phase [J/mol/K]
+    T_ref : float, optional
+        The standard state temperature, default 298.15 K; if set to another
+        value `Hf` and `Sf` must be provided for this temperature `T_ref`
+        or the default values at 298.15 K will be used and this function will
+        return nonsense, [-]
+
+    Returns
+    -------
+    H_standard_state : float
+        The standard state ideal gas enthalpy of the compound, [J/mol]
+    S_standard_state : float
+        The standard state ideal gas entropy of the compound, [J/mol/K]
+    G_standard_state : float
+        The standard state ideal gas Gibbs energy of the compound, [J/mol]
+
+    Notes
+    -----
+    Not all elements are supported. The default property methods
+    for some phases of the elements are hardcoded in this function for
+    accuracy, and may change as data evolves.
+
+    Examples
+    --------
+    >>> from thermo.chemical import Chemical
+    >>> standard_state_ideal_gas_formation(Chemical('water'), T=500.0)
+    (-243821.4, -49.63, -219006.)
+    '''
     # Whatever the compound is, it is assumed to be in the standard state
     # not that this should not be called on elements
     # Can check against JANAF
     Hf_ref = Hf if Hf is not None else c.Hfgm
     Sf_ref = Sf if Sf is not None else c.Sfgm
     atoms = c.atoms
+    return _standard_state_ideal_gas_formation_direct(T=T, Hf_ref=Hf_ref, Sf_ref=Sf_ref, 
+            atoms=atoms, gas_Cp=c.HeatCapacityGas, T_ref=T_ref)
+
+def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp, T_ref=298.15):
     reactant_coeff, elemental_counts, elemental_composition = standard_formation_reaction(atoms)
     
-    dH_compound = c.HeatCapacityGas.T_dependent_property_integral(T_ref, T)
-    dS_compound = c.HeatCapacityGas.T_dependent_property_integral_over_T(T_ref, T)
+    dH_compound = gas_Cp.T_dependent_property_integral(T_ref, T)
+    dS_compound = gas_Cp.T_dependent_property_integral_over_T(T_ref, T)
     
     H_calc = reactant_coeff*Hf_ref + reactant_coeff*dH_compound
     S_calc = reactant_coeff*Sf_ref + reactant_coeff*dS_compound
@@ -194,7 +252,10 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
         solid_obj = HeatCapacitySolid(CASRN=element_obj.CAS_standard)
         liquid_obj = HeatCapacityLiquid(CASRN=element_obj.CAS_standard)
         gas_obj = HeatCapacityGas(CASRN=element_obj.CAS_standard)
-        if ele in ('H', 'O', 'N', 'F', 'P', 'Cl', 'Br', 'I', 'Mg', 'B', 'Pb', 'Li', 'Na', 'Al', 'K', 'V', 'Cr'):
+        if ele not in standard_state_supported_elements_set:
+            raise NotImplementedError(f"The element {ele} is not currently supported")
+
+        if ele in shomate_gas_elements:
             gas_obj.method = 'WEBBOOK_SHOMATE'
         elif ele == 'Si':
             solid_obj.method = 'JANAF'

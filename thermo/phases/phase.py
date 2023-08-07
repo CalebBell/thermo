@@ -44,6 +44,7 @@ from chemicals.utils import (
     phase_identification_parameter,
     property_molar_to_mass,
     speed_of_sound,
+    mixing_simple
 )
 from chemicals.virial import B_from_Z
 from fluids.constants import R, R_inv
@@ -4196,6 +4197,101 @@ class Phase:
             Ideal gas mass Helmholtz free energy, [J/(kg)]
         '''
         return property_molar_to_mass(self.A_ideal_gas(), self.MW())
+
+
+
+
+
+
+
+
+
+
+
+
+    def _set_ideal_gas_standard_state(self):
+        # TODO: Do not depend on Chemical infrastructure in the future
+        CASs = self.CASs
+        T = self.T
+        zs = self.zs
+        from thermo.chemical_utils import standard_state_ideal_gas_formation, _standard_state_ideal_gas_formation_direct
+        from thermo import Chemical
+        H_chemicals = []
+        S_chemicals = []
+        G_chemicals = []
+
+        try:
+            Hfs = self.Hfs
+        except:
+            Hfs = self.constants.Hfgs
+        try:
+            Sfs = self.Sfs
+        except:
+            Sfs = self.constants.Sfgs
+        try:
+            HeatCapacityGases = self.HeatCapacityGases
+        except:
+            HeatCapacityGases = self.correlations.HeatCapacityGases
+        atomss = self.atomss
+
+        for i in range(self.N):
+            Hi, Si, Gi = standard_state_ideal_gas_formation(Chemical(CASs[i]), T)
+            # Hi, Si, Gi = _standard_state_ideal_gas_formation_direct(T, Hfs[i], Sfs[i], atoms=atomss[i], gas_Cp=HeatCapacityGases[i])
+            H_chemicals.append(Hi)
+            S_chemicals.append(Si)
+            G_chemicals.append(Gi)
+        G = mixing_simple(G_chemicals, zs)
+        H = mixing_simple(H_chemicals, zs)
+        S = mixing_simple(S_chemicals, zs)
+
+        self._H_ideal_gas_standard_state = H
+        self._Hs_ideal_gas_standard_state = H_chemicals
+        self._S_ideal_gas_standard_state = S
+        self._Ss_ideal_gas_standard_state = S_chemicals
+        self._G_ideal_gas_standard_state = G
+        self._Gs_ideal_gas_standard_state = G_chemicals
+
+    def H_ideal_gas_standard_state(self):
+        try:
+            return self._H_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._H_ideal_gas_standard_state
+
+    def Hs_ideal_gas_standard_state(self):
+        try:
+            return self._Hs_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._Hs_ideal_gas_standard_state
+
+    def G_ideal_gas_standard_state(self):
+        try:
+            return self._G_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._G_ideal_gas_standard_state
+
+    def Gs_ideal_gas_standard_state(self):
+        try:
+            return self._Gs_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._Gs_ideal_gas_standard_state
+
+    def S_ideal_gas_standard_state(self):
+        try:
+            return self._S_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._S_ideal_gas_standard_state
+
+    def Ss_ideal_gas_standard_state(self):
+        try:
+            return self._Ss_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._Ss_ideal_gas_standard_state
 
     def _set_mechanical_critical_point(self):
         zs = self.zs
