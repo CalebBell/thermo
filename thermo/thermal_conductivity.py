@@ -98,6 +98,18 @@ Mixture Gas Thermal Conductivity
 
 .. autodata:: thermal_conductivity_gas_mixture_methods
 
+Pure Solid Thermal Conductivity
+=============================
+.. autoclass:: ThermalConductivitySolid
+    :members: calculate
+              name, property_max, property_min,
+              units, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: thermal_conductivity_solid_methods
+
 '''
 
 
@@ -112,7 +124,8 @@ __all__ = [
 'GHARAGHEIZI_L', 'NICOLA', 'NICOLA_ORIGINAL', 'SATO_RIEDEL', 'SHEFFY_JOHNSON',
 'BAHADORI_L', 'LAKSHMI_PRASAD', 'MISSENARD', 'DIPPR_9G',
 
-           ]
+'ThermalConductivitySolid',
+]
 
 
 from chemicals import miscdata, thermal_conductivity
@@ -150,7 +163,7 @@ from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import thermal_conductivity_Magomedov
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TDependentProperty, TPDependentProperty
 from thermo.viscosity import ViscosityGas
 from thermo.volume import VolumeGas
 
@@ -1393,3 +1406,101 @@ class ThermalConductivityGasMixture(MixtureProperty):
             return True
         return super().test_method_validity(T, P, zs, ws, method)
 
+
+thermal_conductivity_solid_methods = []
+"""Holds all methods available for the :obj:`ThermalConductivitySolid` class, for use in
+iterating over them."""
+
+class ThermalConductivitySolid(TDependentProperty):
+    r'''Class for dealing with solid thermal conductivity as a function of temperature.
+
+    Parameters
+    ----------
+    CASRN : str, optional
+        The CAS number of the chemical
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
+
+    Notes
+    -----
+    A string holding each method's name is assigned to the following variables
+    in this module, intended as the most convenient way to refer to a method.
+    To iterate over all methods, use the list stored in
+    :obj:`thermal_conductivity_solid_methods`.
+
+
+    See Also
+    --------
+    Examples
+    --------
+    >>> obj = ThermalConductivitySolid(CASRN='142-82-5')
+
+    References
+    ----------
+    '''
+    name = 'solid thermal conductivity'
+    units = 'W/m/K'
+    interpolation_T = None
+    """No interpolation transformation by default."""
+    interpolation_property = None
+    """No interpolation transformation by default."""
+    interpolation_property_inv = None
+    """No interpolation transformation by default."""
+    tabular_extrapolation_permitted = True
+    """Allow tabular extrapolation by default; a theoretical solid phase exists
+    for all chemicals at sufficiently high pressures, although few chemicals
+    could stably exist in those conditions."""
+    property_min = 0.0
+    """Mimimum valid value of solid thermal conductivity."""
+    property_max = 5000.0
+    """Maximum valid value of solid thermal conductivity. Diamond 2200, carbon nanotubes maybe 6000."""
+
+    ranked_methods = []
+    """Default rankings of the available methods."""
+
+    custom_args = tuple()
+
+    _json_obj_by_CAS = tuple()
+
+    def __init__(self, CASRN='', extrapolation='linear', **kwargs):
+        self.CASRN = CASRN
+        super().__init__(extrapolation, **kwargs)
+
+    def load_all_methods(self, load_data):
+        methods = []
+        self.T_limits = T_limits = {}
+        self.all_methods = set()
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            pass
+        self.all_methods.update(methods)
+
+    def calculate(self, T, method):
+        r'''Method to calculate thermal conductivity of a solid at temperature `T`
+        with a given method.
+
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
+        for that.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate thermal conductivity, [K]
+        method : str
+            Name of the method to use
+
+        Returns
+        -------
+        ks : float
+            Thermal conductivity of the solid at T and a low pressure, [W/m/K]
+        '''
+        return self._base_calculate(T, method)
