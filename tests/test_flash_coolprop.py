@@ -32,6 +32,7 @@ from thermo import *
 from thermo.coolprop import *
 from thermo.coolprop import has_CoolProp
 from thermo.phases import CoolPropGas, CoolPropLiquid
+from thermo.flash.flash_utils import cm_flash_tol
 
 try:
     import matplotlib.pyplot as plt

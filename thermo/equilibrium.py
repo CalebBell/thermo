@@ -2874,6 +2874,31 @@ class EquilibriumState:
             self._kls = array(self._kls)
         return self._kls
 
+    def kss(self):
+        r'''Method to calculate and return the pure-component solid
+        temperature-dependent thermal conductivity
+        of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivitySolid`
+        objects.
+
+        Returns
+        -------
+        kss : list[float]
+            Pure component temperature dependent solid thermal conductivities,
+            [W/(m*K)]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._kss
+        except:
+            pass
+        T = self.T
+        self._kss = [o.T_dependent_property(T) for o in self.ThermalConductivitySolids]
+        if not self.flasher.scalar:
+            self._kss = array(self._kss)
+        return self._kss
+
     def kgs(self):
         r'''Method to calculate and return the pure-component gas
         temperature-dependent thermal conductivity

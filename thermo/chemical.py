@@ -82,7 +82,7 @@ from thermo.interface import SurfaceTension
 from thermo.law import economic_status, legal_status
 from thermo.permittivity import PermittivityLiquid
 from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
-from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityLiquid
+from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityLiquid, ThermalConductivitySolid
 from thermo.unifac import UNIFAC_RQ, UNIFAC_group_assignment_DDBST, Van_der_Waals_area, Van_der_Waals_volume
 from thermo.utils import identify_phase, phase_select_property
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
@@ -1238,6 +1238,8 @@ class Chemical: # pragma: no cover
         self.ThermalConductivityGas = ThermalConductivityGas(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, dipole=self.dipole, Vmg=self.VolumeGas, Cpgm=self.HeatCapacityGas,
                                                              mug=self.ViscosityGas,
                                                              **user_chemical_property_lookup(self.CAS, 'ThermalConductivityGas'))
+
+        self.ThermalConductivitySolid = ThermalConductivitySolid(CASRN=self.CAS, **user_chemical_property_lookup(self.CAS, 'ThermalConductivitySolid'))
 
         self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid, Cpl=self.HeatCapacityLiquid,
                                              **user_chemical_property_lookup(self.CAS, 'SurfaceTension'))
@@ -2598,6 +2600,20 @@ class Chemical: # pragma: no cover
         return self.ThermalConductivityGas(self.T, self.P)
 
     @property
+    def ks(self):
+        r'''Thermal conductivity of the chemical in the solid phase at its
+        current temperature and pressure, in units of [W/m/K].
+
+        For calculation of this property at other temperatures,
+        or specifying manually the method used to calculate it, and more - see
+        the object oriented interface
+        :obj:`thermo.thermal_conductivity.ThermalConductivitySolid`; each
+        Chemical instance creates one to actually perform the calculations.
+
+        '''
+        return self.ThermalConductivitySolid(self.T)
+
+    @property
     def sigma(self):
         r'''Surface tension of the chemical at its current temperature, in
         units of [N/m].
@@ -3117,8 +3133,8 @@ class Chemical: # pragma: no cover
         >>> Chemical('ethanol', T=400).kg
         0.026
         '''
-        return phase_select_property(phase=self.phase, s=None, l=Chemical.kl,
-                                     g=Chemical.kg, self=self)
+        return phase_select_property(phase=self.phase, l=Chemical.kl,
+                                     g=Chemical.kg, s=Chemical.ks, self=self)
 
     @property
     def nu(self):
