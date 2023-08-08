@@ -29,6 +29,7 @@ import pytest
 from chemicals.exceptions import PhaseExistenceImpossible
 from fluids.numerics import *
 from fluids.numerics import assert_close, assert_close1d
+from thermo.flash.flash_utils import cm_flash_tol
 
 import thermo
 from thermo import *

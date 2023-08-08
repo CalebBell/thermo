@@ -101,7 +101,7 @@ from thermo.heat_capacity import (
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.permittivity import PermittivityLiquid
 from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
-from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityGasMixture, ThermalConductivityLiquid, ThermalConductivityLiquidMixture
+from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityGasMixture, ThermalConductivityLiquid, ThermalConductivityLiquidMixture, ThermalConductivitySolid
 from thermo.unifac import UNIFAC_RQ, UNIFAC_group_assignment_DDBST, Van_der_Waals_area, Van_der_Waals_volume
 from thermo.utils import identify_phase
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
@@ -915,6 +915,9 @@ class ChemicalConstantsPackage:
                                                                 omega=omegas[i], Hfus=Hfus_Tms[i], **user_chemical_property_lookup(CASs[i], 'ThermalConductivityLiquid'))
                                     for i in range(N)]
 
+        ThermalConductivitySolids = [ThermalConductivitySolid(CASRN=CASs[i], **user_chemical_property_lookup(CASs[i], 'ThermalConductivitySolid'))
+                                    for i in range(N)]
+
         ThermalConductivityGases =[ThermalConductivityGas(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i],
                                                           Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i], Vmg=VolumeGases[i],
                                                           Cpgm=HeatCapacityGases[i], mug=ViscosityGases[i],
@@ -925,6 +928,7 @@ class ChemicalConstantsPackage:
                                                  HeatCapacityGases=HeatCapacityGases, HeatCapacityLiquids=HeatCapacityLiquids, HeatCapacitySolids=HeatCapacitySolids,
                                                  ViscosityGases=ViscosityGases, ViscosityLiquids=ViscosityLiquids,
                                                  ThermalConductivityGases=ThermalConductivityGases, ThermalConductivityLiquids=ThermalConductivityLiquids,
+                                                 ThermalConductivitySolids=ThermalConductivitySolids,
                                                  EnthalpyVaporizations=EnthalpyVaporizations, EnthalpySublimations=EnthalpySublimations,
                                                  SurfaceTensions=SurfaceTensions, PermittivityLiquids=PermittivityLiquids)
         return constants, properties
@@ -1333,6 +1337,7 @@ properties_to_classes = {'VaporPressures': VaporPressure,
 'ViscosityLiquids': ViscosityLiquid,
 'ViscosityGases': ViscosityGas,
 'ThermalConductivityLiquids': ThermalConductivityLiquid,
+'ThermalConductivitySolids': ThermalConductivitySolid,
 'ThermalConductivityGases': ThermalConductivityGas,
 'SurfaceTensions': SurfaceTension}
 
@@ -1385,6 +1390,8 @@ class PropertyCorrelationsPackage:
         Objects holding gas thermal conductivity data and methods, [-]
     ThermalConductivityLiquids : list[:obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`], optional
         Objects holding liquid thermal conductivity data and methods, [-]
+    ThermalConductivitySolids : list[:obj:`thermo.thermal_conductivity.ThermalConductivitySolid`], optional
+        Objects holding solid thermal conductivity data and methods, [-]
     EnthalpyVaporizations : list[:obj:`thermo.phase_change.EnthalpyVaporization`], optional
         Objects holding enthalpy of vaporization data and methods, [-]
     EnthalpySublimations : list[:obj:`thermo.phase_change.EnthalpySublimation`], optional
@@ -1444,6 +1451,7 @@ class PropertyCorrelationsPackage:
                          'EnthalpySublimations', 'SublimationPressures',
                          'PermittivityLiquids', 'ViscosityLiquids', 'ViscosityGases',
                          'ThermalConductivityLiquids', 'ThermalConductivityGases',
+                         'ThermalConductivitySolids',
                          'SurfaceTensions')
     mixture_correlations = ('VolumeGasMixture', 'VolumeLiquidMixture', 'VolumeSolidMixture',
                'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture',
@@ -1656,6 +1664,7 @@ class PropertyCorrelationsPackage:
                  HeatCapacityGases=None, HeatCapacityLiquids=None, HeatCapacitySolids=None,
                  ViscosityGases=None, ViscosityLiquids=None,
                  ThermalConductivityGases=None, ThermalConductivityLiquids=None,
+                 ThermalConductivitySolids=None,
                  EnthalpyVaporizations=None, EnthalpySublimations=None,
                  SurfaceTensions=None, PermittivityLiquids=None,
 
@@ -1754,6 +1763,8 @@ class PropertyCorrelationsPackage:
                                                                     Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                                                     omega=constants.omegas[i], Hfus=constants.Hfus_Tms[i])
                                                 for i in cmps]
+        if ThermalConductivitySolids is None and not skip_missing:
+            ThermalConductivitySolids = [ThermalConductivitySolid(CASRN=constants.CASs[i]) for i in cmps]
 
         if ThermalConductivityGases is None and not skip_missing:
             ThermalConductivityGases = [ThermalConductivityGas(CASRN=constants.CASs[i], MW=constants.MWs[i], Tb=constants.Tbs[i],
@@ -1786,6 +1797,7 @@ class PropertyCorrelationsPackage:
         self.ViscosityGases = ViscosityGases
         self.ThermalConductivityLiquids = ThermalConductivityLiquids
         self.ThermalConductivityGases = ThermalConductivityGases
+        self.ThermalConductivitySolids = ThermalConductivitySolids
         self.SurfaceTensions = SurfaceTensions
 
         # Mixture objects

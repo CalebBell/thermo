@@ -893,6 +893,7 @@ class Mixture:
         self.ViscosityGases = [i.ViscosityGas for i in self.Chemicals]
         self.ThermalConductivityLiquids = [i.ThermalConductivityLiquid for i in self.Chemicals]
         self.ThermalConductivityGases = [i.ThermalConductivityGas for i in self.Chemicals]
+        self.ThermalConductivitySolids = [i.ThermalConductivitySolid for i in self.Chemicals]
         self.SurfaceTensions = [i.SurfaceTension for i in self.Chemicals]
         self.Permittivities = [i.Permittivity for i in self.Chemicals]
 
@@ -3391,6 +3392,7 @@ class Mixture:
                  HeatCapacitySolids=self.HeatCapacitySolids,
                  ViscosityGases=self.ViscosityGases, ViscosityLiquids=self.ViscosityLiquids,
                  ThermalConductivityGases=self.ThermalConductivityGases, ThermalConductivityLiquids=self.ThermalConductivityLiquids,
+                 ThermalConductivitySolids=self.ThermalConductivitySolids,
                  EnthalpyVaporizations=self.EnthalpyVaporizations, EnthalpySublimations=self.EnthalpySublimations,
                  SurfaceTensions=self.SurfaceTensions, PermittivityLiquids=self.Permittivities)
         if copy_mixtures:
