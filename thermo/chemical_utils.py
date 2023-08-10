@@ -257,6 +257,10 @@ def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp,
 
         if ele in shomate_gas_elements:
             gas_obj.method = 'WEBBOOK_SHOMATE'
+            if 'WEBBOOK_SHOMATE' in liquid_obj.all_methods:
+                liquid_obj.method = 'WEBBOOK_SHOMATE'
+            if 'WEBBOOK_SHOMATE' in solid_obj.all_methods:
+                solid_obj.method = 'WEBBOOK_SHOMATE'
         elif ele == 'Si':
             solid_obj.method = 'JANAF'
             liquid_obj.method = 'JANAF'

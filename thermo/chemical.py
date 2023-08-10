@@ -120,7 +120,7 @@ class ChemicalConstants:
                  'EnthalpyVaporization', 'VaporPressure', 'VolumeLiquid',
                  'EnthalpySublimation', 'SublimationPressure', 'SurfaceTension',
                  'VolumeSolid',
-                 'VolumeSupercriticalLiquid', 'PermittivityLiquid',
+                 'VolumeSupercriticalLiquid', 'PermittivityLiquid', 'ThermalConductivitySolid',
                  )
 
     # Or can I store the actual objects without doing the searches?
@@ -165,6 +165,7 @@ class ChemicalConstants:
         self.VolumeSolid = VolumeSolid
         self.VolumeSupercriticalLiquid = VolumeSupercriticalLiquid
         self.PermittivityLiquid = PermittivityLiquid
+        self.ThermalConductivitySolid = tuple()
 
 empty_chemical_constants = ChemicalConstants(None)
 

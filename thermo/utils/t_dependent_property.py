@@ -224,6 +224,8 @@ from thermo.utils.names import (
     EXP_STABLEPOLY_FIT,
     EXP_STABLEPOLY_FIT_LN_TAU,
     HEOS_FIT,
+    UNARY,
+    HO1972,
     NEGLECT_P,
     POLY_FIT,
     POLY_FIT_LN_TAU,
@@ -285,6 +287,8 @@ def load_json_based_correlations():
              os.path.join(folder, 'elements.json'),
              os.path.join(folder, 'inorganic_correlations.json'),
              os.path.join(folder, 'organic_correlations.json'),
+             os.path.join(folder, 'Ho_1972_thermal_conductivity_solid.json'),
+             os.path.join(folder, 'pycalphad_unary50.json'),
              ]
     if ENABLE_MIXTURE_JSON:
         paths.extend([os.path.join(folder, 'mixture_correlations.json'),
@@ -1446,7 +1450,7 @@ class TDependentProperty:
 
         return ans
 
-    extra_correlations_internal = {REFPROP_FIT, HEOS_FIT}
+    extra_correlations_internal = {REFPROP_FIT, HEOS_FIT, UNARY, HO1972}
 
     def __repr__(self):
         r'''Create and return a string representation of the object. The design
@@ -3149,7 +3153,7 @@ class TDependentProperty:
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
-            from scipy.interpolate import interp1d
+            from scipy.interpolate import interp1d, PchipInterpolator
             Ts, properties = self.tabular_data[name]
 
             if self.interpolation_T is not None:  # Transform ths Ts with interpolation_T if set
@@ -3164,7 +3168,9 @@ class TDependentProperty:
             extrapolator = interp1d(Ts_interp, properties_interp, fill_value='extrapolate')
             # If more than 5 property points, create a spline interpolation
             if len(properties) >= 5:
+                # TODO: switch interpolator
                 spline = interp1d(Ts_interp, properties_interp, kind='cubic')
+                # spline = PchipInterpolator(Ts_interp, properties_interp)
             else:
                 spline = None
 #            if isinstance(self.tabular_data_interpolators, dict):
@@ -4587,9 +4593,6 @@ class TDependentProperty:
         self._extrapolation_min = kwargs.pop('extrapolation_min', None)
         self._extrapolation_max = kwargs.pop('extrapolation_max', None)
 
-        if kwargs.get('tabular_data', None):
-            for name, (Ts, properties) in kwargs['tabular_data'].items():
-                self.add_tabular_data(Ts, properties, name=name, check_properties=False)
 
         self.correlations = {}
 
@@ -4640,16 +4643,17 @@ class TDependentProperty:
                     for key, json_based_data in something.items():
                         json_based_data_copy = {}
                         for k, v in json_based_data.items():
-                            found_allotropes = True
-                            new_allotrope_method_name = k + ' ' + allotrope_name
-                            json_based_data_copy[new_allotrope_method_name] = v
-                            do_not_set_methods.add(new_allotrope_method_name)
-                            if auto_CAS_idx is not None:
-                                auto_transition_names[auto_CAS_idx] = new_allotrope_method_name
-                                if auto_CAS_idx == 0:
-                                    T_transitions.insert(0, v['Tmin'])
-                                elif auto_CAS_idx == allotrope_phase_count-1:
-                                    T_transitions.append(v['Tmax'])
+                            if k not in self.extra_correlations_internal:
+                                found_allotropes = True
+                                new_allotrope_method_name = k + ' ' + allotrope_name
+                                json_based_data_copy[new_allotrope_method_name] = v
+                                do_not_set_methods.add(new_allotrope_method_name)
+                                if auto_CAS_idx is not None:
+                                    auto_transition_names[auto_CAS_idx] = new_allotrope_method_name
+                                    if auto_CAS_idx == 0:
+                                        T_transitions.insert(0, v['Tmin'])
+                                    elif auto_CAS_idx == allotrope_phase_count-1:
+                                        T_transitions.append(v['Tmax'])
                         json_based_data = json_based_data_copy
                         if key in kwargs:
                             kwargs[key].update(json_based_data)
@@ -4668,6 +4672,11 @@ class TDependentProperty:
                     for corr_i, corr_kwargs in correlation_dict.items():
                         self.add_correlation(name=corr_i, model=correlation_name,
                                              **corr_kwargs)
+        if kwargs.get('tabular_data', None):
+            for name, (Ts, properties) in kwargs['tabular_data'].items():
+                self.add_tabular_data(Ts, properties, name=name, check_properties=False)
+            kwargs.pop('tabular_data')
+
         if found_allotropes:
             # Try to add a generic range based method that handles the transitions
             if None not in auto_transition_names:
@@ -4742,7 +4751,7 @@ class TDependentProperty:
 
 
 
-        if method is None or (found_allotropes and method in do_not_set_methods):
+        if method is None or (found_allotropes and method in do_not_set_methods) or method in self.extra_correlations_internal:
             all_methods = self.all_methods
             for i in self.ranked_methods:
                 if i in all_methods:

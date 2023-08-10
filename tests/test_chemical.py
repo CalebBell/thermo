@@ -141,11 +141,11 @@ def test_Chemical_properties_T_dependent():
     assert_close(w.Hvapm, 43908.418874478055, rtol=1e-4)
     assert_close(w.Hvap, 2437287.6177599267, rtol=1e-4)
 
-    assert_close(Pd.Cpsm, 24.930765664000003, rtol=1e-4)
+    assert_close(Pd.Cpsm, 25.19343074286398, rtol=1e-4)
     assert_close(w.Cplm, 75.2955317728452, rtol=4e-4)
     assert_close(w.Cpgm, 33.590714617128235, rtol=4e-4)
 
-    assert_close(Pd.Cps, 234.26767209171211, rtol=1e-4)
+    assert_close(Pd.Cps, 236.73586490193554, rtol=1e-4)
     assert_close(w.Cpl, 4179.537135856072, rtol=4e-4)
     assert_close(w.Cpg, 1864.5680010040496, rtol=4e-4)
 

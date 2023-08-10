@@ -149,7 +149,7 @@ from thermo.coolprop import (
     has_CoolProp,
 )
 from thermo.electrochem import Laliberte_heat_capacity
-from thermo.utils import COOLPROP, HEOS_FIT, LINEAR, VDI_TABULAR, MixtureProperty, TDependentProperty
+from thermo.utils import COOLPROP, HEOS_FIT, LINEAR, UNARY, VDI_TABULAR, MixtureProperty, TDependentProperty
 
 TRCIG = 'TRCIG'
 POLING_POLY = 'POLING_POLY'
@@ -640,7 +640,7 @@ DADGOSTAR_SHAW = 'DADGOSTAR_SHAW'
 heat_capacity_liquid_methods = [HEOS_FIT, ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      WEBBOOK_SHOMATE, VDI_TABULAR, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
+                      WEBBOOK_SHOMATE, VDI_TABULAR, UNARY, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
                       DADGOSTAR_SHAW, POLING_CONST, CRCSTD]
 """Holds all methods available for the :obj:`HeatCapacityLiquid class`, for use in
 iterating over them."""
@@ -808,7 +808,7 @@ class HeatCapacityLiquid(TDependentProperty):
     ranked_methods = [HEOS_FIT, ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      WEBBOOK_SHOMATE, miscdata.JANAF, VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
+                      WEBBOOK_SHOMATE, miscdata.JANAF, UNARY, VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
                       ROWLINSON_BONDI,
                       POLING_CONST, CRCSTD]
     """Default rankings of the available methods."""
@@ -1268,7 +1268,7 @@ class HeatCapacitySolid(TDependentProperty):
     property_max = 1E4
     """Maximum value of Heat capacity; arbitrarily set."""
 
-    ranked_methods = [WEBBOOK_SHOMATE, miscdata.JANAF, PERRY151, CRCSTD, LASTOVKA_S]
+    ranked_methods = [WEBBOOK_SHOMATE, miscdata.JANAF, UNARY, PERRY151, CRCSTD, LASTOVKA_S]
     """Default rankings of the available methods."""
 
     _fit_force_n = {}
