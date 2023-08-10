@@ -451,12 +451,14 @@ def fit_cheb_poly_auto(func, low, high, start_n=3, max_n=20, eval_pts=100,
                   interpolation_property=None, interpolation_property_inv=None,
                   interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
                   arg_func=None, method=FIT_CHEBTOOLS_POLY, selection_criteria=None, data=None):
+    if max_n > len(data[0]):
+        max_n = len(data[0])
+
     worked_ns, worked_coeffs, worked_stats = fit_many_cheb_poly(func, low, high, ns=range(start_n, max_n+1),
                   interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
                   interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
                   arg_func=arg_func, eval_pts=eval_pts, method=method, data=data)
     idx = select_index_from_stats(worked_stats, worked_ns, selection_criteria=selection_criteria)
-
     return worked_ns[idx], worked_coeffs[idx], worked_stats[idx]
 
 

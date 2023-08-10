@@ -163,7 +163,7 @@ from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import thermal_conductivity_Magomedov
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TDependentProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, HO1972, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TDependentProperty, TPDependentProperty
 from thermo.viscosity import ViscosityGas
 from thermo.volume import VolumeGas
 
@@ -1407,7 +1407,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
         return super().test_method_validity(T, P, zs, ws, method)
 
 
-thermal_conductivity_solid_methods = []
+thermal_conductivity_solid_methods = [HO1972]
 """Holds all methods available for the :obj:`ThermalConductivitySolid` class, for use in
 iterating over them."""
 
@@ -1461,10 +1461,10 @@ class ThermalConductivitySolid(TDependentProperty):
     could stably exist in those conditions."""
     property_min = 0.0
     """Mimimum valid value of solid thermal conductivity."""
-    property_max = 5000.0
-    """Maximum valid value of solid thermal conductivity. Diamond 2200, carbon nanotubes maybe 6000."""
+    property_max = 1e5
+    """Maximum valid value of solid thermal conductivity. Diamond 2200, carbon nanotubes maybe 6000. Copper 25000 at 7 K."""
 
-    ranked_methods = []
+    ranked_methods = [HO1972]
     """Default rankings of the available methods."""
 
     custom_args = tuple()
