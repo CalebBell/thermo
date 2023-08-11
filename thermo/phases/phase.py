@@ -229,8 +229,6 @@ class Phase:
         d['json_version'] = 1
         return d
 
-
-
     @classmethod
     def from_json(cls, json_repr):
         r'''Method to create a phase from a JSON
@@ -278,9 +276,8 @@ class Phase:
         for ref_name, ref_lookup in zip(new.pointer_references, new.pointer_reference_dicts):
             d[ref_name] = ref_lookup[d[ref_name]]
 
-        for k, v in d.items():
+        for k, v in d.items(): 
             setattr(new, k, v)
-        # new.__dict__ = d
         return new
 
     def __hash__(self):
@@ -5860,8 +5857,6 @@ class IdealGasDeparturePhase(Phase):
         self._S = S
         return S
 
-
-
     def Cp(self):
         try:
             return self._Cp
@@ -5889,7 +5884,6 @@ class IdealGasDeparturePhase(Phase):
         return dH_dP
 
     dH_dP_T = dH_dP
-
 
     def dH_dT_V(self):
         dH_dT_V = self.Cp_ideal_gas()
@@ -5935,7 +5929,6 @@ class IdealGasDeparturePhase(Phase):
             dCp = float(dot(zs, dCpigs_pure))
         return dCp + self.d2H_dep_dT2_V()
 
-
     def dH_dzs(self):
         try:
             return self._dH_dzs
@@ -5950,13 +5943,7 @@ class IdealGasDeparturePhase(Phase):
         return self._dH_dzs
 
     def dS_dT(self):
-        HeatCapacityGases = self.HeatCapacityGases
-        cmps = range(self.N)
-        T, zs = self.T, self.zs
-        T_REF_IG = self.T_REF_IG
-        P_REF_IG_INV = self.P_REF_IG_INV
-
-        dS_dT = self.Cp_ideal_gas()/T
+        dS_dT = self.Cp_ideal_gas() / self.T
         dS_dT += self.dS_dep_dT()
         return dS_dT
 
