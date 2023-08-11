@@ -82,7 +82,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     __slots__ = ('eos_class', 'eos_kwargs', 'scalar', 'HeatCapacityGases', 'N',
     'Hfs', 'Gfs', 'Sfs', 'Cpgs_poly_fit', '_Cpgs_data', 'composition_independent',
-     'eos_mix', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
+     'eos_mix', '_model_hash_ignore_phase', '_model_hash')
     ideal_gas_basis = True
 
     pure_references = ('HeatCapacityGases',)
@@ -127,14 +127,13 @@ class CEOSPhase(IdealGasDeparturePhase):
         return base
 
     def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
-                 Gfs=None, Sfs=None,
-                 T=None, P=None, zs=None):
+                 Gfs=None, Sfs=None, T=None, P=None, zs=None):
         self.eos_class = eos_class
         self.eos_kwargs = eos_kwargs
-
-        self.scalar = scalar = not (any(type(v) is ndarray for v in eos_kwargs.values()) or any(type(v) is ndarray for v in (zs, Hfs, Gfs, Sfs)))
-
-
+        self.scalar = scalar = not (
+            any(type(v) is ndarray for v in eos_kwargs.values())
+            or any(type(v) is ndarray for v in (zs, Hfs, Gfs, Sfs))
+        )
         self.HeatCapacityGases = HeatCapacityGases
         if HeatCapacityGases is not None:
             self.N = N = len(HeatCapacityGases)
@@ -143,32 +142,31 @@ class CEOSPhase(IdealGasDeparturePhase):
                     raise ValueError("A HeatCapacityGas object is required")
         elif 'Tcs' in eos_kwargs:
             self.N = N = len(eos_kwargs['Tcs'])
-
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
         self.Cpgs_poly_fit, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
-        self.composition_independent = ideal_gas = eos_class is IGMIX
-        if ideal_gas:
-            self.force_phase = 'g'
-
-
-        if T is not None and P is not None and zs is not None:
-            self.T = T
-            self.P = P
-            self.zs = zs
-            self.eos_mix = eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
-        else:
+        self.composition_independent = eos_class is IGMIX
+        if T is None: T = 298.15
+        if P is None: P = 101325.0
+        if zs is None: 
             if scalar:
-                zs = [1.0/N]*N
+                zs = [1.0 / N] * N
             else:
-                v = 1.0/N
+                v = 1.0 / N
                 zs = full(N, v)
-            self.eos_mix = eos_mix = self.eos_class(T=298.15, P=101325.0, zs=zs, **self.eos_kwargs)
-            self.T = 298.15
-            self.P = 101325.0
-            self.zs = zs
+        self.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
 
+    @property
+    def T(self):
+        return self.eos_mix.T
+    @property
+    def P(self):
+        return self.eos_mix.P
+    @property
+    def zs(self):
+        return self.eos_mix.zs
+    
     def to_TP_zs(self, T, P, zs, other_eos=None):
         r'''Method to create a new Phase object with the same constants as the
         existing Phase but at a different `T` and `P`. This method has a
@@ -215,9 +213,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         '''
         # Why so slow
         new = self.__class__.__new__(self.__class__)
-        new.T = T
-        new.P = P
-        new.zs = zs
         new.scalar = self.scalar
         if other_eos is not None:
             other_eos.solve_missing_volumes()
@@ -238,9 +233,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         new._Cpgs_data = self._Cpgs_data
         new.Cpgs_poly_fit = self.Cpgs_poly_fit
         new.composition_independent = self.composition_independent
-        if new.composition_independent:
-            new.force_phase = 'g'
-
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
@@ -255,7 +247,6 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
-        new.zs = zs
         # temporary TODO remove this statement
         if not self.scalar and type(zs) is not ndarray:
             zs = array(zs)
@@ -281,15 +272,10 @@ class CEOSPhase(IdealGasDeparturePhase):
             T = new.eos_mix.T
         else:
             raise ValueError("Two of T, P, or V are needed")
-        new.P, new.T = P, T
-
         new.eos_class, new.eos_kwargs = self.eos_class, self.eos_kwargs
 
         new.HeatCapacityGases, new._Cpgs_data, new.Cpgs_poly_fit = self.HeatCapacityGases, self._Cpgs_data, self.Cpgs_poly_fit
         new.composition_independent, new.scalar = self.composition_independent, self.scalar
-        if new.composition_independent:
-            new.force_phase = 'g'
-
         new.Hfs, new.Gfs, new.Sfs = self.Hfs, self.Gfs, self.Sfs
 
         try:
@@ -395,7 +381,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         return k
 
     def _set_mechanical_critical_point(self):
-        zs = self.zs
         new = self.eos_mix.to_mechanical_critical_point()
         self._mechanical_critical_T = new.T
         self._mechanical_critical_P = new.P
@@ -608,6 +593,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 class CEOSGas(CEOSPhase):
     is_gas = True
     is_liquid = False
+    __slots__ = ()
 
     @property
     def phase(self):
@@ -894,6 +880,7 @@ class CEOSGas(CEOSPhase):
 class CEOSLiquid(CEOSPhase):
     is_gas = False
     is_liquid = True
+    __slots__ = ()
 
     @property
     def phase(self):
