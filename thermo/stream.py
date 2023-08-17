@@ -1214,6 +1214,11 @@ class StreamArgs:
         return specs
 
     @property
+    def non_pressure_state_specs(self):
+        specs = self.state_specs
+        return [(s, v) for s, v in specs if s != 'P']
+
+    @property
     def specified_state_vars(self):
         # Slightly faster
         s = self.specifications
@@ -2361,6 +2366,7 @@ class EquilibriumStream(EquilibriumState):
                     specs.append((var, v))
         return specs
 
+
     @property
     def specified_flow_vars(self):
         '''Always needs only one flow specified'''
@@ -2371,6 +2377,7 @@ class EquilibriumStream(EquilibriumState):
         '''Always needs a flow specified'''
         return True
 
+EquilibriumStream.non_pressure_state_specs = StreamArgs.non_pressure_state_specs
 
 
 energy_types = {'LP_STEAM': 'Steam 50 psi',
