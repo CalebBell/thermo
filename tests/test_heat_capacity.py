@@ -736,7 +736,49 @@ def test_HeatCapacitySolid_titanium_custom():
     assert HeatCapacitySolid.from_json(obj.as_json()) == obj
     assert eval(str(obj)) == obj
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_stable_polynomial_parameters():
+    coeffs = [-1.1807560231661693, 1.0707500453237926, 6.219226796524199, -5.825940187155626, -13.479685202800221, 12.536206919506746, 16.713022858280983, -14.805461693468148, -13.840786121365808, 11.753575516231718, 7.020730111250113, -5.815540568906596, -2.001592044472603, 0.9210441915058972, 1.6279658993728698, -1.0508623065949019, -0.2536958793947375, 1.1354682714079252, -1.3567430363825075, 0.3415188644466688, 1.604997313795647, -2.26022568959622, -1.62374341299051, 10.875220288166474, 42.85532802412628]
+    Tmin, Tmax = 251.165, 2000.0
+    kwargs = {'stable_polynomial_parameters': {'test': {'coeffs': coeffs,'Tmin': Tmin, 'Tmax': Tmax  }}}
+    obj = HeatCapacityGas(**kwargs)
+    assert_close(obj(300), 33.59562103706877, rtol=1e-13)
+    assert_close(obj.calculate_integral(300, 400, 'test'), 3389.544332887159, rtol=1e-13)
 
+    # No real way to force check that quad isn't used but this at least checks the results
+    assert 'int_coeffs' in obj.correlations['test'][3] 
+    expect_coeffs = [-41.298949195476155, 39.0117740732049, 236.44351075433477, -231.5592751637343, -561.2796493247411, 548.0939357018894, 769.1662981674165, -719.2308222415658, -711.9191528399639, 642.3457574352843, 409.2699514702697, -363.22931752942026, -134.6328547344325, 67.11476327717565, 129.41107925589787, -91.88923909769476, -24.648457402294206, 124.10916590172992, -169.47997914514303, 49.77167860871583, 280.687547727181, -494.09522423312563, -473.27655194287644, 4754.741468163904, 37473.448792536445, 0.0]
+    assert_close1d(obj.correlations['test'][3]['int_coeffs'], expect_coeffs)
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy():
+    coeffs_num = [-1.1807560231661693, 1.0707500453237926, 6.219226796524199, -5.825940187155626, -13.479685202800221, 12.536206919506746, 16.713022858280983, -14.805461693468148, -13.840786121365808, 11.753575516231718, 7.020730111250113, -5.815540568906596, -2.001592044472603, 0.9210441915058972, 1.6279658993728698, -1.0508623065949019, -0.2536958793947375, 1.1354682714079252, -1.3567430363825075, 0.3415188644466688, 1.604997313795647, -2.26022568959622, -1.62374341299051, 10.875220288166474, 42.85532802412628]
+    Tmin, Tmax = 251.165, 2000.0
+    kwargs = {'stable_polynomial_parameters': {'test': {'coeffs': coeffs_num,'Tmin': Tmin, 'Tmax': Tmax  }}}
+    obj = HeatCapacityGas(extrapolation="linear",**kwargs)
+    dSs = []
+    dHs = []
+    pairs = [(252, 400), (252, 1000), (252, 2000), (Tmin, Tmax), (1, 10000), (1, 300), (1000, 10000)]
+    dSs_expect = [15.587741399855702, 49.537011711414834, 81.56764797150367, 81.67860031367769, 377.40462102946975, 187.9790605246881, 145.72976380712763]
+
+    for (T1, T2), dS_expect in zip(pairs, dSs_expect):
+        dS = obj.T_dependent_property_integral_over_T(T1, T2)
+        # print(T1, T2, dS/dS_expect, dS_expect, dS)
+        dSs.append(dS)
+
+    for T1, T2 in pairs:
+        dH = obj.T_dependent_property_integral(T1, T2)
+        dHs.append(dH)
+    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.5550873382, 9924.4462248903, 665908.1651110547]
+    assert_close1d(dHs, dHs_expect, rtol=1e-13)
+
+    # Essentially what writting this test discovered is that there kind of is a numerical problem with so many parameters
+    # Definite numerical stability issue
+    # I don't believe it possible for stable_poly to be integrated over T and stay stable unfortunately.
+    # There are other alternatives like transfering the coefficients of the polynomial to stable form, and
+    # re-fitting them to the analytical results. That should fix the issue but will be hard to do and 
+    # when would it happen? Can't happen in runtime.
+    assert_close1d(dSs, dSs_expect, rtol=1e-6)
 
 
 @pytest.mark.slow

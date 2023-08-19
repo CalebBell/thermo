@@ -177,11 +177,14 @@ from fluids.numerics import (
     polyder,
     polyint,
     polyint_over_x,
+    polyint_stable,
     polynomial_offset_scale,
     quad,
     secant,
     trunc_exp,
     trunc_log,
+    polyint_over_x_stable,
+    horner_log,
 )
 from fluids.numerics import numpy as np
 
@@ -3247,6 +3250,9 @@ class TDependentProperty:
 
         elif model == 'stable_polynomial':
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
+            extra['int_coeffs'] = polyint_stable(coeffs, Tmin, Tmax)
+            extra['int_T_coeffs'], extra['int_T_log_coeff'] = polyint_over_x_stable(coeffs, Tmin, Tmax)
+
         elif model == 'exp_stable_polynomial':
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
         elif model == 'exp_stable_polynomial_ln_tau':
@@ -3898,6 +3904,11 @@ class TDependentProperty:
                     Tmax, extra['Tmin_value'],
                     extra['Tmax_value'], extra['Tmin_slope'],
                     extra['Tmax_slope'])
+            elif model == 'stable_polynomial':
+                int_coeffs, offset, scale = extra['int_coeffs'], extra['offset'], extra['scale']
+                return horner_stable(T2, int_coeffs, offset, scale) - horner_stable(T1, int_coeffs, offset, scale)
+
+
             calls = self.correlation_models[model][2]
             if 'f_int' in calls:
                 return calls['f_int'](T2, **kwargs) - calls['f_int'](T1, **kwargs)
@@ -4041,6 +4052,9 @@ class TDependentProperty:
                     extra['Tmin_value'],
                     extra['Tmax_value'], extra['Tmin_slope'],
                     extra['Tmax_slope'])
+            elif model == 'stable_polynomial':
+                int_T_coeffs, int_T_log_coeff = extra['int_T_coeffs'], extra['int_T_log_coeff']
+                return horner_log(int_T_coeffs, int_T_log_coeff, T2) - horner_log(int_T_coeffs, int_T_log_coeff, T1)
             calls = self.correlation_models[model][2]
             if 'f_int_over_T' in calls:
                 return calls['f_int_over_T'](T2, **kwargs) - calls['f_int_over_T'](T1, **kwargs)
