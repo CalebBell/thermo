@@ -185,6 +185,7 @@ from fluids.numerics import (
     trunc_log,
     polyint_over_x_stable,
     horner_log,
+    horner_stable_log,
 )
 from fluids.numerics import numpy as np
 
@@ -912,7 +913,7 @@ class TDependentProperty:
       {'fit_params': []},
       ),
 
-    'stable_polynomial': (['coeffs'],
+    'stable_polynomial': (['coeffs', 'int_over_T_coeffs'],
       [],
       {'f': None,
       'signature': 'array'},
@@ -3249,9 +3250,15 @@ class TDependentProperty:
 
 
         elif model == 'stable_polynomial':
+            from fluids.numerics.polynomial_utils import polyint_over_x_stable2
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
             extra['int_coeffs'] = polyint_stable(coeffs, Tmin, Tmax)
             extra['int_T_coeffs'], extra['int_T_log_coeff'] = polyint_over_x_stable(coeffs, Tmin, Tmax)
+            extra['int_T_coeffs2'], extra['int_T_log_coeff'] = polyint_over_x_stable2(coeffs, Tmin, Tmax)
+
+            from numpy.polynomial.polynomial import Polynomial
+
+            extra['int_T_stable_coeffs'] = Polynomial(extra['int_T_coeffs'][::-1]).convert(domain=(Tmin, Tmax)).coef.tolist()[::-1]
 
         elif model == 'exp_stable_polynomial':
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
@@ -4053,8 +4060,21 @@ class TDependentProperty:
                     extra['Tmax_value'], extra['Tmin_slope'],
                     extra['Tmax_slope'])
             elif model == 'stable_polynomial':
-                int_T_coeffs, int_T_log_coeff = extra['int_T_coeffs'], extra['int_T_log_coeff']
-                return horner_log(int_T_coeffs, int_T_log_coeff, T2) - horner_log(int_T_coeffs, int_T_log_coeff, T1)
+                # int_T_coeffs, int_T_log_coeff = extra['int_T_coeffs'], extra['int_T_log_coeff']
+                # int_T_coeffs2, int_T_log_coeff = extra['int_T_coeffs2'], extra['int_T_log_coeff']
+                # int_over_T_coeffs = kwargs['int_over_T_coeffs']
+
+                int_T_stable_coeffs, int_T_log_coeff = extra['int_T_stable_coeffs'], extra['int_T_log_coeff']
+                offset, scale = extra['offset'], extra['scale']
+                return horner_stable_log(T2, int_T_stable_coeffs, offset, scale, int_T_log_coeff) - horner_stable_log(T1, int_T_stable_coeffs, offset, scale, int_T_log_coeff)
+
+                # from fluids.numerics.polynomial_evaluation import horner_stable_log2
+                # return horner_stable_log2(T2, int_T_coeffs2, offset, scale, int_T_log_coeff) - horner_stable_log(T1, int_T_coeffs2, offset, scale, int_T_log_coeff)
+
+                # return horner_stable_log(T2, int_T_stable_coeffs, offset, scale, int_T_log_coeff) - horner_stable_log(T1, int_T_stable_coeffs, offset, scale, int_T_log_coeff)
+
+                
+                # return horner_log(int_T_coeffs, int_T_log_coeff, T2) - horner_log(int_T_coeffs, int_T_log_coeff, T1)
             calls = self.correlation_models[model][2]
             if 'f_int_over_T' in calls:
                 return calls['f_int_over_T'](T2, **kwargs) - calls['f_int_over_T'](T1, **kwargs)
