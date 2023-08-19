@@ -810,6 +810,35 @@ def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy_fixed():
     assert_close1d(dSs, dSs_expect, rtol=1e-14)
 
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_UNARY_calphad():
+    # silver
+    obj = HeatCapacitySolid(CASRN='7440-22-4')
+    obj.method = 'UNARY'
+    # obj.T_dependent
+    assert_close(obj(400), 25.81330053581182, rtol=1e-7)
+    assert_close(obj(2500),obj(2600), rtol=1e-4)
+    assert_close(obj(2000),obj(2600), rtol=1e-3)
+    assert_close(obj(2000),obj(3000), rtol=2e-3)
+    Tmin, Tmax = 300, 800
+
+    assert 'int_T_coeffs' in obj.correlations['UNARY'][3]
+    assert 'int_T_log_coeff' in  obj.correlations['UNARY'][3]
+
+    assert_close(obj.calculate_integral_over_T(Tmin, Tmax, 'UNARY'), 25.966064453125)
+    assert_close(obj.calculate_integral(Tmin, Tmax, 'UNARY'), 13348.922120498239)
+
+    obj = HeatCapacityLiquid(CASRN='7440-22-4')
+    obj.method = 'UNARY'
+    assert_close(obj.calculate_integral_over_T(Tmin, Tmax, 'UNARY'), 25.92645263671875)
+    assert_close(obj.calculate_integral(Tmin, Tmax, 'UNARY'), 13343.854184041487)
+    assert_close(obj(500), 26.323860726469874)
+
+
+    assert 'int_T_coeffs' in obj.correlations['UNARY'][3]
+    assert 'int_T_log_coeff' in  obj.correlations['UNARY'][3]
+
+
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral():
