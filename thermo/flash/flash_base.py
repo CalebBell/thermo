@@ -778,6 +778,14 @@ class Flash:
         self.scalar = scalar_statuses.pop()
 
         self.supports_lnphis_args = all(p.supports_lnphis_args for p in self.phases)
+        
+        # Make the phases aware of the constants and properties
+        constants = self.constants
+        correlations = self.correlations
+        for p in self.phases:
+            p.constants = constants
+            p.correlations = correlations
+
 
     def debug_grid_flash(self, zs, check0, check1, Ts=None, Ps=None, Vs=None,
                          VFs=None, SFs=None, Hs=None, Ss=None, Us=None,

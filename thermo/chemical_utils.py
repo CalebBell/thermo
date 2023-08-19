@@ -172,6 +172,37 @@ shomate_gas_elements = ('H', 'O', 'N', 'F', 'P', 'Cl', 'Br', 'I', 'Mg', 'B', 'Pb
 standard_state_supported_elements = shomate_gas_elements + ('C', 'Si', 'Hg')
 standard_state_supported_elements_set = set(standard_state_supported_elements)
 
+element_HeatCapacityGas_dict = {}
+
+def element_HeatCapacityGas_cache(CAS):
+    try:
+        return element_HeatCapacityGas_dict[CAS]
+    except:
+        obj = HeatCapacityGas(CASRN=CAS)
+        element_HeatCapacityGas_dict[CAS] = obj
+        return obj
+
+element_HeatCapacityLiquid_dict = {}
+
+def element_HeatCapacityLiquid_cache(CAS):
+    try:
+        return element_HeatCapacityLiquid_dict[CAS]
+    except:
+        obj = HeatCapacityLiquid(CASRN=CAS)
+        element_HeatCapacityLiquid_dict[CAS] = obj
+        return obj
+
+element_HeatCapacitySolid_dict = {}
+
+def element_HeatCapacitySolid_cache(CAS):
+    try:
+        return element_HeatCapacitySolid_dict[CAS]
+    except:
+        obj = HeatCapacitySolid(CASRN=CAS)
+        element_HeatCapacitySolid_dict[CAS] = obj
+        return obj
+
+
 def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
     r'''This function calculates the standard state ideal-gas heat of formation
     of a compound at a specified from first principles. The entropy change and
@@ -249,9 +280,9 @@ def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp,
         ele = list(ele_data.keys())[0]
         element_obj = periodic_table[ele]
 #         element = Chemical(element_obj.CAS_standard)
-        solid_obj = HeatCapacitySolid(CASRN=element_obj.CAS_standard)
-        liquid_obj = HeatCapacityLiquid(CASRN=element_obj.CAS_standard)
-        gas_obj = HeatCapacityGas(CASRN=element_obj.CAS_standard)
+        solid_obj = element_HeatCapacitySolid_cache(element_obj.CAS_standard)
+        liquid_obj = element_HeatCapacityLiquid_cache(element_obj.CAS_standard)
+        gas_obj = element_HeatCapacityGas_cache(element_obj.CAS_standard)
         if ele not in standard_state_supported_elements_set:
             raise NotImplementedError(f"The element {ele} is not currently supported")
 

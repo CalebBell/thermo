@@ -4232,11 +4232,11 @@ class Phase:
             HeatCapacityGases = self.HeatCapacityGases
         except:
             HeatCapacityGases = self.correlations.HeatCapacityGases
-        atomss = self.atomss
+        atomss = self.constants.atomss
 
         for i in range(self.N):
-            Hi, Si, Gi = standard_state_ideal_gas_formation(Chemical(CASs[i]), T)
-            # Hi, Si, Gi = _standard_state_ideal_gas_formation_direct(T, Hfs[i], Sfs[i], atoms=atomss[i], gas_Cp=HeatCapacityGases[i])
+            # Hi, Si, Gi = standard_state_ideal_gas_formation(Chemical(CASs[i]), T)
+            Hi, Si, Gi = _standard_state_ideal_gas_formation_direct(T, Hfs[i], Sfs[i], atoms=atomss[i], gas_Cp=HeatCapacityGases[i])
             H_chemicals.append(Hi)
             S_chemicals.append(Si)
             G_chemicals.append(Gi)
