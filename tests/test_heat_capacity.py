@@ -838,6 +838,27 @@ def test_HeatCapacityGas_UNARY_calphad():
     assert 'int_T_coeffs' in obj.correlations['UNARY'][3]
     assert 'int_T_log_coeff' in  obj.correlations['UNARY'][3]
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacity_stable_polynomial_water():
+    obj = HeatCapacityGas(CASRN='7732-18-5')
+    obj.method = 'HEOS_FIT'
+    assert 'int_T_coeffs' in obj.correlations['HEOS_FIT'][3]
+    assert 'int_T_log_coeff' in  obj.correlations['HEOS_FIT'][3]
+    Tmin, Tmax = 300, 800
+
+    assert_close(obj.calculate_integral_over_T(Tmin, Tmax, 'HEOS_FIT'), 34.78301770087086)
+    assert_close(obj.calculate_integral(Tmin, Tmax, 'HEOS_FIT'), 17940.09005349636)
+
+
+    obj = HeatCapacityLiquid(CASRN='7732-18-5')
+    obj.method = 'HEOS_FIT'
+    assert 'int_T_coeffs' in obj.correlations['HEOS_FIT'][3]
+    assert 'int_T_log_coeff' in  obj.correlations['HEOS_FIT'][3]
+
+    Tmin, Tmax = 300, 550
+    assert_close(obj.calculate_integral_over_T(Tmin, Tmax, 'HEOS_FIT'), 47.9072265625)
+    assert_close(obj.calculate_integral(Tmin, Tmax, 'HEOS_FIT'), 19944.787214230466)
+
 
 @pytest.mark.slow
 @pytest.mark.fuzz
