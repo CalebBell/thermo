@@ -293,9 +293,9 @@ def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp,
             if 'WEBBOOK_SHOMATE' in solid_obj.all_methods:
                 solid_obj.method = 'WEBBOOK_SHOMATE'
         elif ele == 'Si':
-            solid_obj.method = 'JANAF'
-            liquid_obj.method = 'JANAF'
-            gas_obj.method = 'JANAF'
+            solid_obj.method = 'JANAF_FIT'
+            liquid_obj.method = 'JANAF_FIT'
+            gas_obj.method = 'JANAF_FIT'
 
         if ele in standard_state_transitions:
             dat = standard_state_transitions[ele]
