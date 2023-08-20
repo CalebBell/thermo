@@ -791,17 +791,14 @@ class Flash:
                     liquids_to_unique_liquids.append(i)
                 else:
                     liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
-        if gas is not None:
-            gas_hash = gas.model_hash(True)
-
         gas_to_unique_liquid = None
-        if len(unique_liquids) == 1:
-            for i, l in enumerate(liquids):
-                h = l.model_hash(True)
-                if gas is not None and gas_hash == h:
-                    gas_to_unique_liquid = liquids_to_unique_liquids[i]
-                    self.ceos_gas_liquid_compatible = True
-                    break
+        if gas is not None:
+            if len(unique_liquids) == 1:
+                for i, l in enumerate(liquids):
+                    if l.is_same_model(gas, ignore_phase=True):
+                        gas_to_unique_liquid = liquids_to_unique_liquids[i]
+                        self.ceos_gas_liquid_compatible = True
+                        break
 
         self.gas_to_unique_liquid = gas_to_unique_liquid
         self.liquids_to_unique_liquids = liquids_to_unique_liquids
