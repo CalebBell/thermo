@@ -263,9 +263,23 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
     return _standard_state_ideal_gas_formation_direct(T=T, Hf_ref=Hf_ref, Sf_ref=Sf_ref, 
             atoms=atoms, gas_Cp=c.HeatCapacityGas, T_ref=T_ref)
 
-def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp, T_ref=298.15):
-    reactant_coeff, elemental_counts, elemental_composition = standard_formation_reaction(atoms)
-    
+_standard_formation_reaction_cache = {}
+MAX_STANDARD_FORMATION_CACHE = 250
+def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp, T_ref=298.15, cache=True):
+    if cache:
+        atoms_key = hash(tuple(atoms.items()))
+        if atoms_key in _standard_formation_reaction_cache:
+            reactant_coeff, elemental_counts, elemental_composition = _standard_formation_reaction_cache[atoms_key]
+        else:
+            reactant_coeff, elemental_counts, elemental_composition = standard_formation_reaction(atoms)
+            _standard_formation_reaction_cache[atoms_key] = reactant_coeff, elemental_counts, elemental_composition
+
+            if len(_standard_formation_reaction_cache) > MAX_STANDARD_FORMATION_CACHE:
+                # Prevent the cache growing too much
+                _standard_formation_reaction_cache.pop(next(iter(_standard_formation_reaction_cache)))
+    else:
+        _standard_formation_reaction_cache[atoms_key] = reactant_coeff, elemental_counts, elemental_composition
+
     dH_compound = gas_Cp.T_dependent_property_integral(T_ref, T)
     dS_compound = gas_Cp.T_dependent_property_integral_over_T(T_ref, T)
     
