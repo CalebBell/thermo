@@ -787,12 +787,13 @@ class Flash:
             gas_hash = gas.model_hash(True)
 
         gas_to_unique_liquid = None
-        for i, l in enumerate(liquids):
-            h = l.model_hash(True)
-            if gas is not None and gas_hash == h:
-                gas_to_unique_liquid = liquids_to_unique_liquids[i]
-                self.ceos_gas_liquid_compatible = True
-                break
+        if len(unique_liquids) == 1:
+            for i, l in enumerate(liquids):
+                h = l.model_hash(True)
+                if gas is not None and gas_hash == h:
+                    gas_to_unique_liquid = liquids_to_unique_liquids[i]
+                    self.ceos_gas_liquid_compatible = True
+                    break
 
         self.gas_to_unique_liquid = gas_to_unique_liquid
         self.liquids_to_unique_liquids = liquids_to_unique_liquids
