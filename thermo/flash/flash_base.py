@@ -830,7 +830,11 @@ class Flash:
         constants = self.constants
         correlations = self.correlations
         for p in self.phases:
+            if hasattr(p, 'constants') and p.constants is not constants:
+                raise ValueError("Provided phase is associated with a different constants object")
             p.constants = constants
+            if hasattr(p, 'correlations') and p.correlations is not correlations:
+                raise ValueError("Provided phase is associated with a different correlations object")
             p.correlations = correlations
 
 
