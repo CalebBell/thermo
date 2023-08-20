@@ -1438,9 +1438,9 @@ class TDependentProperty:
     def __eq__(self, other):
         return self.__hash__() == hash(other)
 
-    hash_ignore_props = ('extrapolation_coeffs', 'prop_cached',
+    hash_ignore_props = {'extrapolation_coeffs', 'prop_cached',
                          'TP_cached', 'tabular_data_interpolators',
-                         'tabular_data_interpolators_P', 'T_cached')
+                         'tabular_data_interpolators_P', 'T_cached'}
     def __hash__(self):
         d = self.__dict__
         # extrapolation values and interpolation objects should be ignored
