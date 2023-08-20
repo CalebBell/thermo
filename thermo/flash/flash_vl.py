@@ -352,36 +352,6 @@ class FlashVL(Flash):
         #
         self.phases = [gas, liquid]
 
-        liquids_to_unique_liquids = []
-        unique_liquids, unique_liquid_hashes = [], []
-        for i, l in enumerate(liquids):
-            h = l.model_hash()
-            if h not in unique_liquid_hashes:
-                unique_liquid_hashes.append(h)
-                unique_liquids.append(l)
-                liquids_to_unique_liquids.append(i)
-            else:
-                liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
-        if gas:
-            gas_hash = gas.model_hash(True)
-
-        gas_to_unique_liquid = None
-        for i, l in enumerate(liquids):
-            h = l.model_hash(True)
-            if gas_hash == h:
-                gas_to_unique_liquid = liquids_to_unique_liquids[i]
-                self.ceos_gas_liquid_compatible = True
-                break
-
-        self.gas_to_unique_liquid = gas_to_unique_liquid
-        self.liquids_to_unique_liquids = liquids_to_unique_liquids
-
-        self.unique_liquids = unique_liquids
-        self.unique_liquid_count = len(unique_liquids)
-        self.unique_phases = [gas] + unique_liquids
-        self.unique_phase_count = 1 + self.unique_liquid_count
-        self.unique_liquid_hashes = unique_liquid_hashes
-
         self._finish_initialization_base()
 
     def phases_at_TP_binary(self, T, P, zs, liq, gas):
