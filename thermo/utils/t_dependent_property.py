@@ -237,6 +237,7 @@ from thermo.utils.names import (
     STABLEPOLY_FIT,
     STABLEPOLY_FIT_LN_TAU,
     VDI_TABULAR,
+    JANAF_FIT,
 )
 
 """This section is intended to be used in being able to add new data without
@@ -289,6 +290,7 @@ def load_json_based_correlations():
     folder = os.path.join(source_path, 'Misc')
     paths = [os.path.join(folder, 'refprop_correlations.json'),
              os.path.join(folder, 'elements.json'),
+             os.path.join(folder, 'janaf_correlations.json'),
              os.path.join(folder, 'inorganic_correlations.json'),
              os.path.join(folder, 'organic_correlations.json'),
              os.path.join(folder, 'Ho_1972_thermal_conductivity_solid.json'),
@@ -1454,7 +1456,7 @@ class TDependentProperty:
 
         return ans
 
-    extra_correlations_internal = {REFPROP_FIT, HEOS_FIT, UNARY, HO1972}
+    extra_correlations_internal = {REFPROP_FIT, HEOS_FIT, UNARY, HO1972, JANAF_FIT}
 
     def __repr__(self):
         r'''Create and return a string representation of the object. The design
