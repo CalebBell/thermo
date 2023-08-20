@@ -101,7 +101,8 @@ from .names import (
     MIXING_LOG_MOLAR,
     MIXING_LOG_MASS,
     UNARY,
-    HO1972
+    HO1972,
+    JANAF_FIT
 )
 from .t_dependent_property import *
 from .tp_dependent_property import *
@@ -115,5 +116,5 @@ __all__ = (
     'STABLEPOLY_FIT', 'EXP_STABLEPOLY_FIT', 'STABLEPOLY_FIT_LN_TAU', 'EXP_STABLEPOLY_FIT_LN_TAU',
     'CHEB_FIT', 'EXP_CHEB_FIT', 'CHEB_FIT_LN_TAU', 'EXP_CHEB_FIT_LN_TAU', 'IAPWS', 'DIPPR_PERRY_8E',
     'VDI_TABULAR', 'VDI_PPDS', 'COOLPROP', 'EOS', 'HEOS_FIT', 'REFPROP_FIT', 'HO1972', 'UNARY',
-    'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS'
+    'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS', 'JANAF_FIT'
 )

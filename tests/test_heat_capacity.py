@@ -859,6 +859,11 @@ def test_HeatCapacity_stable_polynomial_water():
     assert_close(obj.calculate_integral_over_T(Tmin, Tmax, 'HEOS_FIT'), 47.9072265625)
     assert_close(obj.calculate_integral(Tmin, Tmax, 'HEOS_FIT'), 19944.787214230466)
 
+@pytest.mark.meta_T_dept
+def test_JANAF_fit_carbon_exists():
+    obj = HeatCapacitySolid(CASRN="7440-44-0")
+    assert obj.method == 'JANAF_FIT'
+
 
 @pytest.mark.slow
 @pytest.mark.fuzz

@@ -149,7 +149,7 @@ from thermo.coolprop import (
     has_CoolProp,
 )
 from thermo.electrochem import Laliberte_heat_capacity
-from thermo.utils import COOLPROP, HEOS_FIT, LINEAR, UNARY, VDI_TABULAR, MixtureProperty, TDependentProperty
+from thermo.utils import COOLPROP, HEOS_FIT, LINEAR, UNARY, JANAF_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
 
 TRCIG = 'TRCIG'
 POLING_POLY = 'POLING_POLY'
@@ -1175,7 +1175,7 @@ class HeatCapacityLiquid(TDependentProperty):
 
 LASTOVKA_S = 'LASTOVKA_S'
 PERRY151 = """PERRY151"""
-heat_capacity_solid_methods = [WEBBOOK_SHOMATE, PERRY151, CRCSTD, LASTOVKA_S]
+heat_capacity_solid_methods = [JANAF_FIT, WEBBOOK_SHOMATE, PERRY151, CRCSTD, LASTOVKA_S]
 """Holds all methods available for the :obj:`HeatCapacitySolid` class, for use in
 iterating over them."""
 
@@ -1268,7 +1268,7 @@ class HeatCapacitySolid(TDependentProperty):
     property_max = 1E4
     """Maximum value of Heat capacity; arbitrarily set."""
 
-    ranked_methods = [WEBBOOK_SHOMATE, miscdata.JANAF, UNARY, PERRY151, CRCSTD, LASTOVKA_S]
+    ranked_methods = [WEBBOOK_SHOMATE, JANAF_FIT, miscdata.JANAF, UNARY, PERRY151, CRCSTD, LASTOVKA_S]
     """Default rankings of the available methods."""
 
     _fit_force_n = {}
