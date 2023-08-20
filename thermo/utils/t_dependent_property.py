@@ -245,7 +245,7 @@ changing code for each object.
 """
 loaded_json_based_correlations = False
 
-ENABLE_MIXTURE_JSON = True
+ENABLE_MIXTURE_JSON = False
 
 def json_correlation_lookup(CAS, key):
     if not loaded_json_based_correlations:

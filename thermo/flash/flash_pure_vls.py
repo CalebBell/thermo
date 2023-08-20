@@ -333,37 +333,6 @@ class FlashPureVLS(Flash):
             # Two phase pure eoss are two phase up to the critical point only! Then one phase
             self.eos_pure_STP = gas.eos_mix.to_TPV_pure(T=298.15, P=101325.0, V=None, i=0)
 
-
-        liquids_to_unique_liquids = []
-        unique_liquids, unique_liquid_hashes = [], []
-        for i, l in enumerate(liquids):
-            h = l.model_hash()
-            if h not in unique_liquid_hashes:
-                unique_liquid_hashes.append(h)
-                unique_liquids.append(l)
-                liquids_to_unique_liquids.append(i)
-            else:
-                liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
-        if gas is not None:
-            gas_hash = gas.model_hash(True)
-
-        gas_to_unique_liquid = None
-        for i, l in enumerate(liquids):
-            h = l.model_hash(True)
-            if gas is not None and gas_hash == h:
-                gas_to_unique_liquid = liquids_to_unique_liquids[i]
-                break
-
-        self.gas_to_unique_liquid = gas_to_unique_liquid
-        self.liquids_to_unique_liquids = liquids_to_unique_liquids
-
-        self.unique_liquids = unique_liquids
-        self.unique_liquid_count = len(unique_liquids)
-        self.unique_phases = [gas] + unique_liquids if gas is not None else unique_liquids
-        if solids:
-            self.unique_phases += solids
-        self.unique_phase_count = (1 if gas is not None else 0) + self.unique_liquid_count + len(solids)
-        self.unique_liquid_hashes = unique_liquid_hashes
         self._finish_initialization_base()
 
 
