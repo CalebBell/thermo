@@ -376,18 +376,23 @@ class ChemicalConstantsPackage:
             is_one = len(idxs) == 1
             idx = idxs[0]
 
-        def atindexes(values):
-            if is_slice:
-                return values[idxs]
-            if is_one:
-                return [values[idx]]
-            return [values[i] for i in idxs]
-
         new = {}
-        for p in properties:
-            v = getattr(self, p)
-            if v is not None:
-                new[p] = atindexes(v)
+        if is_slice:
+            for p in properties:
+                v = getattr(self, p)
+                if v is not None:
+                    new[p] = v[idxs]
+        elif is_one:
+            for p in properties:
+                v = getattr(self, p)
+                if v is not None:
+                    new[p] = [v[idx]]
+        else:
+            for p in properties:
+                v = getattr(self, p)
+                if v is not None:
+                    new[p] = [v[i] for i in idxs]
+
         return ChemicalConstantsPackage(**new)
 
     def __repr__(self):
