@@ -319,6 +319,51 @@ class Phase:
         '''
         return hash_any_primitive((self.model_hash(), self.T, self.P, self.V(), self.zs))
 
+    def is_same_model(self, other_phase, ignore_phase=False):
+        r'''Method to check whether or not a model is the exact same
+        as another. In the case `ignore_phase` is True, whether the
+        model is liquid or gas is omitted as in the case of CEOSGas
+        and CEOSLiquid.
+
+        Parameters
+        ----------
+        other_phase : Phase
+            The phase to compare against, [-]
+        ignore_phase : bool
+            Whether or not to include the specifc class of the model in the
+            hash
+
+        Returns
+        -------
+        same : bool
+            Whether they are the same or not
+
+        Notes
+        -----
+        This may be quicker to calculate than the model hash.
+        '''
+        # Are we the same object? If so, obviously the same
+        if self is other_phase:
+            return True
+
+        # Are the attributes the same? If not, we can't be the same
+        if self.model_attributes != other_phase.model_attributes:
+            return False
+
+        identical_model_attribute_ids = True
+        for attr in self.model_attributes:
+            if getattr(self, attr) is not getattr(other_phase, attr):
+                identical_model_attribute_ids = False
+                break
+        if identical_model_attribute_ids:
+            if ignore_phase:
+                return True
+            return self.__class__.__name__ == other_phase.__class__.__name__ 
+
+        # Using identities only we could not confirm if the phase was the same or not.
+        # The values may still be the same if the identities are not.
+        return self.model_hash(ignore_phase) == other_phase.model_hash(ignore_phase)
+    
     def model_hash(self, ignore_phase=False):
         r'''Method to compute a hash of a phase.
 
