@@ -774,15 +774,23 @@ class Flash:
             solids = []
 
         liquids_to_unique_liquids = []
-        unique_liquids, unique_liquid_hashes = [], []
-        for i, l in enumerate(liquids):
-            h = l.model_hash()
-            if h not in unique_liquid_hashes:
-                unique_liquid_hashes.append(h)
-                unique_liquids.append(l)
-                liquids_to_unique_liquids.append(i)
-            else:
-                liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
+        unique_liquids = []
+        liquid_count = len(liquids)
+        if liquid_count == 1 or (liquid_count > 1 and all(liquids[0].is_same_model(l) for l in liquids[1:])):
+            # All the liquids are the same
+            unique_liquids.append(liquids[0])
+            liquids_to_unique_liquids.extend([0]*len(liquids))
+        else:
+            unique_liquid_hashes = []
+            # unique_liquid_hashes is not used except in this code block
+            for i, l in enumerate(liquids):
+                h = l.model_hash()
+                if h not in unique_liquid_hashes:
+                    unique_liquid_hashes.append(h)
+                    unique_liquids.append(l)
+                    liquids_to_unique_liquids.append(i)
+                else:
+                    liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
         if gas is not None:
             gas_hash = gas.model_hash(True)
 
