@@ -1624,6 +1624,22 @@ class TDependentProperty:
             d['local_methods'] = {}
         return d
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        for obj_name in self._json_obj_by_CAS:
+            try:
+                if obj_name in state:
+                    state[obj_name] = self.CASRN
+                # del state[obj_name]
+            except:
+                pass
+        return state
+
+    def __setstate__(self, state):
+        self._load_json_CAS_references(state)
+        self.__dict__.update(state)
+
+
     @classmethod
     def _load_json_CAS_references(cls, d):
         try:
