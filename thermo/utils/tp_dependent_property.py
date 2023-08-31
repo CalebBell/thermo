@@ -320,6 +320,25 @@ class TPDependentProperty(TDependentProperty):
             prop = self.T_dependent_property(T)
         return prop
 
+    def T_atmospheric_dependent_property(self, T, P_atm=101325.0):
+        r'''Method to calculate the property given a temperature at the standard
+        atmospheric pressure to the selected :obj:`method_P` and :obj:`method`.
+        This is a wrapper around :obj:`TP_dependent_property`.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P_atm : float, optional
+            Atmospheric pressure at which to calculate the property, [Pa]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`]
+        '''
+        return self.TP_dependent_property(T, P_atm)
+
     def add_tabular_data_P(self, Ts, Ps, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.
         Ts and Psmust be in increasing order. If no name is given, data will be

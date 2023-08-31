@@ -37,6 +37,22 @@ from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductiv
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.viscosity import ViscosityGas, ViscosityLiquid
 from thermo.volume import *
+from thermo.bulk import default_settings
+import pickle
+
+def test_default_settings_storage():
+    settings_copy = eval(str(default_settings))
+    assert settings_copy == default_settings
+    assert hash(settings_copy) == hash(default_settings)
+
+    # Pickle checks
+    settings_pickle = pickle.loads(pickle.dumps(settings_copy))
+    assert settings_pickle == settings_copy
+    assert settings_pickle == default_settings
+
+    # Test creating it
+    obj = BulkSettings(dP_dT='MOLE_WEIGHTED', dP_dV='MOLE_WEIGHTED', d2P_dV2='MOLE_WEIGHTED', d2P_dT2='MOLE_WEIGHTED', d2P_dTdV='MOLE_WEIGHTED', mu_LL='LOG_PROP_MASS_WEIGHTED', mu_LL_power_exponent=0.4, mu_VL='McAdams', mu_VL_power_exponent=0.4, k_LL='MASS_WEIGHTED', k_LL_power_exponent=0.4, k_VL='MASS_WEIGHTED', k_VL_power_exponent=0.4, sigma_LL='MASS_WEIGHTED', sigma_LL_power_exponent=0.4, T_liquid_volume_ref=298.15, T_normal=273.15, P_normal=101325.0, T_standard=288.15, P_standard=101325.0, T_gas_ref=288.15, P_gas_ref=101325.0, speed_of_sound='MOLE_WEIGHTED', kappa='MOLE_WEIGHTED', isobaric_expansion='MOLE_WEIGHTED', Joule_Thomson='MOLE_WEIGHTED', VL_ID='PIP', S_ID='d2P_dVdT', solid_sort_method='prop', liquid_sort_method='prop', liquid_sort_cmps=[], solid_sort_cmps=[], liquid_sort_cmps_neg=[], solid_sort_cmps_neg=[], liquid_sort_prop='DENSITY_MASS', solid_sort_prop='DENSITY_MASS', phase_sort_higher_first=True, water_sort='water not special', equilibrium_perturbation=1e-07)
+
 
 
 def test_two_eos_pure_flash_all_properties():
