@@ -5907,6 +5907,69 @@ class Phase:
             self._concentrations = concentrations = rho*zs
         return concentrations
 
+    def concentrations_gas(self):
+        r'''Method to return the molar concentrations of each component in the
+        phase in units of mol/m^3, using the ideal-gas molar volume of the
+        phase at the chosen reference temperature and pressure.
+
+        Returns
+        -------
+        concentrations_gas : list[float]
+            Molar concentrations of all the components in the phase, [mol/m^3]
+
+        Notes
+        -----
+        '''
+        rho = self.rho_gas()
+        zs = self.zs
+        if self.scalar:
+            concentrations = [rho*zi for zi in zs]
+        else:
+            concentrations = rho*zs
+        return concentrations
+
+    def concentrations_gas_normal(self):
+        r'''Method to return the molar concentrations of each component in the
+        phase in units of mol/m^3, using the ideal-gas molar volume of the
+        phase at the normal temperature and pressure.
+
+        Returns
+        -------
+        concentrations_gas_normal : list[float]
+            Molar concentrations of all the components in the phase, [mol/m^3]
+
+        Notes
+        -----
+        '''
+        rho = self.rho_gas_normal()
+        zs = self.zs
+        if self.scalar:
+            concentrations = [rho*zi for zi in zs]
+        else:
+            concentrations = rho*zs
+        return concentrations
+
+    def concentrations_gas_standard(self):
+        r'''Method to return the molar concentrations of each component in the
+        phase in units of mol/m^3, using the ideal-gas molar volume of the
+        phase at the standard temperature and pressure.
+
+        Returns
+        -------
+        concentrations_gas_standard : list[float]
+            Molar concentrations of all the components in the phase, [mol/m^3]
+
+        Notes
+        -----
+        '''
+        rho = self.rho_gas_standard()
+        zs = self.zs
+        if self.scalar:
+            concentrations = [rho*zi for zi in zs]
+        else:
+            concentrations = rho*zs
+        return concentrations
+
     def concentrations_mass(self):
         r'''Method to return the mass concentrations of each component in the
         phase in units of kg/m^3.
@@ -5930,6 +5993,69 @@ class Phase:
         else:
             self._concentrations_mass = rho_mass*ws
         return self._concentrations_mass
+
+    def concentrations_mass_gas(self):
+        r'''Method to return the mass concentrations of each component in the
+        phase in units of kg/m^3, using the ideal-gas molar volume of the
+        phase at the chosen reference temperature and pressure.
+
+        Returns
+        -------
+        concentrations_mass_gas : list[float]
+            Mass concentrations of all the components in the phase, [kg/m^3]
+
+        Notes
+        -----
+        '''
+        rho_mass = self.rho_mass_gas()
+        ws = self.ws()
+        if self.scalar:
+            concentrations_mass = [rho_mass*wi for wi in ws]
+        else:
+            concentrations_mass = rho_mass*ws
+        return concentrations_mass
+
+    def concentrations_mass_gas_normal(self):
+        r'''Method to return the mass concentrations of each component in the
+        phase in units of kg/m^3, using the ideal-gas molar volume of the
+        phase at the normal temperature and pressure.
+
+        Returns
+        -------
+        concentrations_mass_gas_normal : list[float]
+            Mass concentrations of all the components in the phase, [kg/m^3]
+
+        Notes
+        -----
+        '''
+        rho_mass = self.rho_mass_gas_normal()
+        ws = self.ws()
+        if self.scalar:
+            concentrations_mass = [rho_mass*wi for wi in ws]
+        else:
+            concentrations_mass = rho_mass*ws
+        return concentrations_mass
+
+    def concentrations_mass_gas_standard(self):
+        r'''Method to return the mass concentrations of each component in the
+        phase in units of kg/m^3, using the ideal-gas molar volume of the
+        phase at the standard temperature and pressure.
+
+        Returns
+        -------
+        concentrations_mass_gas_standard : list[float]
+            Mass concentrations of all the components in the phase, [kg/m^3]
+
+        Notes
+        -----
+        '''
+        rho_mass = self.rho_mass_gas_standard()
+        ws = self.ws()
+        if self.scalar:
+            concentrations_mass = [rho_mass*wi for wi in ws]
+        else:
+            concentrations_mass = rho_mass*ws
+        return concentrations_mass
 
     def partial_pressures(self):
         r'''Method to return the partial pressures of each component in the
