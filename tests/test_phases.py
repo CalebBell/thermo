@@ -26,7 +26,7 @@ from math import *
 
 import numpy as np
 import pytest
-from chemicals.utils import rho_to_Vm
+from chemicals.utils import rho_to_Vm, Vm_to_rho
 from fluids.constants import *
 from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d, derivative, hessian, jacobian, normalize
 
@@ -2174,13 +2174,49 @@ def test_BulkSettings_normal_standard():
         settings = BulkSettings(**kwargs)
         res = EquilibriumState(settings=settings, **VLL_kwargs)
         V_expect = 0.02494338785445972
+        rho_expect = 1.0/V_expect
+        test_objs = [res, res.liquid_bulk, res.bulk, res.gas, res.liquid0, res.liquid1]
+        for obj in test_objs:
+            assert_close(getattr(obj, attr)(), V_expect, rtol=1e-12)
 
-        assert_close(getattr(res, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.liquid_bulk, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.bulk, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.gas, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.liquid0, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.liquid1, attr)(), V_expect, rtol=1e-12)
+            assert_close1d(getattr(obj, 'concentrations_mass_gas')(),
+                          [wi*obj.rho_mass_gas() for wi in obj.ws()], rtol=1e-13)
+
+            assert_close1d(getattr(obj, 'concentrations_mass_gas_standard')(),
+                          [wi*obj.rho_mass_gas_standard() for wi in obj.ws()], rtol=1e-13)
+
+            assert_close1d(getattr(obj, 'concentrations_mass_gas_normal')(),
+                          [wi*obj.rho_mass_gas_normal() for wi in obj.ws()], rtol=1e-13)
+
+            assert_close1d(getattr(obj, 'concentrations_gas')(),
+                          [zi*obj.rho_gas() for zi in obj.zs], rtol=1e-13)
+
+            assert_close1d(getattr(obj, 'concentrations_gas_standard')(),
+                          [zi*obj.rho_gas_standard() for zi in obj.zs], rtol=1e-13)
+
+            assert_close1d(getattr(obj, 'concentrations_gas_normal')(),
+                          [zi*obj.rho_gas_normal() for zi in obj.zs], rtol=1e-13)
+
+
+        attr = attr.replace('V', 'rho')
+        for obj in test_objs:
+            assert_close(getattr(obj, attr)(), rho_expect, rtol=1e-12)
+
+        def check_mass(phase):
+            MW = phase.MW()
+            expect = Vm_to_rho(V_expect, MW)
+            assert_close(getattr(phase, attr)(), expect, rtol=1e-12)
+        attr = attr.replace('rho', 'rho_mass')
+
+
+
+
+        check_mass(res)
+        check_mass(res.liquid_bulk)
+        check_mass(res.bulk)
+        check_mass(res.gas)
+        check_mass(res.liquid0)
+        check_mass(res.liquid1)
 
     settings = BulkSettings()
     res = EquilibriumState(settings=settings, **VLL_kwargs)
