@@ -521,6 +521,10 @@ class Flash:
                                          incipient_liquid_bounded_PT_sat,
                                          ]
 
+    FLASH_MIXING_PHASE_BOUNDARY_MAXITER = 100
+    FLASH_MIXING_PHASE_BOUNDARY_XTOL = 1e-6
+    FLASH_MIXING_PHASE_BOUNDARY_YTOL = 1e-6
+
     def flash_mixing_phase_boundary(self, specs, zs_existing, zs_added, boundary='VL'):
         if boundary == 'VL':
             # if we start from a liquid, will converge to a gas with VF=0
@@ -546,11 +550,13 @@ class Flash:
                 if boundary not in ('VL',):
                     continue
                 res, bounding_attempts, iters, mixing_factor = incipient_phase_one_sided_secant(
-                    flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+                    flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check, ytol=self.FLASH_MIXING_PHASE_BOUNDARY_YTOL)
             elif method is incipient_phase_bounded_naive:
-                res, bounding_attempts, iters, mixing_factor = incipient_phase_bounded_naive(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+                res, bounding_attempts, iters, mixing_factor = incipient_phase_bounded_naive(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check,
+                                                                                    xtol=self.FLASH_MIXING_PHASE_BOUNDARY_XTOL)
             elif method is incipient_liquid_bounded_PT_sat and boundary == 'VL':
-                res, bounding_attempts, iters, mixing_factor = incipient_liquid_bounded_PT_sat(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+                res, bounding_attempts, iters, mixing_factor = incipient_liquid_bounded_PT_sat(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check,
+                                                                                            xtol=self.FLASH_MIXING_PHASE_BOUNDARY_XTOL)
 
 
             res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,
