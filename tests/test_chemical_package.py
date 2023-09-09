@@ -141,6 +141,7 @@ def test_compound_index():
     assert 1 == obj.compound_index(PubChem=7929)
     assert 0 == obj.compound_index(smiles='O')
     assert 0 == obj.compound_index(CAS='7732-18-5')
+    assert 0 == obj.compound_index(CAS='7732-18-5')
     assert 0 == obj.compound_index(InChI='H2O/h1H2')
     assert 1 == obj.compound_index(InChI_Key='IVSZLXZYQVIEFR-UHFFFAOYSA-N')
 
