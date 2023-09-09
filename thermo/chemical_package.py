@@ -154,7 +154,7 @@ class ChemicalConstantsPackage:
     properties = ('atom_fractions',) + non_vector_properties
     """Tuple of all properties that can be held by this object."""
 
-    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash')
+    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash', '_CAS_to_index')
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
 
@@ -446,7 +446,8 @@ class ChemicalConstantsPackage:
             If no match is found for the provided identifier, this is raised
         '''
         if CAS is not None:
-            return self.CASs.index(CAS)
+            CAS_to_index = self.CAS_to_index
+            return CAS_to_index[CAS]
         elif name is not None:
             return self.names.index(name)
         elif smiles is not None:
@@ -459,6 +460,23 @@ class ChemicalConstantsPackage:
             return self.PubChems.index(PubChem)
         else:
             raise ValueError("No identifier provided")
+
+    @property
+    def CAS_to_index(self):
+        r'''Dictionary of CAS: index, used for efficiently 
+        looking up which index a specified CAS number is in.
+        This can save a lot of time, but does take a little more memory.
+
+        Returns
+        -------
+        CAS_to_index : dict[str: int]
+            Dictionary for CAS to index lookups, [-]
+        '''
+        try:
+            return self._CAS_to_index
+        except:
+            self._CAS_to_index = {CAS: i for i, CAS in enumerate(self.CASs)}
+            return self._CAS_to_index
 
 
     @staticmethod

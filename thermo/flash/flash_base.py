@@ -220,6 +220,7 @@ class Flash:
         Examples
         --------
         '''
+        # print('flashing',T, P, H, S, VF)
         if zs is None:
             if self.N == 1:
                 zs = [1.0] if self.scalar else ones(1)
