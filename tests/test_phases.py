@@ -2178,7 +2178,7 @@ def test_BulkSettings_normal_standard():
         test_objs = [res, res.liquid_bulk, res.bulk, res.gas, res.liquid0, res.liquid1]
         for obj in test_objs:
             assert_close(getattr(obj, attr)(), V_expect, rtol=1e-12)
-
+            
             assert_close1d(getattr(obj, 'concentrations_mass_gas')(),
                           [wi*obj.rho_mass_gas() for wi in obj.ws()], rtol=1e-13)
 
