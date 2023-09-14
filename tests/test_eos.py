@@ -2185,6 +2185,7 @@ def test_MSRK():
 
 
 @pytest.mark.slow
+@pytest.mark.fuzz
 def test_eos_P_limits():
     '''Test designed to take some volumes, push the EOS to those limits, and
     check that the EOS either recognizes the limit or solves fine
