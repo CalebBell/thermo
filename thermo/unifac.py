@@ -2618,13 +2618,12 @@ def load_group_assignments_DDBST():
 ## Database lookup
 UNIFAC_DDBST_ASSIGNMENT_CURSOR = None
 
-def init_ddbst_UNIFAC_db(**connection_params):
+def init_ddbst_UNIFAC_db():
     global UNIFAC_DDBST_ASSIGNMENT_CURSOR
     import sqlite3
-    if "database" not in connection_params:
-        connection_params["database"] = os.path.join(os.path.dirname(__file__), 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite')
     conn = sqlite3.connect(
-        **connection_params
+        os.path.join(os.path.dirname(__file__), 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite'),
+        check_same_thread=False,
     )
     UNIFAC_DDBST_ASSIGNMENT_CURSOR = conn.cursor()
 
