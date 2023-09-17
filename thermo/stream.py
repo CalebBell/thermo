@@ -1352,6 +1352,8 @@ class StreamArgs:
     def flash(self, hot_start=None, existing_flash=None):
 #        if self.flow_specified and self.composition_specified and self.state_specified:
         s = self.specifications
+        if existing_flash is None:
+            existing_flash = self.flash_state(hot_start)
         return EquilibriumStream(self.flasher, hot_start=hot_start,
                                  existing_flash=existing_flash, **s)
 
