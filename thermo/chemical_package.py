@@ -166,8 +166,7 @@ class ChemicalConstantsPackage:
                 missing.append(prop)
         return tuple(missing)
 
-    @property
-    def __dict__(self):
+    def as_dict(self):
         new = {}
         properties = self.properties
         for p in properties:
@@ -194,7 +193,7 @@ class ChemicalConstantsPackage:
         >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
         >>> string = json.dumps(constants.as_json())
         '''
-        d = self.__dict__.copy()
+        d = self.as_dict().copy()
         for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
             # keys are stored as strings and not ints
             d[k] = [{str(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
@@ -283,8 +282,8 @@ class ChemicalConstantsPackage:
             raise TypeError('Adding to a ChemicalConstantsPackage requires that the other object '
                             'also be a ChemicalConstantsPackage.')
         a = self
-        a_dict = a.__dict__
-        b_dict = b.__dict__
+        a_dict = a.as_dict()
+        b_dict = b.as_dict()
         kwargs = {}
         for k in a_dict.keys():
             kwargs[k] = a_dict[k] + b_dict[k]
