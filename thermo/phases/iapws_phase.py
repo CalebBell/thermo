@@ -43,6 +43,10 @@ class IAPWS95(HelmholtzEOS):
     Pc = iapws.iapws95_Pc
     rhoc_mass = iapws.iapws95_rhoc
     rhoc_mass_inv = 1.0/rhoc_mass
+
+    Hfs = [-241822.0]
+    Sfs = [-44.5]
+    Gfs = [-228554.325]
     
     N = 1
     rhoc_inv = rho_to_Vm(rhoc_mass, _MW)

@@ -1897,8 +1897,8 @@ class PropertyCorrelationsPackage:
 
 
 # Values except for omega from IAPWS; heat capacity isn't official.
-iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],
-                                           Pcs=[22064000.0], Tcs=[647.096], Tts=[273.16], Pts=[611.654771008])
+iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],atomss=[{'H': 2, 'O': 1}],
+                                           Pcs=[22064000.0], Tcs=[647.096], Tts=[273.16], Pts=[611.654771008], Hfgs=[-241822.0], Sfgs=[-44.5], Gfgs=[-228554.325])
 """:obj:`ChemicalConstantsPackage` : Object intended to hold the IAPWS-95 water constants
 for use with the :obj:`thermo.phases.IAPWS95` phase object.
 """
