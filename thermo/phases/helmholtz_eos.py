@@ -51,7 +51,8 @@ class HelmholtzEOS(Phase):
         IAPWS95Gas(T=300, P=100000.0, zs=[1.0])
         '''
         base = '%s('  %(self.__class__.__name__)
-        for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
+        iter_props = ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs') if self.__class__.__name__ not in ('IAPWS95Gas', 'IAPWS95Liquid') else ('T', 'P', 'zs')
+        for s in iter_props:
             if hasattr(self, s) and getattr(self, s) is not None:
                 base += f'{s}={getattr(self, s)}, '
         if base[-2:] == ', ':
