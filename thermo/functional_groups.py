@@ -34,6 +34,7 @@ Specific molecule matching functions
 
 .. autofunction:: thermo.functional_groups.is_organic
 .. autofunction:: thermo.functional_groups.is_inorganic
+.. autofunction:: thermo.functional_groups.is_radionuclide
 
 ------------------
 Hydrocarbon Groups
@@ -99,6 +100,7 @@ Nitrogen Groups
 .. autofunction:: thermo.functional_groups.is_oxime
 .. autofunction:: thermo.functional_groups.is_pyridyl
 .. autofunction:: thermo.functional_groups.is_carbamate
+.. autofunction:: thermo.functional_groups.is_cyanide
 
 -------------
 Sulfur Groups
@@ -178,7 +180,7 @@ Utility functions
 
 .. autofunction:: thermo.functional_groups.count_ring_ring_attatchments
 .. autofunction:: thermo.functional_groups.count_rings_attatched_to_rings
-
+.. autofunction:: thermo.functional_groups.benene_rings
 
 ------------------------------------
 Functions using group identification
@@ -213,7 +215,7 @@ group_names = ['mercaptan', 'sulfide', 'disulfide', 'sulfoxide', 'sulfone',
                'borinic_ester', 'phosphine', 'phosphonic_acid', 'phosphodiester',
                'phosphate', 'alkyllithium', 'alkylmagnesium_halide',
                'alkylaluminium', 'silyl_ether', 'organic', 'inorganic',
-               'is_hydrocarbon']
+               'is_hydrocarbon', 'cyanide']
 __all__ = [# sulfur
            'is_mercaptan', 'is_sulfide', 'is_disulfide', 'is_sulfoxide',
            'is_sulfone', 'is_sulfinic_acid', 'is_sulfonic_acid',
@@ -240,7 +242,7 @@ __all__ = [# sulfur
            'is_secondary_aldimine', 'is_imide', 'is_azide', 'is_azo',
            'is_cyanate', 'is_isocyanate', 'is_nitrate', 'is_isonitrile',
            'is_nitrite', 'is_nitroso', 'is_oxime', 'is_pyridyl',
-           'is_carbamate',
+           'is_carbamate', 'is_cyanide',
 
            # oxygen
            'is_acyl_halide', 'is_alcohol', 'is_polyol',
@@ -259,10 +261,11 @@ __all__ = [# sulfur
            'is_alkyllithium', 'is_alkylmagnesium_halide', 'is_alkylaluminium',
            'is_silyl_ether',
 
-           'is_organic', 'is_inorganic',
+           'is_organic', 'is_inorganic', 'is_radionuclide',
 
            'count_ring_ring_attatchments',
            'count_rings_attatched_to_rings',
+           'benene_rings',
            'group_names',
 
            'BVirial_Tsonopoulos_extended_ab']
@@ -1841,6 +1844,31 @@ def is_isocyanate(mol):
     matches = mol.GetSubstructMatches(smarts_mol_cache(isocyanate_smarts))
     return bool(matches)
 
+cyanide_smarts = 'C#N'
+
+def is_cyanide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule contains a cyanide functional group.
+
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_cyanide : bool
+        Whether or not the compound contains a cyanide functional group, [-].
+
+    Examples
+    --------
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_cyanide(MolFromSmiles('CC#N')) # doctest:+SKIP
+    True
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(cyanide_smarts))
+    return bool(matches)
+
 nitrate_smarts = '[OX2][N+X3H0](=[OX1H0])[O-X1H0]'
 
 def is_nitrate(mol):
@@ -2798,6 +2826,105 @@ def count_rings_attatched_to_rings(mol, allow_neighbors=True, atom_rings=None):
             rings_attatched_to_rings+= 1
     return rings_attatched_to_rings
 
+benzene_smarts = 'c1ccccc1'
+
+def benene_rings(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns the number of benzene rings 
+    in the molecule.
+
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    benene_rings : int
+        Number of benzene rings in the molecule, [-]
+
+    Examples
+    --------
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> benene_rings(MolFromSmiles('c1ccccc1')) # doctest:+SKIP
+    1
+    >>> benene_rings(MolFromSmiles('c1ccccc1c1ccccc1')) # doctest:+SKIP
+    2
+    '''
+    matches = mol.GetSubstructMatches(smarts_mol_cache(benzene_smarts))
+    return len(matches)
+
+
+
+
+
+radionuclides = {
+    'H': {3},  # Tritium
+    'Be': {10},  # Beryllium-10
+    'C': {14},  # Carbon-14
+    'F': {18},  # Fluorine-18
+    'Al': {26},  # Aluminium-26
+    'Cl': {36},  # Chlorine-36
+    'K': {40},  # Potassium-40
+    'Ca': {41},  # Calcium-41
+    'Co': {60},  # Cobalt-60
+    'Kr': {81},  # Krypton-81
+    'Sr': {90},  # Strontium-90
+    'Tc': {99},  # Technetium-99 and Technetium-99m (same isotope number)
+    'I': {129, 131},  # Iodine-129 and Iodine-131
+    'Xe': {135},  # Xenon-135
+    'Cs': {137},  # Caesium-137
+    'Gd': {153},  # Gadolinium-153
+    'Bi': {209},  # Bismuth-209
+    'Po': {210},  # Polonium-210
+    'Rn': {222},  # Radon-222
+    'Th': {232},  # Thorium-232
+    'U': {235, 238},  # Uranium-235 and Uranium-238
+    'Pu': {238, 239},  # Plutonium-238 and Plutonium-239
+    'Am': {241},  # Americium-241
+    'Cf': {252}  # Californium-252
+}
+# Computer readable version
+# https://www.anl.gov/sites/www/files/2022-11/nubase_4.mas20.txt
+# https://www.anl.gov/phy/atomic-mass-data-resources
+
+def is_radionuclide(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    molecule contains an unstable isotope (radionuclide).
+
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule [-]
+
+    Returns
+    -------
+    is_radionuclide : bool
+        Whether or not the compound is a radionuclide, [-]
+
+    Notes
+    -----
+    The lsit of radionuclide in this function is not complete
+    and only contains ~25 common ones. A complete data source is in [1]_.
+
+    Examples
+    --------
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> is_radionuclide(MolFromSmiles("[131I]C")) # doctest:+SKIP
+    True
+
+    References
+    ----------
+    .. [1] Kondev, F. G., M. Wang, W. J. Huang, S. Naimi, and G. Audi. 
+       "The NUBASE2020 Evaluation of Nuclear Physics Properties *." 
+       Chinese Physics C 45, no. 3 (March 2021): 030001. 
+       https://doi.org/10.1088/1674-1137/abddae.
+    '''
+    for atom in mol.GetAtoms():
+        element = atom.GetSymbol()
+        isotope = atom.GetIsotope()
+        if element in radionuclides and isotope in radionuclides[element]:
+            return True
+    return False
 
 
 ### Calculate things using functional groups - basic
