@@ -2380,10 +2380,14 @@ def test_BVirial_Tsonopoulos_extended_ab():
     assert_close1d(res, (-328285.5327580192, 0.0))
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_cyanide():
     assert is_cyanide(Chem.MolFromSmiles('CC#N'))
     assert not is_cyanide(Chem.MolFromSmiles('C1=CC=C(C=C1)N=O'))
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_benene_rings():
     assert benene_rings(Chem.MolFromSmiles('c1ccccc1')) == 1
     assert benene_rings(Chem.MolFromSmiles('c1ccccc1c1ccccc1')) == 2
@@ -2413,6 +2417,8 @@ def test_benene_rings():
     assert benene_rings(mol_from_name('Tetrahydrofuran')) == 0
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_is_radionuclide():
     assert is_radionuclide(Chem.MolFromSmiles("[3H]O"))  # Water with Tritium
     assert is_radionuclide(Chem.MolFromSmiles("[131I]C"))  # Methyl iodide with I-131
