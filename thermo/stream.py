@@ -21,7 +21,7 @@ SOFTWARE.
 '''
 
 
-__all__ = ['Stream', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance', 'energy_balance']
+__all__ = ['Stream', 'EnergyStream', 'StreamArgs', 'EquilibriumStream']
 
 #import enum
 try:
@@ -2594,6 +2594,7 @@ def _mole_balance_process_ns(f, ns, compounds, use_mass=True, use_volume=True):
     return ns
 
 def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
+    # TODO document and expose
     inlet_count = len(inlets)
     outlet_count = len(outlets)
 
@@ -2781,6 +2782,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
 
 
 def energy_balance(inlets, outlets, reactive=False):
+    # TODO document and expose
     inlet_count = len(inlets)
     outlet_count = len(outlets)
 
