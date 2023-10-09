@@ -1573,28 +1573,23 @@ class Stream(Mixture):
     >>> Stream('air', T=400, P=1e5, n=1)
     <Stream, components=['nitrogen', 'argon', 'oxygen'], mole fractions=[0.7812, 0.0092, 0.2096], mass flow=0.028958 kg/s, mole flow=1 mol/s, T=400.00 K, P=100000 Pa>
 
-    A flow of 1 L/s of 10 wt% phosphoric acid at 320 K:
-
-    >>> Stream(['water', 'phosphoric acid'], ws=[.9, .1], T=320, P=1E5, Q=0.001)
-    <Stream, components=['water', 'phosphoric acid'], mole fractions=[0.98, 0.02], mole flow=53.2136286991 mol/s, T=320.00 K, P=100000 Pa>
-
     Instead of specifying the composition and flow rate separately, they can
     be specified as a list of flow rates in the appropriate units.
 
     80 kg/s of furfuryl alcohol/water solution:
 
     >>> Stream(['furfuryl alcohol', 'water'], ms=[50, 30])
-    <Stream, components=['furfuryl alcohol', 'water'], mole fractions=[0.2343, 0.7657], mole flow=2174.93735951 mol/s, T=298.15 K, P=101325 Pa>
+    <Stream, components=['furfuryl alcohol', 'water'], mole fractions=[0.2343, 0.7657], mass flow=80.0 kg/s, mole flow=2174.937359509809 mol/s, T=298.15 K, P=101325 Pa>
 
     A stream of 100 mol/s of 400 K, 1 MPa argon:
 
     >>> Stream(['argon'], ns=[100], T=400, P=1E6)
-    <Stream, components=['argon'], mole fractions=[1.0], mole flow=100 mol/s, T=400.00 K, P=1000000 Pa>
+    <Stream, components=['argon'], mole fractions=[1.0], mass flow=3.9948 kg/s, mole flow=100 mol/s, T=400.00 K, P=1000000 Pa>
 
     A large stream of vinegar, 8 volume %:
 
     >>> Stream(['Acetic acid', 'water'], Qls=[1, 1/.088])
-    <Stream, components=['acetic acid', 'water'], mole fractions=[0.0269, 0.9731], mole flow=646268.518749 mol/s, T=298.15 K, P=101325 Pa>
+    <Stream, components=['acetic acid', 'water'], mole fractions=[0.0269, 0.9731], mass flow=12372.158780648899 kg/s, mole flow=646268.5186913002 mol/s, T=298.15 K, P=101325 Pa>
 
     A very large stream of 100 m^3/s of steam at 500 K and 2 MPa:
 
@@ -2000,6 +1995,48 @@ first stream.' %self.IDs[i])
 
 
 class EquilibriumStream(EquilibriumState):
+    '''Creates an EquilibriumStream object, built off :obj:`EquilibriumState`
+    to contain flow rate amounts, making mass and energy balances easier.
+
+    EquilibriumStreams can have their flow rate, state, and composition 
+    defined using any sufficient set of the following. Note that not all
+    set of specs will have a solution, or a unique solution, or an
+    algorithm to solve the problem implemented.
+
+    The state can be specified using any two of:
+
+    * Temperature `T` [K]
+    * Pressure `P` [Pa]
+    * Vapor fraction `VF`
+    * Enthalpy `H` [J/mol] or `H_mass` [J/kg]
+    * Entropy `S` [J/mol/K] or `S_mass` [J/kg/K]
+    * Internal energy `U` [J/mol] or `U_mass` [J/kg]
+    * Gibbs free energy `G` [J/mol] or `G_mass` [J/kg]
+    * Helmholtz energy `A` [J/mol] or `A_mass` [J/kg]
+    * Energy `energy` [W] and `energy_reactive` [W] which count as a enthalpy spec only when flow rate is given
+    * Reactive enthalpy `H_reactive` [J/mol]
+    * Molar volume `V` [m^3/mol], molar density `rho` [mol/m^3], or mass density `rho_mass`, [kg/m^3]
+
+    The composition can be specified using any of:
+
+    * Mole fractions `zs`
+    * Mass fractions `ws`
+    * Liquid standard volume fractions `Vfls`
+    * Gas standard volume fractions `Vfgs`
+    * Mole flow rates of each component `ns` [mol/s]
+    * Mass flow rates of each component `ms` [kg/s]
+    * Liquid standard volume flow rates of each component `Qls` [m^3/s]
+    * Gas standard flow rates of each component `Qgs` [m^3/s]
+
+    Total flow rates can be specified using:
+
+    * Mole flow rate `n` [mol/s]
+    * Mass flow rate `m` [kg/s]
+    * Actual volume flow rate `Q` [m^3/s]
+    * Liquid volume standard flow rate `Ql` [m^3/s]
+    * Gas standard volume flow rate `Qg` [m^3/s]
+
+    '''
     flashed = True
 
     # def __repr__(self):
