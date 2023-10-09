@@ -2000,7 +2000,7 @@ class EquilibriumStream(EquilibriumState):
 
     EquilibriumStreams can have their flow rate, state, and composition 
     defined using any sufficient set of the following. Note that not all
-    set of specs will have a solution, or a unique solution, or an
+    sets of specs will have a solution, or a unique solution, or an
     algorithm to solve the problem implemented.
 
     The state can be specified using any two of:
@@ -2036,6 +2036,93 @@ class EquilibriumStream(EquilibriumState):
     * Liquid volume standard flow rate `Ql` [m^3/s]
     * Gas standard volume flow rate `Qg` [m^3/s]
 
+    Note that the liquid flow rates `Ql` and `Qls` will by default use the
+    pure component liquid standard molar densities, but the temperature and
+    pressure used to calculate the liquid molar densities can be set with 
+    the two-tuple `Vf_TP`. 
+    See :obj:`EquilibriumState.V_liquids_ref` for details.
+
+    Parameters
+    ----------
+    flasher : One of :obj:`thermo.flash.FlashPureVLS`, :obj:`thermo.flash.FlashVL`, :obj:`thermo.flash.FlashVLN`, 
+        The configured flash object which can perform flashes for the 
+        configured components, [-]
+    zs : list, optional
+        Mole fractions of all components [-]
+    ws : list, optional
+        Mass fractions of all components [-]
+    Vfls : list, optional
+        Volume fractions of all components as a hypothetical liquid phase based
+        on pure component densities [-]
+    Vfgs : list, optional
+        Volume fractions of all components as a hypothetical gas phase based
+        on pure component densities [-]
+    ns : list, optional
+        Mole flow rates of each component [mol/s]
+    ms : list, optional
+        Mass flow rates of each component [kg/s]
+    Qls : list, optional
+        Component volumetric flow rate specs for a hypothetical liquid phase based on
+        :obj:`EquilibriumState.V_liquids_ref` [m^3/s]
+    Qgs : list, optional
+        Component volumetric flow rate specs for a hypothetical gas phase based on
+        :obj:`EquilibriumState.V_gas` [m^3/s]
+    Ql : float, optional
+        Total volumetric flow rate spec for a hypothetical liquid phase based on
+        :obj:`EquilibriumState.V_liquids_ref` [m^3/s]
+    Qg : float, optional
+        Total volumetric flow rate spec for a hypothetical gas phase based on
+        :obj:`EquilibriumState.V_gas` [m^3/s]
+    Q : float, optional
+        Total actual volumetric flow rate of the stream based on the
+        density of the stream at the specified conditions [m^3/s]
+    n : float, optional
+        Total mole flow rate of all components in the stream [mol/s]
+    m : float, optional
+        Total mass flow rate of all components in the stream [kg/s]
+    T : float, optional
+        Temperature of the stream (default 298.15 K), [K]
+    P : float, optional
+        Pressure of the stream (default 101325 Pa) [Pa]
+    VF : float, optional
+        Vapor fraction (mole basis) of the stream, [-]
+    V : float, optional
+        Molar volume of the overall stream [m^3/mol]
+    rho : float, optional
+        Molar density of the overall stream [mol/m^3]
+    rho_mass : float, optional
+        Mass density of the overall stream [kg/m^3]
+    H : float, optional
+        Molar enthalpy of the stream [J/mol]
+    H_mass : float, optional
+        Mass enthalpy of the stream [J/kg]
+    S : float, optional
+        Molar entropy of the stream [J/mol/K]
+    S_mass : float, optional
+        Mass entropy of the stream [J/kg/K]
+    U : float, optional
+        Molar internal energy of the stream [J/mol]
+    U_mass : float, optional
+        Mass internal energy of the stream [J/kg]
+    G : float, optional
+        Molar Gibbs free energy of the stream [J/mol]
+    G_mass : float, optional
+        Mass Gibbs free energy of the stream [J/kg]
+    A : float, optional
+        Molar Helmholtz energy of the stream [J/mol]
+    A_mass : float, optional
+        Mass Helmholtz energy of the stream [J/kg]
+    energy : float, optional
+        Flowing energy of the stream [W]
+    energy_reactive : float, optional
+        Flowing energy of the stream on a reactive basis [W]
+    H_reactive : float, optional
+        Reactive molar enthalpy of the stream [J/mol]
+    hot_start : :obj:`EquilibriumState`, optional
+        See :obj:`EquilibriumState.hot_start`; not recommended as an input, [-]
+    existing_flash : :obj:`EquilibriumState`, optional
+        Previously calculated :obj:`EquilibriumState` at the exact conditions, will be used
+        instead of performing a new flash calculation if provided [-]
     '''
     flashed = True
 
