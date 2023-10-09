@@ -1799,16 +1799,18 @@ class Stream(Mixture):
     def set_extensive_flow(self, n=None):
         if n is None:
             n = self.n
+        T, P = self.T, self.P
         self.n = n
-        self.m = property_mass_to_molar(self.n, self.MW)
-        self.ns = [self.n*zi for zi in self.zs]
-        self.ms =  [self.m*wi for wi in self.ws]
+        self.m = m = property_mass_to_molar(n, self.MW)
+        self.ns = [n*zi for zi in self.zs]
+        self.ms = [m*wi for wi in self.ws]
         try:
-            self.Q = self.m/self.rho
+            self.Q = m/self.rho
         except:
             pass
         try:
-            self.Qgs = [m/Vm_to_rho(ideal_gas(self.T, self.P), MW=MW) for m, MW in zip(self.ms, self.MWs)]
+            V_ig = ideal_gas(T, P)
+            self.Qgs = [m/Vm_to_rho(V_ig, MW=MW) for m, MW in zip(self.ms, self.MWs)]
         except:
             pass
         try:
@@ -1817,8 +1819,8 @@ class Stream(Mixture):
             pass
 
         if self.phase == 'l/g' or self.phase == 'l':
-            self.nl = self.n*(1. - self.V_over_F)
-            self.nls = [xi*self.nl for xi in self.xs]
+            self.nl = nl = n*(1. - self.V_over_F)
+            self.nls = [xi*nl for xi in self.xs]
             self.mls = [ni*MWi*1E-3 for ni, MWi in zip(self.nls, self.MWs)]
             self.ml = sum(self.mls)
             if self.rhol:
@@ -1827,8 +1829,8 @@ class Stream(Mixture):
                 self.Ql = None
 
         if self.phase == 'l/g' or self.phase == 'g':
-            self.ng = self.n*self.V_over_F
-            self.ngs = [yi*self.ng for yi in self.ys]
+            self.ng = ng = n*self.V_over_F
+            self.ngs = [yi*ng for yi in self.ys]
             self.mgs = [ni*MWi*1E-3 for ni, MWi in zip(self.ngs, self.MWs)]
             self.mg = sum(self.mgs)
             if self.rhog:
