@@ -132,7 +132,7 @@ def test_lemmon2000_package():
 
 def test_compound_index():
     obj = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'],
-                             CASs=['7732-18-5', '108-38-3'],
+                             CASs=['7732-18-5', '108-38-3'],atomss=[{'H': 2, 'O': 1}, {'C': 8, 'H': 10}],
                              InChI_Keys=['XLYOFNOQVPJJNP-UHFFFAOYSA-N', 'IVSZLXZYQVIEFR-UHFFFAOYSA-N'],
                              InChIs=['H2O/h1H2', 'C8H10/c1-7-4-3-5-8(2)6-7/h3-6H,1-2H3'],
                              smiless=['O', 'CC1=CC(=CC=C1)C'], PubChems=[962, 7929],)
@@ -144,6 +144,8 @@ def test_compound_index():
     assert 0 == obj.compound_index(CAS='7732-18-5')
     assert 0 == obj.compound_index(InChI='H2O/h1H2')
     assert 1 == obj.compound_index(InChI_Key='IVSZLXZYQVIEFR-UHFFFAOYSA-N')
+
+    assert ('C', 'H', 'O') == obj.unique_atoms
 
 
 def test_add_ChemicalConstantsPackage():
@@ -166,6 +168,7 @@ def test_add_PropertyCorrelationsPackage():
 def test_ChemicalConstantsPackage_pickle():
     # Pickle checks
     model = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane'])
+    model.unique_atoms
     model_pickle = pickle.loads(pickle.dumps(model))
     assert model_pickle == model
 

@@ -2447,7 +2447,7 @@ class EquilibriumStream(EquilibriumState):
         '''
         kwargs = self.flash_specs.copy()
         del kwargs['zs']
-        kwargs['pkg'] = self.flasher
+        kwargs['flasher'] = self.flasher
         kwargs[self.composition_spec[0]] = self.composition_spec[1]
         kwargs[self.flow_spec[0]] = self.flow_spec[1]
         return StreamArgs(**kwargs)

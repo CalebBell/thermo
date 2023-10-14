@@ -154,7 +154,7 @@ class ChemicalConstantsPackage:
     properties = ('atom_fractions',) + non_vector_properties
     """Tuple of all properties that can be held by this object."""
 
-    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash', '_CAS_to_index')
+    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash', '_CAS_to_index', '_unique_atoms')
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
 
@@ -477,6 +477,24 @@ class ChemicalConstantsPackage:
             self._CAS_to_index = {CAS: i for i, CAS in enumerate(self.CASs)}
             return self._CAS_to_index
 
+    @property
+    def unique_atoms(self):
+        r'''Tuple of all of the atoms in the package. Useful for iterating
+        over all the atom dictionaries.
+
+        Returns
+        -------
+        unique_atoms : tuple
+            Unique atoms, [-]
+        '''
+        try:
+            return self._unique_atoms
+        except:
+            all_atoms = set()
+            for atoms in self.atomss:
+                all_atoms.update(atoms.keys())
+            self._unique_atoms = tuple(sorted(all_atoms))
+            return self._unique_atoms
 
     @staticmethod
     def constants_from_IDs(IDs):
