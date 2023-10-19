@@ -31,7 +31,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 Bulk Class
 ==========
 .. autoclass:: Bulk
-    :members: beta, betas_mass, betas_volume, k, mu, sigma, MW, V, V_iter, Cp, H, S,
+    :members: beta, betas_mass, betas_volume, beta_volume_liquid_ref, k, mu, sigma, MW, V, V_iter, Cp, H, S,
               dG_dT, dG_dP, dU_dT, dU_dP, dA_dT, dA_dP,
               H_reactive, S_reactive, dP_dT_frozen, dP_dV_frozen,
               d2P_dT2_frozen, d2P_dV2_frozen, d2P_dTdV_frozen,
@@ -686,6 +686,34 @@ class Bulk(Phase):
     @property
     def beta_volume(self):
         return sum(self.betas_volume)
+
+    @property
+    def betas_volume_liquid_ref(self):
+        r'''Method to calculate and return the standard liquid volume fraction of all of the
+        phases in the bulk.
+
+        Returns
+        -------
+        betas_volume_liquid_ref : list[float]
+            Standard liquid volume phase fractions of all the phases in the bulk, ordered
+            vapor, liquid, then solid , [-]
+
+        Notes
+        -----
+        '''
+        betas = self.phase_fractions
+        phase_iter = range(len(betas))
+        Vs_phases = [i.V_liquid_ref() for i in self.phases]
+
+        tot = 0.0
+        for i in phase_iter:
+            tot += Vs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+
+    @property
+    def beta_volume_liquid_ref(self):
+        return sum(self.betas_volume_liquid_ref)
 
     def _property_mixing_rule(self, method, exponent, mix_obj, attr):
         if method == AS_ONE_LIQUID:

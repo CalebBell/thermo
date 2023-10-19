@@ -5472,6 +5472,27 @@ class Phase:
                 return result.betas_volume[i]
 
     @property
+    def beta_volume_liquid_ref(self):
+        r'''Method to return the standard liquid volume fraction of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumState.
+
+        Returns
+        -------
+        beta_volume : float
+            Phase fraction on a volumetric basis, [-]
+
+        Notes
+        -----
+        '''
+        try:
+            result = self.result
+        except:
+            return None
+        for i, p in enumerate(result.phases):
+            if p is self:
+                return result.betas_volume_liquid_ref[i]
+    @property
     def VF(self):
         r'''Method to return the vapor fraction of the phase.
         If no vapor/gas is present, 0 is always returned. This method is only

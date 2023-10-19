@@ -547,7 +547,7 @@ class EquilibriumState:
         -----
         '''
         try:
-            return self._betas_volume
+            return self._betas_volume_liquid_ref
         except:
             pass
         phase_iter = range(self.phase_count)
@@ -558,8 +558,36 @@ class EquilibriumState:
         for i in phase_iter:
             tot += Vs_phases[i]*betas[i]
         tot_inv = 1.0/tot
-        self._betas_volume = [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
-        return self._betas_volume
+        self._betas_volume_liquid_ref = [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+        return self._betas_volume_liquid_ref
+
+    @property
+    def betas_volume_liquid_ref(self):
+        r'''Method to calculate and return the standard liquid volume fraction of all of the
+        phases in the bulk.
+
+        Returns
+        -------
+        betas_volume_liquid_ref : list[float]
+            Standard liquid volume phase fractions of all the phases in the bulk, ordered
+            vapor, liquid, then solid , [-]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._betas_volume_liquid_ref
+        except:
+            pass
+        phase_iter = range(self.phase_count)
+        betas = self.betas
+        Vs_phases = [i.V_liquid_ref() for i in self.phases]
+        tot = 0.0
+        for i in phase_iter:
+            tot += Vs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        self._betas_volume_liquid_ref = [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+        return self._betas_volume_liquid_ref
 
     @property
     def betas_liquids(self):
@@ -2232,6 +2260,7 @@ class EquilibriumState:
             z_w = l.zs[water_index]
             if z_w > max_zw:
                 max_phase, max_zw, max_phase_idx = l, z_w, i
+                break
 
         self._water_phase_index = max_phase_idx
         return max_phase_idx
