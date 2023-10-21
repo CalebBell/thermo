@@ -2260,7 +2260,6 @@ class EquilibriumState:
             z_w = l.zs[water_index]
             if z_w > max_zw:
                 max_phase, max_zw, max_phase_idx = l, z_w, i
-                break
 
         self._water_phase_index = max_phase_idx
         return max_phase_idx
