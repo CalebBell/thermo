@@ -2746,7 +2746,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
         n_in = 0.0
         for i in range(inlet_count):
             f = inlets[i]
-            n = f.specifications['n']
+            n = f.n
             if n is None:
                 n = f.n_calc
             if n is None:
@@ -2763,7 +2763,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
         n_out = 0.0
         for i in range(outlet_count):
             f = outlets[i]
-            n = f.specifications['n']
+            n = f.n
             if n is None:
                 n = f.n_calc
             if n is None:
@@ -2781,7 +2781,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
     return progress
 
 
-def energy_balance(inlets, outlets, reactive=False):
+def energy_balance(inlets, outlets, reactive=False, use_mass=False):
     # TODO document and expose
     inlet_count = len(inlets)
     outlet_count = len(outlets)
@@ -2881,7 +2881,7 @@ def energy_balance(inlets, outlets, reactive=False):
         else:
             outlets[out_unknown_idx].energy = set_energy
         return True
-    if in_unknown_count == 1 and out_unknown_count == 0:
+    elif in_unknown_count == 1 and out_unknown_count == 0:
         set_energy = outlet_energy
         for v in all_energy_in:
             if v is not None:
@@ -2892,4 +2892,82 @@ def energy_balance(inlets, outlets, reactive=False):
             inlets[in_unknown_idx].energy = set_energy
 
         return True
+
+    elif (in_unknown_count==1 and out_unknown_count == 1 and use_mass 
+        and isinstance(inlets[in_unknown_idx], StreamArgs) and isinstance(outlets[out_unknown_idx], StreamArgs) 
+        and inlets[in_unknown_idx].state_specified and outlets[out_unknown_idx].state_specified):
+        '''
+        from sympy import *
+        m_in_known, m_in_unknown, m_out_known, m_out_unknown = symbols('m_in_known, m_in_unknown, m_out_known, m_out_unknown')
+        e_in_known, e_out_known = symbols('e_in_known, e_out_known')
+        H_in, H_out = symbols('H_in, H_out')
+
+        e_in_unknown = m_in_unknown*H_in
+        e_out_unknown = m_out_unknown*H_out
+
+        Eq0 = Eq(e_in_known+e_in_unknown, e_out_unknown+e_out_known)
+        Eq1 = Eq(m_in_known+ m_in_unknown, m_out_known+m_out_unknown)
+        solve([Eq0, Eq1], [m_in_unknown, m_out_unknown])'''
+        unknown_in_state = inlets[in_unknown_idx].flash_state()
+        unknown_out_state = outlets[out_unknown_idx].flash_state()
+        H_mass_in_unknown = unknown_in_state.H_mass() if not reactive else unknown_in_state.H_reactive_mass()
+        H_mass_out_unknown = unknown_out_state.H_mass() if not reactive else unknown_out_state.H_reactive_mass()
+        energy_in_known = sum(v for v in all_energy_in if v is not None)
+        energy_out_known = sum(v for v in all_energy_out if v is not None)
+        m_in_known = sum(v.m for i, v in enumerate(inlets) if (i != in_unknown_idx and not isinstance(v, EnergyStream)))
+        m_out_known = sum(v.m for i, v in enumerate(outlets) if (i != out_unknown_idx and not isinstance(v, EnergyStream)))
+        inlets[in_unknown_idx].m = (H_mass_out_unknown*m_in_known - H_mass_out_unknown*m_out_known - energy_in_known + energy_out_known)/(H_mass_in_unknown - H_mass_out_unknown)
+        outlets[out_unknown_idx].m = (H_mass_in_unknown*m_in_known - H_mass_in_unknown*m_out_known - energy_in_known + energy_out_known)/(H_mass_in_unknown - H_mass_out_unknown)
+        return True
+    elif in_unknown_count == 2 and out_unknown_count == 0 and use_mass:
+        unknown_inlet_idxs = []
+        for i in range(inlet_count):
+            f = inlets[i]
+            if isinstance(f, StreamArgs) and f.state_specified:
+                unknown_inlet_idxs.append(i)
+        if len(unknown_inlet_idxs) == 2:
+            '''
+            from sympy import *
+            m_in_known, m_in_unknown0, m_in_unknown1, m_out_known = symbols('m_in_known, m_in_unknown0, m_in_unknown1, m_out_known')
+            e_in_known, e_known = symbols('e_in_known, e_known')
+            H_unkown0, H_unkown1 = symbols('H_unkown0, H_unkown1')
+
+            e_unkown0 = m_in_unknown0*H_unkown0
+            e_unkown1 = m_in_unknown1*H_unkown1
+
+            Eq0 = Eq(e_known, e_in_known + e_unkown1+e_unkown0 )
+            Eq1 = Eq(m_in_known+ m_in_unknown0+ m_in_unknown1, m_out_known)
+            solve([Eq0, Eq1], [m_in_unknown0, m_in_unknown1])
+            '''
+            in_unknown_idx_0, in_unknown_idx_1 = unknown_inlet_idxs
+            unknown_state_0 = inlets[in_unknown_idx_0].flash_state()
+            unknown_state_1 = inlets[in_unknown_idx_1].flash_state()
+            H_mass_in_unknown_0 = unknown_state_0.H_mass() if not reactive else unknown_state_0.H_reactive_mass()
+            H_mass_in_unknown_1 = unknown_state_1.H_mass() if not reactive else unknown_state_1.H_reactive_mass()
+            energy_in_known = sum(v for v in all_energy_in if v is not None)
+            m_in_known = sum(v.m for i, v in enumerate(inlets) if (i != in_unknown_idx_0 and i != in_unknown_idx_1 and not isinstance(v, EnergyStream)))
+            m_out_known = sum(v.m for i, v in enumerate(outlets) if not isinstance(v, EnergyStream))
+
+            inlets[in_unknown_idx_0].m = (H_mass_in_unknown_1*m_in_known - H_mass_in_unknown_1*m_out_known - energy_in_known + outlet_energy)/(H_mass_in_unknown_0 - H_mass_in_unknown_1) 
+            inlets[in_unknown_idx_1].m = (-H_mass_in_unknown_0*m_in_known + H_mass_in_unknown_0*m_out_known + energy_in_known - outlet_energy)/(H_mass_in_unknown_0 - H_mass_in_unknown_1)
+            return True
+    elif out_unknown_count == 2 and in_unknown_count == 0 and use_mass:
+        unknown_outlet_idxs = []
+        for i in range(outlet_count):
+            f = outlets[i]
+            if isinstance(f, StreamArgs) and f.state_specified:
+                unknown_outlet_idxs.append(i)
+        if len(unknown_outlet_idxs) == 2:
+            out_unknown_idx_0, out_unknown_idx_1 = unknown_outlet_idxs
+            unknown_state_0 = outlets[out_unknown_idx_0].flash_state()
+            unknown_state_1 = outlets[out_unknown_idx_1].flash_state()
+            H_mass_out_unknown_0 = unknown_state_0.H_mass() if not reactive else unknown_state_0.H_reactive_mass()
+            H_mass_out_unknown_1 = unknown_state_1.H_mass() if not reactive else unknown_state_1.H_reactive_mass()
+            energy_out_known = sum(v for v in all_energy_out if v is not None)
+            m_out_known = sum(v.m for i, v in enumerate(outlets) if (i != out_unknown_idx_0 and i != out_unknown_idx_1 and not isinstance(v, EnergyStream)))
+            m_in_known = sum(v.m for i, v in enumerate(inlets) if not isinstance(v, EnergyStream))
+
+            outlets[out_unknown_idx_0].m = (H_mass_out_unknown_1*m_out_known - H_mass_out_unknown_1*m_in_known - energy_out_known + inlet_energy)/(H_mass_out_unknown_0 - H_mass_out_unknown_1) 
+            outlets[out_unknown_idx_1].m = (-H_mass_out_unknown_0*m_out_known + H_mass_out_unknown_0*m_in_known + energy_out_known - inlet_energy)/(H_mass_out_unknown_0 - H_mass_out_unknown_1)
+            return True
     return False

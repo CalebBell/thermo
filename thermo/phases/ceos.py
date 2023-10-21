@@ -45,7 +45,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     Parameters
     ----------
-    eos_class : :obj:`thermo.eos_mix.GCEOSMIX`
+    eos_class : GCEOSMIX
         EOS class, [-]
     eos_kwargs : dict
         Parameters to be passed to the created EOS, [-]

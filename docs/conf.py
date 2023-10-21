@@ -323,6 +323,8 @@ numpydoc_show_class_members = True
 numpydoc_show_inherited_class_members = True
 numpydoc_class_members_toctree = False
 numpydoc_attributes_as_param_list = True
+numpydoc_xref_param_type = True
+
 autosummary_generate = True
 add_function_parentheses = False
 autodoc_default_flags = ['undoc-members', 'show-inheritance']
@@ -332,6 +334,13 @@ nbsphinx_requirejs_path = '' # fixes katex not working
 plot_rcparams = {'savefig.bbox': 'tight'}
 plot_apply_rcparams = True  # if context option is used
 
+import thermo
+numpydoc_xref_aliases = {}
+for obj_name in dir(thermo):
+    obj = getattr(thermo, obj_name)
+    if isinstance(obj, type):
+        numpydoc_xref_aliases[obj.__name__] = obj.__module__+'.'+obj.__name__
+numpydoc_xref_aliases
 
 #autodoc_default_flags = ['members', 'private-members', 'special-members',
 #                         #'undoc-members',
