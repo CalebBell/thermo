@@ -1551,7 +1551,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     ranked_methods = [LALIBERTE, LINEAR]
     pure_references = ('HeatCapacityLiquids',)
     pure_reference_types = (HeatCapacityLiquid,)
-    
+
     pure_constants = ('MWs', )
     custom_args = pure_constants
 

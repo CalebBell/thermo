@@ -462,7 +462,7 @@ class ChemicalConstantsPackage:
 
     @property
     def CAS_to_index(self):
-        r'''Dictionary of CAS: index, used for efficiently 
+        r'''Dictionary of CAS: index, used for efficiently
         looking up which index a specified CAS number is in.
         This can save a lot of time, but does take a little more memory.
 

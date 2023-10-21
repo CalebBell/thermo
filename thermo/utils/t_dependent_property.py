@@ -3328,7 +3328,7 @@ class TDependentProperty:
         method_names : list[str]
             Each of the existing methods, [-]
         T_ranges : list[float]
-            A list of temperatures consisting of [Tmin, T_transition1, ..., Tmax]; 
+            A list of temperatures consisting of [Tmin, T_transition1, ..., Tmax];
             this is size len(method_names) + 1, [K]
 
         Notes
@@ -4737,7 +4737,7 @@ class TDependentProperty:
             piecewise_methods = kwargs['piecewise_methods']
             for name, data in piecewise_methods.items():
                 self.add_piecewise_method(name=name, method_names=data['methods'], T_ranges=data['T_ranges'])
-        
+
         try:
             method = kwargs['method']
         except:

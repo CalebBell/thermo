@@ -935,7 +935,7 @@ class MixtureProperty:
             combined = list(product(iter_Ts, iter_Ps))
             iter_Ts = [T for T, _ in combined]
             iter_Ps = [P for _, P in combined]
-        
+
 
         xs = linspace(0, 1, pts)
         for T, P in zip(iter_Ts, iter_Ps):
@@ -1084,7 +1084,7 @@ class MixtureProperty:
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
 
-        
+
 
         if T is None:
             # vary T

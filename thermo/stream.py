@@ -2000,7 +2000,7 @@ class EquilibriumStream(EquilibriumState):
     '''Creates an EquilibriumStream object, built off :obj:`EquilibriumState`
     to contain flow rate amounts, making mass and energy balances easier.
 
-    EquilibriumStreams can have their flow rate, state, and composition 
+    EquilibriumStreams can have their flow rate, state, and composition
     defined using any sufficient set of the following. Note that not all
     sets of specs will have a solution, or a unique solution, or an
     algorithm to solve the problem implemented.
@@ -2040,14 +2040,14 @@ class EquilibriumStream(EquilibriumState):
 
     Note that the liquid flow rates `Ql` and `Qls` will by default use the
     pure component liquid standard molar densities, but the temperature and
-    pressure used to calculate the liquid molar densities can be set with 
-    the two-tuple `Vf_TP`. 
+    pressure used to calculate the liquid molar densities can be set with
+    the two-tuple `Vf_TP`.
     See :obj:`EquilibriumState.V_liquids_ref` for details.
 
     Parameters
     ----------
-    flasher : One of :obj:`thermo.flash.FlashPureVLS`, :obj:`thermo.flash.FlashVL`, :obj:`thermo.flash.FlashVLN`, 
-        The configured flash object which can perform flashes for the 
+    flasher : One of :obj:`thermo.flash.FlashPureVLS`, :obj:`thermo.flash.FlashVL`, :obj:`thermo.flash.FlashVLN`,
+        The configured flash object which can perform flashes for the
         configured components, [-]
     zs : list, optional
         Mole fractions of all components [-]
@@ -2893,10 +2893,10 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
 
         return True
 
-    elif (in_unknown_count==1 and out_unknown_count == 1 and use_mass 
-        and isinstance(inlets[in_unknown_idx], StreamArgs) and isinstance(outlets[out_unknown_idx], StreamArgs) 
+    elif (in_unknown_count==1 and out_unknown_count == 1 and use_mass
+        and isinstance(inlets[in_unknown_idx], StreamArgs) and isinstance(outlets[out_unknown_idx], StreamArgs)
         and inlets[in_unknown_idx].state_specified and outlets[out_unknown_idx].state_specified):
-        '''
+        """
         from sympy import *
         m_in_known, m_in_unknown, m_out_known, m_out_unknown = symbols('m_in_known, m_in_unknown, m_out_known, m_out_unknown')
         e_in_known, e_out_known = symbols('e_in_known, e_out_known')
@@ -2907,7 +2907,7 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
 
         Eq0 = Eq(e_in_known+e_in_unknown, e_out_unknown+e_out_known)
         Eq1 = Eq(m_in_known+ m_in_unknown, m_out_known+m_out_unknown)
-        solve([Eq0, Eq1], [m_in_unknown, m_out_unknown])'''
+        solve([Eq0, Eq1], [m_in_unknown, m_out_unknown])"""
         unknown_in_state = inlets[in_unknown_idx].flash_state()
         unknown_out_state = outlets[out_unknown_idx].flash_state()
         H_mass_in_unknown = unknown_in_state.H_mass() if not reactive else unknown_in_state.H_reactive_mass()
@@ -2926,7 +2926,7 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
             if isinstance(f, StreamArgs) and f.state_specified:
                 unknown_inlet_idxs.append(i)
         if len(unknown_inlet_idxs) == 2:
-            '''
+            """
             from sympy import *
             m_in_known, m_in_unknown0, m_in_unknown1, m_out_known = symbols('m_in_known, m_in_unknown0, m_in_unknown1, m_out_known')
             e_in_known, e_known = symbols('e_in_known, e_known')
@@ -2938,7 +2938,7 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
             Eq0 = Eq(e_known, e_in_known + e_unkown1+e_unkown0 )
             Eq1 = Eq(m_in_known+ m_in_unknown0+ m_in_unknown1, m_out_known)
             solve([Eq0, Eq1], [m_in_unknown0, m_in_unknown1])
-            '''
+            """
             in_unknown_idx_0, in_unknown_idx_1 = unknown_inlet_idxs
             unknown_state_0 = inlets[in_unknown_idx_0].flash_state()
             unknown_state_1 = inlets[in_unknown_idx_1].flash_state()
@@ -2948,7 +2948,7 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
             m_in_known = sum(v.m for i, v in enumerate(inlets) if (i != in_unknown_idx_0 and i != in_unknown_idx_1 and not isinstance(v, EnergyStream)))
             m_out_known = sum(v.m for i, v in enumerate(outlets) if not isinstance(v, EnergyStream))
 
-            inlets[in_unknown_idx_0].m = (H_mass_in_unknown_1*m_in_known - H_mass_in_unknown_1*m_out_known - energy_in_known + outlet_energy)/(H_mass_in_unknown_0 - H_mass_in_unknown_1) 
+            inlets[in_unknown_idx_0].m = (H_mass_in_unknown_1*m_in_known - H_mass_in_unknown_1*m_out_known - energy_in_known + outlet_energy)/(H_mass_in_unknown_0 - H_mass_in_unknown_1)
             inlets[in_unknown_idx_1].m = (-H_mass_in_unknown_0*m_in_known + H_mass_in_unknown_0*m_out_known + energy_in_known - outlet_energy)/(H_mass_in_unknown_0 - H_mass_in_unknown_1)
             return True
     elif out_unknown_count == 2 and in_unknown_count == 0 and use_mass:
@@ -2967,7 +2967,7 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
             m_out_known = sum(v.m for i, v in enumerate(outlets) if (i != out_unknown_idx_0 and i != out_unknown_idx_1 and not isinstance(v, EnergyStream)))
             m_in_known = sum(v.m for i, v in enumerate(inlets) if not isinstance(v, EnergyStream))
 
-            outlets[out_unknown_idx_0].m = (H_mass_out_unknown_1*m_out_known - H_mass_out_unknown_1*m_in_known - energy_out_known + inlet_energy)/(H_mass_out_unknown_0 - H_mass_out_unknown_1) 
+            outlets[out_unknown_idx_0].m = (H_mass_out_unknown_1*m_out_known - H_mass_out_unknown_1*m_in_known - energy_out_known + inlet_energy)/(H_mass_out_unknown_0 - H_mass_out_unknown_1)
             outlets[out_unknown_idx_1].m = (-H_mass_out_unknown_0*m_out_known + H_mass_out_unknown_0*m_in_known + energy_out_known - inlet_energy)/(H_mass_out_unknown_0 - H_mass_out_unknown_1)
             return True
     return False

@@ -301,11 +301,11 @@ class VaporPressure(TDependentProperty):
        Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
        Quarterly 23, no. 3 (July 1, 1984): 309-13.
        https://doi.org/10.1179/cmq.1984.23.3.309.
-    .. [8] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons, 
+    .. [8] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons,
        and S, Se, Te, and Halogen Containing Organic Compounds. Springer, 1999.
     .. [9] Dykyj, J., and K. R. Hall. "Vapor Pressure and Antoine Constants for
        Oxygen Containing Organic Compounds". 2000.
-    .. [10] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen 
+    .. [10] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen
        Containing Organic Compounds. Springer, 2001.
     '''
 
@@ -718,11 +718,11 @@ class SublimationPressure(TDependentProperty):
        Equations for the Metallic Elements: 298-2500K." Canadian Metallurgical
        Quarterly 23, no. 3 (July 1, 1984): 309-13.
        https://doi.org/10.1179/cmq.1984.23.3.309.
-    .. [3] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons, 
+    .. [3] Hall, K. R. Vapor Pressure and Antoine Constants for Hydrocarbons,
        and S, Se, Te, and Halogen Containing Organic Compounds. Springer, 1999.
     .. [4] Dykyj, J., and K. R. Hall. "Vapor Pressure and Antoine Constants for
        Oxygen Containing Organic Compounds". 2000.
-    .. [5] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen 
+    .. [5] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen
        Containing Organic Compounds. Springer, 2001.
     '''
 

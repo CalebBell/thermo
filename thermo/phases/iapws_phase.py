@@ -47,7 +47,7 @@ class IAPWS95(HelmholtzEOS):
     Hfs = [-241822.0]
     Sfs = [-44.5]
     Gfs = [-228554.325]
-    
+
     N = 1
     rhoc_inv = rho_to_Vm(rhoc_mass, _MW)
     rhoc = 1.0/rhoc_inv
@@ -756,17 +756,17 @@ class IAPWS06(GibbsEOS):
 
         tau2 = tau*tau
         v0 = pi - pi0
-        r2 = (v0*(v0*(2.34801409215913e-11 - 2.85651142904972e-11j) 
+        r2 = (v0*(v0*(2.34801409215913e-11 - 2.85651142904972e-11j)
                      + (-5.57107698030123e-5 + 4.64578634580806e-5j))
                      + (-72.597457432922 - 78.100842711287j))
 
-        r2p = (v0*(7.677551608692879e-14-9.340239477516712e-14j) 
+        r2p = (v0*(7.677551608692879e-14-9.340239477516712e-14j)
                + (-9.108171704568459e-08+7.595411065038183e-08j))
-        g0 = (v0*(v0*(v0*(-5.56464869058991e-22*v0 + 3.39746123271053e-15) 
+        g0 = (v0*(v0*(v0*(-5.56464869058991e-22*v0 + 3.39746123271053e-15)
                - 1.89369929326131e-8) + 0.655022213658955) - 632020.233335886)
         g0p = (v0*(v0*(-3.6390648292032365e-24*v0 + 1.666356094695489e-17)
                 - 6.192030151739651e-11) + 0.0010708979275295713)
-        g0pp = ((-1.7848556441943294e-26*v0 + 5.44866189611331e-20)*v0 
+        g0pp = ((-1.7848556441943294e-26*v0 + 5.44866189611331e-20)*v0
                 - 1.0123370045204503e-13)
 
 
@@ -774,17 +774,17 @@ class IAPWS06(GibbsEOS):
         log_t1_n_tau = logc(t1 - tau)
         log_t2_tau = logc(t2 + tau)
         log_t2_n_tau = logc(t2 - tau)
-        
+
         log_t1 = logc(t1)
         log_t2 = logc(t2)
-        
+
         t2_inv = 1.0/t2
         t1_inv = 1.0/t1
-        
+
         tau_t2inv = tau*t2_inv
         t2_log_t2 = t2*log_t2
         t2_log_t2_2 = t2_log_t2 + t2_log_t2
-        
+
         g_real_sum = (r1*((t1-tau)*log_t1_n_tau + (t1+tau)*log_t1_tau - 2.0*t1*log_t1 - tau2*t1_inv)
                    + (r2*((t2-tau)*log_t2_n_tau + (t2+tau)*log_t2_tau - t2_log_t2_2 - tau2*t2_inv))).real
         g = g0 - s0*Tt*tau + Tt*g_real_sum
@@ -798,7 +798,7 @@ class IAPWS06(GibbsEOS):
         g_TT = 0.0036608581051398447*g_TT_real_sum #1.0/Tt*g_TT_real_sum
 
         x0 = (t2-tau)*log_t2_n_tau + (t2+tau)*log_t2_tau - t2_log_t2_2 - tau2*t2_inv
-        
+
         g_P_real_sum = (r2p*(x0)).real
         g_P = g0p + Tt*g_P_real_sum
         g_PP_real_sum = (self.r2pp*(x0)).real
@@ -828,19 +828,19 @@ class IAPWS06(GibbsEOS):
 
     def dG_dT(self):
         return self._dG_dT
-    
+
     def d2G_dT2(self):
         return self._d2G_dT2
 
     def dG_dP(self):
         return self._dG_dP
-    
+
     def d2G_dP2(self):
         return self._d2G_dP2
-    
+
     def d2G_dTdP(self):
         return self._d2G_dTdP
-        
+
     d2G_dPdT = d2G_dTdP
 
     def P_sub(self):

@@ -372,8 +372,8 @@ class BulkSettings:
                 'mu_VL', 'mu_VL_power_exponent', 'k_LL', 'k_LL_power_exponent', 'k_VL', 'k_VL_power_exponent',
                 'sigma_LL', 'sigma_LL_power_exponent', 'T_liquid_volume_ref', 'T_normal', 'P_normal', 'T_standard',
                 'P_standard', 'T_gas_ref', 'P_gas_ref', 'speed_of_sound', 'kappa', 'isobaric_expansion',
-                'Joule_Thomson', 'VL_ID', 'VL_ID_settings', 'S_ID', 'S_ID_settings', 'solid_sort_method', 
-                'liquid_sort_method', 'liquid_sort_cmps', 'solid_sort_cmps', 'liquid_sort_cmps_neg', 'solid_sort_cmps_neg', 
+                'Joule_Thomson', 'VL_ID', 'VL_ID_settings', 'S_ID', 'S_ID_settings', 'solid_sort_method',
+                'liquid_sort_method', 'liquid_sort_cmps', 'solid_sort_cmps', 'liquid_sort_cmps_neg', 'solid_sort_cmps_neg',
                 'liquid_sort_prop', 'solid_sort_prop', 'phase_sort_higher_first', 'water_sort', 'equilibrium_perturbation')
 
     def as_json(self):

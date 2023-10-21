@@ -165,7 +165,7 @@ standard_state_transitions = {
     # 'S': {'Tm': 388.360, 'Tb': 882.117, 'Hfus': 1721, 'Hvap': 53326,  'solid_T_trans': [368.300], 'solid_H_trans': [401]}, # TODO
     # 'Be': {'Tm': 1560.000, 'Tb': 2741.437, 'Hfus': 7895, 'Hvap': 291572, 'solid_T_trans': [1527.000], 'solid_H_trans': [6849]}, # TODO
     # 'Fe': {'Tm': 3133.345, 'Hfus': 349585, 'solid_T_trans': [1184.000, 1665.000], 'solid_H_trans': [900, 837]}, # TODO
-    
+
     }
 
 shomate_gas_elements = ('H', 'O', 'N', 'F', 'P', 'Cl', 'Br', 'I', 'Mg', 'B', 'Pb', 'Li', 'Na', 'Al', 'K', 'V', 'Cr')
@@ -206,12 +206,12 @@ def element_HeatCapacitySolid_cache(CAS):
 def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
     r'''This function calculates the standard state ideal-gas heat of formation
     of a compound at a specified from first principles. The entropy change and
-    Gibbs free energy change of formation are also returned. 
+    Gibbs free energy change of formation are also returned.
     This special condition is usually tabulated in thermodynamic tables, and
     this function is intended to be consistent with the standard conventions.
 
     The values returned depend on:
-    
+
     * The heat of formation as an ideal gas of the compound at 298.15 K (must be measured experimentally)
     * The ideal gas absolute entropy of the compound at 298.15 K (calculated from heat capacity and phase transitions of the compound and its various phases)
     * The chosen reference states of the elements (convention, but hardcoded)
@@ -260,7 +260,7 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
     Hf_ref = Hf if Hf is not None else c.Hfgm
     Sf_ref = Sf if Sf is not None else c.Sfgm
     atoms = c.atoms
-    return _standard_state_ideal_gas_formation_direct(T=T, Hf_ref=Hf_ref, Sf_ref=Sf_ref, 
+    return _standard_state_ideal_gas_formation_direct(T=T, Hf_ref=Hf_ref, Sf_ref=Sf_ref,
             atoms=atoms, gas_Cp=c.HeatCapacityGas, T_ref=T_ref)
 
 _standard_formation_reaction_cache = {}
@@ -282,14 +282,14 @@ def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp,
 
     dH_compound = gas_Cp.T_dependent_property_integral(T_ref, T)
     dS_compound = gas_Cp.T_dependent_property_integral_over_T(T_ref, T)
-    
+
     H_calc = reactant_coeff*Hf_ref + reactant_coeff*dH_compound
     S_calc = reactant_coeff*Sf_ref + reactant_coeff*dS_compound
     # if the compound is an element it will need special handling to go from solid liquid to gas if needed
 
     solid_ele = set(['C'])
     liquid_ele = set([''])
-    
+
     for coeff, ele_data in zip(elemental_counts, elemental_composition):
         ele = list(ele_data.keys())[0]
         element_obj = periodic_table[ele]
@@ -334,7 +334,7 @@ def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp,
         elif ele == 'P':
             # White phosphorus is the basis here
             T_alpha_beta_P = 195.400
-            Htrans_alpha_beta_P = 521.0 # 525.5104 reported in 
+            Htrans_alpha_beta_P = 521.0 # 525.5104 reported in
             # The thermodynamic properties of elementary phosphorus The heat capacities of two crystalline modifications of red phosphorus, of α and β white phosphorus, and of black phosphorus from 15 to 300 K
             Tm_P = 317.300
             Hfus_P = 659
@@ -389,7 +389,7 @@ def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp,
         H_calc -= coeff*dH_ele
         S_calc -= coeff*dS_ele
     G_calc = H_calc - T*S_calc
-    
+
     H_calc, S_calc, G_calc = H_calc/reactant_coeff, S_calc/reactant_coeff, G_calc/reactant_coeff
-    
+
     return H_calc, S_calc, G_calc

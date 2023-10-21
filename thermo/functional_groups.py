@@ -2829,7 +2829,7 @@ def count_rings_attatched_to_rings(mol, allow_neighbors=True, atom_rings=None):
 benzene_smarts = 'c1ccccc1'
 
 def benene_rings(mol):
-    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns the number of benzene rings 
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns the number of benzene rings
     in the molecule.
 
     Parameters
@@ -2914,9 +2914,9 @@ def is_radionuclide(mol):
 
     References
     ----------
-    .. [1] Kondev, F. G., M. Wang, W. J. Huang, S. Naimi, and G. Audi. 
-       "The NUBASE2020 Evaluation of Nuclear Physics Properties *." 
-       Chinese Physics C 45, no. 3 (March 2021): 030001. 
+    .. [1] Kondev, F. G., M. Wang, W. J. Huang, S. Naimi, and G. Audi.
+       "The NUBASE2020 Evaluation of Nuclear Physics Properties *."
+       Chinese Physics C 45, no. 3 (March 2021): 030001.
        https://doi.org/10.1088/1674-1137/abddae.
     '''
     for atom in mol.GetAtoms():

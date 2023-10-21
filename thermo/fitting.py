@@ -68,17 +68,17 @@ def split_data(x, y, folds=5, seed=42):
     if pts != len(y):
         raise ValueError("Wrong size")
     z = list(range(pts))
-    
+
     Random(seed).shuffle(z)
     # go one by one and assign data to each group
-    
+
     fold_xs = [[] for _ in range(folds)]
     fold_ys = [[] for _ in range(folds)]
     for i in range(pts):
         l = i%folds
         fold_xs[l].append(x[i])
         fold_ys[l].append(y[i])
-    
+
     return fold_xs, fold_ys
 
 def assemble_fit_test_groups(x_groups, y_groups):
@@ -98,7 +98,7 @@ def assemble_fit_test_groups(x_groups, y_groups):
             if j != i:
                 x_train.extend(x_groups[j])
                 y_train.extend(y_groups[j])
-        
+
         train_x_groups.append(x_train)
         train_y_groups.append(y_train)
     return (train_x_groups, test_x_groups, train_y_groups, test_y_groups)
@@ -851,7 +851,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         statistics['min_ratio'] = float(stats[2])
         statistics['max_ratio'] = float(stats[3])
         try:
-            pcov = float(pcov) 
+            pcov = float(pcov)
         except:
             # ndarray or None
             pass

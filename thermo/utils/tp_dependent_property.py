@@ -107,7 +107,7 @@ class TPDependentProperty(TDependentProperty):
         super().__init__(extrapolation, **kwargs)
 
         self.P_limits = {}
-        '''Pressure limits on a per-component basis. Not currently used.'''
+        """Pressure limits on a per-component basis. Not currently used."""
 
         if kwargs:
             P_correlation_keys_to_parameters = self.P_correlation_keys_to_parameters

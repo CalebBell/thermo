@@ -107,7 +107,7 @@ def redlich_kister_excess_inner(N, N_terms, a_tensor, xs):
 def redlich_kister_build_structure(N, shape, data, indexes):
     r'''Builds a redlich-kister compatible
     tensor (data structure) from pairs of indexes, and
-    the coefficients associated with those indexes. 
+    the coefficients associated with those indexes.
     This is especially important because of the asymmetry
     of the model.
 
@@ -136,7 +136,7 @@ def redlich_kister_build_structure(N, shape, data, indexes):
     and should be cached
     '''
     out = []
-    
+
     if len(shape) == 1:
         one_d = True
         two_d = False
@@ -145,12 +145,12 @@ def redlich_kister_build_structure(N, shape, data, indexes):
         two_d = True
     else:
         raise ValueError("Shape must be provided")
-        
+
     if len(indexes) != len(data):
         raise ValueError("Index and data length must be the same")
-        
+
     data_dict = {idx: d for idx, d in zip(indexes, data)}
-        
+
     for i in range(N):
         l = []
         for j in range(N):
@@ -159,7 +159,7 @@ def redlich_kister_build_structure(N, shape, data, indexes):
             else:
                 l.append([[0.0]*shape[1] for _ in range(shape[0])])
         out.append(l)
-        
+
     for i in range(N):
         for j in range(N):
             if (i, j) in data_dict:
@@ -248,7 +248,7 @@ def redlich_kister_excess_inner_binary(ais, xs):
     system. This calculation is optimized. This works
     with the same values of coefficients as `redlich_kister_excess_inner`
     but without the excess dimensionality of the input
-    data. 
+    data.
 
     Parameters
     ----------
@@ -288,7 +288,7 @@ def redlich_kister_excess_binary(coefficients, x0, T, N_T, N_terms):
     factor = 1.0
     for i in range(N_terms):
         offset = i*N_T
-        ai = coefficients[offset] 
+        ai = coefficients[offset]
         if N_T >= 2:
             ai +=  coefficients[offset+1]*Tinv
         if N_T >= 3:

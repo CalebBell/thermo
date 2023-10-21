@@ -832,7 +832,7 @@ class Flash:
         self.scalar = scalar_statuses.pop()
 
         self.supports_lnphis_args = all(p.supports_lnphis_args for p in self.phases)
-        
+
         # Make the phases aware of the constants and properties
         constants = self.constants
         correlations = self.correlations

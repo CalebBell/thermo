@@ -358,12 +358,12 @@ class Phase:
         if identical_model_attribute_ids:
             if ignore_phase:
                 return True
-            return self.__class__.__name__ == other_phase.__class__.__name__ 
+            return self.__class__.__name__ == other_phase.__class__.__name__
 
         # Using identities only we could not confirm if the phase was the same or not.
         # The values may still be the same if the identities are not.
         return self.model_hash(ignore_phase) == other_phase.model_hash(ignore_phase)
-    
+
     def model_hash(self, ignore_phase=False):
         r'''Method to compute a hash of a phase.
 
@@ -6363,7 +6363,7 @@ derivatives_thermodynamic = ['dA_dP', 'dA_dP_T', 'dA_dP_V', 'dA_dT', 'dA_dT_P', 
              # These will probably need their doc fixed
              'd2G_dP2', 'd2G_dT2',
              'd2G_dPdT', 'd2G_dTdP',
-             
+
              ]
 derivatives_thermodynamic_mass = []
 

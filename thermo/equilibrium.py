@@ -3395,7 +3395,7 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
                'Gs_ideal_gas_standard_state', 'S_ideal_gas_standard_state', 'Ss_ideal_gas_standard_state',
 
                 'concentrations_mass_gas', 'concentrations_mass_gas_normal', 'concentrations_mass_gas_standard',
-                'concentrations_gas_standard', 'concentrations_gas_normal', 'concentrations_gas'              
+                'concentrations_gas_standard', 'concentrations_gas_normal', 'concentrations_gas'
  ]
 
 

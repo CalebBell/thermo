@@ -70,7 +70,7 @@ __all__ = [
     'generate_phase_boundaries_naive',
     'water_wet_bulb_temperature',
     'water_dew_point_from_humidity',
-    'solve_water_wet_bulb_temperature_nested', 
+    'solve_water_wet_bulb_temperature_nested',
     'solve_water_wet_bulb_temperature_direct',
 ]
 
@@ -5280,13 +5280,13 @@ def water_dew_point_from_humidity(flasher, T, P, humidity, zs_air, zs_added):
     except:
         return None
     N = flasher.N
-    ratio = sat.flash_convergence['mixing_factor'] 
+    ratio = sat.flash_convergence['mixing_factor']
     feed_ns = zs_air
     zs_for_factor = flash_mixing_remove_overlap(zs_air, zs_added)
     n_factor = sum([feed_ns[i] if zs_for_factor[i] > 0 else 0 for i in range(N)])
     ns_out = [n_factor*(zs_for_factor[i] + zs_added[i]*ratio*humidity) for i in range(N)]
     zs_my_flash = normalize(ns_out)
-    
+
     return water_wet_bulb_temperature(flasher, zs=zs_my_flash, T=T, P=P)
 
 
@@ -5413,10 +5413,10 @@ def solve_water_wet_bulb_temperature_direct(flasher, zs, T, P, T_wet_bulb):
     H_water_product = water_product.H()
     flashes2 = []
 
-    '''Known: T_wet_bulb. Product T. Product P.
+    """Known: T_wet_bulb. Product T. Product P.
 
     Unknown: x_w out, how many moles water to add to cause saturation of water, the temperature of the end flash
-    '''
+    """
     def wet_bulb_T_error_direct(guess):
         # TODO make a standalone function for this
         moles_water_1, moles_water_2 = guess
@@ -5439,7 +5439,7 @@ def solve_water_wet_bulb_temperature_direct(flasher, zs, T, P, T_wet_bulb):
         zs_out = normalize(ns_out_2)
 
         # As best as I can tell, the VF=1 flash is required otherwise the newton solver will
-        # go nuts with no jacobian. 
+        # go nuts with no jacobian.
         flash_out = flasher.flash(VF=1, P=P, zs=zs_out)
         flashes2[:] = [flash_out]
         energy_err = H_out_balanced - flash_out.H()

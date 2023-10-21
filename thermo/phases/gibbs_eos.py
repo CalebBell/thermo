@@ -27,7 +27,7 @@ from thermo.phases.phase import Phase
 
 class GibbsEOS(Phase):
     # http://www.iapws.org/relguide/Advise3.pdf is useful
-    def V(self):    
+    def V(self):
         return self.dG_dP()
         # return self._V
 
@@ -41,7 +41,7 @@ class GibbsEOS(Phase):
         return self.d2G_dP2()
 
     dV_dP_T = dV_dP
-    
+
     def dP_dV(self):
         return 1.0/self.d2G_dP2()
 
@@ -55,12 +55,12 @@ class GibbsEOS(Phase):
 
     def dT_dV(self):
         return 1.0/self.d2G_dTdP()
-    
+
     dT_dV_P = dT_dV
 
     def d2V_dT2(self):
         return self.d3G_dT2dP()
-    
+
     def d2V_dTdP(self):
         return self.d3G_dTdP2()
 
@@ -72,7 +72,7 @@ class GibbsEOS(Phase):
 
     def dT_dP(self):
         return 1.0/self.dP_dT()
-    
+
     dT_dP_V = dT_dP
 
 
@@ -81,10 +81,10 @@ class GibbsEOS(Phase):
 
     def S(self):
         return -self.dG_dT()
-    
+
     def Cp(self):
         return -self.T*self.d2G_dT2()
-    
+
     def U(self):
         return self.G() - self.T*self.dG_dT() - self.P*self.dG_dP()
 
@@ -109,6 +109,6 @@ class GibbsEOS(Phase):
 
     def d2S_dTdP(self):
         return -self.d3G_dT2dP()
-    
 
-    
+
+
