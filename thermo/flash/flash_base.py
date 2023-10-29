@@ -1288,6 +1288,7 @@ class Flash:
         vmax = len(used_values) - 1
 
 #        ax.scatter(Ts,Ps, s=dat)
+        print(np.array(Ts).shape, np.array(Ps).shape, np.array(dat).shape)
         im = ax.pcolormesh(Ts, Ps, dat, cmap=cmap, norm=colors.Normalize(vmin=0, vmax=vmax)) # , cmap=color_map, norm=LogNorm()
         cbar = fig.colorbar(im, ax=ax)
         cbar.set_label('Phase')

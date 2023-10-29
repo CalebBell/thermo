@@ -687,3 +687,11 @@ def test_ViscosityLiquid_exp_stable_polynomial_generic():
     obj_polynomial = ViscosityLiquid(exp_stable_polynomial_parameters={'test': {'coeffs': coeffs,
                                                                     'Tmin': Tmin, 'Tmax': Tmax}})
     assert_close(obj_polynomial.calculate(300.0, 'test'), 0.0005929213664710905)
+
+
+def test_ViscosityLiquidMixture_initialization_str():
+    pure_obj = ViscosityGas(extrapolation="linear", method="POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, poly_fit=(85.53, 350.0, [-3.1840315590772447e-24, 5.632245762287636e-21, -4.211563759618865e-18, 1.7309219264976467e-15, -4.25623447818058e-13, 6.379502491722484e-11, -5.653736202867734e-09, 2.934273667761606e-07, -4.688742520151596e-06]))
+    obj = ViscosityGasMixture(MWs=[44.09562], molecular_diameters=[], Stockmayers=[], CASs=[], correct_pressure_pure=False, method="HERNING_ZIPPERER", ViscosityGases=[pure_obj])
+    copy = eval(str(obj))
+
+    assert copy == obj

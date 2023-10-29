@@ -107,6 +107,7 @@ from thermo.utils import identify_phase
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.viscosity import ViscosityGas, ViscosityGasMixture, ViscosityLiquid, ViscosityLiquidMixture
 from thermo.volume import VolumeGas, VolumeGasMixture, VolumeLiquid, VolumeLiquidMixture, VolumeSolid, VolumeSolidMixture
+from thermo.utils.mixture_property import MixtureProperty
 
 CAS_H2O = '7732-18-5'
 
@@ -1510,9 +1511,34 @@ class PropertyCorrelationsPackage:
     def __hash__(self):
         hashes = []
         for k in self.correlations:
+            # print('hashing', hash_any_primitive(getattr(self, k)), getattr(self, k))
             hashes.append(hash_any_primitive(getattr(self, k)))
         return hash_any_primitive(hashes)
 
+
+    def __repr__(self):
+        return self._make_str()
+
+    def _make_str(self, delim=', ', correlations=None):
+        '''Method to create a new string representing the
+        object.
+        '''
+        if correlations is None:
+            correlations = self.correlations
+
+        s = 'PropertyCorrelationsPackage('
+        for k in correlations:
+            obj = getattr(self, k)
+            if obj is None:
+                continue
+            if isinstance(obj, MixtureProperty):
+                s += f'{k}Obj={obj}{delim}\n'
+            elif any(i is not None for i in obj):
+                s += f'{k}={obj}{delim}\n'
+        s += f'constants={self.constants}{delim}\n'
+        s += f'skip_missing={self.skip_missing}{delim}'
+        s = s[:-2] + ')'
+        return s
 
     def as_json(self):
         r'''Method to create a JSON friendly serialization of the chemical

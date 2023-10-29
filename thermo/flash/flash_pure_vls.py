@@ -247,7 +247,8 @@ class FlashPureVLS(Flash):
     PSF_xtol = 1e-10
 
     def __repr__(self):
-        return f"FlashPureVLS(gas={self.gas}, liquids={self.liquids}, solids={self.solids})"
+        return f"FlashPureVLS(gas={self.gas.__repr__()}, liquids={self.liquids}, solids={self.solids}, constants={self.constants.__repr__()}, correlations={self.correlations.__repr__()})"
+
     def __init__(self, constants, correlations, gas, liquids, solids,
                  settings=default_settings):
         # These attributes are all that needs to be stored, then call _finish_initialization

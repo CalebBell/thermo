@@ -229,9 +229,9 @@ class EquilibriumState:
 
     def __repr__(self):
         s = f'{self.__class__.__name__}(T={self.T}, P={self.P}, zs={self.zs}, betas={self.betas}'
-        s += ', gas=%s' %(self.gas)
-        s += ', liquids=%s' %(self.liquids)
-        s += ', solids=%s' %(self.solids)
+        s += ', gas=%s' %(self.gas.__repr__())
+        s += ', liquids=%s' %(self.liquids.__repr__())
+        s += ', solids=%s' %(self.solids.__repr__())
         s += ')'
         return s
 

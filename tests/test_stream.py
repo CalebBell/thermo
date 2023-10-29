@@ -31,6 +31,7 @@ from numpy.testing import assert_allclose
 
 from thermo import (
     PR78MIX,
+    PRMIX,
     CEOSGas,
     CEOSLiquid,
     ChemicalConstantsPackage,
@@ -40,8 +41,18 @@ from thermo import (
     IdealGas,
     PropertyCorrelationsPackage,
     VolumeLiquid,
+    EquilibriumState,
 )
 from thermo.stream import EquilibriumStream, Stream, StreamArgs, mole_balance
+from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage
+from thermo.flash import FlashPureVLS, FlashVLN
+from thermo.heat_capacity import HeatCapacityGas
+from thermo.interface import SurfaceTension, SurfaceTensionMixture
+from thermo.phases import CEOSGas, CEOSLiquid, IdealGas
+from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityLiquid, ThermalConductivityGasMixture, ThermalConductivityLiquidMixture
+from thermo.vapor_pressure import VaporPressure
+from thermo.viscosity import ViscosityGas, ViscosityLiquid, ViscosityGasMixture, ViscosityLiquidMixture
+from thermo.volume import VolumeLiquid
 
 
 @pytest.mark.deprecated
@@ -1042,3 +1053,32 @@ def test_EquilibriumStream_different_input_sources():
             if do_flow:
                 assert_close1d(new.ns, [5.0, 3.0, 2.0], rtol=1e-13)
 
+
+def test_equilibrium_stream():
+    constants = ChemicalConstantsPackage(atomss=[{'C': 3, 'H': 8}], CASs=['74-98-6'], Gfgs=[-24008.76000000004], Hcs=[-2219332.0], Hcs_lower=[-2043286.016], Hcs_lower_mass=[-46337618.47548578], Hcs_mass=[-50329987.42278712], Hfgs=[-104390.0], MWs=[44.09562], names=['propane'], omegas=[0.152], Pcs=[4248000.0], Sfgs=[-269.5999999999999], Tbs=[231.04], Tcs=[369.83], Vml_STPs=[8.982551425831519e-05], Vml_60Fs=[8.721932949945705e-05])
+    correlations = PropertyCorrelationsPackage(VaporPressures=[VaporPressure(extrapolation="AntoineAB|DIPPR101_ABC", method="EXP_POLY_FIT", exp_poly_fit=(85.53500000000001, 369.88, [-6.614459112569553e-18, 1.3568029167021588e-14, -1.2023152282336466e-11, 6.026039040950274e-09, -1.877734093773071e-06, 0.00037620249872919755, -0.048277894617307984, 3.790545023359657, -137.90784855852178]))], 
+                                                VolumeLiquids=[VolumeLiquid(extrapolation="constant", method="POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, poly_fit=(85.53500000000001, 359.89, [1.938305828541795e-22, -3.1476633433892663e-19, 2.1728188240044968e-16, -8.304069912036783e-14, 1.9173728759045994e-11, -2.7331397706706945e-09, 2.346460759888426e-07, -1.1005126799030672e-05, 0.00027390337689920513]))], 
+                                                HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [7.008452174279456e-22, -1.7927920989992578e-18, 1.1218415948991092e-17, 4.23924157032547e-12, -5.279987063309569e-09, 2.5119646468572195e-06, -0.0004080663744697597, 0.1659704314379956, 26.107282495650367]))], 
+                                                ViscosityLiquids=[ViscosityLiquid(extrapolation="linear", method="EXP_POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, exp_poly_fit=(85.53500000000001, 369.88, [-1.464186051602898e-17, 2.3687106330094663e-14, -1.601177693693127e-11, 5.837768086076859e-09, -1.2292283268696937e-06, 0.00014590412750959653, -0.0081324465457914, -0.005575029473976978, 8.728914946382764]))], 
+                                                ViscosityGases=[ViscosityGas(extrapolation="linear", method="POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, poly_fit=(85.53, 350.0, [-3.1840315590772447e-24, 5.632245762287636e-21, -4.211563759618865e-18, 1.7309219264976467e-15, -4.25623447818058e-13, 6.379502491722484e-11, -5.653736202867734e-09, 2.934273667761606e-07, -4.688742520151596e-06]))], 
+                                                ThermalConductivityLiquids=[ThermalConductivityLiquid(extrapolation="linear", method="POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, poly_fit=(85.53, 350.0, [-1.119942102768228e-20, 2.0010259140958334e-17, -1.5432664732534744e-14, 6.710420754858951e-12, -1.8195587835583956e-09, 3.271396846047887e-07, -4.022072549142343e-05, 0.0025702260414860677, 0.15009818638364272]))], 
+                                                ThermalConductivityGases=[ThermalConductivityGas(extrapolation="linear", method="POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, poly_fit=(85.53, 350.0, [-4.225968132998871e-21, 7.499602824205188e-18, -5.628911367597151e-15, 2.323826706645111e-12, -5.747490655145977e-10, 8.692266787645703e-08, -7.692555396195328e-06, 0.0004075191640226901, -0.009175197596970735]))], 
+                                                SurfaceTensions=[SurfaceTension(Tc=369.83, extrapolation="DIPPR106_AB", method="EXP_POLY_FIT_LN_TAU", exp_poly_fit_ln_tau=(193.15, 366.48, 369.83, [-4.69903867038229e-05, -0.001167676479018507, -0.01245104796692622, -0.07449082604785806, -0.27398619941324853, -0.6372368552001203, -0.9215870661729839, 0.4680106704255822, -3.2163790497734346]))], 
+                                                ViscosityGasMixtureObj=ViscosityGasMixture(MWs=[44.09562], molecular_diameters=[], Stockmayers=[], CASs=[], correct_pressure_pure=False, method="HERNING_ZIPPERER", ViscosityGases=[ViscosityGas(extrapolation="linear", method="POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, poly_fit=(85.53, 350.0, [-3.1840315590772447e-24, 5.632245762287636e-21, -4.211563759618865e-18, 1.7309219264976467e-15, -4.25623447818058e-13, 6.379502491722484e-11, -5.653736202867734e-09, 2.934273667761606e-07, -4.688742520151596e-06]))]), 
+                                                ViscosityLiquidMixtureObj=ViscosityLiquidMixture(MWs=[], CASs=[], correct_pressure_pure=False, method="Logarithmic mixing, molar", ViscosityLiquids=[ViscosityLiquid(extrapolation="linear", method="EXP_POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, exp_poly_fit=(85.53500000000001, 369.88, [-1.464186051602898e-17, 2.3687106330094663e-14, -1.601177693693127e-11, 5.837768086076859e-09, -1.2292283268696937e-06, 0.00014590412750959653, -0.0081324465457914, -0.005575029473976978, 8.728914946382764]))]), 
+                                                ThermalConductivityGasMixtureObj=ThermalConductivityGasMixture(MWs=[44.09562], Tbs=[231.04], CASs=[], correct_pressure_pure=False, method="LINDSAY_BROMLEY", ThermalConductivityGases=[ThermalConductivityGas(extrapolation="linear", method="POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, poly_fit=(85.53, 350.0, [-4.225968132998871e-21, 7.499602824205188e-18, -5.628911367597151e-15, 2.323826706645111e-12, -5.747490655145977e-10, 8.692266787645703e-08, -7.692555396195328e-06, 0.0004075191640226901, -0.009175197596970735]))], ViscosityGases=[ViscosityGas(extrapolation="linear", method="POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, poly_fit=(85.53, 350.0, [-3.1840315590772447e-24, 5.632245762287636e-21, -4.211563759618865e-18, 1.7309219264976467e-15, -4.25623447818058e-13, 6.379502491722484e-11, -5.653736202867734e-09, 2.934273667761606e-07, -4.688742520151596e-06]))]), 
+                                                ThermalConductivityLiquidMixtureObj=ThermalConductivityLiquidMixture(MWs=[], CASs=[], correct_pressure_pure=False, method="DIPPR_9H", ThermalConductivityLiquids=[ThermalConductivityLiquid(extrapolation="linear", method="POLY_FIT", method_P="NEGLECT_P", tabular_extrapolation_permitted=True, poly_fit=(85.53, 350.0, [-1.119942102768228e-20, 2.0010259140958334e-17, -1.5432664732534744e-14, 6.710420754858951e-12, -1.8195587835583956e-09, 3.271396846047887e-07, -4.022072549142343e-05, 0.0025702260414860677, 0.15009818638364272]))]), 
+                                                SurfaceTensionMixtureObj=SurfaceTensionMixture(MWs=[44.09562], Tbs=[231.04], Tcs=[369.83], CASs=['74-98-6'], correct_pressure_pure=False, method="Winterfeld, Scriven, and Davis (1978)", SurfaceTensions=[SurfaceTension(Tc=369.83, extrapolation="DIPPR106_AB", method="EXP_POLY_FIT_LN_TAU", exp_poly_fit_ln_tau=(193.15, 366.48, 369.83, [-4.69903867038229e-05, -0.001167676479018507, -0.01245104796692622, -0.07449082604785806, -0.27398619941324853, -0.6372368552001203, -0.9215870661729839, 0.4680106704255822, -3.2163790497734346]))], VolumeLiquids=[SurfaceTension(Tc=369.83, extrapolation="DIPPR106_AB", method="EXP_POLY_FIT_LN_TAU", exp_poly_fit_ln_tau=(193.15, 366.48, 369.83, [-4.69903867038229e-05, -0.001167676479018507, -0.01245104796692622, -0.07449082604785806, -0.27398619941324853, -0.6372368552001203, -0.9215870661729839, 0.4680106704255822, -3.2163790497734346]))]), 
+                                                constants=ChemicalConstantsPackage(atomss=[{'C': 3, 'H': 8}], CASs=['74-98-6'], Gfgs=[-24008.76000000004], Hcs=[-2219332.0], Hcs_lower=[-2043286.016], Hcs_lower_mass=[-46337618.47548578], Hcs_mass=[-50329987.42278712], Hfgs=[-104390.0], MWs=[44.09562], names=['propane'], omegas=[0.152], Pcs=[4248000.0], Sfgs=[-269.5999999999999], Tbs=[231.04], Tcs=[369.83], Vml_STPs=[8.982551425831519e-05], Vml_60Fs=[8.721932949945705e-05]), 
+                                                skip_missing=True)
+
+    gas = CEOSGas(eos_class=PRMIX, eos_kwargs={"Pcs": [4248000.0], "Tcs": [369.83], "omegas": [0.152]}, HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-104390.0], Gfs=[-24008.76000000004], Sfs=[-269.5999999999999], T=298.15, P=101325.0, zs=[1.0])
+    liquid = CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Pcs": [4248000.0], "Tcs": [369.83], "omegas": [0.152]}, HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-104390.0], Gfs=[-24008.76000000004], Sfs=[-269.5999999999999], T=298.15, P=101325.0, zs=[1.0])
+    flasher = FlashPureVLS(gas=gas, liquids=[liquid], solids=[], constants=constants, correlations=correlations)
+
+    obj = EquilibriumStream(n=714.3446478105737, flasher=flasher, existing_flash=EquilibriumState(T=394.26111111111106, P=689475.7293168361, zs=[1], betas=[1.0],
+                            gas=CEOSGas(eos_class=PRMIX, eos_kwargs={"Pcs": [4248000.0], "Tcs": [369.83], "omegas": [0.152]}, 
+                            HeatCapacityGases=correlations.HeatCapacityGases, 
+                            Hfs=[-104390.0], Gfs=[-24008.76000000004], Sfs=[-269.5999999999999], T=394.26111111111106, P=689475.7293168361, zs=[1]), liquids=[], solids=[]))
+
+    obj_copy = eval(obj.__repr__())

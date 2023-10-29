@@ -2083,9 +2083,9 @@ class EquilibriumStream(EquilibriumState):
     m : float, optional
         Total mass flow rate of all components in the stream [kg/s]
     T : float, optional
-        Temperature of the stream (default 298.15 K), [K]
+        Temperature of the stream, [K]
     P : float, optional
-        Pressure of the stream (default 101325 Pa) [Pa]
+        Pressure of the stream [Pa]
     VF : float, optional
         Vapor fraction (mole basis) of the stream, [-]
     V : float, optional
@@ -2128,15 +2128,14 @@ class EquilibriumStream(EquilibriumState):
     '''
     flashed = True
 
-    # def __repr__(self):
-    #     s = '%s(T=%s, P=%s, zs=%s, betas=%s, n=%s' %(self.__class__.__name__, self.T, self.P, self.zs, self.betas, self.n)
-    #     s += ', gas=%s' %(self.gas.__repr__())
-    #     s += ', liquids=%s' %(self.liquids)
-    #     s += ', solids=%s' %(self.solids)
-    #     s += ')'
-    #     return s
-
     def __repr__(self):
+        s = '%s(n=%s, ' %(self.__class__.__name__, self.n)
+        s += 'flasher=flasher'
+        s += ', existing_flash=%s' %EquilibriumState.__repr__(self).replace('EquilibriumStream', 'EquilibriumState')
+        s += ')'
+        return s
+
+    def __str__(self):
         s = '<EquilibriumStream, T=%.4f, P=%.4f, zs=%s, betas=%s, mass flow=%s kg/s, mole flow=%s mol/s, phases=%s>'
         s = s %(self.T, self.P, self.zs, self.betas, self.m, self.n, self.phases)
         return s
@@ -2191,9 +2190,14 @@ class EquilibriumStream(EquilibriumState):
             composition_option_count += 1
             self.composition_spec = ('Qgs', Qgs)
         if composition_option_count < 1:
-            raise Exception("No composition information is provided; one of "
-                            "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
-                            "'Qgs' must be specified")
+            if existing_flash is not None:
+                zs = existing_flash.zs
+                composition_option_count += 1
+                self.composition_spec = ('zs', zs)
+            else:
+                raise Exception("No composition information is provided; one of "
+                                "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
+                                "'Qgs' must be specified")
         elif composition_option_count > 1:
             raise Exception("More than one source of composition information "
                             "is provided; only one of "
