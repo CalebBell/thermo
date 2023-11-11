@@ -80,9 +80,9 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     '''
 
-    __slots__ = ('eos_class', 'eos_kwargs', 'scalar', 'HeatCapacityGases', 'N',
+    __slots__ = ('eos_class', 'eos_kwargs', 'vectorized', 'HeatCapacityGases', 'N',
     'Hfs', 'Gfs', 'Sfs', 'Cpgs_poly_fit', '_Cpgs_data', 'composition_independent',
-     'eos_mix', '_model_hash_ignore_phase', '_model_hash')
+     'eos_mix', 'T', 'P' 'zs', '_model_hash_ignore_phase', '_model_hash')
     ideal_gas_basis = True
 
     pure_references = ('HeatCapacityGases',)
@@ -130,7 +130,7 @@ class CEOSPhase(IdealGasDeparturePhase):
                  Gfs=None, Sfs=None, T=None, P=None, zs=None):
         self.eos_class = eos_class
         self.eos_kwargs = eos_kwargs
-        self.scalar = scalar = not (
+        self.vectorized = vectorized = (
             any(type(v) is ndarray for v in eos_kwargs.values())
             or any(type(v) is ndarray for v in (zs, Hfs, Gfs, Sfs))
         )
@@ -150,23 +150,16 @@ class CEOSPhase(IdealGasDeparturePhase):
         if T is None: T = 298.15
         if P is None: P = 101325.0
         if zs is None: 
-            if scalar:
-                zs = [1.0 / N] * N
-            else:
+            if vectorized:
                 v = 1.0 / N
                 zs = full(N, v)
+            else:
+                zs = [1.0 / N] * N
+        self.T = T
+        self.P = P
+        self.zs = zs
         self.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
 
-    @property
-    def T(self):
-        return self.eos_mix.T
-    @property
-    def P(self):
-        return self.eos_mix.P
-    @property
-    def zs(self):
-        return self.eos_mix.zs
-    
     def to_TP_zs(self, T, P, zs, other_eos=None):
         r'''Method to create a new Phase object with the same constants as the
         existing Phase but at a different `T` and `P`. This method has a
@@ -213,7 +206,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         '''
         # Why so slow
         new = self.__class__.__new__(self.__class__)
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
         if other_eos is not None:
             other_eos.solve_missing_volumes()
             new.eos_mix = other_eos
@@ -225,10 +218,8 @@ class CEOSPhase(IdealGasDeparturePhase):
                                                          # 1 hour on this because the heat capacity calculation was wrong
             except AttributeError:
                 new.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
-
         new.eos_class = self.eos_class
         new.eos_kwargs = self.eos_kwargs
-
         new.HeatCapacityGases = self.HeatCapacityGases
         new._Cpgs_data = self._Cpgs_data
         new.Cpgs_poly_fit = self.Cpgs_poly_fit
@@ -236,6 +227,11 @@ class CEOSPhase(IdealGasDeparturePhase):
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
+        new.T = T
+        new.P = P
+        new.zs = zs
+        if new.composition_independent:
+            new.force_phase = 'g'
 
         try:
             new.N = self.N
@@ -248,7 +244,7 @@ class CEOSPhase(IdealGasDeparturePhase):
     def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         # temporary TODO remove this statement
-        if not self.scalar and type(zs) is not ndarray:
+        if self.vectorized and type(zs) is not ndarray:
             zs = array(zs)
 
         if T is not None:
@@ -273,11 +269,14 @@ class CEOSPhase(IdealGasDeparturePhase):
         else:
             raise ValueError("Two of T, P, or V are needed")
         new.eos_class, new.eos_kwargs = self.eos_class, self.eos_kwargs
-
         new.HeatCapacityGases, new._Cpgs_data, new.Cpgs_poly_fit = self.HeatCapacityGases, self._Cpgs_data, self.Cpgs_poly_fit
-        new.composition_independent, new.scalar = self.composition_independent, self.scalar
+        new.composition_independent, new.vectorized = self.composition_independent, self.vectorized
         new.Hfs, new.Gfs, new.Sfs = self.Hfs, self.Gfs, self.Sfs
-
+        new.T = T
+        new.P = P
+        new.zs = zs
+        if new.composition_independent:
+            new.force_phase = 'g'
         try:
             new.N = self.N
         except:
@@ -304,10 +303,10 @@ class CEOSPhase(IdealGasDeparturePhase):
         # Could save time by allowing T, P as an argument, and getting a new eos_mix at that
         N = self.N
         eos_mix = self.eos_mix
-        if self.scalar:
-            a_alpha_j_rows, vec0, lnphis = [0.0]*N, [0.0]*N, [0.0]*N
-        else:
+        if self.vectorized:
             a_alpha_j_rows, vec0, lnphis = zeros(N), zeros(N), zeros(N)
+        else:
+            a_alpha_j_rows, vec0, lnphis = [0.0]*N, [0.0]*N, [0.0]*N
         l, g = (self.is_liquid, self.is_gas) #if not most_stable else (True, True)
         if eos_mix.translated:
             return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, l, g,
@@ -325,10 +324,10 @@ class CEOSPhase(IdealGasDeparturePhase):
     def fugacities_at_zs(self, zs, most_stable=False):
         P = self.P
         lnphis = lnphis_direct(zs, *self.lnphis_args(most_stable))
-        if self.scalar:
-            return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
-        else:
+        if self.vectorized:
             return trunc_exp_numpy(lnphis)*P*zs
+        else:
+            return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
 
     def T_max_at_V(self, V):
         T_max = self.eos_mix.T_max_at_V(V)
@@ -562,10 +561,10 @@ class CEOSPhase(IdealGasDeparturePhase):
         P = self.P
         zs = self.zs
         lnphis = self.lnphis_lowest_Gibbs()
-        if self.scalar:
-            return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
-        else:
+        if self.vectorized:
             return trunc_exp_numpy(lnphis)*P*zs
+        else:
+            return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
 
     def V_iter(self, force=False):
         # Can be some severe issues in the very low pressure/temperature range
@@ -645,7 +644,7 @@ class CEOSGas(CEOSPhase):
             return self._phi_pures
         except:
             pass
-        phis_pure = [0.0]*self.N  if self.scalar else zeros(self.N)
+        phis_pure = zeros(self.N) if self.vectorized else [0.0]*self.N
         for i, o in enumerate(self.eos_mix.pures()):
             try:
                 phis_pure[i] = o.phi_g
@@ -932,7 +931,7 @@ class CEOSLiquid(CEOSPhase):
             return self._phi_pures
         except:
             pass
-        phis_pure = [0.0]*self.N  if self.scalar else zeros(self.N)
+        phis_pure = zeros(self.N) if self.vectorized else [0.0]*self.N
         for i, o in enumerate(self.eos_mix.pures()):
             try:
                 phis_pure[i] = (o.phi_l)
