@@ -222,7 +222,7 @@ class Flash:
         '''
         if zs is None:
             if self.N == 1:
-                zs = [1.0] if self.scalar else ones(1)
+                zs = ones(1) if self.vectorized else [1.0]
             else:
                 raise ValueError("Composition missing for flash")
         constants, correlations = self.constants, self.correlations
@@ -727,7 +727,7 @@ class Flash:
             spec_iters.append(SFs)
 
         do_props = props is not None
-        scalar_props = isinstance(props, str)
+        vectorized_props = isinstance(props, str)
 
         calc_props = []
         for n0, spec0 in enumerate(spec_iters[0]):
@@ -746,8 +746,8 @@ class Flash:
                 if store:
                     row_flashes.append(state)
                 if do_props:
-                    if scalar_props:
-                        state_props = state.value(props)if state is not None else None
+                    if vectorized_props:
+                        state_props = state.value(props) if state is not None else None
                     else:
                         state_props = [state.value(s) for s in props] if state is not None else [None for s in props]
 
@@ -769,11 +769,11 @@ class Flash:
     def _finish_initialization_base(self):
         self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
         self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
-        scalar = True
-        scalar_statuses = {i.scalar for i in self.phases}
-        if len(scalar_statuses) > 1:
+        vectorized = False
+        vectorized_statuses = {i.vectorized for i in self.phases}
+        if len(vectorized_statuses) > 1:
             raise ValueError("Can only perform flashes with all phases in a numpy basis or all phases in a pure Python basis")
-        self.scalar = scalar_statuses.pop()
+        self.vectorized = vectorized_statuses.pop()
 
         self.supports_lnphis_args = all(p.supports_lnphis_args for p in self.phases)
 
