@@ -5940,10 +5940,10 @@ class Phase:
         '''
         rho = self.rho_gas()
         zs = self.zs
-        if self.scalar:
-            concentrations = [rho*zi for zi in zs]
-        else:
+        if self.vectorized:
             concentrations = rho*zs
+        else:
+            concentrations = [rho*zi for zi in zs]
         return concentrations
 
     def concentrations_gas_normal(self):
@@ -5961,10 +5961,10 @@ class Phase:
         '''
         rho = self.rho_gas_normal()
         zs = self.zs
-        if self.scalar:
-            concentrations = [rho*zi for zi in zs]
-        else:
+        if self.vectorized:
             concentrations = rho*zs
+        else:
+            concentrations = [rho*zi for zi in zs]
         return concentrations
 
     def concentrations_gas_standard(self):
@@ -5982,10 +5982,10 @@ class Phase:
         '''
         rho = self.rho_gas_standard()
         zs = self.zs
-        if self.scalar:
-            concentrations = [rho*zi for zi in zs]
-        else:
+        if self.vectorized:
             concentrations = rho*zs
+        else:
+            concentrations = [rho*zi for zi in zs]
         return concentrations
 
     def concentrations_mass(self):
