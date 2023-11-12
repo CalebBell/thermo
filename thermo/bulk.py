@@ -31,7 +31,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 Bulk Class
 ==========
 .. autoclass:: Bulk
-    :members: beta, betas_mass, betas_volume, k, mu, sigma, MW, V, V_iter, Cp, H, S,
+    :members: beta, betas_mass, betas_volume, beta_volume_liquid_ref, k, mu, sigma, MW, V, V_iter, Cp, H, S,
               dG_dT, dG_dP, dU_dT, dU_dP, dA_dT, dA_dP,
               H_reactive, S_reactive, dP_dT_frozen, dP_dV_frozen,
               d2P_dT2_frozen, d2P_dV2_frozen, d2P_dTdV_frozen,
@@ -73,7 +73,7 @@ Bulk Settings Class
 
 __all__ = ['Bulk', 'BulkSettings', 'default_settings']
 
-from chemicals.utils import Joule_Thomson, isobaric_expansion, isothermal_compressibility, object_data, speed_of_sound
+from chemicals.utils import Joule_Thomson, isobaric_expansion, isothermal_compressibility, object_data, speed_of_sound, hash_any_primitive
 from fluids.constants import R, atm
 from fluids.numerics import exp, log, sqrt
 from fluids.two_phase_voidage import gas_liquid_viscosity
@@ -368,10 +368,86 @@ class BulkSettings:
 
     __full_path__ = f"{__module__}.{__qualname__}"
 
+    settings = ('dP_dT', 'dP_dV', 'd2P_dV2', 'd2P_dT2', 'd2P_dTdV', 'mu_LL', 'mu_LL_power_exponent',
+                'mu_VL', 'mu_VL_power_exponent', 'k_LL', 'k_LL_power_exponent', 'k_VL', 'k_VL_power_exponent',
+                'sigma_LL', 'sigma_LL_power_exponent', 'T_liquid_volume_ref', 'T_normal', 'P_normal', 'T_standard',
+                'P_standard', 'T_gas_ref', 'P_gas_ref', 'speed_of_sound', 'kappa', 'isobaric_expansion',
+                'Joule_Thomson', 'VL_ID', 'VL_ID_settings', 'S_ID', 'S_ID_settings', 'solid_sort_method',
+                'liquid_sort_method', 'liquid_sort_cmps', 'solid_sort_cmps', 'liquid_sort_cmps_neg', 'solid_sort_cmps_neg',
+                'liquid_sort_prop', 'solid_sort_prop', 'phase_sort_higher_first', 'water_sort', 'equilibrium_perturbation')
+
     def as_json(self):
         d = object_data(self)
         return d
         # return self.__dict__.copy()
+
+    def __repr__(self):
+        r'''Method to create a string representation of the phase object, with
+        the goal of making it easy to obtain standalone code which reproduces
+        the current state of the phase. This is extremely helpful in creating
+        new test cases.
+
+        Returns
+        -------
+        recreation : str
+            String which is valid Python and recreates the current state of
+            the object if ran, [-]
+
+        '''
+        eos_kwargs = str(self.eos_kwargs).replace("'", '"')
+        try:
+            Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
+        except:
+            Cpgs = ''
+        base = f'{self.__class__.__name__}(eos_class={self.eos_class.__name__}, eos_kwargs={eos_kwargs}, HeatCapacityGases=[{Cpgs}], '
+        for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
+            if hasattr(self, s) and getattr(self, s) is not None:
+                base += f'{s}={getattr(self, s)}, '
+        if base[-2:] == ', ':
+            base = base[:-2]
+        base += ')'
+        return base
+
+    def __repr__(self):
+        r'''Method to create a string representation of the BulkSettings object, with
+        the goal of making it easy to obtain standalone code which reproduces
+        the current state of the phase. This is extremely helpful in creating
+        new test cases.
+
+        Returns
+        -------
+        recreation : str
+            String which is valid Python and recreates the current state of
+            the object if ran, [-]
+
+        '''
+        base = f'{self.__class__.__name__}('
+        for s in self.settings:
+            if hasattr(self, s) and getattr(self, s) is not None:
+                val = getattr(self, s)
+                if type(val) is str:
+                    val = f"'{val}'"
+                base += f'{s}={val}, '
+        if base[-2:] == ', ':
+            base = base[:-2]
+        base += ')'
+        return base
+
+    def __eq__(self, other):
+        return self.__hash__() == hash(other)
+
+    def __hash__(self):
+        r'''Method to calculate and return a hash representing the exact state
+        of the object.
+
+        Returns
+        -------
+        hash : int
+            Hash of the object, [-]
+        '''
+        d = object_data(self)
+        ans = hash_any_primitive((self.__class__.__name__, d))
+        return ans
 
     def __init__(self,
                  dP_dT=MOLE_WEIGHTED, dP_dV=MOLE_WEIGHTED,
@@ -610,6 +686,34 @@ class Bulk(Phase):
     @property
     def beta_volume(self):
         return sum(self.betas_volume)
+
+    @property
+    def betas_volume_liquid_ref(self):
+        r'''Method to calculate and return the standard liquid volume fraction of all of the
+        phases in the bulk.
+
+        Returns
+        -------
+        betas_volume_liquid_ref : list[float]
+            Standard liquid volume phase fractions of all the phases in the bulk, ordered
+            vapor, liquid, then solid , [-]
+
+        Notes
+        -----
+        '''
+        betas = self.phase_fractions
+        phase_iter = range(len(betas))
+        Vs_phases = [i.V_liquid_ref() for i in self.phases]
+
+        tot = 0.0
+        for i in phase_iter:
+            tot += Vs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        return [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+
+    @property
+    def beta_volume_liquid_ref(self):
+        return sum(self.betas_volume_liquid_ref)
 
     def _property_mixing_rule(self, method, exponent, mix_obj, attr):
         if method == AS_ONE_LIQUID:

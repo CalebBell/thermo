@@ -48,6 +48,7 @@ from thermo.vapor_pressure import (
     VDI_TABULAR,
     WAGNER_MCGARRY,
     WAGNER_POLING,
+    LANDOLT
 )
 
 
@@ -92,6 +93,7 @@ def test_VaporPressure_ethanol():
                      WAGNER_POLING: 11590.408779316374,
                      ANTOINE_POLING: 11593.661615921257,
                      DIPPR_PERRY_8E: 11659.154222044575,
+                     LANDOLT: 11366.66757231785,
                      VDI_PPDS: 11698.02742876088,
                      BOILING_CRITICAL: 14088.453409816764,
                      LEE_KESLER_PSAT: 11350.156640503357,
@@ -107,7 +109,7 @@ def test_VaporPressure_ethanol():
         EtOH.method = i
         Psat_calcs[i] = EtOH.T_dependent_property(T)
         Tmin, Tmax = EtOH.T_limits[i]
-        if i not in (ANTOINE_WEBBOOK,):
+        if i not in (ANTOINE_WEBBOOK, LANDOLT):
             assert Tmin < T < Tmax
 
     for k, v in Psats_expected.items():
@@ -133,7 +135,7 @@ def test_VaporPressure_ethanol():
 @pytest.mark.meta_T_dept
 def test_VaporPressure_extended_poling():
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
-    a = VaporPressure(CASRN='589-81-1')
+    a = VaporPressure(CASRN='589-81-1', extrapolation="AntoineAB|DIPPR101_ABC")
 
     Psat_calcs = []
     for i in list(a.all_methods):
@@ -141,7 +143,7 @@ def test_VaporPressure_extended_poling():
         Psat_calcs.append(a.T_dependent_property(410))
 
 
-    Psat_exp = [162944.82134710113, 162870.44794192078, 170508.47471278594, 162865.5380455795]
+    Psat_exp = [162944.82134710113, 162870.44794192078, 170508.47471278594, 162865.5380455795, 162865.44152809016]
     assert_close1d(sorted(Psat_calcs), sorted(Psat_exp))
 
     s = a.as_json()
@@ -868,3 +870,72 @@ def test_vapor_pressure_element_metals():
 def test_accurate_vapor_pressure_H2O2():
     obj = VaporPressure(CASRN="7722-84-1")
     assert_close(obj(160+273.15), 124484.67628951524, rtol=0.005)
+
+@pytest.mark.meta_T_dept
+def test_sublimation_pressure_iapws():
+    obj = SublimationPressure(CASRN="7732-18-5", Tt=273.16, Pt=611.654771008, Hsub_t=51065.16012541218, extrapolation="linear", method="IAPWS")
+    assert_close(obj(240), 27.26684427485674, rtol=1e-13)
+    assert obj.T_limits['IAPWS'][0] == 50
+    assert obj.T_limits['IAPWS'][1] == 273.16
+
+@pytest.mark.meta_T_dept
+def test_sublimation_pressure_alcock():
+    obj = SublimationPressure(CASRN="7440-62-2", Tt=2183.15, Pt=3.008394450145412, Hsub_t=190913.3611650746, extrapolation="linear", method="ALCOCK_ELEMENTS")
+    assert_close(obj(1018), 2.7958216156724275e-14, rtol=1e-12)
+
+@pytest.mark.meta_T_dept
+def test_sublimation_pressure_custom_fit():
+    kwargs = {"DIPPR101_parameters": {
+        "New Fit": {
+          "A": 166.01402981804137,
+          "B": -6239.149610239025,
+          "C": -23.9237938633523,
+          "D": 0.00004603892300585473,
+          "E": 2.1411178524601593,
+          "Tmax": 216.56,
+          "Tmin": 194.225
+        }
+      }}
+    # first custom fit for sublimation data
+    obj = SublimationPressure(**kwargs)
+    assert_close(obj(205),227135.9050298131)
+
+@pytest.mark.meta_T_dept
+def test_sublimation_pressure_landolt():
+    # methane
+    obj = SublimationPressure(CASRN="74-82-8", Tt=90.6941, Pt=11696.0641152, Hsub_t=9669.32184157482, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(80), 2113.6314607955483, rtol=1e-12)
+
+    # benzene
+    obj = SublimationPressure(CASRN="71-43-2", Tt=278.674, Pt=4784.60513165, Hsub_t=44400.0, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(270), 2573.7097987788748)
+
+
+    # 2-bromonapthalene
+    obj = SublimationPressure(CASRN="580-13-2", Tt=328.15, Pt=14.95627484078953, Hsub_t=75656.084, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(280), 0.5126876513974122)
+
+    # Dinitrogen oxide (Nitrous oxide)
+    obj = SublimationPressure(CASRN="10024-97-2", Tt=182.33, Pt=87837.3103401, Hsub_t=23128.43978202224, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(150), 2945.2163686099707)
+
+    # 9-Methylcarbazole
+    obj = SublimationPressure(CASRN="1484-12-4", Tt=362.485, Pt=7.4604138453786435, Hsub_t=95500.0, extrapolation="linear", method="LANDOLT")
+    assert_close(obj(320), 0.1177826093493645, rtol=1e-12)
+
+@pytest.mark.meta_T_dept
+def test_vapor_pressure_landolt():
+    # Volume A
+    obj = VaporPressure(CASRN="7647-01-0", Tb=188.172607605, Tc=324.68, Pc=8313500.0, omega=0.129,
+                        extrapolation="AntoineAB|DIPPR101_ABC", method="LANDOLT")
+    assert_close(obj(180), 62353.92510216071, rtol=1e-12)
+
+    # Volume B
+    obj = VaporPressure(CASRN="143-08-8", Tb=486.85, Tc=670.7, Pc=2528000.0, omega=0.6177, 
+                        extrapolation="AntoineAB|DIPPR101_ABC", method="LANDOLT")
+    assert_close(obj(400), 4925.021091045397, rtol=1e-12)
+
+    # Volume C
+    obj = VaporPressure(CASRN="62-53-3", Tb=457.25, Tc=705.0, Pc=5630000.0, omega=0.382,
+                        extrapolation="AntoineAB|DIPPR101_ABC", method="LANDOLT")
+    assert_close(obj(400), 17243.29241464641, rtol=1e-12)

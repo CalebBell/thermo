@@ -22,6 +22,7 @@ SOFTWARE.
 
 import json
 import pickle
+import sqlite3
 import types
 from math import *
 
@@ -1087,3 +1088,27 @@ def test_UNIFAC_group_assignment_DDBST():
     assert {} == UNIFAC_group_assignment_DDBST('50-37-3', 'PSRK')
     assert {} == UNIFAC_group_assignment_DDBST('50-37-3', 'UNIFAC')
     assert UNIFAC_group_assignment_DDBST('50-37-3', 'MODIFIED_UNIFAC') == {1: 2, 8: 1, 9: 3, 10: 3, 34: 1, 38: 1, 78: 2, 79: 2, 103: 1}
+
+
+def test_unifac_sql_connection_check_threading_false():
+    import threading
+    # given is the module interface
+    from thermo import unifac
+    # and the interface has init the database connection
+    unifac.init_ddbst_UNIFAC_db()
+    assert unifac.UNIFAC_DDBST_ASSIGNMENT_CURSOR is not None
+    # when user querying UNIFAC from different threads
+
+    def worker(raised_exception: threading.Event):
+        try:
+            UNIFAC_group_assignment_DDBST('50-14-6', 'UNIFAC')
+        except Exception:
+            raised_exception.set()
+
+    raised = threading.Event()
+    t = threading.Thread(target=worker, args=(raised,))
+    t.start()
+    t.join()
+    # then no exception is raised on any thread
+    assert not raised.is_set()
+

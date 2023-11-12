@@ -1116,7 +1116,8 @@ class VolumeLiquidMixture(MixtureProperty):
     pure_references = ('VolumeLiquids',)
     pure_reference_types = (VolumeLiquid, )
 
-    custom_args = ('MWs', 'Tcs', 'Pcs', 'Vcs', 'Zcs', 'omegas')
+    pure_constants = ('MWs', 'Tcs', 'Pcs', 'Vcs', 'Zcs', 'omegas')
+    custom_args = pure_constants
 
     def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[],
                  CASs=[], VolumeLiquids=[], **kwargs):
@@ -1194,10 +1195,6 @@ class VolumeLiquidMixture(MixtureProperty):
                 self.index_w = self.CASs.index('7732-18-5')
 
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a liquid mixture at
@@ -1252,40 +1249,16 @@ class VolumeLiquidMixture(MixtureProperty):
             return Rackett_mixture(T, zs, self.MWs, self.Tcs, self.Pcs, self.Zcs)
         elif method == RACKETT_PARAMETERS:
             return Rackett_mixture(T, zs, self.MWs, self.Tcs, self.Pcs, self.Z_RAs)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if LALIBERTE in self.all_methods:
             # If everything is an electrolyte, accept only it as a method
             if method in self.all_methods:
                 return method == LALIBERTE
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 #PR = 'PR'
@@ -1652,6 +1625,7 @@ class VolumeGasMixture(MixtureProperty):
     pure_references = ('VolumeGases',)
     pure_reference_types = (VolumeGas, )
 
+    pure_constants = ('MWs', )
     custom_args = ('MWs', 'eos')
 
     def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[], **kwargs):
@@ -1677,10 +1651,6 @@ class VolumeGasMixture(MixtureProperty):
         if self.eos:
             methods.append(EOS)
         self.all_methods = all_methods =  set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a gas mixture at
@@ -1723,36 +1693,12 @@ class VolumeGasMixture(MixtureProperty):
         elif method == EOS:
             self.eos[0] = self.eos[0].to_TP_zs(T=T, P=P, zs=zs)
             return self.eos[0].V_g
-        else:
-            raise ValueError('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 
@@ -1978,7 +1924,8 @@ class VolumeSolidMixture(MixtureProperty):
     pure_references = ('VolumeSolids',)
     pure_reference_types = (VolumeSolid, )
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
     def __init__(self, CASs=[], VolumeSolids=[], MWs=[], **kwargs):
         self.CASs = CASs
@@ -2003,10 +1950,6 @@ class VolumeSolidMixture(MixtureProperty):
         '''
         methods = [LINEAR]
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate molar volume of a solid mixture at
@@ -2035,36 +1978,9 @@ class VolumeSolidMixture(MixtureProperty):
             Molar volume of the solid mixture at the given conditions,
             [m^3/mol]
         '''
-        if method == LINEAR:
-            Vms = [i(T, P) for i in self.VolumeSolids]
-            return mixing_simple(zs, Vms)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)

@@ -149,7 +149,7 @@ from thermo.coolprop import (
     has_CoolProp,
 )
 from thermo.electrochem import Laliberte_heat_capacity
-from thermo.utils import COOLPROP, HEOS_FIT, LINEAR, VDI_TABULAR, MixtureProperty, TDependentProperty
+from thermo.utils import COOLPROP, HEOS_FIT, LINEAR, UNARY, JANAF_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
 
 TRCIG = 'TRCIG'
 POLING_POLY = 'POLING_POLY'
@@ -640,7 +640,7 @@ DADGOSTAR_SHAW = 'DADGOSTAR_SHAW'
 heat_capacity_liquid_methods = [HEOS_FIT, ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      WEBBOOK_SHOMATE, VDI_TABULAR, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
+                      WEBBOOK_SHOMATE, VDI_TABULAR, UNARY, ROWLINSON_POLING, ROWLINSON_BONDI, COOLPROP,
                       DADGOSTAR_SHAW, POLING_CONST, CRCSTD]
 """Holds all methods available for the :obj:`HeatCapacityLiquid class`, for use in
 iterating over them."""
@@ -808,7 +808,7 @@ class HeatCapacityLiquid(TDependentProperty):
     ranked_methods = [HEOS_FIT, ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
-                      WEBBOOK_SHOMATE, miscdata.JANAF, VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
+                      WEBBOOK_SHOMATE, miscdata.JANAF, UNARY, VDI_TABULAR, COOLPROP, DADGOSTAR_SHAW, ROWLINSON_POLING,
                       ROWLINSON_BONDI,
                       POLING_CONST, CRCSTD]
     """Default rankings of the available methods."""
@@ -1175,10 +1175,9 @@ class HeatCapacityLiquid(TDependentProperty):
 
 LASTOVKA_S = 'LASTOVKA_S'
 PERRY151 = """PERRY151"""
-heat_capacity_solid_methods = [WEBBOOK_SHOMATE, PERRY151, CRCSTD, LASTOVKA_S]
+heat_capacity_solid_methods = [JANAF_FIT, WEBBOOK_SHOMATE, PERRY151, CRCSTD, LASTOVKA_S]
 """Holds all methods available for the :obj:`HeatCapacitySolid` class, for use in
 iterating over them."""
-
 
 class HeatCapacitySolid(TDependentProperty):
     r'''Class for dealing with solid heat capacity as a function of temperature.
@@ -1269,7 +1268,7 @@ class HeatCapacitySolid(TDependentProperty):
     property_max = 1E4
     """Maximum value of Heat capacity; arbitrarily set."""
 
-    ranked_methods = [WEBBOOK_SHOMATE, miscdata.JANAF, PERRY151, CRCSTD, LASTOVKA_S]
+    ranked_methods = [WEBBOOK_SHOMATE, JANAF_FIT, miscdata.JANAF, UNARY, PERRY151, CRCSTD, LASTOVKA_S]
     """Default rankings of the available methods."""
 
     _fit_force_n = {}
@@ -1553,30 +1552,14 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     pure_references = ('HeatCapacityLiquids',)
     pure_reference_types = (HeatCapacityLiquid,)
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
-    def __init__(self, MWs=[], CASs=[], HeatCapacityLiquids=[]):
+    def __init__(self, MWs=[], CASs=[], HeatCapacityLiquids=[], **kwargs):
         self.MWs = MWs
         self.CASs = CASs
         self.HeatCapacityLiquids = HeatCapacityLiquids
-
-        self.Tmin = None
-        """Minimum temperature at which no method can calculate the
-        heat capacity under."""
-        self.Tmax = None
-        """Maximum temperature at which no method can calculate the
-        heat capacity above."""
-
-        self.sorted_valid_methods = []
-        """sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.user_methods = []
-        """user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.all_methods = set()
-        """Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`."""
-        self.load_all_methods()
+        super().__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1626,10 +1609,6 @@ class HeatCapacityLiquidMixture(MixtureProperty):
                 self.wCASs = wCASs
                 self.index_w = self.CASs.index('7732-18-5')
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a liquid mixture at
@@ -1658,45 +1637,18 @@ class HeatCapacityLiquidMixture(MixtureProperty):
             Molar heat capacity of the liquid mixture at the given conditions,
             [J/mol]
         '''
-        if method == LINEAR:
-            Cplms = [i(T) for i in self.HeatCapacityLiquids]
-            return mixing_simple(zs, Cplms)
-        elif method == LALIBERTE:
+        if method == LALIBERTE:
             ws = list(ws)
             ws.pop(self.index_w)
             Cpl = Laliberte_heat_capacity(T, ws, self.wCASs)
             MW = mixing_simple(zs, self.MWs)
             return property_mass_to_molar(Cpl, MW)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 
@@ -1734,30 +1686,14 @@ class HeatCapacitySolidMixture(MixtureProperty):
     pure_references = ('HeatCapacitySolids',)
     pure_reference_types = (HeatCapacitySolid,)
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
-    def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[]):
+    def __init__(self, CASs=[], HeatCapacitySolids=[], MWs=[], **kwargs):
         self.CASs = CASs
         self.HeatCapacitySolids = HeatCapacitySolids
         self.MWs = MWs
-
-        self.Tmin = None
-        """Minimum temperature at which no method can calculate the
-        heat capacity under."""
-        self.Tmax = None
-        """Maximum temperature at which no method can calculate the
-        heat capacity above."""
-
-        self.sorted_valid_methods = []
-        """sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.user_methods = []
-        """user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.all_methods = set()
-        """Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`."""
-        self.load_all_methods()
+        super().__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1773,10 +1709,6 @@ class HeatCapacitySolidMixture(MixtureProperty):
         '''
         methods = [LINEAR]
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a solid mixture at
@@ -1804,39 +1736,12 @@ class HeatCapacitySolidMixture(MixtureProperty):
         Cpsm : float
             Molar heat capacity of the solid mixture at the given conditions, [J/mol]
         '''
-        if method == LINEAR:
-            Cpsms = [i(T) for i in self.HeatCapacitySolids]
-            return mixing_simple(zs, Cpsms)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 class HeatCapacityGasMixture(MixtureProperty):
@@ -1874,30 +1779,14 @@ class HeatCapacityGasMixture(MixtureProperty):
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
-    def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[]):
+    def __init__(self, CASs=[], HeatCapacityGases=[], MWs=[], **kwargs):
         self.CASs = CASs
         self.HeatCapacityGases = HeatCapacityGases
         self.MWs = MWs
-
-        self.Tmin = None
-        """Minimum temperature at which no method can calculate the
-        heat capacity under."""
-        self.Tmax = None
-        """Maximum temperature at which no method can calculate the
-        heat capacity above."""
-
-        self.sorted_valid_methods = []
-        """sorted_valid_methods, list: Stored methods which were found valid
-        at a specific temperature; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.user_methods = []
-        """user_methods, list: Stored methods which were specified by the user
-        in a ranked order of preference; set by :obj:`mixture_property <thermo.utils.MixtureProperty.mixture_property>`."""
-        self.all_methods = set()
-        """Set of all methods available for a given set of information;
-        filled by :obj:`load_all_methods`."""
-        self.load_all_methods()
+        super().__init__(**kwargs)
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which
@@ -1913,10 +1802,6 @@ class HeatCapacityGasMixture(MixtureProperty):
         '''
         methods = [LINEAR]
         self.all_methods = all_methods = set(methods)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a gas mixture at
@@ -1945,37 +1830,10 @@ class HeatCapacityGasMixture(MixtureProperty):
             Molar heat capacity of the gas mixture at the given conditions,
             [J/mol]
         '''
-        if method == LINEAR:
-            Cpgms = [i(T) for i in self.HeatCapacityGases]
-            return mixing_simple(zs, Cpgms)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
-        method : str
-            Method name to use
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
         if method in self.all_methods:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 

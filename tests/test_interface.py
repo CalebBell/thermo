@@ -24,7 +24,7 @@ import json
 
 import pytest
 from chemicals.dippr import EQ106
-from chemicals.utils import property_mass_to_molar, zs_to_ws
+from chemicals.utils import property_mass_to_molar, zs_to_ws, ws_to_zs
 from fluids.numerics import assert_close, assert_close1d, derivative, linspace
 
 from thermo.interface import *
@@ -310,3 +310,22 @@ def test_SurfaceTensionMixture():
     assert hash(obj) == hash0
     assert hash(obj2) == hash0
 
+
+def test_SurfaceTensionMixture_RK():
+    rk_struct = [[[[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]], [[-0.001524469890834797, 1.0054473481826371], [0.011306977309368058, -3.260062182048661], [0.015341200351987746, -4.484565752157498], [-0.030368567453463967, 8.99609823333603]]], [[[-0.001524469890834797, 1.0054473481826371], [-0.011306977309368058, 3.260062182048661], [0.015341200351987746, -4.484565752157498], [0.030368567453463967, -8.99609823333603]], [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]]]
+
+    redlick_kister_parameters={'fit test': {'coeffs': rk_struct, 'N_terms': 4, 'N_T': 2}}
+
+    SurfaceTensions = [SurfaceTension(CASRN="7732-18-5", MW=18.01528, Tb=373.124295848, Tc=647.096, Pc=22064000.0, Vc=5.59480372671e-05, Zc=0.22943845208106295, omega=0.3443, StielPolar=0.023504366573307456, Hvap_Tb=2256470.315159003, extrapolation="DIPPR106_AB", method="REFPROP_FIT", exp_stable_polynomial_ln_tau_parameters={'REFPROP_FIT': {'Tc': 647.096, 'coeffs': [-0.013397167543380295, 0.09018370971898611, -0.2520912562903041, 0.3433557312810748, -0.13152273913480572, -0.29531952656781263, 0.5090941125808105, -0.3066181788894154, -0.028094295006648968, 0.16299091616169084, -0.10021702497821923, 0.01293602515363503, 0.013931363949354863, -0.009681075363666861, -0.00037868681772088844, -0.0026032409621614305, -0.005187181836159808, -0.008505280528265961, -0.015031573223813882, -0.027341171777993004, -0.049718571565094134, -0.08358188908174445, -0.11579008507191359, 2.3236782516300956, -4.554811076898462], 'Tmax': 638.9178163265306, 'Tmin': 251.165}}),
+                    SurfaceTension(CASRN="7722-84-1", MW=34.01468, Tb=423.35, Tc=728.0, Pc=22000000.0, Vc=7.77e-05, Zc=0.28240874135993943, omega=0.3582, StielPolar=-0.03984834320500852, Hvap_Tb=1336355.5708140612, extrapolation="DIPPR106_AB", method="Fit 2023", DIPPR100_parameters={'Fit 2023': {'A': 0.12117476526756533, 'B': -0.00015504951516449433, 'C': 0.0, 'D': 0.0, 'E': 0.0, 'F': 0.0, 'G': 0.0, 'Tmax': 291.34999999999997, 'Tmin': 273.34999999999997}})]
+
+    obj = SurfaceTensionMixture(MWs=[18.01528, 34.01468], Tbs=[373.124295848, 423.35], 
+                        Tcs=[647.096, 728.0], CASs=['7732-18-5', '7722-84-1'], 
+                        correct_pressure_pure=False, 
+                        SurfaceTensions=SurfaceTensions,
+                        redlick_kister_parameters=redlick_kister_parameters)
+    assert obj.method == 'fit test'
+    ws = [1-0.8631, 0.8631]
+    MWs = [18.01528, 34.01468]
+    value = obj(273.15, 1e5, ws_to_zs(ws, MWs), ws)
+    assert_close(value, 0.07840690708312911, rtol=1e-13)

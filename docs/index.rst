@@ -25,7 +25,7 @@ Installation
    :target: https://pypi.python.org/pypi/thermo
    :alt: Version_status
 .. image:: http://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat
-   :target: https://thermo.readthedocs.io/en/latest/
+   :target: https://thermo.readthedocs.io
    :alt: Documentation
 .. image:: http://img.shields.io/badge/license-MIT-blue.svg?style=flat
    :target: https://github.com/CalebBell/thermo/blob/master/LICENSE.txt

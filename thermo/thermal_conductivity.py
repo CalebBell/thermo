@@ -98,6 +98,18 @@ Mixture Gas Thermal Conductivity
 
 .. autodata:: thermal_conductivity_gas_mixture_methods
 
+Pure Solid Thermal Conductivity
+=============================
+.. autoclass:: ThermalConductivitySolid
+    :members: calculate
+              name, property_max, property_min,
+              units, ranked_methods
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
+
+.. autodata:: thermal_conductivity_solid_methods
+
 '''
 
 
@@ -112,7 +124,8 @@ __all__ = [
 'GHARAGHEIZI_L', 'NICOLA', 'NICOLA_ORIGINAL', 'SATO_RIEDEL', 'SHEFFY_JOHNSON',
 'BAHADORI_L', 'LAKSHMI_PRASAD', 'MISSENARD', 'DIPPR_9G',
 
-           ]
+'ThermalConductivitySolid',
+]
 
 
 from chemicals import miscdata, thermal_conductivity
@@ -150,7 +163,7 @@ from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import thermal_conductivity_Magomedov
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TPDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, HO1972, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TDependentProperty, TPDependentProperty
 from thermo.viscosity import ViscosityGas
 from thermo.volume import VolumeGas
 
@@ -673,7 +686,8 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     pure_references = ('ThermalConductivityLiquids',)
     pure_reference_types = (ThermalConductivityLiquid,)
 
-    custom_args = ('MWs', )
+    pure_constants = ('MWs', )
+    custom_args = pure_constants
 
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
                  **kwargs):
@@ -711,10 +725,6 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate thermal conductivity of a liquid mixture at
@@ -747,25 +757,13 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
             ws = list(ws)
             ws.pop(self.index_w)
             return thermal_conductivity_Magomedov(T, P, ws, self.wCASs, k_w)
-
-        if self._correct_pressure_pure:
-            ks = []
-            for obj in self.ThermalConductivityLiquids:
-                k = obj.TP_dependent_property(T, P)
-                if k is None:
-                    k = obj.T_dependent_property(T)
-                ks.append(k)
-        else:
-            ks = [i.T_dependent_property(T) for i in self.ThermalConductivityLiquids]
-
-        if method == LINEAR:
-            return mixing_simple(zs, ks)
-        elif method == DIPPR_9H:
+        if method == DIPPR_9H:
+            ks = self.calculate_pures_corrected(T, P, fallback=True)
             return DIPPR9H(ws, ks)
         elif method == FILIPPOV:
+            ks = self.calculate_pures_corrected(T, P, fallback=True)
             return Filippov(ws, ks)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
         r'''Method to test the validity of a specified method for the given
@@ -796,8 +794,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
                 return method == MAGOMEDOV
         if method in [LINEAR, DIPPR_9H, FILIPPOV]:
             return True
-        else:
-            raise Exception('Method not valid')
+        return super().test_method_validity(T, P, zs, ws, method)
 
 
 GHARAGHEIZI_G = 'GHARAGHEIZI_G'
@@ -1331,10 +1328,11 @@ class ThermalConductivityGasMixture(MixtureProperty):
 
     ranked_methods = [LINDSAY_BROMLEY, LINEAR]
 
-    pure_references = ('ViscosityGases', 'ThermalConductivityGases')
-    pure_reference_types = (ViscosityGas, ThermalConductivityGas)
+    pure_references = ('ThermalConductivityGases', 'ViscosityGases', )
+    pure_reference_types = (ThermalConductivityGas, ViscosityGas)
 
-    custom_args = ('MWs', 'Tbs', )
+    pure_constants = ('MWs', 'Tbs', )
+    custom_args = pure_constants
 
     def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[],
                  ViscosityGases=[],  **kwargs):
@@ -1370,10 +1368,6 @@ class ThermalConductivityGasMixture(MixtureProperty):
             self.Tmin = max(Tmins)
         if Tmaxs:
             self.Tmax = max(Tmaxs)
-        for m in self.ranked_methods:
-            if m in all_methods:
-                self.method = m
-                break
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate thermal conductivity of a gas mixture at
@@ -1401,57 +1395,112 @@ class ThermalConductivityGasMixture(MixtureProperty):
         kg : float
             Thermal conductivity of gas mixture, [W/m/K]
         '''
-        if self._correct_pressure_pure:
-            ks = []
-            for obj in self.ThermalConductivityGases:
-                k = obj.TP_dependent_property(T, P)
-                if k is None:
-                    k = obj.T_dependent_property(T)
-                ks.append(k)
-        else:
-            ks = [i.T_dependent_property(T) for i in self.ThermalConductivityGases]
-
-        if method == LINEAR:
-            return mixing_simple(zs, ks)
-        elif method == LINDSAY_BROMLEY:
-            if self._correct_pressure_pure:
-                mus = []
-                for obj in self.ViscosityGases:
-                    mu = obj.TP_dependent_property(T, P)
-                    if mu is None:
-                        mu = obj.T_dependent_property(T)
-                    mus.append(mu)
-            else:
-                mus = [i.T_dependent_property(T) for i in self.ViscosityGases]
+        if method == LINDSAY_BROMLEY:
+            ks = self.calculate_pures_corrected(T, P, fallback=True)
+            mus = self.calculate_pures_corrected(T, P, fallback=True, objs=self.ViscosityGases)
             return Lindsay_Bromley(T=T, ys=zs, ks=ks, mus=mus, Tbs=self.Tbs, MWs=self.MWs)
-        else:
-            raise Exception('Method not valid')
+        return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
-        conditions. No methods have implemented checks or strict ranges of
-        validity.
+        if method in [LINEAR, LINDSAY_BROMLEY]:
+            return True
+        return super().test_method_validity(T, P, zs, ws, method)
+
+
+thermal_conductivity_solid_methods = [HO1972]
+"""Holds all methods available for the :obj:`ThermalConductivitySolid` class, for use in
+iterating over them."""
+
+class ThermalConductivitySolid(TDependentProperty):
+    r'''Class for dealing with solid thermal conductivity as a function of temperature.
+
+    Parameters
+    ----------
+    CASRN : str, optional
+        The CAS number of the chemical
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
+    extrapolation : str or None
+        None to not extrapolate; see
+        :obj:`TDependentProperty <thermo.utils.TDependentProperty>`
+        for a full list of all options, [-]
+    method : str or None, optional
+        If specified, use this method by default and do not use the ranked
+        sorting; an exception is raised if this is not a valid method for the
+        provided inputs, [-]
+
+    Notes
+    -----
+    A string holding each method's name is assigned to the following variables
+    in this module, intended as the most convenient way to refer to a method.
+    To iterate over all methods, use the list stored in
+    :obj:`thermal_conductivity_solid_methods`.
+
+
+    See Also
+    --------
+    Examples
+    --------
+    >>> obj = ThermalConductivitySolid(CASRN='142-82-5')
+
+    References
+    ----------
+    '''
+    name = 'solid thermal conductivity'
+    units = 'W/m/K'
+    interpolation_T = None
+    """No interpolation transformation by default."""
+    interpolation_property = None
+    """No interpolation transformation by default."""
+    interpolation_property_inv = None
+    """No interpolation transformation by default."""
+    tabular_extrapolation_permitted = True
+    """Allow tabular extrapolation by default; a theoretical solid phase exists
+    for all chemicals at sufficiently high pressures, although few chemicals
+    could stably exist in those conditions."""
+    property_min = 0.0
+    """Mimimum valid value of solid thermal conductivity."""
+    property_max = 1e5
+    """Maximum valid value of solid thermal conductivity. Diamond 2200, carbon nanotubes maybe 6000. Copper 25000 at 7 K."""
+
+    ranked_methods = [HO1972]
+    """Default rankings of the available methods."""
+
+    custom_args = tuple()
+
+    _json_obj_by_CAS = tuple()
+
+    def __init__(self, CASRN='', extrapolation='linear', **kwargs):
+        self.CASRN = CASRN
+        super().__init__(extrapolation, **kwargs)
+
+    def load_all_methods(self, load_data):
+        methods = []
+        self.T_limits = T_limits = {}
+        self.all_methods = set()
+        CASRN = self.CASRN
+        if load_data and CASRN:
+            pass
+        self.all_methods.update(methods)
+
+    def calculate(self, T, method):
+        r'''Method to calculate thermal conductivity of a solid at temperature `T`
+        with a given method.
+
+        This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
+        for that.
 
         Parameters
         ----------
         T : float
-            Temperature at which to check method validity, [K]
-        P : float
-            Pressure at which to check method validity, [Pa]
-        zs : list[float]
-            Mole fractions of all species in the mixture, [-]
-        ws : list[float]
-            Weight fractions of all species in the mixture, [-]
+            Temperature at which to calculate thermal conductivity, [K]
         method : str
-            Method name to use
+            Name of the method to use
 
         Returns
         -------
-        validity : bool
-            Whether or not a specifid method is valid
+        ks : float
+            Thermal conductivity of the solid at T and a low pressure, [W/m/K]
         '''
-        if method in [LINEAR, LINDSAY_BROMLEY]:
-            return True
-        else:
-            raise Exception('Method not valid')
-
+        return self._base_calculate(T, method)

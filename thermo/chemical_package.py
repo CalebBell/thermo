@@ -101,7 +101,7 @@ from thermo.heat_capacity import (
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.permittivity import PermittivityLiquid
 from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
-from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityGasMixture, ThermalConductivityLiquid, ThermalConductivityLiquidMixture
+from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityGasMixture, ThermalConductivityLiquid, ThermalConductivityLiquidMixture, ThermalConductivitySolid
 from thermo.unifac import UNIFAC_RQ, UNIFAC_group_assignment_DDBST, Van_der_Waals_area, Van_der_Waals_volume
 from thermo.utils import identify_phase
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
@@ -154,7 +154,7 @@ class ChemicalConstantsPackage:
     properties = ('atom_fractions',) + non_vector_properties
     """Tuple of all properties that can be held by this object."""
 
-    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash')
+    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash', '_CAS_to_index', '_unique_atoms')
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
 
@@ -166,8 +166,7 @@ class ChemicalConstantsPackage:
                 missing.append(prop)
         return tuple(missing)
 
-    @property
-    def __dict__(self):
+    def as_dict(self):
         new = {}
         properties = self.properties
         for p in properties:
@@ -194,7 +193,7 @@ class ChemicalConstantsPackage:
         >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
         >>> string = json.dumps(constants.as_json())
         '''
-        d = self.__dict__.copy()
+        d = self.as_dict().copy()
         for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
             # keys are stored as strings and not ints
             d[k] = [{str(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
@@ -283,8 +282,8 @@ class ChemicalConstantsPackage:
             raise TypeError('Adding to a ChemicalConstantsPackage requires that the other object '
                             'also be a ChemicalConstantsPackage.')
         a = self
-        a_dict = a.__dict__
-        b_dict = b.__dict__
+        a_dict = a.as_dict()
+        b_dict = b.as_dict()
         kwargs = {}
         for k in a_dict.keys():
             kwargs[k] = a_dict[k] + b_dict[k]
@@ -376,18 +375,23 @@ class ChemicalConstantsPackage:
             is_one = len(idxs) == 1
             idx = idxs[0]
 
-        def atindexes(values):
-            if is_slice:
-                return values[idxs]
-            if is_one:
-                return [values[idx]]
-            return [values[i] for i in idxs]
-
         new = {}
-        for p in properties:
-            v = getattr(self, p)
-            if v is not None:
-                new[p] = atindexes(v)
+        if is_slice:
+            for p in properties:
+                v = getattr(self, p)
+                if v is not None:
+                    new[p] = v[idxs]
+        elif is_one:
+            for p in properties:
+                v = getattr(self, p)
+                if v is not None:
+                    new[p] = [v[idx]]
+        else:
+            for p in properties:
+                v = getattr(self, p)
+                if v is not None:
+                    new[p] = [v[i] for i in idxs]
+
         return ChemicalConstantsPackage(**new)
 
     def __repr__(self):
@@ -441,7 +445,8 @@ class ChemicalConstantsPackage:
             If no match is found for the provided identifier, this is raised
         '''
         if CAS is not None:
-            return self.CASs.index(CAS)
+            CAS_to_index = self.CAS_to_index
+            return CAS_to_index[CAS]
         elif name is not None:
             return self.names.index(name)
         elif smiles is not None:
@@ -455,6 +460,41 @@ class ChemicalConstantsPackage:
         else:
             raise ValueError("No identifier provided")
 
+    @property
+    def CAS_to_index(self):
+        r'''Dictionary of CAS: index, used for efficiently
+        looking up which index a specified CAS number is in.
+        This can save a lot of time, but does take a little more memory.
+
+        Returns
+        -------
+        CAS_to_index : dict[str: int]
+            Dictionary for CAS to index lookups, [-]
+        '''
+        try:
+            return self._CAS_to_index
+        except:
+            self._CAS_to_index = {CAS: i for i, CAS in enumerate(self.CASs)}
+            return self._CAS_to_index
+
+    @property
+    def unique_atoms(self):
+        r'''Tuple of all of the atoms in the package. Useful for iterating
+        over all the atom dictionaries.
+
+        Returns
+        -------
+        unique_atoms : tuple
+            Unique atoms, [-]
+        '''
+        try:
+            return self._unique_atoms
+        except:
+            all_atoms = set()
+            for atoms in self.atomss:
+                all_atoms.update(atoms.keys())
+            self._unique_atoms = tuple(sorted(all_atoms))
+            return self._unique_atoms
 
     @staticmethod
     def constants_from_IDs(IDs):
@@ -915,6 +955,9 @@ class ChemicalConstantsPackage:
                                                                 omega=omegas[i], Hfus=Hfus_Tms[i], **user_chemical_property_lookup(CASs[i], 'ThermalConductivityLiquid'))
                                     for i in range(N)]
 
+        ThermalConductivitySolids = [ThermalConductivitySolid(CASRN=CASs[i], **user_chemical_property_lookup(CASs[i], 'ThermalConductivitySolid'))
+                                    for i in range(N)]
+
         ThermalConductivityGases =[ThermalConductivityGas(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i],
                                                           Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i], Vmg=VolumeGases[i],
                                                           Cpgm=HeatCapacityGases[i], mug=ViscosityGases[i],
@@ -925,6 +968,7 @@ class ChemicalConstantsPackage:
                                                  HeatCapacityGases=HeatCapacityGases, HeatCapacityLiquids=HeatCapacityLiquids, HeatCapacitySolids=HeatCapacitySolids,
                                                  ViscosityGases=ViscosityGases, ViscosityLiquids=ViscosityLiquids,
                                                  ThermalConductivityGases=ThermalConductivityGases, ThermalConductivityLiquids=ThermalConductivityLiquids,
+                                                 ThermalConductivitySolids=ThermalConductivitySolids,
                                                  EnthalpyVaporizations=EnthalpyVaporizations, EnthalpySublimations=EnthalpySublimations,
                                                  SurfaceTensions=SurfaceTensions, PermittivityLiquids=PermittivityLiquids)
         return constants, properties
@@ -1333,6 +1377,7 @@ properties_to_classes = {'VaporPressures': VaporPressure,
 'ViscosityLiquids': ViscosityLiquid,
 'ViscosityGases': ViscosityGas,
 'ThermalConductivityLiquids': ThermalConductivityLiquid,
+'ThermalConductivitySolids': ThermalConductivitySolid,
 'ThermalConductivityGases': ThermalConductivityGas,
 'SurfaceTensions': SurfaceTension}
 
@@ -1385,6 +1430,8 @@ class PropertyCorrelationsPackage:
         Objects holding gas thermal conductivity data and methods, [-]
     ThermalConductivityLiquids : list[:obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`], optional
         Objects holding liquid thermal conductivity data and methods, [-]
+    ThermalConductivitySolids : list[:obj:`thermo.thermal_conductivity.ThermalConductivitySolid`], optional
+        Objects holding solid thermal conductivity data and methods, [-]
     EnthalpyVaporizations : list[:obj:`thermo.phase_change.EnthalpyVaporization`], optional
         Objects holding enthalpy of vaporization data and methods, [-]
     EnthalpySublimations : list[:obj:`thermo.phase_change.EnthalpySublimation`], optional
@@ -1444,6 +1491,7 @@ class PropertyCorrelationsPackage:
                          'EnthalpySublimations', 'SublimationPressures',
                          'PermittivityLiquids', 'ViscosityLiquids', 'ViscosityGases',
                          'ThermalConductivityLiquids', 'ThermalConductivityGases',
+                         'ThermalConductivitySolids',
                          'SurfaceTensions')
     mixture_correlations = ('VolumeGasMixture', 'VolumeLiquidMixture', 'VolumeSolidMixture',
                'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture',
@@ -1656,6 +1704,7 @@ class PropertyCorrelationsPackage:
                  HeatCapacityGases=None, HeatCapacityLiquids=None, HeatCapacitySolids=None,
                  ViscosityGases=None, ViscosityLiquids=None,
                  ThermalConductivityGases=None, ThermalConductivityLiquids=None,
+                 ThermalConductivitySolids=None,
                  EnthalpyVaporizations=None, EnthalpySublimations=None,
                  SurfaceTensions=None, PermittivityLiquids=None,
 
@@ -1754,6 +1803,8 @@ class PropertyCorrelationsPackage:
                                                                     Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                                                     omega=constants.omegas[i], Hfus=constants.Hfus_Tms[i])
                                                 for i in cmps]
+        if ThermalConductivitySolids is None and not skip_missing:
+            ThermalConductivitySolids = [ThermalConductivitySolid(CASRN=constants.CASs[i]) for i in cmps]
 
         if ThermalConductivityGases is None and not skip_missing:
             ThermalConductivityGases = [ThermalConductivityGas(CASRN=constants.CASs[i], MW=constants.MWs[i], Tb=constants.Tbs[i],
@@ -1786,6 +1837,7 @@ class PropertyCorrelationsPackage:
         self.ViscosityGases = ViscosityGases
         self.ThermalConductivityLiquids = ThermalConductivityLiquids
         self.ThermalConductivityGases = ThermalConductivityGases
+        self.ThermalConductivitySolids = ThermalConductivitySolids
         self.SurfaceTensions = SurfaceTensions
 
         # Mixture objects
@@ -1863,13 +1915,14 @@ class PropertyCorrelationsPackage:
 
 
 # Values except for omega from IAPWS; heat capacity isn't official.
-iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],
-                                           Pcs=[22064000.0], Tcs=[647.096])
+iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],atomss=[{'H': 2, 'O': 1}],
+                                           Pcs=[22064000.0], Tcs=[647.096], Tts=[273.16], Pts=[611.654771008], Hfgs=[-241822.0], Sfgs=[-44.5], Gfgs=[-228554.325])
 """:obj:`ChemicalConstantsPackage` : Object intended to hold the IAPWS-95 water constants
 for use with the :obj:`thermo.phases.IAPWS95` phase object.
 """
 
 iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip_missing=True,
+                                                SublimationPressures=[SublimationPressure(CASRN="7732-18-5", method="IAPWS", load_data=False)],
                                                  SurfaceTensions=[SurfaceTension(load_data=False, Tc=647.14, exp_poly_fit_ln_tau=(248.14999999999998, 643.9043, 647.14,
                                                     [-2.8494246663280267e-05, -0.0007642770215779117, -0.0087879657158058, -0.056840919106152674, -0.22915223013722677, -0.607083777358256,
                                                      -1.0946692428934923, -0.08982641235684152, -2.383855224250596]))],

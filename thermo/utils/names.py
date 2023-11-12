@@ -45,4 +45,10 @@ COOLPROP = 'COOLPROP'
 HEOS_FIT = 'HEOS_FIT'
 REFPROP_FIT = 'REFPROP_FIT'
 EOS = 'EOS'
+UNARY = 'UNARY'
+HO1972 = 'Ho (1972)'
+JANAF_FIT = 'JANAF_FIT'
+
+MIXING_LOG_MOLAR = 'Logarithmic mixing, molar'
+MIXING_LOG_MASS = 'Logarithmic mixing, mass'
 

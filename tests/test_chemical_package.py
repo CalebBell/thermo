@@ -27,9 +27,22 @@ import pytest
 from chemicals import *
 from chemicals.utils import hash_any_primitive
 from fluids.numerics import *
-
+import pickle
 from thermo import *
 
+assorted_IDs = ['1,2-ethanediol', '1,3-butadiene', '1,3-propanediol', '1,4-Dioxane', '2-Nitrotoluene', 
+'2-methylbutane', '3-Nitrotoluene', '4-Nitrotoluene', 'Acetic Acid', 'Acetic anhydride', 'Ammonium Chloride',
+ 'Aniline', 'CO2', 'COS', 'CS2', 'Carbon monoxide', 'Chloroform', 'Cumene', 'DMSO', 'Diethanolamine',
+  'Dimethyl Carbonate', 'ETBE', 'Ethyl Lactate', 'Ethylamine', 'H2S', 'Isoamyl Acetate', 'Isoamyl Alcohol', 
+  'MTBE', 'Methyl Acetate', 'Methyl Isobutyl Ketone', 'Methyl Methacrylate', 'Methylal', 'MonoChlorobenzene', 
+  'Monoethanolamine', 'N2H4', 'Nitrobenzene', 'Phenol', 'Propylene oxide', 'Pyridine', 'SO2', 'Sulfur Trioxide', 
+  'Triethanolamine', 'Vinyl Chloride', 'acetanilide', 'ammonia', 'argon', 'benzene', 'benzoic acid', 'carbon', 
+  'cyclohexane', 'decane', 'dimethyl ether', 'eicosane', 'ethane', 'ethanol', 'ethyl mercaptan', 'ethylbenzene',
+   'ethylene', 'ethylene oxide', 'ethylenediamine', 'furfural', 'furfuryl alcohol', 'glycerol', 'heptane',
+    'hexane', 'hydrochloric acid', 'hydrogen', 'hydrogen cyanide', 'hydroxylamine hydrochloride', 'isobutane',
+     'isopropanol', 'ketene', 'maleic anhydride', 'methane', 'methanol', 'methyl mercaptan', 'n-Propyl Acetate', 
+     'n-butane', 'n-octane', 'nitric acid', 'nitrogen', 'oxygen', 'p-Phenetidine', 'pentane', 'potassium iodide', 
+     'propane', 'propylene', 'propylene glycol', 'styrene', 'tetrahydrofuran', 'toluene', 'triethylene glycol', 'water']
 
 @pytest.mark.fuzz
 @pytest.mark.slow
@@ -42,6 +55,7 @@ def test_ChemicalConstantsPackage_from_json_as_json_large():
         except:
             pass
 
+    # Test constants_from_IDs
     obj = ChemicalConstantsPackage.constants_from_IDs(create_compounds)
     obj2 = ChemicalConstantsPackage.from_json(json.loads(json.dumps(obj.as_json())))
 
@@ -49,6 +63,7 @@ def test_ChemicalConstantsPackage_from_json_as_json_large():
     assert obj == obj2
     assert id(obj) != id(obj2)
 
+    # Test correlations_from_IDs
     obj = ChemicalConstantsPackage.correlations_from_IDs(create_compounds)
     obj2 = PropertyCorrelationsPackage.from_json(json.loads(json.dumps(obj.as_json())))
     assert hash(obj) == hash(obj2)
@@ -117,7 +132,7 @@ def test_lemmon2000_package():
 
 def test_compound_index():
     obj = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'],
-                             CASs=['7732-18-5', '108-38-3'],
+                             CASs=['7732-18-5', '108-38-3'],atomss=[{'H': 2, 'O': 1}, {'C': 8, 'H': 10}],
                              InChI_Keys=['XLYOFNOQVPJJNP-UHFFFAOYSA-N', 'IVSZLXZYQVIEFR-UHFFFAOYSA-N'],
                              InChIs=['H2O/h1H2', 'C8H10/c1-7-4-3-5-8(2)6-7/h3-6H,1-2H3'],
                              smiless=['O', 'CC1=CC(=CC=C1)C'], PubChems=[962, 7929],)
@@ -126,8 +141,11 @@ def test_compound_index():
     assert 1 == obj.compound_index(PubChem=7929)
     assert 0 == obj.compound_index(smiles='O')
     assert 0 == obj.compound_index(CAS='7732-18-5')
+    assert 0 == obj.compound_index(CAS='7732-18-5')
     assert 0 == obj.compound_index(InChI='H2O/h1H2')
     assert 1 == obj.compound_index(InChI_Key='IVSZLXZYQVIEFR-UHFFFAOYSA-N')
+
+    assert ('C', 'H', 'O') == obj.unique_atoms
 
 
 def test_add_ChemicalConstantsPackage():
@@ -145,3 +163,23 @@ def test_add_PropertyCorrelationsPackage():
 
     c_good = ChemicalConstantsPackage.correlations_from_IDs(IDs=['water', 'hexane', 'toluene'])
     assert c == c_good
+
+
+def test_ChemicalConstantsPackage_pickle():
+    # Pickle checks
+    model = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane'])
+    model.unique_atoms
+    model_pickle = pickle.loads(pickle.dumps(model))
+    assert model_pickle == model
+
+def test_correlations_from_IDs_pickle():
+    # Pickle checks
+    model = ChemicalConstantsPackage.correlations_from_IDs(IDs=['water', 'hexane'])
+    model_pickle = pickle.loads(pickle.dumps(model))
+    assert model_pickle == model
+
+def test_correlations_from_IDs_larger_pickle():
+    # Pickle checks
+    model = ChemicalConstantsPackage.correlations_from_IDs(IDs=assorted_IDs)
+    model_pickle = pickle.loads(pickle.dumps(model))
+    assert model_pickle == model

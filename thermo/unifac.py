@@ -2621,7 +2621,10 @@ UNIFAC_DDBST_ASSIGNMENT_CURSOR = None
 def init_ddbst_UNIFAC_db():
     global UNIFAC_DDBST_ASSIGNMENT_CURSOR
     import sqlite3
-    conn = sqlite3.connect(os.path.join(os.path.dirname(__file__), 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite'))
+    conn = sqlite3.connect(
+        os.path.join(os.path.dirname(__file__), 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite'),
+        check_same_thread=False,
+    )
     UNIFAC_DDBST_ASSIGNMENT_CURSOR = conn.cursor()
 
 def UNIFAC_group_assignment_DDBST(CAS, model):

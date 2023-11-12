@@ -31,6 +31,7 @@ import thermo
 from thermo import *
 from thermo.coolprop import *
 from thermo.test_utils import mark_plot_unsupported
+from thermo.flash.flash_utils import cm_flash_tol
 
 try:
     import matplotlib.pyplot as plt

@@ -220,6 +220,7 @@ class Flash:
         Examples
         --------
         '''
+        # print('flashing',T, P, H, S, VF)
         if zs is None:
             if self.N == 1:
                 zs = ones(1) if self.vectorized else [1.0]
@@ -276,9 +277,9 @@ class Flash:
         if T_spec:
             T = float(T)
             flash_specs['T'] = T
-            if T < self.T_MIN_FLASH:
+            if T < self.T_MIN_FLASH_ANY:
                 raise ValueError("Specified temperature ({} K) is below the minimum temeprature ({} K) "
-                                 "supported by the provided phases".format(T, self.T_MIN_FLASH))
+                                 "supported by any of the provided phases".format(T, self.T_MIN_FLASH_ANY))
             # if T <= 0.0:
             #     raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
         if P_spec:
@@ -521,6 +522,10 @@ class Flash:
                                          incipient_liquid_bounded_PT_sat,
                                          ]
 
+    FLASH_MIXING_PHASE_BOUNDARY_MAXITER = 100
+    FLASH_MIXING_PHASE_BOUNDARY_XTOL = 1e-6
+    FLASH_MIXING_PHASE_BOUNDARY_YTOL = 1e-6
+
     def flash_mixing_phase_boundary(self, specs, zs_existing, zs_added, boundary='VL'):
         if boundary == 'VL':
             # if we start from a liquid, will converge to a gas with VF=0
@@ -546,11 +551,13 @@ class Flash:
                 if boundary not in ('VL',):
                     continue
                 res, bounding_attempts, iters, mixing_factor = incipient_phase_one_sided_secant(
-                    flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+                    flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check, ytol=self.FLASH_MIXING_PHASE_BOUNDARY_YTOL)
             elif method is incipient_phase_bounded_naive:
-                res, bounding_attempts, iters, mixing_factor = incipient_phase_bounded_naive(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+                res, bounding_attempts, iters, mixing_factor = incipient_phase_bounded_naive(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check,
+                                                                                    xtol=self.FLASH_MIXING_PHASE_BOUNDARY_XTOL)
             elif method is incipient_liquid_bounded_PT_sat and boundary == 'VL':
-                res, bounding_attempts, iters, mixing_factor = incipient_liquid_bounded_PT_sat(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check)
+                res, bounding_attempts, iters, mixing_factor = incipient_liquid_bounded_PT_sat(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check,
+                                                                                            xtol=self.FLASH_MIXING_PHASE_BOUNDARY_XTOL)
 
 
             res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,
@@ -767,8 +774,51 @@ class Flash:
         return None
 
     def _finish_initialization_base(self):
-        self.T_MIN_FLASH = max(p.T_MIN_FLASH for p in self.phases)
-        self.T_MAX_FLASH = min(p.T_MAX_FLASH for p in self.phases)
+        solids = self.solids
+        liquids = self.liquids
+        gas = self.gas
+        if solids is None:
+            solids = []
+
+        liquids_to_unique_liquids = []
+        unique_liquids = []
+        liquid_count = len(liquids)
+        if liquid_count == 1 or (liquid_count > 1 and all(liquids[0].is_same_model(l) for l in liquids[1:])):
+            # All the liquids are the same
+            unique_liquids.append(liquids[0])
+            liquids_to_unique_liquids.extend([0]*len(liquids))
+        else:
+            unique_liquid_hashes = []
+            # unique_liquid_hashes is not used except in this code block
+            for i, l in enumerate(liquids):
+                h = l.model_hash()
+                if h not in unique_liquid_hashes:
+                    unique_liquid_hashes.append(h)
+                    unique_liquids.append(l)
+                    liquids_to_unique_liquids.append(i)
+                else:
+                    liquids_to_unique_liquids.append(unique_liquid_hashes.index(h))
+        gas_to_unique_liquid = None
+        if gas is not None:
+            if len(unique_liquids) == 1:
+                for i, l in enumerate(liquids):
+                    if l.is_same_model(gas, ignore_phase=True):
+                        gas_to_unique_liquid = liquids_to_unique_liquids[i]
+                        self.ceos_gas_liquid_compatible = True
+                        break
+
+        self.gas_to_unique_liquid = gas_to_unique_liquid
+        self.liquids_to_unique_liquids = liquids_to_unique_liquids
+
+        self.unique_liquids = unique_liquids
+        self.unique_liquid_count = len(unique_liquids)
+        self.unique_phases = [gas] + unique_liquids if gas is not None else unique_liquids
+        if solids:
+            self.unique_phases += solids
+        self.unique_phase_count = (1 if gas is not None else 0) + self.unique_liquid_count + len(solids)
+
+        self.T_MIN_FLASH = self.T_MIN_FLASH_ANY = max(p.T_MIN_FLASH for p in self.phases)
+        self.T_MAX_FLASH = self.T_MAX_FLASH_ANY = min(p.T_MAX_FLASH for p in self.phases)
         vectorized = False
         vectorized_statuses = {i.vectorized for i in self.phases}
         if len(vectorized_statuses) > 1:
@@ -776,6 +826,18 @@ class Flash:
         self.vectorized = vectorized_statuses.pop()
 
         self.supports_lnphis_args = all(p.supports_lnphis_args for p in self.phases)
+
+        # Make the phases aware of the constants and properties
+        constants = self.constants
+        correlations = self.correlations
+        for p in self.phases:
+            if hasattr(p, 'constants') and p.constants is not constants:
+                raise ValueError("Provided phase is associated with a different constants object")
+            p.constants = constants
+            if hasattr(p, 'correlations') and p.correlations is not correlations:
+                raise ValueError("Provided phase is associated with a different correlations object")
+            p.correlations = correlations
+
 
     def debug_grid_flash(self, zs, check0, check1, Ts=None, Ps=None, Vs=None,
                          VFs=None, SFs=None, Hs=None, Ss=None, Us=None,

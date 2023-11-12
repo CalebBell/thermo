@@ -26,7 +26,7 @@ from math import *
 
 import numpy as np
 import pytest
-from chemicals.utils import rho_to_Vm
+from chemicals.utils import rho_to_Vm, Vm_to_rho
 from fluids.constants import *
 from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d, derivative, hessian, jacobian, normalize
 
@@ -2174,13 +2174,49 @@ def test_BulkSettings_normal_standard():
         settings = BulkSettings(**kwargs)
         res = EquilibriumState(settings=settings, **VLL_kwargs)
         V_expect = 0.02494338785445972
+        rho_expect = 1.0/V_expect
+        test_objs = [res, res.liquid_bulk, res.bulk, res.gas, res.liquid0, res.liquid1]
+        for obj in test_objs:
+            assert_close(getattr(obj, attr)(), V_expect, rtol=1e-12)
+            
+            assert_close1d(getattr(obj, 'concentrations_mass_gas')(),
+                          [wi*obj.rho_mass_gas() for wi in obj.ws()], rtol=1e-13)
 
-        assert_close(getattr(res, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.liquid_bulk, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.bulk, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.gas, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.liquid0, attr)(), V_expect, rtol=1e-12)
-        assert_close(getattr(res.liquid1, attr)(), V_expect, rtol=1e-12)
+            assert_close1d(getattr(obj, 'concentrations_mass_gas_standard')(),
+                          [wi*obj.rho_mass_gas_standard() for wi in obj.ws()], rtol=1e-13)
+
+            assert_close1d(getattr(obj, 'concentrations_mass_gas_normal')(),
+                          [wi*obj.rho_mass_gas_normal() for wi in obj.ws()], rtol=1e-13)
+
+            assert_close1d(getattr(obj, 'concentrations_gas')(),
+                          [zi*obj.rho_gas() for zi in obj.zs], rtol=1e-13)
+
+            assert_close1d(getattr(obj, 'concentrations_gas_standard')(),
+                          [zi*obj.rho_gas_standard() for zi in obj.zs], rtol=1e-13)
+
+            assert_close1d(getattr(obj, 'concentrations_gas_normal')(),
+                          [zi*obj.rho_gas_normal() for zi in obj.zs], rtol=1e-13)
+
+
+        attr = attr.replace('V', 'rho')
+        for obj in test_objs:
+            assert_close(getattr(obj, attr)(), rho_expect, rtol=1e-12)
+
+        def check_mass(phase):
+            MW = phase.MW()
+            expect = Vm_to_rho(V_expect, MW)
+            assert_close(getattr(phase, attr)(), expect, rtol=1e-12)
+        attr = attr.replace('rho', 'rho_mass')
+
+
+
+
+        check_mass(res)
+        check_mass(res.liquid_bulk)
+        check_mass(res.bulk)
+        check_mass(res.gas)
+        check_mass(res.liquid0)
+        check_mass(res.liquid1)
 
     settings = BulkSettings()
     res = EquilibriumState(settings=settings, **VLL_kwargs)
@@ -2306,43 +2342,43 @@ def test_viscosity_bulk():
 
     settings = BulkSettings(mu_VL='Beattie Whalley', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect =  9.411770734983076e-05
+    mu_expect = 9.444973170122925e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='McAdams', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0002036661410653679
+    mu_expect = 0.00020740600899307388
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Cicchitti', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004498838091208372
+    mu_expect = 0.0004498945147517062
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Lin Kwok', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.00035231645076735013
+    mu_expect = 0.00035505884302088227
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Fourar Bories', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 6.711304514284185e-05
+    mu_expect = 6.79588952470955e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Duckler', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 3.516224626001169e-05
+    mu_expect = 3.5494270611410175e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=AS_ONE_GAS, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 1.0935521242505785e-05
+    mu_expect = 1.1303475347160652e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
@@ -2354,55 +2390,55 @@ def test_viscosity_bulk():
 
     settings = BulkSettings(mu_VL=MOLE_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.00045104828084961045
+    mu_expect = 0.00045105808426897304
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=MASS_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004498838091208372
+    mu_expect = 0.0004498945147517062
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=VOLUME_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 3.582321366162159e-05
+    mu_expect = 3.615472590750443e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=LOG_PROP_MOLE_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004174877255632339
+    mu_expect = 0.00041786007301121934
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=LOG_PROP_MASS_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004134734397320772
+    mu_expect = 0.0004138761612074623
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=LOG_PROP_VOLUME_WEIGHTED, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 1.3317065001179692e-05
+    mu_expect = 1.3724636873530997e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=POWER_PROP_MOLE_WEIGHTED, mu_VL_power_exponent=0.6, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004445359080052111
+    mu_expect = 0.00044457896440451653
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=POWER_PROP_MASS_WEIGHTED, mu_VL_power_exponent=0.6, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004427883876785026
+    mu_expect = 0.00044283533263468454
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL=POWER_PROP_VOLUME_WEIGHTED, mu_VL_power_exponent=0.6, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 2.0589999375854145e-05
+    mu_expect = 2.1017800744379754e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
@@ -2414,7 +2450,7 @@ def test_viscosity_bulk():
 
     settings = BulkSettings(mu_VL=MINIMUM_PHASE_PROP, mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 1.0822296297706245e-05
+    mu_expect = 1.1173178799439836e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
@@ -5092,3 +5128,67 @@ def test_Tr_167_Prtranslated_alpha_function():
     liquid = CEOSLiquid(eos_class=PRMIXTranslatedConsistent, eos_kwargs={"Pcs": [114497.25, 5930000.0], "Tcs": [3.309, 694.2], "omegas": [-0.4715, 0.44], "kijs": [[0.0, 0], [0, 0.0]]}, HeatCapacityGases=[HeatCapacityGas(CASRN="14762-55-1", MW=4.002602, similarity_variable=0.2498374807187924, extrapolation="linear", method="POLING_POLY"), HeatCapacityGas(CASRN="108-95-2", MW=94.11124, similarity_variable=0.13813440349951825, extrapolation="linear", method="TRCIG")], T=298.15, P=101325.0, zs=[0.5, 0.5])
     new_liquid = liquid.to(zs=[1e-07, 0.9999999], P=851222.128878439,T=553.4386787878783)
     assert_close(new_liquid.eos_mix.a_alpha, 3.146979305113219)
+
+
+def test_iapws06_phase():
+    obj = IAPWS06(T=250, P=2e8)
+
+    assert_close(obj.to(T=obj.T, V=obj.V(), zs=[1]).P,obj.P)
+
+    assert_close(obj.to(P=obj.P, V=obj.V(), zs=[1]).T, obj.T)
+
+
+
+    point3 = IAPWS06(T=100, P=100e6)
+    assert_close(point3.G_mass(), -0.222296513088E6, rtol=1e-10)
+    assert_close(point3.dG_mass_dP(), 0.106193389260E-2, rtol=1e-10)
+    assert_close(point3.dG_mass_dT(), 0.261195122589E4, rtol=1e-10)
+    assert_close(point3.d2G_mass_dP2(), -0.941807981761E-13, rtol=1e-10)
+    assert_close(point3.d2G_mass_dPdT(), 0.274505162488E-7, rtol=1e-10)
+    assert_close(point3.d2G_mass_dT2(), -0.866333195517E1, rtol=1e-10)
+
+    assert_close(point3.H_mass(), -0.483491635676E6, rtol=1e-10)
+    assert_close(point3.A_mass(), -0.328489902347E6, rtol=1e-10)
+    assert_close(point3.U_mass(), -0.589685024936E6, rtol=1e-10)
+    assert_close(point3.S_mass(), -0.261195122589E4, rtol=1e-10)
+    assert_close(point3.Cp_mass(), 0.866333195517E3, rtol=1e-10)
+    assert_close(point3.rho_mass(), 0.941678203297E3, rtol=1e-10)
+
+    point2 = IAPWS06(T=273.152519, P=101325.0)
+    assert_close(point2.G_mass(), 0.10134274069E3, rtol=1e-10)
+    assert_close(point2.dG_mass_dP(), 0.109084388214E-2, rtol=1e-10)
+    assert_close(point2.dG_mass_dT(), 0.122076932550E4, rtol=1e-10)
+    assert_close(point2.d2G_mass_dP2(), -0.128485364928E-12, rtol=1e-10)
+    assert_close(point2.d2G_mass_dPdT(), 0.174362219972E-6, rtol=1e-10)
+    assert_close(point2.d2G_mass_dT2(), -0.767598233365E1, rtol=1e-10)
+
+    assert_close(point2.H_mass(), -0.333354873637E6, rtol=1e-10)
+    assert_close(point2.A_mass(), -0.918701567E1, rtol=1e-10)
+    assert_close(point2.U_mass(), -0.333465403393E6, rtol=1e-10)
+    assert_close(point2.S_mass(),-0.122076932550E4, rtol=1e-10)
+    assert_close(point2.Cp_mass(), 0.209671391024E4, rtol=1e-10)
+    assert_close(point2.rho_mass(), 0.916721463419E3, rtol=1e-10)
+
+
+
+
+    point1 = IAPWS06(T=273.16, P=611.657)
+    assert_close(point1.G_mass(), 0.611784135, rtol=1e-9)
+    assert_close(point1.dG_mass_dP(), 0.109085812737E-2, rtol=1e-10)
+    assert_close(point1.dG_mass_dT(), 0.122069433940E4, rtol=1e-10)
+    assert_close(point1.d2G_mass_dP2(), -0.128495941571E-12, rtol=1e-10)
+    assert_close(point1.d2G_mass_dPdT(), 0.174387964700E-6, rtol=1e-10)
+    assert_close(point1.d2G_mass_dT2(), -0.767602985875E1, rtol=1e-10)
+
+    assert_close(point1.H_mass(), -0.333444253966E6, rtol=1e-10)
+    assert_close(point1.A_mass(), -0.55446875E-1, rtol=1e-9)
+    assert_close(point1.U_mass(), -0.333444921197E6, rtol=1e-10)
+    assert_close(point1.S_mass(), -0.122069433940E4, rtol=1e-10)
+    assert_close(point1.Cp_mass(), 0.209678431622E4, rtol=1e-10)
+    assert_close(point1.rho_mass(), 0.916709492200E3, rtol=1e-10)
+
+    assert_close(point1.V(), 1.9652101514483845e-05)
+
+    assert_close(point1.isobaric_expansion(), 0.159863102566E-3) # alpha
+    assert_close(point1.dP_dT_V(), 0.135714764659E7) # beta
+    assert_close(point1.isothermal_compressibility(), 0.117793449348E-9) # kT

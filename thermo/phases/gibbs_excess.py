@@ -1936,6 +1936,7 @@ class GibbsExcessLiquid(Phase):
         return self._lnphis
 
     lnphis_G_min = lnphis
+    lnphis_lowest_Gibbs = lnphis
 
 #    def fugacities(self, T, P, zs):
 #        # DO NOT EDIT _ CORRECT

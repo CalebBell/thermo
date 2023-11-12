@@ -21,7 +21,7 @@ SOFTWARE.
 '''
 
 
-__all__ = ['Stream', 'EnergyStream', 'StreamArgs', 'EquilibriumStream', 'mole_balance', 'energy_balance']
+__all__ = ['Stream', 'EnergyStream', 'StreamArgs', 'EquilibriumStream']
 
 #import enum
 try:
@@ -1214,6 +1214,11 @@ class StreamArgs:
         return specs
 
     @property
+    def non_pressure_state_specs(self):
+        specs = self.state_specs
+        return [(s, v) for s, v in specs if s != 'P']
+
+    @property
     def specified_state_vars(self):
         # Slightly faster
         s = self.specifications
@@ -1347,6 +1352,8 @@ class StreamArgs:
     def flash(self, hot_start=None, existing_flash=None):
 #        if self.flow_specified and self.composition_specified and self.state_specified:
         s = self.specifications
+        if existing_flash is None:
+            existing_flash = self.flash_state(hot_start)
         return EquilibriumStream(self.flasher, hot_start=hot_start,
                                  existing_flash=existing_flash, **s)
 
@@ -1566,28 +1573,23 @@ class Stream(Mixture):
     >>> Stream('air', T=400, P=1e5, n=1)
     <Stream, components=['nitrogen', 'argon', 'oxygen'], mole fractions=[0.7812, 0.0092, 0.2096], mass flow=0.028958 kg/s, mole flow=1 mol/s, T=400.00 K, P=100000 Pa>
 
-    A flow of 1 L/s of 10 wt% phosphoric acid at 320 K:
-
-    >>> Stream(['water', 'phosphoric acid'], ws=[.9, .1], T=320, P=1E5, Q=0.001)
-    <Stream, components=['water', 'phosphoric acid'], mole fractions=[0.98, 0.02], mole flow=53.2136286991 mol/s, T=320.00 K, P=100000 Pa>
-
     Instead of specifying the composition and flow rate separately, they can
     be specified as a list of flow rates in the appropriate units.
 
     80 kg/s of furfuryl alcohol/water solution:
 
     >>> Stream(['furfuryl alcohol', 'water'], ms=[50, 30])
-    <Stream, components=['furfuryl alcohol', 'water'], mole fractions=[0.2343, 0.7657], mole flow=2174.93735951 mol/s, T=298.15 K, P=101325 Pa>
+    <Stream, components=['furfuryl alcohol', 'water'], mole fractions=[0.2343, 0.7657], mass flow=80.0 kg/s, mole flow=2174.937359509809 mol/s, T=298.15 K, P=101325 Pa>
 
     A stream of 100 mol/s of 400 K, 1 MPa argon:
 
     >>> Stream(['argon'], ns=[100], T=400, P=1E6)
-    <Stream, components=['argon'], mole fractions=[1.0], mole flow=100 mol/s, T=400.00 K, P=1000000 Pa>
+    <Stream, components=['argon'], mole fractions=[1.0], mass flow=3.9948 kg/s, mole flow=100 mol/s, T=400.00 K, P=1000000 Pa>
 
     A large stream of vinegar, 8 volume %:
 
     >>> Stream(['Acetic acid', 'water'], Qls=[1, 1/.088])
-    <Stream, components=['acetic acid', 'water'], mole fractions=[0.0269, 0.9731], mole flow=646268.518749 mol/s, T=298.15 K, P=101325 Pa>
+    <Stream, components=['acetic acid', 'water'], mole fractions=[0.0269, 0.9731], mass flow=12372.158780648899 kg/s, mole flow=646268.5186913002 mol/s, T=298.15 K, P=101325 Pa>
 
     A very large stream of 100 m^3/s of steam at 500 K and 2 MPa:
 
@@ -1797,16 +1799,18 @@ class Stream(Mixture):
     def set_extensive_flow(self, n=None):
         if n is None:
             n = self.n
+        T, P = self.T, self.P
         self.n = n
-        self.m = property_mass_to_molar(self.n, self.MW)
-        self.ns = [self.n*zi for zi in self.zs]
-        self.ms =  [self.m*wi for wi in self.ws]
+        self.m = m = property_mass_to_molar(n, self.MW)
+        self.ns = [n*zi for zi in self.zs]
+        self.ms = [m*wi for wi in self.ws]
         try:
-            self.Q = self.m/self.rho
+            self.Q = m/self.rho
         except:
             pass
         try:
-            self.Qgs = [m/Vm_to_rho(ideal_gas(self.T, self.P), MW=MW) for m, MW in zip(self.ms, self.MWs)]
+            V_ig = ideal_gas(T, P)
+            self.Qgs = [m/Vm_to_rho(V_ig, MW=MW) for m, MW in zip(self.ms, self.MWs)]
         except:
             pass
         try:
@@ -1815,8 +1819,8 @@ class Stream(Mixture):
             pass
 
         if self.phase == 'l/g' or self.phase == 'l':
-            self.nl = self.n*(1. - self.V_over_F)
-            self.nls = [xi*self.nl for xi in self.xs]
+            self.nl = nl = n*(1. - self.V_over_F)
+            self.nls = [xi*nl for xi in self.xs]
             self.mls = [ni*MWi*1E-3 for ni, MWi in zip(self.nls, self.MWs)]
             self.ml = sum(self.mls)
             if self.rhol:
@@ -1825,8 +1829,8 @@ class Stream(Mixture):
                 self.Ql = None
 
         if self.phase == 'l/g' or self.phase == 'g':
-            self.ng = self.n*self.V_over_F
-            self.ngs = [yi*self.ng for yi in self.ys]
+            self.ng = ng = n*self.V_over_F
+            self.ngs = [yi*ng for yi in self.ys]
             self.mgs = [ni*MWi*1E-3 for ni, MWi in zip(self.ngs, self.MWs)]
             self.mg = sum(self.mgs)
             if self.rhog:
@@ -1993,6 +1997,135 @@ first stream.' %self.IDs[i])
 
 
 class EquilibriumStream(EquilibriumState):
+    '''Creates an EquilibriumStream object, built off :obj:`EquilibriumState`
+    to contain flow rate amounts, making mass and energy balances easier.
+
+    EquilibriumStreams can have their flow rate, state, and composition
+    defined using any sufficient set of the following. Note that not all
+    sets of specs will have a solution, or a unique solution, or an
+    algorithm to solve the problem implemented.
+
+    The state can be specified using any two of:
+
+    * Temperature `T` [K]
+    * Pressure `P` [Pa]
+    * Vapor fraction `VF`
+    * Enthalpy `H` [J/mol] or `H_mass` [J/kg]
+    * Entropy `S` [J/mol/K] or `S_mass` [J/kg/K]
+    * Internal energy `U` [J/mol] or `U_mass` [J/kg]
+    * Gibbs free energy `G` [J/mol] or `G_mass` [J/kg]
+    * Helmholtz energy `A` [J/mol] or `A_mass` [J/kg]
+    * Energy `energy` [W] and `energy_reactive` [W] which count as a enthalpy spec only when flow rate is given
+    * Reactive enthalpy `H_reactive` [J/mol]
+    * Molar volume `V` [m^3/mol], molar density `rho` [mol/m^3], or mass density `rho_mass`, [kg/m^3]
+
+    The composition can be specified using any of:
+
+    * Mole fractions `zs`
+    * Mass fractions `ws`
+    * Liquid standard volume fractions `Vfls`
+    * Gas standard volume fractions `Vfgs`
+    * Mole flow rates of each component `ns` [mol/s]
+    * Mass flow rates of each component `ms` [kg/s]
+    * Liquid standard volume flow rates of each component `Qls` [m^3/s]
+    * Gas standard flow rates of each component `Qgs` [m^3/s]
+
+    Total flow rates can be specified using:
+
+    * Mole flow rate `n` [mol/s]
+    * Mass flow rate `m` [kg/s]
+    * Actual volume flow rate `Q` [m^3/s]
+    * Liquid volume standard flow rate `Ql` [m^3/s]
+    * Gas standard volume flow rate `Qg` [m^3/s]
+
+    Note that the liquid flow rates `Ql` and `Qls` will by default use the
+    pure component liquid standard molar densities, but the temperature and
+    pressure used to calculate the liquid molar densities can be set with
+    the two-tuple `Vf_TP`.
+    See :obj:`EquilibriumState.V_liquids_ref` for details.
+
+    Parameters
+    ----------
+    flasher : One of :obj:`thermo.flash.FlashPureVLS`, :obj:`thermo.flash.FlashVL`, :obj:`thermo.flash.FlashVLN`,
+        The configured flash object which can perform flashes for the
+        configured components, [-]
+    zs : list, optional
+        Mole fractions of all components [-]
+    ws : list, optional
+        Mass fractions of all components [-]
+    Vfls : list, optional
+        Volume fractions of all components as a hypothetical liquid phase based
+        on pure component densities [-]
+    Vfgs : list, optional
+        Volume fractions of all components as a hypothetical gas phase based
+        on pure component densities [-]
+    ns : list, optional
+        Mole flow rates of each component [mol/s]
+    ms : list, optional
+        Mass flow rates of each component [kg/s]
+    Qls : list, optional
+        Component volumetric flow rate specs for a hypothetical liquid phase based on
+        :obj:`EquilibriumState.V_liquids_ref` [m^3/s]
+    Qgs : list, optional
+        Component volumetric flow rate specs for a hypothetical gas phase based on
+        :obj:`EquilibriumState.V_gas` [m^3/s]
+    Ql : float, optional
+        Total volumetric flow rate spec for a hypothetical liquid phase based on
+        :obj:`EquilibriumState.V_liquids_ref` [m^3/s]
+    Qg : float, optional
+        Total volumetric flow rate spec for a hypothetical gas phase based on
+        :obj:`EquilibriumState.V_gas` [m^3/s]
+    Q : float, optional
+        Total actual volumetric flow rate of the stream based on the
+        density of the stream at the specified conditions [m^3/s]
+    n : float, optional
+        Total mole flow rate of all components in the stream [mol/s]
+    m : float, optional
+        Total mass flow rate of all components in the stream [kg/s]
+    T : float, optional
+        Temperature of the stream (default 298.15 K), [K]
+    P : float, optional
+        Pressure of the stream (default 101325 Pa) [Pa]
+    VF : float, optional
+        Vapor fraction (mole basis) of the stream, [-]
+    V : float, optional
+        Molar volume of the overall stream [m^3/mol]
+    rho : float, optional
+        Molar density of the overall stream [mol/m^3]
+    rho_mass : float, optional
+        Mass density of the overall stream [kg/m^3]
+    H : float, optional
+        Molar enthalpy of the stream [J/mol]
+    H_mass : float, optional
+        Mass enthalpy of the stream [J/kg]
+    S : float, optional
+        Molar entropy of the stream [J/mol/K]
+    S_mass : float, optional
+        Mass entropy of the stream [J/kg/K]
+    U : float, optional
+        Molar internal energy of the stream [J/mol]
+    U_mass : float, optional
+        Mass internal energy of the stream [J/kg]
+    G : float, optional
+        Molar Gibbs free energy of the stream [J/mol]
+    G_mass : float, optional
+        Mass Gibbs free energy of the stream [J/kg]
+    A : float, optional
+        Molar Helmholtz energy of the stream [J/mol]
+    A_mass : float, optional
+        Mass Helmholtz energy of the stream [J/kg]
+    energy : float, optional
+        Flowing energy of the stream [W]
+    energy_reactive : float, optional
+        Flowing energy of the stream on a reactive basis [W]
+    H_reactive : float, optional
+        Reactive molar enthalpy of the stream [J/mol]
+    hot_start : :obj:`EquilibriumState`, optional
+        See :obj:`EquilibriumState.hot_start`; not recommended as an input, [-]
+    existing_flash : :obj:`EquilibriumState`, optional
+        Previously calculated :obj:`EquilibriumState` at the exact conditions, will be used
+        instead of performing a new flash calculation if provided [-]
+    '''
     flashed = True
 
     # def __repr__(self):
@@ -2314,7 +2447,7 @@ class EquilibriumStream(EquilibriumState):
         '''
         kwargs = self.flash_specs.copy()
         del kwargs['zs']
-        kwargs['pkg'] = self.flasher
+        kwargs['flasher'] = self.flasher
         kwargs[self.composition_spec[0]] = self.composition_spec[1]
         kwargs[self.flow_spec[0]] = self.flow_spec[1]
         return StreamArgs(**kwargs)
@@ -2361,6 +2494,7 @@ class EquilibriumStream(EquilibriumState):
                     specs.append((var, v))
         return specs
 
+
     @property
     def specified_flow_vars(self):
         '''Always needs only one flow specified'''
@@ -2371,6 +2505,7 @@ class EquilibriumStream(EquilibriumState):
         '''Always needs a flow specified'''
         return True
 
+EquilibriumStream.non_pressure_state_specs = StreamArgs.non_pressure_state_specs
 
 
 energy_types = {'LP_STEAM': 'Steam 50 psi',
@@ -2459,6 +2594,7 @@ def _mole_balance_process_ns(f, ns, compounds, use_mass=True, use_volume=True):
     return ns
 
 def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
+    # TODO document and expose
     inlet_count = len(inlets)
     outlet_count = len(outlets)
 
@@ -2610,7 +2746,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
         n_in = 0.0
         for i in range(inlet_count):
             f = inlets[i]
-            n = f.specifications['n']
+            n = f.n
             if n is None:
                 n = f.n_calc
             if n is None:
@@ -2627,7 +2763,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
         n_out = 0.0
         for i in range(outlet_count):
             f = outlets[i]
-            n = f.specifications['n']
+            n = f.n
             if n is None:
                 n = f.n_calc
             if n is None:
@@ -2645,7 +2781,8 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
     return progress
 
 
-def energy_balance(inlets, outlets, reactive=False):
+def energy_balance(inlets, outlets, reactive=False, use_mass=False):
+    # TODO document and expose
     inlet_count = len(inlets)
     outlet_count = len(outlets)
 
@@ -2744,7 +2881,7 @@ def energy_balance(inlets, outlets, reactive=False):
         else:
             outlets[out_unknown_idx].energy = set_energy
         return True
-    if in_unknown_count == 1 and out_unknown_count == 0:
+    elif in_unknown_count == 1 and out_unknown_count == 0:
         set_energy = outlet_energy
         for v in all_energy_in:
             if v is not None:
@@ -2755,4 +2892,82 @@ def energy_balance(inlets, outlets, reactive=False):
             inlets[in_unknown_idx].energy = set_energy
 
         return True
+
+    elif (in_unknown_count==1 and out_unknown_count == 1 and use_mass
+        and isinstance(inlets[in_unknown_idx], StreamArgs) and isinstance(outlets[out_unknown_idx], StreamArgs)
+        and inlets[in_unknown_idx].state_specified and outlets[out_unknown_idx].state_specified):
+        """
+        from sympy import *
+        m_in_known, m_in_unknown, m_out_known, m_out_unknown = symbols('m_in_known, m_in_unknown, m_out_known, m_out_unknown')
+        e_in_known, e_out_known = symbols('e_in_known, e_out_known')
+        H_in, H_out = symbols('H_in, H_out')
+
+        e_in_unknown = m_in_unknown*H_in
+        e_out_unknown = m_out_unknown*H_out
+
+        Eq0 = Eq(e_in_known+e_in_unknown, e_out_unknown+e_out_known)
+        Eq1 = Eq(m_in_known+ m_in_unknown, m_out_known+m_out_unknown)
+        solve([Eq0, Eq1], [m_in_unknown, m_out_unknown])"""
+        unknown_in_state = inlets[in_unknown_idx].flash_state()
+        unknown_out_state = outlets[out_unknown_idx].flash_state()
+        H_mass_in_unknown = unknown_in_state.H_mass() if not reactive else unknown_in_state.H_reactive_mass()
+        H_mass_out_unknown = unknown_out_state.H_mass() if not reactive else unknown_out_state.H_reactive_mass()
+        energy_in_known = sum(v for v in all_energy_in if v is not None)
+        energy_out_known = sum(v for v in all_energy_out if v is not None)
+        m_in_known = sum(v.m for i, v in enumerate(inlets) if (i != in_unknown_idx and not isinstance(v, EnergyStream)))
+        m_out_known = sum(v.m for i, v in enumerate(outlets) if (i != out_unknown_idx and not isinstance(v, EnergyStream)))
+        inlets[in_unknown_idx].m = (H_mass_out_unknown*m_in_known - H_mass_out_unknown*m_out_known - energy_in_known + energy_out_known)/(H_mass_in_unknown - H_mass_out_unknown)
+        outlets[out_unknown_idx].m = (H_mass_in_unknown*m_in_known - H_mass_in_unknown*m_out_known - energy_in_known + energy_out_known)/(H_mass_in_unknown - H_mass_out_unknown)
+        return True
+    elif in_unknown_count == 2 and out_unknown_count == 0 and use_mass:
+        unknown_inlet_idxs = []
+        for i in range(inlet_count):
+            f = inlets[i]
+            if isinstance(f, StreamArgs) and f.state_specified:
+                unknown_inlet_idxs.append(i)
+        if len(unknown_inlet_idxs) == 2:
+            """
+            from sympy import *
+            m_in_known, m_in_unknown0, m_in_unknown1, m_out_known = symbols('m_in_known, m_in_unknown0, m_in_unknown1, m_out_known')
+            e_in_known, e_known = symbols('e_in_known, e_known')
+            H_unkown0, H_unkown1 = symbols('H_unkown0, H_unkown1')
+
+            e_unkown0 = m_in_unknown0*H_unkown0
+            e_unkown1 = m_in_unknown1*H_unkown1
+
+            Eq0 = Eq(e_known, e_in_known + e_unkown1+e_unkown0 )
+            Eq1 = Eq(m_in_known+ m_in_unknown0+ m_in_unknown1, m_out_known)
+            solve([Eq0, Eq1], [m_in_unknown0, m_in_unknown1])
+            """
+            in_unknown_idx_0, in_unknown_idx_1 = unknown_inlet_idxs
+            unknown_state_0 = inlets[in_unknown_idx_0].flash_state()
+            unknown_state_1 = inlets[in_unknown_idx_1].flash_state()
+            H_mass_in_unknown_0 = unknown_state_0.H_mass() if not reactive else unknown_state_0.H_reactive_mass()
+            H_mass_in_unknown_1 = unknown_state_1.H_mass() if not reactive else unknown_state_1.H_reactive_mass()
+            energy_in_known = sum(v for v in all_energy_in if v is not None)
+            m_in_known = sum(v.m for i, v in enumerate(inlets) if (i != in_unknown_idx_0 and i != in_unknown_idx_1 and not isinstance(v, EnergyStream)))
+            m_out_known = sum(v.m for i, v in enumerate(outlets) if not isinstance(v, EnergyStream))
+
+            inlets[in_unknown_idx_0].m = (H_mass_in_unknown_1*m_in_known - H_mass_in_unknown_1*m_out_known - energy_in_known + outlet_energy)/(H_mass_in_unknown_0 - H_mass_in_unknown_1)
+            inlets[in_unknown_idx_1].m = (-H_mass_in_unknown_0*m_in_known + H_mass_in_unknown_0*m_out_known + energy_in_known - outlet_energy)/(H_mass_in_unknown_0 - H_mass_in_unknown_1)
+            return True
+    elif out_unknown_count == 2 and in_unknown_count == 0 and use_mass:
+        unknown_outlet_idxs = []
+        for i in range(outlet_count):
+            f = outlets[i]
+            if isinstance(f, StreamArgs) and f.state_specified:
+                unknown_outlet_idxs.append(i)
+        if len(unknown_outlet_idxs) == 2:
+            out_unknown_idx_0, out_unknown_idx_1 = unknown_outlet_idxs
+            unknown_state_0 = outlets[out_unknown_idx_0].flash_state()
+            unknown_state_1 = outlets[out_unknown_idx_1].flash_state()
+            H_mass_out_unknown_0 = unknown_state_0.H_mass() if not reactive else unknown_state_0.H_reactive_mass()
+            H_mass_out_unknown_1 = unknown_state_1.H_mass() if not reactive else unknown_state_1.H_reactive_mass()
+            energy_out_known = sum(v for v in all_energy_out if v is not None)
+            m_out_known = sum(v.m for i, v in enumerate(outlets) if (i != out_unknown_idx_0 and i != out_unknown_idx_1 and not isinstance(v, EnergyStream)))
+            m_in_known = sum(v.m for i, v in enumerate(inlets) if not isinstance(v, EnergyStream))
+
+            outlets[out_unknown_idx_0].m = (H_mass_out_unknown_1*m_out_known - H_mass_out_unknown_1*m_in_known - energy_out_known + inlet_energy)/(H_mass_out_unknown_0 - H_mass_out_unknown_1)
+            outlets[out_unknown_idx_1].m = (-H_mass_out_unknown_0*m_out_known + H_mass_out_unknown_0*m_in_known + energy_out_known - inlet_energy)/(H_mass_out_unknown_0 - H_mass_out_unknown_1)
+            return True
     return False

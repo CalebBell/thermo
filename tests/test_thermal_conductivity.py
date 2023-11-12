@@ -457,3 +457,10 @@ def test_ThermalConductivityLiquidMixture_electrolytes():
     assert kl_mix == kl_mix2
     assert hash(kl_mix) == hash0
     assert hash(kl_mix2) == hash0
+
+
+@pytest.mark.meta_T_dept
+def test_solid_thermal_conductivity():
+    # Data from Ho, point exactly
+    obj = ThermalConductivitySolid(CASRN="7440-57-5")
+    assert_close(obj(500), 304)

@@ -27,6 +27,7 @@ import pytest
 from chemicals import Antoine, Rackett_fit, normalize
 from fluids.constants import *
 from fluids.numerics import assert_close, assert_close1d, assert_close2d
+import os
 
 import thermo
 from thermo import *
@@ -44,7 +45,7 @@ if numba is not None:
 
     import thermo.numba
 
-
+jit_disabled = os.environ.get('NUMBA_DISABLE_JIT') == '1'
 
 def swap_funcs_and_test(names, substitutions, test):
     '''
@@ -295,6 +296,7 @@ def test_a_alpha_and_derivatives_full():
     assert_close1d(d2a_alpha_dT2_ijs0, d2a_alpha_dT2_ijs, rtol=1e-13)
 
 
+@pytest.mark.skipif(jit_disabled, reason='NUMBA JIT is disabled')
 @mark_as_numba
 def test_IAPWS95_numba():
     assert isinstance(thermo.numba.flash.iapws95_Psat, numba.core.registry.CPUDispatcher)

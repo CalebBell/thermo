@@ -2333,6 +2333,7 @@ def test_d2b_d2nx(kwargs):
 
 @pytest.mark.slow
 @pytest.mark.sympy
+@pytest.mark.fuzz
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3b_dnz_sympy(kwargs):
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
@@ -2406,6 +2407,7 @@ def test_d3b_dnz_sympy(kwargs):
 
 @pytest.mark.slow
 @pytest.mark.sympy
+@pytest.mark.fuzz
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3delta_dnz_sympy(kwargs):
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
@@ -2610,6 +2612,7 @@ def test_d2delta_dnz_sympy(kwargs):
 
 @pytest.mark.sympy
 @pytest.mark.slow
+@pytest.mark.fuzz
 @pytest.mark.parametrize("kwargs", [quaternary_basic])
 def test_d3epsilon_dnz_sympy(kwargs):
     # Rough - neeed sympy, numerical differentiation does not give any accuracy
@@ -2715,6 +2718,7 @@ def test_d3epsilon_dnz_sympy(kwargs):
 
 @pytest.mark.sympy
 @pytest.mark.slow
+@pytest.mark.fuzz
 @pytest.mark.parametrize("kwargs", [ternary_basic])
 def test_d2epsilon_dnz_sympy(kwargs):
     from sympy import diff, symbols
@@ -2962,6 +2966,7 @@ def test_d2a_alpha_d2nx(kwargs):
 
 @pytest.mark.sympy
 @pytest.mark.slow
+@pytest.mark.fuzz
 def test_d3a_alpha_dninjnk():
     from sympy import Function, diff, simplify, symbols
     a_alpha11, a_alpha12, a_alpha13, a_alpha14, a_alpha21, a_alpha22, a_alpha23, a_alpha24, a_alpha31, a_alpha32, a_alpha33, a_alpha34, a_alpha41, a_alpha42, a_alpha43, a_alpha44 = symbols(

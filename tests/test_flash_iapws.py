@@ -34,7 +34,7 @@ from thermo.chemical_package import iapws_correlations
 from thermo.coolprop import *
 from thermo.phases import IAPWS95Gas, IAPWS95Liquid
 from thermo.test_utils import mark_plot_unsupported
-
+from thermo.flash.flash_utils import cm_flash_tol
 try:
     import matplotlib.pyplot as plt
 except:

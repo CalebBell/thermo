@@ -29,12 +29,14 @@ import pytest
 from chemicals.exceptions import PhaseExistenceImpossible
 from fluids.numerics import *
 from fluids.numerics import assert_close, assert_close1d
+from thermo.flash.flash_utils import cm_flash_tol
 
 import thermo
 from thermo import *
 from thermo import eos_volume
 from thermo.test_utils import *
 from thermo.test_utils import plot_unsupported
+import pickle
 
 try:
     import matplotlib.pyplot as plt
@@ -1019,6 +1021,23 @@ def test_P_H_plot_ideal_Poy(fluid):
     max_err = np.max(errs)
     assert max_err < 1e-8
 #test_PH_plot_ideal_Poy('methanol')
+
+# @pytest.mark.parametrize("eos", eos_mix_list)
+# def test_pickle_with_different_eos(eos):
+#     # TODO: Need to implement __eq__ and __hash__ on Flash objects
+#     T, P = 298.15, 101325.0
+#     zs = [1.0]
+#     fluid_idx = 0
+#     pure_const, pure_props = constants.subset([fluid_idx]), correlations.subset([fluid_idx])
+#     kwargs = dict(eos_kwargs=dict(Tcs=pure_const.Tcs, Pcs=pure_const.Pcs, omegas=pure_const.omegas),
+#                   HeatCapacityGases=pure_props.HeatCapacityGases)
+#     liquid = CEOSLiquid(eos, T=T, P=P, zs=zs, **kwargs)
+#     gas = CEOSGas(eos, T=T, P=P, zs=zs, **kwargs)
+#     flasher = FlashPureVLS(pure_const, pure_props, gas, [liquid], [])
+
+#     # Pickle checks
+#     flasher_pickle = pickle.loads(pickle.dumps(flasher))
+#     assert flasher_pickle == flasher
 
 
 ### Non-generic tests

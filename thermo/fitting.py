@@ -68,17 +68,17 @@ def split_data(x, y, folds=5, seed=42):
     if pts != len(y):
         raise ValueError("Wrong size")
     z = list(range(pts))
-    
+
     Random(seed).shuffle(z)
     # go one by one and assign data to each group
-    
+
     fold_xs = [[] for _ in range(folds)]
     fold_ys = [[] for _ in range(folds)]
     for i in range(pts):
         l = i%folds
         fold_xs[l].append(x[i])
         fold_ys[l].append(y[i])
-    
+
     return fold_xs, fold_ys
 
 def assemble_fit_test_groups(x_groups, y_groups):
@@ -98,7 +98,7 @@ def assemble_fit_test_groups(x_groups, y_groups):
             if j != i:
                 x_train.extend(x_groups[j])
                 y_train.extend(y_groups[j])
-        
+
         train_x_groups.append(x_train)
         train_y_groups.append(y_train)
     return (train_x_groups, test_x_groups, train_y_groups, test_y_groups)
@@ -451,12 +451,14 @@ def fit_cheb_poly_auto(func, low, high, start_n=3, max_n=20, eval_pts=100,
                   interpolation_property=None, interpolation_property_inv=None,
                   interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
                   arg_func=None, method=FIT_CHEBTOOLS_POLY, selection_criteria=None, data=None):
+    if max_n > len(data[0]):
+        max_n = len(data[0])
+
     worked_ns, worked_coeffs, worked_stats = fit_many_cheb_poly(func, low, high, ns=range(start_n, max_n+1),
                   interpolation_property=interpolation_property, interpolation_property_inv=interpolation_property_inv,
                   interpolation_x=interpolation_x, interpolation_x_inv=interpolation_x_inv,
                   arg_func=arg_func, eval_pts=eval_pts, method=method, data=data)
     idx = select_index_from_stats(worked_stats, worked_ns, selection_criteria=selection_criteria)
-
     return worked_ns[idx], worked_coeffs[idx], worked_stats[idx]
 
 
@@ -848,7 +850,12 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         statistics['STDEV'] = float(stats[1])
         statistics['min_ratio'] = float(stats[2])
         statistics['max_ratio'] = float(stats[3])
-        statistics['pcov'] = float(pcov) if pcov is not None else None
+        try:
+            pcov = float(pcov)
+        except:
+            # ndarray or None
+            pass
+        statistics['pcov'] = pcov
         return out_kwargs, statistics
 
 

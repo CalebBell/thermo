@@ -35,6 +35,7 @@ from math import e
 
 import chemicals
 import fluids
+from chemicals.elements import solid_allotrope_map, allotrope_CAS_to_name
 from chemicals.dippr import (
     EQ100,
     EQ101,
@@ -69,6 +70,7 @@ from chemicals.heat_capacity import (
     Zabransky_quasi_polynomial_integral,
     Zabransky_quasi_polynomial_integral_over_T,
 )
+from chemicals.identifiers import sorted_CAS_key
 from chemicals.interface import PPDS14, ISTExpansion, Jasper, REFPROP_sigma, Somayajulu, Watson_sigma
 from chemicals.phase_change import PPDS12, Alibakhshi, Watson, Watson_n
 from chemicals.thermal_conductivity import PPDS3, PPDS8, Chemsep_16
@@ -175,11 +177,15 @@ from fluids.numerics import (
     polyder,
     polyint,
     polyint_over_x,
+    polyint_stable,
     polynomial_offset_scale,
     quad,
     secant,
     trunc_exp,
     trunc_log,
+    polyint_over_x_stable,
+    horner_log,
+    horner_stable_log,
 )
 from fluids.numerics import numpy as np
 
@@ -222,6 +228,8 @@ from thermo.utils.names import (
     EXP_STABLEPOLY_FIT,
     EXP_STABLEPOLY_FIT_LN_TAU,
     HEOS_FIT,
+    UNARY,
+    HO1972,
     NEGLECT_P,
     POLY_FIT,
     POLY_FIT_LN_TAU,
@@ -229,12 +237,15 @@ from thermo.utils.names import (
     STABLEPOLY_FIT,
     STABLEPOLY_FIT_LN_TAU,
     VDI_TABULAR,
+    JANAF_FIT,
 )
 
 """This section is intended to be used in being able to add new data without
 changing code for each object.
 """
 loaded_json_based_correlations = False
+
+ENABLE_MIXTURE_JSON = False
 
 def json_correlation_lookup(CAS, key):
     if not loaded_json_based_correlations:
@@ -254,6 +265,23 @@ def json_correlation_lookup(CAS, key):
             continue
     return json_based_found
 
+def json_mixture_correlation_lookup(CAS1, CAS2, key):
+    if not loaded_json_based_correlations:
+        load_json_based_correlations()
+    CAS_key = ' '.join(sorted_CAS_key([CAS1, CAS2]))
+    json_based_found = {}
+    for db in json_based_correlation_data:
+        try:
+            found_stuff = db[CAS_key][key]
+            for k, v in found_stuff.items():
+                if k not in json_based_found:
+                    json_based_found[k] = v
+                else:
+                    json_based_found[k].update(v)
+        except KeyError:
+            continue
+    return json_based_found
+
 json_based_correlation_data = []
 json_based_correlation_paths = []
 
@@ -262,9 +290,15 @@ def load_json_based_correlations():
     folder = os.path.join(source_path, 'Misc')
     paths = [os.path.join(folder, 'refprop_correlations.json'),
              os.path.join(folder, 'elements.json'),
+             os.path.join(folder, 'janaf_correlations.json'),
              os.path.join(folder, 'inorganic_correlations.json'),
              os.path.join(folder, 'organic_correlations.json'),
+             os.path.join(folder, 'Ho_1972_thermal_conductivity_solid.json'),
+             os.path.join(folder, 'pycalphad_unary50.json'),
              ]
+    if ENABLE_MIXTURE_JSON:
+        paths.extend([os.path.join(folder, 'mixture_correlations.json'),
+                    ])
     json_based_correlation_data.clear()
     json_based_correlation_paths.clear()
     import json
@@ -457,6 +491,7 @@ PROPERTY_TRANSFORM_D2_X = 'd2xdT2overx'
 
 skipped_parameter_combinations = {'REFPROP_sigma': set([('sigma1',), ('sigma1', 'n1', 'sigma2')])}
 
+DEFAULT_PHASE_TRANSITIONS = 'Default phase transitions'
 
 class TDependentProperty:
     r'''Class for calculating temperature-dependent chemical properties.
@@ -881,7 +916,7 @@ class TDependentProperty:
       ),
 
     'stable_polynomial': (['coeffs'],
-      [],
+      ['int_T_coeffs', 'int_T_log_coeff'],
       {'f': None,
       'signature': 'array'},
       {'fit_params': []},
@@ -1393,7 +1428,6 @@ class TDependentProperty:
     correlation_keys_to_parameters = {v: k for k, v in correlation_parameters.items()}
 
 
-
     def __copy__(self):
         return self
 
@@ -1404,9 +1438,9 @@ class TDependentProperty:
     def __eq__(self, other):
         return self.__hash__() == hash(other)
 
-    hash_ignore_props = ('extrapolation_coeffs', 'prop_cached',
+    hash_ignore_props = {'extrapolation_coeffs', 'prop_cached',
                          'TP_cached', 'tabular_data_interpolators',
-                         'tabular_data_interpolators_P', 'T_cached')
+                         'tabular_data_interpolators_P', 'T_cached'}
     def __hash__(self):
         d = self.__dict__
         # extrapolation values and interpolation objects should be ignored
@@ -1422,7 +1456,7 @@ class TDependentProperty:
 
         return ans
 
-    extra_correlations_internal = {REFPROP_FIT, HEOS_FIT}
+    extra_correlations_internal = {REFPROP_FIT, HEOS_FIT, UNARY, HO1972, JANAF_FIT}
 
     def __repr__(self):
         r'''Create and return a string representation of the object. The design
@@ -1435,6 +1469,9 @@ class TDependentProperty:
         repr : str
             String representation, [-]
         '''
+        return self.as_string()
+
+    def as_string(self, tabular=True, references=True, json_parameters=False):
         clsname = self.__class__.__name__
         base = '%s(' % (clsname)
         if self.CASRN:
@@ -1442,6 +1479,8 @@ class TDependentProperty:
         for k in self.custom_args:
             v = getattr(self, k)
             if v is not None:
+                if not references and isinstance(v, TDependentProperty):
+                    continue
                 base += f'{k}={v}, '
 
         extrap_str = '"%s"' %(self.extrapolation) if self.extrapolation is not None else 'None'
@@ -1449,16 +1488,16 @@ class TDependentProperty:
 
         method_str = '"%s"' %(self.method) if self.method is not None else 'None'
         base += 'method=%s, ' %(method_str)
-        if self.tabular_data:
+        if self.tabular_data and tabular:
             if not (len(self.tabular_data) == 1 and VDI_TABULAR in self.tabular_data):
                 base += 'tabular_data=%s, ' %(self.tabular_data)
 
         if self.P_dependent:
             method_P_str = '"%s"' %(self.method_P) if self.method_P is not None else 'None'
             base += 'method_P=%s, ' %(method_P_str)
-            if self.tabular_data_P:
+            if self.tabular_data_P and tabular:
                 base += 'tabular_data_P=%s, ' %(self.tabular_data_P)
-            if 'tabular_extrapolation_permitted' in self.__dict__:
+            if 'tabular_extrapolation_permitted' in self.__dict__ and tabular:
                 base += 'tabular_extrapolation_permitted=%s, ' %(self.tabular_extrapolation_permitted)
 
 
@@ -1481,12 +1520,17 @@ class TDependentProperty:
             if extra_model:
                 # Remove any internal models that happen to use the same infrastructure
                 extra_model = extra_model.copy()
-                for extra_added_corr in self.extra_correlations_internal:
-                    if extra_added_corr in extra_model:
-                        del extra_model[extra_added_corr]
+                if not json_parameters:
+                    for extra_added_corr in self.extra_correlations_internal:
+                        if extra_added_corr in extra_model:
+                            del extra_model[extra_added_corr]
                 if len(extra_model):
                     # Only add the string if we still have anything
                     base += f'{k}={extra_model}, '
+        if hasattr(self, 'piecewise_methods'):
+            piecewise_methods = self.piecewise_methods.copy()
+            piecewise_methods.pop(DEFAULT_PHASE_TRANSITIONS, None)
+            base += 'piecewise_methods=%s, ' %({k: {'methods': v[0], 'T_ranges': v[1]} for k, v in piecewise_methods.items()})
 
 
         if base[-2:] == ', ':
@@ -1580,6 +1624,22 @@ class TDependentProperty:
             d['local_methods'] = {}
         return d
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        for obj_name in self._json_obj_by_CAS:
+            try:
+                if obj_name in state:
+                    state[obj_name] = self.CASRN
+                # del state[obj_name]
+            except:
+                pass
+        return state
+
+    def __setstate__(self, state):
+        self._load_json_CAS_references(state)
+        self.__dict__.update(state)
+
+
     @classmethod
     def _load_json_CAS_references(cls, d):
         try:
@@ -1653,7 +1713,7 @@ class TDependentProperty:
         del d["json_version"]
         new = cls.__new__(cls)
         new.__dict__ = d
-        new.add_extra_correlations()
+        new._add_extra_correlations()
 
         for name, params in new.correlations.items():
             model = params[2]
@@ -2071,7 +2131,11 @@ class TDependentProperty:
                 sel = lambda x: x[3]
                 best_fit_bic, stats_bic, _, _, parameters_bic, _ = min(all_fits, key=sel)
                 if parameters_aic <= parameters_bic:
-                    best_fit, stats  = best_fit_aic, stats_aic
+                    # If the bic is very substantially better of a fit (and the fit is also poor), allow using it
+                    if stats_aic['MAE'] > 0.1 and stats_bic['MAE']/stats_aic['MAE'] < 1.0/3.0:
+                        best_fit, stats = best_fit_bic, stats_bic
+                    else:
+                        best_fit, stats  = best_fit_aic, stats_aic
                 else:
                     best_fit, stats  = best_fit_bic, stats_bic
             elif model_selection.startswith('min(BIC, AICc, KFold'):
@@ -2699,6 +2763,12 @@ class TDependentProperty:
             return self.interpolate(T, method)
         elif method in self.local_methods:
             return self.local_methods[method].f(T)
+        elif hasattr(self, 'piecewise_methods') and method in self.piecewise_methods:
+            method_names, _, T_iter = self.piecewise_methods[method]
+            for a_method, a_Tmax in zip(method_names, T_iter):
+                if T <= a_Tmax:
+                    return self.calculate(T, a_method)
+            return self.calculate(T, method_names[-1])
         else:
             raise ValueError("Unknown method; methods are %s" %(self.all_methods))
 
@@ -3105,7 +3175,7 @@ class TDependentProperty:
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
-            from scipy.interpolate import interp1d
+            from scipy.interpolate import interp1d, PchipInterpolator
             Ts, properties = self.tabular_data[name]
 
             if self.interpolation_T is not None:  # Transform ths Ts with interpolation_T if set
@@ -3120,7 +3190,9 @@ class TDependentProperty:
             extrapolator = interp1d(Ts_interp, properties_interp, fill_value='extrapolate')
             # If more than 5 property points, create a spline interpolation
             if len(properties) >= 5:
+                # TODO: switch interpolator
                 spline = interp1d(Ts_interp, properties_interp, kind='cubic')
+                # spline = PchipInterpolator(Ts_interp, properties_interp)
             else:
                 spline = None
 #            if isinstance(self.tabular_data_interpolators, dict):
@@ -3197,6 +3269,22 @@ class TDependentProperty:
 
         elif model == 'stable_polynomial':
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
+            is_Cp = self.units =='J/mol/K'
+            # Don't bother doing unneeded work for other properties
+            if is_Cp:
+                extra['int_coeffs'] = polyint_stable(coeffs, Tmin, Tmax)
+
+            # This integral over T is numerically challenging and is best converted using mpmath.
+            # Looking at errors on the order of 1e-6 if not but I'm sure there are cases if not.
+            if 'int_T_coeffs' in kwargs and 'int_T_log_coeff' in kwargs:
+                extra['int_T_coeffs'], extra['int_T_log_coeff'] = kwargs['int_T_coeffs'], kwargs['int_T_log_coeff']
+
+            elif is_Cp:
+                # Only setup the integral coefficients if the model is a heat capacity model
+                int_T_coeffs_unstable, extra['int_T_log_coeff'] = polyint_over_x_stable(coeffs, Tmin, Tmax)
+                from numpy.polynomial.polynomial import Polynomial
+                extra['int_T_coeffs'] = Polynomial(int_T_coeffs_unstable[::-1]).convert(domain=(Tmin, Tmax)).coef.tolist()[::-1]
+
         elif model == 'exp_stable_polynomial':
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
         elif model == 'exp_stable_polynomial_ln_tau':
@@ -3226,6 +3314,46 @@ class TDependentProperty:
             extra['int_coeffs'] = chebyshev_int_coeffs = chebint(coeffs, scl=1.0/scale)
 
         self.correlations[name] = (call, kwargs, model, extra)
+
+    def add_piecewise_method(self, name, method_names, T_ranges):
+        r'''Method to add a piecewise method made of already added other methods.
+        This can be useful in the event of multiple solid phases.
+        However, if the methods are not continuous at the transitions,
+        there will be discontinuities!
+
+        Parameters
+        ----------
+        name : str
+            The name of method, [-]
+        method_names : list[str]
+            Each of the existing methods, [-]
+        T_ranges : list[float]
+            A list of temperatures consisting of [Tmin, T_transition1, ..., Tmax];
+            this is size len(method_names) + 1, [K]
+
+        Notes
+        -----
+        '''
+        for m in method_names:
+            if m not in self.all_methods:
+                raise ValueError(f"The provided method `{m}` was not found; methods are {self.all_methods}")
+        if name in self.all_methods:
+            raise ValueError("Method already exists")
+        if not len(method_names) + 1 == len(T_ranges):
+            raise ValueError("Method name and temperature ranges are inconsistent")
+        if not T_ranges == list(sorted(T_ranges)):
+            raise ValueError("Temperature ranges should be sorted assending")
+        Tmin = T_ranges[0]
+        Tmax = T_ranges[-1]
+        d = getattr(self, 'piecewise_methods', None)
+        if d is None:
+            d = {}
+            self.piecewise_methods = d
+        d[name] = (method_names, T_ranges, T_ranges[1:])
+        self.T_limits[name] = (Tmin, Tmax)
+        self.all_methods.add(name)
+        self.method = name
+
 
     def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
         r'''Method to add a new set of emperical fit equation coefficients to
@@ -3808,6 +3936,12 @@ class TDependentProperty:
                     Tmax, extra['Tmin_value'],
                     extra['Tmax_value'], extra['Tmin_slope'],
                     extra['Tmax_slope'])
+            elif model == 'stable_polynomial':
+                if 'int_coeffs' in extra:
+                    int_coeffs, offset, scale = extra['int_coeffs'], extra['offset'], extra['scale']
+                    return horner_stable(T2, int_coeffs, offset, scale) - horner_stable(T1, int_coeffs, offset, scale)
+
+
             calls = self.correlation_models[model][2]
             if 'f_int' in calls:
                 return calls['f_int'](T2, **kwargs) - calls['f_int'](T1, **kwargs)
@@ -3951,6 +4085,12 @@ class TDependentProperty:
                     extra['Tmin_value'],
                     extra['Tmax_value'], extra['Tmin_slope'],
                     extra['Tmax_slope'])
+            elif model == 'stable_polynomial':
+                if 'int_T_coeffs' in extra:
+                    int_T_coeffs, int_T_log_coeff = extra['int_T_coeffs'], extra['int_T_log_coeff']
+                    offset, scale = extra['offset'], extra['scale']
+                    return horner_stable_log(T2, int_T_coeffs, offset, scale, int_T_log_coeff) - horner_stable_log(T1, int_T_coeffs, offset, scale, int_T_log_coeff)
+
             calls = self.correlation_models[model][2]
             if 'f_int_over_T' in calls:
                 return calls['f_int_over_T'](T2, **kwargs) - calls['f_int_over_T'](T1, **kwargs)
@@ -4503,9 +4643,6 @@ class TDependentProperty:
         self._extrapolation_min = kwargs.pop('extrapolation_min', None)
         self._extrapolation_max = kwargs.pop('extrapolation_max', None)
 
-        if kwargs.get('tabular_data', None):
-            for name, (Ts, properties) in kwargs['tabular_data'].items():
-                self.add_tabular_data(Ts, properties, name=name, check_properties=False)
 
         self.correlations = {}
 
@@ -4528,6 +4665,7 @@ class TDependentProperty:
             CASRN = self.CASRN
         except AttributeError:
             CASRN = '' # some tests don't have this
+        found_allotropes = False
         if CASRN and load_data:
             something = json_correlation_lookup(CASRN, self.__class__.__name__)
             for key, json_based_data in something.items():
@@ -4535,6 +4673,43 @@ class TDependentProperty:
                     kwargs[key].update(json_based_data)
                 else:
                     kwargs[key] = json_based_data
+
+            if CASRN in solid_allotrope_map:
+                do_not_set_methods = set()
+                # Load all the allotropes
+                solid_allotrope_mapping = solid_allotrope_map[CASRN]
+                CASs_transitions = solid_allotrope_mapping['CASs_transitions']
+                allotrope_phase_count = len(CASs_transitions)
+                auto_transition_names = [None]*allotrope_phase_count
+                T_transitions = list(solid_allotrope_mapping['T_transitions'])
+                for CASRN_allotrope in solid_allotrope_map[CASRN]['all_CASs']:
+                    something = json_correlation_lookup(CASRN_allotrope, self.__class__.__name__)
+                    allotrope_name = allotrope_CAS_to_name[CASRN_allotrope]
+                    try:
+                        auto_CAS_idx = CASs_transitions.index(CASRN_allotrope)
+                    except:
+                        auto_CAS_idx = None
+
+                    for key, json_based_data in something.items():
+                        json_based_data_copy = {}
+                        for k, v in json_based_data.items():
+                            if k not in self.extra_correlations_internal:
+                                found_allotropes = True
+                                new_allotrope_method_name = k + ' ' + allotrope_name
+                                json_based_data_copy[new_allotrope_method_name] = v
+                                do_not_set_methods.add(new_allotrope_method_name)
+                                if auto_CAS_idx is not None:
+                                    auto_transition_names[auto_CAS_idx] = new_allotrope_method_name
+                                    if auto_CAS_idx == 0:
+                                        T_transitions.insert(0, v['Tmin'])
+                                    elif auto_CAS_idx == allotrope_phase_count-1:
+                                        T_transitions.append(v['Tmax'])
+                        json_based_data = json_based_data_copy
+                        if key in kwargs:
+                            kwargs[key].update(json_based_data)
+                        else:
+                            kwargs[key] = json_based_data
+
 
         if kwargs:
             correlation_keys_to_parameters = self.correlation_keys_to_parameters
@@ -4547,6 +4722,22 @@ class TDependentProperty:
                     for corr_i, corr_kwargs in correlation_dict.items():
                         self.add_correlation(name=corr_i, model=correlation_name,
                                              **corr_kwargs)
+        if kwargs.get('tabular_data', None):
+            for name, (Ts, properties) in kwargs['tabular_data'].items():
+                self.add_tabular_data(Ts, properties, name=name, check_properties=False)
+            kwargs.pop('tabular_data')
+
+        if found_allotropes:
+            # Try to add a generic range based method that handles the transitions
+            if None not in auto_transition_names:
+                self.add_piecewise_method(DEFAULT_PHASE_TRANSITIONS, method_names=auto_transition_names,
+                                          T_ranges=T_transitions)
+
+        if 'piecewise_methods' in kwargs:
+            piecewise_methods = kwargs['piecewise_methods']
+            for name, data in piecewise_methods.items():
+                self.add_piecewise_method(name=name, method_names=data['methods'], T_ranges=data['T_ranges'])
+
         try:
             method = kwargs['method']
         except:
@@ -4606,9 +4797,11 @@ class TDependentProperty:
             method = EXP_CHEB_FIT_LN_TAU
             self.all_methods.add(EXP_CHEB_FIT_LN_TAU)
 
-        self.add_extra_correlations()
+        self._add_extra_correlations()
 
-        if method is None:
+
+
+        if method is None or (found_allotropes and method in do_not_set_methods) or method in self.extra_correlations_internal:
             all_methods = self.all_methods
             for i in self.ranked_methods:
                 if i in all_methods:
@@ -4616,7 +4809,7 @@ class TDependentProperty:
                     break
         self.method = method
 
-    def add_extra_correlations(self):
+    def _add_extra_correlations(self):
         # Load any component specific methods
         if hasattr(self, 'CASRN'):
             CASRN = self.CASRN

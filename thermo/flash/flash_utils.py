@@ -67,7 +67,11 @@ __all__ = [
     'flash_phase_boundary_one_sided_secant',
     'VLN_bubble_boolean_check',
     'VL_dew_boolean_check',
-    'generate_phase_boundaries_naive'
+    'generate_phase_boundaries_naive',
+    'water_wet_bulb_temperature',
+    'water_dew_point_from_humidity',
+    'solve_water_wet_bulb_temperature_nested',
+    'solve_water_wet_bulb_temperature_direct',
 ]
 
 from math import copysign, log10
@@ -114,6 +118,7 @@ from fluids.numerics import (
     translate_bound_f_jac,
     trunc_exp,
     trunc_log,
+    SolverInterface,
 )
 from fluids.numerics import numpy as np
 
@@ -5267,6 +5272,188 @@ def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check
             break
 
     return v, attempts, iterations, multiplier
+
+def water_dew_point_from_humidity(flasher, T, P, humidity, zs_air, zs_added):
+    try:
+        sat = flasher.flash_mixing_phase_boundary(specs={'T': T, 'P': P}, zs_existing=zs_air,
+                                           zs_added=zs_added, boundary='VL')
+    except:
+        return None
+    N = flasher.N
+    ratio = sat.flash_convergence['mixing_factor']
+    feed_ns = zs_air
+    zs_for_factor = flash_mixing_remove_overlap(zs_air, zs_added)
+    n_factor = sum([feed_ns[i] if zs_for_factor[i] > 0 else 0 for i in range(N)])
+    ns_out = [n_factor*(zs_for_factor[i] + zs_added[i]*ratio*humidity) for i in range(N)]
+    zs_my_flash = normalize(ns_out)
+
+    return water_wet_bulb_temperature(flasher, zs=zs_my_flash, T=T, P=P)
+
+
+def water_wet_bulb_temperature(flasher, zs, T, P, feed=None):
+    '''Solver which calculates the water wet bulb temperature of a stream.
+    The stream can contain water, but not more water than the saturation amount.
+
+    If water is not in the feed the calculation cannot be performed.
+
+    Parameters
+    ----------
+    flasher : Flash
+        Flash object, [-]
+    zs : list[float]
+        Mole fractions of stream, [-]
+    T : float
+        Temperature, [K]
+    P : float
+        Pressure, [Pa]
+    feed : EquilibriumState
+        If the feed at `zs`, `T`, and `P` has already been flashed, this
+        object can be provided to avoid additional calculations, [-]
+
+    Returns
+    -------
+    sat : EquilibriumState
+        The flash results at the wet bulb temperature and composition, [-]
+    '''
+    water_index = flasher.water_index
+    water_comp = [0.0]*flasher.N
+    water_comp[water_index] = 1
+
+    flashes2 = []
+    feed = feed if feed is not None else flasher.flash(zs=zs, T=T, P=P)
+
+    # water_feed = flasher.flash(zs=water_comp, T=T, P=P)
+    water_feed = flasher.liquids[0].to(zs=water_comp, T=T, P=P)
+    # Attempt to get a water vapor pressure
+
+    try:
+        Psat_water_feed = water_feed.Psats()[water_index]
+    except:
+        try:
+            Psat_water_feed = flasher.correlations.VaporPressures[water_index](T)
+        except:
+            Psat_water_feed = None
+
+
+
+
+    H_feed = feed.H()
+    H_water_feed = water_feed.H()
+
+    def wet_bulb_T_error_direct(moles_water):
+        # Investigated the possibility of using TPD to make this a NR system
+        # However the liquid mole fractions for the TPD=0 spec can only be found by solving the saturation equations
+        # so it can't really be a 2 equation system.
+
+        # print(moles_water, 'moles_water')
+        # Basis feed 1 mole
+        H_out = (moles_water*H_water_feed + H_feed)/(1.0 + moles_water)
+        ns_out = zs.copy()
+        ns_out[water_index] += moles_water
+        zs_out = normalize(ns_out)
+
+        # Can we target the energy balance?
+        # flash_out = flasher.flash(H=H_out, P=feed.P, zs=zs_out)
+        # flashes2[:] = [flash_out]
+        # return flash_out.VF-.99999999
+        flash_out = flasher.flash(VF=1, P=P, zs=zs_out)
+        flashes2[:] = [flash_out]
+        error = H_out - flash_out.H()
+        # print(error, moles_water)
+        return error
+
+    # import matplotlib.pyplot as plt
+    # ns = linspace(1e-13, 1e-6, 10000)
+    # vals = [wet_bulb_T_error_direct(ni) for ni in ns]
+    # plt.plot(ns, vals)
+    # plt.show()
+    if Psat_water_feed is not None:
+        high = Psat_water_feed/P*5
+        low = 1e-5*Psat_water_feed/P
+        guess = 0.6*Psat_water_feed/P
+    else:
+        high = None
+        low = 1e-5
+        guess = 0.05
+    try:
+        secant(wet_bulb_T_error_direct, guess, low=low, high=high, bisection=True, require_eval=True)
+    except:
+        # Arbitrary 1e-7 low bound based on the mole fraction at which VF=1 flashes start to not converge with CEOS
+        # Do not remove
+        secant(wet_bulb_T_error_direct, guess, low=1e-7, bisection=True, require_eval=True)
+    return flashes2[0]
+
+
+def solve_water_wet_bulb_temperature_nested(flasher, zs, T, P, T_wet_bulb):
+    water_index = flasher.water_index
+    water_comp = [0.0]*flasher.N
+    water_comp[water_index] = 1
+    flashes = []
+    def wet_bulb_T_error_inner_outer(guess):
+        xwo = guess
+        xwf = zs[water_index]
+        n_out = (1.0 - xwf)/(1.0 - xwo)
+        n_added = n_out - 1.0
+        ns_out = [nfi + n_added*zsi for nfi, zsi in zip(zs, water_comp)]
+        zs_out_product = normalize(ns_out)
+        flash_wet_bulb = water_wet_bulb_temperature(flasher=flasher, zs=zs_out_product, T=T, P=P)
+        flashes[::] = [flash_wet_bulb]
+        return flash_wet_bulb.T - T_wet_bulb
+
+    # The mole fraction at the end is not the relevant variable
+    x_for_wet_bulb = secant(wet_bulb_T_error_inner_outer, .0025, low=0, bisection=True)
+    return x_for_wet_bulb
+
+
+def solve_water_wet_bulb_temperature_direct(flasher, zs, T, P, T_wet_bulb):
+    water_index = flasher.water_index
+    water_comp = [0.0]*flasher.N
+    water_comp[water_index] = 1
+    water_product = flasher.flash(zs=water_comp, T=T, P=P)
+    H_water_product = water_product.H()
+    flashes2 = []
+
+    """Known: T_wet_bulb. Product T. Product P.
+
+    Unknown: x_w out, how many moles water to add to cause saturation of water, the temperature of the end flash
+    """
+    def wet_bulb_T_error_direct(guess):
+        # TODO make a standalone function for this
+        moles_water_1, moles_water_2 = guess
+        moles_water_1 = abs(moles_water_1)
+        moles_water_2 = abs(moles_water_2)
+
+        # Calculate the amount of water in the actual product and its enthalpy
+        ns_out = zs.copy()
+        ns_out[water_index] += moles_water_1
+        n_product = sum(ns_out)
+        zs_out_product = normalize(ns_out)
+        product_flash = flasher.flash(zs=zs_out_product, T=T, P=P)
+
+        H_product = product_flash.H()
+        H_out_balanced = (moles_water_2*H_water_product + H_product*n_product)/(n_product + moles_water_2)
+
+        # Now calculate the bit about the wet bulb
+        ns_out_2 = ns_out.copy()
+        ns_out_2[water_index] += moles_water_2
+        zs_out = normalize(ns_out_2)
+
+        # As best as I can tell, the VF=1 flash is required otherwise the newton solver will
+        # go nuts with no jacobian.
+        flash_out = flasher.flash(VF=1, P=P, zs=zs_out)
+        flashes2[:] = [flash_out]
+        energy_err = H_out_balanced - flash_out.H()
+        wet_bulb_T_error = T_wet_bulb - flash_out.T
+
+        errors = [energy_err, wet_bulb_T_error]
+        # print(f'errors={errors}, guess={guess}')
+        return errors
+
+    solver = SolverInterface(method='newton_system_line_search', objf=wet_bulb_T_error_direct, jacobian_perturbation=1e-9, xtol=1e-11)
+    solution = solver.solve([0.01, 0.005])
+    x_w = solution[0]/(1+solution[0])
+    return x_w
+
 
 
 def cricondentherm_direct_criteria(res, require_two_phase=True, require_gas=False):

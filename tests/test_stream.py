@@ -568,6 +568,140 @@ def test_mole_balance_backward():
     ns_now = [f0.n_calc, f1.n_calc, f2.n_calc, p0.n_calc]
     assert_close1d(ns_expect, ns_now)
 
+def test_energy_balance():
+    from thermo import IAPWS95Liquid, IAPWS95Gas, iapws_constants, iapws_correlations
+    from thermo.stream import energy_balance, EnergyStream
+    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+    gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
+    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
+
+
+    in_known = EquilibriumStream(m=5, P=1e5, T=340, flasher=flasher, zs=[1])
+    in_unknown = StreamArgs(P=1e5, T=330, flasher=flasher, zs=[1])
+    out_known = EquilibriumStream(m=4, P=1e5, T=350, flasher=flasher, zs=[1])
+    out_unknown = StreamArgs(P=1e5, T=329, flasher=flasher, zs=[1])
+
+    energy_balance([in_known,in_unknown], [out_unknown, out_known], reactive=False, use_mass=True)
+    in_unknown = in_unknown.stream
+    out_unknown = out_unknown.stream
+    assert_close(in_known.energy+in_unknown.energy, out_unknown.energy + out_known.energy, rtol=1e-13)
+    assert_close(in_known.m+in_unknown.m ,out_unknown.m + out_known.m, rtol=1e-13)
+    assert_close(in_unknown.m, 29.06875321803928)
+    assert_close(out_unknown.m, 30.06875321803839)
+    # Run the same test reactive
+    in_known = EquilibriumStream(m=5, P=1e5, T=340, flasher=flasher, zs=[1])
+    in_unknown = StreamArgs(P=1e5, T=330, flasher=flasher, zs=[1])
+    out_known = EquilibriumStream(m=4, P=1e5, T=350, flasher=flasher, zs=[1])
+    out_unknown = StreamArgs(P=1e5, T=329, flasher=flasher, zs=[1])
+
+    energy_balance([in_known,in_unknown], [out_unknown, out_known], reactive=True, use_mass=True)
+    in_unknown = in_unknown.stream
+    out_unknown = out_unknown.stream
+    assert_close(in_known.energy+in_unknown.energy, out_unknown.energy + out_known.energy, rtol=1e-13)
+    assert_close(in_known.m+in_unknown.m ,out_unknown.m + out_known.m, rtol=1e-13)
+    assert_close(in_unknown.m, 29.06875321803928)
+    assert_close(out_unknown.m, 30.06875321803839)
+
+    # Test with dummy energy streams
+    in_known = EquilibriumStream(m=5, P=1e5, T=340, flasher=flasher, zs=[1])
+    in_unknown = StreamArgs(P=1e5, T=330, flasher=flasher, zs=[1])
+    out_known = EquilibriumStream(m=4, P=1e5, T=350, flasher=flasher, zs=[1])
+    out_unknown = StreamArgs(P=1e5, T=329, flasher=flasher, zs=[1])
+    energy_balance([in_known,in_unknown, EnergyStream(Q=1e-100)], [out_unknown, out_known, EnergyStream(Q=1e-100)], reactive=False, use_mass=True)
+    in_unknown = in_unknown.stream
+    out_unknown = out_unknown.stream
+    assert_close(in_known.energy+in_unknown.energy, out_unknown.energy + out_known.energy, rtol=1e-13)
+    assert_close(in_known.m+in_unknown.m ,out_unknown.m + out_known.m, rtol=1e-13)
+    assert_close(in_unknown.m, 29.06875321803928)
+    assert_close(out_unknown.m, 30.06875321803839)
+
+    # Run the same test reactive
+    in_known = EquilibriumStream(m=5, P=1e5, T=340, flasher=flasher, zs=[1])
+    in_unknown = StreamArgs(P=1e5, T=330, flasher=flasher, zs=[1])
+    out_known = EquilibriumStream(m=4, P=1e5, T=350, flasher=flasher, zs=[1])
+    out_unknown = StreamArgs(P=1e5, T=329, flasher=flasher, zs=[1])
+
+    energy_balance([in_known,in_unknown, EnergyStream(Q=1e-100)], [out_unknown, out_known], reactive=True, use_mass=True)
+    in_unknown = in_unknown.stream
+    out_unknown = out_unknown.stream
+    assert_close(in_known.energy+in_unknown.energy, out_unknown.energy + out_known.energy, rtol=1e-13)
+    assert_close(in_known.m+in_unknown.m ,out_unknown.m + out_known.m, rtol=1e-13)
+    assert_close(in_unknown.m, 29.06875321803928)
+    assert_close(out_unknown.m, 30.06875321803839)
+
+def test_energy_balance_mass_two_unknown_inlets():
+    from thermo import IAPWS95Liquid, IAPWS95Gas, iapws_constants, iapws_correlations
+    from thermo.stream import energy_balance, EnergyStream
+    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+    gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
+    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
+
+    for reactive in (True, False):
+        in0 = StreamArgs(P=1e5, T=340, flasher=flasher, zs=[1])
+        in1 = StreamArgs(P=1e5, T=330, flasher=flasher, zs=[1])
+        out1 = EquilibriumStream(m=4, P=1e5, T=350, flasher=flasher, zs=[1])
+        out2 = EquilibriumStream(P=1e5, m=30.06875321803839, T=329, flasher=flasher, zs=[1])
+        progress = energy_balance([in0,in1], [out1, out2], reactive=reactive, use_mass=True)
+        assert progress
+
+        in0 = in0.stream
+        in1 = in1.stream
+        assert_close(in0.energy+in1.energy, out1.energy + out2.energy, rtol=1e-13)
+        assert_close(in0.m+in1.m ,out1.m + out2.m, rtol=1e-13)
+        assert_close(in0.m, 5)
+        assert_close(in1.m, 29.06875321803928)
+
+        # with energy streams too
+        in0 = StreamArgs(P=1e5, T=340, flasher=flasher, zs=[1])
+        in1 = StreamArgs(P=1e5, T=330, flasher=flasher, zs=[1])
+        out1 = EquilibriumStream(m=4, P=1e5, T=350, flasher=flasher, zs=[1])
+        out2 = EquilibriumStream(P=1e5, m=30.06875321803839, T=329, flasher=flasher, zs=[1])
+        progress = energy_balance([EnergyStream(Q=1e-300), in0,in1,EnergyStream(Q=1e-100),EnergyStream(Q=1e-20)], [out1, out2,EnergyStream(Q=1e-100)], reactive=reactive, use_mass=True)
+        assert progress
+
+        in0 = in0.stream
+        in1 = in1.stream
+        assert_close(in0.energy+in1.energy, out1.energy + out2.energy, rtol=1e-13)
+        assert_close(in0.m+in1.m ,out1.m + out2.m, rtol=1e-13)
+        assert_close(in0.m, 5)
+        assert_close(in1.m, 29.06875321803928)
+
+def test_energy_balance_mass_two_unknown_outlets():
+    from thermo import IAPWS95Liquid, IAPWS95Gas, iapws_constants, iapws_correlations
+    from thermo.stream import energy_balance, EnergyStream
+    liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
+    gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
+    flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
+
+    for reactive in (True, False):
+        in0 = EquilibriumStream(P=1e5, T=340, m=5, flasher=flasher, zs=[1])
+        in1 = EquilibriumStream(P=1e5, T=330, m=29.06875321803928, flasher=flasher, zs=[1])
+        out0 = StreamArgs(P=1e5, T=350, flasher=flasher, zs=[1])
+        out1 = StreamArgs(P=1e5, T=329, flasher=flasher, zs=[1])
+        progress = energy_balance([in0,in1], [out0, out1], reactive=reactive, use_mass=True)
+        assert progress
+        out0 = out0.stream
+        out1 = out1.stream
+        assert_close(in0.energy+in1.energy, out0.energy + out1.energy, rtol=1e-13)
+        assert_close(in0.m+in1.m ,out0.m + out1.m, rtol=1e-13)
+        assert_close(out0.m, 4)
+        assert_close(out1.m, 30.06875321803839)
+
+        # with energy streams too
+        in0 = EquilibriumStream(P=1e5, T=340, m=5, flasher=flasher, zs=[1])
+        in1 = EquilibriumStream(P=1e5, T=330, m=29.06875321803928, flasher=flasher, zs=[1])
+        out0 = StreamArgs(P=1e5, T=350, flasher=flasher, zs=[1])
+        out1 = StreamArgs(P=1e5, T=329, flasher=flasher, zs=[1])
+        progress = energy_balance([in0,in1,EnergyStream(Q=1e-100),EnergyStream(Q=1e-100),EnergyStream(Q=1e-100)], [EnergyStream(Q=1e-100),out0, out1,EnergyStream(Q=1e-100)], reactive=reactive, use_mass=True)
+        assert progress
+        out0 = out0.stream
+        out1 = out1.stream
+        assert_close(in0.energy+in1.energy, out0.energy + out1.energy, rtol=1e-13)
+        assert_close(in0.m+in1.m ,out0.m + out1.m, rtol=1e-13)
+        assert_close(out0.m, 4)
+        assert_close(out1.m, 30.06875321803839)
+
+
 
 def test_EquilibriumStream_unusual_inputs():
     constants = ChemicalConstantsPackage(Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344], MWs=[18.01528],  CASs=['7732-18-5'],)

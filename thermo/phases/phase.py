@@ -44,6 +44,7 @@ from chemicals.utils import (
     phase_identification_parameter,
     property_molar_to_mass,
     speed_of_sound,
+    mixing_simple
 )
 from chemicals.virial import B_from_Z
 from fluids.constants import R, R_inv
@@ -314,6 +315,51 @@ class Phase:
             Hash of the object's model parameters and state, [-]
         '''
         return hash_any_primitive((self.model_hash(), self.T, self.P, self.V(), self.zs))
+
+    def is_same_model(self, other_phase, ignore_phase=False):
+        r'''Method to check whether or not a model is the exact same
+        as another. In the case `ignore_phase` is True, whether the
+        model is liquid or gas is omitted as in the case of CEOSGas
+        and CEOSLiquid.
+
+        Parameters
+        ----------
+        other_phase : Phase
+            The phase to compare against, [-]
+        ignore_phase : bool
+            Whether or not to include the specifc class of the model in the
+            hash
+
+        Returns
+        -------
+        same : bool
+            Whether they are the same or not
+
+        Notes
+        -----
+        This may be quicker to calculate than the model hash.
+        '''
+        # Are we the same object? If so, obviously the same
+        if self is other_phase:
+            return True
+
+        # Are the attributes the same? If not, we can't be the same
+        if self.model_attributes != other_phase.model_attributes:
+            return False
+
+        identical_model_attribute_ids = True
+        for attr in self.model_attributes:
+            if getattr(self, attr) is not getattr(other_phase, attr):
+                identical_model_attribute_ids = False
+                break
+        if identical_model_attribute_ids:
+            if ignore_phase:
+                return True
+            return self.__class__.__name__ == other_phase.__class__.__name__
+
+        # Using identities only we could not confirm if the phase was the same or not.
+        # The values may still be the same if the identities are not.
+        return self.model_hash(ignore_phase) == other_phase.model_hash(ignore_phase)
 
     def model_hash(self, ignore_phase=False):
         r'''Method to compute a hash of a phase.
@@ -4194,6 +4240,101 @@ class Phase:
         '''
         return property_molar_to_mass(self.A_ideal_gas(), self.MW())
 
+
+
+
+
+
+
+
+
+
+
+
+    def _set_ideal_gas_standard_state(self):
+        # TODO: Do not depend on Chemical infrastructure in the future
+        CASs = self.CASs
+        T = self.T
+        zs = self.zs
+        from thermo.chemical_utils import standard_state_ideal_gas_formation, _standard_state_ideal_gas_formation_direct
+        from thermo import Chemical
+        H_chemicals = []
+        S_chemicals = []
+        G_chemicals = []
+
+        try:
+            Hfs = self.Hfs
+        except:
+            Hfs = self.constants.Hfgs
+        try:
+            Sfs = self.Sfs
+        except:
+            Sfs = self.constants.Sfgs
+        try:
+            HeatCapacityGases = self.HeatCapacityGases
+        except:
+            HeatCapacityGases = self.correlations.HeatCapacityGases
+        atomss = self.constants.atomss
+
+        for i in range(self.N):
+            # Hi, Si, Gi = standard_state_ideal_gas_formation(Chemical(CASs[i]), T)
+            Hi, Si, Gi = _standard_state_ideal_gas_formation_direct(T, Hfs[i], Sfs[i], atoms=atomss[i], gas_Cp=HeatCapacityGases[i])
+            H_chemicals.append(Hi)
+            S_chemicals.append(Si)
+            G_chemicals.append(Gi)
+        G = mixing_simple(G_chemicals, zs)
+        H = mixing_simple(H_chemicals, zs)
+        S = mixing_simple(S_chemicals, zs)
+
+        self._H_ideal_gas_standard_state = H
+        self._Hs_ideal_gas_standard_state = H_chemicals
+        self._S_ideal_gas_standard_state = S
+        self._Ss_ideal_gas_standard_state = S_chemicals
+        self._G_ideal_gas_standard_state = G
+        self._Gs_ideal_gas_standard_state = G_chemicals
+
+    def H_ideal_gas_standard_state(self):
+        try:
+            return self._H_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._H_ideal_gas_standard_state
+
+    def Hs_ideal_gas_standard_state(self):
+        try:
+            return self._Hs_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._Hs_ideal_gas_standard_state
+
+    def G_ideal_gas_standard_state(self):
+        try:
+            return self._G_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._G_ideal_gas_standard_state
+
+    def Gs_ideal_gas_standard_state(self):
+        try:
+            return self._Gs_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._Gs_ideal_gas_standard_state
+
+    def S_ideal_gas_standard_state(self):
+        try:
+            return self._S_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._S_ideal_gas_standard_state
+
+    def Ss_ideal_gas_standard_state(self):
+        try:
+            return self._Ss_ideal_gas_standard_state
+        except:
+            self._set_ideal_gas_standard_state()
+            return self._Ss_ideal_gas_standard_state
+
     def _set_mechanical_critical_point(self):
         zs = self.zs
         # Get initial guess
@@ -5328,6 +5469,27 @@ class Phase:
                 return result.betas_volume[i]
 
     @property
+    def beta_volume_liquid_ref(self):
+        r'''Method to return the standard liquid volume fraction of this phase.
+        This method is only
+        available when the phase is linked to an EquilibriumState.
+
+        Returns
+        -------
+        beta_volume : float
+            Phase fraction on a volumetric basis, [-]
+
+        Notes
+        -----
+        '''
+        try:
+            result = self.result
+        except:
+            return None
+        for i, p in enumerate(result.phases):
+            if p is self:
+                return result.betas_volume_liquid_ref[i]
+    @property
     def VF(self):
         r'''Method to return the vapor fraction of the phase.
         If no vapor/gas is present, 0 is always returned. This method is only
@@ -5763,6 +5925,69 @@ class Phase:
             self._concentrations = concentrations = [rho*zi for zi in zs]
         return concentrations
 
+    def concentrations_gas(self):
+        r'''Method to return the molar concentrations of each component in the
+        phase in units of mol/m^3, using the ideal-gas molar volume of the
+        phase at the chosen reference temperature and pressure.
+
+        Returns
+        -------
+        concentrations_gas : list[float]
+            Molar concentrations of all the components in the phase, [mol/m^3]
+
+        Notes
+        -----
+        '''
+        rho = self.rho_gas()
+        zs = self.zs
+        if self.scalar:
+            concentrations = [rho*zi for zi in zs]
+        else:
+            concentrations = rho*zs
+        return concentrations
+
+    def concentrations_gas_normal(self):
+        r'''Method to return the molar concentrations of each component in the
+        phase in units of mol/m^3, using the ideal-gas molar volume of the
+        phase at the normal temperature and pressure.
+
+        Returns
+        -------
+        concentrations_gas_normal : list[float]
+            Molar concentrations of all the components in the phase, [mol/m^3]
+
+        Notes
+        -----
+        '''
+        rho = self.rho_gas_normal()
+        zs = self.zs
+        if self.scalar:
+            concentrations = [rho*zi for zi in zs]
+        else:
+            concentrations = rho*zs
+        return concentrations
+
+    def concentrations_gas_standard(self):
+        r'''Method to return the molar concentrations of each component in the
+        phase in units of mol/m^3, using the ideal-gas molar volume of the
+        phase at the standard temperature and pressure.
+
+        Returns
+        -------
+        concentrations_gas_standard : list[float]
+            Molar concentrations of all the components in the phase, [mol/m^3]
+
+        Notes
+        -----
+        '''
+        rho = self.rho_gas_standard()
+        zs = self.zs
+        if self.scalar:
+            concentrations = [rho*zi for zi in zs]
+        else:
+            concentrations = rho*zs
+        return concentrations
+
     def concentrations_mass(self):
         r'''Method to return the mass concentrations of each component in the
         phase in units of kg/m^3.
@@ -5786,6 +6011,69 @@ class Phase:
         else:
             self._concentrations_mass = [rho_mass*wi for wi in ws]
         return self._concentrations_mass
+
+    def concentrations_mass_gas(self):
+        r'''Method to return the mass concentrations of each component in the
+        phase in units of kg/m^3, using the ideal-gas molar volume of the
+        phase at the chosen reference temperature and pressure.
+
+        Returns
+        -------
+        concentrations_mass_gas : list[float]
+            Mass concentrations of all the components in the phase, [kg/m^3]
+
+        Notes
+        -----
+        '''
+        rho_mass = self.rho_mass_gas()
+        ws = self.ws()
+        if self.scalar:
+            concentrations_mass = [rho_mass*wi for wi in ws]
+        else:
+            concentrations_mass = rho_mass*ws
+        return concentrations_mass
+
+    def concentrations_mass_gas_normal(self):
+        r'''Method to return the mass concentrations of each component in the
+        phase in units of kg/m^3, using the ideal-gas molar volume of the
+        phase at the normal temperature and pressure.
+
+        Returns
+        -------
+        concentrations_mass_gas_normal : list[float]
+            Mass concentrations of all the components in the phase, [kg/m^3]
+
+        Notes
+        -----
+        '''
+        rho_mass = self.rho_mass_gas_normal()
+        ws = self.ws()
+        if self.scalar:
+            concentrations_mass = [rho_mass*wi for wi in ws]
+        else:
+            concentrations_mass = rho_mass*ws
+        return concentrations_mass
+
+    def concentrations_mass_gas_standard(self):
+        r'''Method to return the mass concentrations of each component in the
+        phase in units of kg/m^3, using the ideal-gas molar volume of the
+        phase at the standard temperature and pressure.
+
+        Returns
+        -------
+        concentrations_mass_gas_standard : list[float]
+            Mass concentrations of all the components in the phase, [kg/m^3]
+
+        Notes
+        -----
+        '''
+        rho_mass = self.rho_mass_gas_standard()
+        ws = self.ws()
+        if self.scalar:
+            concentrations_mass = [rho_mass*wi for wi in ws]
+        else:
+            concentrations_mass = rho_mass*ws
+        return concentrations_mass
 
     def partial_pressures(self):
         r'''Method to return the partial pressures of each component in the
@@ -6058,7 +6346,12 @@ derivatives_thermodynamic = ['dA_dP', 'dA_dP_T', 'dA_dP_V', 'dA_dT', 'dA_dT_P', 
              'dG_dV_P', 'dG_dV_T', 'dH_dP', 'dH_dP_T', 'dH_dP_V', 'dH_dT', 'dH_dT_P', 'dH_dT_V',
              'dH_dV_P', 'dH_dV_T', 'dS_dP', 'dS_dP_T', 'dS_dP_V', 'dS_dT', 'dS_dT_P', 'dS_dT_V',
              'dS_dV_P', 'dS_dV_T', 'dU_dP', 'dU_dP_T', 'dU_dP_V', 'dU_dT', 'dU_dT_P', 'dU_dT_V',
-             'dU_dV_P', 'dU_dV_T']
+             'dU_dV_P', 'dU_dV_T',
+             # These will probably need their doc fixed
+             'd2G_dP2', 'd2G_dT2',
+             'd2G_dPdT', 'd2G_dTdP',
+
+             ]
 derivatives_thermodynamic_mass = []
 
 prop_names = {'A' : 'Helmholtz energy',
@@ -6089,20 +6382,23 @@ for attr in derivatives_thermodynamic:
         at_constant = 'T' if diff_by == 'P' else 'P'
     s = f'{base}_mass_{end}'
 
-    doc = r"""Method to calculate and return the {} derivative of mass {} of the phase at constant {}.
+    if not '2' in attr:
+        # TODO docs for second mass derivatives
 
-    .. math::
-        \left(\frac{{\partial {}_{{\text{{mass}}}}}}{{\partial {}}}\right)_{{{}}}
+        doc = r"""Method to calculate and return the {} derivative of mass {} of the phase at constant {}.
 
-Returns
--------
-{} : float
-    The {} derivative of mass {} of the phase at constant {}, [{}/{}]
-""".format(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
-    try:
-        _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
-    except:
-        pass
+        .. math::
+            \left(\frac{{\partial {}_{{\text{{mass}}}}}}{{\partial {}}}\right)_{{{}}}
+
+    Returns
+    -------
+    {} : float
+        The {} derivative of mass {} of the phase at constant {}, [{}/{}]
+    """.format(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
+        try:
+            _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
+        except:
+            pass
     setattr(Phase, s, _der)
     derivatives_thermodynamic_mass.append(s)
 del prop_names, prop_units

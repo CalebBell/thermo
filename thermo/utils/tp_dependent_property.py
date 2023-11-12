@@ -81,6 +81,14 @@ class TPDependentProperty(TDependentProperty):
     P_dependent = True
     interpolation_P = None
 
+    P_correlation_models = {
+        'Tait': {'custom': True},
+    }
+    available_P_correlations = frozenset(P_correlation_models.keys())
+
+    P_correlation_parameters = {k: k + '_parameters' for k in P_correlation_models.keys()}
+    P_correlation_keys_to_parameters = {v: k for k, v in P_correlation_parameters.items()}
+
     def __init__(self, extrapolation, **kwargs):
         self.tabular_data_P = {}
         """tabular_data_P, dict: Stored (Ts, Ps, properties) for any
@@ -94,8 +102,24 @@ class TPDependentProperty(TDependentProperty):
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used."""
 
+        self.P_correlations = {}
+
         super().__init__(extrapolation, **kwargs)
 
+        self.P_limits = {}
+        """Pressure limits on a per-component basis. Not currently used."""
+
+        if kwargs:
+            P_correlation_keys_to_parameters = self.P_correlation_keys_to_parameters
+            # Iterate over all the dictionaries in reverse such that the first one is left as the default
+            for key in reversed(list(kwargs.keys())):
+                if key in P_correlation_keys_to_parameters:
+                    P_correlation_dict = kwargs.pop(key)
+                    P_correlation_name = P_correlation_keys_to_parameters[key]
+                    # Probably need to reverse this too
+                    for corr_i, corr_kwargs in P_correlation_dict.items():
+                        self.add_P_correlation(name=corr_i, model=P_correlation_name,
+                                             **corr_kwargs)
 
         self.tabular_extrapolation_permitted = kwargs.get('tabular_extrapolation_permitted', True)
 
@@ -120,6 +144,21 @@ class TPDependentProperty(TDependentProperty):
         self.all_methods = set()
         """Set of all P-dependent methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`."""
+
+    def add_P_correlation(self, name, model, **kwargs):
+        d = getattr(self, model + '_parameters', None)
+        if d is None:
+            d = {}
+            setattr(self, model + '_parameters', d)
+
+        full_kwargs = kwargs.copy()
+        d[name] = full_kwargs
+        self.all_methods.add(name)
+        self.method = name
+
+        args = (kwargs['coeffs'], kwargs['N_terms'], kwargs['N_T'])
+
+        self.P_correlations[name] = args
 
     @property
     def method_P(self):
@@ -280,6 +319,25 @@ class TPDependentProperty(TDependentProperty):
         if P is None or prop is None:
             prop = self.T_dependent_property(T)
         return prop
+
+    def T_atmospheric_dependent_property(self, T, P_atm=101325.0):
+        r'''Method to calculate the property given a temperature at the standard
+        atmospheric pressure to the selected :obj:`method_P` and :obj:`method`.
+        This is a wrapper around :obj:`TP_dependent_property`.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which to calculate the property, [K]
+        P_atm : float, optional
+            Atmospheric pressure at which to calculate the property, [Pa]
+
+        Returns
+        -------
+        prop : float
+            Calculated property, [`units`]
+        '''
+        return self.TP_dependent_property(T, P_atm)
 
     def add_tabular_data_P(self, Ts, Ps, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.
@@ -671,7 +729,7 @@ class TPDependentProperty(TDependentProperty):
         Ts = np.linspace(Tmin, Tmax, pts)
         Ts_mesh, Ps_mesh = np.meshgrid(Ts, Ps)
         fig = plt.figure()
-        ax = fig.gca(projection='3d')
+        ax = fig.add_subplot(1,1,1,projection="3d")
 
         handles = []
         for method_P in methods_P:
@@ -692,7 +750,7 @@ class TPDependentProperty(TDependentProperty):
                         else:
                             T_props.append(None)
                     properties.append(T_props)
-                properties = ma.masked_invalid(np.array(properties, dtype=np.float).T)
+                properties = ma.masked_invalid(np.array(properties, dtype=np.float64).T)
                 handles.append(ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5))
             else:
                 properties = np.array([[self.calculate_P(T, P, method_P) for T in Ts] for P in Ps])
@@ -706,10 +764,6 @@ class TPDependentProperty(TDependentProperty):
         ax.set_zlabel(self.name + ', ' + self.units)
         plt.title(self.name + ' of ' + self.CASRN)
         plt.show(block=False)
-        # The below is a workaround for a matplotlib bug
-        ax.legend(handles, methods_P)
-        plt.show(block=False)
-
 
     def calculate_derivative_T(self, T, P, method, order=1):
         r'''Method to calculate a derivative of a temperature and pressure

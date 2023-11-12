@@ -2378,3 +2378,74 @@ def test_BVirial_Tsonopoulos_extended_ab():
     assert_close1d(res, (-0.07845103454306249, 0.0))
     res = BVirial_Tsonopoulos_extended_ab(Tc=317.4, Pc=5870000.0, dipole=1.85, smiles="CF")
     assert_close1d(res, (-328285.5327580192, 0.0))
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_cyanide():
+    assert is_cyanide(Chem.MolFromSmiles('CC#N'))
+    assert not is_cyanide(Chem.MolFromSmiles('C1=CC=C(C=C1)N=O'))
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_benene_rings():
+    assert benene_rings(Chem.MolFromSmiles('c1ccccc1')) == 1
+    assert benene_rings(Chem.MolFromSmiles('c1ccccc1c1ccccc1')) == 2
+    assert benene_rings(Chem.MolFromSmiles('c1ccc2cc3ccccc3cc2c1')) == 3
+
+    assert benene_rings(mol_from_name('toluene')) == 1
+    assert benene_rings(mol_from_name('biphenyl')) == 2
+    assert benene_rings(mol_from_name('Styrene')) == 1
+    assert benene_rings(mol_from_name('Benzaldehyde')) == 1
+    assert benene_rings(mol_from_name('Benzoic Acid')) == 1
+    assert benene_rings(mol_from_name('Pyrene')) == 4
+
+    assert benene_rings(mol_from_name('Cyclohexane')) == 0
+    assert benene_rings(mol_from_name('Methylcyclohexane')) == 0
+    assert benene_rings(mol_from_name('Cyclohexanol')) == 0
+    assert benene_rings(mol_from_name('Cyclohexanone')) == 0
+    assert benene_rings(mol_from_name('Cis-1,2-Dimethylcyclohexane')) == 0
+
+    assert benene_rings(mol_from_name('Cyclobutane')) == 0
+    assert benene_rings(mol_from_name('1,2-Dioxetane')) == 0
+    assert benene_rings(mol_from_name('Cyclopentane')) == 0
+    assert benene_rings(mol_from_name('Cyclopentene')) == 0
+    assert benene_rings(mol_from_name('Pyrrole')) == 0
+    assert benene_rings(mol_from_name('Furan')) == 0
+    assert benene_rings(mol_from_name('Thiophene')) == 0
+    assert benene_rings(mol_from_name('Imidazole')) == 0
+    assert benene_rings(mol_from_name('Tetrahydrofuran')) == 0
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_is_radionuclide():
+    assert is_radionuclide(Chem.MolFromSmiles("[3H]O"))  # Water with Tritium
+    assert is_radionuclide(Chem.MolFromSmiles("[131I]C"))  # Methyl iodide with I-131
+
+    assert not is_radionuclide(Chem.MolFromSmiles("CC"))
+
+
+    # Radionuclides
+    assert is_radionuclide(Chem.MolFromSmiles("[3H]O"))  # Water with Tritium
+    assert is_radionuclide(Chem.MolFromSmiles("[131I]C"))  # Methyl iodide with I-131
+    assert is_radionuclide(Chem.MolFromSmiles("[14C]O"))  # Carbon monoxide with C-14
+    assert is_radionuclide(Chem.MolFromSmiles("O=[14C]=O"))  # Carbon dioxide with C-14
+    assert is_radionuclide(Chem.MolFromSmiles("[235U]"))  # Uranium-235
+    assert is_radionuclide(Chem.MolFromSmiles("[210Po]"))  # Polonium-210
+    assert is_radionuclide(Chem.MolFromSmiles("[137Cs]O"))  # Cesium hydroxide with Cs-137
+    assert is_radionuclide(Chem.MolFromSmiles("[10Be]"))  # Beryllium-10
+    assert is_radionuclide(Chem.MolFromSmiles("[238Pu]"))  # Plutonium-238
+    assert is_radionuclide(Chem.MolFromSmiles("[36Cl]"))  # Chlorine-36
+
+    # Stable isotopes (not radionuclides)
+    assert not is_radionuclide(Chem.MolFromSmiles("CC"))  # Ethane
+    assert not is_radionuclide(Chem.MolFromSmiles("[2H]O"))  # Water with Deuterium
+    assert not is_radionuclide(Chem.MolFromSmiles("[13C]O"))  # Carbon monoxide with C-13
+    assert not is_radionuclide(Chem.MolFromSmiles("O=[13C]=O"))  # Carbon dioxide with C-13
+    assert not is_radionuclide(Chem.MolFromSmiles("[16O]"))  # Oxygen-16
+    assert not is_radionuclide(Chem.MolFromSmiles("[12C]"))  # Carbon-12
+    assert not is_radionuclide(Chem.MolFromSmiles("[32S]"))  # Sulfur-32
+    assert not is_radionuclide(Chem.MolFromSmiles("[15N]"))  # Nitrogen-15
+    assert not is_radionuclide(Chem.MolFromSmiles("[63Cu]"))  # Copper-63
+    assert not is_radionuclide(Chem.MolFromSmiles("[28Si]"))  # Silicon-28

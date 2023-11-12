@@ -547,7 +547,7 @@ class EquilibriumState:
         -----
         '''
         try:
-            return self._betas_volume
+            return self._betas_volume_liquid_ref
         except:
             pass
         phase_iter = range(self.phase_count)
@@ -558,8 +558,36 @@ class EquilibriumState:
         for i in phase_iter:
             tot += Vs_phases[i]*betas[i]
         tot_inv = 1.0/tot
-        self._betas_volume = [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
-        return self._betas_volume
+        self._betas_volume_liquid_ref = [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+        return self._betas_volume_liquid_ref
+
+    @property
+    def betas_volume_liquid_ref(self):
+        r'''Method to calculate and return the standard liquid volume fraction of all of the
+        phases in the bulk.
+
+        Returns
+        -------
+        betas_volume_liquid_ref : list[float]
+            Standard liquid volume phase fractions of all the phases in the bulk, ordered
+            vapor, liquid, then solid , [-]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._betas_volume_liquid_ref
+        except:
+            pass
+        phase_iter = range(self.phase_count)
+        betas = self.betas
+        Vs_phases = [i.V_liquid_ref() for i in self.phases]
+        tot = 0.0
+        for i in phase_iter:
+            tot += Vs_phases[i]*betas[i]
+        tot_inv = 1.0/tot
+        self._betas_volume_liquid_ref = [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+        return self._betas_volume_liquid_ref
 
     @property
     def betas_liquids(self):
@@ -2021,6 +2049,95 @@ class EquilibriumState:
         '''
         return R*self.settings.T_gas_ref/self.settings.P_gas_ref
 
+    def rho_gas_standard(self, phase=None):
+        r'''Method to calculate and return the ideal-gas molar density of the
+        phase at the standard temperature and pressure,  according to the
+        temperature variable `T_standard` and pressure variable `P_standard`
+        of the :obj:`thermo.bulk.BulkSettings`.
+
+        Returns
+        -------
+        rho_gas_standard : float
+            Ideal gas molar density at standard temperature and pressure,
+            [mol/m^3]
+        '''
+        return 1.0/self.V_gas_standard(phase)
+
+    def rho_gas_normal(self, phase=None):
+        r'''Method to calculate and return the ideal-gas molar density of the
+        phase at the normal temperature and pressure,  according to the
+        temperature variable `T_normal` and pressure variable `P_normal`
+        of the :obj:`thermo.bulk.BulkSettings`.
+
+        Returns
+        -------
+        rho_gas_normal : float
+            Ideal gas molar density at normal temperature and pressure,
+            [mol/m^3]
+        '''
+        return 1.0/self.V_gas_normal(phase)
+
+    def rho_gas(self, phase=None):
+        r'''Method to calculate and return the ideal-gas molar density of the
+        phase at the chosen reference temperature and pressure,  according to the
+        temperature variable `T_gas_ref` and pressure variable `P_gas_ref`
+        of the :obj:`thermo.bulk.BulkSettings`.
+
+        Returns
+        -------
+        rho_gas : float
+            Ideal gas molar density at the reference temperature and pressure,
+            [mol/m^3]
+        '''
+        return 1.0/self.V_gas(phase)
+
+    def rho_mass_gas_standard(self, phase=None):
+        r'''Method to calculate and return the ideal-gas mass density of the
+        phase at the standard temperature and pressure,  according to the
+        temperature variable `T_standard` and pressure variable `P_standard`
+        of the :obj:`thermo.bulk.BulkSettings`.
+
+        Returns
+        -------
+        rho_mass_gas_standard : float
+            Ideal gas molar density at standard temperature and pressure,
+            [kg/m^3]
+        '''
+        V = self.V_gas_standard(phase)
+        MW = phase.MW() if phase is not None else self.MW()
+        return Vm_to_rho(V, MW)
+
+    def rho_mass_gas_normal(self, phase=None):
+        r'''Method to calculate and return the ideal-gas mass density of the
+        phase at the normal temperature and pressure,  according to the
+        temperature variable `T_normal` and pressure variable `P_normal`
+        of the :obj:`thermo.bulk.BulkSettings`.
+
+        Returns
+        -------
+        rho_mass_gas_normal : float
+            Ideal gas molar density at normal temperature and pressure,
+            [kg/m^3]
+        '''
+        V = self.V_gas_normal(phase)
+        MW = phase.MW() if phase is not None else self.MW()
+        return Vm_to_rho(V, MW)
+
+    def rho_mass_gas(self, phase=None):
+        r'''Method to calculate and return the ideal-gas mass density of the
+        phase at the chosen reference temperature and pressure,  according to the
+        temperature variable `T_gas_ref` and pressure variable `P_gas_ref`
+        of the :obj:`thermo.bulk.BulkSettings`.
+
+        Returns
+        -------
+        rho_mass_gas : float
+            Ideal gas molar density at the reference temperature and pressure,
+            [kg/m^3]
+        '''
+        V = self.V_gas(phase)
+        MW = phase.MW() if phase is not None else self.MW()
+        return Vm_to_rho(V, MW)
 
     def H_C_ratio(self, phase=None):
         r'''Method to calculate and return the atomic ratio of hydrogen atoms
@@ -2282,10 +2399,10 @@ class EquilibriumState:
             return self.phases[0].phis()
         raise ValueError("This property is not defined for EquilibriumStates with more than one phase")
 
-    def Ks(self, phase, phase_ref=None):
+    def Ks(self, phase, ref_phase=None):
         r'''Method to calculate and return the K-values of each phase.
         These are NOT just liquid-vapor K values; these are thermodynamic K
-        values. The reference phase can be specified with `phase_ref`, and then
+        values. The reference phase can be specified with `ref_phase`, and then
         the K-values will be with respect to that phase.
 
         .. math::
@@ -2307,7 +2424,7 @@ class EquilibriumState:
         Notes
         -----
         '''
-        if phase_ref is None:
+        if ref_phase is None:
             try:
                 ref_phase = self.flash_convergence['ref_phase']
             except:
@@ -2317,7 +2434,7 @@ class EquilibriumState:
                     ref_phase = self.solid0
                 else:
                     ref_phase = self.gas
-        ref_zs = phase_ref.zs
+        ref_zs = ref_phase.zs
         zs = phase.zs
         if self.flasher.vectorized:
             Ks = zs/ref_zs
@@ -2874,6 +2991,31 @@ class EquilibriumState:
             self._kls = array(self._kls)
         return self._kls
 
+    def kss(self):
+        r'''Method to calculate and return the pure-component solid
+        temperature-dependent thermal conductivity
+        of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivitySolid`
+        objects.
+
+        Returns
+        -------
+        kss : list[float]
+            Pure component temperature dependent solid thermal conductivities,
+            [W/(m*K)]
+
+        Notes
+        -----
+        '''
+        try:
+            return self._kss
+        except:
+            pass
+        T = self.T
+        self._kss = [o.T_dependent_property(T) for o in self.ThermalConductivitySolids]
+        if not self.flasher.scalar:
+            self._kss = array(self._kss)
+        return self._kss
+
     def kgs(self):
         r'''Method to calculate and return the pure-component gas
         temperature-dependent thermal conductivity
@@ -3183,6 +3325,8 @@ phases_properties_to_EquilibriumState = ['atom_content', 'atom_fractions', 'atom
                                          'pseudo_Tc', 'pseudo_Pc', 'pseudo_Vc', 'pseudo_Zc',
                                          'pseudo_omega',
                                          'V_gas_standard', 'V_gas_normal', 'V_gas',
+                                         'rho_gas_standard', 'rho_gas_normal', 'rho_gas',
+                                         'rho_mass_gas_standard', 'rho_mass_gas_normal', 'rho_mass_gas',
                                          'Hc_normal', 'Hc_standard',
                                          'Hc_lower_normal', 'Hc_lower_standard',
                                          'Wobbe_index_lower_normal', 'Wobbe_index_lower_standard',
@@ -3246,7 +3390,12 @@ bulk_props = ['V', 'Z', 'rho', 'Cp', 'Cv', 'H', 'S', 'U', 'G', 'A', #'dH_dT', 'd
 
               'concentrations_mass', 'concentrations', 'Qls', 'ms', 'ns', 'Q', 'm', 'n',
               'nu', 'kinematic_viscosity', 'partial_pressures',
-              ]
+              'H_ideal_gas_standard_state', 'Hs_ideal_gas_standard_state', 'G_ideal_gas_standard_state',
+               'Gs_ideal_gas_standard_state', 'S_ideal_gas_standard_state', 'Ss_ideal_gas_standard_state',
+
+                'concentrations_mass_gas', 'concentrations_mass_gas_normal', 'concentrations_mass_gas_standard',
+                'concentrations_gas_standard', 'concentrations_gas_normal', 'concentrations_gas'
+ ]
 
 
 

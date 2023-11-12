@@ -714,6 +714,157 @@ def test_HeatCapacityGas_polynomial_input_forms():
         assert HeatCapacityGas.from_json(o.as_json()) == o
         assert eval(str(o)) == o
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacitySolid_titanium_custom():
+    # First test case with customized CAS and literature data
+    # alpha
+    obj = HeatCapacitySolid(CASRN="2099571000-00-0")
+    assert_close(obj(300), 25.809979690958304, rtol=.005)
+
+    # beta
+    obj = HeatCapacitySolid(CASRN="2099555000-00-0")
+    assert_close(obj(1800), 35.667417599655764, rtol=.005)
+
+    # Test we can add a method that combines them
+    obj = HeatCapacitySolid(CASRN="7440-32-6")
+    a, b = 'Fit 2023 alpha titanium', 'Fit 2023 beta titanium'
+    obj.add_piecewise_method('auto', method_names=[a,b], T_ranges=[*obj.T_limits[a], obj.T_limits[b][1]])
+    assert_close(obj(1500), 31.89694904655883)
+    assert_close(obj(200), 22.149215492789644)
+
+    # Did we break storing and representation?
+    assert HeatCapacitySolid.from_json(obj.as_json()) == obj
+    assert eval(str(obj)) == obj
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_stable_polynomial_parameters():
+    coeffs = [-1.1807560231661693, 1.0707500453237926, 6.219226796524199, -5.825940187155626, -13.479685202800221, 12.536206919506746, 16.713022858280983, -14.805461693468148, -13.840786121365808, 11.753575516231718, 7.020730111250113, -5.815540568906596, -2.001592044472603, 0.9210441915058972, 1.6279658993728698, -1.0508623065949019, -0.2536958793947375, 1.1354682714079252, -1.3567430363825075, 0.3415188644466688, 1.604997313795647, -2.26022568959622, -1.62374341299051, 10.875220288166474, 42.85532802412628]
+    Tmin, Tmax = 251.165, 2000.0
+    kwargs = {'stable_polynomial_parameters': {'test': {'coeffs': coeffs,'Tmin': Tmin, 'Tmax': Tmax  }}}
+    obj = HeatCapacityGas(**kwargs)
+    assert_close(obj(300), 33.59562103706877, rtol=1e-13)
+    assert_close(obj.calculate_integral(300, 400, 'test'), 3389.544332887159, rtol=1e-13)
+
+    # No real way to force check that quad isn't used but this at least checks the results
+    assert 'int_coeffs' in obj.correlations['test'][3] 
+    expect_coeffs = [-41.298949195476155, 39.0117740732049, 236.44351075433477, -231.5592751637343, -561.2796493247411, 548.0939357018894, 769.1662981674165, -719.2308222415658, -711.9191528399639, 642.3457574352843, 409.2699514702697, -363.22931752942026, -134.6328547344325, 67.11476327717565, 129.41107925589787, -91.88923909769476, -24.648457402294206, 124.10916590172992, -169.47997914514303, 49.77167860871583, 280.687547727181, -494.09522423312563, -473.27655194287644, 4754.741468163904, 37473.448792536445, 0.0]
+    assert_close1d(obj.correlations['test'][3]['int_coeffs'], expect_coeffs)
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy():
+    coeffs_num = [-1.1807560231661693, 1.0707500453237926, 6.219226796524199, -5.825940187155626, -13.479685202800221, 12.536206919506746, 16.713022858280983, -14.805461693468148, -13.840786121365808, 11.753575516231718, 7.020730111250113, -5.815540568906596, -2.001592044472603, 0.9210441915058972, 1.6279658993728698, -1.0508623065949019, -0.2536958793947375, 1.1354682714079252, -1.3567430363825075, 0.3415188644466688, 1.604997313795647, -2.26022568959622, -1.62374341299051, 10.875220288166474, 42.85532802412628]
+    Tmin, Tmax = 251.165, 2000.0
+    kwargs = {'stable_polynomial_parameters': {'test': {'coeffs': coeffs_num,'Tmin': Tmin, 'Tmax': Tmax  }}}
+    obj = HeatCapacityGas(extrapolation="linear",**kwargs)
+    dSs = []
+    dHs = []
+    pairs = [(252, 400), (252, 1000), (252, 2000), (Tmin, Tmax), (1, 10000), (1, 300), (1000, 10000)]
+    dSs_expect = [15.587741399855702, 49.537011711414834, 81.56764797150367, 81.67860031367769, 377.40462102946975, 187.9790605246881, 145.72976380712763]
+
+    for (T1, T2), dS_expect in zip(pairs, dSs_expect):
+        dS = obj.T_dependent_property_integral_over_T(T1, T2)
+        # print(T1, T2, dS/dS_expect, dS_expect, dS)
+        dSs.append(dS)
+
+    for T1, T2 in pairs:
+        dH = obj.T_dependent_property_integral(T1, T2)
+        dHs.append(dH)
+    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.5550873382, 9924.4462248903, 665908.1651110547]
+    assert_close1d(dHs, dHs_expect, rtol=1e-13)
+
+    # Essentially what writting this test discovered is that there kind of is a numerical problem with so many parameters;
+    # whether the parameters are converted to stable poly form or not their calculation is imprecise.
+    # With more math work calculating them without rounding errors is probably possible. However, it will be slow
+    # It is already slow!!
+    # See test_HeatCapacityGas_stable_polynomial_parameters_with_entropy_fixed for how the situation is to be handled.
+    assert_close1d(dSs, dSs_expect, rtol=1e-6)
+
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy_fixed():
+    coeffs_num = [-1.1807560231661693, 1.0707500453237926, 6.219226796524199, -5.825940187155626, -13.479685202800221, 12.536206919506746, 16.713022858280983, -14.805461693468148, -13.840786121365808, 11.753575516231718, 7.020730111250113, -5.815540568906596, -2.001592044472603, 0.9210441915058972, 1.6279658993728698, -1.0508623065949019, -0.2536958793947375, 1.1354682714079252, -1.3567430363825075, 0.3415188644466688, 1.604997313795647, -2.26022568959622, -1.62374341299051, 10.875220288166474, 42.85532802412628]
+    Tmin, Tmax = 251.165, 2000.0
+
+    int_T_coeffs = [-0.04919816763192372, 0.11263751330617996, 0.13111045246317343, -0.45423261676182597, -0.060044010117414455, 0.7411591719418316, -0.07854882531076747, -0.7638508595972384, 0.17966146925345727, 0.5368870307001614, -0.238984435878899, -0.1160558677189392, -0.004958654675811305, 0.09069452297160363, 0.034376716486728694, -0.16593023302511933, 0.20857847967437174, -0.1446358723821105, -0.008913096668590397, 0.08207169354184629, 0.26919218469883643, -1.215427392470841, 1.5349428351610082, 6.923550076265145, 3.2254691726042486]
+    int_T_log_coeff = 33.943078665304306
+    kwargs = {'stable_polynomial_parameters': {'test': {'coeffs': coeffs_num,'Tmin': Tmin, 'Tmax': Tmax,
+                                                    'int_T_coeffs': int_T_coeffs, 'int_T_log_coeff': int_T_log_coeff}}}
+    obj = HeatCapacityGas(extrapolation="linear",**kwargs)
+    assert_close(obj.calculate_integral_over_T(300, 400, 'test'), 9.746526386096955, rtol=1e-13)
+    dSs = []
+    dHs = []
+    pairs = [(252, 400), (252, 1000), (252, 2000), (Tmin, Tmax), (1, 10000), (1, 300), (1000, 10000)]
+    dSs_expect = [15.587741399857379, 49.53701171701344, 81.56762248012049, 81.67857482229452, 377.4045955380866, 187.97906052468775, 145.72973831014585]
+    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.5550873382, 9924.4462248903, 665908.1651110547]
+
+    for (T1, T2), dS_expect in zip(pairs, dSs_expect):
+        dS = obj.T_dependent_property_integral_over_T(T1, T2)
+        print(T1, T2, dS/dS_expect, dS_expect, dS)
+        dSs.append(dS)
+
+    for T1, T2 in pairs:
+        dH = obj.T_dependent_property_integral(T1, T2)
+        dHs.append(dH)
+
+    assert_close1d(dHs, dHs_expect, rtol=1e-13)
+    assert_close1d(dSs, dSs_expect, rtol=1e-14)
+
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_UNARY_calphad():
+    # silver
+    obj = HeatCapacitySolid(CASRN='7440-22-4')
+    obj.method = 'UNARY'
+    # obj.T_dependent
+    assert_close(obj(400), 25.81330053581182, rtol=1e-7)
+    assert_close(obj(2500),obj(2600), rtol=1e-4)
+    assert_close(obj(2000),obj(2600), rtol=1e-3)
+    assert_close(obj(2000),obj(3000), rtol=2e-3)
+    Tmin, Tmax = 300, 800
+
+    assert 'int_T_coeffs' in obj.correlations['UNARY'][3]
+    assert 'int_T_log_coeff' in  obj.correlations['UNARY'][3]
+
+    assert_close(obj.calculate_integral_over_T(Tmin, Tmax, 'UNARY'), 25.966064453125)
+    assert_close(obj.calculate_integral(Tmin, Tmax, 'UNARY'), 13348.922120498239)
+
+    obj = HeatCapacityLiquid(CASRN='7440-22-4')
+    obj.method = 'UNARY'
+    assert_close(obj.calculate_integral_over_T(Tmin, Tmax, 'UNARY'), 25.92645263671875)
+    assert_close(obj.calculate_integral(Tmin, Tmax, 'UNARY'), 13343.854184041487)
+    assert_close(obj(500), 26.323860726469874)
+
+
+    assert 'int_T_coeffs' in obj.correlations['UNARY'][3]
+    assert 'int_T_log_coeff' in  obj.correlations['UNARY'][3]
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacity_stable_polynomial_water():
+    obj = HeatCapacityGas(CASRN='7732-18-5')
+    obj.method = 'HEOS_FIT'
+    assert 'int_T_coeffs' in obj.correlations['HEOS_FIT'][3]
+    assert 'int_T_log_coeff' in  obj.correlations['HEOS_FIT'][3]
+    Tmin, Tmax = 300, 800
+
+    assert_close(obj.calculate_integral_over_T(Tmin, Tmax, 'HEOS_FIT'), 34.78301770087086)
+    assert_close(obj.calculate_integral(Tmin, Tmax, 'HEOS_FIT'), 17940.09005349636)
+
+
+    obj = HeatCapacityLiquid(CASRN='7732-18-5')
+    obj.method = 'HEOS_FIT'
+    assert 'int_T_coeffs' in obj.correlations['HEOS_FIT'][3]
+    assert 'int_T_log_coeff' in  obj.correlations['HEOS_FIT'][3]
+
+    Tmin, Tmax = 300, 550
+    assert_close(obj.calculate_integral_over_T(Tmin, Tmax, 'HEOS_FIT'), 47.9072265625)
+    assert_close(obj.calculate_integral(Tmin, Tmax, 'HEOS_FIT'), 19944.787214230466)
+
+@pytest.mark.meta_T_dept
+def test_JANAF_fit_carbon_exists():
+    obj = HeatCapacitySolid(CASRN="7440-44-0")
+    assert obj.method == 'JANAF_FIT'
+
+
 @pytest.mark.slow
 @pytest.mark.fuzz
 def test_locked_integral():

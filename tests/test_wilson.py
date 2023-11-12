@@ -590,6 +590,7 @@ def test_multicomnent_madeup():
 
 @pytest.mark.slow
 @pytest.mark.sympy
+@pytest.mark.fuzz
 def test_multicomponent_madeup_sympy():
     from sympy import diff, exp, log, symbols
     A, B, C, D, E, F, T = symbols('A, B, C, D, E, F, T')
