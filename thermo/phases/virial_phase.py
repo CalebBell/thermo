@@ -531,15 +531,15 @@ class VirialCSP:
         N = self.N
         Tcs, Pcs, Vcs, omegas = self.Tcs, self.Pcs, self.Vcs, self.omegas
         if self.vectorized:
-            Bs = [0.0]*N
-            dB_dTs = [0.0]*N
-            d2B_dT2s = [0.0]*N
-            d3B_dT3s = [0.0]*N
-        else:
             Bs = zeros(N)
             dB_dTs = zeros(N)
             d2B_dT2s = zeros(N)
             d3B_dT3s = zeros(N)
+        else:
+            Bs = [0.0]*N
+            dB_dTs = [0.0]*N
+            d2B_dT2s = [0.0]*N
+            d3B_dT3s = [0.0]*N
 
         if self.B_model == VIRIAL_B_ZERO:
             return Bs, dB_dTs, d2B_dT2s, d3B_dT3s
