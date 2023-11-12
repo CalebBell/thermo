@@ -2007,9 +2007,9 @@ class Twu91_a_alpha(a_alpha_base):
             Tr = T/Tcs[i]
             a_alpha = ais[i]*(Tr**(coeffs[2]*(coeffs[1] - 1.0))*exp(coeffs[0]*(1.0 - (Tr)**(coeffs[1]*coeffs[2]))))
             a_alphas.append(a_alpha)
-        if self.scalar:
-            return a_alphas
-        return array(a_alphas)
+        if self.vectorized:
+            return array(a_alphas)
+        return a_alphas
 
     def a_alpha_and_derivatives_vectorized(self, T):
         r'''Method to calculate the pure-component `a_alphas` and their first
@@ -2064,9 +2064,9 @@ class Twu91_a_alpha(a_alpha_base):
             da_alpha_dTs[i] = x8*(x1 - x7)*T_inv
             d2a_alpha_dT2s[i] = d2a_alpha_dT2
 
-        if self.scalar:
-            return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
-        return array(a_alphas), array(da_alpha_dTs), array(d2a_alpha_dT2s)
+        if self.vectorized:
+            return array(a_alphas), array(da_alpha_dTs), array(d2a_alpha_dT2s)
+        return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 
 class Soave_1993_a_alpha(a_alpha_base):
@@ -2350,9 +2350,9 @@ class TwuSRK95_a_alpha(a_alpha_base):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, method='SRK')
                 for i in range(self.N)]
-        if self.scalar:
-            return a_alphas
-        return array(a_alphas)
+        if self.vectorized:
+            return array(a_alphas)
+        return a_alphas
 
     def a_alpha_and_derivatives_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
@@ -2362,9 +2362,9 @@ class TwuSRK95_a_alpha(a_alpha_base):
             r0.append(v0)
             r1.append(v1)
             r2.append(v2)
-        if self.scalar:
-            return r0, r1, r2
-        return array(r0), array(r1), array(r2)
+        if self.vectorized:
+            return array(r0), array(r1), array(r2)
+        return r0, r1, r2
 
 
 
@@ -2473,9 +2473,9 @@ class TwuPR95_a_alpha(a_alpha_base):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, method='PR')
                 for i in range(self.N)]
-        if self.scalar:
-            return a_alphas
-        return array(a_alphas)
+        if self.vectorized:
+            return array(a_alphas)
+        return a_alphas
 
     def a_alpha_and_derivatives_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
@@ -2485,9 +2485,9 @@ class TwuPR95_a_alpha(a_alpha_base):
             r0.append(v0)
             r1.append(v1)
             r2.append(v2)
-        if self.scalar:
-            return r0, r1, r2
-        return array(r0), array(r1), array(r2)
+        if self.vectorized:
+            return array(r0), array(r1), array(r2)
+        return r0, r1, r2
 
 
 class Soave_1979_a_alpha(a_alpha_base):
