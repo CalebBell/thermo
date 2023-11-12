@@ -68,12 +68,11 @@ from chemicals.virial import (
 from fluids.constants import R
 from fluids.numerics import log, newton
 from fluids.numerics import numpy as np
-
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import IdealGasDeparturePhase, Phase
 
 try:
-    array, zeros, ones, delete, npsum, nplog = np.array, np.zeros, np.ones, np.delete, np.sum, np.log
+    ndarray, array, zeros, ones, delete, npsum, nplog = np.ndarray, np.array, np.zeros, np.ones, np.delete, np.sum, np.log
 except (ImportError, AttributeError):
     pass
 
@@ -361,40 +360,40 @@ class VirialCSP:
         self.Vcs = Vcs
         self.omegas = omegas
         self.N = N = len(Tcs)
-        self.scalar = scalar = type(Tcs) is list
+        self.vectorized = vectorized = type(Tcs) is ndarray
         self.T = T
 
         self.B_model = B_model
         self.cross_B_model = cross_B_model
 
         if cross_B_model_kijs is None:
-            if scalar:
-                cross_B_model_kijs = [[0.0]*N for i in range(N)]
-            else:
+            if vectorized:
                 cross_B_model_kijs = zeros((N, N))
+            else:
+                cross_B_model_kijs = [[0.0]*N for i in range(N)]
 
         self.cross_B_model_kijs = cross_B_model_kijs
 
         # Parameters specific to `B` model
         if B_model_Meng_as is None:
-            if scalar:
-                B_model_Meng_as = [[0.0]*N for i in range(N)]
-            else:
+            if vectorized:
                 B_model_Meng_as = zeros((N, N))
+            else:
+                B_model_Meng_as = [[0.0]*N for i in range(N)]
         B_model_Meng_as_pure = [B_model_Meng_as[i][i] for i in range(N)]
 
         if B_model_Tsonopoulos_extended_as is None:
-            if scalar:
-                B_model_Tsonopoulos_extended_as = [[0.0]*N for i in range(N)]
-            else:
+            if vectorized:
                 B_model_Tsonopoulos_extended_as = zeros((N, N))
+            else:
+                B_model_Tsonopoulos_extended_as = [[0.0]*N for i in range(N)]
         B_model_Tsonopoulos_extended_as_pure = [B_model_Tsonopoulos_extended_as[i][i] for i in range(N)]
 
         if B_model_Tsonopoulos_extended_bs is None:
-            if scalar:
-                B_model_Tsonopoulos_extended_bs = [[0.0]*N for i in range(N)]
-            else:
+            if vectorized:
                 B_model_Tsonopoulos_extended_bs = zeros((N, N))
+            else:
+                B_model_Tsonopoulos_extended_bs = [[0.0]*N for i in range(N)]
         B_model_Tsonopoulos_extended_bs_pure = [B_model_Tsonopoulos_extended_bs[i][i] for i in range(N)]
 
         self.B_model_Meng_as = B_model_Meng_as
@@ -446,7 +445,7 @@ class VirialCSP:
         new.Vcs = self.Vcs
         new.omegas = self.omegas
         new.N = self.N
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
         new.B_model = self.B_model
         # Parameters specific to `B` model
         new.B_model_Meng_as = self.B_model_Meng_as
@@ -477,17 +476,16 @@ class VirialCSP:
     def B_interactions_at_T(self, T):
         N = self.N
         Tcijs, Pcijs, Vcijs, omegaijs = self.cross_B_model_Tcijs, self.cross_B_model_Pcijs, self.cross_B_model_Vcijs, self.cross_B_model_omegaijs
-        if self.scalar:
-            Bs = [[0.0]*N for _ in range(N)]
-            dB_dTs = [[0.0]*N for _ in range(N)]
-            d2B_dT2s = [[0.0]*N for _ in range(N)]
-            d3B_dT3s = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             Bs = zeros((N, N))
             dB_dTs = zeros((N, N))
             d2B_dT2s = zeros((N, N))
             d3B_dT3s = zeros((N, N))
-
+        else:
+            Bs = [[0.0]*N for _ in range(N)]
+            dB_dTs = [[0.0]*N for _ in range(N)]
+            d2B_dT2s = [[0.0]*N for _ in range(N)]
+            d3B_dT3s = [[0.0]*N for _ in range(N)]
 
         if self.B_model == VIRIAL_B_ZERO:
             return Bs, dB_dTs, d2B_dT2s, d3B_dT3s
@@ -532,7 +530,7 @@ class VirialCSP:
     def B_pures_at_T(self, T):
         N = self.N
         Tcs, Pcs, Vcs, omegas = self.Tcs, self.Pcs, self.Vcs, self.omegas
-        if self.scalar:
+        if self.vectorized:
             Bs = [0.0]*N
             dB_dTs = [0.0]*N
             d2B_dT2s = [0.0]*N
@@ -694,16 +692,16 @@ class VirialCSP:
     def C_interactions_at_T(self, T):
         N = self.N
         Tcijs, Pcijs, Vcijs, omegaijs = self.cross_C_model_Tcijs, self.cross_C_model_Pcijs, self.cross_C_model_Vcijs, self.cross_C_model_omegaijs
-        if self.scalar:
-            Cs = [[0.0]*N for _ in range(N)]
-            dC_dTs = [[0.0]*N for _ in range(N)]
-            d2C_dT2s = [[0.0]*N for _ in range(N)]
-            d3C_dT3s = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             Cs = zeros((N, N))
             dC_dTs = zeros((N, N))
             d2C_dT2s = zeros((N, N))
             d3C_dT3s = zeros((N, N))
+        else:
+            Cs = [[0.0]*N for _ in range(N)]
+            dC_dTs = [[0.0]*N for _ in range(N)]
+            d2C_dT2s = [[0.0]*N for _ in range(N)]
+            d3C_dT3s = [[0.0]*N for _ in range(N)]
 
         if self.C_model == VIRIAL_C_ZERO:
             return Cs, dC_dTs, d2C_dT2s, d3C_dT3s
@@ -720,16 +718,16 @@ class VirialCSP:
     def C_pures_at_T(self, T):
         N = self.N
         Tcs, Pcs, Vcs, omegas = self.Tcs, self.Pcs, self.Vcs, self.omegas
-        if self.scalar:
-            Cs = [0.0]*N
-            dC_dTs = [0.0]*N
-            d2C_dT2s = [0.0]*N
-            d3C_dT3s = [0.0]*N
-        else:
+        if self.vectorized:
             Cs = zeros(N)
             dC_dTs = zeros(N)
             d2C_dT2s = zeros(N)
             d3C_dT3s = zeros(N)
+        else:
+            Cs = [0.0]*N
+            dC_dTs = [0.0]*N
+            d2C_dT2s = [0.0]*N
+            d3C_dT3s = [0.0]*N
 
         if self.C_model == VIRIAL_C_ZERO:
             return Cs, dC_dTs, d2C_dT2s, d3C_dT3s
@@ -984,7 +982,7 @@ class VirialGas(IdealGasDeparturePhase):
                 break
         if zs is not None:
             self.zs = zs
-            self.scalar = scalar = type(zs) is list
+            self.vectorized = vectorized = type(zs) is ndarray
         if T is not None:
             self.T = T
             self.model.T = T
@@ -1056,10 +1054,10 @@ class VirialGas(IdealGasDeparturePhase):
         C = self.C()
         V = self._V
         N = self.N
-        if self.scalar:
-            dV_dzs = [0.0]*N
-        else:
+        if self.vectorized:
             dV_dzs = zeros(N)
+        else:
+            dV_dzs = [0.0]*N
         self._dV_dzs = dV_dzs_virial(B=B, C=C, V=V, dB_dzs=dB_dzs, dC_dzs=dC_dzs, dV_dzs=dV_dzs)
         return dV_dzs
 
@@ -1087,10 +1085,10 @@ class VirialGas(IdealGasDeparturePhase):
         V = self._V
         dV_dzs = self.dV_dzs()
         N = self.N
-        if self.scalar:
-            d2V_dzizjs = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             d2V_dzizjs = zeros((N,N))
+        else:
+            d2V_dzizjs = [[0.0]*N for _ in range(N)]
         self._d2V_dzizjs = d2V_dzizjs_virial(B=B, C=C, V=V, dB_dzs=dB_dzs, dC_dzs=dC_dzs, dV_dzs=dV_dzs,
                                              d2B_dzizjs=d2B_dzizjs, d2C_dzizjs=d2C_dzizjs, d2V_dzizjs=d2V_dzizjs)
         return d2V_dzizjs
@@ -1121,10 +1119,10 @@ class VirialGas(IdealGasDeparturePhase):
         C = self.C()
         V = self._V
         N = self.N
-        if self.scalar:
-            dG_dep_dzs = [0.0]*N
-        else:
+        if self.vectorized:
             dG_dep_dzs = zeros(N)
+        else:
+            dG_dep_dzs = [0.0]*N
         for i in range(N):
             x0 = V
             x1 = x0*x0
@@ -1150,10 +1148,10 @@ class VirialGas(IdealGasDeparturePhase):
         except:
             pass
         N = self.N
-        if self.scalar:
-            dG_dep_dns = [0.0]*N
-        else:
+        if self.vectorized:
             dG_dep_dns = zeros(N)
+        else:
+            dG_dep_dns = [0.0]*N
         self._dG_dep_dns = dG_dep_dns = dxs_to_dns(self.dG_dep_dzs(), self.zs, dG_dep_dns)
         return dG_dep_dns
 
@@ -1165,10 +1163,10 @@ class VirialGas(IdealGasDeparturePhase):
         except:
             pass
         N = self.N
-        if self.scalar:
-            dnG_dep_dns = [0.0]*N
-        else:
+        if self.vectorized:
             dnG_dep_dns = zeros(N)
+        else:
+            dnG_dep_dns = [0.0]*N
 
         self._dnG_dep_dns = dnG_dep_dns = dxs_to_dn_partials(self.dG_dep_dzs(), self.zs, self.G_dep(), dnG_dep_dns)
         return dnG_dep_dns
@@ -1191,12 +1189,12 @@ class VirialGas(IdealGasDeparturePhase):
         RT_inv = 1.0/(R*T)
         lnphi = self.G_dep()*RT_inv
         dG_dep_dns = self.dG_dep_dns()
-        if self.scalar:
-            dG_dep_dns_RT = [v*RT_inv for v in dG_dep_dns]
-        else:
+        if self.vectorized:
             dG_dep_dns_RT = RT_inv*dG_dep_dns
+        else:
+            dG_dep_dns_RT = [v*RT_inv for v in dG_dep_dns]
 
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = zeros(self.N) if self.vectorized else [0.0]*self.N
         log_phis = dns_to_dn_partials(dG_dep_dns_RT, lnphi, out)
         return log_phis
 
@@ -1809,7 +1807,7 @@ class VirialGas(IdealGasDeparturePhase):
         new.P = P
         new.zs = zs
         new.N = self.N
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
         new.cross_B_coefficients = self.cross_B_coefficients
         new.cross_C_coefficients = self.cross_C_coefficients
         new.cross_B_model = self.cross_B_model
@@ -1827,7 +1825,7 @@ class VirialGas(IdealGasDeparturePhase):
     def to(self, zs, T=None, P=None, V=None):
         new = self.__class__.__new__(self.__class__)
         new.zs = zs
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
         new.N = self.N
         new.cross_B_coefficients = self.cross_B_coefficients
         new.cross_C_coefficients = self.cross_C_coefficients
@@ -2150,10 +2148,10 @@ class VirialGas(IdealGasDeparturePhase):
             self._dB_dzs = dB_dzs = Bs
             return dB_dzs
         N = self.N
-        if self.scalar:
-            dB_dzs = [0.0]*N
-        else:
+        if self.vectorized:
             dB_dzs = zeros(N)
+        else:
+            dB_dzs = [0.0]*N
 
         B_interactions = self.model.B_interactions()
         self._dB_dzs = dB_dzs = dBVirial_mixture_dzs(zs, B_interactions, dB_dzs)
@@ -2182,10 +2180,10 @@ class VirialGas(IdealGasDeparturePhase):
             return d2B_dTdzs
 
         N = self.N
-        if self.scalar:
-            d2B_dTdzs = [0.0]*N
-        else:
+        if self.vectorized:
             d2B_dTdzs = zeros(N)
+        else:
+            d2B_dTdzs = [0.0]*N
         B_interactions = self.model.dB_dT_interactions()
         self._d2B_dTdzs = d2B_dTdzs = dBVirial_mixture_dzs(zs, B_interactions, d2B_dTdzs)
         return d2B_dTdzs
@@ -2213,10 +2211,10 @@ class VirialGas(IdealGasDeparturePhase):
             return d3B_dT2dzs
 
         N = self.N
-        if self.scalar:
-            d3B_dT2dzs = [0.0]*N
-        else:
+        if self.vectorized:
             d3B_dT2dzs = zeros(N)
+        else:
+            d3B_dT2dzs = [0.0]*N
         B_interactions = self.model.d2B_dT2_interactions()
         self._d3B_dT2dzs = d3B_dT2dzs = dBVirial_mixture_dzs(zs, B_interactions, d3B_dT2dzs)
         return d3B_dT2dzs
@@ -2243,10 +2241,10 @@ class VirialGas(IdealGasDeparturePhase):
             self._d4B_dT3dzs = d4B_dT3dzs = Bs
             return d4B_dT3dzs
         N = self.N
-        if self.scalar:
-            d4B_dT3dzs = [0.0]*N
-        else:
+        if self.vectorized:
             d4B_dT3dzs = zeros(N)
+        else:
+            d4B_dT3dzs = [0.0]*N
 
         B_interactions = self.model.d3B_dT3_interactions()
         self._d4B_dT3dzs = d4B_dT3dzs = dBVirial_mixture_dzs(zs, B_interactions, d4B_dT3dzs)
@@ -2269,10 +2267,10 @@ class VirialGas(IdealGasDeparturePhase):
 
         N = self.N
         zs = self.zs
-        if self.scalar:
-            d2B_dzizjs = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             d2B_dzizjs = zeros((N, N))
+        else:
+            d2B_dzizjs = [[0.0]*N for _ in range(N)]
         if not self.cross_B_coefficients:
             self._d2B_dzizjs = d2B_dzizjs
             return d2B_dzizjs
@@ -2300,10 +2298,10 @@ class VirialGas(IdealGasDeparturePhase):
 
         N = self.N
         zs = self.zs
-        if self.scalar:
-            d3B_dTdzizjs = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             d3B_dTdzizjs = zeros((N, N))
+        else:
+            d3B_dTdzizjs = [[0.0]*N for _ in range(N)]
         if not self.cross_B_coefficients:
             self._d3B_dTdzizjs = d3B_dTdzizjs
             return d3B_dTdzizjs
@@ -2331,10 +2329,10 @@ class VirialGas(IdealGasDeparturePhase):
 
         N = self.N
         zs = self.zs
-        if self.scalar:
-            d4B_dT2dzizjs = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             d4B_dT2dzizjs = zeros((N, N))
+        else:
+            d4B_dT2dzizjs = [[0.0]*N for _ in range(N)]
         if not self.cross_B_coefficients:
             self._d4B_dT2dzizjs = d4B_dT2dzizjs
             return d4B_dT2dzizjs
@@ -2360,10 +2358,10 @@ class VirialGas(IdealGasDeparturePhase):
 
         N = self.N
         zs = self.zs
-        if self.scalar:
-            d3B_dzizjzks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
-        else:
+        if self.vectorized:
             d3B_dzizjzks = zeros((N, N, N))
+        else:
+            d3B_dzizjzks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         if not self.cross_B_coefficients:
             self._d3B_dzizjzks = d3B_dzizjzks
             return d3B_dzizjzks
@@ -2391,10 +2389,10 @@ class VirialGas(IdealGasDeparturePhase):
         except:
             pass
         N = self.N
-        if self.scalar:
-            dB_dns = [0.0]*N
-        else:
+        if self.vectorized:
             dB_dns = zeros(N)
+        else:
+            dB_dns = [0.0]*N
         self._dB_dns = dB_dns = dxs_to_dns(self.dB_dzs(), self.zs, dB_dns)
         return dB_dns
 
@@ -2413,10 +2411,10 @@ class VirialGas(IdealGasDeparturePhase):
         except:
             pass
         N = self.N
-        if self.scalar:
-            dnB_dns = [0.0]*N
-        else:
+        if self.vectorized:
             dnB_dns = zeros(N)
+        else:
+            dnB_dns = [0.0]*N
 
         self._dnB_dns = dnB_dns = dxs_to_dn_partials(self.dB_dzs(), self.zs, self.B(), dnB_dns)
         return dnB_dns
@@ -2442,10 +2440,10 @@ class VirialGas(IdealGasDeparturePhase):
             self._dC_dzs = dC_dzs = Cs
             return dC_dzs
         N = self.N
-        if self.scalar:
-            dC_dzs = [0.0]*N
-        else:
+        if self.vectorized:
             dC_dzs = zeros(N)
+        else:
+            dC_dzs = [0.0]*N
         self._dC_dzs = dC_dzs
 
         if not self.model.C_zero:
@@ -2473,10 +2471,10 @@ class VirialGas(IdealGasDeparturePhase):
             self._d2C_dTdzs = d2C_dTdzs = self.model.dC_dT_pures()
             return d2C_dTdzs
         N = self.N
-        if self.scalar:
-            d2C_dTdzs = [0.0]*N
-        else:
+        if self.vectorized:
             d2C_dTdzs = zeros(N)
+        else:
+            d2C_dTdzs = [0.0]*N
 
         self._d2C_dTdzs = d2C_dTdzs
         if not self.model.C_zero:
@@ -2504,10 +2502,10 @@ class VirialGas(IdealGasDeparturePhase):
             pass
 
         N = self.N
-        if self.scalar:
-            d2C_dzizjs = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             d2C_dzizjs = zeros((N, N))
+        else:
+            d2C_dzizjs = [[0.0]*N for _ in range(N)]
 
         zs = self.zs
         if not self.cross_C_coefficients:
@@ -2540,10 +2538,10 @@ class VirialGas(IdealGasDeparturePhase):
             pass
 
         N = self.N
-        if self.scalar:
-            d3C_dzizjzks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
-        else:
+        if self.vectorized:
             d3C_dzizjzks = zeros((N, N, N))
+        else:
+            d3C_dzizjzks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
 
         zs = self.zs
         if not self.cross_C_coefficients:
@@ -2572,10 +2570,10 @@ class VirialGas(IdealGasDeparturePhase):
         except:
             pass
         N = self.N
-        if self.scalar:
-            dC_dns = [0.0]*N
-        else:
+        if self.vectorized:
             dC_dns = zeros(N)
+        else:
+            dC_dns = [0.0]*N
         self._dC_dns = dC_dns = dxs_to_dns(self.dC_dzs(), self.zs, dC_dns)
         return dC_dns
 
@@ -2594,10 +2592,10 @@ class VirialGas(IdealGasDeparturePhase):
         except:
             pass
         N = self.N
-        if self.scalar:
-            dnC_dns = [0.0]*N
-        else:
+        if self.vectorized:
             dnC_dns = zeros(N)
+        else:
+            dnC_dns = [0.0]*N
 
         self._dnC_dns = dnC_dns = dxs_to_dn_partials(self.dC_dzs(), self.zs, self.C(), dnC_dns)
         return dnC_dns
