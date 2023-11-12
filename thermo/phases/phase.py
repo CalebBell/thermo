@@ -2991,8 +2991,8 @@ class Phase:
         '''
         factor = self.P/(self.T*self.R)
         if self.vectorized:
-            return [dV*factor for dV in self.dV_dzs()]
-        return factor*self.dV_dzs()
+            return factor*self.dV_dzs()
+        return [dV*factor for dV in self.dV_dzs()]
 
     def dZ_dns(self):
         r'''Method to calculate and return the mole number derivatives of the
