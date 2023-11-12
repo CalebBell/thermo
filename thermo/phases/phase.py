@@ -6027,10 +6027,10 @@ class Phase:
         '''
         rho_mass = self.rho_mass_gas()
         ws = self.ws()
-        if self.scalar:
-            concentrations_mass = [rho_mass*wi for wi in ws]
-        else:
+        if self.vectorized:
             concentrations_mass = rho_mass*ws
+        else:
+            concentrations_mass = [rho_mass*wi for wi in ws]
         return concentrations_mass
 
     def concentrations_mass_gas_normal(self):
@@ -6048,10 +6048,10 @@ class Phase:
         '''
         rho_mass = self.rho_mass_gas_normal()
         ws = self.ws()
-        if self.scalar:
-            concentrations_mass = [rho_mass*wi for wi in ws]
-        else:
+        if self.vectorized:
             concentrations_mass = rho_mass*ws
+        else:
+            concentrations_mass = [rho_mass*wi for wi in ws]
         return concentrations_mass
 
     def concentrations_mass_gas_standard(self):
@@ -6069,10 +6069,10 @@ class Phase:
         '''
         rho_mass = self.rho_mass_gas_standard()
         ws = self.ws()
-        if self.scalar:
-            concentrations_mass = [rho_mass*wi for wi in ws]
-        else:
+        if self.vectorized:
             concentrations_mass = rho_mass*ws
+        else:
+            concentrations_mass = [rho_mass*wi for wi in ws]
         return concentrations_mass
 
     def partial_pressures(self):
