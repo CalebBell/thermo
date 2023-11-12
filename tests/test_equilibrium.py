@@ -1309,6 +1309,10 @@ def test_equilibrium_ternary_air_PR():
     assert_close(res.gas.humidity_ratio(), 0.009998742813826613)
     assert_close(res.bulk.humidity_ratio(), 0.009998742813826613)
 
+    assert_close1d(res.zs_no_water(), [0.20999959359505813, 0.7900004064049418, 0.0])
+    assert_close1d(res.bulk.zs_no_water(), [0.20999959359505813, 0.7900004064049418, 0.0])
+    assert_close2d([i.zs_no_water() for i in res.phases], [[0.20999959359505813, 0.7900004064049418, 0.0]])
+
 def test_Phase_to_EquilibriumState():
     constants = ChemicalConstantsPackage(atomss=[{'O': 2}, {'N': 2}, {'H': 2, 'O': 1}], CASs=['7782-44-7', '7727-37-9', '7732-18-5'], Gfgs=[0.0, 0.0, -228554.325], Hfgs=[0.0, 0.0, -241822.0], MWs=[31.9988, 28.0134, 18.01528], names=['oxygen', 'nitrogen', 'water'], omegas=[0.021, 0.04, 0.344], Pcs=[5042945.25, 3394387.5, 22048320.0], Sfgs=[0.0, 0.0, -44.499999999999964], Tbs=[90.188, 77.355, 373.124], Tcs=[154.58, 126.2, 647.14], Tms=[54.36, 63.15, 273.15], Vcs=[7.34e-05, 8.95e-05, 5.6e-05])
 

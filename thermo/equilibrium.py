@@ -2360,7 +2360,9 @@ class EquilibriumState:
                 zs[i] *= m
         else:
             zs *= m
-        return m
+
+        zs[water_index] = 0.0
+        return zs
 
     def ws_no_water(self, phase=None):
         r'''Method to calculate and return the mass fractions of all species
@@ -2390,7 +2392,8 @@ class EquilibriumState:
                 ws[i] *= m
         else:
             ws *= m
-        return m
+        ws[water_index] = 0.0
+        return ws
 
     def phis(self, phase=None):
         if phase is not None:
