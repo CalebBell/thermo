@@ -2351,15 +2351,15 @@ class EquilibriumState:
         water_index = self.water_index
         if water_index is None:
             return phase.zs
-        scalar = self.flasher.scalar
-        zs = list(phase.zs) if scalar else array(phase.zs)
+        vectorized = self.flasher.vectorized
+        zs = array(phase.zs) if vectorized else list(phase.zs)
         z_water = zs[water_index]
         m = 1/(1.0 - z_water)
-        if scalar:
+        if vectorized:
+            zs *= m
+        else:
             for i in range(self.N):
                 zs[i] *= m
-        else:
-            zs *= m
         return m
 
     def ws_no_water(self, phase=None):
@@ -2381,15 +2381,15 @@ class EquilibriumState:
         water_index = self.water_index
         if water_index is None:
             return phase.ws()
-        scalar = self.flasher.scalar
-        ws = list(phase.ws())  if scalar else array(phase.ws())
+        vectorized = self.flasher.vectorized
+        ws = array(phase.ws()) if vectorized else list(phase.ws())
         z_water = ws[water_index]
         m = 1/(1.0 - z_water)
-        if scalar:
+        if vectorized:
+            ws *= m
+        else:
             for i in range(self.N):
                 ws[i] *= m
-        else:
-            ws *= m
         return m
 
     def phis(self, phase=None):
@@ -2436,10 +2436,10 @@ class EquilibriumState:
                     ref_phase = self.gas
         ref_zs = ref_phase.zs
         zs = phase.zs
-        if self.flasher.scalar:
-            Ks = [g/l for l, g in zip(ref_zs, zs)]
-        else:
+        if self.flasher.vectorized:
             Ks = zs/ref_zs
+        else:
+            Ks = [g/l for l, g in zip(ref_zs, zs)]
         return Ks
 
     def Hc(self, phase=None):
@@ -2776,7 +2776,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._Psats = [o.T_dependent_property(T) for o in self.VaporPressures]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._Psats = array(self._Psats)
         return self._Psats
 
@@ -2804,7 +2804,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._Psubs = [o.T_dependent_property(T) for o in self.SublimationPressures]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._Psubs = array(self._Psubs)
         return self._Psubs
 
@@ -2832,7 +2832,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._Hsubs = [o.T_dependent_property(T) for o in self.EnthalpySublimations]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._Hsubs = array(self._Hsubs)
         return self._Hsubs
 
@@ -2860,7 +2860,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._Hvaps = [o.T_dependent_property(T) for o in self.EnthalpyVaporizations]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._Hvaps = array(self._Hvaps)
         return self._Hvaps
 
@@ -2884,7 +2884,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._sigmas = [o.T_dependent_property(T) for o in self.SurfaceTensions]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._sigmas = array(self._sigmas)
         return self._sigmas
 
@@ -2908,7 +2908,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._Cpgs = [o.T_dependent_property(T) for o in self.HeatCapacityGases]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._Cpgs = array(self._Cpgs)
         return self._Cpgs
 
@@ -2936,7 +2936,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._Cpls = [o.T_dependent_property(T) for o in self.HeatCapacityLiquids]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._Cpls = array(self._Cpls)
         return self._Cpls
 
@@ -2959,7 +2959,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._Cpss = [o.T_dependent_property(T) for o in self.HeatCapacitySolids]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._Cpss = array(self._Cpss)
         return self._Cpss
 
@@ -2987,7 +2987,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._kls = [o.T_dependent_property(T) for o in self.ThermalConductivityLiquids]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._kls = array(self._kls)
         return self._kls
 
@@ -3039,7 +3039,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._kgs = [o.T_dependent_property(T) for o in self.ThermalConductivityGases]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._kgs = array(self._kgs)
         return self._kgs
 
@@ -3065,7 +3065,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._muls = [o.T_dependent_property(T) for o in self.ViscosityLiquids]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._muls = array(self._muls)
         return self._muls
 
@@ -3091,7 +3091,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._mugs = [o.T_dependent_property(T) for o in self.ViscosityGases]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._mugs = array(self._mugs)
         return self._mugs
 
@@ -3117,7 +3117,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._Vls = [o.T_dependent_property(T) for o in self.VolumeLiquids]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._Vls = array(self._Vls)
         return self._Vls
 
@@ -3141,7 +3141,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._Vss = [o.T_dependent_property(T) for o in self.VolumeSolids]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._Vss = array(self._Vss)
         return self._Vss
 

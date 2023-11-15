@@ -142,7 +142,7 @@ class Phase:
     Psats_poly_fit = False
     Cpgs_poly_fit = False
     composition_independent = False
-    scalar  = True
+    vectorized = False
 
     supports_lnphis_args = False
 
@@ -210,7 +210,7 @@ class Phase:
         >>> assert phase == new_phase
         '''
         d = object_data(self)
-        if not self.scalar:
+        if self.vectorized:
             d = arrays_to_lists(d)
         for obj_name in self.obj_references:
             o = d[obj_name]
@@ -229,8 +229,6 @@ class Phase:
         d["py/object"] = self.__full_path__
         d['json_version'] = 1
         return d
-
-
 
     @classmethod
     def from_json(cls, json_repr):
@@ -279,9 +277,8 @@ class Phase:
         for ref_name, ref_lookup in zip(new.pointer_references, new.pointer_reference_dicts):
             d[ref_name] = ref_lookup[d[ref_name]]
 
-        for k, v in d.items():
+        for k, v in d.items(): 
             setattr(new, k, v)
-        # new.__dict__ = d
         return new
 
     def __hash__(self):
@@ -681,11 +678,11 @@ class Phase:
         lnphis = self.lnphis()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
-        if self.scalar:
+        if self.vectorized:
+            S0 -= float((zs*(R*lnphis + R*T*dlnphis_dT)).sum())
+        else:
             for i in range(self.N):
                 S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
-        else:
-            S0 -= float((zs*(R*lnphis + R*T*dlnphis_dT)).sum())
         self._S_phi_consistency = abs(1.0 - S0/self.S())
         return self._S_phi_consistency
 
@@ -733,10 +730,10 @@ class Phase:
         zs, T = self.zs, self.T
         G_dep_RT = 0.0
         lnphis = self.lnphis()
-        if self.scalar:
-            G_dep_RT = sum(zs[i]*lnphis[i] for i in range(self.N))
-        else:
+        if self.vectorized:
             G_dep_RT = float(dot(zs, lnphis))
+        else:
+            G_dep_RT = sum(zs[i]*lnphis[i] for i in range(self.N))
         G_dep = G_dep_RT*R*T
         self._G_dep_phi_consistency = abs(1.0 - G_dep/self.G_dep())
         return self._G_dep_phi_consistency
@@ -763,10 +760,10 @@ class Phase:
         H_dep_RT2 = 0.0
         dlnphis_dTs = self.dlnphis_dT()
         zs, T = self.zs, self.T
-        if self.scalar:
-            H_dep_RT2 = sum([zs[i]*dlnphis_dTs[i] for i in range(self.N)])
-        else:
+        if self.vectorized:
             H_dep_RT2 = float(dot(zs, dlnphis_dTs))
+        else:
+            H_dep_RT2 = sum([zs[i]*dlnphis_dTs[i] for i in range(self.N)])
         H_dep_recalc = -H_dep_RT2*R*T*T
         H_dep = self.H_dep()
         self._H_dep_phi_consistency = abs(1.0 - H_dep/H_dep_recalc)
@@ -796,11 +793,11 @@ class Phase:
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
         S_dep = 0.0
-        if self.scalar:
+        if self.vectorized:
+            S_dep -= float((zs*(R*lnphis + R*T*dlnphis_dT)).sum())
+        else:
             for i in range(self.N):
                 S_dep -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
-        else:
-            S_dep -= float((zs*(R*lnphis + R*T*dlnphis_dT)).sum())
         self._S_dep_phi_consistency = abs(1.0 - S_dep/self.S_dep())
         return self._S_dep_phi_consistency
 
@@ -826,10 +823,10 @@ class Phase:
             pass
         zs, P = self.zs, self.P
         dlnphis_dP = self.dlnphis_dP()
-        if self.scalar:
-            lhs = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
-        else:
+        if self.vectorized:
             lhs = float(dot(zs, dlnphis_dP))
+        else:
+            lhs = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
         Z_calc = lhs*P + 1.0
         V_calc = Z_calc*self.R*self.T/P
         V = self.V()
@@ -854,11 +851,11 @@ class Phase:
         H0 = self.H_ideal_gas()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
-        if self.scalar:
+        if self.vectorized:
+            H0 -= R*T*T*float(dot(zs, dlnphis_dT))
+        else:
             for i in range(self.N):
                 H0 -= R*T*T*zs[i]*dlnphis_dT[i]
-        else:
-            H0 -= R*T*T*float(dot(zs, dlnphis_dT))
         return H0
 
     def S_from_phi(self):
@@ -880,11 +877,11 @@ class Phase:
         lnphis = self.lnphis()
         dlnphis_dT = self.dlnphis_dT()
         T, zs = self.T, self.zs
-        if self.scalar:
+        if self.vectorized:
+            S0 -= float((zs*(R*lnphis + R*T*dlnphis_dT)).sum())
+        else:
             for i in range(self.N):
                 S0 -= zs[i]*(R*lnphis[i] + R*T*dlnphis_dT[i])
-        else:
-            S0 -= float((zs*(R*lnphis + R*T*dlnphis_dT)).sum())
         return S0
 
     def V_from_phi(self):
@@ -903,10 +900,10 @@ class Phase:
         '''
         zs, P = self.zs, self.P
         dlnphis_dP = self.dlnphis_dP()
-        if self.scalar:
-            obj = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
-        else:
+        if self.vectorized:
             obj = float(dot(zs, dlnphis_dP))
+        else:
+            obj = sum(zs[i]*dlnphis_dP[i] for i in range(self.N))
         Z = P*obj + 1.0
         return Z*self.R*self.T/P
 
@@ -930,11 +927,11 @@ class Phase:
         zs = self.zs
         log_zs = self.log_zs()
         G_crit = 0.0
-        if self.scalar:
+        if self.vectorized:
+            G_crit += float(dot(zs, log_zs))
+        else:
             for i in range(self.N):
                 G_crit += zs[i]*log_zs[i]
-        else:
-            G_crit += float(dot(zs, log_zs))
 
         G_crit = G_crit*R*self.T + self.G_dep()
         return G_crit
@@ -978,10 +975,10 @@ class Phase:
         # P = self.P
         # fugacities_lowest_Gibbs
         # lnphis = self.lnphis_at_zs(zs, most_stable)
-        # if self.scalar:
-        #     return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
-        # else:
+        # if self.vectorized:
         #     return P*zs*trunc_exp_numpy(lnphis)
+        # else:
+        #     return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
 
     def lnphi(self):
         r'''Method to calculate and return the log of fugacity coefficient of
@@ -1067,10 +1064,10 @@ class Phase:
         P = self.P
         zs = self.zs
         lnphis = self.lnphis()
-        if self.scalar:
-            self._fugacities = [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
-        else:
+        if self.vectorized:
             self._fugacities = P*zs*trunc_exp_numpy(lnphis)
+        else:
+            self._fugacities = [P*zs[i]*trunc_exp(lnphis[i]) for i in range(self.N)]
         return self._fugacities
 
     def lnfugacities(self):
@@ -1093,10 +1090,10 @@ class Phase:
         lnphis = self.lnphis()
         logP = log(P)
         log_zs = self.log_zs()
-        if self.scalar:
-            lnfugacities = [logP + log_zs[i] + lnphis[i] for i in range(self.N)]
-        else:
+        if self.vectorized:
             lnfugacities = logP + log_zs + lnphis
+        else:
+            lnfugacities = [logP + log_zs[i] + lnphis[i] for i in range(self.N)]
         self._lnfugacities = lnfugacities
         return lnfugacities
 
@@ -1110,10 +1107,10 @@ class Phase:
         P = self.P
         zs = self.zs
         fugacities_lowest_Gibbs = self.fugacities_lowest_Gibbs()
-        if self.scalar:
-            lnphis_lowest_Gibbs = [trunc_log(fi/(zi*P)) for fi, zi in zip(fugacities_lowest_Gibbs, zs)]
-        else:
+        if self.vectorized:
             lnphis_lowest_Gibbs = trunc_log_numpy(fugacities_lowest_Gibbs/(zs*P))
+        else:
+            lnphis_lowest_Gibbs = [trunc_log(fi/(zi*P)) for fi, zi in zip(fugacities_lowest_Gibbs, zs)]
         self._lnphis_lowest_Gibbs = lnphis_lowest_Gibbs
         return lnphis_lowest_Gibbs
 
@@ -1140,10 +1137,10 @@ class Phase:
             pass
         dphis_dT = self.dphis_dT()
         P, zs = self.P, self.zs
-        if self.scalar:
-            self._dfugacities_dT = [P*zs[i]*dphis_dT[i] for i in range(self.N)]
-        else:
+        if self.vectorized:
             self._dfugacities_dT = P*zs*dphis_dT
+        else:
+            self._dfugacities_dT = [P*zs[i]*dphis_dT[i] for i in range(self.N)]
         return self._dfugacities_dT
 
     def lnphis_G_min(self):
@@ -1175,10 +1172,10 @@ class Phase:
             return self._phis
         except:
             pass
-        if self.scalar:
-            self._phis = [trunc_exp(i) for i in self.lnphis()]
-        else:
+        if self.vectorized:
             self._phis = trunc_exp_numpy(self.lnphis())
+        else:
+            self._phis = [trunc_exp(i) for i in self.lnphis()]
         return self._phis
 
     def dphis_dT(self):
@@ -1211,10 +1208,10 @@ class Phase:
             phis = self._phis
         except AttributeError:
             phis = self.phis()
-        if self.scalar:
-            self._dphis_dT = [dlnphis_dT[i]*phis[i] for i in range(self.N)]
-        else:
+        if self.vectorized:
             self._dphis_dT = dlnphis_dT*phis
+        else:
+            self._dphis_dT = [dlnphis_dT[i]*phis[i] for i in range(self.N)]
         return self._dphis_dT
 
     def dphis_dP(self):
@@ -1247,10 +1244,10 @@ class Phase:
             phis = self._phis
         except AttributeError:
             phis = self.phis()
-        if self.scalar:
-            self._dphis_dP = [dlnphis_dP[i]*phis[i] for i in range(self.N)]
-        else:
+        if self.vectorized:
             self._dphis_dP = dlnphis_dP*phis
+        else:
+            self._dphis_dP = [dlnphis_dP[i]*phis[i] for i in range(self.N)]
 
         return self._dphis_dP
 
@@ -1288,7 +1285,7 @@ class Phase:
         N = self.N
         self._dphis_dzs = [[dlnphis_dzs[i][j]*phis[i] for j in range(N)]
                            for i in range(N)]
-        if not self.scalar:
+        if self.vectorized:
             self._dphis_dzs = array(self._dphis_dzs)
         return self._dphis_dzs
 
@@ -1324,10 +1321,10 @@ class Phase:
             phis = self.phis()
 
         P, zs = self.P, self.zs
-        if self.scalar:
-            return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in range(self.N)]
-        else:
+        if self.vectorized:
             return zs*(P*dphis_dP + phis)
+        else:
+            return [zs[i]*(P*dphis_dP[i] + phis[i]) for i in range(self.N)]
 
     def dfugacities_dns(self):
         r'''Method to calculate and return the mole number derivative of the
@@ -1359,7 +1356,7 @@ class Phase:
         phis = self.phis()
         dlnphis_dns = self.dlnphis_dns()
         P, zs, N = self.P, self.zs, self.N
-        matrix = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
+        matrix = zeros((N, N)) if self.vectorized else [[0.0]*N for _ in range(N)] 
         for i in range(N):
             phi_P = P*phis[i]
             ziPphi = phi_P*zs[i]
@@ -1388,7 +1385,7 @@ class Phase:
         '''
         fugacities = self.fugacities()
         dlnfugacities_dns = [list(i) for i in self.dfugacities_dns()]
-        if not self.scalar:
+        if self.vectorized:
             dlnfugacities_dns = array(dlnfugacities_dns)
         fugacities_inv = [1.0/fi for fi in fugacities]
         cmps = range(self.N)
@@ -1444,10 +1441,10 @@ class Phase:
             return self._log_zs
         except AttributeError:
             pass
-        if self.scalar:
-            self._log_zs = [trunc_log(zi) for zi in self.zs]
-        else:
+        if self.vectorized:
             self._log_zs = trunc_log_numpy(self.zs)
+        else:
+            self._log_zs = [trunc_log(zi) for zi in self.zs]
         # except ValueError:
         #     self._log_zs = _log_zs = []
         #     for zi in self.zs:
@@ -1547,7 +1544,7 @@ class Phase:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = zeros(self.N) if self.vectorized else [0.0]*self.N
         return dxs_to_dns(self.dH_dzs(), self.zs, out)
 
     def dS_dns(self):
@@ -1566,7 +1563,7 @@ class Phase:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = zeros(self.N) if self.vectorized else [0.0]*self.N
         return dxs_to_dns(self.dS_dzs(), self.zs, out)
 
     def dG_dT(self):
@@ -2108,11 +2105,11 @@ class Phase:
         except AttributeError:
             pass
         H = self.H()
-        if self.scalar:
+        if self.vectorized:
+            H += float(dot(self.zs, self.Hfs))
+        else:
             for zi, Hf in zip(self.zs, self.Hfs):
                 H += zi*Hf
-        else:
-            H += float(dot(self.zs, self.Hfs))
         self._H_reactive = H
         return H
 
@@ -2136,11 +2133,11 @@ class Phase:
         except:
             pass
         S = self.S()
-        if self.scalar:
+        if self.vectorized:
+            S += float(dot(self.zs, self.Sfs))
+        else:
             for zi, Sf in zip(self.zs, self.Sfs):
                 S += zi*Sf
-        else:
-            S += float(dot(self.zs, self.Sfs))
         self._S_reactive = S
         return S
 
@@ -2219,11 +2216,11 @@ class Phase:
         except AttributeError:
             pass
         Hf_ideal_gas = 0.0
-        if self.scalar:
+        if self.vectorized:
+            Hf_ideal_gas = float(self.zs, self.Hfs)
+        else:
             for zi, Hf in zip(self.zs, self.Hfs):
                 Hf_ideal_gas += zi*Hf
-        else:
-            Hf_ideal_gas = float(self.zs, self.Hfs)
         self._H_formation_ideal_gas = Hf_ideal_gas
         return Hf_ideal_gas
 
@@ -2248,11 +2245,11 @@ class Phase:
         except:
             pass
         Sf_ideal_gas = 0.0
-        if self.scalar:
+        if self.vectorized:
+            Sf_ideal_gas = float(dot(self.zs, self.Sfs))
+        else:
             for zi, Sf in zip(self.zs, self.Sfs):
                 Sf_ideal_gas += zi*Sf
-        else:
-            Sf_ideal_gas = float(dot(self.zs, self.Sfs))
         self._S_formation_ideal_gas = Sf_ideal_gas
         return Sf_ideal_gas
 
@@ -2497,11 +2494,11 @@ class Phase:
         dS_dzs = self.dS_dzs()
         dH_dzs = self.dH_dzs()
         T, Hfs, Sfs = self.T, self.Hfs, self.Sfs
-        if self.scalar:
-            dG_reactive_dzs = [Hfs[i] - T*(Sfs[i] + dS_dzs[i]) + dH_dzs[i] for i in range(self.N)]
-        else:
+        if self.vectorized:
             dG_reactive_dzs = Hfs - T*(Sfs + dS_dzs) + dH_dzs
-        dG_reactive_dns = [0.0]*self.N if self.scalar else zeros(self.N)
+        else:
+            dG_reactive_dzs = [Hfs[i] - T*(Sfs[i] + dS_dzs[i]) + dH_dzs[i] for i in range(self.N)]
+        dG_reactive_dns = zeros(self.N) if self.vectorized else [0.0]*self.N
         dG_reactive_dns = dxs_to_dns(dG_reactive_dzs, self.zs, dG_reactive_dns)
         chemical_potentials = dns_to_dn_partials(dG_reactive_dns, self.G_reactive())
         self._chemical_potentials = chemical_potentials
@@ -2532,9 +2529,9 @@ class Phase:
         # CORRECT DO NOT CHANGE
         fugacities = self.fugacities()
         fugacities_std = self.fugacities_std() # TODO implement fugacities_std
-        if self.scalar:
-            return [fugacities[i]/fugacities_std[i] for i in range(self.N)]
-        return fugacities/fugacities_std
+        if self.vectorized:
+            return fugacities/fugacities_std
+        return [fugacities[i]/fugacities_std[i] for i in range(self.N)]
 
     def gammas(self):
         r'''Method to calculate and return the activity coefficients of the
@@ -2566,10 +2563,10 @@ class Phase:
         # the most generally used one for EOSs; and activity methods
         # override this
         phis = self.phis()
-        T, P, N, scalar = self.T, self.P, self.N, self.scalar
-        self._gammas = gammas = [0.0]*N if scalar else zeros(N)
+        T, P, N, vectorized = self.T, self.P, self.N, self.vectorized
+        self._gammas = gammas = zeros(N) if vectorized else [0.0]*N
         for i in range(N):
-            comp = [0.0]*N if scalar else zeros(N)
+            comp = zeros(N) if vectorized else [0.0]*N
             comp[i] = 1.0
             phi = self.to_TP_zs(T=T, P=P, zs=comp).phis()[i]
             gammas[i] = phis[i]/phi
@@ -2599,12 +2596,12 @@ class Phase:
         zs_base = self.zs
         x_infinite_dilution = self._x_infinite_dilution
         # x_infinite_dilution = 1e-7
-        if self.scalar:
-            gammas_inf = [0.0]*N
-            copy_fun = list
-        else:
+        if self.vectorized:
             gammas_inf = zeros(N)
             copy_fun = array
+        else:
+            gammas_inf = [0.0]*N
+            copy_fun = list
         phis = self.phis()
         for i in range(N):
             zs = copy_fun(zs_base)
@@ -3039,9 +3036,9 @@ class Phase:
         -----
         '''
         factor = self.P/(self.T*self.R)
-        if self.scalar:
-            return [dV*factor for dV in self.dV_dzs()]
-        return factor*self.dV_dzs()
+        if self.vectorized:
+            return factor*self.dV_dzs()
+        return [dV*factor for dV in self.dV_dzs()]
 
     def dZ_dns(self):
         r'''Method to calculate and return the mole number derivatives of the
@@ -3059,7 +3056,7 @@ class Phase:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = zeros(self.N) if self.vectorized else [0.0]*self.N
         return dxs_to_dns(self.dZ_dzs(), self.zs, out)
 
     def dV_dzs(self):
@@ -3094,7 +3091,7 @@ class Phase:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = zeros(self.N) if self.vectorized else [0.0]*self.N
         return dxs_to_dns(self.dV_dzs(), self.zs, out)
 
     def dnV_dns(self):
@@ -3113,7 +3110,7 @@ class Phase:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = zeros(self.N) if self.vectorized else [0.0]*self.N
         return dns_to_dn_partials(self.dV_dns(), self.V(), out)
 
     # Derived properties
@@ -3661,7 +3658,7 @@ class Phase:
 
     def _Cp_pure_fast(self, Cps_data):
         T, N = self.T, self.N
-        Cps = [0.0]*N if self.scalar else zeros(N)
+        Cps = zeros(N) if self.vectorized else [0.0]*N
         Tmins, Tmaxs, coeffs = Cps_data[0], Cps_data[3], Cps_data[12]
         Tmin_slopes = Cps_data[1]
         Tmin_values = Cps_data[2]
@@ -3682,7 +3679,7 @@ class Phase:
 
     def _dCp_dT_pure_fast(self, Cps_data):
         T, N = self.T, self.N
-        dCps = [0.0]*N if self.scalar else zeros(N)
+        dCps = zeros(N) if self.vectorized else [0.0]*N
         Tmins, Tmaxs, coeffs = Cps_data[0], Cps_data[3], Cps_data[12]
         Tmin_slopes = Cps_data[1]
         Tmax_slopes = Cps_data[4]
@@ -3701,7 +3698,7 @@ class Phase:
 
     def _Cp_integrals_pure_fast(self, Cps_data):
         T, N = self.T, self.N
-        Cp_integrals_pure = [0.0]*N if self.scalar else zeros(N)
+        Cp_integrals_pure = zeros(N) if self.vectorized else [0.0]*N
         Tmins, Tmaxes, int_coeffs = Cps_data[0], Cps_data[3], Cps_data[13]
         for i in range(N):
             # If indeed everything is working here, need to optimize to decide what to store
@@ -3757,7 +3754,7 @@ class Phase:
     def _Cp_integrals_over_T_pure_fast(self, Cps_data):
         T, N = self.T, self.N
         Tmins, Tmaxes, T_int_T_coeffs = Cps_data[0], Cps_data[3], Cps_data[14]
-        Cp_integrals_over_T_pure = [0.0]*N if self.scalar else zeros(N)
+        Cp_integrals_over_T_pure = zeros(N) if self.vectorized else [0.0]*N
         logT = log(T)
         for i in range(N):
             Tmin = Tmins[i]
@@ -3807,7 +3804,7 @@ class Phase:
 
         T = self.T
         Cpigs = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
-        if not self.scalar:
+        if self.vectorized:
             Cpigs = array(Cpigs)
         self._Cpigs = Cpigs
         return Cpigs
@@ -3840,7 +3837,7 @@ class Phase:
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
         Cpig_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
                                    for obj in HeatCapacityGases]
-        if not self.scalar:
+        if self.vectorized:
             Cpig_integrals_pure = array(Cpig_integrals_pure)
         self._Cpig_integrals_pure = Cpig_integrals_pure
         return Cpig_integrals_pure
@@ -3876,7 +3873,7 @@ class Phase:
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
         Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
                                    for obj in HeatCapacityGases]
-        if not self.scalar:
+        if self.vectorized:
             Cpig_integrals_over_T_pure = array(Cpig_integrals_over_T_pure)
         self._Cpig_integrals_over_T_pure = Cpig_integrals_over_T_pure
         return Cpig_integrals_over_T_pure
@@ -3907,7 +3904,7 @@ class Phase:
 
         T = self.T
         dCpigs_dT = [i.T_dependent_property_derivative(T) for i in self.HeatCapacityGases]
-        if not self.scalar:
+        if self.vectorized:
             dCpigs_dT = array(dCpigs_dT)
         self._dCpigs_dT = dCpigs_dT
         return dCpigs_dT
@@ -3924,7 +3921,7 @@ class Phase:
 
         T = self.T
         Cpls = [i.T_dependent_property(T) for i in self.HeatCapacityLiquids]
-        if not self.scalar:
+        if self.vectorized:
             Cpls = array(Cpls)
         self._Cpls = Cpls
         return Cpls
@@ -3949,7 +3946,7 @@ class Phase:
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
         Cpl_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
                                    for obj in HeatCapacityLiquids]
-        if not self.scalar:
+        if self.vectorized:
             Cpl_integrals_pure = array(Cpl_integrals_pure)
         self._Cpl_integrals_pure = Cpl_integrals_pure
         return Cpl_integrals_pure
@@ -3975,7 +3972,7 @@ class Phase:
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
         Cpl_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
                                    for obj in HeatCapacityLiquids]
-        if not self.scalar:
+        if self.vectorized:
             Cpl_integrals_over_T_pure = array(Cpl_integrals_over_T_pure)
         self._Cpl_integrals_over_T_pure = Cpl_integrals_over_T_pure
         return Cpl_integrals_over_T_pure
@@ -4009,12 +4006,12 @@ class Phase:
             return self._H_ideal_gas
         except AttributeError:
             pass
-        if self.scalar:
+        if self.vectorized:
+            H = float(dot(self.zs, self.Cpig_integrals_pure()))
+        else:
             H = 0.0
             for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
                 H += zi*Cp_int
-        else:
-            H = float(dot(self.zs, self.Cpig_integrals_pure()))
         self._H_ideal_gas = H
         return H
 
@@ -4041,13 +4038,13 @@ class Phase:
         S = 0.0
         S -= R*log(P*P_REF_IG_INV)
 
-        if self.scalar:
+        if self.vectorized:
+            S -= R*float(dot(zs, log_zs))
+            S += float(dot(zs, Cpig_integrals_over_T_pure))
+        else:
             S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
             for i in cmps:
                 S += zs[i]*Cpig_integrals_over_T_pure[i]
-        else:
-            S -= R*float(dot(zs, log_zs))
-            S += float(dot(zs, Cpig_integrals_over_T_pure))
         self._S_ideal_gas = S
         return S
 
@@ -4069,11 +4066,11 @@ class Phase:
             pass
         Cpigs_pure = self.Cpigs_pure()
         Cp, zs = 0.0, self.zs
-        if self.scalar:
+        if self.vectorized:
+            Cp = float(dot(zs, Cpigs_pure))
+        else:
             for i in range(self.N):
                 Cp += zs[i]*Cpigs_pure[i]
-        else:
-            Cp = float(dot(zs, Cpigs_pure))
         self._Cp_ideal_gas = Cp
         return Cp
 
@@ -4715,12 +4712,12 @@ class Phase:
         except AttributeError:
             pass
         zs, MWs = self.zs, self.constants.MWs
-        if self.scalar:
+        if self.vectorized:
+            MW = float(dot(zs, MWs))
+        else:
             MW = 0.0
             for i in range(self.N):
                 MW += zs[i]*MWs[i]
-        else:
-            MW = float(dot(zs, MWs))
         self._MW = MW
         return MW
 
@@ -5362,15 +5359,15 @@ class Phase:
             pass
         MWs = self.constants.MWs
         zs, cmps = self.zs, range(self.N)
-        if self.scalar:
+        if self.vectorized:
+            ws = zs*MWs
+            Mavg = 1.0/ws.sum()
+            ws *= Mavg
+        else:
             ws = [zs[i]*MWs[i] for i in cmps]
             Mavg = 1.0/sum(ws)
             for i in cmps:
                 ws[i] *= Mavg
-        else:
-            ws = zs*MWs
-            Mavg = 1.0/ws.sum()
-            ws *= Mavg
         self._ws = ws
         return ws
 
@@ -5657,10 +5654,10 @@ class Phase:
                 return self._ns
             except:
                 n = self.result.n*self.beta
-                if self.scalar:
-                    self._ns = [n*zi for zi in self.zs]
-                else:
+                if self.vectorized:
                     self._ns = self.zs*n
+                else:
+                    self._ns = [n*zi for zi in self.zs]
                 return self._ns
         except:
             return None
@@ -5687,10 +5684,10 @@ class Phase:
             except:
                 pass
             m = self.result.m*self.beta_mass
-            if self.scalar:
-                self._ms = [m*wi for wi in self.ws()]
-            else:
+            if self.vectorized:
                 self._ms = m*self.ws()
+            else:
+                self._ms = [m*wi for wi in self.ws()]
             return self._ms
         except:
             return None
@@ -5721,10 +5718,10 @@ class Phase:
         V = R*settings.T_gas_ref/settings.P_gas_ref
         n = self.n
         Vn = V*n
-        if self.scalar:
-            self._Qgs = [zi*Vn for zi in self.zs]
-        else:
+        if self.vectorized:
             self._Qgs = self.zs*Vn
+        else:
+            self._Qgs = [zi*Vn for zi in self.zs]
         return self._Qgs
 
     Qgs_calc = Qgs
@@ -5779,10 +5776,10 @@ class Phase:
             pass
         ns = self.ns
         Vmls = self.result.V_liquids_ref()
-        if self.scalar:
-            self._Qls = [ns[i]*Vmls[i] for i in range(self.N)]
-        else:
+        if self.vectorized:
             self._Qls = ns*Vmls
+        else:
+            self._Qls = [ns[i]*Vmls[i] for i in range(self.N)]
         return self._Qls
 
     Qls_calc = Qls
@@ -5922,10 +5919,10 @@ class Phase:
             pass
         rho = self.rho()
         zs = self.zs
-        if self.scalar:
-            self._concentrations = concentrations = [rho*zi for zi in zs]
-        else:
+        if self.vectorized:
             self._concentrations = concentrations = rho*zs
+        else:
+            self._concentrations = concentrations = [rho*zi for zi in zs]
         return concentrations
 
     def concentrations_gas(self):
@@ -5943,10 +5940,10 @@ class Phase:
         '''
         rho = self.rho_gas()
         zs = self.zs
-        if self.scalar:
-            concentrations = [rho*zi for zi in zs]
-        else:
+        if self.vectorized:
             concentrations = rho*zs
+        else:
+            concentrations = [rho*zi for zi in zs]
         return concentrations
 
     def concentrations_gas_normal(self):
@@ -5964,10 +5961,10 @@ class Phase:
         '''
         rho = self.rho_gas_normal()
         zs = self.zs
-        if self.scalar:
-            concentrations = [rho*zi for zi in zs]
-        else:
+        if self.vectorized:
             concentrations = rho*zs
+        else:
+            concentrations = [rho*zi for zi in zs]
         return concentrations
 
     def concentrations_gas_standard(self):
@@ -5985,10 +5982,10 @@ class Phase:
         '''
         rho = self.rho_gas_standard()
         zs = self.zs
-        if self.scalar:
-            concentrations = [rho*zi for zi in zs]
-        else:
+        if self.vectorized:
             concentrations = rho*zs
+        else:
+            concentrations = [rho*zi for zi in zs]
         return concentrations
 
     def concentrations_mass(self):
@@ -6009,10 +6006,10 @@ class Phase:
             pass
         rho_mass = self.rho_mass()
         ws = self.ws()
-        if self.scalar:
-            self._concentrations_mass = [rho_mass*wi for wi in ws]
-        else:
+        if self.vectorized:
             self._concentrations_mass = rho_mass*ws
+        else:
+            self._concentrations_mass = [rho_mass*wi for wi in ws]
         return self._concentrations_mass
 
     def concentrations_mass_gas(self):
@@ -6030,10 +6027,10 @@ class Phase:
         '''
         rho_mass = self.rho_mass_gas()
         ws = self.ws()
-        if self.scalar:
-            concentrations_mass = [rho_mass*wi for wi in ws]
-        else:
+        if self.vectorized:
             concentrations_mass = rho_mass*ws
+        else:
+            concentrations_mass = [rho_mass*wi for wi in ws]
         return concentrations_mass
 
     def concentrations_mass_gas_normal(self):
@@ -6051,10 +6048,10 @@ class Phase:
         '''
         rho_mass = self.rho_mass_gas_normal()
         ws = self.ws()
-        if self.scalar:
-            concentrations_mass = [rho_mass*wi for wi in ws]
-        else:
+        if self.vectorized:
             concentrations_mass = rho_mass*ws
+        else:
+            concentrations_mass = [rho_mass*wi for wi in ws]
         return concentrations_mass
 
     def concentrations_mass_gas_standard(self):
@@ -6072,10 +6069,10 @@ class Phase:
         '''
         rho_mass = self.rho_mass_gas_standard()
         ws = self.ws()
-        if self.scalar:
-            concentrations_mass = [rho_mass*wi for wi in ws]
-        else:
+        if self.vectorized:
             concentrations_mass = rho_mass*ws
+        else:
+            concentrations_mass = [rho_mass*wi for wi in ws]
         return concentrations_mass
 
     def partial_pressures(self):
@@ -6099,10 +6096,10 @@ class Phase:
         except:
             pass
         P = self.P
-        if self.scalar:
-            self._partial_pressures = [zi*P for zi in self.zs]
-        else:
+        if self.vectorized:
             self._partial_pressures = self.zs*P
+        else:
+            self._partial_pressures = [zi*P for zi in self.zs]
         return self._partial_pressures
 
 
@@ -6115,11 +6112,11 @@ class IdealGasDeparturePhase(Phase):
         except AttributeError:
             pass
         H = self.H_dep()
-        if self.scalar:
+        if self.vectorized:
+            H += float(dot(self.zs, self.Cpig_integrals_pure()))
+        else:
             for zi, Cp_int in zip(self.zs, self.Cpig_integrals_pure()):
                 H += zi*Cp_int
-        else:
-            H += float(dot(self.zs, self.Cpig_integrals_pure()))
 
         self._H = H
         return H
@@ -6136,19 +6133,17 @@ class IdealGasDeparturePhase(Phase):
         R = self.R
         S = 0.0
 
-        if self.scalar:
+        if self.vectorized:
+            S -= R*float(dot(zs, log_zs))
+            S += float(dot(zs, Cpig_integrals_over_T_pure))
+        else:
             S -= R*sum([zs[i]*log_zs[i] for i in cmps]) # ideal composition entropy composition
             for i in cmps:
                 S += zs[i]*Cpig_integrals_over_T_pure[i]
-        else:
-            S -= R*float(dot(zs, log_zs))
-            S += float(dot(zs, Cpig_integrals_over_T_pure))
         S -= R*log(P*P_REF_IG_INV)
         S += self.S_dep()
         self._S = S
         return S
-
-
 
     def Cp(self):
         try:
@@ -6157,11 +6152,11 @@ class IdealGasDeparturePhase(Phase):
             pass
         Cpigs_pure = self.Cpigs_pure()
         Cp, zs = 0.0, self.zs
-        if self.scalar:
+        if self.vectorized:
+            Cp = float(dot(zs, Cpigs_pure))
+        else:
             for i in range(self.N):
                 Cp += zs[i]*Cpigs_pure[i]
-        else:
-            Cp = float(dot(zs, Cpigs_pure))
         Cp += self.Cp_dep()
         self._Cp = Cp
         return Cp
@@ -6177,7 +6172,6 @@ class IdealGasDeparturePhase(Phase):
         return dH_dP
 
     dH_dP_T = dH_dP
-
 
     def dH_dT_V(self):
         dH_dT_V = self.Cp_ideal_gas()
@@ -6204,11 +6198,11 @@ class IdealGasDeparturePhase(Phase):
             pass
         dCpigs_pure = self.dCpigs_dT_pure()
         dCp, zs = 0.0, self.zs
-        if self.scalar:
+        if self.vectorized:
+            dCp = float(dot(zs, dCpigs_pure))
+        else:
             for i in range(self.N):
                 dCp += zs[i]*dCpigs_pure[i]
-        else:
-            dCp = float(dot(zs, dCpigs_pure))
         dCp += self.d2H_dep_dT2()
         self._d2H_dT2 = dCp
         return dCp
@@ -6216,13 +6210,12 @@ class IdealGasDeparturePhase(Phase):
     def d2H_dT2_V(self):
         dCpigs_pure = self.dCpigs_dT_pure()
         dCp, zs = 0.0, self.zs
-        if self.scalar:
+        if self.vectorized:
+            dCp = float(dot(zs, dCpigs_pure))
+        else:
             for i in range(self.N):
                 dCp += zs[i]*dCpigs_pure[i]
-        else:
-            dCp = float(dot(zs, dCpigs_pure))
         return dCp + self.d2H_dep_dT2_V()
-
 
     def dH_dzs(self):
         try:
@@ -6231,20 +6224,14 @@ class IdealGasDeparturePhase(Phase):
             pass
         dH_dep_dzs = self.dH_dep_dzs()
         Cpig_integrals_pure = self.Cpig_integrals_pure()
-        if self.scalar:
-            self._dH_dzs = [dH_dep_dzs[i] + Cpig_integrals_pure[i] for i in range(self.N)]
-        else:
+        if self.vectorized:
             self._dH_dzs = dH_dep_dzs + Cpig_integrals_pure
+        else:
+            self._dH_dzs = [dH_dep_dzs[i] + Cpig_integrals_pure[i] for i in range(self.N)]
         return self._dH_dzs
 
     def dS_dT(self):
-        HeatCapacityGases = self.HeatCapacityGases
-        cmps = range(self.N)
-        T, zs = self.T, self.zs
-        T_REF_IG = self.T_REF_IG
-        P_REF_IG_INV = self.P_REF_IG_INV
-
-        dS_dT = self.Cp_ideal_gas()/T
+        dS_dT = self.Cp_ideal_gas() / self.T
         dS_dT += self.dS_dep_dT()
         return dS_dT
 
@@ -6308,10 +6295,10 @@ class IdealGasDeparturePhase(Phase):
         integrals = self.Cpig_integrals_over_T_pure()
         dS_dep_dzs = self.dS_dep_dzs()
         R = self.R
-        if self.scalar:
-            self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i] for i in cmps]
-        else:
+        if self.vectorized:
             self._dS_dzs = integrals - R*(log_zs + 1.0) + dS_dep_dzs
+        else:
+            self._dS_dzs = [integrals[i] - R*(log_zs[i] + 1.0) + dS_dep_dzs[i] for i in cmps]
         return self._dS_dzs
 
     def gammas(self):
@@ -6321,10 +6308,10 @@ class IdealGasDeparturePhase(Phase):
             pass
         phis = self.phis()
         phi_pures = self.phi_pures()
-        if self.scalar:
-            self._gammas = [phis[i]/phi_pures[i] for i in range(self.N)]
-        else:
+        if self.vectorized:
             self._gammas = phis/phi_pures
+        else:
+            self._gammas = [phis[i]/phi_pures[i] for i in range(self.N)]
         return self._gammas
 
 
