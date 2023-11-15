@@ -4535,7 +4535,7 @@ class UNIFAC(GibbsExcess):
             else:
                 raise ValueError("'version' must be a number from 0 to 5")
 
-        scalar = type(xs) is list
+        vectorized = type(xs) is not list
         rs = []
         qs = []
         for groups in chemgroups:
@@ -4590,7 +4590,7 @@ class UNIFAC(GibbsExcess):
 
 
 #        debug = (rs, qs, Qs, vs, (psi_a, psi_b, psi_c))
-        if scalar:
+        if not vectorized:
             return UNIFAC(T=T, xs=xs, rs=rs, qs=qs, Qs=Qs, vs=vs, psi_abc=(psi_a, psi_b, psi_c), version=version)
         return UNIFAC(T=T, xs=xs, rs=array(rs), qs=array(qs), Qs=array(Qs), vs=array(vs, dtype=float), psi_abc=(array(psi_a), array(psi_b), array(psi_c)), version=version)
 
@@ -4611,7 +4611,7 @@ class UNIFAC(GibbsExcess):
                  version=0):
         self.T = T
         self.xs = xs
-        self.scalar = scalar = type(xs) is list
+        self.vectorized = vectorized = type(xs) is not list
 
         # rs - 1d index by [component] parameter, calculated using the chemical's subgroups and their count
         self.rs = rs
@@ -4643,14 +4643,14 @@ class UNIFAC(GibbsExcess):
 
         if self.version == 1:
             power = 0.75
-            if scalar:
+            if not vectorized:
                 self.rs_34 = [ri**power for ri in rs]
             else:
                 self.rs_34 = rs**0.75
         elif self.version == 4:
             power = 2.0/3.0 # Lyngby
             # works in the various functions without change as never taking the der w.r.t. r
-            if scalar:
+            if not vectorized:
                 self.rs_34 = [ri**power for ri in rs]
             else:
                 self.rs_34 = rs**power
@@ -4661,7 +4661,7 @@ class UNIFAC(GibbsExcess):
             for group in range(N_groups):
                 tot += vs[group][i]
             cmp_v_count.append(tot)
-        if scalar:
+        if not vectorized:
             cmp_v_count_inv = [1.0/ni for ni in cmp_v_count]
         else:
             self.cmp_v_count = cmp_v_count = array(cmp_v_count)
@@ -4672,7 +4672,7 @@ class UNIFAC(GibbsExcess):
         cmp_group_idx = [[j for j in range(N_groups) if vs[j][i]] for i in range(N)]
         # TODO figure out the best way to handle this with numba
         # as each array was supposedly a different shape
-        if not scalar:
+        if vectorized:
             cmp_group_idx = tuple(array(v) for v in cmp_group_idx)
         self.cmp_group_idx = cmp_group_idx
 
@@ -4685,7 +4685,7 @@ class UNIFAC(GibbsExcess):
                 if k in groups2:
                     temp.append(i)
             group_cmp_idx.append(temp)
-        if not scalar:
+        if vectorized:
             group_cmp_idx = tuple(array(v) for v in group_cmp_idx)
         self.group_cmp_idx = group_cmp_idx
 
@@ -4722,7 +4722,7 @@ class UNIFAC(GibbsExcess):
         new.T = T
         new.xs = xs
         new.N = self.N
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
 
         new.N_groups = self.N_groups
 
@@ -4783,7 +4783,7 @@ class UNIFAC(GibbsExcess):
                 new._d3lnGammas_subgroups_pure_dT3 = self._d3lnGammas_subgroups_pure_dT3
             except AttributeError:
                 pass
-        if (self.scalar and xs == self.xs) or (not self.scalar and array_equal(xs, self.xs)):
+        if (not self.vectorized and xs == self.xs) or (self.vectorized and array_equal(xs, self.xs)):
             try:
                 new._Fis = self._Fis
             except AttributeError:
@@ -4904,7 +4904,7 @@ class UNIFAC(GibbsExcess):
         T, N_groups = self.T, self.N_groups
 #        mT_inv = -1.0/T
         psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
-        if self.scalar:
+        if not self.vectorized:
             psis = [[0.0]*N_groups for _ in range(N_groups)]
         else:
             psis = zeros((N_groups, N_groups))
@@ -4963,7 +4963,7 @@ class UNIFAC(GibbsExcess):
         T, N_groups = self.T, self.N_groups
         psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
 
-        if self.scalar:
+        if not self.vectorized:
             dpsis_dT = [[0.0]*N_groups for _ in range(N_groups)]
         else:
             dpsis_dT = zeros((N_groups, N_groups))
@@ -5029,7 +5029,7 @@ class UNIFAC(GibbsExcess):
         T, N_groups = self.T, self.N_groups
         psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
 
-        if self.scalar:
+        if not self.vectorized:
             d2psis_dT2 = [[0.0]*N_groups for _ in range(N_groups)]
         else:
             d2psis_dT2 = zeros((N_groups, N_groups))
@@ -5105,7 +5105,7 @@ class UNIFAC(GibbsExcess):
         T, N_groups = self.T, self.N_groups
         psi_a, psi_b, psi_c = self.psi_a, self.psi_b, self.psi_c
 
-        if self.scalar:
+        if not self.vectorized:
             d3psis_dT3 = [[0.0]*N_groups for _ in range(N_groups)]
         else:
             d3psis_dT3 = zeros((N_groups, N_groups))
@@ -5134,7 +5134,7 @@ class UNIFAC(GibbsExcess):
         except:
             pass
         rs, xs, N = self.rs, self.xs, self.N
-        if self.scalar:
+        if not self.vectorized:
             Vis = [0.0]*N
         else:
             Vis = zeros(N)
@@ -5172,7 +5172,7 @@ class UNIFAC(GibbsExcess):
             rx_sum_inv = self.rx_sum_inv
 
         rs, N = self.rs, self.N
-        if self.scalar:
+        if not self.vectorized:
             dVis_dxs = [[0.0]*N for _ in range(N)]
         else:
             dVis_dxs = zeros((N, N))
@@ -5210,7 +5210,7 @@ class UNIFAC(GibbsExcess):
             self.Vis()
             rx_sum_inv = self.rx_sum_inv
         rs, N = self.rs, self.N
-        if self.scalar:
+        if not self.vectorized:
             d2Vis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             d2Vis_dxixjs = zeros((N, N, N))
@@ -5249,7 +5249,7 @@ class UNIFAC(GibbsExcess):
             self.Vis()
             rx_sum_inv = self.rx_sum_inv
         rs, N = self.rs, self.N
-        if self.scalar:
+        if not self.vectorized:
             d3Vis_dxixjxks = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)]
         else:
             d3Vis_dxixjxks = zeros((N, N, N, N))
@@ -5277,7 +5277,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         qs, xs, N = self.qs, self.xs, self.N
-        if self.scalar:
+        if not self.vectorized:
             Fis = [0.0]*N
         else:
             Fis = zeros(N)
@@ -5317,7 +5317,7 @@ class UNIFAC(GibbsExcess):
         qs, N = self.qs, self.N
 
 
-        if self.scalar:
+        if not self.vectorized:
             dFis_dxs  = [[0.0]*N for _ in range(N)]
         else:
             dFis_dxs  = zeros((N, N))
@@ -5357,7 +5357,7 @@ class UNIFAC(GibbsExcess):
 
         qs, N = self.qs, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             d2Fis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             d2Fis_dxixjs = zeros((N, N, N))
@@ -5397,7 +5397,7 @@ class UNIFAC(GibbsExcess):
             qx_sum_inv = self.qx_sum_inv
         qs, N = self.qs, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             d3Fis_dxixjxks = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)]
         else:
             d3Fis_dxixjxks = zeros((N, N, N, N))
@@ -5426,7 +5426,7 @@ class UNIFAC(GibbsExcess):
             pass
         rs_34, xs, N = self.rs_34, self.xs, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             Vis_modified = [0.0]*N
         else:
             Vis_modified = zeros(N)
@@ -5464,7 +5464,7 @@ class UNIFAC(GibbsExcess):
             r34x_sum_inv = self.r34x_sum_inv
 
         rs_34, N = self.rs_34, self.N
-        if self.scalar:
+        if not self.vectorized:
             dVis_modified = [[0.0]*N for _ in range(N)]
         else:
             dVis_modified = zeros((N, N))
@@ -5503,7 +5503,7 @@ class UNIFAC(GibbsExcess):
             r34x_sum_inv = self.r34x_sum_inv
         rs_34, N = self.rs_34, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             d2Vis_modified = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             d2Vis_modified = zeros((N, N, N))
@@ -5543,7 +5543,7 @@ class UNIFAC(GibbsExcess):
             r34x_sum_inv = self.r34x_sum_inv
         rs_34, N = self.rs_34, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             d3Vis_modified = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)]
         else:
             d3Vis_modified = zeros((N, N, N, N))
@@ -5571,7 +5571,7 @@ class UNIFAC(GibbsExcess):
         # is an index, numbered sequentially by the number of subgroups in the mixture
         vs, xs = self.vs, self.xs
         N, N_groups = self.N, self.N_groups
-        if self.scalar:
+        if not self.vectorized:
             Xs = [0.0]*N_groups
         else:
             Xs = zeros(N_groups)
@@ -5609,7 +5609,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Xs = self.Xs()
 
-        if self.scalar:
+        if not self.vectorized:
             Thetas = [0.0]*N_groups
         else:
             Thetas = zeros(N_groups)
@@ -5673,7 +5673,7 @@ class UNIFAC(GibbsExcess):
 
         VS = self.cmp_v_count
 
-        if self.scalar:
+        if not self.vectorized:
             dThetas_dxs = [[0.0]*N for _ in range(N_groups)]
         else:
             dThetas_dxs = zeros((N_groups, N))
@@ -5755,7 +5755,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             VSXS = self._VSXS()
 
-        if self.scalar:
+        if not self.vectorized:
             d2Thetas_dxixjs = [[[0.0]*N_groups for _ in range(N)] for _ in range(N)]
         else:
             d2Thetas_dxixjs = zeros((N, N, N_groups))
@@ -5768,7 +5768,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         N_groups = self.N_groups
-        if self.scalar:
+        if not self.vectorized:
             VSXS = [0.0]*N_groups
         else:
             VSXS = zeros(N_groups)
@@ -5798,7 +5798,7 @@ class UNIFAC(GibbsExcess):
             psis = self.psis()
         N_groups = self.N_groups
 
-        if self.scalar:
+        if not self.vectorized:
             Theta_Psi_sums = [0.0]*N_groups
         else:
             Theta_Psi_sums = zeros(N_groups)
@@ -5820,7 +5820,7 @@ class UNIFAC(GibbsExcess):
                 Theta_Psi_sums = self.Theta_Psi_sums
             except AttributeError:
                 Theta_Psi_sums = self._Theta_Psi_sums()
-        if self.scalar:
+        if not self.vectorized:
             self.Theta_Psi_sum_invs = [1.0/v for v in Theta_Psi_sums]
         else:
             self.Theta_Psi_sum_invs = 1.0/Theta_Psi_sums
@@ -5849,7 +5849,7 @@ class UNIFAC(GibbsExcess):
             dThetas_dxs = self.dThetas_dxs()
         N, N_groups = self.N, self.N_groups
 
-        if self.scalar:
+        if not self.vectorized:
             Ws = [[0.0]*N for _ in range(N_groups)]
         else:
             Ws = zeros((N_groups, N))
@@ -5878,7 +5878,7 @@ class UNIFAC(GibbsExcess):
 
         N_groups = self.N_groups
 
-        if self.scalar:
+        if not self.vectorized:
             Fs = [0.0]*N_groups
         else:
             Fs = zeros(N_groups)
@@ -5907,7 +5907,7 @@ class UNIFAC(GibbsExcess):
 
         N_groups = self.N_groups
 
-        if self.scalar:
+        if not self.vectorized:
             Gs = [0.0]*N_groups
         else:
             Gs = zeros(N_groups)
@@ -5942,7 +5942,7 @@ class UNIFAC(GibbsExcess):
 
         N_groups = self.N_groups
 
-        if self.scalar:
+        if not self.vectorized:
             Hs = [0.0]*N_groups
         else:
             Hs = zeros(N_groups)
@@ -5963,7 +5963,7 @@ class UNIFAC(GibbsExcess):
 
         N_groups, N = self.N_groups, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             Theta_pure_Psi_sums = [[0.0]*N_groups for _ in range(N)]
         else:
             Theta_pure_Psi_sums = zeros((N, N_groups))
@@ -5985,7 +5985,7 @@ class UNIFAC(GibbsExcess):
                 Theta_pure_Psi_sums = self.Theta_pure_Psi_sums
             except AttributeError:
                 Theta_pure_Psi_sums = self._Theta_pure_Psi_sums()
-        if self.scalar:
+        if not self.vectorized:
             self.Theta_pure_Psi_sum_invs = [[1.0/v for v in row] for row in Theta_pure_Psi_sums]
         else:
             self.Theta_pure_Psi_sum_invs = 1.0/Theta_pure_Psi_sums
@@ -6009,7 +6009,7 @@ class UNIFAC(GibbsExcess):
 
         N_groups, N = self.N_groups, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             Fs_pure = [[0.0]*N_groups for _ in range(N)]
         else:
             Fs_pure = zeros((N, N_groups))
@@ -6035,7 +6035,7 @@ class UNIFAC(GibbsExcess):
 
         N_groups, N = self.N_groups, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             Gs_pure = [[0.0]*N_groups for _ in range(N)]
         else:
             Gs_pure = zeros((N, N_groups))
@@ -6061,7 +6061,7 @@ class UNIFAC(GibbsExcess):
 
         N_groups, N = self.N_groups, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             Hs_pure = [[0.0]*N_groups for _ in range(N)]
         else:
             Hs_pure = zeros((N, N_groups))
@@ -6105,7 +6105,7 @@ class UNIFAC(GibbsExcess):
 
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
-        if self.scalar:
+        if not self.vectorized:
             lnGammas_subgroups = [0.0]*N_groups
         else:
             lnGammas_subgroups = zeros(N_groups)
@@ -6166,7 +6166,7 @@ class UNIFAC(GibbsExcess):
             Ws = self._Ws()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
-        if self.scalar:
+        if not self.vectorized:
             dlnGammas_subgroups_dxs = [[0.0]*N for _ in range(N_groups)]
         else:
             dlnGammas_subgroups_dxs = zeros((N_groups, N))
@@ -6253,7 +6253,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Fs = self._Fs()
 
-        if self.scalar:
+        if not self.vectorized:
             d2lnGammas_subgroups_dTdxs = [[0.0]*N for _ in range(N_groups)]
         else:
             d2lnGammas_subgroups_dTdxs = zeros((N_groups, N))
@@ -6332,7 +6332,7 @@ class UNIFAC(GibbsExcess):
 
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
-        if self.scalar:
+        if not self.vectorized:
             d2lnGammas_subgroups_dxixjs = [[[0.0]*N_groups for _ in range(N)] for _ in range(N)]
         else:
             d2lnGammas_subgroups_dxixjs = zeros((N, N, N_groups))
@@ -6388,7 +6388,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Fs = self._Fs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
-        if self.scalar:
+        if not self.vectorized:
             dlnGammas_subgroups_dT = [0.0]*N_groups
         else:
             dlnGammas_subgroups_dT = zeros(N_groups)
@@ -6458,7 +6458,7 @@ class UNIFAC(GibbsExcess):
             Gs = self._Gs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
-        if self.scalar:
+        if not self.vectorized:
             d2lnGammas_subgroups_dT2 = [0.0]*N_groups
         else:
             d2lnGammas_subgroups_dT2 = zeros(N_groups)
@@ -6546,7 +6546,7 @@ class UNIFAC(GibbsExcess):
             Hs = self._Hs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
-        if self.scalar:
+        if not self.vectorized:
             d3lnGammas_subgroups_dT3 = [0.0]*N_groups
         else:
             d3lnGammas_subgroups_dT3 = zeros(N_groups)
@@ -6578,7 +6578,7 @@ class UNIFAC(GibbsExcess):
         vs, cmp_v_count_inv = self.vs, self.cmp_v_count_inv
         N, N_groups = self.N, self.N_groups
 
-        if self.scalar:
+        if not self.vectorized:
             Xs_pure = [[0.0]*N for _ in range(N_groups)]
         else:
             Xs_pure = zeros((N_groups, N))
@@ -6608,7 +6608,7 @@ class UNIFAC(GibbsExcess):
         Xs_pure, Qs = self.Xs_pure(), self.Qs
         N, N_groups = self.N, self.N_groups
 
-        if self.scalar:
+        if not self.vectorized:
             Thetas_pure = [[0.0]*N_groups for _ in range(N)]
         else:
             Thetas_pure = zeros((N, N_groups))
@@ -6647,7 +6647,7 @@ class UNIFAC(GibbsExcess):
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
         Thetas_pure, cmp_group_idx = self._Thetas_pure, self.cmp_group_idx
 
-        if self.scalar:
+        if not self.vectorized:
             lnGammas_subgroups_pure = [[0.0]*N for _ in range(N_groups)]
         else:
             lnGammas_subgroups_pure = zeros((N_groups, N))
@@ -6711,7 +6711,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             Fs_pure = self._Fs_pure()
 
-        if self.scalar:
+        if not self.vectorized:
             dlnGammas_subgroups_pure_dT = [[0.0]*N for _ in range(N_groups)]
         else:
             dlnGammas_subgroups_pure_dT = zeros((N_groups, N))
@@ -6778,7 +6778,7 @@ class UNIFAC(GibbsExcess):
             Gs_pure = self.Gs_pure
         except AttributeError:
             Gs_pure = self._Gs_pure()
-        if self.scalar:
+        if not self.vectorized:
             d2lnGammas_subgroups_pure_dT2 = [[0.0]*N for _ in range(N_groups)]
         else:
             d2lnGammas_subgroups_pure_dT2 = zeros((N_groups, N))
@@ -6853,7 +6853,7 @@ class UNIFAC(GibbsExcess):
             Hs_pure = self._Hs_pure()
 
 
-        if self.scalar:
+        if not self.vectorized:
             d3lnGammas_subgroups_pure_dT3 = [[0.0]*N for _ in range(N_groups)]
         else:
             d3lnGammas_subgroups_pure_dT3 = zeros((N_groups, N))
@@ -6885,7 +6885,7 @@ class UNIFAC(GibbsExcess):
         vs = self.vs
         N, N_groups = self.N, self.N_groups
 
-        if self.scalar:
+        if not self.vectorized:
             lngammas_r = [0.0]*N
         else:
             lngammas_r = zeros(N)
@@ -6924,7 +6924,7 @@ class UNIFAC(GibbsExcess):
         vs = self.vs
         N, N_groups = self.N, self.N_groups
 
-        if self.scalar:
+        if not self.vectorized:
             dlngammas_r_dT = [0.0]*N
         else:
             dlngammas_r_dT = zeros(N)
@@ -6961,7 +6961,7 @@ class UNIFAC(GibbsExcess):
         N, N_groups = self.N, self.N_groups
 
 
-        if self.scalar:
+        if not self.vectorized:
             d2lngammas_r_dT2 = [0.0]*N
         else:
             d2lngammas_r_dT2 = zeros(N)
@@ -6996,7 +6996,7 @@ class UNIFAC(GibbsExcess):
         d3lnGammas_subgroups_dT3 = self.d3lnGammas_subgroups_dT3()
         vs = self.vs
         N, N_groups = self.N, self.N_groups
-        if self.scalar:
+        if not self.vectorized:
             d3lngammas_r_dT3 = [0.0]*N
         else:
             d3lngammas_r_dT3 = zeros(N)
@@ -7025,7 +7025,7 @@ class UNIFAC(GibbsExcess):
         vs, N, N_groups = self.vs, self.N, self.N_groups
         dlnGammas_subgroups_dxs = self.dlnGammas_subgroups_dxs()
 
-        if self.scalar:
+        if not self.vectorized:
             dlngammas_r_dxs = [[0.0]*N for _ in range(N)]
         else:
             dlngammas_r_dxs = zeros((N, N))
@@ -7065,7 +7065,7 @@ class UNIFAC(GibbsExcess):
         N, N_groups = self.N, self.N_groups
         d2lnGammas_subgroups_dTdxs = self.d2lnGammas_subgroups_dTdxs()
 
-        if self.scalar:
+        if not self.vectorized:
             d2lngammas_r_dTdxs = [[0.0]*N for _ in range(N)]
         else:
             d2lngammas_r_dTdxs = zeros((N, N))
@@ -7096,7 +7096,7 @@ class UNIFAC(GibbsExcess):
         N, N_groups = self.N, self.N_groups
         d2lnGammas_subgroups_dxixjs = self.d2lnGammas_subgroups_dxixjs()
 
-        if self.scalar:
+        if not self.vectorized:
             d2lngammas_r_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             d2lngammas_r_dxixjs = zeros((N, N, N))
@@ -7156,7 +7156,7 @@ class UNIFAC(GibbsExcess):
         T, xs, N, skip_comb = self.T, self.xs, self.N, self.skip_comb
         lngammas_r = self.lngammas_r()
         dlngammas_r_dxs = self.dlngammas_r_dxs()
-        if self.scalar:
+        if not self.vectorized:
             dGE_dxs = [0.0]*N
         else:
             dGE_dxs = zeros(N)
@@ -7199,7 +7199,7 @@ class UNIFAC(GibbsExcess):
         dlngammas_r_dT = self.dlngammas_r_dT()
         d2lngammas_r_dTdxs = self.d2lngammas_r_dTdxs()
 
-        if self.scalar:
+        if not self.vectorized:
             d2GE_dTdxs = [0.0]*N
         else:
             d2GE_dTdxs = zeros(N)
@@ -7241,7 +7241,7 @@ class UNIFAC(GibbsExcess):
         dlngammas_r_dxs = self.dlngammas_r_dxs()
         d2lngammas_r_dxixjs = self.d2lngammas_r_dxixjs()
 
-        if self.scalar:
+        if not self.vectorized:
             d2GE_dxixjs = [[0.0]*N for _ in range(N)]
         else:
             d2GE_dxixjs = zeros((N, N))
@@ -7352,7 +7352,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             lngammas_r = self.lngammas_r()
         if self.skip_comb:
-            if self.scalar:
+            if not self.vectorized:
                 self._gammas = gammas = [exp(ri) for ri in lngammas_r]
             else:
                 self._gammas = gammas = npexp(lngammas_r)
@@ -7361,7 +7361,7 @@ class UNIFAC(GibbsExcess):
                 lngammas_c = self._lngammas_c
             except AttributeError:
                 lngammas_c = self.lngammas_c()
-            if self.scalar:
+            if not self.vectorized:
                 gammas = [0.0]*N
             else:
                 gammas = zeros(N)
@@ -7396,7 +7396,7 @@ class UNIFAC(GibbsExcess):
             dlngammas_r_dT = self._dlngammas_r_dT
         except AttributeError:
             dlngammas_r_dT = self.dlngammas_r_dT()
-        if self.scalar:
+        if not self.vectorized:
             self._dgammas_dT = dgammas_dT = [dlngammas_r_dT[i]*gammas[i] for i in range(self.N)]
         else:
             self._dgammas_dT = dgammas_dT = dlngammas_r_dT*gammas
@@ -7409,7 +7409,7 @@ class UNIFAC(GibbsExcess):
             pass
         dgammas_dxs = self.dgammas_dxs()
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             dgammas_dns = [[0.0]*N for _ in range(N)]
         else:
             dgammas_dns = zeros((N, N))
@@ -7455,7 +7455,7 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             dlngammas_r_dxs = self.dlngammas_r_dxs()
 
-        if self.scalar:
+        if not self.vectorized:
             dgammas_dxs = [[0.0]*N for _ in range(N)]
         else:
             dgammas_dxs = zeros((N, N))
@@ -7511,7 +7511,7 @@ class UNIFAC(GibbsExcess):
         else:
             Vis_modified = Vis
 
-        if self.scalar:
+        if not self.vectorized:
             lngammas_c = [0.0]*N
         else:
             lngammas_c = zeros(N)
@@ -7533,7 +7533,7 @@ class UNIFAC(GibbsExcess):
             Combinatorial lngammas term temperature derivatives, size number of
             components, [-]
         '''
-        if self.scalar:
+        if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 
@@ -7550,7 +7550,7 @@ class UNIFAC(GibbsExcess):
             Combinatorial lngammas term second temperature derivatives, size
             number of components, [-]
         '''
-        if self.scalar:
+        if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 
@@ -7567,7 +7567,7 @@ class UNIFAC(GibbsExcess):
             Combinatorial lngammas term second temperature derivatives, size
             number of components, [-]
         '''
-        if self.scalar:
+        if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 
@@ -7584,7 +7584,7 @@ class UNIFAC(GibbsExcess):
             Combinatorial lngammas term second temperature derivatives, size
             number of components by number of components, [-]
         '''
-        if self.scalar:
+        if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 
@@ -7652,7 +7652,7 @@ class UNIFAC(GibbsExcess):
             Vis_modified = Vis
             dVis_modified_dxs = dVis_dxs
 
-        if self.scalar:
+        if not self.vectorized:
             dlngammas_c_dxs = [[0.0]*N for _ in range(N)]
         else:
             dlngammas_c_dxs = zeros((N, N))
@@ -7803,7 +7803,7 @@ class UNIFAC(GibbsExcess):
             dVis_modified_dxs = dVis_dxs
             d2Vis_modified_dxixjs = d2Vis_dxixjs
 
-        if self.scalar:
+        if not self.vectorized:
             d2lngammas_c_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             d2lngammas_c_dxixjs = zeros((N, N, N))
@@ -7901,7 +7901,7 @@ class UNIFAC(GibbsExcess):
             d2Vis_modified_dxixjs = d2Vis_dxixjs
             d3Vis_modified_dxixjxks = d3Vis_dxixjxks
 
-        if self.scalar:
+        if not self.vectorized:
             d3lngammas_c_dxixjxks = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)]
         else:
             d3lngammas_c_dxixjxks = zeros((N, N, N, N))

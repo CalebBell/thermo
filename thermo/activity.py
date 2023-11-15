@@ -289,7 +289,7 @@ class GibbsExcess:
     as not all models can mathematically be evaluated at zero mole-fraction."""
 
 
-    __slots__ = ('T', 'N', 'xs', 'scalar', '_GE', '_dGE_dT', '_SE','_d2GE_dT2', '_d2GE_dTdxs', '_dGE_dxs',
+    __slots__ = ('T', 'N', 'xs', 'vectorized', '_GE', '_dGE_dT', '_SE','_d2GE_dT2', '_d2GE_dTdxs', '_dGE_dxs',
                   '_gammas', '_dgammas_dns', '_dgammas_dT', '_d2GE_dxixjs',  '_dHE_dxs', '_dSE_dxs',
                   '_model_hash')
 
@@ -379,7 +379,7 @@ class GibbsExcess:
         state_hash : int
             Hash of the object's model parameters and state, [-]
         '''
-        xs = self.xs if self.scalar else self.xs.tolist()
+        xs = self.xs if not self.vectorized else self.xs.tolist()
         return hash_any_primitive((self.model_hash(), float(self.T), xs))
 
     def as_json(self):
@@ -406,7 +406,7 @@ class GibbsExcess:
         '''
         # vaguely jsonpickle compatible
         d = object_data(self)
-        if not self.scalar:
+        if self.vectorized:
             d = serialize.arrays_to_lists(d)
         d["py/object"] = self.__full_path__
         d["json_version"] = 1
@@ -440,13 +440,13 @@ class GibbsExcess:
         >>> assert model == new_model
         '''
         d = json_repr
-        scalar = d['scalar']
-        if not scalar:
+        vectorized = d['vectorized']
+        if vectorized:
             d = serialize.naive_lists_to_arrays(d)
 
-        if not scalar and 'cmp_group_idx' in d:
+        if vectorized and 'cmp_group_idx' in d:
             d['cmp_group_idx'] = tuple(array(v) for v in d['cmp_group_idx'])
-        if not scalar and 'group_cmp_idx' in d:
+        if vectorized and 'group_cmp_idx' in d:
             d['group_cmp_idx'] = tuple(array(v) for v in d['group_cmp_idx'])
 
 
@@ -532,7 +532,7 @@ class GibbsExcess:
         except:
             dGE_dxs = self.dGE_dxs()
         dHE_dxs = gibbs_excess_dHE_dxs(dGE_dxs, d2GE_dTdxs, self.N, self.T)
-        if not self.scalar and type(dHE_dxs) is list:
+        if self.vectorized and type(dHE_dxs) is list:
             dHE_dxs = array(dHE_dxs)
         self._dHE_dxs = dHE_dxs
         return dHE_dxs
@@ -553,7 +553,7 @@ class GibbsExcess:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dHE_dns = dxs_to_dns(self.dHE_dxs(), self.xs, out)
         return dHE_dns
 
@@ -573,7 +573,7 @@ class GibbsExcess:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dnHE_dns = dxs_to_dn_partials(self.dHE_dxs(), self.xs, self.HE(), out)
         return dnHE_dns
 
@@ -675,7 +675,7 @@ class GibbsExcess:
             d2GE_dTdxs = self._d2GE_dTdxs
         except:
             d2GE_dTdxs = self.d2GE_dTdxs()
-        if self.scalar:
+        if not self.vectorized:
             dSE_dxs = [-v for v in d2GE_dTdxs]
         else:
             dSE_dxs = -d2GE_dTdxs
@@ -698,7 +698,7 @@ class GibbsExcess:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dSE_dns = dxs_to_dns(self.dSE_dxs(), self.xs, out)
         return dSE_dns
 
@@ -718,7 +718,7 @@ class GibbsExcess:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dnSE_dns = dxs_to_dn_partials(self.dSE_dxs(), self.xs, self.SE(), out)
         return dnSE_dns
 
@@ -738,7 +738,7 @@ class GibbsExcess:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dGE_dns = dxs_to_dns(self.dGE_dxs(), self.xs, out)
         return dGE_dns
 
@@ -758,7 +758,7 @@ class GibbsExcess:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dnGE_dns = dxs_to_dn_partials(self.dGE_dxs(), self.xs, self.GE(), out)
         return dnGE_dns
 
@@ -779,7 +779,7 @@ class GibbsExcess:
         Notes
         -----
         '''
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         d2GE_dTdns = dxs_to_dns(self.d2GE_dTdxs(), self.xs, out)
         return d2GE_dTdns
 
@@ -804,7 +804,7 @@ class GibbsExcess:
         # needed in gammas temperature derivatives
         dGE_dT = self.dGE_dT()
         d2GE_dTdns = self.d2GE_dTdns()
-        out = [0.0]*self.N if self.scalar else zeros(self.N)
+        out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         d2nGE_dTdns = dns_to_dn_partials(d2GE_dTdns, dGE_dT, out)
         return d2nGE_dTdns
 
@@ -828,7 +828,7 @@ class GibbsExcess:
         '''
         # This one worked out
         d2nGE_dninjs = d2xs_to_dxdn_partials(self.d2GE_dxixjs(), self.xs)
-        if not self.scalar and type(d2nGE_dninjs) is list:
+        if self.vectorized and type(d2nGE_dninjs) is list:
             d2nGE_dninjs = array(d2nGE_dninjs)
         return d2nGE_dninjs
 
@@ -851,7 +851,7 @@ class GibbsExcess:
         T, N = self.T, self.N
         xs_base = self.xs
         x_infinite_dilution = self._x_infinite_dilution
-        if self.scalar:
+        if not self.vectorized:
             gammas_inf = [0.0]*N
             copy_fun = list
         else:
@@ -886,7 +886,7 @@ class GibbsExcess:
         # Matches the gamma formulation perfectly
         GE = self.GE()
         dG_dxs = self.dGE_dxs()
-        if self.scalar:
+        if not self.vectorized:
             dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
             RT_inv = 1.0/(R*self.T)
             gammas = [trunc_exp(i*RT_inv) for i in dG_dns]
@@ -929,11 +929,11 @@ class GibbsExcess:
         xs = self.xs
         d2GE_dxixjs = self.d2GE_dxixjs()
 
-        dgammas_dns = [[0.0]*N for _ in range(N)] if self.scalar else zeros((N, N))
+        dgammas_dns = [[0.0]*N for _ in range(N)] if not self.vectorized else zeros((N, N))
 
         dgammas_dns = gibbs_excess_dgammas_dns(xs, gammas, d2GE_dxixjs, N, self.T, dgammas_dns)
 
-        if not self.scalar and type(dgammas_dns) is list:
+        if self.vectorized and type(dgammas_dns) is list:
             dgammas_dns = array(dgammas_dns)
 
         self._dgammas_dns = dgammas_dns
@@ -1015,7 +1015,7 @@ class GibbsExcess:
         dG_dxs = self.dGE_dxs()
         d2GE_dTdxs = self.d2GE_dTdxs()
         dgammas_dT = gibbs_excess_dgammas_dT(xs, GE, dGE_dT, dG_dxs, d2GE_dTdxs, N, T)
-        if not self.scalar and type(dgammas_dT) is list:
+        if self.vectorized and type(dgammas_dT) is list:
             dgammas_dT = array(dgammas_dT)
         self._dgammas_dT = dgammas_dT
         return dgammas_dT
@@ -1083,9 +1083,9 @@ class IdealSolution(GibbsExcess):
         if xs is not None:
             self.xs = xs
             self.N = len(xs)
-            self.scalar = type(xs) is list
+            self.vectorized = type(xs) is not list
         else:
-            self.scalar = True
+            self.vectorized = False
             self.N = None
 
     def to_T_xs(self, T, xs):
@@ -1117,7 +1117,7 @@ class IdealSolution(GibbsExcess):
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
         new.N = len(xs)
         return new
 
@@ -1208,7 +1208,7 @@ class IdealSolution(GibbsExcess):
         Notes
         -----
         '''
-        if self.scalar:
+        if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 
@@ -1228,7 +1228,7 @@ class IdealSolution(GibbsExcess):
         Notes
         -----
         '''
-        if self.scalar:
+        if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 
@@ -1249,7 +1249,7 @@ class IdealSolution(GibbsExcess):
         -----
         '''
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             return [[0.0]*N for i in range(self.N)]
         return zeros((N, N))
 
@@ -1270,12 +1270,12 @@ class IdealSolution(GibbsExcess):
         -----
         '''
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             return [[[0.0]*N for i in range(N)] for j in range(N)]
         return zeros((N, N, N))
 
     def gammas(self):
-        if self.scalar:
+        if not self.vectorized:
             return [1.0]*self.N
         else:
             return ones(self.N)

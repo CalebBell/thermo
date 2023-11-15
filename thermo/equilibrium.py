@@ -3015,7 +3015,7 @@ class EquilibriumState:
             pass
         T = self.T
         self._kss = [o.T_dependent_property(T) for o in self.ThermalConductivitySolids]
-        if not self.flasher.scalar:
+        if self.flasher.vectorized:
             self._kss = array(self._kss)
         return self._kss
 

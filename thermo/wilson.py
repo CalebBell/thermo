@@ -590,10 +590,10 @@ class Wilson(GibbsExcess):
 
         lambdas = obj.lambdas()
         N = obj.N
-        if self.scalar:
-            xj_Lambda_ijs, vec0 = [0.0]*N, [0.0]*N
-        else:
+        if self.vectorized:
             xj_Lambda_ijs, vec0 = zeros(N), zeros(N)
+        else:
+            xj_Lambda_ijs, vec0 = [0.0]*N, [0.0]*N
         return (N, lambdas, xj_Lambda_ijs, vec0)
 
     @staticmethod
@@ -753,7 +753,7 @@ class Wilson(GibbsExcess):
                  lambda_cs=None, lambda_ds=None, lambda_es=None, lambda_fs=None):
         self.T = T
         self.xs = xs
-        self.scalar = scalar = type(xs) is list
+        self.vectorized = vectorized = type(xs) is not list
         self.N = N = len(xs)
 
         if ABCDEF is None:
@@ -771,26 +771,26 @@ class Wilson(GibbsExcess):
             except:
                 raise ValueError("Coefficients not input correctly")
 
-        if scalar:
-            zero_coeffs = [[0.0]*N for _ in range(N)]
-        else:
+        if vectorized:
             zero_coeffs = zeros((N, N))
+        else:
+            zero_coeffs = [[0.0]*N for _ in range(N)]
 
         if lambda_coeffs is not None:
-            if scalar:
-                self.lambda_as = [[i[0] for i in l] for l in lambda_coeffs]
-                self.lambda_bs = [[i[1] for i in l] for l in lambda_coeffs]
-                self.lambda_cs = [[i[2] for i in l] for l in lambda_coeffs]
-                self.lambda_ds = [[i[3] for i in l] for l in lambda_coeffs]
-                self.lambda_es = [[i[4] for i in l] for l in lambda_coeffs]
-                self.lambda_fs = [[i[5] for i in l] for l in lambda_coeffs]
-            else:
+            if vectorized:
                 self.lambda_as = array(lambda_coeffs[:,:,0], order='C', copy=True)
                 self.lambda_bs = array(lambda_coeffs[:,:,1], order='C', copy=True)
                 self.lambda_cs = array(lambda_coeffs[:,:,2], order='C', copy=True)
                 self.lambda_ds = array(lambda_coeffs[:,:,3], order='C', copy=True)
                 self.lambda_es = array(lambda_coeffs[:,:,4], order='C', copy=True)
                 self.lambda_fs = array(lambda_coeffs[:,:,5], order='C', copy=True)
+            else:
+                self.lambda_as = [[i[0] for i in l] for l in lambda_coeffs]
+                self.lambda_bs = [[i[1] for i in l] for l in lambda_coeffs]
+                self.lambda_cs = [[i[2] for i in l] for l in lambda_coeffs]
+                self.lambda_ds = [[i[3] for i in l] for l in lambda_coeffs]
+                self.lambda_es = [[i[4] for i in l] for l in lambda_coeffs]
+                self.lambda_fs = [[i[5] for i in l] for l in lambda_coeffs]
         else:
             len_ABCDEF = len(ABCDEF)
             if len_ABCDEF == 0 or ABCDEF[0] is None:
@@ -821,7 +821,7 @@ class Wilson(GibbsExcess):
         # Make an array of values identifying what coefficients are zero.
         # This may be useful for performance optimization in the future but is
         # especially important for reducing the size of the __repr__ string.
-        self.lambda_coeffs_nonzero = lambda_coeffs_nonzero = [True]*6 if scalar else ones(6, bool)
+        self.lambda_coeffs_nonzero = lambda_coeffs_nonzero = ones(6, bool) if vectorized else [True]*6
         for k, coeffs in enumerate([self.lambda_as, self.lambda_bs, self.lambda_cs,
                            self.lambda_ds, self.lambda_es, self.lambda_fs]):
             nonzero = False
@@ -875,7 +875,7 @@ class Wilson(GibbsExcess):
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
         new.N = self.N
         (new.lambda_as, new.lambda_bs, new.lambda_cs,
          new.lambda_ds, new.lambda_es, new.lambda_fs) = (
@@ -928,10 +928,10 @@ class Wilson(GibbsExcess):
             pass
 
         N = self.N
-        if self.scalar:
-            lambdas = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             lambdas = zeros((N, N))
+        else:
+            lambdas = [[0.0]*N for _ in range(N)]
 
         lambdas = interaction_exp(self.T, N, self.lambda_as, self.lambda_bs,
                                   self.lambda_cs, self.lambda_ds,
@@ -975,10 +975,10 @@ class Wilson(GibbsExcess):
             lambdas = self._lambdas
         except AttributeError:
             lambdas = self.lambdas()
-        if self.scalar:
-            dlambdas_dT = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             dlambdas_dT = zeros((N, N))
+        else:
+            dlambdas_dT = [[0.0]*N for _ in range(N)]
 
         self._dlambdas_dT = dinteraction_exp_dT(T, N, B, C, D, E, F, lambdas, dlambdas_dT)
         return dlambdas_dT
@@ -1021,7 +1021,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             dlambdas_dT = self.dlambdas_dT()
 
-        if self.scalar:
+        if not self.vectorized:
             d2lambdas_dT2 = [[0.0]*N for _ in range(N)]
         else:
             d2lambdas_dT2 = zeros((N, N))
@@ -1078,7 +1078,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             dlambdas_dT = self.dlambdas_dT()
 
-        if self.scalar:
+        if not self.vectorized:
             d3lambdas_dT3s = [[0.0]*N for _ in range(N)]
         else:
             d3lambdas_dT3s = zeros((N, N))
@@ -1099,7 +1099,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             lambdas = self.lambdas()
 
-        if self.scalar:
+        if not self.vectorized:
             xj_Lambda_ijs = [0.0]*self.N
         else:
             xj_Lambda_ijs = zeros(self.N)
@@ -1119,7 +1119,7 @@ class Wilson(GibbsExcess):
             xj_Lambda_ijs = self._xj_Lambda_ijs
         except AttributeError:
             xj_Lambda_ijs = self.xj_Lambda_ijs()
-        if self.scalar:
+        if not self.vectorized:
             self._xj_Lambda_ijs_inv = [1.0/x for x in xj_Lambda_ijs]
         else:
             self._xj_Lambda_ijs_inv = 1.0/xj_Lambda_ijs
@@ -1136,7 +1136,7 @@ class Wilson(GibbsExcess):
             xj_Lambda_ijs = self._xj_Lambda_ijs
         except AttributeError:
             xj_Lambda_ijs = self.xj_Lambda_ijs()
-        if self.scalar:
+        if not self.vectorized:
             self._log_xj_Lambda_ijs = [log(i) for i in xj_Lambda_ijs]
         else:
             self._log_xj_Lambda_ijs = nplog(xj_Lambda_ijs)
@@ -1155,7 +1155,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             dlambdas_dT = self.dlambdas_dT()
 
-        if self.scalar:
+        if not self.vectorized:
             xj_dLambda_dTijs = [0.0]*self.N
         else:
             xj_dLambda_dTijs = zeros(self.N)
@@ -1176,7 +1176,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             d2lambdas_dT2 = self.d2lambdas_dT2()
 
-        if self.scalar:
+        if not self.vectorized:
             xj_d2Lambda_dT2ijs = [0.0]*self.N
         else:
             xj_d2Lambda_dT2ijs = zeros(self.N)
@@ -1196,7 +1196,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             d3lambdas_dT3 = self.d3lambdas_dT3()
 
-        if self.scalar:
+        if not self.vectorized:
             xj_d3Lambda_dT3ijs = [0.0]*self.N
         else:
             xj_d3Lambda_dT3ijs = zeros(self.N)
@@ -1230,7 +1230,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             log_xj_Lambda_ijs = self.log_xj_Lambda_ijs()
 
-        if self.scalar:
+        if not self.vectorized:
             xs, N = self.xs, self.N
             GE = 0.0
             for i in range(N):
@@ -1429,7 +1429,7 @@ class Wilson(GibbsExcess):
             xj_dLambda_dTijs = self._xj_dLambda_dTijs
         except AttributeError:
             xj_dLambda_dTijs = self.xj_dLambda_dTijs()
-        if self.scalar:
+        if not self.vectorized:
             d2GE_dTdxs = [0.0]*self.N
         else:
             d2GE_dTdxs = zeros(self.N)
@@ -1500,7 +1500,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
 
-        if self.scalar:
+        if not self.vectorized:
             dGE_dxs = [0.0]*self.N
         else:
             dGE_dxs = zeros(self.N)
@@ -1542,7 +1542,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             d2GE_dxixjs = [[0.0]*N for _ in range(N)]
         else:
             d2GE_dxixjs = zeros((N, N))
@@ -1584,7 +1584,7 @@ class Wilson(GibbsExcess):
             xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
 
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             d3GE_dxixjxks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             d3GE_dxixjxks = zeros((N, N, N))
@@ -1613,7 +1613,7 @@ class Wilson(GibbsExcess):
         except AttributeError:
             xj_Lambda_ijs_inv = self.xj_Lambda_ijs_inv()
 
-        if self.scalar:
+        if not self.vectorized:
             gammas = [0.0]*self.N
         else:
             gammas = zeros(self.N)

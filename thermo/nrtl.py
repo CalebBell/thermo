@@ -592,7 +592,7 @@ class NRTL(GibbsExcess):
         Gs_taus = obj.Gs_taus()
 
         N = obj.N
-        if self.scalar:
+        if not self.vectorized:
             xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1 = [0.0]*N, [0.0]*N, [0.0]*N, [0.0]*N
         else:
             xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1 = zeros(N), zeros(N), zeros(N),  zeros(N)
@@ -607,10 +607,10 @@ class NRTL(GibbsExcess):
                  alpha_ds=None):
         self.T = T
         self.xs = xs
-        self.scalar = scalar = type(xs) is list
+        self.vectorized = vectorized = type(xs) is not list
         self.N = N = len(xs)
 
-        if self.scalar:
+        if not self.vectorized:
             self.zero_coeffs = [[0.0]*N for _ in range(N)]
         else:
             self.zero_coeffs = zeros((N, N))
@@ -640,7 +640,7 @@ class NRTL(GibbsExcess):
                 raise ValueError("Coefficients not input correctly")
 
         if tau_coeffs is not None and alpha_coeffs is not None:
-            if scalar:
+            if not vectorized:
                 self.tau_as = [[i[0] for i in l] for l in tau_coeffs]
                 self.tau_bs = [[i[1] for i in l] for l in tau_coeffs]
                 self.tau_es = [[i[2] for i in l] for l in tau_coeffs]
@@ -654,7 +654,7 @@ class NRTL(GibbsExcess):
                 self.tau_fs = array(tau_coeffs[:,:,3], order='C', copy=True)
                 self.tau_gs = array(tau_coeffs[:,:,4], order='C', copy=True)
                 self.tau_hs = array(tau_coeffs[:,:,5], order='C', copy=True)
-            if scalar:
+            if not vectorized:
                 self.alpha_cs = [[i[0] for i in l] for l in alpha_coeffs]
                 self.alpha_ds = [[i[1] for i in l] for l in alpha_coeffs]
             else:
@@ -705,7 +705,7 @@ class NRTL(GibbsExcess):
         # Make an array of values identifying what coefficients are zero.
         # This may be useful for performance optimization in the future but is
         # especially important for reducing the size of the __repr__ string.
-        self.tau_coeffs_nonzero = tau_coeffs_nonzero = [True]*6 if scalar else ones(6, bool)
+        self.tau_coeffs_nonzero = tau_coeffs_nonzero = [True]*6 if not vectorized else ones(6, bool)
         for k, coeffs in enumerate([self.tau_as, self.tau_bs, self.tau_es,
                            self.tau_fs, self.tau_gs, self.tau_hs]):
             nonzero = False
@@ -767,7 +767,7 @@ class NRTL(GibbsExcess):
         have been calculated, they will be set to the new object as well.
         '''
         new = self.__class__.__new__(self.__class__)
-        (new.T, new.xs, new.N, new.scalar) = T, xs, self.N, self.scalar
+        (new.T, new.xs, new.N, new.vectorized) = T, xs, self.N, self.vectorized
         (new.tau_as, new.tau_bs, new.tau_es,
          new.tau_fs, new.tau_gs, new.tau_hs,
          new.alpha_cs, new.alpha_ds, new.tau_coeffs_nonzero,
@@ -834,7 +834,7 @@ class NRTL(GibbsExcess):
 
         xj_Gs_jis_inv, xj_Gs_taus_jis = self.xj_Gs_jis_inv(), self.xj_Gs_taus_jis()
 
-        if self.scalar:
+        if not self.vectorized:
             gammas = [0.0]*self.N
         else:
             gammas = zeros(self.N)
@@ -871,7 +871,7 @@ class NRTL(GibbsExcess):
         G = self.tau_gs
         H = self.tau_hs
         T, N = self.T, self.N
-        if self.scalar:
+        if not self.vectorized:
             taus = [[0.0]*N for _ in range(N)]
         else:
             taus = zeros((N, N))
@@ -907,7 +907,7 @@ class NRTL(GibbsExcess):
         G = self.tau_gs
         H = self.tau_hs
         T, N = self.T, self.N
-        if self.scalar:
+        if not self.vectorized:
             dtaus_dT = [[0.0]*N for _ in range(N)]
         else:
             dtaus_dT = zeros((N, N))
@@ -942,7 +942,7 @@ class NRTL(GibbsExcess):
         H = self.tau_hs
         T, N = self.T, self.N
 
-        if self.scalar:
+        if not self.vectorized:
             d2taus_dT2 = [[0.0]*N for _ in range(N)]
         else:
             d2taus_dT2 = zeros((N, N))
@@ -975,7 +975,7 @@ class NRTL(GibbsExcess):
         E = self.tau_es
         G = self.tau_gs
         T, N = self.T, self.N
-        if self.scalar:
+        if not self.vectorized:
             d3taus_dT3 = [[0.0]*N for _ in range(N)]
         else:
             d3taus_dT3 = zeros((N, N))
@@ -1020,7 +1020,7 @@ class NRTL(GibbsExcess):
         if self.alpha_temperature_independent:
             self._alphas = alphas = self.alpha_cs
         else:
-            if self.scalar:
+            if not self.vectorized:
                 alphas = [[0.0]*N for _ in range(N)]
             else:
                 alphas = zeros((N, N))
@@ -1063,7 +1063,7 @@ class NRTL(GibbsExcess):
         taus = self.taus()
         N = self.N
 
-        if self.scalar:
+        if not self.vectorized:
             Gs = [[0.0]*N for _ in range(N)]
         else:
             Gs = zeros((N, N))
@@ -1105,7 +1105,7 @@ class NRTL(GibbsExcess):
         Gs = self.Gs()
         N = self.N
 
-        if self.scalar:
+        if not self.vectorized:
             dGs_dT = [[0.0]*N for _ in range(N)]
         else:
             dGs_dT = zeros((N, N))
@@ -1153,7 +1153,7 @@ class NRTL(GibbsExcess):
         Gs = self.Gs()
         N = self.N
 
-        if self.scalar:
+        if not self.vectorized:
             d2Gs_dT2 = [[0.0]*N for _ in range(N)]
         else:
             d2Gs_dT2 = zeros((N, N))
@@ -1205,7 +1205,7 @@ class NRTL(GibbsExcess):
         d3taus_dT3 = self.d3taus_dT3()
         Gs = self.Gs()
 
-        if self.scalar:
+        if not self.vectorized:
             d3Gs_dT3 = [[0.0]*N for _ in range(N)]
         else:
             d3Gs_dT3 = zeros((N, N))
@@ -1219,7 +1219,7 @@ class NRTL(GibbsExcess):
             return self._Gs_transposed
         except AttributeError:
             pass
-        if self.scalar:
+        if not self.vectorized:
             self._Gs_transposed = transpose(self.Gs())
         else:
             self._Gs_transposed = ascontiguousarray(nptranspose(self.Gs()))
@@ -1232,7 +1232,7 @@ class NRTL(GibbsExcess):
             return self._Gs_taus_transposed
         except AttributeError:
             pass
-        if self.scalar:
+        if not self.vectorized:
             mat = transpose(self.taus())
             Gs_transposed = self.Gs_transposed()
             N = self.N
@@ -1251,7 +1251,7 @@ class NRTL(GibbsExcess):
             return self._Gs_taus
         except AttributeError:
             pass
-        if self.scalar:
+        if not self.vectorized:
             N = self.N
             Gs_taus = [[0.0]*N for _ in range(N)]
             taus = self.taus()
@@ -1288,7 +1288,7 @@ class NRTL(GibbsExcess):
             Gs_taus_transposed = self.Gs_taus_transposed()
 
         xs, N = self.xs, self.N
-        if self.scalar:
+        if not self.vectorized:
             _xj_Gs_jis = [0.0]*N
             _xj_Gs_taus_jis = [0.0]*N
         else:
@@ -1311,7 +1311,7 @@ class NRTL(GibbsExcess):
         except AttributeError:
             xj_Gs_jis = self.xj_Gs_jis()
 
-        if self.scalar:
+        if not self.vectorized:
             self._xj_Gs_jis_inv = [1.0/i for i in xj_Gs_jis]
         else:
             self._xj_Gs_jis_inv = 1.0/xj_Gs_jis
@@ -1336,7 +1336,7 @@ class NRTL(GibbsExcess):
             taus = self.taus()
 
         xs, N = self.xs, self.N
-        if self.scalar:
+        if not self.vectorized:
             xj_Gs_taus_jis = [0.0]*N
         else:
             xj_Gs_taus_jis = zeros(N)
@@ -1356,7 +1356,7 @@ class NRTL(GibbsExcess):
             dGs_dT = self.dGs_dT()
 
         xs, N = self.xs, self.N
-        if self.scalar:
+        if not self.vectorized:
             xj_dGs_dT_jis = [0.0]*N
         else:
             xj_dGs_dT_jis = zeros(N)
@@ -1379,7 +1379,7 @@ class NRTL(GibbsExcess):
         except AttributeError:
             taus = self.taus()
 
-        if self.scalar:
+        if not self.vectorized:
             xj_taus_dGs_dT_jis = [0.0]*N
         else:
             xj_taus_dGs_dT_jis = zeros(N)
@@ -1403,7 +1403,7 @@ class NRTL(GibbsExcess):
         except AttributeError:
             Gs = self.Gs()
 
-        if self.scalar:
+        if not self.vectorized:
             xj_Gs_dtaus_dT_jis = [0.0]*N
         else:
             xj_Gs_dtaus_dT_jis = zeros(N)
@@ -1577,7 +1577,7 @@ class NRTL(GibbsExcess):
         Gs = self.Gs()
         xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()
-        if self.scalar:
+        if not self.vectorized:
             dGE_dxs = [0.0]*N
         else:
             dGE_dxs = zeros(N)
@@ -1659,7 +1659,7 @@ class NRTL(GibbsExcess):
         Gs = self.Gs()
         xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()
-        if self.scalar:
+        if not self.vectorized:
             d2GE_dxixjs = [[0.0]*N for _ in range(N)]
         else:
             d2GE_dxixjs = zeros((N, N))
@@ -1717,7 +1717,7 @@ class NRTL(GibbsExcess):
 
         Gs = self.Gs()
         dGs_dT = self.dGs_dT()
-        if self.scalar:
+        if not self.vectorized:
             d2GE_dTdxs = [0.0]*N
         else:
             d2GE_dTdxs = zeros(N)

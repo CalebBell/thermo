@@ -553,7 +553,7 @@ class UNIQUAC(GibbsExcess):
                  tau_es=None, tau_fs=None):
         self.T = T
         self.xs = xs
-        self.scalar = scalar = type(rs) is list
+        self.vectorized = vectorized = type(rs) is not list
         self.rs = rs
         self.qs = qs
 
@@ -585,13 +585,13 @@ class UNIQUAC(GibbsExcess):
         else:
             raise ValueError("`tau_coeffs` or `ABCDEF` is required")
 
-        if scalar:
+        if not vectorized:
             self.zero_coeffs = zero_coeffs = [[0.0]*N for _ in range(N)]
         else:
             self.zero_coeffs = zero_coeffs = zeros((N, N))
 
         if tau_coeffs is not None:
-            if scalar:
+            if not vectorized:
                 self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
                 self.tau_coeffs_B = [[i[1] for i in l] for l in tau_coeffs]
                 self.tau_coeffs_C = [[i[2] for i in l] for l in tau_coeffs]
@@ -658,7 +658,7 @@ class UNIQUAC(GibbsExcess):
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
         new.rs = self.rs
         new.qs = self.qs
         new.N = self.N
@@ -718,7 +718,7 @@ class UNIQUAC(GibbsExcess):
         F = self.tau_coeffs_F
         T = self.T
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             taus = [[0.0]*N for _ in range(N)]
         else:
             taus = zeros((N, N))
@@ -761,7 +761,7 @@ class UNIQUAC(GibbsExcess):
             taus = self._taus
         except AttributeError:
             taus = self.taus()
-        if self.scalar:
+        if not self.vectorized:
             dtaus_dT = [[0.0]*N for _ in range(N)]
         else:
             dtaus_dT = zeros((N, N))
@@ -809,7 +809,7 @@ class UNIQUAC(GibbsExcess):
             dtaus_dT = self._dtaus_dT
         except AttributeError:
             dtaus_dT = self.dtaus_dT()
-        if self.scalar:
+        if not self.vectorized:
             d2taus_dT2s = [[0.0]*N for _ in range(N)]
         else:
             d2taus_dT2s = zeros((N, N))
@@ -860,7 +860,7 @@ class UNIQUAC(GibbsExcess):
             dtaus_dT = self._dtaus_dT
         except AttributeError:
             dtaus_dT = self.dtaus_dT()
-        if self.scalar:
+        if not self.vectorized:
             d3taus_dT3s = [[0.0]*N for _ in range(N)]
         else:
             d3taus_dT3s = zeros((N, N))
@@ -887,7 +887,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         N, xs, rs = self.N, self.xs, self.rs
-        if self.scalar:
+        if not self.vectorized:
             phis = [0.0]*N
         else:
             phis = zeros(N)
@@ -902,7 +902,7 @@ class UNIQUAC(GibbsExcess):
             pass
 
         phis = self.phis()
-        if self.scalar:
+        if not self.vectorized:
             phis_inv = [1.0/v for v in phis]
         else:
             phis_inv = 1.0/phis
@@ -928,7 +928,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         N, rs = self.N, self.rs
-        if self.scalar:
+        if not self.vectorized:
             dphis_dxs = [[0.0]*N for i in range(N)]
         else:
             dphis_dxs = zeros((N, N))
@@ -955,7 +955,7 @@ class UNIQUAC(GibbsExcess):
 
         self.phis() # Ensure the sum is there
         rsxs_sum_inv = self._rsxs_sum_inv
-        if self.scalar:
+        if not self.vectorized:
             d2phis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             d2phis_dxixjs = zeros((N, N, N))
@@ -987,7 +987,7 @@ class UNIQUAC(GibbsExcess):
             pass
         N, xs = self.N, self.xs
         qs = self.qs
-        if self.scalar:
+        if not self.vectorized:
             thetas = [0.0]*N
         else:
             thetas = zeros(N)
@@ -1013,7 +1013,7 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         N, qs = self.N, self.qs
-        if self.scalar:
+        if not self.vectorized:
             dthetas_dxs =  [[0.0]*N for i in range(N)]
         else:
             dthetas_dxs = zeros((N, N))
@@ -1041,7 +1041,7 @@ class UNIQUAC(GibbsExcess):
 
         self.thetas() # Ensure the sum is there
         qsxs_sum_inv = self._qsxs_sum_inv
-        if self.scalar:
+        if not self.vectorized:
             d2thetas_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             d2thetas_dxixjs = zeros((N, N, N))
@@ -1068,7 +1068,7 @@ class UNIQUAC(GibbsExcess):
             taus = self.taus()
 
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             thetaj_taus_jis = [0.0]*N
         else:
             thetaj_taus_jis = zeros(N)
@@ -1082,7 +1082,7 @@ class UNIQUAC(GibbsExcess):
             pass
 
         thetaj_taus_jis = self.thetaj_taus_jis()
-        if self.scalar:
+        if not self.vectorized:
             thetaj_taus_jis_inv = [1.0/v for v in thetaj_taus_jis]
         else:
             thetaj_taus_jis_inv = 1.0/thetaj_taus_jis
@@ -1125,7 +1125,7 @@ class UNIQUAC(GibbsExcess):
             dtaus_dT = self.dtaus_dT()
 
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             thetaj_dtaus_dT_jis = [0.0]*N
         else:
             thetaj_dtaus_dT_jis = zeros(N)
@@ -1150,7 +1150,7 @@ class UNIQUAC(GibbsExcess):
             d2taus_dT2 = self.d2taus_dT2()
 
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             thetaj_d2taus_dT2_jis = [0.0]*N
         else:
             thetaj_d2taus_dT2_jis = zeros(N)
@@ -1172,7 +1172,7 @@ class UNIQUAC(GibbsExcess):
             d3taus_dT3 = self.d3taus_dT3()
 
         N = self.N
-        if self.scalar:
+        if not self.vectorized:
             thetaj_d3taus_dT3_jis = [0.0]*N
         else:
             thetaj_d3taus_dT3_jis = zeros(N)
@@ -1353,7 +1353,7 @@ class UNIQUAC(GibbsExcess):
         thetaj_taus_jis = self.thetaj_taus_jis()
         thetaj_taus_jis_inv = self.thetaj_taus_jis_inv()
 
-        if self.scalar:
+        if not self.vectorized:
             dGE_dxs = [0.0]*N
         else:
             dGE_dxs = zeros(N)
@@ -1409,7 +1409,7 @@ class UNIQUAC(GibbsExcess):
         thetaj_taus_jis_inv = self.thetaj_taus_jis_inv()
         thetaj_dtaus_dT_jis = self.thetaj_dtaus_dT_jis()
 
-        if self.scalar:
+        if not self.vectorized:
             d2GE_dTdxs = [0.0]*N
             qsxs = [qs[i]*xs[i] for i in range(N)]
             qsxsthetaj_taus_jis_inv = [thetaj_taus_jis_inv[i]*qsxs[i] for i in range(N)]
@@ -1620,7 +1620,7 @@ class UNIQUAC(GibbsExcess):
                 dG_row.append(RT*tot)
             d2GE_dxixjs.append(dG_row)
 #            debug_mat.append(debug_row)
-        if not self.scalar:
+        if self.vectorized:
             d2GE_dxixjs = array(d2GE_dxixjs)
         self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs

@@ -321,7 +321,7 @@ class RegularSolution(GibbsExcess):
         else:
             obj = self
         N = obj.N
-        if self.scalar:
+        if self.vectorized:
             xsVs, Hi_sums, dGE_dxs = [0.0]*N, [0.0]*N, [0.0]*N
         else:
             xsVs, Hi_sums, dGE_dxs = zeros(N), zeros(N), zeros(N)
@@ -335,10 +335,10 @@ class RegularSolution(GibbsExcess):
         self.Vs = Vs
         self.SPs = SPs
         self.N = N = len(Vs)
-        self.scalar = scalar = type(Vs) is list
+        self.vectorized = vectorized = type(Vs) is not list
 
         if lambda_coeffs is None:
-            if scalar:
+            if not vectorized:
                 lambda_coeffs = [[0.0]*N for i in range(N)]
             else:
                 lambda_coeffs = zeros((N, N))
@@ -355,7 +355,7 @@ class RegularSolution(GibbsExcess):
                 break
         self._lambda_coeffs_zero = lambda_coeffs_zero
 
-        if scalar:
+        if not vectorized:
             xsVs = []
             xsVs_sum = 0.0
             for i in range(N):
@@ -411,9 +411,9 @@ class RegularSolution(GibbsExcess):
         new.N = N = self.N
         new.lambda_coeffs = self.lambda_coeffs
         new._lambda_coeffs_zero = self._lambda_coeffs_zero
-        new.scalar = scalar = self.scalar
+        new.vectorized = vectorized = self.vectorized
 
-        if scalar:
+        if not vectorized:
             xsVs = []
             xsVs_sum = 0.0
             for i in range(N):
@@ -510,7 +510,7 @@ class RegularSolution(GibbsExcess):
         except:
             GE = self.GE()
 
-        if self.scalar:
+        if not self.vectorized:
             dGE_dxs = [0.0]*self.N
         else:
             dGE_dxs = zeros(self.N)
@@ -524,7 +524,7 @@ class RegularSolution(GibbsExcess):
             return self._Hi_sums
         except:
             pass
-        if self.scalar:
+        if not self.vectorized:
             Hi_sums = [0.0]*self.N
         else:
             Hi_sums = zeros(self.N)
@@ -568,7 +568,7 @@ class RegularSolution(GibbsExcess):
             dGE_dxs = self.dGE_dxs()
         N = self.N
 
-        if self.scalar:
+        if not self.vectorized:
             d2GE_dxixjs = [[0.0]*N for i in range(N)]
         else:
             d2GE_dxixjs = zeros((N, N))
@@ -623,7 +623,7 @@ class RegularSolution(GibbsExcess):
         except:
             Hi_sums = self.Hi_sums()
 
-        if self.scalar:
+        if not self.vectorized:
             d3GE_dxixjxks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
         else:
             d3GE_dxixjxks = zeros((N, N, N))
@@ -650,7 +650,7 @@ class RegularSolution(GibbsExcess):
         Notes
         -----
         '''
-        if self.scalar:
+        if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 

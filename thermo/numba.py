@@ -323,7 +323,7 @@ Support class constants.
 
 This is not likely to happen.
 
-IdealSolution_spec = [('T', float64), ('N', int64), ('xs', float64[:]), ('scalar', boolean)]
+IdealSolution_spec = [('T', float64), ('N', int64), ('xs', float64[:]), ('vectorized', boolean)]
 
 IdealSolutionNumba = jitclass(IdealSolution_spec)(thermo.numba.activity.IdealSolution)
 
