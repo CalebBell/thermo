@@ -364,10 +364,10 @@ class GibbsExcessLiquid(Phase):
             self._Psats_data = Psats_data
 
 
-        if self.scalar:
-            zero_coeffs = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             zero_coeffs = zeros((N, N))
+        else:
+            zero_coeffs = [[0.0]*N for _ in range(N)]
 
         self.HeatCapacityGases = HeatCapacityGases
         self.Cpgs_poly_fit, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
@@ -503,20 +503,20 @@ class GibbsExcessLiquid(Phase):
         if input_count_henry > 1:
             raise ValueError("Input only one of henry_abcdef, or (henry_as...henry_fs)")
         if henry_abcdef is not None:
-            if self.scalar:
-                self.henry_as = [[i[0] for i in l] for l in henry_abcdef]
-                self.henry_bs = [[i[1] for i in l] for l in henry_abcdef]
-                self.henry_cs = [[i[2] for i in l] for l in henry_abcdef]
-                self.henry_ds = [[i[3] for i in l] for l in henry_abcdef]
-                self.henry_es = [[i[4] for i in l] for l in henry_abcdef]
-                self.henry_fs = [[i[5] for i in l] for l in henry_abcdef]
-            else:
+            if self.vectorized:
                 self.henry_as = array(henry_abcdef[:,:,0], order='C', copy=True)
                 self.henry_bs = array(henry_abcdef[:,:,1], order='C', copy=True)
                 self.henry_cs = array(henry_abcdef[:,:,2], order='C', copy=True)
                 self.henry_ds = array(henry_abcdef[:,:,3], order='C', copy=True)
                 self.henry_es = array(henry_abcdef[:,:,4], order='C', copy=True)
                 self.henry_fs = array(henry_abcdef[:,:,5], order='C', copy=True)
+            else:
+                self.henry_as = [[i[0] for i in l] for l in henry_abcdef]
+                self.henry_bs = [[i[1] for i in l] for l in henry_abcdef]
+                self.henry_cs = [[i[2] for i in l] for l in henry_abcdef]
+                self.henry_ds = [[i[3] for i in l] for l in henry_abcdef]
+                self.henry_es = [[i[4] for i in l] for l in henry_abcdef]
+                self.henry_fs = [[i[5] for i in l] for l in henry_abcdef]
         else:
             if henry_abcdef is None:
                 henry_abcdef = multiple_henry_inputs
@@ -720,7 +720,7 @@ class GibbsExcessLiquid(Phase):
         Poyntings = self.Poyntings()
         phis_sat = self.phis_sat()
         activity_args = self.GibbsExcessModel.gammas_args()
-        lnphis = [0.0]*self.N if self.scalar else zeros(self.N)
+        lnphis = zeros(self.N) if self.vectorized else [0.0]*self.N
         self._lnphis_args = (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args +(lnphis,)
         return self._lnphis_args
 
@@ -747,10 +747,10 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         N = self.N
-        if self.scalar:
-            lnHenry_matrix = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             lnHenry_matrix = zeros((N, N))
+        else:
+            lnHenry_matrix = [[0.0]*N for _ in range(N)]
 
         lnHenry_matrix = ln_henries(self.T, N, self.henry_as, self.henry_bs, self.henry_cs, self.henry_ds, self.henry_es, self.henry_fs, lnHenry_matrix)
         self._lnHenry_matrix = lnHenry_matrix
@@ -775,10 +775,10 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         N = self.N
-        if self.scalar:
-            dlnHenry_matrix_dT = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             dlnHenry_matrix_dT = zeros((N, N))
+        else:
+            dlnHenry_matrix_dT = [[0.0]*N for _ in range(N)]
         dlnHenry_matrix_dT = dln_henries_dT(self.T, N, self.henry_bs, self.henry_cs, self.henry_ds, self.henry_es, self.henry_fs, dlnHenry_matrix_dT)
         self._dlnHenry_matrix_dT = dlnHenry_matrix_dT
         return dlnHenry_matrix_dT
@@ -802,39 +802,39 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         N = self.N
-        if self.scalar:
-            d2lnHenry_matrix_dT2 = [[0.0]*N for _ in range(N)]
-        else:
+        if self.vectorized:
             d2lnHenry_matrix_dT2 = zeros((N, N))
+        else:
+            d2lnHenry_matrix_dT2 = [[0.0]*N for _ in range(N)]
         d2lnHenry_matrix_dT2 = d2ln_henries_dT2(self.T, N, self.henry_bs, self.henry_cs, self.henry_es, self.henry_fs, d2lnHenry_matrix_dT2)
         self._d2lnHenry_matrix_dT2 = d2lnHenry_matrix_dT2
         return d2lnHenry_matrix_dT2
 
     def Henry_constants(self):
-        zs, scalar, N, henry_components, henry_mode = self.zs, self.scalar, self.N, self.henry_components, self.henry_mode
+        zs, vectorized, N, henry_components, henry_mode = self.zs, self.vectorized, self.N, self.henry_components, self.henry_mode
         solvents_with_parameters = henry_mode == 'solvents_with_parameters'
         lnHenry_matrix = self.lnHenry_matrix()
-        Hs = [0.0]*N if scalar else zeros(N)
+        Hs = zeros(N) if vectorized else [0.0]*N
         Henry_constants(lnHenry_matrix, zs, henry_components, solvents_with_parameters, Hs)
         return Hs
         dHenry_constants_dT
 
     def dHenry_constants_dT(self):
-        zs, scalar, N, henry_components, henry_mode = self.zs, self.scalar, self.N, self.henry_components, self.henry_mode
+        zs, vectorized, N, henry_components, henry_mode = self.zs, self.vectorized, self.N, self.henry_components, self.henry_mode
         solvents_with_parameters = henry_mode == 'solvents_with_parameters'
         lnHenry_matrix = self.lnHenry_matrix()
         dlnHenry_matrix_dT = self.dlnHenry_matrix_dT()
-        dHs = [0.0]*N if scalar else zeros(N)
+        dHs = zeros(N) if vectorized else [0.0]*N
         dHenry_constants_dT(lnHenry_matrix, dlnHenry_matrix_dT, zs, henry_components, solvents_with_parameters, dHs)
         return dHs
 
     def d2Henry_constants_dT2(self):
-        zs, scalar, N, henry_components, henry_mode = self.zs, self.scalar, self.N, self.henry_components, self.henry_mode
+        zs, vectorized, N, henry_components, henry_mode = self.zs, self.vectorized, self.N, self.henry_components, self.henry_mode
         solvents_with_parameters = henry_mode == 'solvents_with_parameters'
         lnHenry_matrix = self.lnHenry_matrix()
         dlnHenry_matrix_dT = self.dlnHenry_matrix_dT()
         d2lnHenry_matrix_dT2 = self.d2lnHenry_matrix_dT2()
-        d2Hs = [0.0]*N if scalar else zeros(N)
+        d2Hs = zeros(N) if vectorized else [0.0]*N
         d2Henry_constants_dT2(lnHenry_matrix, dlnHenry_matrix_dT, d2lnHenry_matrix_dT2, zs, henry_components, solvents_with_parameters, d2Hs)
         return d2Hs
 

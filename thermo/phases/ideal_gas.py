@@ -92,7 +92,7 @@ class IdealGas(Phase):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
         self.Gfs = Gfs
-        self.scalar = scalar = not any(type(v) is ndarray for v in (zs, Hfs, Gfs))
+        self.vectorized = vectorized = any(type(v) is ndarray for v in (zs, Hfs, Gfs))
 
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             T_ref_inv = 1.0/298.15
@@ -102,12 +102,12 @@ class IdealGas(Phase):
 
         if zs is not None:
             self.N = N = len(zs)
-            self.zeros1d = [0.0]*N if scalar else zeros(N)
-            self.ones1d = [1.0]*N if scalar else ones(N)
+            self.zeros1d = zeros(N) if vectorized else [0.0]*N
+            self.ones1d = ones(N) if vectorized else [1.0]*N
         elif HeatCapacityGases is not None:
             self.N = N = len(HeatCapacityGases)
-            self.zeros1d = [0.0]*N if scalar else zeros(N)
-            self.ones1d = [1.0]*N if scalar else ones(N)
+            self.zeros1d = zeros(N) if vectorized else [0.0]*N
+            self.ones1d = ones(N) if vectorized else [1.0]*N
         if zs is not None:
             self.zs = zs
         if T is not None:
@@ -267,7 +267,7 @@ class IdealGas(Phase):
         new.N = self.N
         new.zeros1d = self.zeros1d
         new.ones1d = self.ones1d
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
 
         new.HeatCapacityGases = self.HeatCapacityGases
         new.Hfs = self.Hfs
@@ -298,7 +298,7 @@ class IdealGas(Phase):
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
-        new.scalar = self.scalar
+        new.vectorized = self.vectorized
 
         return new
 

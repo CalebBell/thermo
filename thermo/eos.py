@@ -867,7 +867,7 @@ class GCEOS:
 
     N = 1
     """The number of components in the EOS"""
-    scalar = True
+    vectorized = False
 
     multicomponent = False
     """Whether or not the EOS is multicomponent or not"""
@@ -1028,7 +1028,7 @@ class GCEOS:
         '''
         # vaguely jsonpickle compatible
         d = object_data(self)
-        if not self.scalar:
+        if self.vectorized:
             d = serialize.arrays_to_lists(d)
         # TODO: delete kwargs and reconstruct it
         # Need to add all kwargs attributes
