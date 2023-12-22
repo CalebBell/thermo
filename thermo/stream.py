@@ -1,5 +1,6 @@
 '''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022, 2023
+Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -41,6 +42,8 @@ from chemicals.utils import (
     ws_to_zs,
     zs_to_Vfs,
     zs_to_ws,
+    object_data,
+    hash_any_primitive,
 )
 from chemicals.volume import ideal_gas
 from fluids.constants import R
@@ -53,6 +56,7 @@ from thermo.mixture import Mixture
 class StreamArgs:
     flashed = False
     _state_cache = None
+    __full_path__ = f"{__module__}.{__qualname__}"
 
 
     def __init__(self, *, zs=None, ws=None, Vfls=None, Vfgs=None,
@@ -2127,6 +2131,7 @@ class EquilibriumStream(EquilibriumState):
         instead of performing a new flash calculation if provided [-]
     '''
     flashed = True
+    __full_path__ = f"{__module__}.{__qualname__}"
 
     def __repr__(self):
         s = '%s(n=%s, ' %(self.__class__.__name__, self.n)
@@ -2512,47 +2517,56 @@ class EquilibriumStream(EquilibriumState):
 EquilibriumStream.non_pressure_state_specs = StreamArgs.non_pressure_state_specs
 
 
-energy_types = {'LP_STEAM': 'Steam 50 psi',
-                'MP_STEAM': 'Steam 150 psi',
-                'HP_STEAM': 'Steam 300 psi',
-                'ELECTRICITY': 'Electricity',
-                'AC_ELECTRICITY': 'AC Electricity',
-                'DC_ELECTRICITY': 'DC Electricity'}
-for freq in residential_power_frequencies:
-    for voltage in voltages_1_phase_residential:
-        energy_types[f'AC_ELECTRICITY_1_PHASE_{voltage!s}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 1 PHASE {voltage!s} V {str(freq)} Hz'
-    for voltage in voltages_3_phase:
-        energy_types[f'AC_ELECTRICITY_3_PHASE_{voltage!s}_V_{str(freq)}_Hz'] = f'AC_ELECTRICITY 3 PHASE {voltage!s} V {str(freq)} Hz'
 
+ok_energy_types = (type(None), float, int)
 
 class EnergyStream:
+    '''Creates an EnergyStream object which contains an energy flow rate.
+    This object is made available to help make mass and energy balances easier.
+
+    Parameters
+    ----------
+    Q : float, optional
+        Energy flow rate, may be None if unknown [W]
+
+    Examples
+    --------
+    >>> EnergyStream(Q=10.0)
+    EnergyStream(Q=10.0)
+    >>> EnergyStream(Q=None)
+    EnergyStream(Q=None)
     '''
-    '''
-    Q = None
-    medium = None
-    Hm = None
+    __full_path__ = f"{__module__}.{__qualname__}"
 
     def copy(self):
-        return EnergyStream(Q=self.Q, medium=self.medium)
+        r'''Method to copy the EnergyStream.
+
+        Returns
+        -------
+        copy : EnergyStream
+            Copied Energy Stream, [-]
+        '''
+        return EnergyStream(Q=self.Q)
 
     __copy__ = copy
 
-    def __repr__(self):
-        try:
-            medium = self.medium.value
-        except:
-            medium = self.medium
-        return f'<Energy stream, Q={self.Q} W, medium={medium}>'
+    def __str__(self):
+        return f'<Energy stream, Q={self.Q} W>'
 
-    def __init__(self, Q, medium=None):
-        self.medium = medium
-        # isinstance test is slow, especially with Number - faster to check float and int first
-        if not (Q is None or isinstance(Q, (float, int))):
-            raise Exception('Energy stream flow rate is not a flow rate')
+    def __repr__(self):
+        return f'EnergyStream(Q={self.Q})'
+
+    def __init__(self, Q):
         self.Q = Q
+        if not isinstance(Q, ok_energy_types):
+            raise ValueError('Energy stream flow rate is not a flow rate')
 
     @property
     def energy(self):
+        '''Getter/setter for the energy of the stream. This method is a compatibility
+        shim to make this object work the same way as StreamArgs, so energy balances
+        can treat the two objects the same way.
+        '''
         return self.Q
 
     @energy.setter
@@ -2561,6 +2575,83 @@ class EnergyStream:
 
     energy_calc = energy
 
+    def as_json(self):
+        r'''Method to create a JSON-friendly representation of the EnergyStream
+        object which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : dict
+            JSON-friendly representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> import json
+        >>> obj = EnergyStream(Q=325.0)
+        >>> json_view = obj.as_json()
+        >>> json_str = json.dumps(json_view)
+        >>> assert type(json_str) is str
+        >>> obj_copy = EnergyStream.from_json(json.loads(json_str))
+        >>> assert obj_copy == obj
+        '''
+        d = object_data(self)
+        d["py/object"] = self.__full_path__
+        d["json_version"] = 1
+        return d
+
+    @classmethod
+    def from_json(cls, json_repr):
+        r'''Method to create a EnergyStream object from a JSON-friendly
+        serialization of another EnergyStream.
+
+        Parameters
+        ----------
+        json_repr : dict
+            JSON-friendly representation, [-]
+
+        Returns
+        -------
+        model : :obj:`EnergyStream`
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`EnergyStream.as_json`.
+
+        Examples
+        --------
+        >>> obj = EnergyStream(Q=550)
+        >>> json_view = obj.as_json()
+        >>> new_obj = EnergyStream.from_json(json_view)
+        >>> assert obj == new_obj
+        '''
+        d = json_repr
+        del d['py/object']
+        del d["json_version"]
+        new = cls.__new__(cls)
+        for k, v in d.items():
+            setattr(new, k, v)
+        return new
+
+    def __eq__(self, other):
+        return self.__hash__() == hash(other)
+
+    def __hash__(self):
+        r'''Method to calculate and return a hash representing the exact state
+        of the object.
+
+        Returns
+        -------
+        hash : int
+            Hash of the object, [-]
+        '''
+        d = object_data(self)
+        ans = hash_any_primitive((self.__class__.__name__, d))
+        return ans
 
 def _mole_balance_process_ns(f, ns, compounds, use_mass=True, use_volume=True):
     if use_mass:
