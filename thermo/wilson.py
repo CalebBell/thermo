@@ -576,9 +576,14 @@ class Wilson(GibbsExcess):
 
     model_id = 200
 
-    __slots__ = GibbsExcess.__slots__ + ('_d3GE_dxixjxks', 'lambda_as', '_xj_dLambda_dTijs', '_xj_Lambda_ijs', '_log_xj_Lambda_ijs',
-                   '_dlambdas_dT', '_lambdas', 'lambda_ds', '_d3GE_dT3', 'lambda_fs', '_xj_d2Lambda_dT2ijs', 'lambda_cs', '_xj_Lambda_ijs_inv',
-                   'lambda_coeffs_nonzero', 'lambda_es', '_d2lambdas_dT2', 'lambda_bs', '_d3lambdas_dT3', '_xj_d3Lambda_dT3ijs')
+    _model_attributes = ('lambda_as', 'lambda_bs', 'lambda_cs',
+                        'lambda_ds', 'lambda_es', 'lambda_fs')
+    _cached_calculated_attributes = ('_d3GE_dxixjxks', '_xj_dLambda_dTijs', '_xj_Lambda_ijs', '_log_xj_Lambda_ijs',
+                                     '_dlambdas_dT', '_lambdas', '_d3GE_dT3', '_xj_d2Lambda_dT2ijs', '_xj_Lambda_ijs_inv',
+                                     '_d2lambdas_dT2', '_d3lambdas_dT3', '_xj_d3Lambda_dT3ijs')
+
+    __slots__ = GibbsExcess.__slots__ + _model_attributes + _cached_calculated_attributes + ('lambda_coeffs_nonzero',)
+    recalculable_attributes = _cached_calculated_attributes + GibbsExcess.recalculable_attributes
 
 
     gammas_from_args = staticmethod(wilson_gammas_from_args)
@@ -837,8 +842,6 @@ class Wilson(GibbsExcess):
             lambda_coeffs_nonzero[k] = nonzero
 
 
-    _model_attributes = ('lambda_as', 'lambda_bs', 'lambda_cs',
-                        'lambda_ds', 'lambda_es', 'lambda_fs')
 
     def __repr__(self):
 

@@ -112,7 +112,7 @@ def test_VolumeGas():
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_close2d(TP_data, recalc_pts)
 
-    assert_close(EtOH.TP_dependent_property(300, 9E4), 0.06596765735649)
+    assert_close(EtOH.TP_dependent_property(300, 9E4), 0.026845060700185927) # Ideal gas value is 0.027714875393844134, should be close. Improved July 2024
     EtOH.tabular_extrapolation_permitted = False
     assert None is EtOH.TP_dependent_property(300, 90000.0)
 
@@ -264,7 +264,7 @@ def test_VolumeLiquid():
     assert_close2d(TP_data, recalc_pts)
 
     EtOH.tabular_extrapolation_permitted = True
-    assert_close(EtOH.TP_dependent_property(274, 9E4), 5.723868454722602e-05)
+    assert_close(EtOH.TP_dependent_property(274, 9E4), 5.7176984130314224e-05)
     EtOH.tabular_extrapolation_permitted = False
     assert None is EtOH.TP_dependent_property(300, 90000.0)
 
@@ -694,3 +694,23 @@ def test_VolumeSupercriticalLiquidMixtureCoolProp():
     assert_close(V_implemented, V_CoolProp, rtol=1e-13)
     assert obj.test_method_validity_P(T=700.0, P=1e8, method='COOLPROP')
     assert obj.test_method_validity_P(T=700.0, P=1e4, method='COOLPROP')
+
+def test_no_numpy_costald():
+    obj = VolumeLiquidMixture(MWs=[324.62722, 338.6538], Tcs=[790.0, 800.0], Pcs=[920000.0, 870000.0], Vcs=[0.001527, 0.001585], Zcs=[0.213877740833194, 0.20731195498270885], omegas=[1.0247, 1.0411], CASs=['638-67-5', '646-31-1'], correct_pressure_pure=True, method="LINEAR", VolumeLiquids=[VolumeLiquid(CASRN="638-67-5", MW=324.62722, Tb=654.15, Tc=790.0, Pc=920000.0, Vc=0.001527, Zc=0.213877740833194, omega=1.0247, dipole=0.0, Psat=VaporPressure(CASRN="638-67-5", Tb=654.15, Tc=790.0, Pc=920000.0, omega=1.0247, extrapolation="AntoineAB|DIPPR101_ABC", method="ANTOINE_WEBBOOK"), eos=[PR(Tc=790.0, Pc=920000.0, omega=1.0247, T=298.15, P=101325.0)], extrapolation="constant", method="HTCOSTALDFIT", method_P="COSTALD_COMPRESSED", tabular_extrapolation_permitted=True), VolumeLiquid(CASRN="646-31-1", MW=338.6538, Tb=664.15, Tc=800.0, Pc=870000.0, Vc=0.001585, Zc=0.20731195498270885, omega=1.0411, dipole=0.0, Psat=VaporPressure(CASRN="646-31-1", Tb=664.15, Tc=800.0, Pc=870000.0, omega=1.0411, extrapolation="AntoineAB|DIPPR101_ABC", method="ANTOINE_WEBBOOK"), eos=[PR(Tc=800.0, Pc=870000.0, omega=1.0411, T=298.15, P=101325.0)], extrapolation="constant", method="HTCOSTALDFIT", method_P="COSTALD_COMPRESSED", tabular_extrapolation_permitted=True)])
+    for v in obj.COSTALD_Vchars:
+        assert type(v) is float
+    for v in obj.COSTALD_omegas:
+        assert type(v) is float
+
+
+def test_simple_json_export_fail_easy_to_debug():
+    Psat = VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, 
+                    extrapolation="AntoineAB|DIPPR101_ABC", method=EXP_POLY_FIT, 
+                    exp_poly_fit=(278.68399999999997, 562.01, [4.547344107145341e-20, -1.3312501882259186e-16, 1.6282983902136683e-13, -1.0498233680158312e-10, 3.535838362096064e-08, -3.6181923213017173e-06, -0.001593607608896686, 0.6373679536454406, -64.4285974110459]))
+    obj = VolumeLiquid(CASRN="71-43-2", MW=78.11184, Tb=353.23, Tc=562.05, Pc=4895000.0, Vc=0.000256, Zc=0.2681535335844513, omega=0.212, 
+                dipole=0.0, Psat=Psat, extrapolation="constant", method=POLY_FIT, 
+                poly_fit=(278.68399999999997, 552.02, [2.5040222732960933e-22, -7.922607445206804e-19, 1.088548130214618e-15, -8.481605391952225e-13, 4.098451788397536e-10, -1.257577461969114e-07, 2.3927976459304723e-05, -0.0025810882828932375, 0.12092854717588034]))
+    json_dump = obj.as_json()
+    s = json.loads(json.dumps(json_dump))
+    obj2 = VolumeLiquid.from_json(s)
+    assert obj2 == obj

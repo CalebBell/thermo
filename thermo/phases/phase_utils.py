@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 from fluids.numerics import log, trunc_exp
-
+from thermo.serialize import object_lookups
 from thermo.activity import IdealSolution
 from thermo.eos import eos_full_path_dict
 from thermo.eos_mix import eos_mix_full_path_dict
@@ -58,7 +58,6 @@ activity_pointer_reference_dicts = {
 activity_reference_pointer_dicts = {
     v: k for k, v in activity_pointer_reference_dicts.items()
 }
-object_lookups = {}
 object_lookups.update(activity_pointer_reference_dicts)
 object_lookups.update(eos_mix_full_path_dict)
 object_lookups.update(eos_full_path_dict)

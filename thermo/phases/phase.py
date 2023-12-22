@@ -67,7 +67,7 @@ from fluids.numerics import numpy as np
 
 from thermo import phases
 from thermo.phases.phase_utils import object_lookups
-from thermo.serialize import arrays_to_lists
+from thermo.serialize import arrays_to_lists, JsonOptEncodable
 from thermo.utils import POLY_FIT
 
 try:
@@ -156,10 +156,13 @@ class Phase:
     """Tuple of types of :obj:`thermo.utils.TDependentProperty`
     or :obj:`thermo.utils.TPDependentProperty` corresponding to `pure_references`."""
 
-    obj_references = ()
+    obj_references = ('result', 'constants', 'correlations')
     """Tuple of object instances which should be stored as json using their own
     as_json method.
     """
+    json_version = 1
+    non_json_attributes =  ['_model_hash', '_model_hash_ignore_phase']
+
     pointer_references = ()
     """Tuple of attributes which should be stored by converting them to
     a string, and then they will be looked up in their corresponding
@@ -189,7 +192,7 @@ class Phase:
         s += '>'
         return s
 
-    def as_json(self):
+    def as_json(self, cache=None, option=0):
         r'''Method to create a JSON-friendly serialization of the phase
         which can be stored, and reloaded later.
 
@@ -209,29 +212,10 @@ class Phase:
         >>> new_phase = Phase.from_json(json.loads(json.dumps(phase.as_json())))
         >>> assert phase == new_phase
         '''
-        d = object_data(self)
-        if self.vectorized:
-            d = arrays_to_lists(d)
-        for obj_name in self.obj_references:
-            o = d[obj_name]
-            if type(o) is list:
-                d[obj_name] = [v.as_json() for v in o]
-            else:
-                d[obj_name] = o.as_json()
-        for prop_name in self.pure_references:
-            # Known issue: references to other properties
-            # Needs special fixing - maybe a function
-            l = d[prop_name]
-            if l:
-                d[prop_name] = [v.as_json() for v in l]
-        for ref_name, ref_lookup in zip(self.pointer_references, self.reference_pointer_dicts):
-            d[ref_name] = ref_lookup[d[ref_name]]
-        d["py/object"] = self.__full_path__
-        d['json_version'] = 1
-        return d
+        return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
-    def from_json(cls, json_repr):
+    def from_json(cls, json_repr, cache=None):
         r'''Method to create a phase from a JSON
         serialization of another phase.
 
@@ -253,51 +237,7 @@ class Phase:
         Examples
         --------
         '''
-        d = json_repr
-        phase_name = d['py/object']
-        del d['py/object']
-        del d['json_version']
-        phase = phases.phase_full_path_dict[phase_name]
-        new = phase.__new__(phase)
-
-        for obj_name, obj_cls in zip(new.pure_references, new.pure_reference_types):
-            l = d[obj_name]
-            if l:
-                for i, v in enumerate(l):
-                    l[i] = obj_cls.from_json(v)
-
-        for obj_name in new.obj_references:
-            o = d[obj_name]
-            if type(o) is list:
-                d[obj_name] = [object_lookups[v['py/object']].from_json(v) for v in o]
-            else:
-                obj_cls = object_lookups[o['py/object']]
-                d[obj_name] = obj_cls.from_json(o)
-
-        for ref_name, ref_lookup in zip(new.pointer_references, new.pointer_reference_dicts):
-            d[ref_name] = ref_lookup[d[ref_name]]
-
-        for k, v in d.items(): 
-            setattr(new, k, v)
-        return new
-
-    def __hash__(self):
-        r'''Method to calculate and return a hash representing the exact state
-        of the object.
-
-        Returns
-        -------
-        hash : int
-            Hash of the object, [-]
-        '''
-        # Ensure the hash is set so it is always part of the object hash
-        self.model_hash(False)
-        self.model_hash(True)
-        self.state_hash()
-        d = object_data(self)
-
-        ans = hash_any_primitive((self.__class__.__name__, d))
-        return ans
+        return JsonOptEncodable.from_json(json_repr, cache)
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)
@@ -315,6 +255,26 @@ class Phase:
             Hash of the object's model parameters and state, [-]
         '''
         return hash_any_primitive((self.model_hash(), self.T, self.P, self.V(), self.zs))
+
+    __hash__ = state_hash
+
+    def exact_hash(self):
+        r'''Method to calculate and return a hash representing the exact state
+        of the object.
+
+        Returns
+        -------
+        hash : int
+            Hash of the object, [-]
+        '''
+        # Ensure the hash is set so it is always part of the object hash
+        self.model_hash(False)
+        self.model_hash(True)
+        self.state_hash()
+        d = object_data(self)
+        ans = hash_any_primitive((self.__class__.__name__, d))
+        return ans
+
 
     def is_same_model(self, other_phase, ignore_phase=False):
         r'''Method to check whether or not a model is the exact same

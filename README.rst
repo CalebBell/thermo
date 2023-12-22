@@ -247,5 +247,5 @@ Citation
 
 To cite Thermo in publications use::
 
-    Caleb Bell and Contributors (2016-2023). Thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
+    Caleb Bell and Contributors (2016-2024). Thermo: Chemical properties component of Chemical Engineering Design Library (ChEDL)
     https://github.com/CalebBell/thermo.

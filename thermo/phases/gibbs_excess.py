@@ -241,7 +241,10 @@ class GibbsExcessLiquid(Phase):
                         'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs','henry_mode',
                         'Psat_extrpolation') + pure_references
 
-    obj_references = ('GibbsExcessModel', 'eos_pure_instances')
+    obj_references = ('GibbsExcessModel', 'eos_pure_instances', 'result', 'constants', 'correlations',
+                        'HeatCapacityGases', 'VolumeLiquids', 'VaporPressures', 'HeatCapacityLiquids',
+                                        'EnthalpyVaporizations')
+
 
     # Not sure how this will progress
     __slots__ = ('VaporPressures', 'Psats_poly_fit', 'Psat_extrpolation', 'N', 'HeatCapacityGases', 'Cpgs_poly_fit',

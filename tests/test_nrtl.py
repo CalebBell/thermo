@@ -34,7 +34,7 @@ from fluids.numerics import assert_close, assert_close1d, assert_close2d, deriva
 from thermo import *
 from thermo.nrtl import NRTL
 from thermo.test_utils import check_np_output_activity
-
+import json
 
 def test_NRTL_gammas():
     # P05.01b VLE Behavior of Ethanol - Water Using NRTL
@@ -180,12 +180,37 @@ def make_taus(N):
 
 
 def test_madeup_NRTL():
-    N = 6
+    N = 4
     alphas = make_alphas(N)
     taus = make_taus(N)
     xs = normalize([random() for i in range(N)])
     T = 350.0
     GE = NRTL(T, xs, taus, alphas)
+    # Run the various checks for storing/loading
+    assert eval(str(GE)).GE() == GE.GE()
+
+    GE_pickle = pickle.loads(pickle.dumps(GE))
+    assert GE_pickle == GE
+    assert GE_pickle.model_hash() == GE.model_hash()
+
+
+    assert NRTL.from_json(json.loads(json.dumps(GE.as_json()))) == GE
+
+    # Check after we calculate things
+    for attr in GE._point_properties:
+        try:
+            getattr(GE, attr)()
+        except:
+            pass
+    # Check we get the attributes copied
+    GE_copy = NRTL.from_json(json.loads(json.dumps(GE.as_json(option=0))))
+    assert_close(GE_copy._dGE_dT, GE._dGE_dT)
+    assert GE_copy == GE
+
+    # Check we can also copy without calculated values
+    GE_copy = NRTL.from_json(json.loads(json.dumps(GE.as_json(option=1))))
+    assert GE_copy == GE
+    assert not hasattr(GE_copy, '_dGE_dT')
 
 
 def test_water_ethanol_methanol_madeup():

@@ -108,7 +108,7 @@ from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.viscosity import ViscosityGas, ViscosityGasMixture, ViscosityLiquid, ViscosityLiquidMixture
 from thermo.volume import VolumeGas, VolumeGasMixture, VolumeLiquid, VolumeLiquidMixture, VolumeSolid, VolumeSolidMixture
 from thermo.utils.mixture_property import MixtureProperty
-
+from thermo.serialize import JsonOptEncodable
 CAS_H2O = '7732-18-5'
 
 
@@ -128,7 +128,7 @@ warn_chemicals_msg ="""`chemicals <https://github.com/CalebBell/chemicals>`_ is 
             fairly easily once the data entry is complete."""
 
 
-class ChemicalConstantsPackage:
+class ChemicalConstantsPackage():
     non_vector_properties = ('atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
                  'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs',
                  'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass',
@@ -155,9 +155,13 @@ class ChemicalConstantsPackage:
     properties = ('atom_fractions',) + non_vector_properties
     """Tuple of all properties that can be held by this object."""
 
-    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('json_version', '_hash', '_CAS_to_index', '_unique_atoms')
+    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('_hash', '_CAS_to_index', '_unique_atoms')
     non_vectors = ('atom_fractions',)
     non_vectors_set = set(non_vectors)
+    json_version = 1
+    non_json_attributes = []
+    obj_references = []
+    vectorized = False
 
     def _missing_properties(self):
         missing = []
@@ -176,7 +180,42 @@ class ChemicalConstantsPackage:
                 new[p] = v
         return new
 
-    def as_json(self):
+    def _custom_as_json(self, d, cache):
+        del d['cmps']
+        # economic_statuses
+        for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
+            # keys are stored as strings and not ints
+            d[k] = [{str(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
+        
+
+        # This is not so much a performance optimization as an improvement on file size
+        # and readability. Do not remove it! Comparing against an empty list is the
+        # fastest way to check as of 2023.
+        # Benchmarking 7 components with Python json savings is 136 µs down to 101 µs.
+        # Benchmarking with orjson shown a slowdown from 46 to 50.2 µs but the json is
+        # much nicer.
+        N = self.N
+        empty_list = [None]*N
+        for k in self.non_vector_properties:
+            if d[k] == empty_list:
+                del d[k]
+
+    def _custom_from_json(self, *args):
+        self.cmps = range(self.N)
+        empty_list = [None]*self.N
+        for k in self.non_vector_properties:
+            if not hasattr(self, k):
+                setattr(self, k, empty_list)
+        for k in ('TWAs', 'STELs'):
+            # tuple gets converted to a json list
+            l = getattr(self, k)
+            setattr(self, k, [tuple(v) if v is not None else v for v in l])
+        for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
+            obj = getattr(self, k)
+            obj = [{int(k): v for k, v in r.items()} if r is not None else r for r in obj]
+            setattr(self, k, obj)
+
+    def as_json(self, cache=None, option=0):
         r'''Method to create a JSON friendly serialization of the chemical constants
         package which can be stored, and reloaded later.
 
@@ -194,17 +233,10 @@ class ChemicalConstantsPackage:
         >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
         >>> string = json.dumps(constants.as_json())
         '''
-        d = self.as_dict().copy()
-        for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
-            # keys are stored as strings and not ints
-            d[k] = [{str(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
-
-        d['json_version'] = 1
-        d['py/object'] = self.__full_path__
-        return d
+        return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
-    def from_json(cls, json_repr):
+    def from_json(cls, json_repr, cache=None):
         r'''Method to create a ChemicalConstantsPackage from a JSON
         serialization of another ChemicalConstantsPackage.
 
@@ -231,20 +263,7 @@ class ChemicalConstantsPackage:
         >>> new_constants  = ChemicalConstantsPackage.from_json(json.loads(string))
         >>> assert hash(new_constants) == hash(constants)
         '''
-        d = json_repr
-
-        for k in ('TWAs', 'STELs'):
-            # tuple gets converted to a json list
-            l = d[k]
-            d[k] = [tuple(v) if v is not None else v for v in l]
-
-        for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
-            # keys are stored as strings and not ints
-            d[k] = [{int(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
-
-        del d['json_version']
-        del d['py/object']
-        return cls(**d)
+        return JsonOptEncodable.from_json(json_repr, cache)
 
     def __hash__(self):
         try:
@@ -888,8 +907,8 @@ class ChemicalConstantsPackage:
         atom_fractionss = [atom_fractions(atomss[i]) for i in range(N)]
 
         # Too slow
-        economic_statuses = [None]*N#[economic_status(CASs[i], method='Combined') for i in range(N)]
-        legal_statuses = [None]*N#[legal_status(CASs[i], method='COMBINED') for i in range(N)]
+        # economic_statuses = [None]*N#[economic_status(CASs[i], method='Combined') for i in range(N)]
+        # legal_statuses = [None]*N#[legal_status(CASs[i], method='COMBINED') for i in range(N)]
 
         GWPs = [GWP(CASRN=CASs[i]) for i in range(N)]
         ODPs = [ODP(CASRN=CASs[i]) for i in range(N)]
@@ -933,7 +952,7 @@ class ChemicalConstantsPackage:
                  PubChems=PubChems, formulas=formulas, smiless=smiless, InChIs=InChIs,
                  InChI_Keys=InChI_Keys, aliases=aliases,
 
-                 economic_statuses=economic_statuses, legal_statuses=legal_statuses,
+                #  economic_statuses=economic_statuses, legal_statuses=legal_statuses,
                  GWPs=GWPs, ODPs=ODPs, logPs=logPs,
                 )
 
@@ -1230,6 +1249,8 @@ class ChemicalConstantsPackage:
         except:
             self.n_atoms = None
 
+
+
 constants_docstrings = {'N': (int, "Number of components in the package", "[-]", None),
 'cmps': (range, "Iterator over all components", "[-]", None),
 'atom_fractions': ("list[dict]", "Breakdown of each component into its elemental fractions, as a dict", "[-]", None),
@@ -1502,6 +1523,10 @@ class PropertyCorrelationsPackage:
 
     correlations = pure_correlations + mixture_correlations
 #    __slots__ = correlations + ('constants', 'skip_missing')
+    json_version = 1
+    non_json_attributes = []
+    obj_references = correlations + ('constants',)
+    vectorized = False
 
     __full_path__ = f"{__module__}.{__qualname__}"
 
@@ -1540,7 +1565,7 @@ class PropertyCorrelationsPackage:
         s = s[:-2] + ')'
         return s
 
-    def as_json(self):
+    def as_json(self, cache=None, option=0):
         r'''Method to create a JSON friendly serialization of the chemical
         properties package which can be stored, and reloaded later.
 
@@ -1555,50 +1580,10 @@ class PropertyCorrelationsPackage:
         Examples
         --------
         '''
-        d = self.__dict__.copy()
-        d["py/object"] = self.__full_path__
-        N = self.constants.N
-
-        props_to_store = []
-        for prop_name in self.pure_correlations:
-            l = getattr(self, prop_name)
-            if l is None:
-                props_to_store.append((prop_name, l))
-            else:
-                props = []
-                for o in l:
-                    s = o.as_json(references=0)
-                    # Remove references to other properties
-                    for ref in o.pure_references:
-                        s[ref] = None
-                    props.append(s)
-
-                props_to_store.append((prop_name, props))
-            del d[prop_name]
-
-        mix_props_to_store = []
-        for prop_name in self.mixture_correlations:
-            l = getattr(self, prop_name)
-            if l is None:
-                mix_props_to_store.append((prop_name, l))
-            else:
-                s = l.as_json(references=0)
-                for ref in l.pure_references:
-                    s[ref] = [None]*N
-                mix_props_to_store.append((prop_name, s))
-            del d[prop_name]
-
-
-
-        d['constants'] = self.constants.as_json()
-        d['mixture_properties'] = mix_props_to_store
-        d['pure_properties'] = props_to_store
-        d['json_version'] = 1
-        d['skip_missing'] = self.skip_missing
-        return d
+        return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
-    def from_json(cls, json_repr):
+    def from_json(cls, json_repr, cache=None):
         r'''Method to create a :obj:`PropertyCorrelationsPackage` from a JSON
         serialization of another :obj:`PropertyCorrelationsPackage`.
 
@@ -1620,44 +1605,7 @@ class PropertyCorrelationsPackage:
         Examples
         --------
         '''
-        d = json_repr
-        new = cls.__new__(cls)
-        d2 = new.__dict__
-        new.constants = ChemicalConstantsPackage.from_json(d['constants'])
-        N = new.constants.N
-        new.skip_missing = d['skip_missing']
-
-        for prop, value in d['pure_properties']:
-            if value is None:
-                d2[prop] = value
-            else:
-                callable = properties_to_classes[prop].from_json
-                d2[prop] = [callable(v) for v in value]
-
-
-        # Set the links back to other objects
-        for prop_name, prop_cls in properties_to_classes.items():
-            l = d2[prop_name]
-            if l:
-                for ref_name, ref_cls in zip(prop_cls.pure_references, prop_cls.pure_reference_types):
-                    real_ref_list = getattr(new, classes_to_properties[ref_cls])
-                    if real_ref_list:
-                        for i in range(N):
-                            setattr(l[i], ref_name, real_ref_list[i])
-
-
-        for prop, value in d['mixture_properties']:
-            if value is None:
-                d2[prop] = value
-            else:
-                mix_prop = mix_properties_to_classes[prop].from_json(value)
-                for k, sub_cls in zip(mix_prop.pure_references, mix_prop.pure_reference_types):
-                    real_ref_list = getattr(new, classes_to_properties[sub_cls])
-                    setattr(mix_prop, k, real_ref_list)
-                d2[prop] = mix_prop
-
-
-        return new
+        return JsonOptEncodable.from_json(json_repr, cache)
 
     def __add__(self, b):
         r'''Method to create a new :obj:`PropertyCorrelationsPackage` object
@@ -1821,7 +1769,7 @@ class PropertyCorrelationsPackage:
         if ViscosityGases is None and not skip_missing:
             ViscosityGases = [ViscosityGas(CASRN=constants.CASs[i], MW=constants.MWs[i], Tc=constants.Tcs[i],
                                            Pc=constants.Pcs[i], Zc=constants.Zcs[i], dipole=constants.dipoles[i],
-                                           Vmg=lambda T: VolumeGases[i](T, 101325.0)) # Might be an issue with what i refers too
+                                           Vmg=VolumeGases[i]) # Vmg is not currently used actually
                                 for i in cmps]
         if ThermalConductivityLiquids is None and not skip_missing:
             ThermalConductivityLiquids = [ThermalConductivityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i],
@@ -1836,7 +1784,7 @@ class PropertyCorrelationsPackage:
             ThermalConductivityGases = [ThermalConductivityGas(CASRN=constants.CASs[i], MW=constants.MWs[i], Tb=constants.Tbs[i],
                                                                Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
                                                                Zc=constants.Zcs[i], omega=constants.omegas[i], dipole=constants.dipoles[i],
-                                                               Vmg=VolumeGases[i], mug=ViscosityLiquids[i].T_dependent_property,
+                                                               Vmg=VolumeGases[i], mug=ViscosityLiquids[i],
                                                                Cpgm=HeatCapacityGases[i])
                                                 for i in cmps]
 
@@ -1844,8 +1792,8 @@ class PropertyCorrelationsPackage:
             SurfaceTensions = [SurfaceTension(CASRN=constants.CASs[i], MW=constants.MWs[i], Tb=constants.Tbs[i],
                                               Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
                                               Zc=constants.Zcs[i], omega=constants.omegas[i], StielPolar=constants.StielPolars[i],
-                                              Hvap_Tb=constants.Hvap_Tbs[i], Vml=VolumeLiquids[i].T_dependent_property,
-                                              Cpl=lambda T : property_molar_to_mass(HeatCapacityLiquids[i].T_dependent_property(T), constants.MWs[i]))
+                                              Hvap_Tb=constants.Hvap_Tbs[i], Vml=VolumeLiquids[i],
+                                              Cpl=HeatCapacityLiquids[i])
                                     for i in cmps]
 
         self.VaporPressures = VaporPressures

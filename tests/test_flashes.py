@@ -198,6 +198,7 @@ def test_dew_bubble_newton_zs_methane_decane():
     gas = CEOSGas(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     liquid = CEOSLiquid(PRMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
     flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    hash(flasher)
 
     PVF1 = dew_bubble_newton_zs(672, 8.5e6, [.5, .5], gas, liquid,
                                iter_var='T', fixed_var='P', V_over_F=1, trivial_solution_tol=1e-4,
@@ -565,6 +566,7 @@ def test_existence_3P_Michelsen_Mollerup_C1_C8_H2O():
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
+    hash(flashN)
 
     # Flash for P
     P, phases, betas, err0, err1, iterations = existence_3P_Michelsen_Mollerup(guess=6e4, fixed_val=111.87837478660803, zs=zs, iter_phase=gas, liquid0=liq, liquid1=liq,
@@ -718,6 +720,7 @@ def test_flash_iapws95():
     gas = IAPWS95Gas(T=300, P=1e5, zs=[1])
 
     flasher = FlashPureVLS(iapws_constants, iapws_correlations, gas, [liquid], [])
+    hash(flasher)
     base = flasher.flash(T=300, P=1e6)
 
     res = flasher.flash(T=300.0, VF=.3)
@@ -744,14 +747,16 @@ def test_sequential_substitution_2P_functional_vs_FlashVL():
 
     # There are a lot of specially-coded numbers
     # so yes, it is necessary to loop through all the EOSs and check they are the same.
+    hashes = []
     for obj in eos_mix_list:
         if obj is IGMIX:
             continue
 
-        gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-        liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+        gas = CEOSGas(obj, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+        liq = CEOSLiquid(obj, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
         flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
+        hashes.append(hash(flasher))
         res_expect = flasher.flash(T=T, P=P, zs=zs)
         VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
 
@@ -770,6 +775,7 @@ def test_sequential_substitution_2P_functional_vs_FlashVL():
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
     flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
+    hashes.append(hash(flasher))
     res_expect = flasher.flash(T=T, P=P, zs=zs)
     VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
 
@@ -789,6 +795,7 @@ def test_sequential_substitution_2P_functional_vs_FlashVL():
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
     flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
+    hashes.append(hash(flasher))
     res_expect = flasher.flash(T=T, P=P, zs=zs)
     VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
 
@@ -799,6 +806,8 @@ def test_sequential_substitution_2P_functional_vs_FlashVL():
     assert_close(VF_calc, VF_expect, rtol=1e-6)
     assert_close1d(xs_calc, xs_expect)
     assert_close1d(ys_calc, ys_expect)
+
+    assert len(set(hashes)) == len(hashes)
 
 def test_sequential_substitution_2P_functional_trivial_solution():
     constants = ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4}, {'H': 2, 'O': 1}, {'C': 10, 'H': 22}], MWs=[16.04246, 18.01528, 142.28168], omegas=[0.008, 0.344, 0.49], Pcs=[4599000.0, 22048320.0, 2110000.0], Tcs=[190.564, 647.14, 611.7], Vcs=[9.86e-05, 5.6e-05, 0.000624])
@@ -885,18 +894,23 @@ def test_liquid_ref_volumes_available():
 
     gas = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
 
+    hashes = []
     settings = BulkSettings(T_liquid_volume_ref=300)
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas, settings=settings)
     assert_close1d(flasher.V_liquids_ref(), [1.8098147388650142e-05, 5.906395043918031e-05])
+    hashes.append(hash(flasher))
 
     settings = BulkSettings(T_liquid_volume_ref=298.15)
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas, settings=settings)
     assert_close1d(flasher.V_liquids_ref(), Vml_STPs)
+    hashes.append(hash(flasher))
 
     settings = BulkSettings(T_liquid_volume_ref=T_60F)
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas, settings=settings)
     assert_close1d(flasher.V_liquids_ref(), Vml_60Fs)
+    hashes.append(hash(flasher))
 
+    assert len(hashes) == len(set(hashes))
 
     # Stream args tests
     stream = StreamArgs(flasher=flasher)

@@ -119,7 +119,7 @@ from chemicals.viscosity import (
     dPPDS9_dT,
     viscosity_gas_Gharagheizi,
 )
-from fluids.numerics import brenth, exp, horner, isinf, isnan, log, trunc_log
+from fluids.numerics import brenth, exp, sqrt, horner, isinf, isnan, log, trunc_log
 
 from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
@@ -344,9 +344,10 @@ class ViscosityLiquid(TPDependentProperty):
 
     custom_args = ('MW', 'Tm', 'Tc', 'Pc', 'Vc', 'omega', 'Psat', 'Vml')
 
+    DEFAULT_EXTRAPOLATION_MIN = 1e-5
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
                  omega=None, Psat=None, Vml=None, extrapolation='linear',
-                 extrapolation_min=1e-5,
+                 extrapolation_min=DEFAULT_EXTRAPOLATION_MIN,
                  **kwargs):
         self.CASRN = CASRN
         self.MW = MW
@@ -845,8 +846,9 @@ class ViscosityGas(TPDependentProperty):
     obj_references_types = pure_reference_types = (VolumeGas,)
 
     custom_args = ('MW', 'Tc', 'Pc', 'Zc', 'dipole', 'Vmg')
+    DEFAULT_EXTRAPOLATION_MIN = 1e-5
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
-                 dipole=None, Vmg=None, extrapolation='linear', extrapolation_min=1e-5,
+                 dipole=None, Vmg=None, extrapolation='linear', extrapolation_min=DEFAULT_EXTRAPOLATION_MIN,
                  **kwargs):
         self.CASRN = CASRN
         self.MW = MW
@@ -1138,6 +1140,7 @@ class ViscosityLiquidMixture(MixtureProperty):
 
     pure_references = ('ViscosityLiquids',)
     pure_reference_types = (ViscosityLiquid, )
+    obj_references = ('ViscosityLiquids',)
 
     pure_constants = ('MWs', )
     custom_args = pure_constants
@@ -1337,10 +1340,13 @@ class ViscosityGasMixture(MixtureProperty):
     ranked_methods = [BROKAW, HERNING_ZIPPERER, LINEAR, WILKE]
 
     pure_references = ('ViscosityGases',)
+    obj_references = ('ViscosityGases',)
     pure_reference_types = (ViscosityGas, )
 
     pure_constants = ('MWs', 'molecular_diameters', 'Stockmayers')
     custom_args = pure_constants
+
+    non_json_attributes = TPDependentProperty.non_json_attributes + ['MW_roots', 'Wilke_t0s', 'Wilke_t1s', 'Wilke_t2s']
 
     def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[],
                  ViscosityGases=[], **kwargs):
@@ -1349,13 +1355,21 @@ class ViscosityGasMixture(MixtureProperty):
         self.Stockmayers = Stockmayers
         self.CASs = CASs
         self.ViscosityGases = ViscosityGases
+        self._set_Wilke_data()
+        super().__init__(**kwargs)
+
+    def _set_Wilke_data(self):
+        MWs = self.MWs
         try:
-            self.MW_roots = [i**0.5 for i in MWs]
-            MWs_inv = [1.0/MWi for MWi in MWs]
+            self.MW_roots = [sqrt(i) for i in MWs]
             self.Wilke_t0s, self.Wilke_t1s, self.Wilke_t2s = Wilke_prefactors(MWs)
         except:
             pass
-        super().__init__(**kwargs)
+
+    def _custom_from_json(self, *args):
+        self._set_Wilke_data()
+        super()._custom_from_json(*args)
+
 
     def load_all_methods(self):
         r'''Method to initialize the object by precomputing any values which

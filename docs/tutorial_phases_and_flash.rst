@@ -61,11 +61,11 @@ Storing and recreating objects with Python's :py:func:`pickle.dumps` library is 
 
 Hashing
 ^^^^^^^
-All models have a :obj:`__hash__ <thermo.phases.Phase.__hash__>` method that can be used to compare different phases to see if they are absolutely identical (including which values have been calculated already).
+All models have a :obj:`__hash__ <thermo.phases.Phase.exact_hash>` method that can be used to compare different phases to see if they are absolutely identical (including which values have been calculated already).
 
 They also have a :obj:`model_hash <thermo.phases.Phase.model_hash>` method that can be used to compare different phases to see if they have identical model parameters.
 
-They also have a :obj:`state_hash <thermo.phases.Phase.state_hash>` method that can be used to compare different phases to see if they have identical temperature, composition, and model parameters.
+They also have a :obj:`state_hash <thermo.phases.Phase.state_hash>` method that can be used to compare different phases to see if they have identical temperature, composition, and model parameters. This is the __hash__ method.
 
 
 

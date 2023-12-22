@@ -33,7 +33,7 @@ from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert
 from thermo import *
 from thermo.activity import GibbsExcess
 from thermo.test_utils import check_np_output_activity
-
+import json
 
 def test_no_interactions():
     GE = RegularSolution(T=325.0, xs=[.25, .75], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7])
@@ -69,6 +69,7 @@ def test_4_components():
     assert GE3 == GE4
     assert GE4.GE() == GE3.GE()
     GE5 = RegularSolution.from_json(GE4.as_json())
+    GE5.model_hash() # need to compute this or it won't match
     assert object_data(GE4) == object_data(GE3)
     assert object_data(GE5) == object_data(GE3)
     assert GE5 == GE3
@@ -168,7 +169,13 @@ def test_4_components():
 
     # Test with some stored results
     GE2 = RegularSolution.from_json(GE.as_json())
+    assert hasattr(GE2, '_GE')
     assert object_data(GE2) == object_data(GE)
+
+    # Test a few more storing
+    GE_copy = RegularSolution.from_json(json.loads(json.dumps(GE.as_json(option=1))))
+    assert GE_copy == GE
+    assert not hasattr(GE_copy, '_GE')
 
     # Direct call for gammas
     gammas_args = GE.gammas_args()

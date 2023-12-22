@@ -188,6 +188,7 @@ from thermo.phases.iapws_phase import IAPWS95, IAPWS97, IAPWS95Gas, IAPWS95Liqui
 from thermo.phases.ideal_gas import IdealGas
 from thermo.phases.petroleum import ChaoSeader, GraysonStreed
 from thermo.phases.phase import IdealGasDeparturePhase, Phase, derivatives_jacobian, derivatives_thermodynamic, derivatives_thermodynamic_mass
+from thermo.serialize import object_lookups
 from thermo.phases.virial_phase import (
     VIRIAL_B_ABBOTT,
     VIRIAL_B_MENG,
@@ -218,6 +219,8 @@ __all__ = ('air_phase', 'ceos', 'combined', 'coolprop_phase', 'gibbs_excess',
   'VIRIAL_B_OCONNELL_PRAUSNITZ', 'VIRIAL_B_XIANG', 'VIRIAL_B_MENG', 'VIRIAL_C_XIANG', 'VIRIAL_C_ORBEY_VERA', 'VIRIAL_C_ZERO',
   'VIRIAL_B_MODELS', 'VIRIAL_C_MODELS')
 
+
+
 gas_phases = (
     IdealGas,
     CEOSGas,
@@ -244,3 +247,6 @@ many_phases = (
 )
 all_phases = gas_phases + liquid_phases + solid_phases + many_phases
 phase_full_path_dict = {c.__full_path__: c for c in all_phases}
+object_lookups.update(phase_full_path_dict)
+
+object_lookups[VirialCSP.__full_path__] = VirialCSP

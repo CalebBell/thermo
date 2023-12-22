@@ -74,7 +74,7 @@ from chemicals.identifiers import sorted_CAS_key
 from chemicals.interface import PPDS14, ISTExpansion, Jasper, REFPROP_sigma, Somayajulu, Watson_sigma
 from chemicals.phase_change import PPDS12, Alibakhshi, Watson, Watson_n
 from chemicals.thermal_conductivity import PPDS3, PPDS8, Chemsep_16
-from chemicals.utils import hash_any_primitive
+from chemicals.utils import hash_any_primitive, property_molar_to_mass
 from chemicals.vapor_pressure import (
     Antoine,
     Antoine_AB_coeffs_from_point,
@@ -239,6 +239,7 @@ from thermo.utils.names import (
     VDI_TABULAR,
     JANAF_FIT,
 )
+from thermo.serialize import JsonOptEncodable
 
 """This section is intended to be used in being able to add new data without
 changing code for each object.
@@ -837,6 +838,12 @@ class TDependentProperty:
            {'A': 0.0, 'B': 0.0, 'C': 0.0, 'D': 0.0, 'E': 0.0, 'F': 1.0, 'G': 1.0},
            ]},
       ),
+    'DIPPR100_inv': ([],
+      ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+      {'f': lambda T, **kwargs: 1.0/EQ100(T, order=0, **kwargs)},
+      {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+      },
+      ),
     'constant': ([],
       ['A'],
       {'f': EQ100,
@@ -1226,6 +1233,9 @@ class TDependentProperty:
           {'A': 15.0, 'B': 0.3, 'C': 7000.0, 'D': 0.3},  #
           {'A': 0.1, 'B': 0.05, 'C': 3300.0, 'D': 0.1},  #
           ]}),
+     'DIPPR105_inv': (['A', 'B', 'C', 'D'],
+      [],
+      {'f': lambda T, **kwargs: 1.0/EQ105(T, order=0, **kwargs)},),
 
      'DIPPR106': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
@@ -1250,6 +1260,11 @@ class TDependentProperty:
            ]
 
       }),
+     'DIPPR106_inv': (['Tc', 'A', 'B'],
+        ['C', 'D', 'E'],
+        {'f': lambda T, **kwargs: 1.0/EQ106(T, order=0, **kwargs),},
+        {'fit_params': ['A', 'B', 'C', 'D', 'E'], 
+        }),
      'YawsSigma': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ106,
@@ -1427,7 +1442,10 @@ class TDependentProperty:
     correlation_parameters = {k: k + '_parameters' for k in correlation_models.keys()}
     correlation_keys_to_parameters = {v: k for k, v in correlation_parameters.items()}
 
+    DEFAULT_EXTRAPOLATION_MIN = None
+    DEFAULT_EXTRAPOLATION_MAX = None
 
+    vectorized = False
     def __copy__(self):
         return self
 
@@ -1485,6 +1503,13 @@ class TDependentProperty:
 
         extrap_str = '"%s"' %(self.extrapolation) if self.extrapolation is not None else 'None'
         base += 'extrapolation=%s, ' %(extrap_str)
+
+        if self._extrapolation_min != self.DEFAULT_EXTRAPOLATION_MIN:
+            extrap_str = '%s' %(self._extrapolation_min) if self._extrapolation_min is not None else 'None'
+            base += 'extrapolation_min=%s, ' %(extrap_str)
+        if self._extrapolation_max != self.DEFAULT_EXTRAPOLATION_MAX:
+            extrap_str = '%s' %(self._extrapolation_max) if self._extrapolation_max is not None else 'None'
+            base += 'extrapolation_max=%s, ' %(extrap_str)
 
         method_str = '"%s"' %(self.method) if self.method is not None else 'None'
         base += 'method=%s, ' %(method_str)
@@ -1561,7 +1586,64 @@ class TDependentProperty:
             self.T_cached = T
             return self.prop_cached
 
-    def as_json(self, references=1):
+    json_version = 1
+    non_json_attributes = ['correlations', 'extrapolation_coeffs', 'tabular_data_interpolators', 'tabular_data_interpolators_P', 'T_cached', 'local_methods']
+    obj_references = ['eos']
+
+    def _custom_as_json(self, d, cache):
+        d['all_methods'] = list(d['all_methods'])
+
+        if hasattr(self, 'all_methods_P'):
+            d['all_methods_P'] = list(d['all_methods_P'])
+            try:
+                del d['TP_cached']
+            except:
+                pass
+        for name in self._json_obj_by_CAS:
+            CASRN = self.CASRN
+            if hasattr(self, name):
+                d[name] = CASRN
+
+    def _custom_from_json(self, *args):
+        self._load_json_CAS_references(self.__dict__)
+        self.tabular_data_interpolators = {}
+        self.local_methods = {}
+        self.all_methods = set(self.all_methods)
+        try:
+            self.all_methods_P = set(self.all_methods_P)
+            self.tabular_data_interpolators_P = {}
+            self.TP_cached = None
+        except:
+            pass
+        self.T_limits = {k: tuple(v) for k, v in self.T_limits.items()}
+        self.tabular_data = {k: tuple(v) for k, v in self.tabular_data.items()}
+
+        self.correlations = correlations = {}
+        self.extrapolation_coeffs = {}
+
+        self.T_cached = None
+        # No need to set self.prop_cached
+        
+        for correlation_name in TDependentProperty.correlation_models.keys():
+            # Should be lazy created?
+            correlation_key = TDependentProperty.correlation_parameters[correlation_name]
+            if hasattr(self, correlation_key):
+                call = TDependentProperty.correlation_models[correlation_name][2]['f']
+                for model_name, kwargs in getattr(self, correlation_key).items():
+                    model_kwargs = kwargs.copy()
+                    model_kwargs.pop('Tmin')
+                    model_kwargs.pop('Tmax')
+                    correlations[model_name] = (call, model_kwargs, correlation_name, None)
+
+        self._add_extra_correlations()
+
+        for name, params in self.correlations.items():
+            model = params[2]
+            if model in self.correlation_extra_handling_models:
+                self._optimize_added_correlation(name, model)
+
+
+    def as_json(self, cache=None, option=0):
         r'''Method to create a JSON serialization of the property model
         which can be stored, and reloaded later.
 
@@ -1581,48 +1663,7 @@ class TDependentProperty:
         Examples
         --------
         '''
-        # vaguely jsonpickle compatible
-        d = self.__dict__.copy()
-        d["py/object"] = self.__full_path__
-#        print(self.__full_path__)
-        d["json_version"] = 1
-
-        d['all_methods'] = list(d['all_methods'])
-        d['tabular_data_interpolators'] = {}
-
-        ignored = ('correlations', 'extrapolation_coeffs')
-        for i in ignored:
-            try: del d[i]
-            except: pass
-
-        if hasattr(self, 'all_methods_P'):
-            d['all_methods_P'] = list(d['all_methods_P'])
-            d['tabular_data_interpolators_P'] = {}
-
-        del_objs = references == 0
-        for name in self.pure_references:
-            prop_obj = getattr(self, name)
-            if prop_obj is not None and type(prop_obj) not in (float, int):
-                if del_objs:
-                    del d[name]
-                else:
-                    d[name] = prop_obj.as_json()
-
-        for name in self._json_obj_by_CAS:
-            CASRN = self.CASRN
-            if hasattr(self, name):
-                d[name] = CASRN
-        try:
-            eos = self.eos
-            if eos:
-                d['eos'] = eos[0].as_json()
-        except:
-            pass
-
-        # Cannot store local methods
-        if 'local_methods' in d:
-            d['local_methods'] = {}
-        return d
+        return JsonOptEncodable.as_json(self, cache, option)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -1648,7 +1689,7 @@ class TDependentProperty:
             pass
 
     @classmethod
-    def from_json(cls, json_repr):
+    def from_json(cls, json_repr, cache=None):
         r'''Method to create a property model from a JSON
         serialization of another property model.
 
@@ -1670,57 +1711,58 @@ class TDependentProperty:
         Examples
         --------
         '''
-        d = json_repr#serialize.json.loads(json_repr)
-        cls._load_json_CAS_references(d)
-        try:
-            eos = d['eos']
-            if eos is not None:
-                d['eos'] = [GCEOS.from_json(eos)]
-        except:
-            pass
+        return JsonOptEncodable.from_json(json_repr, cache)
+        # d = json_repr#serialize.json.loads(json_repr)
+        # cls._load_json_CAS_references(d)
+        # try:
+        #     eos = d['eos']
+        #     if eos is not None:
+        #         d['eos'] = [GCEOS.from_json(eos)]
+        # except:
+        #     pass
 
-        d['all_methods'] = set(d['all_methods'])
-        try:
-            d['all_methods_P'] = set(d['all_methods_P'])
-        except:
-            pass
-        d['T_limits'] = {k: tuple(v) for k, v in d['T_limits'].items()}
-        d['tabular_data'] = {k: tuple(v) for k, v in d['tabular_data'].items()}
+        # d['all_methods'] = set(d['all_methods'])
+        # try:
+        #     d['all_methods_P'] = set(d['all_methods_P'])
+        # except:
+        #     pass
+        # d['T_limits'] = {k: tuple(v) for k, v in d['T_limits'].items()}
+        # d['tabular_data'] = {k: tuple(v) for k, v in d['tabular_data'].items()}
 
-        for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
-            if k in d:
-                if type(d[k]) is dict:
-                    sub_json = d[k]
-                    d[k] = sub_cls.from_json(sub_json)
+        # for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
+        #     if k in d:
+        #         if type(d[k]) is dict:
+        #             sub_json = d[k]
+        #             d[k] = sub_cls.from_json(sub_json)
 
 
 
-        d['correlations'] = correlations = {}
-        for correlation_name in cls.correlation_models.keys():
-            # Should be lazy created?
-            correlation_key = cls.correlation_parameters[correlation_name]
-            if correlation_key in d:
-                call = cls.correlation_models[correlation_name][2]['f']
-                for model_name, kwargs in d[correlation_key].items():
-                    model_kwargs = kwargs.copy()
-                    model_kwargs.pop('Tmin')
-                    model_kwargs.pop('Tmax')
-                    correlations[model_name] = (call, model_kwargs, correlation_name, None)
+        # d['correlations'] = correlations = {}
+        # for correlation_name in cls.correlation_models.keys():
+        #     # Should be lazy created?
+        #     correlation_key = cls.correlation_parameters[correlation_name]
+        #     if correlation_key in d:
+        #         call = cls.correlation_models[correlation_name][2]['f']
+        #         for model_name, kwargs in d[correlation_key].items():
+        #             model_kwargs = kwargs.copy()
+        #             model_kwargs.pop('Tmin')
+        #             model_kwargs.pop('Tmax')
+        #             correlations[model_name] = (call, model_kwargs, correlation_name, None)
 
-        d['extrapolation_coeffs'] = {}
+        # d['extrapolation_coeffs'] = {}
 
-        del d['py/object']
-        del d["json_version"]
-        new = cls.__new__(cls)
-        new.__dict__ = d
-        new._add_extra_correlations()
+        # del d['py/object']
+        # del d["json_version"]
+        # new = cls.__new__(cls)
+        # new.__dict__ = d
+        # # new._add_extra_correlations()
 
-        for name, params in new.correlations.items():
-            model = params[2]
-            if model in new.correlation_extra_handling_models:
-                new._optimize_added_correlation(name, model)
+        # # for name, params in new.correlations.items():
+        # #     model = params[2]
+        # #     if model in new.correlation_extra_handling_models:
+        # #         new._optimize_added_correlation(name, model)
 
-        return new
+        # return new
 
     @classmethod
     def _fit_export_polynomials(cls, method=None, start_n=3, max_n=30,
@@ -2854,6 +2896,7 @@ class TDependentProperty:
             elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(f"{self.name} method '{method}' is not valid at T={T} K for component with CASRN '{self.CASRN}'")
 
+
     def calculate_transform(self, T, method, transform):
         if transform == PROPERTY_TRANSFORM_LN:
             if method == EXP_POLY_FIT:
@@ -3397,7 +3440,7 @@ class TDependentProperty:
             raise ValueError("Tmax is not a real number")
 
         if not all(k in kwargs and kwargs[k] is not None for k in model_data[0]):
-            raise ValueError(f"Required arguments for this model are {model_data[0]}")
+            raise ValueError(f"Required arguments for model {model} are {model_data[0]}")
         if name in self.all_methods:
             raise ValueError("Provided method is already a method")
 

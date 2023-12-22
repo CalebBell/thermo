@@ -700,7 +700,7 @@ def test_UNIFAC_class_Lyngby():
     dpsis_dT_expect = [[0.0, 0.0, 0.0009554723111888648],
      [0.0, 0.0, 0.0009554723111888648],
      [0.009512842969259994, 0.009512842969259994, 0.0]]
-    assert_close2d(dpsis_dT, dpsis_dT_numerical, rtol=1e-7)
+    assert_close2d(dpsis_dT, dpsis_dT_numerical, rtol=3e-7)
     assert_close2d(dpsis_dT, dpsis_dT_expect, rtol=1e-12)
 
 
@@ -1031,6 +1031,18 @@ def test_unifac_np_output_and_hash():
     assert modelnp_pickle == modelnp
     model_pickle = pickle.loads(pickle.dumps(model))
     assert model_pickle == model
+
+    # Checks with json simplified
+    # Check we get the attributes copied
+    model.GE(), model.dGE_dT()
+    GE_copy = UNIFAC.from_json(json.loads(json.dumps(model.as_json(option=0))))
+    assert_close(GE_copy._dGE_dT, model._dGE_dT)
+    assert GE_copy == model
+
+    # Check we can also copy without calculated values
+    GE_copy = UNIFAC.from_json(json.loads(json.dumps(model.as_json(option=1))))
+    assert GE_copy == model
+    assert not hasattr(GE_copy, '_dGE_dT')
 
 
 

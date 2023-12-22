@@ -75,3 +75,14 @@ from thermo.flash.flash_vln import FlashVLN
 # __all__ = flash_utils.__all__ + flash_base.__all__ + flash_vl.__all__ + flash_vln.__all__ + flash_pure_vls.__all__
 
 __all__ = ('Flash', 'FlashPureVLS', 'FlashVL', 'FlashVLN')
+
+from thermo.serialize import object_lookups
+object_lookups[FlashPureVLS.__full_path__] = FlashPureVLS
+object_lookups[FlashVL.__full_path__] = FlashVL
+object_lookups[FlashVLN.__full_path__] = FlashVLN
+
+
+from thermo.property_package import StabilityTester
+object_lookups[StabilityTester.__full_path__] = StabilityTester
+
+

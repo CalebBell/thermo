@@ -29,7 +29,7 @@ from fluids.numerics import assert_close, assert_close1d, assert_close2d
 
 import thermo
 from thermo import *
-
+import json
 try:
     import matplotlib.pyplot as plt
 except:
@@ -53,14 +53,14 @@ def test_water_C1_C8():
                          HeatCapacityGas(poly_fit=(200.0, 1000.0, [-1.069661592422583e-22, -1.2992882995593864e-18, 8.808066659263286e-15, -2.1690080247294972e-11, 2.8519221306107026e-08, -2.187775092823544e-05, 0.009432620102532702, -1.5719488702446165, 217.60587499269303]))]
     constants = ChemicalConstantsPackage(Tcs=Tcs, Pcs=Pcs, omegas=omegas, MWs=[18.01528, 16.04246, 114.22852],
                                          CASs=['7732-18-5', '74-82-8', '111-65-9'])
-    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases)
+    correlations = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     eos_kwargs = dict(Tcs=Tcs, Pcs=Pcs, omegas=omegas, kijs=kijs)
 
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
 
-    flashN = FlashVLN(constants, properties, liquids=[liq, liq], gas=gas)
+    flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas)
 
     # This one has a cycle
     res = flashN.flash(zs=zs, T=393.23626311210126, P=500000.0)
@@ -152,23 +152,30 @@ def test_water_C1_C8():
     # Test the flash bubble works OK with multiple liquids (T-VF=1 and P-VF=1)
     liq_SRK = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    res_PR = FlashVLN(constants, properties, liquids=[liq], gas=gas).flash(T=298.15, VF=1, zs=zs)
-    res_SRK = FlashVLN(constants, properties, liquids=[liq_SRK], gas=gas).flash(T=298.15, VF=1, zs=zs)
+    res_PR = FlashVLN(constants, correlations, liquids=[liq], gas=gas).flash(T=298.15, VF=1, zs=zs)
+    res_SRK = FlashVLN(constants, correlations, liquids=[liq_SRK], gas=gas).flash(T=298.15, VF=1, zs=zs)
     assert res_PR.G() > res_SRK.G()
-    new_flasher = FlashVLN(constants, properties, liquids=[liq, liq_SRK], gas=gas)
+    new_flasher = FlashVLN(constants, correlations, liquids=[liq, liq_SRK], gas=gas)
     res_both_liquids = new_flasher.flash(T=298.15, VF=1, zs=zs)
     assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-4)
     assert_close(res_PR.P, 6022.265230194498, rtol=5e-4)
     assert_close(res_SRK.P, 5555.019566177178, rtol=5e-4)
 
-    res_PR = FlashVLN(constants, properties, liquids=[liq], gas=gas).flash(P=6000.0, VF=1, zs=zs)
-    res_SRK = FlashVLN(constants, properties, liquids=[liq_SRK], gas=gas).flash(P=6000.0, VF=1, zs=zs)
+    res_PR = FlashVLN(constants, correlations, liquids=[liq], gas=gas).flash(P=6000.0, VF=1, zs=zs)
+    res_SRK = FlashVLN(constants, correlations, liquids=[liq_SRK], gas=gas).flash(P=6000.0, VF=1, zs=zs)
     assert res_PR.G() > res_SRK.G()
-    res_both_liquids = FlashVLN(constants, properties, liquids=[liq, liq_SRK], gas=gas).flash(P=6000.0, VF=1, zs=zs)
+    res_both_liquids = FlashVLN(constants, correlations, liquids=[liq, liq_SRK], gas=gas).flash(P=6000.0, VF=1, zs=zs)
     assert_close(res_both_liquids.G(), res_SRK.G(), rtol=1e-4)
     assert_close(res_PR.T, 298.0822786634035, rtol=5e-4)
     assert_close(res_SRK.T, 299.5323133142487, rtol=5e-4)
 
+    # Check we can store this
+    output = json.loads(json.dumps(flashN.as_json()))
+    assert 'constants' not in output
+    assert 'correlations' not in output
+    assert 'settings' not in output
+    new_flasher = FlashVLN.from_json(output, {'constants': constants, 'correlations': correlations, 'settings': flashN.settings})
+    assert new_flasher == flashN
 
 def test_C1_to_C5_water_gas():
     zs = normalize([.65, .13, .09, .05, .03, .03, .02, .003, 1e-6])
@@ -325,16 +332,20 @@ def test_binary_LLL_specified_still_one_phase():
     omegas=[0.008, .1]
 
     constants = ChemicalConstantsPackage(Tcs=Tcs, Pcs=Pcs, omegas=omegas, MWs=[16.04246, 34.08088], CASs=['74-82-8', '7783-06-4'])
-    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
                                                                                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [-3.4967172940791855e-22, 1.7086617923088487e-18, -3.505442235019261e-15, 3.911995832871371e-12, -2.56012228400194e-09, 9.620884103239162e-07, -0.00016570643705524543, 0.011886900701175745, 32.972342195898534]))], )
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas, kijs=kijs)
-    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
-    flashN = FlashVLN(constants, properties, liquids=[liq, liq, liq], gas=gas)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    flashN = FlashVLN(constants, correlations, liquids=[liq, liq, liq], gas=gas)
     res = flashN.flash(T=T, P=P, zs=zs)
     assert res.phase_count == 1
     assert res.gas is not None
 
+    # Check we can store this
+    output = json.loads(json.dumps(flashN.as_json()))
+    new_flasher = FlashVLN.from_json(output)
+    assert new_flasher == flashN
 
 def test_binary_phase_switch():
     # Example from Kodama, Daisuke, Ryota Sato, Aya Haneda, and Masahiro Kato. “High-Pressure Phase Equilibrium for Ethylene + Ethanol at 283.65 K.” Journal of Chemical & Engineering Data 50, no. 1 (January 1, 2005): 122–24. https://doi.org/10.1021/je049796y.
@@ -2019,15 +2030,23 @@ def test_44_from_database():
     IDs = ['nitrogen', 'carbon dioxide', 'H2S', 'methane', 'ethane', 'propane', 'isobutane', 'butane', 'isopentane', 'pentane', 'Hexane', 'Heptane', 'Octane', 'Nonane', 'Decane', 'Undecane', 'Dodecane', 'Tridecane', 'Tetradecane', 'Pentadecane', 'Hexadecane', 'Heptadecane', 'Octadecane', 'Nonadecane', 'Eicosane', 'Heneicosane', 'Docosane', 'Tricosane', 'Tetracosane', 'Pentacosane', 'Hexacosane', 'Heptacosane', 'Octacosane', 'Nonacosane', 'Triacontane', 'Benzene', 'Toluene', 'Ethylbenzene', 'Xylene', '1,2,4-Trimethylbenzene', 'Cyclopentane', 'Methylcyclopentane', 'Cyclohexane', 'Methylcyclohexane']
     zs = [9.11975115499676e-05, 9.986813065240533e-05, 0.0010137795304828892, 0.019875879000370657, 0.013528874875432457, 0.021392773691700402, 0.00845450438914824, 0.02500218071904368, 0.016114189201071587, 0.027825798446635016, 0.05583179467176313, 0.0703116540769539, 0.07830577180555454, 0.07236459223729574, 0.0774523322851419, 0.057755091407705975, 0.04030134965162674, 0.03967043780553758, 0.03514481759005302, 0.03175471055284055, 0.025411123554079325, 0.029291866298718154, 0.012084986551713202, 0.01641114551124426, 0.01572454598093482, 0.012145363820829673, 0.01103585282423499, 0.010654818322680342, 0.008777712911254239, 0.008732073853067238, 0.007445155260036595, 0.006402875549212365, 0.0052908087849774296, 0.0048199150683177075, 0.015943943854195963, 0.004452253754752775, 0.01711981267072777, 0.0024032720444511282, 0.032178399403544646, 0.0018219517069058137, 0.003403378548794345, 0.01127516775495176, 0.015133143423489698, 0.029483213283483682]
 
-    constants, properties = ChemicalConstantsPackage.from_IDs(IDs)
+    constants, correlations = ChemicalConstantsPackage.from_IDs(IDs)
 
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
 
-    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
-    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
-    flasher = FlashVLN(constants, properties, liquids=[liq], gas=gas)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    flasher = FlashVLN(constants, correlations, liquids=[liq], gas=gas)
     res = flasher.flash(T=300, P=1e5, zs=zs)
     assert res.phase == 'VL'
+
+    # Check we can store this
+    output = json.loads(json.dumps(flasher.as_json()))
+    assert 'constants' not in output
+    assert 'correlations' not in output
+    assert 'settings' not in output
+    new_flasher = FlashVLN.from_json(output, {'constants': constants, 'correlations': correlations, 'settings': flasher.settings})
+    assert new_flasher == flasher
 
 
 

@@ -158,11 +158,11 @@ Other json libraries can be used besides the standard json library by design.
 
 Storing and recreating objects with Python's :py:func:`pickle.dumps` library is also tested; this can be faster than using JSON at the cost of being binary data.
 
-All models have a :obj:`__hash__ <thermo.activity.GibbsExcess.__hash__>` method that can be used to compare different models to see if they are absolutely identical (including which values have been calculated already).
+All models have a :obj:`__hash__ <thermo.activity.GibbsExcess.exact_hash>` method that can be used to compare different models to see if they are absolutely identical (including which values have been calculated already).
 
 They also have a :obj:`model_hash <thermo.activity.GibbsExcess.model_hash>` method that can be used to compare different models to see if they have identical model parameters.
 
-They also have a :obj:`state_hash <thermo.activity.GibbsExcess.state_hash>` method that can be used to compare different models to see if they have identical temperature, composition, and model parameters.
+They also have a :obj:`state_hash <thermo.activity.GibbsExcess.state_hash>` method that can be used to compare different models to see if they have identical temperature, composition, and model parameters. This is the __hash__ method.
 
 Activity Coefficient Identities
 -------------------------------

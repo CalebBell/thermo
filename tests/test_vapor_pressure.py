@@ -23,7 +23,7 @@ SOFTWARE.
 import json
 from math import *
 from math import isnan
-
+import pickle
 import chemicals
 import numpy as np
 import pytest
@@ -119,7 +119,7 @@ def test_VaporPressure_ethanol():
     assert_close(EtOH.calculate(305, VDI_TABULAR), 11690.81660829924, rtol=1E-4)
 
     s = EtOH.as_json()
-    assert 'json_version' in s
+    assert 'json_version' in str(s)
     obj2 = VaporPressure.from_json(s)
     assert EtOH == obj2
 
@@ -882,6 +882,15 @@ def test_sublimation_pressure_iapws():
 def test_sublimation_pressure_alcock():
     obj = SublimationPressure(CASRN="7440-62-2", Tt=2183.15, Pt=3.008394450145412, Hsub_t=190913.3611650746, extrapolation="linear", method="ALCOCK_ELEMENTS")
     assert_close(obj(1018), 2.7958216156724275e-14, rtol=1e-12)
+
+
+@pytest.mark.meta_T_dept
+def test_sublimation_pressure_pickle_issue():
+    # Check that it pickles
+    obj = SublimationPressure(CASRN="7732-18-5", Tt=273.16, Pt=611.654771008, Hsub_t=51065.16012541231, extrapolation="linear", method="Fit 2023",
+        DIPPR101_parameters={'Fit 2023': {'A': 32.947884114692506, 'B': -6712.991488636315, 'C': 0.0, 'D': 0.0, 'E': 0.0, 'Tmax': 161.465, 'Tmin': 154.965}})
+    model_pickle = pickle.loads(pickle.dumps(obj))
+
 
 @pytest.mark.meta_T_dept
 def test_sublimation_pressure_custom_fit():

@@ -36,7 +36,7 @@ from thermo import *
 from thermo import eos_volume
 from thermo.test_utils import *
 from thermo.test_utils import plot_unsupported
-import pickle
+import pickle, json
 
 try:
     import matplotlib.pyplot as plt
@@ -2048,3 +2048,19 @@ def test_mass_inputs_flash_and_rho():
 
     check_G_mass = flasher.flash(VF=res.VF, G_mass=res.G_mass())
     assert_close(res.T, check_G_mass.T)
+
+
+
+def test_flash_pure_json_creation():
+    from thermo import ChemicalConstantsPackage, PRMIX, CEOSLiquid, CEOSGas, FlashPureVLS
+    from chemicals.utils import object_data
+    constants, correlations = ChemicalConstantsPackage.from_IDs(['decane'])
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    liquid = CEOSLiquid(PRMIX, HeatCapacityGases=correlations.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    gas = CEOSGas(PRMIX, HeatCapacityGases=correlations.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    flasher = FlashPureVLS(constants, correlations, gas=gas, liquids=[liquid], solids=[])
+
+    # Do the default copying
+    output = json.loads(json.dumps(flasher.as_json()))
+    new_flasher = FlashPureVLS.from_json(output)
+    assert new_flasher == flasher

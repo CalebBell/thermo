@@ -2,7 +2,7 @@ numpy
 scipy
 pandas
 sympy
-fluids>=1.0.25
+fluids>=1.0.26
 chemicals>=1.1.5
 pytest
 pytest-cov

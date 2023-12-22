@@ -257,14 +257,14 @@ class FlashVL(Flash):
 
     PT_methods = [
         PT_SS,
-        PT_SS_MEHRA,
         PT_SS_GDEM3,
+        PT_SS_MEHRA,
         PT_NEWTON_lNKVF,
     ]
     PT_algorithms = [
         sequential_substitution_2P,
-        sequential_substitution_Mehra_2P,
         sequential_substitution_GDEM3_2P,
+        sequential_substitution_Mehra_2P,
         nonlin_2P_newton
     ]
 
@@ -781,7 +781,8 @@ class FlashVL(Flash):
                   gas_phase=gas_phase, V_over_F_guess=V_over_F_guess)
                 return sln
             except Exception as e:
-                a = 1
+                pass
+                # a = 1
 
     def flash_PV(self, P, V, zs, solution=None, hot_start=None):
         return self.flash_TPV_HSGUA(fixed_val=P, spec_val=V, fixed_var='P', spec='V',

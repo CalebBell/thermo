@@ -577,6 +577,7 @@ class SurfaceTensionMixture(MixtureProperty):
 
     pure_references = ('SurfaceTensions', 'VolumeLiquids')
     pure_reference_types = (SurfaceTension, VolumeLiquid)
+    obj_references = ('SurfaceTensions', 'VolumeLiquids')
 
     pure_constants = ('MWs', 'Tbs', 'Tcs')
     custom_args = pure_constants

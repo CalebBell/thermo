@@ -1638,7 +1638,7 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
     x1 = SU - b_3a
 
     # Must be polished
-    x1 = newton(horner_and_der_as_error, x1, bisection=True, fprime=True, low=b_eos/RT_P, xtol=1e-16, args=(coeffs,))
+    x1 = newton(horner_and_der_as_error, x1, bisection=True, fprime=True, low=b_eos/RT_P, xtol=1e-16, additional_guesses=True, args=(coeffs,))
 
     V = x1*RT_P
     if V == b_eos:

@@ -4392,7 +4392,7 @@ def test_model_encode_json_gceosmix():
     for eos in eos_mix_no_coeffs_list:
         obj1 = eos(T=T, P=P, zs=zs, omegas=omegas, Tcs=Tcs, Pcs=Pcs, kijs=kijs)
         s = obj1.as_json()
-        assert 'json_version' in s
+        assert 'json_version' in str(s)
         assert type(s) is dict
         obj2 = GCEOSMIX.from_json(s)
         assert obj1.__dict__ == obj2.__dict__
@@ -4675,8 +4675,8 @@ def test_eos_mix_one_minus_kijs():
     import pickle
     eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
     json_copy = eos.as_json()
-    assert 'kijs' in json_copy
-    assert 'one_minus_kijs' not in json_copy
+    assert 'kijs' in str(json_copy)
+    assert 'one_minus_kijs' not in str(json_copy)
     json_stuff = pickle.dumps(json_copy)
     new_eos = GCEOSMIX.from_json(pickle.loads(json_stuff))
 

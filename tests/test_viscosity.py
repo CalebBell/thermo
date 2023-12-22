@@ -155,7 +155,7 @@ def test_ViscosityLiquid():
     EtOH.tabular_extrapolation_permitted = False
     assert None is EtOH.TP_dependent_property(300, 90000.0)
     EtOH.tabular_extrapolation_permitted = True
-    assert_close(EtOH.TP_dependent_property(300, 9E4), 0.0010445175985089377)
+    assert_close(EtOH.TP_dependent_property(300, 9E4), 0.0010443414003675137)
 
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
@@ -567,7 +567,7 @@ def test_ViscosityGas():
     EtOH.tabular_extrapolation_permitted = False
     assert None is EtOH.TP_dependent_property(300, 90000.0)
     EtOH.tabular_extrapolation_permitted = True
-    assert_close(EtOH.TP_dependent_property(300, 9E4), 1.1854259955707653e-05)
+    assert_close(EtOH.TP_dependent_property(300, 9E4), 8.940734479925292e-06)
 
     with pytest.raises(Exception):
         EtOH.test_method_validity_P(300, 1E5, 'BADMETHOD')
@@ -695,3 +695,26 @@ def test_ViscosityLiquidMixture_initialization_str():
     copy = eval(str(obj))
 
     assert copy == obj
+
+def test_ViscosityLiquid_str_repr_extrapolation_min_max():
+    a = ViscosityLiquid(extrapolation_min=0, exp_poly_fit=(190.0, 391.9, [1.8379049563136273e-17, -4.5666126233131545e-14, 4.9414486397781785e-11, -3.042378423089263e-08, 1.166244931040138e-05, -0.0028523723735774113, 0.4352378275340892, -37.99358630363772, 1456.8338572042996]))
+    s = str(a)
+    assert 'extrapolation_min=0' in s
+    b = eval(str(a))
+    assert a == b
+    assert hash(a) == hash(b)
+
+    a = ViscosityLiquid(extrapolation_max=100, exp_poly_fit=(190.0, 391.9, [1.8379049563136273e-17, -4.5666126233131545e-14, 4.9414486397781785e-11, -3.042378423089263e-08, 1.166244931040138e-05, -0.0028523723735774113, 0.4352378275340892, -37.99358630363772, 1456.8338572042996]))
+    s = str(a)
+    assert 'extrapolation_max=100' in s
+    b = eval(str(a))
+    assert a == b
+    assert hash(a) == hash(b)
+
+    a = ViscosityLiquid(extrapolation_min=0, extrapolation_max=100, exp_poly_fit=(190.0, 391.9, [1.8379049563136273e-17, -4.5666126233131545e-14, 4.9414486397781785e-11, -3.042378423089263e-08, 1.166244931040138e-05, -0.0028523723735774113, 0.4352378275340892, -37.99358630363772, 1456.8338572042996]))
+    s = str(a)
+    assert 'extrapolation_min=0' in s
+    assert 'extrapolation_max=100' in s
+    b = eval(str(a))
+    assert a == b
+    assert hash(a) == hash(b)

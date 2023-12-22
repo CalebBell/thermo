@@ -205,6 +205,7 @@ from fluids.numerics import numpy as np
 from fluids.numerics.arrays import det, subset_matrix
 
 from thermo import serialize
+from thermo.serialize import JsonOptEncodable
 from thermo.eos import (
     APISRK,
     GCEOS,
@@ -424,8 +425,30 @@ class GCEOSMIX(GCEOS):
         s += ')'
         return s
 
+    def _custom_from_json(self, *args):
+        eos_name = self.__full_path__
+        eos = eos_mix_full_path_dict[eos_name]
+        try:
+            self.raw_volumes = tuple(self.raw_volumes)
+        except:
+            pass
+        try:
+            self.alpha_coeffs = [tuple(v) for v in self.alpha_coeffs]
+        except:
+            pass
+        if eos.kwargs_keys:
+            self.kwargs = {k: getattr(self, k) for k in eos.kwargs_keys}
+            try:
+                self.kwargs['alpha_coeffs'] = [tuple(v) for v in self.kwargs['alpha_coeffs']]
+            except:
+                pass
+        try:
+            setattr(self, 'one_minus_kijs',  one_minus_kijs(self.kijs))
+        except:
+            pass
+
     @classmethod
-    def from_json(cls, json_repr):
+    def from_json(cls, json_repr, cache=None):
         r'''Method to create a mixture cubic equation of state from a JSON
         friendly serialization of another mixture cubic equation of state.
 
@@ -452,44 +475,7 @@ class GCEOSMIX(GCEOS):
         >>> new_eos = GCEOSMIX.from_json(pickle.loads(json_stuff))
         >>> assert new_eos == eos
         '''
-        d = json_repr
-
-        eos_name = d['py/object']
-        del d['py/object']
-        del d['json_version']
-        if d['vectorized']:
-            d = serialize.naive_lists_to_arrays(d)
-
-        try:
-            d['raw_volumes'] = tuple(d['raw_volumes'])
-        except:
-            pass
-
-        try:
-            alpha_coeffs = [tuple(v) for v in d['alpha_coeffs']]
-            d['alpha_coeffs'] = alpha_coeffs
-        except:
-            pass
-
-        eos = eos_mix_full_path_dict[eos_name]
-
-        try:
-            d['one_minus_kijs'] = one_minus_kijs(d['kijs'])
-        except:
-            pass
-
-        if eos.kwargs_keys:
-            d['kwargs'] = {k: d[k] for k in eos.kwargs_keys}
-            try:
-                d['kwargs']['alpha_coeffs'] = alpha_coeffs
-            except:
-                pass
-
-        new = eos.__new__(eos)
-        for k, v in d.items():
-            setattr(new, k, v)
-        # new.__dict__ = d
-        return new
+        return JsonOptEncodable.from_json(json_repr, cache)
 
     def to_TP_zs_fast(self, T, P, zs, only_l=False, only_g=False, full_alphas=True):
         r'''Method to construct a new :obj:`GCEOSMIX` instance with the same

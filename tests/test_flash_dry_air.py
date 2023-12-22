@@ -33,6 +33,7 @@ from thermo.chemical_package import lemmon2000_constants, lemmon2000_correlation
 from thermo.coolprop import *
 from thermo.phases import DryAirLemmon
 from thermo.test_utils import mark_plot_unsupported
+from thermo.flash.flash_utils import cm_flash_tol
 
 try:
     import matplotlib.pyplot as plt

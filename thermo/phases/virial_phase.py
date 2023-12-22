@@ -70,6 +70,7 @@ from fluids.numerics import log, newton
 from fluids.numerics import numpy as np
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import IdealGasDeparturePhase, Phase
+from thermo.serialize import JsonOptEncodable
 
 try:
     ndarray, array, zeros, ones, delete, npsum, nplog = np.ndarray, np.array, np.zeros, np.ones, np.delete, np.sum, np.log
@@ -234,6 +235,13 @@ class VirialCSP:
        1667-80. https://doi.org/10.1023/B:IJOT.0000004098.98614.38.
     '''
 
+    __full_path__ = f"{__module__}.{__qualname__}"
+    json_version = 1
+    obj_references = []
+    non_json_attributes = ['_model_hash']
+    as_json = JsonOptEncodable.as_json
+    from_json = JsonOptEncodable.from_json
+
     cross_B_calculated = False
     cross_C_calculated = False
     pure_B_calculated = False
@@ -282,21 +290,6 @@ class VirialCSP:
         return base
 
 
-    def state_hash(self):
-        r'''Basic method to calculate a hash of the state of the model and its
-        model parameters.
-
-        Note that the hashes should only be compared on the same system running
-        in the same process!
-
-        Returns
-        -------
-        state_hash : int
-            Hash of the object's model parameters and state, [-]
-        '''
-        #print((self.model_hash(), self.T), 'state hash args')
-        return hash_any_primitive((self.model_hash(), self.T))
-
     def model_hash(self):
         r'''Basic method to calculate a hash of the non-state parts of the model
         This is useful for comparing to models to
@@ -325,7 +318,24 @@ class VirialCSP:
         self._model_hash = h
         return h
 
-    def __hash__(self):
+    def state_hash(self):
+        r'''Basic method to calculate a hash of the state of the model and its
+        model parameters.
+
+        Note that the hashes should only be compared on the same system running
+        in the same process!
+
+        Returns
+        -------
+        state_hash : int
+            Hash of the object's model parameters and state, [-]
+        '''
+        #print((self.model_hash(), self.T), 'state hash args')
+        return hash_any_primitive((self.model_hash(), self.T))
+
+    __hash__ = state_hash
+
+    def exact_hash(self):
         r'''Method to calculate and return a hash representing the exact state
         of the object.
 
@@ -335,8 +345,10 @@ class VirialCSP:
             Hash of the object, [-]
         '''
         d = self.__dict__
-        ans = hash_any_primitive((self.__class__.__name__, self.state_hash(), self.model_hash()))
+        ans = hash_any_primitive((self.__class__.__name__, self.state_hash(), self.model_hash(), d))
         return ans
+    
+    
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)
@@ -947,6 +959,8 @@ class VirialGas(IdealGasDeparturePhase):
     ideal_gas_basis = True
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas, )
+
+    obj_references = ('HeatCapacityGases', 'model', 'result', 'constants', 'correlations')
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'model',
                         'cross_B_model', 'cross_C_model') + pure_references

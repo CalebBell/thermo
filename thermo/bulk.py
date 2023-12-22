@@ -77,7 +77,7 @@ from chemicals.utils import Joule_Thomson, isobaric_expansion, isothermal_compre
 from fluids.constants import R, atm
 from fluids.numerics import exp, log, sqrt
 from fluids.two_phase_voidage import gas_liquid_viscosity
-
+from thermo.serialize import arrays_to_lists, JsonOptEncodable, object_lookups
 from thermo.phase_identification import DENSITY_MASS, PROP_SORT, S_ID_D2P_DVDT, VL_ID_PIP, WATER_NOT_SPECIAL
 from thermo.phases import Phase
 
@@ -367,6 +367,10 @@ class BulkSettings:
     '''
 
     __full_path__ = f"{__module__}.{__qualname__}"
+    json_version = 1
+    obj_references = []
+    non_json_attributes = []
+    vectorized = False
 
     settings = ('dP_dT', 'dP_dV', 'd2P_dV2', 'd2P_dT2', 'd2P_dTdV', 'mu_LL', 'mu_LL_power_exponent',
                 'mu_VL', 'mu_VL_power_exponent', 'k_LL', 'k_LL_power_exponent', 'k_VL', 'k_VL_power_exponent',
@@ -376,37 +380,58 @@ class BulkSettings:
                 'liquid_sort_method', 'liquid_sort_cmps', 'solid_sort_cmps', 'liquid_sort_cmps_neg', 'solid_sort_cmps_neg',
                 'liquid_sort_prop', 'solid_sort_prop', 'phase_sort_higher_first', 'water_sort', 'equilibrium_perturbation')
 
-    def as_json(self):
-        d = object_data(self)
-        return d
-        # return self.__dict__.copy()
-
-    def __repr__(self):
-        r'''Method to create a string representation of the phase object, with
-        the goal of making it easy to obtain standalone code which reproduces
-        the current state of the phase. This is extremely helpful in creating
-        new test cases.
+    def as_json(self, cache=None, option=0):
+        r'''Method to create a JSON-friendly representation of the BulkSettings
+        object which can be stored, and reloaded later.
 
         Returns
         -------
-        recreation : str
-            String which is valid Python and recreates the current state of
-            the object if ran, [-]
+        json_repr : dict
+            JSON-friendly representation, [-]
 
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> import json
+        >>> obj = BulkSettings()
+        >>> json_view = obj.as_json()
+        >>> json_str = json.dumps(json_view)
+        >>> assert type(json_str) is str
+        >>> obj_copy = BulkSettings.from_json(json.loads(json_str))
+        >>> assert obj_copy == obj
         '''
-        eos_kwargs = str(self.eos_kwargs).replace("'", '"')
-        try:
-            Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
-        except:
-            Cpgs = ''
-        base = f'{self.__class__.__name__}(eos_class={self.eos_class.__name__}, eos_kwargs={eos_kwargs}, HeatCapacityGases=[{Cpgs}], '
-        for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
-            if hasattr(self, s) and getattr(self, s) is not None:
-                base += f'{s}={getattr(self, s)}, '
-        if base[-2:] == ', ':
-            base = base[:-2]
-        base += ')'
-        return base
+        return JsonOptEncodable.as_json(self, cache, option)
+
+    @classmethod
+    def from_json(cls, json_repr, cache=None):
+        r'''Method to create a BulkSettings object from a JSON-friendly
+        serialization of another BulkSettings.
+
+        Parameters
+        ----------
+        json_repr : dict
+            JSON-friendly representation, [-]
+
+        Returns
+        -------
+        model : :obj:`BulkSettings`
+            Newly created object from the json serialization, [-]
+
+        Notes
+        -----
+        It is important that the input string be in the same format as that
+        created by :obj:`BulkSettings.as_json`.
+
+        Examples
+        --------
+        >>> obj = BulkSettings()
+        >>> json_view = obj.as_json()
+        >>> new_obj = BulkSettings.from_json(json_view)
+        >>> assert obj == new_obj
+        '''
+        return JsonOptEncodable.from_json(json_repr, cache)
 
     def __repr__(self):
         r'''Method to create a string representation of the BulkSettings object, with
@@ -603,6 +628,10 @@ class Bulk(Phase):
     bulk_phase_type = True
 
     __slots__ = ('phases', 'phase_fractions', 'phase_bulk', 'result', 'constants', 'correlations', 'flasher', 'settings')
+    model_attributes = ()
+    obj_references = ('phases', 'result', 'constants', 'correlations', 'flasher', 'settings')
+    json_version = 1
+    non_json_attributes = []
 
     def __init__(self, T, P, zs, phases, phase_fractions, phase_bulk=None):
         self.T = T
@@ -1683,3 +1712,7 @@ class Bulk(Phase):
 
     def G_min_criteria(self):
         return sum(self.phase_fractions[i]*p.G_min_criteria() for i, p in enumerate(self.phases))
+
+
+object_lookups[Bulk.__full_path__] = Bulk
+object_lookups[BulkSettings.__full_path__] = BulkSettings

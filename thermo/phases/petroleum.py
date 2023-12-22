@@ -46,6 +46,8 @@ class GraysonStreed(Phase):
     model_attributes = ('Tcs', 'Pcs', 'omegas', '_CASs',
                         'GibbsExcessModel') + pure_references
 
+    obj_references = ('HeatCapacityGases', 'GibbsExcessModel', 'result', 'constants', 'correlations')
+
     def to_TP_zs(self, T, P, zs):
         new = self.__class__.__new__(self.__class__)
         new.T = T

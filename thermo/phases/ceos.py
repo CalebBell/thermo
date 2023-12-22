@@ -87,7 +87,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
-    obj_references = ('eos_mix',)
+    obj_references = ('eos_mix', 'result', 'constants', 'correlations', 'HeatCapacityGases')
 
 
     pointer_references = ('eos_class',)
@@ -98,6 +98,12 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'eos_class',
                         'eos_kwargs') + pure_references
+
+    def _custom_as_json(self, d, cache):
+        d['eos_class'] = d['eos_class'].__full_path__
+        
+    def _custom_from_json(self, *args):
+        self.eos_class = eos_mix_full_path_dict[self.eos_class]
 
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with

@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-import pickle
+import pickle, json
 from math import exp, log
 
 import numpy as np
@@ -418,6 +418,16 @@ def test_DDBST_example():
     # Test with some results stored
     GE2 = Wilson.from_json(GE.as_json())
     assert object_data(GE2) == object_data(GE)
+
+    # Test with some stored results
+    GE2 = Wilson.from_json(GE.as_json())
+    assert hasattr(GE2, '_GE')
+    assert object_data(GE2) == object_data(GE)
+
+    # Test a few more storing
+    GE_copy = Wilson.from_json(json.loads(json.dumps(GE.as_json(option=1))))
+    assert GE_copy == GE
+    assert not hasattr(GE_copy, '_GE')
 
     # Direct call for gammas
     gammas_args = GE.gammas_args()

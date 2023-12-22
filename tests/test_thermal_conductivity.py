@@ -139,7 +139,7 @@ def test_ThermalConductivityLiquid():
     recalc_pts = [[EtOH.TP_dependent_property(T, P) for T in Ts] for P in Ps]
     assert_close1d(TP_data, recalc_pts)
 
-    assert_close(EtOH.TP_dependent_property(274, 9E4), 0.16848555706973622)
+    assert_close(EtOH.TP_dependent_property(274, 9E4), 0.16869449763108896)
     EtOH.tabular_extrapolation_permitted = False
     assert None is EtOH.TP_dependent_property(300, 90000.0)
 
@@ -290,7 +290,7 @@ def test_ThermalConductivityGas():
     assert_close2d(TP_data, recalc_pts)
 
     EtOH.tabular_extrapolation_permitted = True
-    assert_close(EtOH.TP_dependent_property(399, 9E3), 0.025825794817543015)
+    assert_close(EtOH.TP_dependent_property(399, 9E3), 0.025702870956832314)
     EtOH.tabular_extrapolation_permitted = False
     assert None is EtOH.TP_dependent_property(399, 9000.0)
 

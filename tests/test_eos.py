@@ -2345,7 +2345,7 @@ def test_model_encode_json_eos():
     for eos in eos_iter:
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
         s = e.as_json()
-        assert 'json_version' in s
+        assert 'json_version' in str(s)
         assert type(s) is dict
         e1 = eos.from_json(s)
         assert e.__dict__ == e1.__dict__

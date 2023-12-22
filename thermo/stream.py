@@ -22,7 +22,8 @@ SOFTWARE.
 '''
 
 
-__all__ = ['Stream', 'EnergyStream', 'StreamArgs', 'EquilibriumStream']
+__all__ = ['Stream', 'EnergyStream', 'StreamArgs', 'EquilibriumStream',
+           'energy_balance', 'mole_balance']
 
 #import enum
 try:
@@ -48,16 +49,182 @@ from chemicals.utils import (
 from chemicals.volume import ideal_gas
 from fluids.constants import R
 from fluids.pump import residential_power_frequencies, voltages_1_phase_residential, voltages_3_phase
-
+from thermo.serialize import JsonOptEncodable
 from thermo.equilibrium import EquilibriumState
 from thermo.mixture import Mixture
+from thermo.serialize import object_lookups
 
 
 class StreamArgs:
+    '''Creates an StreamArgs object, which is a holder and specification
+    tracking/counting utility object for the purposes of making 
+    heat and material balances. Unlike :obj:`EquilibriumStream`, this 
+    object is mutable and doesn't require any specifications. Specifications
+    can be set as they become available, and then a :obj:`EquilibriumStream`
+    can be generated from the method :obj:`StreamArgs.flash`.
+
+    The specification tracking is the key purpose of this object. Once a
+    `T` and `P` have been set, `V` **can't** be set because there are no 
+    degrees of freedom.
+    Another state specification mst be removed by setting it to None
+    before a new specification can be set. The specifications supported are the same
+    as those of :obj:`EquilibriumStream`.
+    Handling flow flow vs. composition is fuzzier because of the common use cases
+    where a flow rate may be known, but not composition; or the composition but not 
+    the flow, however later when the product
+    flows are known it is desireable to set it. To allow this,
+    the variables `ns`, `ms`, `Qls`, and `Qgs` are allowed to overwrite an existing
+    flow and/or composition specification even if if `multiple_composition_basis` is False.
+
+    Eveen if the property wasn't set to this object, but if enough degrees of freedom
+    are known, the actual value can usually be queried by adding `_calc` to the attribute,
+    e.g. `H_calc` is available if `T`, `P`, and `zs` are known. This will perform the
+    flash if it hasn't already been done.
+
+    The state can be specified using any two of:
+
+    * Temperature `T` [K]
+    * Pressure `P` [Pa]
+    * Vapor fraction `VF`
+    * Enthalpy `H` [J/mol] or `H_mass` [J/kg]
+    * Entropy `S` [J/mol/K] or `S_mass` [J/kg/K]
+    * Internal energy `U` [J/mol] or `U_mass` [J/kg]
+    * Gibbs free energy `G` [J/mol] or `G_mass` [J/kg]
+    * Helmholtz energy `A` [J/mol] or `A_mass` [J/kg]
+    * Energy `energy` [W] and `energy_reactive` [W] which count as a enthalpy spec only when flow rate is given
+    * Reactive enthalpy `H_reactive` [J/mol]
+    * Molar volume `V` [m^3/mol], molar density `rho` [mol/m^3], or mass density `rho_mass`, [kg/m^3]
+
+    The composition can be specified using any of:
+
+    * Mole fractions `zs`
+    * Mass fractions `ws`
+    * Liquid standard volume fractions `Vfls`
+    * Gas standard volume fractions `Vfgs`
+    * Mole flow rates of each component `ns` [mol/s]
+    * Mass flow rates of each component `ms` [kg/s]
+    * Liquid standard volume flow rates of each component `Qls` [m^3/s]
+    * Gas standard flow rates of each component `Qgs` [m^3/s]
+
+    In addition to setting flow rate via component flow rates, total flow rates can be specified using:
+
+    * Mole flow rate `n` [mol/s]
+    * Mass flow rate `m` [kg/s]
+    * Actual volume flow rate `Q` [m^3/s]
+    * Liquid volume standard flow rate `Ql` [m^3/s]
+    * Gas standard volume flow rate `Qg` [m^3/s]
+
+    All parameters are also attributes.
+
+    Parameters
+    ----------
+    flasher : One of :obj:`thermo.flash.FlashPureVLS`, :obj:`thermo.flash.FlashVL`, :obj:`thermo.flash.FlashVLN`,
+        The configured flash object which can perform flashes for the
+        configured components, [-]
+    zs : list, optional
+        Mole fractions of all components [-]
+    ws : list, optional
+        Mass fractions of all components [-]
+    Vfls : list, optional
+        Volume fractions of all components as a hypothetical liquid phase based
+        on pure component densities [-]
+    Vfgs : list, optional
+        Volume fractions of all components as a hypothetical gas phase based
+        on pure component densities [-]
+    ns : list, optional
+        Mole flow rates of each component [mol/s]
+    ms : list, optional
+        Mass flow rates of each component [kg/s]
+    Qls : list, optional
+        Component volumetric flow rate specs for a hypothetical liquid phase based on
+        :obj:`EquilibriumState.V_liquids_ref` [m^3/s]
+    Qgs : list, optional
+        Component volumetric flow rate specs for a hypothetical gas phase based on
+        :obj:`EquilibriumState.V_gas` [m^3/s]
+    Ql : float, optional
+        Total volumetric flow rate spec for a hypothetical liquid phase based on
+        :obj:`EquilibriumState.V_liquids_ref` [m^3/s]
+    Qg : float, optional
+        Total volumetric flow rate spec for a hypothetical gas phase based on
+        :obj:`EquilibriumState.V_gas` [m^3/s]
+    Q : float, optional
+        Total actual volumetric flow rate of the stream based on the
+        density of the stream at the specified conditions [m^3/s]
+    n : float, optional
+        Total mole flow rate of all components in the stream [mol/s]
+    m : float, optional
+        Total mass flow rate of all components in the stream [kg/s]
+    T : float, optional
+        Temperature of the stream, [K]
+    P : float, optional
+        Pressure of the stream [Pa]
+    VF : float, optional
+        Vapor fraction (mole basis) of the stream, [-]
+    V : float, optional
+        Molar volume of the overall stream [m^3/mol]
+    rho : float, optional
+        Molar density of the overall stream [mol/m^3]
+    rho_mass : float, optional
+        Mass density of the overall stream [kg/m^3]
+    H : float, optional
+        Molar enthalpy of the stream [J/mol]
+    H_mass : float, optional
+        Mass enthalpy of the stream [J/kg]
+    S : float, optional
+        Molar entropy of the stream [J/mol/K]
+    S_mass : float, optional
+        Mass entropy of the stream [J/kg/K]
+    U : float, optional
+        Molar internal energy of the stream [J/mol]
+    U_mass : float, optional
+        Mass internal energy of the stream [J/kg]
+    G : float, optional
+        Molar Gibbs free energy of the stream [J/mol]
+    G_mass : float, optional
+        Mass Gibbs free energy of the stream [J/kg]
+    A : float, optional
+        Molar Helmholtz energy of the stream [J/mol]
+    A_mass : float, optional
+        Mass Helmholtz energy of the stream [J/kg]
+    energy : float, optional
+        Flowing energy of the stream [W]
+    energy_reactive : float, optional
+        Flowing energy of the stream on a reactive basis [W]
+    H_reactive : float, optional
+        Reactive molar enthalpy of the stream [J/mol]
+    Q_TP : tuple(3, float, float, str), optional
+        The (T, P, phase) at which the actual volumetric flow rate (if specified) is
+        calculated to be at, [K] and [Pa]
+    multiple_composition_basis : bool, optional
+        Fun toggle to allow the object to recieve multiple different types
+        of composition information - e.g. a partial list of mole fractions
+        and a partial list of mass fractions. This can be useful for some
+        problems
+    '''
     flashed = False
-    _state_cache = None
+    '''`flashed` can be checked to quickly determine if an object is already flashed. It is always False for `StreamArgs`,
+    and True for `EquilibriumState` and `EquilibriumStream`'''
     __full_path__ = f"{__module__}.{__qualname__}"
 
+    __slots__ = ('specifications', 'multiple_composition_basis', 'Vf_TP', 'Q_TP', 'flasher', '_state_cache', '_flash')
+    obj_references = ('flasher', '_flash')
+
+    as_json = JsonOptEncodable.as_json
+    from_json = JsonOptEncodable.from_json
+    json_version = 1
+    non_json_attributes = []
+    vectorized = False
+
+    def __eq__(self, other):
+        return self.__hash__() == hash(other)
+
+    def __hash__(self):
+        return hash_any_primitive([self.specifications, self.multiple_composition_basis, self.Vf_TP, self.Q_TP, self.flasher])
+
+    def _custom_from_json(self, *args):
+        if self._state_cache:
+            zs = tuple(self._state_cache[-1])
+            self._state_cache = tuple(self._state_cache[0:-1])+(zs,)
 
     def __init__(self, *, zs=None, ws=None, Vfls=None, Vfgs=None,
                  T=None, P=None,
@@ -69,176 +236,135 @@ class StreamArgs:
                  Ql=None, Qg=None,
                  energy=None, energy_reactive=None, H_reactive=None,
                  Vf_TP=(None, None), Q_TP=(None, None, ''), flasher=None,
-                 single_composition_basis=True):
-        self.specifications = s = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
-                       'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                       'n': None, 'm': None, 'Q': None, 'Ql': None, 'Qg': None,
+                 multiple_composition_basis=False):
+        self.specifications = {'zs': zs, 'ws': ws, 'Vfls': Vfls, 'Vfgs': Vfgs,
+                       'ns': ns, 'ms': ms, 'Qls': Qls, 'Qgs': Qgs,
+                       'n': n, 'm': m, 'Q': Q, 'Ql': Ql, 'Qg': Qg,
 
-                       'T': None, 'P': None,
-                       'V': None, 'rho': None, 'rho_mass': None,
+                       'T': T, 'P': P,
+                       'V': V, 'rho': rho, 'rho_mass': rho_mass,
 
-                       'VF': None,
-                       'H': None,'H_mass': None,
-                       'S': None, 'S_mass': None,
-                       'U': None, 'U_mass': None,
-                       'A': None, 'A_mass': None,
-                       'G': None, 'G_mass': None,
-                       'energy': None, 'energy_reactive': None, 'H_reactive': None}
+                       'VF': VF,
+                       'H': H,'H_mass': H_mass,
+                       'S': S, 'S_mass': S_mass,
+                       'U': U, 'U_mass': U_mass,
+                       'A': A, 'A_mass': A_mass,
+                       'G': G, 'G_mass': G_mass,
+                       'energy': energy, 'energy_reactive': energy_reactive, 'H_reactive': energy_reactive}
 
-        # If this is False, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
+        # If this is True, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
         # This makes sense for certain cases but not all.
-        self.single_composition_basis = single_composition_basis
+        self.multiple_composition_basis = multiple_composition_basis
         self.Vf_TP = Vf_TP
         self.Q_TP = Q_TP
         self.flasher = flasher
+        self._state_cache = None
 
         composition_specs = state_specs = flow_specs = 0
+        # Note that these int statements are faster than adding the booleans
         if zs is not None:
-            s['zs'] = zs
             composition_specs += 1
         if ws is not None:
-            s['ws'] = ws
             composition_specs += 1
         if Vfls is not None:
-            s['Vfls'] = Vfls
             composition_specs += 1
         if Vfgs is not None:
-            s['Vfgs'] = Vfgs
             composition_specs += 1
 
+
         if ns is not None:
-            s['ns'] = ns
             composition_specs += 1
             flow_specs += 1
         if ms is not None:
-            s['ms'] = ms
             composition_specs += 1
             flow_specs += 1
         if Qls is not None:
-            s['Qls'] = Qls
             composition_specs += 1
             flow_specs += 1
         if Qgs is not None:
-            s['Qgs'] = Qgs
             composition_specs += 1
             flow_specs += 1
 
         if n is not None:
-            s['n'] = n
             flow_specs += 1
         if m is not None:
-            s['m'] = m
             flow_specs += 1
         if Q is not None:
-            s['Q'] = Q
             flow_specs += 1
         if Ql is not None:
-            s['Ql'] = Ql
             flow_specs += 1
         if Qg is not None:
-            s['Qg'] = Qg
             flow_specs += 1
 
         if T is not None:
-            s['T'] = T
             state_specs += 1
         if P is not None:
-            s['P'] = P
             state_specs += 1
         if V is not None:
-            s['V'] = V
             state_specs += 1
         if rho is not None:
-            s['rho'] = rho
             state_specs += 1
         if rho_mass is not None:
-            s['rho_mass'] = rho_mass
             state_specs += 1
         if VF is not None:
-            s['VF'] = VF
             state_specs += 1
         if H_mass is not None:
-            s['H_mass'] = H_mass
             state_specs += 1
         if H is not None:
-            s['H'] = H
             state_specs += 1
         if S_mass is not None:
-            s['S_mass'] = S_mass
             state_specs += 1
         if S is not None:
-            s['S'] = S
             state_specs += 1
         if U_mass is not None:
-            s['U_mass'] = U_mass
             state_specs += 1
         if U is not None:
-            s['U'] = U
             state_specs += 1
         if G_mass is not None:
-            s['G_mass'] = G_mass
             state_specs += 1
         if G is not None:
-            s['G'] = G
             state_specs += 1
         if A_mass is not None:
-            s['A_mass'] = A_mass
             state_specs += 1
         if A is not None:
-            s['A'] = A
             state_specs += 1
         if energy is not None:
-            s['energy'] = energy
             state_specs += 1
         if energy_reactive is not None:
-            s['energy_reactive'] = energy_reactive
             state_specs += 1
         if H_reactive is not None:
-            s['H_reactive'] = H_reactive
             state_specs += 1
         if flow_specs > 1 or composition_specs > 1:
             self.reconcile_flows()
 #            raise ValueError("Flow specification is overspecified")
-        if composition_specs > 1 and single_composition_basis:
+        if composition_specs > 1 and not multiple_composition_basis:
             raise ValueError("Composition specification is overspecified")
         if state_specs > 2:
             raise ValueError("State specification is overspecified")
 
-    def __add__(self, b):
-        if not isinstance(b, StreamArgs):
-            raise TypeError('Adding to a StreamArgs requires that the other object '
-                            'also be a StreamArgs.')
-
-        a_flow_spec, b_flow_spec = self.flow_spec, b.flow_spec
-        a_composition_spec, b_composition_spec = self.composition_spec, b.composition_spec
-        a_state_specs, b_state_specs = self.state_specs, b.state_specs
-
-        args = {}
-
-        flow_spec = b_flow_spec if b_flow_spec else a_flow_spec
-        if flow_spec:
-            args[flow_spec[0]] = flow_spec[1]
-
-        composition_spec = b_composition_spec if b_composition_spec else a_composition_spec
-        if composition_spec:
-            args[composition_spec[0]] = composition_spec[1]
-
-        if b_state_specs:
-            for i, j in b_state_specs:
-                args[i] = j
-
-        c = StreamArgs(**args)
-        if b_state_specs and len(b_state_specs) < 2 and a_state_specs:
-            for i, j in a_state_specs:
-                try:
-                    setattr(c, i, j)
-                except:
-                    pass
-
-        return c
-
     def copy(self):
-        # single_composition_basis may mean multiple sets of specs for comp/flow
+        """Create a deep copy of the StreamArgs instance. Parameters
+        `multiple_composition_basis`, `Vf_TP`, `Q_TP` and `flasher`
+        are set to the new object without copying.
+
+        Returns
+        -------
+        StreamArgs
+            A new instance of StreamArgs with the same specifications
+            and configuration as the original.
+
+        Examples
+        --------
+        >>> original_stream = StreamArgs(T=300, P=101325, zs=[0.5, 0.5])
+        >>> copied_stream = original_stream.copy()
+        >>> # Modify the copy without affecting the original
+        >>> copied_stream.T = 350
+        >>> original_stream.T
+        300
+        >>> original_stream.zs is copied_stream.zs
+        False
+        """
+        # multiple_composition_basis may mean multiple sets of specs for comp/flow
         kwargs = self.specifications.copy()
         if kwargs['zs'] is not None:
             kwargs['zs'] = [i for i in kwargs['zs']]
@@ -257,49 +383,59 @@ class StreamArgs:
         if kwargs['Vfls'] is not None:
             kwargs['Vfls'] = [i for i in kwargs['Vfls']]
         return StreamArgs(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, flasher=self.flasher,
-                 single_composition_basis=self.single_composition_basis, **kwargs)
+                 multiple_composition_basis=self.multiple_composition_basis, **kwargs)
 
     __copy__ = copy
 
     @property
     def energy(self):
+        r'''Flowing energy of the stream specification if specified [W]'''
         return self.specifications['energy']
+
     @energy.setter
     def energy(self, energy):
+        r'''Set the flowing energy of the stream [W]. This variable can set either the 
+        flow rate, or act as an enthalpy spec if another flow rate specification is specified.'''
         if energy is None:
             self.specifications['energy'] = energy
             return None
         if self.specified_state_vars > 1 and self.flow_specified and self.energy is None:
-            raise Exception('Two state vars and a flow var already specified; unset another first')
+            raise ValueError('Two state vars and a flow var already specified; unset another first')
         self.specifications['energy'] = energy
 
     @property
     def energy_reactive(self):
+        r'''Flowing energy of the stream on a reactive basis specification if specified [W]'''
         return self.specifications['energy_reactive']
     @energy_reactive.setter
     def energy_reactive(self, energy_reactive):
+        r'''Set the flowing energy of the stream on a reactive basis [W]. This variable can set either the 
+        flow rate, or act as an enthalpy spec if another flow rate specification is specified.'''
         if energy_reactive is None:
             self.specifications['energy_reactive'] = energy_reactive
             return None
         if self.specified_state_vars > 1 and self.flow_specified and self.energy_reactive is None:
-            raise Exception('Two state vars and a flow var already specified; unset another first')
+            raise ValueError('Two state vars and a flow var already specified; unset another first')
         self.specifications['energy_reactive'] = energy_reactive
 
     @property
     def T(self):
+        r'''Temperature of the stream specification if specified [K]'''
         return self.specifications['T']
     @T.setter
     def T(self, T):
+        r'''Set the temperature of the stream specification [K]'''
         s = self.specifications
         if T is None:
             s['T'] = T
             return None
         if s['T'] is None and self.state_specified:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         s['T'] = T
 
     @property
     def T_calc(self):
+        r'''Temperature of the stream; specified or calculated if enough information is available [K]'''
         T = self.specifications['T']
         if T is not None:
             return T
@@ -310,6 +446,7 @@ class StreamArgs:
 
     @property
     def P_calc(self):
+        r'''Pressure of the stream; specified or calculated if enough information is available [Pa]'''
         P = self.specifications['P']
         if P is not None:
             return P
@@ -320,6 +457,7 @@ class StreamArgs:
 
     @property
     def VF_calc(self):
+        r'''Vapor fraction of the stream; specified or calculated if enough information is available [-]'''
         VF = self.specifications['VF']
         if VF is not None:
             return VF
@@ -330,80 +468,93 @@ class StreamArgs:
 
     @property
     def P(self):
+        r'''Pressure of the stream specification if specified [Pa]'''
         return self.specifications['P']
     @P.setter
     def P(self, P):
+        r'''Set the pressure of the stream specification [Pa]'''
         s = self.specifications
         if P is None:
             s['P'] = None
             return None
         if s['P'] is None and self.state_specified:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         s['P'] = P
 
     @property
     def V(self):
+        r'''Molar volume of the stream specification if specified [m^3/mol]'''
         return self.specifications['V']
     @V.setter
     def V(self, V):
+        r'''Set the molar volume of the stream specification [m^3/mol]'''
         if V is None:
             self.specifications['V'] = V
             return None
         if self.state_specified and self.V is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['V'] = V
 
     @property
     def rho(self):
+        r'''Molar density of the stream specification if specified [mol/m^3]'''
         return self.specifications['rho']
     @rho.setter
     def rho(self, rho):
+        r'''Set the molar density of the stream specification [m^3/mol]'''
         if rho is None:
             self.specifications['rho'] = rho
             return None
         if self.state_specified and self.rho is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['rho'] = rho
 
     @property
     def rho_mass(self):
+        r'''Mass density of the stream specification if specified [kg/m^3]'''
         return self.specifications['rho_mass']
     @rho_mass.setter
     def rho_mass(self, rho_mass):
+        r'''Set the mass density of the stream specification [kg/m^3]'''
         if rho_mass is None:
             self.specifications['rho_mass'] = rho_mass
             return None
         if self.state_specified and self.rho_mass is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['rho_mass'] = rho_mass
 
     @property
     def VF(self):
+        r'''Vapor fraction of the stream specification if specified [-]'''
         return self.specifications['VF']
     @VF.setter
     def VF(self, VF):
+        r'''Set the vapor fraction of the stream specification [-]'''
         if VF is None:
             self.specifications['VF'] = VF
             return None
         if self.state_specified and self.VF is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['VF'] = VF
 
     @property
     def H(self):
+        r'''Molar enthalpy of the stream specification if specified [J/mol]'''
         return self.specifications['H']
 
     @H.setter
     def H(self, H):
+        r'''Set the molar enthalpy of the stream specification [J/mol]'''
         if H is None:
             self.specifications['H'] = H
             return None
         if self.state_specified and self.H is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['H'] = H
 
     @property
     def H_calc(self):
+        r'''Molar enthalpy of the stream; specified or calculated if enough information is available [J/mol]'''
         H = self.specifications['H']
         if H is not None:
             return H
@@ -413,7 +564,22 @@ class StreamArgs:
             return None
 
     @property
+    def H_reactive(self):
+        r'''Molar reactive enthalpy of the stream specification if specified [J/mol]'''
+        return self.specifications['H_reactive']
+    @H_reactive.setter
+    def H_reactive(self, H_reactive):
+        r'''Set the molar reactive enthalpy of the stream specification [J/mol]'''
+        if H_reactive is None:
+            self.specifications['H_reactive'] = H_reactive
+            return None
+        if self.state_specified and self.H_reactive is None:
+            raise ValueError('Two state vars already specified; unset another first')
+        self.specifications['H_reactive'] = H_reactive
+
+    @property
     def H_reactive_calc(self):
+        r'''Molar reactive enthalpy of the stream; specified or calculated if enough information is available [J/mol]'''
         H_reactive = self.specifications['H_reactive']
         if H_reactive is not None:
             return H_reactive
@@ -424,18 +590,21 @@ class StreamArgs:
 
     @property
     def H_mass(self):
+        r'''Mass enthalpy of the stream specification if specified [J/kg]'''
         return self.specifications['H_mass']
     @H_mass.setter
     def H_mass(self, H_mass):
+        r'''Set the mass enthalpy of the stream specification [J/kg]'''
         if H_mass is None:
             self.specifications['H_mass'] = H_mass
             return None
-        if self.specified_state_vars > 1 and self.H_mass is None:
-            raise Exception('Two state vars already specified; unset another first')
+        if self.specified_state_vars > 1 and self.specifications['H_mass'] is None:
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['H_mass'] = H_mass
 
     @property
     def H_mass_calc(self):
+        r'''Mass enthalpy of the stream; specified or calculated if enough information is available [J/kg]'''
         H_mass = self.specifications['H_mass']
         if H_mass is not None:
             return H_mass
@@ -446,124 +615,133 @@ class StreamArgs:
 
     @property
     def U(self):
+        r'''Molar internal energy of the stream specification if specified [J/mol]'''
         return self.specifications['U']
     @U.setter
     def U(self, U):
+        r'''Set the molar internal energy of the stream specification [J/mol]'''
         if U is None:
             self.specifications['U'] = U
             return None
         if self.state_specified and self.U is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['U'] = U
 
     @property
     def U_mass(self):
+        r'''Mass internal energy of the stream specification if specified [J/kg]'''
         return self.specifications['U_mass']
     @U_mass.setter
     def U_mass(self, U_mass):
+        r'''Set the mass internal energy of the stream specification [J/kg]'''
         if U_mass is None:
             self.specifications['U_mass'] = U_mass
             return None
         if self.specified_state_vars > 1 and self.U_mass is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['U_mass'] = U_mass
 
     @property
     def G(self):
+        r'''Molar Gibbs free energy of the stream specification if specified [J/mol]'''
         return self.specifications['G']
     @G.setter
     def G(self, G):
+        r'''Set the molar Gibbs free energy of the stream specification [J/mol]'''
         if G is None:
             self.specifications['G'] = G
             return None
         if self.state_specified and self.G is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['G'] = G
 
     @property
     def G_mass(self):
+        r'''Mass Gibbs free energy of the stream specification if specified [J/kg]'''
         return self.specifications['G_mass']
     @G_mass.setter
     def G_mass(self, G_mass):
+        r'''Set the mass Gibbs free energy of the stream specification [J/kg]'''
         if G_mass is None:
             self.specifications['G_mass'] = G_mass
             return None
         if self.specified_state_vars > 1 and self.G_mass is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['G_mass'] = G_mass
 
     @property
     def A(self):
+        r'''Molar Hemholtz free energy of the stream specification if specified [J/mol]'''
         return self.specifications['A']
     @A.setter
     def A(self, A):
+        r'''Set the molar Hemholtz free energy of the stream specification [J/mol]'''
         if A is None:
             self.specifications['A'] = A
             return None
         if self.state_specified and self.A is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['A'] = A
 
     @property
     def A_mass(self):
+        r'''Mass Hemholtz free energy of the stream specification if specified [J/kg]'''
         return self.specifications['A_mass']
     @A_mass.setter
     def A_mass(self, A_mass):
+        r'''Set the mass Hemholtz free energy of the stream specification [J/kg]'''
         if A_mass is None:
             self.specifications['A_mass'] = A_mass
             return None
         if self.specified_state_vars > 1 and self.A_mass is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['A_mass'] = A_mass
 
     @property
     def S(self):
+        r'''Molar entropy of the stream specification if specified [J/(mol*K)]'''
         return self.specifications['S']
     @S.setter
     def S(self, S):
+        r'''Set the molar entropy of the stream specification [J/(mol*K)]'''
         if S is None:
             self.specifications['S'] = S
             return None
         if self.specified_state_vars > 1 and self.S is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['S'] = S
 
     @property
     def S_mass(self):
+        r'''Mass entropy of the stream specification if specified [J/(kg*K)]'''
         return self.specifications['S_mass']
     @S_mass.setter
     def S_mass(self, S_mass):
+        r'''Set the mass entropy of the stream specification [J/(kg*K)]'''
         if S_mass is None:
             self.specifications['S_mass'] = S_mass
             return None
         if self.specified_state_vars > 1 and self.S_mass is None:
-            raise Exception('Two state vars already specified; unset another first')
+            raise ValueError('Two state vars already specified; unset another first')
         self.specifications['S_mass'] = S_mass
 
     @property
-    def H_reactive(self):
-        return self.specifications['H_reactive']
-    @H_reactive.setter
-    def H_reactive(self, H_reactive):
-        if H_reactive is None:
-            self.specifications['H_reactive'] = H_reactive
-            return None
-        if self.state_specified and self.H_reactive is None:
-            raise Exception('Two state vars already specified; unset another first')
-        self.specifications['H_reactive'] = H_reactive
-    @property
     def zs(self):
+        r'''Mole fractions of the stream if specified [-]'''
         return self.specifications['zs']
     @zs.setter
     def zs(self, arg):
+        r'''Set the mole fractions of the stream [-]'''
         s = self.specifications
         if arg is None:
             s['zs'] = arg
         else:
-            # enforce a length
-            if not arg:
+            if not arg: # force empty list to None
                 arg = None
-            if self.single_composition_basis:
+            if not self.multiple_composition_basis:
+                composition_spec = self.composition_spec
+                if composition_spec is not None and composition_spec[0] != 'zs':
+                    raise ValueError('Another composition spec already specified; unset another first')
                 s['zs'] = arg
                 s['ws'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = None
             else:
@@ -571,13 +749,12 @@ class StreamArgs:
 
     @property
     def zs_calc(self):
-        '''
-        '''
+        r'''Mole fractions of the stream; specified or calculated if enough information is available [-]'''
         # This forms the basis for the calculations
         s = self.specifications
         zs = s['zs']
         if zs is not None:
-            if self.single_composition_basis:
+            if not self.multiple_composition_basis:
                 return zs
             else:
                 if None not in zs:
@@ -585,7 +762,7 @@ class StreamArgs:
                 return None
         ns = s['ns']
         if ns is not None:
-            if self.single_composition_basis:
+            if not self.multiple_composition_basis:
                 return normalize(ns)
 
         ws = s['ws']
@@ -620,30 +797,34 @@ class StreamArgs:
         Qgs = s['Qgs']
         if Qgs is not None and None not in Qgs:
             return normalize(Qgs)
-
-
         return None
 
     @property
     def ws(self):
+        r'''Mass fractions of the stream if specified [-]'''
         return self.specifications['ws']
     @ws.setter
     def ws(self, arg):
+        r'''Set the mass fractions of the stream [-]'''
+        s = self.specifications
         if arg is None:
-            self.specifications['ws'] = arg
+            s['ws'] = arg
         else:
             # enforce a length
             if not arg:
                 arg = None
-            if self.single_composition_basis:
-                args = {'zs': None, 'ws': arg, 'Vfls': None, 'Vfgs': None, 'ns': None,
-                        'ms': None, 'Qls': None, 'Qgs': None}
-                self.specifications.update(args)
+            if not self.multiple_composition_basis:
+                composition_spec = self.composition_spec
+                if composition_spec is not None and composition_spec[0] != 'ws':
+                    raise ValueError('Another composition spec already specified; unset another first')
+                s['ws'] = arg
+                s['zs'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = None
             else:
-                self.specifications['ws'] = arg
+                s['ws'] = arg
 
     @property
     def ws_calc(self):
+        r'''Mass fractions of the stream; specified or calculated if enough information is available [-]'''
         ws = self.specifications['ws']
         if ws is not None:
             return ws
@@ -654,25 +835,31 @@ class StreamArgs:
 
     @property
     def Vfls(self):
+        r'''Liquid volume fractions of the stream if specified [-]'''
         return self.specifications['Vfls']
     @Vfls.setter
     def Vfls(self, arg):
+        r'''Set the liquid volume fractions of the stream [-]'''
+        s = self.specifications
         if arg is None:
-            self.specifications['Vfls'] = arg
+            s['Vfls'] = arg
         else:
             # enforce a length
             if not arg:
                 arg = None
-            if self.single_composition_basis:
-                args = {'zs': None, 'ws': None, 'Vfls': arg, 'Vfgs': None, 'ns': None,
-                        'ms': None, 'Qls': None, 'Qgs': None}
-                self.specifications.update(args)
+            if not self.multiple_composition_basis:
+                composition_spec = self.composition_spec
+                if composition_spec is not None and composition_spec[0] != 'Vfls':
+                    raise ValueError('Another composition spec already specified; unset another first')
+                s['Vfls'] = arg
+                s['zs'] = s['ws'] = s['Vfgs'] = s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = None
             else:
-                self.specifications['Vfls'] = arg
+                s['Vfls'] = arg
 
 
     @property
     def Vfls_calc(self):
+        r'''Liquid volume fractions of the stream; specified or calculated if enough information is available [-]'''
         Vfls = self.specifications['Vfls']
         if Vfls is not None:
             return Vfls
@@ -684,31 +871,42 @@ class StreamArgs:
 
     @property
     def Vfgs(self):
+        r'''Gas volume fractions of the stream if specified [-]'''
         return self.specifications['Vfgs']
     @Vfgs.setter
     def Vfgs(self, arg):
+        r'''Set the gas volume fractions of the stream [-]'''
+        s = self.specifications
         if arg is None:
-            self.specifications['Vfgs'] = arg
+            s['Vfgs'] = arg
         else:
             # enforce a length
             if not arg:
                 arg = None
-            if self.single_composition_basis:
-                args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': arg, 'ns': None,
-                        'ms': None, 'Qls': None, 'Qgs': None}
-                self.specifications.update(args)
+            if not self.multiple_composition_basis:
+                composition_spec = self.composition_spec
+                if composition_spec is not None and composition_spec[0] != 'Vfgs':
+                    raise ValueError('Another composition spec already specified; unset another first')
+                s['Vfgs'] = arg
+                s['zs'] = s['ws'] = s['Vfls'] = s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = None
             else:
-                self.specifications['Vfgs'] = arg
+                s['Vfgs'] = arg
     @property
     def ns(self):
+        r'''Mole flows of the stream if specified [mol/s]'''
         return self.specifications['ns']
+    
     @ns.setter
     def ns(self, arg):
+        r'''Set the mole flows of the stream [mol/s]'''
         s = self.specifications
         if arg is None:
             s['ns'] = arg
         else:
-            if self.single_composition_basis:
+            # enforce a length
+            if not arg:
+                arg = None
+            if not self.multiple_composition_basis:
                 s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ms'] = s['Qls'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = s['Qg'] = None
                 s['ns'] = arg
             else:
@@ -716,10 +914,11 @@ class StreamArgs:
 
     @property
     def ns_calc(self):
+        r'''Mole flows of the stream; specified or calculated if enough information is available [mol/s]'''
         s = self.specifications
         ns = s['ns']
         if ns is not None:
-            if self.single_composition_basis:
+            if not self.multiple_composition_basis:
                 return ns
             else:
                 if None not in ns:
@@ -795,14 +994,16 @@ class StreamArgs:
 
     @property
     def ms(self):
+        r'''Mass flows of the stream if specified [kg/s]'''
         return self.specifications['ms']
     @ms.setter
     def ms(self, arg):
+        r'''Set the mass flows of the stream [kg/s]'''
         s = self.specifications
         if arg is None:
             s['ms'] = arg
         else:
-            if self.single_composition_basis:
+            if not self.multiple_composition_basis:
                 s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ns'] = s['Qls'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = s['Qg'] = None
                 s['ms'] = arg
             else:
@@ -810,6 +1011,7 @@ class StreamArgs:
 
     @property
     def ms_calc(self):
+        r'''Mass flows of the stream; specified or calculated if enough information is available [kg/s]'''
         ns = self.ns_calc
         if ns is not None:
             zs = self.zs_calc
@@ -823,14 +1025,16 @@ class StreamArgs:
 
     @property
     def Qls(self):
+        r'''Standard liquid volume flows of the stream if specified [m^3/s]'''
         return self.specifications['Qls']
     @Qls.setter
     def Qls(self, arg):
+        r'''Set the standard liquid volume flows of the stream [m^3/s]'''
         s = self.specifications
         if arg is None:
             s['Qls'] = arg
         else:
-            if self.single_composition_basis:
+            if not self.multiple_composition_basis:
                 s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ms'] = s['ns'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = s['Qg'] = None
                 s['Qls'] = arg
             else:
@@ -838,6 +1042,7 @@ class StreamArgs:
 
     @property
     def Qls_calc(self):
+        r'''Standard liquid volume flows of the stream; specified or calculated if enough information is available [m^3/s]'''
         ns_calc = self.ns_calc
         if ns_calc is not None:
             Vms = self.flasher.V_liquids_ref()
@@ -846,13 +1051,15 @@ class StreamArgs:
 
     @property
     def Qgs(self):
+        r'''Standard gas volume flows of the stream if specified [m^3/s]'''
         return self.specifications['Qgs']
     @Qgs.setter
     def Qgs(self, arg):
+        r'''Set the standard gas volume flows of the stream [m^3/s]'''
         if arg is None:
             self.specifications['Qgs'] = arg
         else:
-            if self.single_composition_basis:
+            if not self.multiple_composition_basis:
                 args = {'zs': None, 'ws': None, 'Vfls': None, 'Vfgs': None,
                         'ns': None, 'ms': None, 'Qls': None, 'Qgs': arg,
                         'n': None, 'm': None, 'Q': None, 'Ql': None, 'Qg': None}
@@ -862,6 +1069,7 @@ class StreamArgs:
 
     @property
     def Qgs_calc(self):
+        r'''Standard gas volume flows of the stream; specified or calculated if enough information is available [m^3/s]'''
         ns_calc = self.ns_calc
         if ns_calc is not None:
             flasher = self.flasher
@@ -871,18 +1079,24 @@ class StreamArgs:
 
     @property
     def m(self):
+        r'''Mass flow of the stream if specified [kg/s]'''
         return self.specifications['m']
     @m.setter
     def m(self, arg):
+        r'''Set the mass flow of the stream [kg/s]'''
+        s = self.specifications
         if arg is None:
-            self.specifications['m'] = arg
+            s['m'] = arg
         else:
-            args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                    'n': None, 'm': arg, 'Q': None, 'Ql': None, 'Qg': None}
-            self.specifications.update(args)
+            flow_spec = self.flow_spec
+            if flow_spec is not None and flow_spec[0] != 'm':
+                raise ValueError('Another flow spec already specified; unset another first')
+            s['Qls'] = s['ms'] = s['ns'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = s['Qg'] = None
+            s['m'] = arg
 
     @property
     def m_calc(self):
+        r'''Mass flow of the stream; specified or calculated if enough information is available [kg/s]'''
         m = self.specifications['m']
         if m is not None:
             return m
@@ -896,18 +1110,24 @@ class StreamArgs:
 
     @property
     def n(self):
+        r'''Mole flow of the stream if specified [mol/s]'''
         return self.specifications['n']
     @n.setter
     def n(self, arg):
+        r'''Set the mole flow of the stream [mol/s]'''
         s = self.specifications
         if arg is None:
-            s['n'] = None
-        else:
             s['n'] = arg
-            s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = s['m'] = s['Q'] = s['Ql'] = s['Qg'] = None
+        else:
+            flow_spec = self.flow_spec
+            if flow_spec is not None and flow_spec[0] != 'n':
+                raise ValueError('Another flow spec already specified; unset another first')
+            s['Qls'] = s['ms'] = s['ns'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = s['Qg'] = None
+            s['n'] = arg
 
     @property
     def n_calc(self):
+        r'''Mole flow of the stream; specified or calculated if enough information is available [mol/s]'''
         s = self.specifications
         n = s['n']
         if n is not None:
@@ -924,18 +1144,24 @@ class StreamArgs:
 
     @property
     def Ql(self):
+        r'''Standard liquid volume flow of the stream if specified [m^3/s]'''
         return self.specifications['Ql']
     @Ql.setter
     def Ql(self, arg):
+        r'''Set the standard liquid volume flow of the stream [m^3/s]'''
+        s = self.specifications
         if arg is None:
-            self.specifications['Ql'] = arg
+            s['Ql'] = arg
         else:
-            args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                    'n': None, 'Ql': arg, 'Q': None, 'Qg': None, 'm': None}
-            self.specifications.update(args)
+            flow_spec = self.flow_spec
+            if flow_spec is not None and flow_spec[0] != 'Ql':
+                raise ValueError('Another flow spec already specified; unset another first')
+            s['Qls'] = s['ms'] = s['ns'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = s['Qg'] = None
+            s['Ql'] = arg
 
     @property
     def Ql_calc(self):
+        r'''Standard liquid volume flow of the stream; specified or calculated if enough information is available [m^3/s]'''
         Ql = self.specifications['Ql']
         if Ql is not None:
             return Ql
@@ -949,18 +1175,24 @@ class StreamArgs:
 
     @property
     def Qg(self):
+        r'''Standard gas volume flow of the stream if specified [m^3/s]'''
         return self.specifications['Qg']
     @Qg.setter
     def Qg(self, arg):
+        r'''Set the standard gas volume flow of the stream [m^3/s]'''
+        s = self.specifications
         if arg is None:
-            self.specifications['Qg'] = arg
+            s['Qg'] = arg
         else:
-            args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                    'n': None, 'Qg': arg, 'Q': None, 'Ql': None, 'm': None}
-            self.specifications.update(args)
+            flow_spec = self.flow_spec
+            if flow_spec is not None and flow_spec[0] != 'Qg':
+                raise ValueError('Another flow spec already specified; unset another first')
+            s['Qls'] = s['ms'] = s['ns'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = s['Qg'] = None
+            s['Qg'] = arg
 
     @property
     def Qg_calc(self):
+        r'''Standard gas volume flow of the stream; specified or calculated if enough information is available [m^3/s]'''
         Qg = self.specifications['Qg']
         if Qg is not None:
             return Qg
@@ -973,7 +1205,25 @@ class StreamArgs:
         return None
 
     @property
+    def Q(self):
+        r'''Actual volume flow of the stream if specified [m^3/s]'''
+        return self.specifications['Q']
+    @Q.setter
+    def Q(self, arg):
+        r'''Set the actual volume flow of the stream [m^3/s]'''
+        s = self.specifications
+        if arg is None:
+            s['Q'] = arg
+        else:
+            flow_spec = self.flow_spec
+            if flow_spec is not None and flow_spec[0] != 'Q':
+                raise ValueError('Another flow spec already specified; unset another first')
+            s['Qls'] = s['ms'] = s['ns'] = s['Qgs'] = s['n'] = s['m'] = s['Q'] = s['Ql'] = s['Qg'] = None
+            s['Q'] = arg
+
+    @property
     def MW(self):
+        r'''Molecular weight of the stream; calculated if enough information is available [g/mol]'''
         try:
             MWs = self.flasher.constants.MWs
             zs = self.zs_calc
@@ -984,6 +1234,7 @@ class StreamArgs:
 
     @property
     def energy_calc(self):
+        r'''Energy flow of the stream; specified or calculated if enough information is available [W]'''
         s = self.specifications
         # Try to get H from energy, or a molar specification
         Q = s['energy']
@@ -1022,21 +1273,8 @@ class StreamArgs:
 
     @property
     def energy_reactive_calc(self):
+        r'''Energy flow of the stream; specified or calculated if enough information is available [W]'''
         return self.specifications['energy_reactive']
-
-
-
-    @property
-    def Q(self):
-        return self.specifications['Q']
-    @Q.setter
-    def Q(self, arg):
-        if arg is None:
-            self.specifications['Q'] = arg
-        else:
-            args = {'ns': None, 'ms': None, 'Qls': None, 'Qgs': None,
-                    'n': None, 'm': None, 'Q': arg, 'Ql': None, 'Qg': None}
-            self.specifications.update(args)
 
 
     def __repr__(self):
@@ -1049,6 +1287,45 @@ class StreamArgs:
         return s
 
     def reconcile_flows(self, n_tol=2e-15, m_tol=2e-15):
+        """Evaluate the flow specifications provided to the StreamArgs instance 
+        in the event the original inputs are overspecified, in the assumption that
+        the inputs are internally consistent. If they are not consistent to the
+        tolerances of this function, the :obj:`StreamArgs` instance will raise an
+        error.
+
+        Examples this function can check are both `ms` and `m` provided, 
+        or `ms` with one missing value and `m` provided (`ms` will be modified
+        with the calculated value of the previously missing flow), if both
+        `ms` and `ns` are set but with only some values in `ms` and some in `ns`
+        (the spec will be set as `ns` and calculate as many values as possible),
+        and the rather absurd case of specifying various inputs of `zs`, `ns`, and `ws`
+        and expecting the software to make sense of it. Obviously if no `flasher`
+        is available with molecular weights the number of checks that can be performed
+        are limited.
+
+        Parameters
+        ----------
+        n_tol : float, optional
+            The tolerance for checking the consistency of mole flow rates.
+            Default is 2e-15.
+        m_tol : float, optional
+            The tolerance for checking the consistency of mass flow rates.
+            Default is 2e-15.
+
+
+        Examples
+        --------
+        >>> stream = StreamArgs(ns=[1.0, None], n=6.0)
+        >>> stream.ns
+        [1.0, 5.0]
+
+        >>> stream = StreamArgs(ms=[4.0, None], m=10.0)
+        >>> stream.ms
+        [4.0, 6.0]
+
+        Notes
+        -----
+        """
         s = self.specifications
         n, m, Q = s['n'], s['m'], s['Q']
         if n is not None:
@@ -1119,9 +1396,28 @@ class StreamArgs:
                 return False
 
 
+    def clear_composition_spec(self):
+        '''Removes any composition specification(s) that are set, otherwise
+        does nothing.
+
+        >>> S = StreamArgs(T=400, H=500, ws=[.3, .7])
+        >>> S.clear_composition_spec()
+        >>> S.ws
+        '''
+        s = self.specifications
+        s['ns'] = s['zs'] = s['ws'] = s['Vfls'] = s['Vfgs'] = s['ms'] = s['Qls'] = s['Qgs'] = None
 
     @property
     def composition_spec(self):
+        '''Composition specification if one has been set, as a tuples
+        of ('specification_name', specification_value); otherwise None.
+
+        >>> StreamArgs(T=400, H=500, ws=[.3, .7]).composition_spec
+        ('ws', [0.3, 0.7])
+        >>> StreamArgs(T=400, H=500).composition_spec
+        >>> StreamArgs(T=400, H=500, Qls=[300.0, 1200.0]).composition_spec
+        ('Qls', [300.0, 1200.0])
+        '''
         s = self.specifications
         if s['zs'] is not None:
             return 'zs', s['zs']
@@ -1142,8 +1438,8 @@ class StreamArgs:
 
     @property
     def clean(self):
-        '''If no variables have been specified, return True,
-        otherwise return False.
+        '''If no variables have been specified, True,
+        otherwis False.
         '''
         if self.composition_specified or self.state_specs or self.flow_specified:
             return False
@@ -1152,6 +1448,11 @@ class StreamArgs:
 
     @property
     def composition_specified(self):
+        '''True if a composition for the stream has been defined.
+        If component flow rates are the specification, requires all of them to be specified.
+        If `zs` or `ws` or Vfls` or `Vfgs` is set, also requires all of them to be specified
+        and additionally them not to be an empty list.
+        '''
         s = self.specifications
         if s['zs'] is not None and None not in s['zs'] and sum(s['zs']) != 0.0:
             return True
@@ -1171,8 +1472,33 @@ class StreamArgs:
             return True
         return False
 
+    def clear_state_specs(self):
+        '''Removes any state specification(s) that are set, otherwise
+        does nothing. Composition is not considered a state spec in
+        this class.
+
+        >>> S = StreamArgs(T=400, H=500, ws=[.3, .7])
+        >>> S.clear_state_specs()
+        >>> S.T
+        >>> S.H
+        '''
+        s = self.specifications
+        for v in ('T', 'P', 'V', 'rho', 'rho_mass',
+                'VF', 'H_mass', 'H', 'S_mass', 'S',
+                'U_mass', 'U', 'A_mass', 'A', 'G_mass', 'G',
+                'energy', 'energy_reactive'):
+            s[v] = None
+
     @property
     def state_specs(self):
+        '''List of state specifications which have been set, as tuples
+        of ('specification_name', specification_value). Energy is 
+        included regardless of whether it is being used as a state
+        specification.
+
+        >>> StreamArgs(T=400, H=500).state_specs
+        [('T', 400), ('H', 500)]
+        '''
         s = self.specifications
         specs = []
         if s['T'] is not None:
@@ -1211,19 +1537,30 @@ class StreamArgs:
             specs.append(('energy', s['energy']))
         if s['energy_reactive'] is not None:
             specs.append(('energy_reactive', s['energy_reactive']))
-#        for var in ('T', 'P', 'VF', 'Hm', 'H', 'Sm', 'S', 'energy'):
-#            v = getattr(self, var)
-#            if v is not None:
-#                specs.append((var, v))
         return specs
 
     @property
     def non_pressure_state_specs(self):
+        '''List of state specifications which have been set, as tuples
+        of ('specification_name', specification_value), excluding pressure. 
+        Energy is included regardless of whether it is being used as a state
+        specification.
+
+        >>> StreamArgs(T=400, P=1e5, n=4).non_pressure_state_specs
+        [('T', 400)]
+        '''
         specs = self.state_specs
         return [(s, v) for s, v in specs if s != 'P']
 
     @property
     def specified_state_vars(self):
+        '''Number of state specifications which have been set.
+        Energy is included regardless of whether it is being used as a state
+        specification.
+
+        >>> StreamArgs(T=400, P=1e5, n=4).specified_state_vars
+        2
+        '''
         # Slightly faster
         s = self.specifications
         return sum(s[i] is not None for i in ('T', 'P', 'V', 'rho', 'rho_mass',
@@ -1234,8 +1571,16 @@ class StreamArgs:
 
     @property
     def state_specified(self):
-        s = self.specifications
+        '''Whether or not the state has been fully specified.
+        Energy is included regardless of whether it is being used as a state
+        specification.
 
+        >>> StreamArgs(T=400, P=1e5, n=4).state_specified
+        True
+        >>> StreamArgs(P=1e5, n=4).state_specified
+        False
+        '''
+        s = self.specifications
         state_vars = 0
         if s['T'] is not None:
             state_vars += 1
@@ -1281,6 +1626,18 @@ class StreamArgs:
 
     @property
     def non_pressure_spec_specified(self):
+        '''Whether there is at least one state specification excluding a pressure
+        specification. 
+        Energy is included regardless of whether it is being used as a state
+        specification.
+
+        >>> StreamArgs(T=400, P=1e5, n=4).non_pressure_spec_specified
+        True
+        >>> StreamArgs(S=400.0, VF=.3, n=4).non_pressure_spec_specified
+        True
+        >>> StreamArgs(P=1e5, n=4).non_pressure_spec_specified
+        False
+        '''
         state_vars = (i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass,
                                               self.H_mass, self.H, self.S_mass, self.S,
                                               self.U_mass, self.U, self.A_mass, self.A, self.G_mass, self.G,
@@ -1289,8 +1646,29 @@ class StreamArgs:
             return True
         return False
 
+
+    def clear_flow_spec(self):
+        '''Removes any flow specification(s) that are set, otherwise
+        does nothing. This will also remove the composition spec
+        if it is coming from `ns`, `ms`, `Qls`, or `Qgs`.
+
+        >>> S = StreamArgs(T=400, H=500, ns=[30, 70])
+        >>> S.clear_flow_spec()
+        >>> S.ns
+        '''
+        s = self.specifications
+        s['ns'] = s['ms'] = s['Qls'] = s['Qgs'] = s['m'] = s['n'] = s['Q'] = s['Ql'] = s['Qg'] = None
+
     @property
     def flow_spec(self):
+        '''Flow specification if one has been set, as a tuples
+        of ('specification_name', specification_value); otherwise None.
+        Energy is never included in this.
+
+        >>> StreamArgs(T=400, H=500, n=1234).flow_spec
+        ('n', 1234)
+        >>> StreamArgs(T=400, H=500).flow_spec
+        '''
         s = self.specifications
         if s['ns'] is not None:
             return ('ns', s['ns'])
@@ -1312,18 +1690,31 @@ class StreamArgs:
             return ('Qg', s['Qg'])
 #
 #        # TODO consider energy?
-#        specs = []
-#        for var in ('ns', 'ms', 'Qls', 'Qgs', 'm', 'n', 'Q'):
-#            v = getattr(self, var)
-#            if v is not None:
-#                return var, v
 
     @property
     def specified_flow_vars(self):
+        '''Number of flow specifications which have been set.
+        Energy is never included regardless of whether it is being used as a flow
+        specification.
+
+        >>> StreamArgs(T=400, P=1e5, n=4).specified_flow_vars
+        1
+        >>> StreamArgs(T=400, P=1e5).specified_flow_vars
+        0
+        '''
         return sum(i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q, self.Ql, self.Qg))
 
     @property
     def flow_specified(self):
+        '''Whether or not the flow has been specified.
+        Energy is never included regardless of whether it is being used as a flow
+        specification.
+
+        >>> StreamArgs(T=400, P=1e5, n=4).flow_specified
+        True
+        >>> StreamArgs(T=400, P=1e5).flow_specified
+        False
+        '''
         s = self.specifications
         if s['ns'] is not None:
             return True
@@ -1344,30 +1735,82 @@ class StreamArgs:
         if s['Qg'] is not None:
             return True
         return False
-#        flow_vars = (i is not None for i in (self.ns, self.ms, self.Qls, self.Qgs, self.m, self.n, self.Q))
-#        if sum(flow_vars) == 1:
-#            return True
-#        return False
 
     def update(self, **kwargs):
-        for key, value in kwargs:
+        """Update the specifications of the StreamArgs instance with new values provided as keyword arguments.
+
+        Parameters
+        ----------
+        kwargs : dict
+            Key-value pairs of specification names and values, [various]
+
+        Examples
+        --------
+        >>> stream = StreamArgs(T=300, P=101325)
+        >>> stream.update(T=350, P=105000)
+        >>> stream.T
+        350
+        >>> stream.P
+        105000
+
+        >>> stream = StreamArgs(S=100, P=101325)
+        >>> stream.update(S=None, P=95000, H=5)
+        >>> (stream.S, stream.P, stream.H)
+        (None, 95000, 5)
+
+        >>> stream = StreamArgs(zs=[0.2, 0.8])
+        >>> stream.update(zs=None, ws=[0.15, 0.85])
+        >>> (stream.zs, stream.ws)
+        (None, [0.15, 0.85])
+
+        Notes
+        -----
+        This can be convinient when creating a dictionary of specifications and setting them all at once
+        """
+        for key, value in kwargs.items():
             setattr(self, key, value)
+    
+    def stream(self, existing_flash=None, hot_start=None):
+        r'''Create and return an EquilibriumStream object using the set specifications.
+        If `existing_flash` is provided, that :obj:`EquilibriumState` object will be used
+        as the state specifications without checking that it contains the same specs as set
+         to this object. If insufficient information is available, return None.
 
-    def flash(self, hot_start=None, existing_flash=None):
-#        if self.flow_specified and self.composition_specified and self.state_specified:
-        s = self.specifications
-        if existing_flash is None:
-            existing_flash = self.flash_state(hot_start)
-        return EquilibriumStream(self.flasher, hot_start=hot_start,
-                                 existing_flash=existing_flash, **s)
-
-    @property
-    def stream(self):
-        if self.flow_specified and self.composition_specified and self.state_specified:
-            s = self.specifications.copy()
-            return EquilibriumStream(self.flasher, **s)
+        Parameters
+        ----------
+        existing_flash : EquilibriumState, optional
+            Existing flash which will be used instead of the composition and 
+            state specs of this object [-]
+        hot_start : EquilibriumState, optional
+            Flash at nearby conditions that may be used to initialize the flash [-]
+        
+        Returns
+        -------
+        stream : EquilibriumStream
+            Created stream, [-]
+        '''
+        if self.flow_specified:
+            s = self.specifications
+            if existing_flash is None:
+                existing_flash = self.flash_state(hot_start)
+            if existing_flash is not None:
+                return EquilibriumStream(self.flasher, hot_start=hot_start,
+                                        existing_flash=existing_flash, **s)
 
     def flash_state(self, hot_start=None):
+        r'''Create and return an EquilibriumState object using the set specifications.
+        If insufficient information is available, return None.
+
+        Parameters
+        ----------
+        hot_start : EquilibriumState, optional
+            Flash at nearby conditions that may be used to initialize the flash [-]
+        
+        Returns
+        -------
+        flash : EquilibriumState
+            Created equilibrium state, [-]
+        '''
         if self.composition_specified and self.state_specified:
             s = self.specifications
             # Flash call only takes `zs`
@@ -1432,7 +1875,7 @@ class StreamArgs:
                            s['V'], s['rho'], s['rho_mass'], tuple(zs))
             if state_cache == self._state_cache:
                 try:
-                    return self._mixture
+                    return self._flash
                 except:
                     pass
 
@@ -1444,11 +1887,14 @@ class StreamArgs:
                                             V=s['V'], rho=s['rho'], rho_mass=s['rho_mass'],
                                             H_reactive=H_reactive,
                                             VF=VF, hot_start=hot_start)
-            self._mixture = m
+            self._flash = m
             self._state_cache = state_cache
             return m
 
     def value(self, name):
+        r'''Wrapper around getattr that obtains a property specified. This method
+        exists to unify e.g. H() on a EquilibriumState with H here which is a property.
+        Either object can simply be called obj.value("H"). [various]'''
         v = getattr(self, name)
         try:
             v = v()
@@ -2134,7 +2580,8 @@ class EquilibriumStream(EquilibriumState):
     __full_path__ = f"{__module__}.{__qualname__}"
 
     def __repr__(self):
-        s = '%s(n=%s, ' %(self.__class__.__name__, self.n)
+        flow_spec, flow_spec_val = self.flow_spec
+        s = '%s(%s=%s, ' %(self.__class__.__name__, flow_spec, flow_spec_val)
         s += 'flasher=flasher'
         s += ', existing_flash=%s' %EquilibriumState.__repr__(self).replace('EquilibriumStream', 'EquilibriumState')
         s += ')'
@@ -2144,6 +2591,10 @@ class EquilibriumStream(EquilibriumState):
         s = '<EquilibriumStream, T=%.4f, P=%.4f, zs=%s, betas=%s, mass flow=%s kg/s, mole flow=%s mol/s, phases=%s>'
         s = s %(self.T, self.P, self.zs, self.betas, self.m, self.n, self.phases)
         return s
+
+    def __hash__(self):
+        # Same as EquilibriumState but with ns
+        return hash_any_primitive([self.phases, self.betas, self.gas_count, self.liquid_count, self.solid_count, self.settings, self.flasher, self.ns])
 
     def __copy__(self):
         # immutable
@@ -2166,7 +2617,8 @@ class EquilibriumStream(EquilibriumState):
                  Vf_TP=None, Q_TP=None, hot_start=None,
                  existing_flash=None, spec_fun=None):
 
-        constants = flasher.constants
+        self.constants = constants = flasher.constants
+        self.correlations = flasher.correlations
 
         # Composition information
         composition_option_count = 0
@@ -2200,11 +2652,11 @@ class EquilibriumStream(EquilibriumState):
                 composition_option_count += 1
                 self.composition_spec = ('zs', zs)
             else:
-                raise Exception("No composition information is provided; one of "
+                raise ValueError("No composition information is provided; one of "
                                 "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
                                 "'Qgs' must be specified")
         elif composition_option_count > 1:
-            raise Exception("More than one source of composition information "
+            raise ValueError("More than one source of composition information "
                             "is provided; only one of "
                             "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
                             "'Qgs' can be specified")
@@ -2243,11 +2695,11 @@ class EquilibriumStream(EquilibriumState):
                 flow_option_count -= 1
 
         if flow_option_count < 1:
-            raise Exception("No flow rate information is provided; one of "
+            raise ValueError("No flow rate information is provided; one of "
                             "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' "
                             "'energy' or 'energy_reactive' must be specified")
         elif flow_option_count > 1:
-            raise Exception("More than one source of flow rate information is "
+            raise ValueError("More than one source of flow rate information is "
                             "provided; only one of "
                             "'m', 'n', 'Q', 'Ql', 'Qg', 'ms', 'ns', 'Qls', 'Qgs' "
                             "'energy' or 'energy_reactive' can be specified")
@@ -2363,7 +2815,7 @@ class EquilibriumStream(EquilibriumState):
                     V = self.V()
                 n = Q/V
             except:
-                raise Exception('Molar volume could not be calculated to determine the flow rate of the stream.')
+                raise ValueError('Molar volume could not be calculated to determine the flow rate of the stream.')
         elif Qls is not None:
             n = 0.0
             Vms = flasher.V_liquids_ref()
@@ -2371,7 +2823,7 @@ class EquilibriumStream(EquilibriumState):
                 for i in range(N):
                     n += Qls[i]/Vms[i]
             except:
-                raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
+                raise ValueError('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
         elif Ql is not None:
             n = 0.0
             Vms = flasher.V_liquids_ref()
@@ -2380,7 +2832,7 @@ class EquilibriumStream(EquilibriumState):
                 for i in range(N):
                     n += Ql*Vfls[i]/(Vms[i])
             except:
-                raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
+                raise ValueError('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
         elif Qg is not None:
             n = 0.0
             settings = self.flasher.settings
@@ -2389,7 +2841,7 @@ class EquilibriumStream(EquilibriumState):
                 for i in range(N):
                     n += Qg*zs[i]/V
             except:
-                raise Exception('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
+                raise ValueError('Liquid molar volume could not be calculated to determine the flow rate of the stream.')
         elif Qgs is not None:
             # Use only ideal gas law; allow user T, P but default to flasher settings when not speced
             if Q_TP is not None and Q_TP[0] is not None and Q_TP[1] is not None:
@@ -2527,7 +2979,7 @@ class EnergyStream:
     Parameters
     ----------
     Q : float, optional
-        Energy flow rate, may be None if unknown [W]
+        Energy flow rate, None if unknown [W]
 
     Examples
     --------
@@ -2537,6 +2989,11 @@ class EnergyStream:
     EnergyStream(Q=None)
     '''
     __full_path__ = f"{__module__}.{__qualname__}"
+
+    obj_references = []
+    json_version = 1
+    non_json_attributes = []
+    vectorized = False
 
     def copy(self):
         r'''Method to copy the EnergyStream.
@@ -2575,7 +3032,7 @@ class EnergyStream:
 
     energy_calc = energy
 
-    def as_json(self):
+    def as_json(self, cache=None, option=0):
         r'''Method to create a JSON-friendly representation of the EnergyStream
         object which can be stored, and reloaded later.
 
@@ -2597,13 +3054,10 @@ class EnergyStream:
         >>> obj_copy = EnergyStream.from_json(json.loads(json_str))
         >>> assert obj_copy == obj
         '''
-        d = object_data(self)
-        d["py/object"] = self.__full_path__
-        d["json_version"] = 1
-        return d
+        return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
-    def from_json(cls, json_repr):
+    def from_json(cls, json_repr, cache=None):
         r'''Method to create a EnergyStream object from a JSON-friendly
         serialization of another EnergyStream.
 
@@ -2629,13 +3083,7 @@ class EnergyStream:
         >>> new_obj = EnergyStream.from_json(json_view)
         >>> assert obj == new_obj
         '''
-        d = json_repr
-        del d['py/object']
-        del d["json_version"]
-        new = cls.__new__(cls)
-        for k, v in d.items():
-            setattr(new, k, v)
-        return new
+        return JsonOptEncodable.from_json(json_repr, cache)
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)
@@ -2689,7 +3137,87 @@ def _mole_balance_process_ns(f, ns, compounds, use_mass=True, use_volume=True):
     return ns
 
 def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
-    # TODO document and expose
+    r'''Basic function for performing material balances between a set of 
+    inputs and outputs. The API of the function is to accept 
+    two lists of {EquilibriumStream, StreamArgs} objects.
+    The objects are subjected to the condition 
+    :math:`\text{material in} = \text{material out}`
+
+    If an overdetermined set of inputs is provided (flow known for all objects),
+    objects are unchanged and the function returns False.
+
+    If an underdetermined set of inputs is provided (insufficient unknowns to calculate
+    anything), objects are unchanged and the function returns False.
+
+    More usefully, if there is exactly one unknown flow, that unknown will be calculated.
+    This means the :obj:`StreamArgs` object with the unknown flow will have the balanced 
+    mole flow `n` set to it. 
+    In certain cases where StreamArgs is used with `multiple_composition_basis`, it can also
+    calculate for a single component flow as part of the specs `ns`, `ms`, `Qls`, or `Qgs`
+    if that is the unknown.
+    EquilibriumStream objects are never unknown by definition and are always unchanged.
+
+    If `use_mass` is False, mass flows will never be used.
+    If `use_volume` is False, volume flows will never be used. The volume flows mentioned are
+    'Qls' and 'Qgs', the not-actual component flow rates which can be balanced by definition.
+
+    Parameters
+    ----------
+    inlets : list[EquilibriumStream or StreamArgs]
+        Objects containing known or unknown inlet flows [-]
+    outlets : list[EquilibriumStream or StreamArgs]
+        Objects containing known or unknown outlet flows [-]
+    compounds : int
+        The number of components, [-]
+    use_mass : bool
+        Whether or not to utilize the mass flows at the same time as
+        the mole flows to calculate mole flows, if mole flows are not known [-]
+    use_volume : bool
+        Whether or not to utilize the standard volume flows at the same time as
+        the mole flows to calculate mole flows, if mole flows are not known [-]
+
+    Returns
+    -------
+    progress : bool
+        Whether or not the function was able to calculate any unknowns, [-]
+
+    Examples
+    --------
+    The examples here don't use EquilirbiumStreams to make the examples concise.
+
+    >>> f0 = StreamArgs(ns=[1,2,3,4])
+    >>> f1 = StreamArgs(n=5, zs=[.5, 0, 0, .5])
+    >>> p0 = StreamArgs()
+    >>> progress = mole_balance([f0, f1], [p0], compounds=4)
+    >>> p0
+    StreamArgs(flasher=False, ns=[3.5, 2.0, 3.0, 6.5])
+
+    >>> f0 = StreamArgs(ns=[1, 2, 3, None])
+    >>> f1 = StreamArgs(ns=[3, 5, 9, 3])
+    >>> p0 = StreamArgs(ns=[None, None, None, 5])
+    >>> progress = mole_balance([f0, f1], [p0], compounds=4)
+    >>> f0
+    StreamArgs(flasher=False, ns=[1, 2, 3, 2])
+    >>> f1
+    StreamArgs(flasher=False, ns=[3, 5, 9, 3])
+    >>> p0
+    StreamArgs(flasher=False, ns=[4, 7, 12, 5])
+
+    Notes
+    -----
+    The algorithm is formulaic, with equations spelled out and no numerical
+    methods used. It is hoped all edge cases have been included. It is suggested
+    that simple material and energy balances can be solved by repeatedly calling
+    :obj:`mole_balance` and :obj:`energy_balance` until both functions return False.
+
+    An exhaustive effort was put into ensuring every possible set of
+    specifications is covered. Nevertheless, this is one of the more complex
+    pieces of code in the library because of the number of inputs, so please
+    reach out if you believe there is a missing case.
+
+    This function will hapilly set negative flows if the math calculates negative
+    flows.
+    '''
     inlet_count = len(inlets)
     outlet_count = len(outlets)
 
@@ -2877,7 +3405,68 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
 
 
 def energy_balance(inlets, outlets, reactive=False, use_mass=False):
-    # TODO document and expose
+    r'''Basic function for performing energy balances between a set of 
+    inputs and outputs. The API of the function is to accept 
+    two lists of {EnergyStream, EquilibriumStream, StreamArgs} objects.
+    The objects are subjected to the condition 
+    :math:`\text{energy in} =  \text{energy out}`
+
+    If an overdetermined set of inputs is provided (energy known for all objects),
+    objects are unchanged and the function returns False.
+
+    If an underdetermined set of inputs is provided (insufficient unknowns to calculate
+    anything), objects are unchanged and the function returns False.
+
+    More usefully, if there is exactly one unknown, that unknown will be calculated.
+    For an EnergyStream this means replacing Q=None with Q=value. For a StreamArgs
+    object this means setting the .energy attribute. EquilibriumStream objects
+    are never unknown by definition and are always unchanged.
+
+    If `use_mass` is True, it is possible in certain cases to solve
+    for two unknowns using the additional equation
+    :math:`\text{mass in} =  \text{mass out}`
+    if all stream enthalpies are known.
+
+    If `reactive` is True, the stream energies used is the form on a
+    reactive basis.
+
+    Parameters
+    ----------
+    inlets : list[EnergyStream or EquilibriumStream or StreamArgs]
+        Objects containing known or unknown inlet energies [-]
+    outlets : list[EnergyStream or EquilibriumStream or StreamArgs]
+        Objects containing known or unknown outlet energies [-]
+    reactive : bool
+        Whether to use the `energy_reactive` form of energy of the
+        plain `energy` form. Note that this function will not be able
+        to balance stream energies if the heats of formation are not
+        available and `reactive` is True [-]
+    use_mass : bool
+        Whether or not to utilize the mass balance at the same time as
+        the energy balance in certain situations [-]
+
+    Returns
+    -------
+    progress : bool
+        Whether or not the function was able to calculate any unknowns, [-]
+
+    Examples
+    --------
+    >>> inlets = [EnergyStream(Q=10.0), EnergyStream(Q=400.0)]
+    >>> outlets = [EnergyStream(Q=160.0), EnergyStream(Q=None)]
+    >>> energy_balance(inlets, outlets)
+    True
+    >>> outlets
+    [EnergyStream(Q=160.0), EnergyStream(Q=250.0)]
+
+
+    Notes
+    -----
+    The algorithm is formulaic, with equations spelled out and no numerical
+    methods used. It is hoped all edge cases have been included. It is suggested
+    that simple material and energy balances can be solved by repeatedly calling
+    `mole_balance` and `energy_balance` until both functions return False.
+    '''
     inlet_count = len(inlets)
     outlet_count = len(outlets)
 
@@ -3066,3 +3655,8 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
             outlets[out_unknown_idx_1].m = (-H_mass_out_unknown_0*m_out_known + H_mass_out_unknown_0*m_in_known + energy_out_known - inlet_energy)/(H_mass_out_unknown_0 - H_mass_out_unknown_1)
             return True
     return False
+
+
+object_lookups[StreamArgs.__full_path__] = StreamArgs
+object_lookups[EquilibriumStream.__full_path__] = EquilibriumStream
+object_lookups[EnergyStream.__full_path__] = EnergyStream

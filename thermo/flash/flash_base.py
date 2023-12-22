@@ -31,11 +31,11 @@ __all__ = ['Flash']
 
 from math import floor, log10, nan
 
-from chemicals.utils import mixing_simple, property_mass_to_molar, rho_to_Vm
+from chemicals.utils import mixing_simple, property_mass_to_molar, rho_to_Vm, hash_any_primitive
 from fluids.constants import R
 from fluids.numerics import linspace, logspace
 from fluids.numerics import numpy as np
-
+from thermo.serialize import JsonOptEncodable, object_lookups
 from thermo import phases
 from thermo.equilibrium import EquilibriumState
 from thermo.flash.flash_utils import (
@@ -56,6 +56,7 @@ try:
     zeros, ones, ndarray = np.zeros, np.ones, np.ndarray
 except:
     pass
+
 
 spec_to_iter_vars = {
      (True, False, False, True, False, False) : ('T', 'H', 'P'), # Iterating on P is slow, derivatives look OK
@@ -106,6 +107,52 @@ class Flash:
 
     def __init_subclass__(cls):
         cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
+
+    def __eq__(self, other):
+        return self.__hash__() == hash(other)
+
+    obj_references = ('correlations', 'constants', 'settings', 'gas', 'liquids', 'liquid', 'solids', 'stab', 'unique_liquids', 'liquid0', 'phases', 'unique_phases', 'eos_pure_STP')
+    json_version = 1
+    non_json_attributes = []
+    vectorized = False
+
+    hash_references = ('correlations', 'constants', 'settings', 'gas', 'liquids', 'liquid', 'solids')
+
+    def __hash__(self):
+        to_hash = [self.__class__.__name__]
+        for attr in self.hash_references:
+            try:
+                obj = getattr(self, attr)
+                hash_value = hash_any_primitive(obj)
+                to_hash.append(hash_value)
+                # print(attr, hash_value) # for debugging when something isn't the same
+            except:
+                pass
+        # Unfortunately we can't cache this because things can be changed on us
+        ans = hash_any_primitive(to_hash)
+        return ans
+
+    def as_json(self, cache=None, option=0):
+        r'''Method to create a JSON-friendly serialization of the
+        Flasher which can be stored, and reloaded later.
+
+        Returns
+        -------
+        json_repr : dict
+            JSON-friendly representation, [-]
+
+        Notes
+        -----
+
+        Examples
+        --------
+        >>> import json
+        '''
+        return JsonOptEncodable.as_json(self, cache, option)
+
+    @classmethod
+    def from_json(cls, json_repr, cache=None):
+        return JsonOptEncodable.from_json(json_repr, cache)
 
     def flash(self, zs=None, T=None, P=None, VF=None, SF=None, V=None, H=None,
               S=None, G=None, U=None, A=None, solution=None, hot_start=None,
@@ -605,6 +652,9 @@ class Flash:
                     Tmax = min(10*round(floor(Tc), -1), 2000)
 
             Ts = logspace(log10(Tmin), log10(Tmax), pts)
+            # Ensure limits
+            Ts[0] = Tmin
+            Ts[-1] = Tmax
 #            Ts = linspace(Tmin, Tmax, pts)
         return Ts
 

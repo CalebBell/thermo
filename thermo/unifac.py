@@ -4402,16 +4402,23 @@ class UNIFAC(GibbsExcess):
 
     gammas_from_args = staticmethod(unifac_gammas_from_args)
 
-    __slots__ = GibbsExcess.__slots__ +('Thetas_sum_inv', 'Hs', '_Thetas_pure', 'Fs_pure', 'Theta_pure_Psi_sum_invs', '_dVis_dxs',
-           '_dVis_modified_dxs', 'rx_sum_inv', '_d2lnGammas_subgroups_dT2', 'VSXS', 'rs', '_d2lngammas_c_dxixjs', 'cmp_group_idx', '_Thetas', '_d3psis_dT3',
-            'N_groups', 'cmp_v_count_inv', 'Fs', 'Ws', '_d2lnGammas_subgroups_dTdxs', '_lngammas_c', 'qx_sum_inv', 'cmp_v_count', 'Gs',
-            '_dlnGammas_subgroups_dT', '_Vis_modified', 'r34x_sum_inv', '_dlngammas_r_dxs', '_dFis_dxs', '_Xs_pure', '_d2lngammas_r_dT2',
-            'skip_comb', '_d3lngammas_r_dT3', '_lnGammas_subgroups', 'qs', '_d2lngammas_r_dxixjs', '_dgammas_dxs', 'group_cmp_idx',
-            '_d3lnGammas_subgroups_pure_dT3', '_lnGammas_subgroups_pure', '_Fis', '_d2lngammas_r_dTdxs', '_d2Fis_dxixjs', 'Theta_Psi_sum_invs',
-            '_d3GE_dT3', '_d2Thetas_dxixjs', 'Qs', '_dpsis_dT', '_d2lnGammas_subgroups_dxixjs', 'rs_34', 'psi_b', '_d3lnGammas_subgroups_dT3',
-            '_Xs', 'Xs_sum_inv', '_dlnGammas_subgroups_dxs', '_dlngammas_c_dxs', 'Theta_pure_Psi_sums', '_psis', 'vs', 'Gs_pure', 'psi_a', '_dThetas_dxs',
-            'Theta_Psi_sums', '_d2Vis_dxixjs', '_dlnGammas_subgroups_pure_dT', '_d2Vis_modified_dxixjs', 'Hs_pure', '_lngammas_r', '_d2lnGammas_subgroups_pure_dT2',
-            '_d2psis_dT2', '_Vis', 'psi_c', 'version', '_dlngammas_r_dT', '_d3Vis_dxixjxks', '_d3Fis_dxixjxks', '_d3Vis_modified_dxixjxks', '_d3lngammas_c_dxixjxks')
+    _cached_calculated_attributes = ('_Fis', '_Fs', '_Fs_pure', '_Gs', '_Gs_pure', '_Hs', '_Hs_pure', '_Theta_Psi_sum_invs', '_Theta_Psi_sums', 
+            '_Theta_pure_Psi_sum_invs', '_Theta_pure_Psi_sums', '_Thetas', '_Thetas_sum_inv', '_VSXS', '_Vis', '_Vis_modified', '_Ws', 
+            '_Xs', '_Xs_sum_inv', '_d2Fis_dxixjs', '_d2Thetas_dxixjs', '_d2Vis_dxixjs', '_d2Vis_modified_dxixjs', 
+            '_d2lnGammas_subgroups_dT2', '_d2lnGammas_subgroups_dTdxs', '_d2lnGammas_subgroups_dxixjs', '_d2lnGammas_subgroups_pure_dT2', 
+            '_d2lngammas_c_dxixjs', '_d2lngammas_r_dT2', '_d2lngammas_r_dTdxs', '_d2lngammas_r_dxixjs', '_d2psis_dT2', '_d3Fis_dxixjxks', 
+            '_d3GE_dT3', '_d3Vis_dxixjxks', '_d3Vis_modified_dxixjxks', '_d3lnGammas_subgroups_dT3', '_d3lnGammas_subgroups_pure_dT3', 
+            '_d3lngammas_c_dxixjxks', '_d3lngammas_r_dT3', '_d3psis_dT3', '_dFis_dxs', '_dThetas_dxs', '_dVis_dxs', '_dVis_modified_dxs', 
+            '_dgammas_dxs', '_dlnGammas_subgroups_dT', '_dlnGammas_subgroups_dxs', '_dlnGammas_subgroups_pure_dT', '_dlngammas_c_dxs', 
+            '_dlngammas_r_dT', '_dlngammas_r_dxs', '_dpsis_dT', '_lnGammas_subgroups', '_lnGammas_subgroups_pure', '_lngammas_c', 
+            '_lngammas_r', '_psis', '_qx_sum_inv', '_rx_sum_inv')
+
+    __slots__ = GibbsExcess.__slots__ + _cached_calculated_attributes + ('N_groups', 'Qs', 'cmp_group_idx', 'cmp_v_count', 'cmp_v_count_inv', 'group_cmp_idx',
+            'psi_a', 'psi_b', 'psi_c', 'qs', 'r34x_sum_inv', 'rs', 'rs_34', 'skip_comb', 'version', 'vs',
+            '_Xs_pure', '_Thetas_pure')
+            
+
+    recalculable_attributes = GibbsExcess.recalculable_attributes + _cached_calculated_attributes
 
     @property
     def model_id(self):
@@ -4789,7 +4796,7 @@ class UNIFAC(GibbsExcess):
             except AttributeError:
                 pass
             try:
-                new.qx_sum_inv = self.qx_sum_inv
+                new._qx_sum_inv = self._qx_sum_inv
             except AttributeError:
                 pass
             try:
@@ -4828,11 +4835,11 @@ class UNIFAC(GibbsExcess):
                 pass
             try:
                 new._Thetas = self._Thetas
-                new.Thetas_sum_inv = self.Thetas_sum_inv
+                new._Thetas_sum_inv = self._Thetas_sum_inv
             except AttributeError:
                 pass
             try:
-                new.Xs_sum_inv = self.Xs_sum_inv
+                new._Xs_sum_inv = self._Xs_sum_inv
             except AttributeError:
                 pass
             try:
@@ -5139,7 +5146,7 @@ class UNIFAC(GibbsExcess):
         else:
             Vis = zeros(N)
 
-        self._Vis, self.rx_sum_inv = unifac_Vis(rs, xs, N, Vis)
+        self._Vis, self._rx_sum_inv = unifac_Vis(rs, xs, N, Vis)
         return Vis
 
     def dVis_dxs(self):
@@ -5166,10 +5173,10 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         try:
-            rx_sum_inv = self.rx_sum_inv
+            rx_sum_inv = self._rx_sum_inv
         except AttributeError:
             self.Vis()
-            rx_sum_inv = self.rx_sum_inv
+            rx_sum_inv = self._rx_sum_inv
 
         rs, N = self.rs, self.N
         if not self.vectorized:
@@ -5205,10 +5212,10 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         try:
-            rx_sum_inv = self.rx_sum_inv
+            rx_sum_inv = self._rx_sum_inv
         except AttributeError:
             self.Vis()
-            rx_sum_inv = self.rx_sum_inv
+            rx_sum_inv = self._rx_sum_inv
         rs, N = self.rs, self.N
         if not self.vectorized:
             d2Vis_dxixjs = [[[0.0]*N for _ in range(N)] for _ in range(N)]
@@ -5244,10 +5251,10 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         try:
-            rx_sum_inv = self.rx_sum_inv
+            rx_sum_inv = self._rx_sum_inv
         except AttributeError:
             self.Vis()
-            rx_sum_inv = self.rx_sum_inv
+            rx_sum_inv = self._rx_sum_inv
         rs, N = self.rs, self.N
         if not self.vectorized:
             d3Vis_dxixjxks = [[[[0.0]*N for _ in range(N)] for _ in range(N)] for _ in range(N)]
@@ -5282,7 +5289,7 @@ class UNIFAC(GibbsExcess):
         else:
             Fis = zeros(N)
 
-        self._Fis, self.qx_sum_inv = unifac_Vis(qs, xs, N, Fis)
+        self._Fis, self._qx_sum_inv = unifac_Vis(qs, xs, N, Fis)
         return Fis
 
     def dFis_dxs(self):
@@ -5309,10 +5316,10 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         try:
-            qx_sum_inv = self.qx_sum_inv
+            qx_sum_inv = self._qx_sum_inv
         except AttributeError:
             self.Fis()
-            qx_sum_inv = self.qx_sum_inv
+            qx_sum_inv = self._qx_sum_inv
 
         qs, N = self.qs, self.N
 
@@ -5350,10 +5357,10 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         try:
-            qx_sum_inv = self.qx_sum_inv
+            qx_sum_inv = self._qx_sum_inv
         except AttributeError:
             self.Fis()
-            qx_sum_inv = self.qx_sum_inv
+            qx_sum_inv = self._qx_sum_inv
 
         qs, N = self.qs, self.N
 
@@ -5391,10 +5398,10 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             pass
         try:
-            qx_sum_inv = self.qx_sum_inv
+            qx_sum_inv = self._qx_sum_inv
         except AttributeError:
             self.Fis()
-            qx_sum_inv = self.qx_sum_inv
+            qx_sum_inv = self._qx_sum_inv
         qs, N = self.qs, self.N
 
         if not self.vectorized:
@@ -5576,15 +5583,15 @@ class UNIFAC(GibbsExcess):
         else:
             Xs = zeros(N_groups)
 
-        self._Xs, self.Xs_sum_inv = unifac_Xs(N, N_groups, xs, vs, Xs)
+        self._Xs, self._Xs_sum_inv = unifac_Xs(N, N_groups, xs, vs, Xs)
         return Xs
 
-    def _Xs_sum_inv(self):
+    def Xs_sum_inv(self):
         try:
-            return self.Xs_sum_inv
+            return self._Xs_sum_inv
         except AttributeError:
             self.Xs()
-            return self.Xs_sum_inv
+            return self._Xs_sum_inv
 
     def Thetas(self):
         r'''Calculate the :math:`\Theta_m` parameters
@@ -5613,15 +5620,15 @@ class UNIFAC(GibbsExcess):
             Thetas = [0.0]*N_groups
         else:
             Thetas = zeros(N_groups)
-        self._Thetas, self.Thetas_sum_inv = unifac_Thetas(N_groups, Xs, Qs, Thetas)
+        self._Thetas, self._Thetas_sum_inv = unifac_Thetas(N_groups, Xs, Qs, Thetas)
         return Thetas
 
-    def _Thetas_sum_inv(self):
+    def Thetas_sum_inv(self):
         try:
-            return self.Thetas_sum_inv
+            return self._Thetas_sum_inv
         except AttributeError:
             self.Thetas()
-            return self.Thetas_sum_inv
+            return self._Thetas_sum_inv
 
     def dThetas_dxs(self):
         r'''Calculate the mole fraction derivatives of the :math:`\Theta_m`
@@ -5660,13 +5667,13 @@ class UNIFAC(GibbsExcess):
             pass
 
         try:
-            F = self.Xs_sum_inv
+            F = self._Xs_sum_inv
         except AttributeError:
-            F = self._Xs_sum_inv()
+            F = self.Xs_sum_inv()
         try:
-            G = self.Thetas_sum_inv
+            G = self._Thetas_sum_inv
         except AttributeError:
-            G = self._Thetas_sum_inv()
+            G = self.Thetas_sum_inv()
         Qs, N, N_groups = self.Qs, self.N, self.N_groups
         # Xs_sum_inv and Thetas_sum_inv have already calculated _Xs, _Thetas
         vs = self.vs
@@ -5679,9 +5686,9 @@ class UNIFAC(GibbsExcess):
             dThetas_dxs = zeros((N_groups, N))
 
         try:
-            VSXS = self.VSXS
+            VSXS = self._VSXS
         except AttributeError:
-            VSXS = self._VSXS()
+            VSXS = self.VSXS()
 #        # Index [subgroup][component]
         self._dThetas_dxs = unifac_dThetas_dxs(N_groups, N, Qs, vs, VS, VSXS, F, G, dThetas_dxs)
         return dThetas_dxs
@@ -5739,21 +5746,21 @@ class UNIFAC(GibbsExcess):
             pass
 
         try:
-            F = self.Xs_sum_inv
+            F = self._Xs_sum_inv
         except AttributeError:
-            F = self._Xs_sum_inv()
+            F = self.Xs_sum_inv()
         try:
-            G = self.Thetas_sum_inv
+            G = self._Thetas_sum_inv
         except AttributeError:
-            G = self._Thetas_sum_inv()
+            G = self.Thetas_sum_inv()
         Qs, N, N_groups = self.Qs, self.N, self.N_groups
         vs = self.vs
 
         VS = self.cmp_v_count
         try:
-            VSXS = self.VSXS
+            VSXS = self._VSXS
         except AttributeError:
-            VSXS = self._VSXS()
+            VSXS = self.VSXS()
 
         if not self.vectorized:
             d2Thetas_dxixjs = [[[0.0]*N_groups for _ in range(N)] for _ in range(N)]
@@ -5762,9 +5769,9 @@ class UNIFAC(GibbsExcess):
         self._d2Thetas_dxixjs = unifac_d2Thetas_dxixjs(N_groups, N, Qs, vs, VS, VSXS, F, G, d2Thetas_dxixjs)
         return d2Thetas_dxixjs
 
-    def _VSXS(self):
+    def VSXS(self):
         try:
-            return self.VSXS
+            return self._VSXS
         except AttributeError:
             pass
         N_groups = self.N_groups
@@ -5773,10 +5780,10 @@ class UNIFAC(GibbsExcess):
         else:
             VSXS = zeros(N_groups)
 
-        self.VSXS = unifac_VSXS(self.N, N_groups, self.vs, self.xs, VSXS)
+        self._VSXS = unifac_VSXS(self.N, N_groups, self.vs, self.xs, VSXS)
         return VSXS
 
-    def _Theta_Psi_sums(self):
+    def Theta_Psi_sums(self):
         r'''
         Computes the following term for each group `k`, size number of groups.
 
@@ -5784,7 +5791,7 @@ class UNIFAC(GibbsExcess):
             \sum_m \Theta_m \Psi_{mk}
         '''
         try:
-            return self.Theta_Psi_sums
+            return self._Theta_Psi_sums
         except AttributeError:
             pass
 
@@ -5803,10 +5810,10 @@ class UNIFAC(GibbsExcess):
         else:
             Theta_Psi_sums = zeros(N_groups)
 
-        self.Theta_Psi_sums = unifac_Theta_Psi_sums(N_groups, Thetas, psis, Theta_Psi_sums)
+        self._Theta_Psi_sums = unifac_Theta_Psi_sums(N_groups, Thetas, psis, Theta_Psi_sums)
         return Theta_Psi_sums
 
-    def _Theta_Psi_sum_invs(self):
+    def Theta_Psi_sum_invs(self):
         r'''
         Computes the following term for each group `k`, size number of groups.
 
@@ -5814,19 +5821,19 @@ class UNIFAC(GibbsExcess):
             U(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
         '''
         try:
-            return self.Theta_Psi_sum_invs
+            return self._Theta_Psi_sum_invs
         except AttributeError:
             try:
-                Theta_Psi_sums = self.Theta_Psi_sums
+                Theta_Psi_sums = self._Theta_Psi_sums
             except AttributeError:
-                Theta_Psi_sums = self._Theta_Psi_sums()
+                Theta_Psi_sums = self.Theta_Psi_sums()
         if not self.vectorized:
-            self.Theta_Psi_sum_invs = [1.0/v for v in Theta_Psi_sums]
+            self._Theta_Psi_sum_invs = [1.0/v for v in Theta_Psi_sums]
         else:
-            self.Theta_Psi_sum_invs = 1.0/Theta_Psi_sums
-        return self.Theta_Psi_sum_invs
+            self._Theta_Psi_sum_invs = 1.0/Theta_Psi_sums
+        return self._Theta_Psi_sum_invs
 
-    def _Ws(self):
+    def Ws(self):
         r'''
         Computes the following for each `k` and each `i`, indexed by [k][i]
         `k` is in groups, and `i` is in components.
@@ -5835,7 +5842,7 @@ class UNIFAC(GibbsExcess):
             W(k,i) = \sum_m^{gr} \psi_{m,k} \frac{\partial \theta_m}{\partial x_i}
         '''
         try:
-            return self.Ws
+            return self._Ws
         except AttributeError:
             pass
 
@@ -5854,17 +5861,17 @@ class UNIFAC(GibbsExcess):
         else:
             Ws = zeros((N_groups, N))
 
-        self.Ws = unifac_ws(N, N_groups, psis, dThetas_dxs, Ws)
+        self._Ws = unifac_ws(N, N_groups, psis, dThetas_dxs, Ws)
         return Ws
 
-    def _Fs(self):
+    def Fs(self):
         r'''Computes the following:
 
         .. math::
             F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
         '''
         try:
-            return self.Fs
+            return self._Fs
         except AttributeError:
             pass
         try:
@@ -5883,17 +5890,17 @@ class UNIFAC(GibbsExcess):
         else:
             Fs = zeros(N_groups)
 
-        self.Fs = unifac_Theta_Psi_sums(N_groups, Thetas, dpsis_dT, Fs)
+        self._Fs = unifac_Theta_Psi_sums(N_groups, Thetas, dpsis_dT, Fs)
         return Fs
 
-    def _Gs(self):
+    def Gs(self):
         r'''Computes the following:
 
         .. math::
             G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
         '''
         try:
-            return self.Gs
+            return self._Gs
         except AttributeError:
             pass
         try:
@@ -5912,7 +5919,7 @@ class UNIFAC(GibbsExcess):
         else:
             Gs = zeros(N_groups)
 
-        self.Gs = unifac_Theta_Psi_sums(N_groups, Thetas, d2psis_dT2, Gs)
+        self._Gs = unifac_Theta_Psi_sums(N_groups, Thetas, d2psis_dT2, Gs)
 #        self.Gs = Gs = []
 #        for k in range(N_groups):
 #            tot = 0.0
@@ -5921,14 +5928,14 @@ class UNIFAC(GibbsExcess):
 #            Gs.append(tot)
         return Gs
 
-    def _Hs(self):
+    def Hs(self):
         r'''Computes the following:
 
         .. math::
             H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
         '''
         try:
-            return self.Hs
+            return self._Hs
         except AttributeError:
             pass
         try:
@@ -5947,12 +5954,12 @@ class UNIFAC(GibbsExcess):
         else:
             Hs = zeros(N_groups)
 
-        self.Hs = unifac_Theta_Psi_sums(N_groups, Thetas, d3psis_dT3, Hs)
+        self._Hs = unifac_Theta_Psi_sums(N_groups, Thetas, d3psis_dT3, Hs)
         return Hs
 
-    def _Theta_pure_Psi_sums(self):
+    def Theta_pure_Psi_sums(self):
         try:
-            return self.Theta_pure_Psi_sums
+            return self._Theta_pure_Psi_sums
         except AttributeError:
             pass
         Thetas_pure = self._Thetas_pure
@@ -5968,10 +5975,10 @@ class UNIFAC(GibbsExcess):
         else:
             Theta_pure_Psi_sums = zeros((N, N_groups))
 
-        self.Theta_pure_Psi_sums = unifac_Theta_pure_Psi_sums(N, N_groups, psis, Thetas_pure, Theta_pure_Psi_sums)
+        self._Theta_pure_Psi_sums = unifac_Theta_pure_Psi_sums(N, N_groups, psis, Thetas_pure, Theta_pure_Psi_sums)
         return Theta_pure_Psi_sums
 
-    def _Theta_pure_Psi_sum_invs(self):
+    def Theta_pure_Psi_sum_invs(self):
         r'''
         Computes the following term for each group `k`, size number of groups.
 
@@ -5979,26 +5986,26 @@ class UNIFAC(GibbsExcess):
             U(k) = \frac{1}{\sum_m \Theta_m \Psi_{m,k}}
         '''
         try:
-            return self.Theta_pure_Psi_sum_invs
+            return self._Theta_pure_Psi_sum_invs
         except AttributeError:
             try:
-                Theta_pure_Psi_sums = self.Theta_pure_Psi_sums
+                Theta_pure_Psi_sums = self._Theta_pure_Psi_sums
             except AttributeError:
-                Theta_pure_Psi_sums = self._Theta_pure_Psi_sums()
+                Theta_pure_Psi_sums = self.Theta_pure_Psi_sums()
         if not self.vectorized:
-            self.Theta_pure_Psi_sum_invs = [[1.0/v for v in row] for row in Theta_pure_Psi_sums]
+            self._Theta_pure_Psi_sum_invs = [[1.0/v for v in row] for row in Theta_pure_Psi_sums]
         else:
-            self.Theta_pure_Psi_sum_invs = 1.0/Theta_pure_Psi_sums
-        return self.Theta_pure_Psi_sum_invs
+            self._Theta_pure_Psi_sum_invs = 1.0/Theta_pure_Psi_sums
+        return self._Theta_pure_Psi_sum_invs
 
-    def _Fs_pure(self):
+    def Fs_pure(self):
         r'''Computes the following:
 
         .. math::
             F(k) = \sum_m^{gr} \theta_m \frac{\partial \psi_{m,k}}{\partial T}
         '''
         try:
-            return self.Fs_pure
+            return self._Fs_pure
         except AttributeError:
             pass
         Thetas_pure = self._Thetas_pure
@@ -6014,17 +6021,17 @@ class UNIFAC(GibbsExcess):
         else:
             Fs_pure = zeros((N, N_groups))
 
-        self.Fs_pure = unifac_Theta_pure_Psi_sums(N, N_groups, dpsis_dT, Thetas_pure, Fs_pure)
+        self._Fs_pure = unifac_Theta_pure_Psi_sums(N, N_groups, dpsis_dT, Thetas_pure, Fs_pure)
         return Fs_pure
 
-    def _Gs_pure(self):
+    def Gs_pure(self):
         r'''Computes the following:
 
         .. math::
             G(k) = \sum_m^{gr} \theta_m \frac{\partial^2 \psi_{m,k}}{\partial T^2}
         '''
         try:
-            return self.Gs_pure
+            return self._Gs_pure
         except AttributeError:
             pass
         Thetas_pure = self._Thetas_pure
@@ -6040,17 +6047,17 @@ class UNIFAC(GibbsExcess):
         else:
             Gs_pure = zeros((N, N_groups))
 
-        self.Gs_pure = unifac_Theta_pure_Psi_sums(N, N_groups, d2psis_dT2, Thetas_pure, Gs_pure)
+        self._Gs_pure = unifac_Theta_pure_Psi_sums(N, N_groups, d2psis_dT2, Thetas_pure, Gs_pure)
         return Gs_pure
 
-    def _Hs_pure(self):
+    def Hs_pure(self):
         r'''Computes the following:
 
         .. math::
             H(k) = \sum_m^{gr} \theta_m \frac{\partial^3 \psi_{m,k}}{\partial T^3}
         '''
         try:
-            return self.Hs_pure
+            return self._Hs_pure
         except AttributeError:
             pass
         Thetas_pure = self._Thetas_pure
@@ -6066,7 +6073,7 @@ class UNIFAC(GibbsExcess):
         else:
             Hs_pure = zeros((N, N_groups))
 
-        self.Hs_pure = unifac_Theta_pure_Psi_sums(N, N_groups, d3psis_dT3, Thetas_pure, Hs_pure)
+        self._Hs_pure = unifac_Theta_pure_Psi_sums(N, N_groups, d3psis_dT3, Thetas_pure, Hs_pure)
         return Hs_pure
 
     def lnGammas_subgroups(self):
@@ -6095,13 +6102,13 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             psis = self.psis()
         try:
-            Theta_Psi_sums = self.Theta_Psi_sums
+            Theta_Psi_sums = self._Theta_Psi_sums
         except AttributeError:
-            Theta_Psi_sums = self._Theta_Psi_sums()
+            Theta_Psi_sums = self.Theta_Psi_sums()
         try:
-            Theta_Psi_sum_invs = self.Theta_Psi_sum_invs
+            Theta_Psi_sum_invs = self._Theta_Psi_sum_invs
         except AttributeError:
-            Theta_Psi_sum_invs = self._Theta_Psi_sum_invs()
+            Theta_Psi_sum_invs = self.Theta_Psi_sum_invs()
 
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
@@ -6153,17 +6160,17 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             psis = self.psis()
         try:
-            Theta_Psi_sum_invs = self.Theta_Psi_sum_invs
+            Theta_Psi_sum_invs = self._Theta_Psi_sum_invs
         except AttributeError:
-            Theta_Psi_sum_invs = self._Theta_Psi_sum_invs()
+            Theta_Psi_sum_invs = self.Theta_Psi_sum_invs()
         try:
             dThetas_dxs = self._dThetas_dxs
         except AttributeError:
             dThetas_dxs = self.dThetas_dxs()
         try:
-            Ws = self.Ws
+            Ws = self._Ws
         except AttributeError:
-            Ws = self._Ws()
+            Ws = self.Ws()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
         if not self.vectorized:
@@ -6239,19 +6246,19 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             dThetas_dxs = self.dThetas_dxs()
         try:
-            Zs = self.Theta_Psi_sum_invs
+            Zs = self._Theta_Psi_sum_invs
         except AttributeError:
-            Zs = self._Theta_Psi_sum_invs()
+            Zs = self.Theta_Psi_sum_invs()
         try:
-            Ws = self.Ws
+            Ws = self._Ws
         except AttributeError:
-            Ws = self._Ws()
+            Ws = self.Ws()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
         try:
-            Fs = self.Fs
+            Fs = self._Fs
         except AttributeError:
-            Fs = self._Fs()
+            Fs = self.Fs()
 
         if not self.vectorized:
             d2lnGammas_subgroups_dTdxs = [[0.0]*N for _ in range(N_groups)]
@@ -6322,13 +6329,13 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             d2Thetas_dxixjs = self.d2Thetas_dxixjs()
         try:
-            Zs = self.Theta_Psi_sum_invs
+            Zs = self._Theta_Psi_sum_invs
         except AttributeError:
-            Zs = self._Theta_Psi_sum_invs()
+            Zs = self.Theta_Psi_sum_invs()
         try:
-            Ws = self.Ws
+            Ws = self._Ws
         except AttributeError:
-            Ws = self._Ws()
+            Ws = self.Ws()
 
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
@@ -6380,13 +6387,13 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             dpsis_dT = self.dpsis_dT()
         try:
-            Zs = self.Theta_Psi_sum_invs
+            Zs = self._Theta_Psi_sum_invs
         except AttributeError:
-            Zs = self._Theta_Psi_sum_invs()
+            Zs = self.Theta_Psi_sum_invs()
         try:
-            Fs = self.Fs
+            Fs = self._Fs
         except AttributeError:
-            Fs = self._Fs()
+            Fs = self.Fs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
         if not self.vectorized:
             dlnGammas_subgroups_dT = [0.0]*N_groups
@@ -6445,17 +6452,17 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             d2psis_dT2 = self.d2psis_dT2()
         try:
-            Zs = self.Theta_Psi_sum_invs
+            Zs = self._Theta_Psi_sum_invs
         except AttributeError:
-            Zs = self._Theta_Psi_sum_invs()
+            Zs = self.Theta_Psi_sum_invs()
         try:
-            Fs = self.Fs
+            Fs = self._Fs
         except AttributeError:
-            Fs = self._Fs()
+            Fs = self.Fs()
         try:
-            Gs = self.Gs
+            Gs = self._Gs
         except AttributeError:
-            Gs = self._Gs()
+            Gs = self.Gs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
         if not self.vectorized:
@@ -6529,21 +6536,21 @@ class UNIFAC(GibbsExcess):
         except AttributeError:
             d3psis_dT3 = self.d3psis_dT3()
         try:
-            Zs = self.Theta_Psi_sum_invs
+            Zs = self._Theta_Psi_sum_invs
         except AttributeError:
-            Zs = self._Theta_Psi_sum_invs()
+            Zs = self.Theta_Psi_sum_invs()
         try:
-            Fs = self.Fs
+            Fs = self._Fs
         except AttributeError:
-            Fs = self._Fs()
+            Fs = self.Fs()
         try:
-            Gs = self.Gs
+            Gs = self._Gs
         except AttributeError:
-            Gs = self._Gs()
+            Gs = self.Gs()
         try:
-            Hs = self.Hs
+            Hs = self._Hs
         except AttributeError:
-            Hs = self._Hs()
+            Hs = self.Hs()
         N, N_groups, Qs = self.N, self.N_groups, self.Qs
 
         if not self.vectorized:
@@ -6703,13 +6710,13 @@ class UNIFAC(GibbsExcess):
         cmp_group_idx = self.cmp_group_idx
 
         try:
-            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs
+            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs
         except AttributeError:
-            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs()
+            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs()
         try:
-            Fs_pure = self.Fs_pure
+            Fs_pure = self._Fs_pure
         except AttributeError:
-            Fs_pure = self._Fs_pure()
+            Fs_pure = self.Fs_pure()
 
         if not self.vectorized:
             dlnGammas_subgroups_pure_dT = [[0.0]*N for _ in range(N_groups)]
@@ -6767,17 +6774,17 @@ class UNIFAC(GibbsExcess):
 
         # Index by [component][subgroup]
         try:
-            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs
+            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs
         except AttributeError:
-            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs()
+            Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs()
         try:
-            Fs_pure = self.Fs_pure
+            Fs_pure = self._Fs_pure
         except AttributeError:
-            Fs_pure = self._Fs_pure()
+            Fs_pure = self.Fs_pure()
         try:
-            Gs_pure = self.Gs_pure
+            Gs_pure = self._Gs_pure
         except AttributeError:
-            Gs_pure = self._Gs_pure()
+            Gs_pure = self.Gs_pure()
         if not self.vectorized:
             d2lnGammas_subgroups_pure_dT2 = [[0.0]*N for _ in range(N_groups)]
         else:
@@ -6836,21 +6843,21 @@ class UNIFAC(GibbsExcess):
         N, N_groups = self.N, self.N_groups
         cmp_group_idx = self.cmp_group_idx
         try:
+            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs
+        except AttributeError:
             Theta_pure_Psi_sum_invs = self.Theta_pure_Psi_sum_invs
-        except AttributeError:
-            Theta_pure_Psi_sum_invs = self._Theta_pure_Psi_sum_invs()
         try:
-            Fs_pure = self.Fs_pure
+            Fs_pure = self._Fs_pure
         except AttributeError:
-            Fs_pure = self._Fs_pure()
+            Fs_pure = self.Fs_pure()
         try:
-            Gs_pure = self.Gs_pure
+            Gs_pure = self._Gs_pure
         except AttributeError:
-            Gs_pure = self._Gs_pure()
+            Gs_pure = self.Gs_pure()
         try:
-            Hs_pure = self.Hs_pure
+            Hs_pure = self._Hs_pure
         except AttributeError:
-            Hs_pure = self._Hs_pure()
+            Hs_pure = self.Hs_pure()
 
 
         if not self.vectorized:

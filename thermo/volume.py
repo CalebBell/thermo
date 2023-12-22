@@ -405,7 +405,8 @@ class VolumeLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
-    obj_references = pure_references = ('Psat',)
+    obj_references = ('eos', 'Psat')
+    pure_references = ('Psat')
     obj_references_types = pure_reference_types = (VaporPressure,)
 
 
@@ -528,7 +529,7 @@ class VolumeLiquid(TPDependentProperty):
             methods.append(TOWNSEND_HALES)
             methods.append(HTCOSTALD)
             methods.append(MMSNM0)
-            if load_data and CASRN in volume.rho_data_SNM0.index:
+            if load_data and CASRN and CASRN in volume.rho_data_SNM0.index:
                 methods.append(MMSNM0FIT)
                 self.SNM0_delta_SRK = float(volume.rho_data_SNM0.at[CASRN, 'delta_SRK'])
                 T_limits[MMSNM0FIT] = (0.0, self.Tc)
@@ -1115,6 +1116,7 @@ class VolumeLiquidMixture(MixtureProperty):
 
     pure_references = ('VolumeLiquids',)
     pure_reference_types = (VolumeLiquid, )
+    obj_references = ('VolumeLiquids',)
 
     pure_constants = ('MWs', 'Tcs', 'Pcs', 'Vcs', 'Zcs', 'omegas')
     custom_args = pure_constants
@@ -1149,14 +1151,14 @@ class VolumeLiquidMixture(MixtureProperty):
         if none_and_length_check([self.Tcs, self.Vcs, self.omegas]):
             methods.append(COSTALD_MIXTURE)
             if none_and_length_check([self.Tcs, self.CASs]) and all(i in volume.rho_data_COSTALD.index for i in self.CASs):
-                self.COSTALD_Vchars = [volume.rho_data_COSTALD.at[CAS, 'Vchar'] for CAS in self.CASs]
-                self.COSTALD_omegas = [volume.rho_data_COSTALD.at[CAS, 'omega_SRK'] for CAS in self.CASs]
+                self.COSTALD_Vchars = [float(volume.rho_data_COSTALD.at[CAS, 'Vchar']) for CAS in self.CASs]
+                self.COSTALD_omegas = [float(volume.rho_data_COSTALD.at[CAS, 'omega_SRK']) for CAS in self.CASs]
                 methods.append(COSTALD_MIXTURE_FIT)
 
         if none_and_length_check([self.MWs, self.Tcs, self.Pcs, self.Zcs]):
             methods.append(RACKETT)
             if none_and_length_check([self.Tcs, self.CASs]) and all(CAS in volume.rho_data_COSTALD.index for CAS in self.CASs):
-                Z_RAs = [volume.rho_data_COSTALD.at[CAS, 'Z_RA'] for CAS in self.CASs]
+                Z_RAs = [float(volume.rho_data_COSTALD.at[CAS, 'Z_RA']) for CAS in self.CASs]
                 if not any(np.isnan(Z_RAs)):
                     self.Z_RAs = Z_RAs
                     methods.append(RACKETT_PARAMETERS)
@@ -1366,8 +1368,13 @@ class VolumeGas(TPDependentProperty):
     units = 'm^3/mol'
     interpolation_T = None
     """No interpolation transformation by default."""
-    interpolation_P = None
-    """No interpolation transformation by default."""
+
+    @staticmethod
+    def interpolation_P(P):
+        '''Function to make the data-based interpolation as linear as possible.
+        This transforms the input `P` into the `1/P` domain.
+        '''
+        return 1./P
     interpolation_property = None
     """No interpolation transformation by default."""
     interpolation_property_inv = None
@@ -1624,6 +1631,7 @@ class VolumeGasMixture(MixtureProperty):
 
     pure_references = ('VolumeGases',)
     pure_reference_types = (VolumeGas, )
+    obj_references = ('VolumeGases', 'eos')
 
     pure_constants = ('MWs', )
     custom_args = ('MWs', 'eos')
@@ -1923,6 +1931,7 @@ class VolumeSolidMixture(MixtureProperty):
 
     pure_references = ('VolumeSolids',)
     pure_reference_types = (VolumeSolid, )
+    obj_references = ('VolumeSolids',)
 
     pure_constants = ('MWs', )
     custom_args = pure_constants

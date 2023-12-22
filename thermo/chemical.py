@@ -71,7 +71,7 @@ from chemicals.virial import B_from_Z
 from chemicals.volume import ideal_gas
 from fluids.constants import epsilon_0
 from fluids.core import Bond, Capillary, Grashof, Jakob, Peclet_heat, Prandtl, Reynolds, Weber, nu_mu_converter, thermal_diffusivity
-from fluids.numerics import exp, log, newton
+from fluids.numerics import exp, log, newton, secant
 
 from thermo import functional_groups
 from thermo.electrochem import conductivity, conductivity_methods
@@ -1507,25 +1507,25 @@ class Chemical: # pragma: no cover
         def to_solve(P):
             self.calculate(T, P)
             return self.H - H
-        return newton(to_solve, self.P)
+        return secant(to_solve, self.P)
 
     def calculate_PH(self, P, H):
         def to_solve(T):
             self.calculate(T, P)
             return self.H - H
-        return newton(to_solve, self.T)
+        return secant(to_solve, self.T)
 
     def calculate_TS(self, T, S):
         def to_solve(P):
             self.calculate(T, P)
             return self.S - S
-        return newton(to_solve, self.P)
+        return secant(to_solve, self.P)
 
     def calculate_PS(self, P, S):
         def to_solve(T):
             self.calculate(T, P)
             return self.S - S
-        return newton(to_solve, self.T)
+        return secant(to_solve, self.T)
 
     def set_thermo(self):
         try:

@@ -86,6 +86,8 @@ class IdealGas(Phase):
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
 
+    obj_references = ('HeatCapacityGases', 'result', 'constants', 'correlations')
+
     model_attributes = ('Hfs', 'Gfs', 'Sfs') + pure_references
 
     def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None):

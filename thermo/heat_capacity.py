@@ -1551,6 +1551,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
     ranked_methods = [LALIBERTE, LINEAR]
     pure_references = ('HeatCapacityLiquids',)
     pure_reference_types = (HeatCapacityLiquid,)
+    obj_references = ('HeatCapacityLiquids',)
 
     pure_constants = ('MWs', )
     custom_args = pure_constants
@@ -1685,6 +1686,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
     ranked_methods = [LINEAR]
     pure_references = ('HeatCapacitySolids',)
     pure_reference_types = (HeatCapacitySolid,)
+    obj_references = ('HeatCapacitySolids',)
 
     pure_constants = ('MWs', )
     custom_args = pure_constants
@@ -1778,6 +1780,7 @@ class HeatCapacityGasMixture(MixtureProperty):
     ranked_methods = [LINEAR]
     pure_references = ('HeatCapacityGases',)
     pure_reference_types = (HeatCapacityGas,)
+    obj_references = ('HeatCapacityGases',)
 
     pure_constants = ('MWs', )
     custom_args = pure_constants

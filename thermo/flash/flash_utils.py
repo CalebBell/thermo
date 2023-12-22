@@ -119,6 +119,7 @@ from fluids.numerics import (
     trunc_exp,
     trunc_log,
     SolverInterface,
+    gdem,
 )
 from fluids.numerics import numpy as np
 
@@ -137,6 +138,7 @@ WILSON_GUESS = 'Wilson'
 TB_TC_GUESS = 'Tb Tc'
 IDEAL_PSAT = 'Ideal Psat'
 PT_SS = 'SS'
+
 PT_SS_MEHRA = 'SS Mehra'
 PT_SS_GDEM3 = 'SS GDEM3'
 PT_NEWTON_lNKVF = 'Newton lnK VF'
@@ -598,7 +600,7 @@ def sequential_substitution_Mehra_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
 def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
                                      gas_phase, maxiter=1000, tol=1E-13,
                                      trivial_solution_tol=1e-5, V_over_F_guess=None,
-                                     acc_frequency=3, acc_delay=3,
+                                     acc_frequency=5, acc_delay=4,
                                      ):
 
     xs, ys = xs_guess, ys_guess
@@ -620,26 +622,18 @@ def sequential_substitution_GDEM3_2P(T, P, zs, xs_guess, ys_guess, liquid_phase,
 
         # Mehra et al. (1983) is another option
 
-#        Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)]
-#        if not (iteration %3) and iteration > 3:
-#            dKs = gdem(Ks, all_Ks[-1], all_Ks[-2], all_Ks[-3])
-#            print(iteration, dKs)
-#            Ks = [Ks[i] + dKs[i] for i in cmps]
-#        all_Ks.append(Ks)
 
-#        lnKs = [(l - g) for l, g in zip(lnphis_l, lnphis_g)]
-#        if not (iteration %3) and iteration > 3:
-##            dlnKs = gdem(lnKs, all_lnKs[-1], all_lnKs[-2], all_lnKs[-3])
-#
-#            dlnKs = gdem(lnKs, all_lnKs[-1], all_lnKs[-2], all_lnKs[-3])
-#            lnKs = [lnKs[i] + dlnKs[i] for i in cmps]
+        lnKs = [(l - g) for l, g in zip(lnphis_l, lnphis_g)]
+        if not (iteration %5) and iteration > 4:
+            dlnKs = gdem(lnKs, all_lnKs[-1], all_lnKs[-2], all_lnKs[-3])
+            lnKs = [lnKs[i] + dlnKs[i] for i in cmps]
 
         # Mehra, R. K., R. A. Heidemann, and K. Aziz. “An Accelerated Successive Substitution Algorithm.” The Canadian Journal of Chemical Engineering 61, no. 4 (August 1, 1983): 590-96. https://doi.org/10.1002/cjce.5450610414.
-        lnKs = [(l - g) for l, g in zip(lnphis_l, lnphis_g)]
-        if not (iteration %acc_frequency) and iteration > acc_delay:
-            dlnKs = gdem(lnKs, all_lnKs[-1], all_lnKs[-2], all_lnKs[-3])
-            # print(dlnKs)
-            lnKs = [lnKs[i] + dlnKs[i] for i in cmps]
+        # lnKs = [(l - g) for l, g in zip(lnphis_l, lnphis_g)]
+        # if not (iteration %acc_frequency) and iteration > acc_delay:
+        #     dlnKs = gdem(lnKs, all_lnKs[-1], all_lnKs[-2], all_lnKs[-3])
+        #     # print(dlnKs)
+        #     lnKs = [lnKs[i] + dlnKs[i] for i in cmps]
 
 
             # Try to testaccelerated
@@ -1328,27 +1322,6 @@ def nonlin_2P_newton(T, P, zs, xs_guess, ys_guess, liquid_phase,
     return VF, xs, ys, l, g, tot_err, J, iterations
 
 
-def gdem(x, x1, x2, x3):
-    cmps = range(len(x))
-    dx2 = [x[i] - x3[i] for i in cmps]
-    dx1 = [x[i] - x2[i] for i in cmps]
-    dx = [x[i] - x1[i] for i in cmps]
-
-    b01, b02, b12, b11, b22 = 0.0, 0.0, 0.0, 0.0, 0.0
-
-    for i in cmps:
-        b01 += dx[i]*dx1[i]
-        b02 += dx[i]*dx2[i]
-        b12 += dx1[i]*dx2[i]
-        b11 += dx1[i]*dx1[i]
-        b22 += dx2[i]*dx2[i]
-
-    den_inv = 1.0/(b11*b22 - b12*b12)
-    mu1 = den_inv*(b02*b12 - b01*b22)
-    mu2 = den_inv*(b01*b12 - b02*b11)
-
-    factor = 1.0/(1.0 + mu1 + mu2)
-    return [factor*(dx[i] - mu2*dx1[i]) for i in cmps]
 
 
 def minimize_gibbs_2P_transformed(T, P, zs, xs_guess, ys_guess, liquid_phase,

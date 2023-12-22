@@ -294,6 +294,7 @@ from fluids.numerics import (
 from fluids.numerics import numpy as np
 
 from thermo import serialize
+from thermo.serialize import JsonOptEncodable
 from thermo.eos_alpha_functions import Mathias_Copeman_poly_a_alpha, Poly_a_alpha, Soave_1979_a_alpha, Twu91_a_alpha, TwuPR95_a_alpha, TwuSRK95_a_alpha
 from thermo.eos_volume import volume_solutions_halley, volume_solutions_ideal, volume_solutions_mpmath, volume_solutions_mpmath_float, volume_solutions_NR
 
@@ -911,6 +912,8 @@ class GCEOS:
             comp = 0
         return hash_any_primitive((self.model_hash(), self.T, self.P, self.V, comp))
 
+    __hash__ = state_hash
+
     def model_hash(self):
         r'''Basic method to calculate a hash of the non-state parts of the model
         This is useful for comparing to models to
@@ -938,7 +941,7 @@ class GCEOS:
         self._model_hash = h
         return h
 
-    def __hash__(self):
+    def exact_hash(self):
         r'''Method to calculate and return a hash representing the exact state
         of the object.
 
@@ -1008,7 +1011,7 @@ class GCEOS:
         s += ')'
         return s
 
-    def as_json(self):
+    def as_json(self, cache=None, option=0):
         r'''Method to create a JSON-friendly serialization of the eos
         which can be stored, and reloaded later.
 
@@ -1026,26 +1029,14 @@ class GCEOS:
         >>> eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
         >>> assert eos == MSRKTranslated.from_json(json.loads(json.dumps(eos.as_json())))
         '''
-        # vaguely jsonpickle compatible
-        d = object_data(self)
-        if self.vectorized:
-            d = serialize.arrays_to_lists(d)
-        # TODO: delete kwargs and reconstruct it
-        # Need to add all kwargs attributes
-        try:
-            del d['kwargs']
-        except:
-            pass
-        try:
-            del d['one_minus_kijs']
-        except:
-            pass
-        d["py/object"] = self.__full_path__
-        d['json_version'] = 1
-        return d
+        return JsonOptEncodable.as_json(self, cache, option)
+
+    json_version = 1
+    obj_references = []
+    non_json_attributes = ['kwargs', 'one_minus_kijs', '_model_hash']
 
     @classmethod
-    def from_json(cls, json_repr):
+    def from_json(cls, json_repr, cache=None):
         r'''Method to create a eos from a JSON
         serialization of another eos.
 
@@ -1071,35 +1062,25 @@ class GCEOS:
         >>> new_eos = GCEOS.from_json(string)
         >>> assert eos.__dict__ == new_eos.__dict__
         '''
-        d = json_repr
-        eos_name = d['py/object']
-        del d['py/object']
-        del d['json_version']
+        return JsonOptEncodable.from_json(json_repr, cache)
 
-        try:
-            d['raw_volumes'] = tuple(d['raw_volumes'])
-        except:
-            pass
-
-        try:
-            d['alpha_coeffs'] = tuple(d['alpha_coeffs'])
-        except:
-            pass
-
+    def _custom_from_json(self, *args):
+        eos_name = self.__full_path__
         eos = eos_full_path_dict[eos_name]
-
+        try:
+            self.raw_volumes = tuple(self.raw_volumes)
+        except:
+            pass
+        try:
+            self.alpha_coeffs = tuple(self.alpha_coeffs)
+        except:
+            pass
         if eos.kwargs_keys:
-            d['kwargs'] = {k: d[k] for k in eos.kwargs_keys}
+            self.kwargs = {k: getattr(self, k) for k in eos.kwargs_keys}
             try:
-                d['kwargs']['alpha_coeffs'] = tuple(d['kwargs']['alpha_coeffs'])
+                self.kwargs['alpha_coeffs'] = tuple(self.kwargs['alpha_coeffs'])
             except:
                 pass
-
-        new = eos.__new__(eos)
-        for k, v in d.items():
-            setattr(new, k, v)
-        # new.__dict__ = d
-        return new
 
     def check_sufficient_inputs(self):
         '''Method to an exception if none of the pairs (T, P), (T, V), or
@@ -8707,7 +8688,7 @@ class PRSV(PR):
             return x11 - x10*x10*x51
         if solution is None:
             try:
-                return newton(to_solve, Tc*0.5)
+                return secant(to_solve, Tc*0.5)
             except:
                 pass
             # The above method handles fewer cases, but the below is less optimized
@@ -8969,7 +8950,7 @@ class PRSV2(PR):
                 x100 = (x3*(x4 - (kappa1 + kappa2*x3*(-kappa3 + x1))*(10.*x1 - 7.)*(x2 + 1.)) - 10.)
                 return (R_x0*T - a*x100*x100*x5_inv) - P
             try:
-                return newton(to_solve, Tc*0.5)
+                return secant(to_solve, Tc*0.5)
             except:
                 pass
             # The above method handles fewer cases, but the below is less optimized
@@ -10723,7 +10704,7 @@ class APISRK(SRK):
 
         if solution is None:
             try:
-                return newton(to_solve, Tc*0.5)
+                return secant(to_solve, Tc*0.5)
             except:
                 pass
         return GCEOS.solve_T(self, P, V, solution=solution)

@@ -203,15 +203,17 @@ True
 >>> PR_case.state_hash() == PR_case2.state_hash()
 False
 
-And finally it is possible to see if two objects are exactly identical, including cached calculation results, by using the  :obj:`__hash__ <thermo.eos.GCEOS.__hash__>` method:
+:obj:`state_hash <thermo.eos.GCEOS.state_hash>` is the __hash__ method of the object.
+
+And finally it is possible to see if two objects are exactly identical, including cached calculation results, by using the  :obj:`exact_hash <thermo.eos.GCEOS.exact_hash>` method:
 
 >>> PR_case3 = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0.41],[0.41,0]])
 >>> PR_case.state_hash() == PR_case3.state_hash()
 True
->>> hash(PR_case) == hash(PR_case3)
+>>> PR_case.exact_hash() == PR_case3.exact_hash()
 True
 >>> _ = PR_case.da_alpha_dT_ijs
->>> hash(PR_case) == hash(PR_case3)
+>>> PR_case.exact_hash() == PR_case3.exact_hash()
 False
 
 Serialization

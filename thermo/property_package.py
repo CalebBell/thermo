@@ -47,6 +47,7 @@ from chemicals.utils import normalize, remove_zeros
 from fluids.constants import R
 from fluids.numerics import UnconvergedError, brenth, derivative, exp, log, secant
 from fluids.numerics import numpy as np
+from thermo.serialize import JsonOptEncodable
 
 DIRECT_1P = 'Direct 1 Phase'
 DIRECT_2P = 'Direct 2 Phase'
@@ -243,13 +244,17 @@ random_values = [0.8444218515250481, 0.7579544029403025, 0.420571580830845, 0.25
 
 
 class StabilityTester:
+    json_version = 1
+    obj_references = []
+    non_json_attributes = []
+    vectorized = False
+    __full_path__ = f"{__module__}.{__qualname__}"
 
     def __init__(self, Tcs, Pcs, omegas, aqueous_check=False, CASs=None):
         self.Tcs = Tcs
         self.Pcs = Pcs
         self.omegas = omegas
         self.N = len(Tcs)
-        self.cmps = range(self.N)
         self.aqueous_check = aqueous_check
         self.CASs = CASs
 
@@ -331,13 +336,15 @@ class StabilityTester:
         return random_guesses
 
     def pure_guesses(self, zero_fraction=1E-6):
-        pure_guesses = [normalize([zero_fraction if j != k else 1 for j in self.cmps])
-                       for k in self.cmps]
+        cmps = range(self.N)
+        pure_guesses = [normalize([zero_fraction if j != k else 1 for j in cmps])
+                       for k in cmps]
         return pure_guesses
 
     def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)): #
         # First K is vapor-like phase; second, liquid like
-        Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in self.cmps]
+        cmps = range(self.N)
+        Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in cmps]
         Wilson_guesses = []
         for power in powers:
             Ys_Wilson = [Ki**power*zi for Ki, zi in zip(Ks_Wilson, zs)]
@@ -365,8 +372,9 @@ class StabilityTester:
             return 'random%d' %(idx-(3+self.N))
 
     def incipient_guess_named(self, T, P, zs, name, zero_fraction=1E-6):
-        N, cmps = self.N, self.cmps
-        Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in self.cmps]
+        N = self.N
+        cmps = range(N)
+        Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in cmps]
         if name == 'Wilson gas':
             # Where the wilson guess leads to an incipient gas
             Ys_Wilson = [Ki*zi for Ki, zi in zip(Ks_Wilson, zs)]
@@ -391,7 +399,8 @@ class StabilityTester:
     def incipient_guesses(self, T, P, zs, pure=True, Wilson=True, random=True,
                 zero_fraction=1E-6, expect_liquid=False, expect_aqueous=False,
                 existing_phases=0):
-        N, cmps = self.N, self.cmps
+        N = self.N
+        cmps = range(N)
         Tcs, Pcs, omegas = self.Tcs, self.Pcs, self.omegas
 
         WILSON_MAX_GUESSES = 4
@@ -531,6 +540,8 @@ class StabilityTester:
 
         return guesses
 
+    as_json = JsonOptEncodable.as_json
+    from_json = JsonOptEncodable.from_json
 
 class PropertyPackage:
 

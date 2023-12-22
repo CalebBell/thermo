@@ -30,7 +30,7 @@ from fluids.numerics import *
 from thermo import *
 from thermo.phases.phase_utils import lnphis_direct
 from thermo.unifac import DOUFIP2006, UFIP
-
+import json
 
 def test_C2_C5_PR():
     T, P = 300, 3e6
@@ -40,7 +40,7 @@ def test_C2_C5_PR():
                                          names=['ethane', 'pentane'], MWs=[30.06904, 72.14878])
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228])),
                          HeatCapacityGas(poly_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866]))]
-    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases)
+    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     zs = ws_to_zs([.5, .5], constants.MWs)
 
 
@@ -77,6 +77,15 @@ def test_C2_C5_PR():
     # This one is presently identified as a LL...  just check the number of phases
     assert flasher.flash(zs=zs, P=6.615e6, T=386).phase_count == 2
 
+    # Check we can store this
+    output = json.loads(json.dumps(flasher.as_json()))
+    new_flasher = FlashVL.from_json(output)
+    assert new_flasher == flasher
+
+    json_data = res.as_json()
+    json_data = json.loads(json.dumps(json_data))
+    new_eq_state = EquilibriumState.from_json(json_data)
+    assert new_eq_state == res
 
 def test_flash_TP_K_composition_idependent_unhappiness():
     constants = ChemicalConstantsPackage(Tcs=[508.1, 536.2, 512.5], Pcs=[4700000.0, 5330000.0, 8084000.0], omegas=[0.309, 0.21600000000000003, 0.5589999999999999],
@@ -158,6 +167,10 @@ def test_flash_combustion_products():
     assert res.gas
     assert res.phase == 'V'
 
+    json_data = res.as_json()
+    json_data = json.loads(json.dumps(json_data))
+    new_eq_state = EquilibriumState.from_json(json_data)
+    assert new_eq_state == res
 
 def test_bubble_T_PR_VL():
     constants = ChemicalConstantsPackage(CASs=['124-38-9', '110-54-3'], MWs=[44.0095, 86.17536], names=['carbon dioxide', 'hexane'], omegas=[0.2252, 0.2975], Pcs=[7376460.0, 3025000.0], Tbs=[194.67, 341.87], Tcs=[304.2, 507.6], Tms=[216.65, 178.075])
@@ -248,6 +261,10 @@ def test_C1_C10_PT_flash_VL():
     res = flasher.flash(T=T, P=P, zs=zs)
     assert_close(res.VF, 0.3933480634014041, rtol=1e-5)
 
+    json_data = res.as_json()
+    json_data = json.loads(json.dumps(json_data))
+    new_eq_state = EquilibriumState.from_json(json_data)
+    assert new_eq_state == res
 
 
 def test_combustion_products():
@@ -264,21 +281,32 @@ def test_combustion_products():
     zs_fuel = normalize(zs_fuel)
     zs_air = [0.0]*9 + [0.79, 0.21] + [0.0]
 
-    constants, properties = ChemicalConstantsPackage.from_IDs(IDs)
+    constants, correlations = ChemicalConstantsPackage.from_IDs(IDs)
     combustion = fuel_air_spec_solver(zs_air=zs_air, zs_fuel=zs_fuel, CASs=constants.CASs,
                                       atomss=constants.atomss, n_fuel=1.0, O2_excess=0.1)
     zs = combustion['zs_out']
 
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    gas = CEOSGas(PRMIX, eos_kwargs, T=T, P=P, zs=zs, HeatCapacityGases=properties.HeatCapacityGases)
-    liquid = CEOSLiquid(PRMIX, eos_kwargs, T=T, P=P, zs=zs, HeatCapacityGases=properties.HeatCapacityGases)
+    gas = CEOSGas(PRMIX, eos_kwargs, T=T, P=P, zs=zs, HeatCapacityGases=correlations.HeatCapacityGases)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs, T=T, P=P, zs=zs, HeatCapacityGases=correlations.HeatCapacityGases)
 
-    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
     res = flasher.flash(T=400.0, P=1e5, zs=zs)
     assert res.phase_count == 1
     assert res.gas is not None
 
+    # Check we can store this
+    output = json.loads(json.dumps(flasher.as_json()))
+    assert 'constants' not in output
+    assert 'correlations' not in output
+    assert 'settings' not in output
+    new_flasher = FlashVL.from_json(output, {'constants': constants, 'correlations': correlations, 'settings': flasher.settings})
+    assert new_flasher == flasher
 
+    json_data = res.as_json()
+    json_data = json.loads(json.dumps(json_data))
+    new_eq_state = EquilibriumState.from_json(json_data)
+    assert new_eq_state == res
 
 def test_furfuryl_alcohol_high_TP():
     # Legacy bug, don't even remember what the original issue was
@@ -373,6 +401,14 @@ def test_flash_GibbsExcessLiquid_ideal_Psat():
         check = flasher.flash(T=T, P=VF.P, zs=zs)
         assert_close(VF.VF, check.VF, rtol=1e-5)
 
+    # Check we can store this
+    output = json.loads(json.dumps(flasher.as_json()))
+    assert 'constants' not in output
+    assert 'correlations' not in output
+    assert 'settings' not in output
+    new_flasher = FlashVL.from_json(output, {'constants': constants, 'correlations': correlations, 'settings': flasher.settings})
+    assert new_flasher == flasher
+
 def test_flash_GibbsExcessLiquid_ideal_PsatPoynting():
     # Binary water-ethanol
     T = 230.0
@@ -420,6 +456,13 @@ def test_flash_GibbsExcessLiquid_ideal_PsatPoynting():
     assert res.phase_count == 1
     assert res.liquid_count == 1
 
+    # Check we can store this
+    output = json.loads(json.dumps(flasher.as_json()))
+    assert 'constants' not in output
+    assert 'correlations' not in output
+    assert 'settings' not in output
+    new_flasher = FlashVL.from_json(output, {'constants': constants, 'correlations': correlations, 'settings': flasher.settings})
+    assert new_flasher == flasher
 
 def test_PRTranslated_air_two_phase():
     HeatCapacityGases = [HeatCapacityGas(CASRN="7727-37-9", MW=28.0134, similarity_variable=0.07139440410660612, extrapolation="linear", method="TRCIG"),
@@ -450,6 +493,10 @@ def test_PRTranslated_air_two_phase():
     res = flasher.flash(P=200000, H=-11909.90990990991, zs=zs)
     assert_close(res.gas_beta, 0.0010452858012690303, rtol=1e-5)
 
+    json_data = res.as_json()
+    json_data = json.loads(json.dumps(json_data))
+    new_eq_state = EquilibriumState.from_json(json_data)
+    assert new_eq_state == res
 
 def test_issue106_Michelson_stability_test_log_zero():
     T = 500
@@ -576,21 +623,28 @@ def test_UNIFAC_water_ethanol_sample():
         assert_close1d(base.liquid0.zs, PVF.liquid0.zs, rtol=1e-5)
         assert_close(base.VF, PVF.VF, rtol=1e-5)
 
+        json_data = base.as_json()
+        json_data = json.loads(json.dumps(json_data))
+        new_eq_state = EquilibriumState.from_json(json_data)
+        assert new_eq_state == base
+        assert base != TVF
+        assert base != PVF
+
 
 def test_UNIFAC_ternary_basic():
     chemicals = ['pentane', 'hexane', 'octane']
     zs=[.1, .4, .5]
     P=1e5
     T=298.15
-    constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
+    constants, correlations = ChemicalConstantsPackage.from_IDs(chemicals)
     GE = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 2, 2: 3}, {1: 2, 2: 4}, {1: 2, 2: 6}], version=0,
                             interaction_data=UFIP, subgroups=UFSG)
 
     eoss = [PR(Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i], T=T, P=P) for i in range(constants.N)]
     liquid = GibbsExcessLiquid(
-        VaporPressures=properties.VaporPressures,
-        HeatCapacityGases=properties.HeatCapacityGases,
-        VolumeLiquids=properties.VolumeLiquids,
+        VaporPressures=correlations.VaporPressures,
+        HeatCapacityGases=correlations.HeatCapacityGases,
+        VolumeLiquids=correlations.VolumeLiquids,
         GibbsExcessModel=GE,
         eos_pure_instances=eoss,
         equilibrium_basis='Poynting&PhiSat', caloric_basis='Poynting&PhiSat',
@@ -598,8 +652,8 @@ def test_UNIFAC_ternary_basic():
 
 
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    gas = CEOSGas(IGMIX, HeatCapacityGases=properties.HeatCapacityGases, eos_kwargs=eos_kwargs)
-    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    gas = CEOSGas(IGMIX, HeatCapacityGases=correlations.HeatCapacityGases, eos_kwargs=eos_kwargs)
+    flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
 
 
     base  = flasher.flash(T=400, P=1E7, zs=zs)
@@ -617,6 +671,13 @@ def test_UNIFAC_ternary_basic():
     assert_close1d(res.gas.zs, ys_expect, rtol=5e-2)
     assert_close(res.P, 212263.260256, rtol=1e-1)
 
+    # Check we can store this
+    output = json.loads(json.dumps(flasher.as_json()))
+    assert 'constants' not in output
+    assert 'correlations' not in output
+    assert 'settings' not in output
+    new_flasher = FlashVL.from_json(output, {'constants': constants, 'correlations': correlations, 'settings': flasher.settings})
+    assert new_flasher == flasher
 
 def test_UNIFAC_binary_caloric_basic():
     # DDBST test question
@@ -752,7 +813,7 @@ def test_first_henry_pure_solvent():
 def test_henry_water_ethanol_solvent_only_water_parameters():
     constants = ChemicalConstantsPackage(CASs=['7732-18-5', '74-82-8', '7782-44-7', '64-17-5'], MWs=[18.01528, 16.04246, 31.9988, 46.06844], names=['water', 'methane', 'oxygen', 'ethanol'], omegas=[0.344, 0.008, 0.021, 0.635], Pcs=[22048320.0, 4599000.0, 5042945.25, 6137000.0], Tbs=[373.124, 111.65, 90.188, 351.39], Tcs=[647.14, 190.564, 154.58, 514.0], Tms=[273.15, 90.75, 54.36, 159.05], Vcs=[5.6e-05, 9.86e-05, 7.34e-05, 0.000168], Zcs=[0.2294727397218464, 0.2861971332411768, 0.2880002236716698, 0.24125043269792065])
 
-    properties = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
     VaporPressures=[VaporPressure(load_data=False, exp_poly_fit=(235.0, 647.096, [-2.2804872185158488e-20, 9.150413938315753e-17, -1.5948089451561768e-13, 1.583762733400446e-10, -9.868214067470077e-08, 3.996161556967839e-05, -0.01048791558325078, 1.7034790943304348, -125.70729281239332])),
     VaporPressure(load_data=False, exp_poly_fit=(91.0, 190.53, [9.622723229049567e-17, -8.612411529834985e-14, 2.9833595006425225e-11, -4.260777701614599e-09, -1.2594926603862017e-07, 0.00013955339672608612, -0.022179706326222424, 1.7235004480396063, -46.63780124626052])),
     VaporPressure(load_data=False, exp_poly_fit=(54.0, 154.7, [-9.531407063492216e-16, 9.489123009949052e-13, -4.093086833338262e-10, 1.0049035481323629e-07, -1.5482475796101542e-05, 0.0015527861689055723, -0.10130889779718814, 4.125643816700549, -72.5217726309476])),
@@ -776,14 +837,14 @@ def test_henry_water_ethanol_solvent_only_water_parameters():
     zs = [0.4, 0.15, 0.05, 0.4]
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
 
-    gas = CEOSGas(IGMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
+    gas = CEOSGas(IGMIX, eos_kwargs=eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
     # henry_params = tuple( np.array(IPDB.get_ip_asymmetric_matrix('ChemSep Henry', constants.CASs, p)).tolist() for p in ('A', 'B', 'C', 'D', 'E', 'F'))
     henry_params = ([[0.0, 0.0, 0.0, 0.0], [349.743, 0.0, 0.0, 0.0], [198.51, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [-13282.1, 0.0, 0.0, 0.0], [-8544.73, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [-51.9144, 0.0, 0.0, 0.0], [-26.35, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0425831, 0.0, 0.0, 0.0], [0.0083538, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]])
 
 
-    liquid = GibbsExcessLiquid(VaporPressures=properties.VaporPressures,
-                            HeatCapacityGases=properties.HeatCapacityGases,
-                            VolumeLiquids=properties.VolumeLiquids,
+    liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures,
+                            HeatCapacityGases=correlations.HeatCapacityGases,
+                            VolumeLiquids=correlations.VolumeLiquids,
                             henry_as=henry_params[0],henry_bs=henry_params[1],
                             henry_cs=henry_params[2],henry_ds=henry_params[3],
                             henry_es=henry_params[4],henry_fs=henry_params[5],
@@ -831,13 +892,20 @@ def test_henry_water_ethanol_solvent_only_water_parameters():
     d2lnPsats_dT2_num = [i[0] for i in d2lnPsats_dT2_num]
     assert_close1d(d2lnPsats_dT2, d2lnPsats_dT2_num, rtol=1e-5)
 
-    flasher = FlashVL(constants, properties, liquid=liquid, gas=gas)
+    flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
     PT = flasher.flash(T=T, P=P, zs=zs)
     assert_close(PT.VF, 0.21303456001555365, rtol=1e-12)
     assert_close1d(PT.gas.zs, [0.017803525791727007, 0.7040477725323597, 0.2346846611296595, 0.04346404054625393])
     assert_close1d(PT.liquid0.zs, [0.5034620500286068, 1.7145033253831193e-05, 5.154576856346698e-06, 0.49651565036128303])
 
 
+    # Check we can store this
+    output = json.loads(json.dumps(flasher.as_json()))
+    assert 'constants' not in output
+    assert 'correlations' not in output
+    assert 'settings' not in output
+    new_flasher = FlashVL.from_json(output, {'constants': constants, 'correlations': correlations, 'settings': flasher.settings})
+    assert new_flasher == flasher
 
 
 def test_PRMIX_basics_H_S():

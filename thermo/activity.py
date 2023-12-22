@@ -38,7 +38,7 @@ Base Class
     :members:
     :undoc-members:
     :show-inheritance:
-    :exclude-members:
+    :exclude-members: d2GE_dT2_numerical, d2GE_dTdxs_numerical, d2GE_dxixjs_numerical, d3GE_dT3_numerical, dGE_dT_numerical, dGE_dxs_numerical
     :special-members: __hash__, __eq__, __repr__
 
 Ideal Liquid Class
@@ -69,11 +69,12 @@ References
 __all__ = ['GibbsExcess', 'IdealSolution']
 from chemicals.utils import d2xs_to_dxdn_partials, dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, normalize, object_data
 from fluids.constants import R, R_inv
-from fluids.numerics import exp, log, trunc_exp
+from fluids.numerics import exp, log, trunc_exp, derivative, jacobian, hessian
 from fluids.numerics import numpy as np
 
 from thermo import serialize
 from thermo.fitting import fit_customized
+from thermo.serialize import JsonOptEncodable
 
 try:
     npexp, ones, zeros, array, ndarray = np.exp, np.ones, np.zeros, np.array, np.ndarray
@@ -293,6 +294,9 @@ class GibbsExcess:
                   '_gammas', '_dgammas_dns', '_dgammas_dT', '_d2GE_dxixjs',  '_dHE_dxs', '_dSE_dxs',
                   '_model_hash')
 
+    recalculable_attributes = ('_GE', '_dGE_dT', '_SE','_d2GE_dT2', '_d2GE_dTdxs', '_dGE_dxs',
+                  '_gammas', '_dgammas_dns', '_dgammas_dT', '_d2GE_dxixjs',  '_dHE_dxs', '_dSE_dxs')
+
     _point_properties = ('CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns',
                          'd2GE_dTdxs', 'd2GE_dxixjs', 'd2nGE_dTdns', 'd2nGE_dninjs',
                          'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
@@ -302,6 +306,10 @@ class GibbsExcess:
 
     def __init_subclass__(cls):
         cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
+
+    json_version = 1
+    obj_references = []
+    non_json_attributes = ['_model_hash']
 
     def __repr__(self):
         r'''Method to create a string representation of the state of the model.
@@ -325,20 +333,6 @@ class GibbsExcess:
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)
-
-    def __hash__(self):
-        r'''Method to calculate and return a hash representing the exact state
-        of the object. This includes `T`, `xs`,
-        the model class, and which values have already been calculated.
-
-        Returns
-        -------
-        hash : int
-            Hash of the object, [-]
-        '''
-        d = object_data(self)
-        ans = hash_any_primitive((self.__class__.__name__, d))
-        return ans
 
     def model_hash(self):
         r'''Basic method to calculate a hash of the non-state parts of the model
@@ -382,7 +376,23 @@ class GibbsExcess:
         xs = self.xs if not self.vectorized else self.xs.tolist()
         return hash_any_primitive((self.model_hash(), float(self.T), xs))
 
-    def as_json(self):
+    __hash__ = state_hash
+
+    def exact_hash(self):
+        r'''Method to calculate and return a hash representing the exact state
+        of the object. This includes `T`, `xs`,
+        the model class, and which values have already been calculated.
+
+        Returns
+        -------
+        hash : int
+            Hash of the object, [-]
+        '''
+        d = object_data(self)
+        ans = hash_any_primitive((self.__class__.__name__, d))
+        return ans
+    
+    def as_json(self, cache=None, option=0):
         r'''Method to create a JSON-friendly representation of the Gibbs Excess
         model which can be stored, and reloaded later.
 
@@ -404,16 +414,10 @@ class GibbsExcess:
         >>> model_copy = IdealSolution.from_json(json.loads(json_str))
         >>> assert model_copy == model
         '''
-        # vaguely jsonpickle compatible
-        d = object_data(self)
-        if self.vectorized:
-            d = serialize.arrays_to_lists(d)
-        d["py/object"] = self.__full_path__
-        d["json_version"] = 1
-        return d
+        return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
-    def from_json(cls, json_repr):
+    def from_json(cls, json_repr, cache=None):
         r'''Method to create a Gibbs Excess model from a JSON-friendly
         serialization of another Gibbs Excess model.
 
@@ -439,28 +443,14 @@ class GibbsExcess:
         >>> new_model = IdealSolution.from_json(json_view)
         >>> assert model == new_model
         '''
-        d = json_repr
-        vectorized = d['vectorized']
-        if vectorized:
-            d = serialize.naive_lists_to_arrays(d)
+        return JsonOptEncodable.from_json(json_repr, cache)
 
-        if vectorized and 'cmp_group_idx' in d:
-            d['cmp_group_idx'] = tuple(array(v) for v in d['cmp_group_idx'])
-        if vectorized and 'group_cmp_idx' in d:
-            d['group_cmp_idx'] = tuple(array(v) for v in d['group_cmp_idx'])
-
-
-#        if cls is GibbsExcess:
-#            model_name = d['py/object']
-
-        del d['py/object']
-        del d["json_version"]
-
-        new = cls.__new__(cls)
-        for k, v in d.items():
-            setattr(new, k, v)
-        # new.__dict__ = d
-        return new
+    def _custom_from_json(self, *args):
+        vectorized = self.vectorized
+        if vectorized and hasattr(self, 'cmp_group_idx'):
+            setattr(self, 'cmp_group_idx', tuple(array(v) for v in getattr(self, 'cmp_group_idx')))
+        if vectorized and hasattr(self, 'group_cmp_idx'):
+            setattr(self, 'group_cmp_idx', tuple(array(v) for v in getattr(self, 'group_cmp_idx')))
 
     def HE(self):
         r'''Calculate and return the excess entropy of a liquid phase using an
@@ -1038,6 +1028,55 @@ class GibbsExcess:
                     **fit_kwargs)
         return res
 
+        
+derivatives_added = [('dGE_dT', 'GE', 1),
+ ('d2GE_dT2', 'GE', 2),
+ ('d3GE_dT3', 'GE', 3),
+]
+for create_derivative, derive_attr, order in derivatives_added:
+    def numerical_derivative(self, derive_attr=derive_attr, n=order, ):
+        order = 2*n+1
+        perturbation = 1e-7
+        xs = self.xs
+        def func(T):
+            if T == self.T:
+                obj = self
+            else:
+                obj = self.to_T_xs(xs=xs, T=T)
+            return getattr(obj, derive_attr)()
+        return derivative(func, x0=self.T, dx=self.T*perturbation, lower_limit=0.0, n=n, order=order)
+    setattr(GibbsExcess, create_derivative+'_numerical', numerical_derivative)
+
+first_comp_derivatives = [
+    ('dGE_dxs', 'GE'),
+    ('d2GE_dTdxs', 'dGE_dT'),
+]
+for create_derivative, derive_attr in first_comp_derivatives:
+    def numerical_derivative(self, derive_attr=derive_attr):
+        perturbation = 1e-7
+        def func(xs):
+            if xs == self.xs:
+                obj = self
+            else:
+                obj = self.to_T_xs(xs=xs, T=self.T)
+            return getattr(obj, derive_attr)()
+        return jacobian(func, self.xs, perturbation=perturbation)
+    setattr(GibbsExcess, create_derivative+'_numerical', numerical_derivative)
+
+second_comp_derivatives = [
+    ('d2GE_dxixjs', 'GE'),
+]
+for create_derivative, derive_attr in second_comp_derivatives:
+    def numerical_derivative(self, derive_attr=derive_attr):
+        perturbation = 1e-5
+        def func(xs):
+            if xs == self.xs:
+                obj = self
+            else:
+                obj = self.to_T_xs(xs=xs, T=self.T)
+            return getattr(obj, derive_attr)()
+        return hessian(func, self.xs, perturbation=perturbation)
+    setattr(GibbsExcess, create_derivative+'_numerical', numerical_derivative)
 
 class IdealSolution(GibbsExcess):
     r'''Class for  representing an ideal liquid, with no excess gibbs energy

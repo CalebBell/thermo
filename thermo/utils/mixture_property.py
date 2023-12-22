@@ -32,6 +32,7 @@ from thermo.eos_mix import GCEOSMIX
 from thermo.utils.functional import has_matplotlib
 from thermo.utils.names import POLY_FIT, LINEAR, MIXING_LOG_MOLAR, MIXING_LOG_MASS
 from thermo.utils.t_dependent_property import json_mixture_correlation_lookup, ENABLE_MIXTURE_JSON
+from thermo.serialize import JsonOptEncodable
 try:
     from itertools import product
 except:
@@ -52,7 +53,10 @@ class MixtureProperty:
 
     pure_references = ()
     pure_reference_types = ()
-
+    obj_references = () 
+    json_version = 1
+    non_json_attributes = ['TP_zs_ws_cached', 'prop_cached']
+    vectorized = False
     skip_prop_validity_check = False
     """Flag to disable checking the output of the value. Saves a little time.
     """
@@ -291,7 +295,7 @@ class MixtureProperty:
             return True
         raise ValueError("No check implemented for sepcified method")
 
-    def as_json(self, references=1):
+    def as_json(self, cache=None, option=0):
         r'''Method to create a JSON serialization of the mixture property
         which can be stored, and reloaded later.
 
@@ -311,25 +315,13 @@ class MixtureProperty:
         Examples
         --------
         '''
-        d = self.__dict__.copy() # Not a the real object dictionary
-        if references == 1:
-            for k in self.pure_references:
-                d[k] = [v.as_json() for v in d[k]]
+        return JsonOptEncodable.as_json(self, cache, option)
 
-        try:
-            eos = self.eos
-            if eos:
-                d['eos'] = eos[0].as_json()
-        except:
-            pass
-
-        d['json_version'] = 1
-        d["py/object"] = self.__full_path__
+    def _custom_as_json(self, d, cache):
         d['all_methods'] = list(d['all_methods'])
-        return d
 
     @classmethod
-    def from_json(cls, string):
+    def from_json(cls, json_repr, cache=None):
         r'''Method to create a MixtureProperty from a JSON
         serialization of another MixtureProperty.
 
@@ -351,24 +343,11 @@ class MixtureProperty:
         Examples
         --------
         '''
-        d = string
-        d['all_methods'] = set(d['all_methods'])
-        for k, sub_cls in zip(cls.pure_references, cls.pure_reference_types):
-            sub_jsons = d[k]
-            d[k] = [sub_cls.from_json(j) if j is not None else None
-                    for j in sub_jsons]
+        return JsonOptEncodable.from_json(json_repr, cache)
 
-        try:
-            eos = d['eos']
-            if eos is not None:
-                d['eos'] = [GCEOSMIX.from_json(eos)]
-        except:
-            pass
-        del d['py/object']
-        del d["json_version"]
-        new = cls.__new__(cls)
-        new.__dict__ = d
-        return new
+    def _custom_from_json(self, *args):
+        self.all_methods = set(self.all_methods)
+        self.TP_zs_ws_cached = [None, None, None, None]
 
     @property
     def method(self):

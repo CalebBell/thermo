@@ -40,12 +40,12 @@ EquilibriumState
 __all__ = ['EquilibriumState']
 
 from chemicals.elements import mass_fractions, periodic_table
-from chemicals.utils import SG, Vm_to_rho, mixing_simple, normalize, vapor_mass_quality, zs_to_ws
+from chemicals.utils import SG, Vm_to_rho, mixing_simple, normalize, vapor_mass_quality, zs_to_ws, object_data, hash_any_primitive
 from fluids.constants import N_A, R
 from fluids.numerics import log
 from fluids.numerics import numpy as np
-
-from thermo.bulk import Bulk, default_settings
+from thermo.serialize import arrays_to_lists, object_lookups
+from thermo.bulk import Bulk, default_settings, JsonOptEncodable
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
 from thermo.phases import Phase, derivatives_jacobian, derivatives_thermodynamic, derivatives_thermodynamic_mass, gas_phases, liquid_phases, solid_phases
 
@@ -205,6 +205,7 @@ class EquilibriumState:
     max_liquid_phases = 1
     reacted = False
     flashed = True
+    vectorized = False # not supported yet
 
     liquid_bulk = None
     solid_bulk = None
@@ -221,6 +222,26 @@ class EquilibriumState:
                  'liquid_zs', #'liquid_bulk',
                   'liquid0', 'liquid1', 'liquid2', 'bulk', 'flash_specs', 'flash_convergence',
                  'flasher', 'settings', 'constants', 'correlations', '__dict__')
+
+    obj_references = ('liquid_bulk', 'solid_bulk', 'bulk', 'gas', 'liquids', 'phases', 
+                    'solids',  'settings', 'constants', 'correlations', 'flasher',
+                      'liquid0', 'liquid1', 'liquid2')
+
+    def __eq__(self, other):
+        return self.__hash__() == hash(other)
+
+    def __hash__(self):
+        r'''Basic method to calculate a hash of the state.
+
+        Note that the hashes should only be compared on the same system running
+        in the same process!
+
+        Returns
+        -------
+        hash : int
+            Hash of the state including the phases making it up [-]
+        '''
+        return hash_any_primitive([self.phases, self.betas, self.gas_count, self.liquid_count, self.solid_count, self.settings, self.flasher])
 
     def __str__(self):
         s = '<EquilibriumState, T=%.4f, P=%.4f, zs=%s, betas=%s, phases=%s>'
@@ -319,6 +340,16 @@ class EquilibriumState:
             phase.result = self
             phase.constants = constants
             phase.correlations = correlations
+
+    def as_json(self, cache=None, option=0):
+        return JsonOptEncodable.as_json(self, cache, option)
+    @classmethod
+    def from_json(cls, json_repr, cache=None):
+        return JsonOptEncodable.from_json(json_repr, cache)
+
+    json_version = 1
+    non_json_attributes = []
+    vectorized = False
 
     @property
     def phase(self):
@@ -3621,3 +3652,14 @@ for _name, _CAS in _comonent_specific_properties.items():
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
 del _add_attrs_doc
+
+
+object_lookups[EquilibriumState.__full_path__] = EquilibriumState
+object_lookups[ChemicalConstantsPackage.__full_path__] = ChemicalConstantsPackage
+object_lookups[PropertyCorrelationsPackage.__full_path__] = PropertyCorrelationsPackage
+
+from thermo.chemical_package import mix_properties_to_classes, properties_to_classes
+for o in mix_properties_to_classes.values():
+    object_lookups[o.__full_path__] = o
+for o in properties_to_classes.values():
+    object_lookups[o.__full_path__] = o

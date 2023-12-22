@@ -340,9 +340,10 @@ class ThermalConductivityLiquid(TPDependentProperty):
 
     custom_args = ('MW', 'Tm', 'Tb', 'Tc', 'Pc', 'omega', 'Hfus')
 
+    DEFAULT_EXTRAPOLATION_MIN = 1e-4
     def __init__(self, CASRN='', MW=None, Tm=None, Tb=None, Tc=None, Pc=None,
                  omega=None, Hfus=None, extrapolation='linear',
-                 extrapolation_min=1e-4,
+                 extrapolation_min=DEFAULT_EXTRAPOLATION_MIN,
                  **kwargs):
         self.CASRN = CASRN
         self.MW = MW
@@ -685,6 +686,7 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
 
     pure_references = ('ThermalConductivityLiquids',)
     pure_reference_types = (ThermalConductivityLiquid,)
+    obj_references = ('ThermalConductivityLiquids',)
 
     pure_constants = ('MWs', )
     custom_args = pure_constants
@@ -989,9 +991,10 @@ class ThermalConductivityGas(TPDependentProperty):
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
                    'Vmg', 'Cpgm', 'mug')
 
+    DEFAULT_EXTRAPOLATION_MIN = 1e-4
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
                  Zc=None, omega=None, dipole=None, Vmg=None, Cpgm=None, mug=None,
-                 extrapolation='linear', extrapolation_min=1e-4, **kwargs):
+                 extrapolation='linear', extrapolation_min=DEFAULT_EXTRAPOLATION_MIN, **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -1330,6 +1333,7 @@ class ThermalConductivityGasMixture(MixtureProperty):
 
     pure_references = ('ThermalConductivityGases', 'ViscosityGases', )
     pure_reference_types = (ThermalConductivityGas, ViscosityGas)
+    obj_references = ('ThermalConductivityGases', 'ViscosityGases', )
 
     pure_constants = ('MWs', 'Tbs', )
     custom_args = pure_constants

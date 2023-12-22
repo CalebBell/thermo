@@ -313,7 +313,11 @@ class RegularSolution(GibbsExcess):
 
     gammas_from_args = staticmethod(regular_solution_gammas)
 
-    __slots__ = GibbsExcess.__slots__ + ('xsVs_sum', '_Hi_sums', 'lambda_coeffs', '_d3GE_dxixjxks', '_lambda_coeffs_zero', 'SPs', 'Vs', 'xsVs_sum_inv', 'xsVs')
+    _cached_calculated_attributes = ('_Hi_sums', '_d3GE_dxixjxks')
+    _model_attributes = ('Vs', 'SPs', 'lambda_coeffs')
+
+    __slots__ = GibbsExcess.__slots__ + ('xsVs_sum', 'xsVs_sum_inv', 'lambda_coeffs', '_lambda_coeffs_zero', 'SPs', 'Vs', 'xsVs') + _cached_calculated_attributes
+    recalculable_attributes = GibbsExcess.recalculable_attributes + _cached_calculated_attributes
 
     def gammas_args(self, T=None):
         if T is not None:
@@ -371,7 +375,6 @@ class RegularSolution(GibbsExcess):
         self.xsVs_sum = xsVs_sum
         self.xsVs_sum_inv = 1.0/xsVs_sum
 
-    _model_attributes = ('Vs', 'SPs', 'lambda_coeffs')
 
     def __repr__(self):
         s = '{}(T={}, xs={}, Vs={}, SPs={}'.format(self.__class__.__name__, repr(self.T), repr(self.xs),

@@ -341,7 +341,7 @@ class TPDependentProperty(TDependentProperty):
 
     def add_tabular_data_P(self, Ts, Ps, properties, name=None, check_properties=True):
         r'''Method to set tabular data to be used for interpolation.
-        Ts and Psmust be in increasing order. If no name is given, data will be
+        Ts and Ps must be in increasing order. If no name is given, data will be
         assigned the name 'Tabular data series #x', where x is the number of
         previously added tabular data series.
 
@@ -455,9 +455,7 @@ class TPDependentProperty(TDependentProperty):
         if key in self.tabular_data_interpolators_P:
             extrapolator, spline = self.tabular_data_interpolators_P[key]
         else:
-            from scipy.interpolate import interp2d
-
-
+            from scipy.interpolate import RectBivariateSpline, RegularGridInterpolator
             if self.interpolation_T:  # Transform ths Ts with interpolation_T if set
                 Ts2 = [self.interpolation_T(T2) for T2 in Ts]
             else:
@@ -470,11 +468,27 @@ class TPDependentProperty(TDependentProperty):
                 properties2 = [[self.interpolation_property(p) for p in r] for r in properties]
             else:
                 properties2 = properties
+            
+            # The data table must be sorted now, after transform the data may not be in ascending order
+
+            Ts2_sorted_indices = np.argsort(Ts2)
+            Ts2_sorted = np.array(Ts2)[Ts2_sorted_indices]
+
+            Ps2_sorted_indices = np.argsort(Ps2)
+            Ps2_sorted = np.array(Ps2)[Ps2_sorted_indices]
+
+            # Transform zs according to the sorted order of ys first (rows), then xs (columns)
+            properties2_sorted = np.array(properties2)[Ps2_sorted_indices, :][:, Ts2_sorted_indices]
+
+
+
+
             # Only allow linear extrapolation, but with whatever transforms are specified
-            extrapolator = interp2d(Ts2, Ps2, properties2)  # interpolation if fill value is missing
+            # extrapolator = RectBivariateSpline(Ts2_sorted, Ps2_sorted, properties2_sorted.T, kx=1, ky=1, s=0)  # interpolation if fill value is missing
+            extrapolator = RegularGridInterpolator((Ts2_sorted, Ps2_sorted), properties2_sorted.T, method='slinear', fill_value=None, bounds_error=False)  # interpolation if fill value is missing
             # If more than 5 property points, create a spline interpolation
             if len(properties) >= 5:
-                spline = interp2d(Ts2, Ps2, properties2, kind='cubic')
+                spline = RectBivariateSpline(Ts2_sorted, Ps2_sorted, properties2_sorted.T, kx=3, ky=3, s=0)
             else:
                 spline = None
             self.tabular_data_interpolators_P[key] = (extrapolator, spline)
@@ -483,7 +497,7 @@ class TPDependentProperty(TDependentProperty):
         # use.
         Ts, Ps, properties = self.tabular_data_P[name]
 
-        if T < Ts[0] or T > Ts[-1] or not spline or P < Ps[0] or P > Ps[-1]:
+        if T < Ts[0] or T > Ts[-1] or spline is None or P < Ps[0] or P > Ps[-1]:
             tool = extrapolator
         else:
             tool = spline
@@ -492,7 +506,7 @@ class TPDependentProperty(TDependentProperty):
             T = self.interpolation_T(T)
         if self.interpolation_P:
             P = self.interpolation_P(P)
-        prop = tool(T, P)  # either spline, or linear interpolation
+        prop = tool([T, P])[0] # either spline, or linear interpolation
 
         if self.interpolation_property:
             prop = self.interpolation_property_inv(prop)
@@ -706,22 +720,22 @@ class TPDependentProperty(TDependentProperty):
             if self.Pmin is not None:
                 Pmin = self.Pmin
             else:
-                raise Exception('Minimum pressure could not be auto-detected; please provide it')
+                raise ValueError('Minimum pressure could not be auto-detected; please provide it')
         if Pmax is None:
             if self.Pmax is not None:
                 Pmax = self.Pmax
             else:
-                raise Exception('Maximum pressure could not be auto-detected; please provide it')
+                raise ValueError('Maximum pressure could not be auto-detected; please provide it')
         if Tmin is None:
             if self._T_min_any is not None:
                 Tmin = self._T_min_any
             else:
-                raise Exception('Minimum temperature could not be auto-detected; please provide it')
+                raise ValueError('Minimum temperature could not be auto-detected; please provide it')
         if Tmax is None:
             if self._T_max_any is not None:
                 Tmax = self._T_max_any
             else:
-                raise Exception('Maximum temperature could not be auto-detected; please provide it')
+                raise ValueError('Maximum temperature could not be auto-detected; please provide it')
 
         if not methods_P:
             methods_P = self.all_methods_P

@@ -567,11 +567,13 @@ class NRTL(GibbsExcess):
                          'tau_gs', 'tau_hs', 'alpha_cs', 'alpha_ds')
     model_id = 100
 
+    stored_attributes = _model_attributes + ('alpha_temperature_independent', 'tau_coeffs_nonzero','zero_coeffs')
+    _cached_calculated_attributes = ('_alphas', '_dGs_dT', '_xj_dGs_dT_jis', '_xj_Gs_dtaus_dT_jis', '_d2Gs_dT2', '_xj_taus_dGs_dT_jis', '_dtaus_dT', '_Gs', '_d2taus_dT2',
+                '_taus',  '_xj_Gs_jis_inv', '_xj_Gs_taus_jis', '_xj_Gs_jis', 
+                '_d3taus_dT3', '_d3Gs_dT3', '_Gs_transposed', '_Gs_taus_transposed', '_Gs_taus')
+    __slots__ = GibbsExcess.__slots__ + stored_attributes + _cached_calculated_attributes
+    recalculable_attributes = _cached_calculated_attributes + GibbsExcess.recalculable_attributes
 
-    __slots__ = GibbsExcess.__slots__+('_alphas', '_dGs_dT', 'tau_gs', '_xj_dGs_dT_jis', '_xj_Gs_dtaus_dT_jis',  'tau_bs',  'alpha_ds', 'tau_fs', 'tau_hs',
-                 'alpha_temperature_independent',  '_d2Gs_dT2', '_xj_taus_dGs_dT_jis', '_dtaus_dT', '_Gs', '_d2taus_dT2', 'tau_as',
-                 'tau_coeffs_nonzero', '_taus', 'tau_es', '_xj_Gs_jis_inv', '_xj_Gs_taus_jis', '_xj_Gs_jis', 'zero_coeffs',  'alpha_cs',
-                 '_d3taus_dT3', '_d3Gs_dT3', '_Gs_transposed', '_Gs_taus_transposed', '_Gs_taus')
 
 
     def gammas_args(self, T=None):

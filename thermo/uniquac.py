@@ -521,12 +521,13 @@ class UNIQUAC(GibbsExcess):
     _model_attributes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_C',
                         'tau_coeffs_D', 'tau_coeffs_E', 'tau_coeffs_F',
                         'rs', 'qs')
-
-    __slots__ = GibbsExcess.__slots__ + ('tau_coeffs_C', 'tau_coeffs_A', '_qsxs_sum_inv', '_thetaj_d3taus_dT3_jis',
+    _cached_calculated_attributes = ('_qsxs_sum_inv', '_thetaj_d3taus_dT3_jis',
                  '_thetas', '_d2taus_dT2', '_thetaj_dtaus_dT_jis', '_thetaj_taus_jis', '_thetaj_d2taus_dT2_jis',
-                 '_dthetas_dxs', 'zero_coeffs', '_rsxs_sum_inv', 'tau_coeffs_E', '_phis_inv', '_dtaus_dT',
-                 'tau_coeffs_D', 'tau_coeffs_F', '_d3taus_dT3', 'qs', '_d2phis_dxixjs', 'tau_coeffs_B',
-                 '_phis', 'rs', '_dphis_dxs', '_taus', '_thetaj_taus_jis_inv', '_d2thetas_dxixjs', '_d3GE_dT3')
+                 '_dthetas_dxs', '_rsxs_sum_inv', '_phis_inv', '_dtaus_dT',
+                 '_d3taus_dT3', '_d2phis_dxixjs',
+                 '_phis', '_dphis_dxs', '_taus', '_thetaj_taus_jis_inv', '_d2thetas_dxixjs', '_d3GE_dT3')
+
+    __slots__ = GibbsExcess.__slots__ + _model_attributes + _cached_calculated_attributes + ('zero_coeffs',)
 
     def gammas_args(self, T=None):
         if T is not None:

@@ -30,15 +30,18 @@ from thermo.eos_mix import *
 from thermo.equilibrium import EquilibriumState
 from thermo.flash import FlashPureVLS, FlashVL, FlashVLN
 from thermo.heat_capacity import *
-from thermo.interface import SurfaceTension
+from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.phase_change import *
 from thermo.phases import *
-from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityLiquid
+from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityLiquid, ThermalConductivitySolid, ThermalConductivityGasMixture, ThermalConductivityLiquidMixture
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
-from thermo.viscosity import ViscosityGas, ViscosityLiquid
+from thermo.viscosity import ViscosityGas, ViscosityLiquid, ViscosityGasMixture, ViscosityLiquidMixture
+from thermo.permittivity import PermittivityLiquid
 from thermo.volume import *
 from thermo.bulk import default_settings
 import pickle
+import json
+
 
 def test_default_settings_storage():
     settings_copy = eval(str(default_settings))
@@ -49,9 +52,16 @@ def test_default_settings_storage():
     settings_pickle = pickle.loads(pickle.dumps(settings_copy))
     assert settings_pickle == settings_copy
     assert settings_pickle == default_settings
+    
+    # json checks
+    new = BulkSettings.from_json(json.loads(json.dumps(default_settings.as_json())))
+    assert new == default_settings
 
     # Test creating it
     obj = BulkSettings(dP_dT='MOLE_WEIGHTED', dP_dV='MOLE_WEIGHTED', d2P_dV2='MOLE_WEIGHTED', d2P_dT2='MOLE_WEIGHTED', d2P_dTdV='MOLE_WEIGHTED', mu_LL='LOG_PROP_MASS_WEIGHTED', mu_LL_power_exponent=0.4, mu_VL='McAdams', mu_VL_power_exponent=0.4, k_LL='MASS_WEIGHTED', k_LL_power_exponent=0.4, k_VL='MASS_WEIGHTED', k_VL_power_exponent=0.4, sigma_LL='MASS_WEIGHTED', sigma_LL_power_exponent=0.4, T_liquid_volume_ref=298.15, T_normal=273.15, P_normal=101325.0, T_standard=288.15, P_standard=101325.0, T_gas_ref=288.15, P_gas_ref=101325.0, speed_of_sound='MOLE_WEIGHTED', kappa='MOLE_WEIGHTED', isobaric_expansion='MOLE_WEIGHTED', Joule_Thomson='MOLE_WEIGHTED', VL_ID='PIP', S_ID='d2P_dVdT', solid_sort_method='prop', liquid_sort_method='prop', liquid_sort_cmps=[], solid_sort_cmps=[], liquid_sort_cmps_neg=[], solid_sort_cmps_neg=[], liquid_sort_prop='DENSITY_MASS', solid_sort_prop='DENSITY_MASS', phase_sort_higher_first=True, water_sort='water not special', equilibrium_perturbation=1e-07)
+    new = BulkSettings.from_json(json.loads(json.dumps(obj.as_json())))
+    assert new == obj
+
 
 
 
@@ -111,6 +121,11 @@ def test_two_eos_pure_flash_all_properties():
 
     # Pseudo vapor volume for eos gas?
     flasher = FlashPureVLS(constants, correlations, gas, [eos_liquid], [])
+
+    # Check we can recreate the flasher and it is the same object
+    flasher_copy = eval(repr(flasher))
+    assert flasher_copy == flasher
+    assert hash(flasher_copy) == hash(flasher)
 
     # Test all the results
     T, VF = 300.0, 0.4
@@ -734,6 +749,15 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.Vss(), Vss_expect, rtol=1e-12)
     assert_close(eq.bulk.Vss(), Vss_expect, rtol=1e-12)
     assert_close1d([i.Vss() for i in eq.phases], [Vss_expect]*2, rtol=1e-12)
+
+    # Dump it to json
+
+    json_data = eq.as_json()
+    json_data = json.loads(json.dumps(json_data))
+    new_eq_state = EquilibriumState.from_json(json_data)
+    assert new_eq_state == eq
+
+
     # Test some methods that failed
     # gas flash
     pure_gas = flasher.flash(T=500.0, P=1e5)
@@ -862,6 +886,10 @@ def test_thermodynamic_derivatives_named_settings_with_flash():
     assert_close(res.kappa(), 0.0010137530158341767, rtol=1e-5)
     assert_close(res.bulk.kappa(), 0.0010137530158341767, rtol=1e-5)
 
+    json_data = res.as_json()
+    json_data = json.loads(json.dumps(json_data))
+    new_eq_state = EquilibriumState.from_json(json_data)
+    assert new_eq_state == res
 
 
 def test_thermodynamic_derivatives_settings():
@@ -943,7 +971,7 @@ def test_thermodynamic_derivatives_settings():
     settings = BulkSettings(dP_dT=MASS_WEIGHTED, dP_dV=MASS_WEIGHTED,
                         d2P_dV2=MASS_WEIGHTED, d2P_dT2=MASS_WEIGHTED,
                         d2P_dTdV=MASS_WEIGHTED)
-    res = EquilibriumState(settings=settings, **VLL_kwargs)
+    res = res_old = EquilibriumState(settings=settings, **VLL_kwargs)
     v, v2 = 1665265.7297690287, 1717663.9516905276
     assert_close(res.dP_dT(), v, rtol=1e-8)
     assert_close(res.bulk.dP_dT(), v, rtol=1e-8)
@@ -969,11 +997,17 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.d2P_dTdV(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dTdV(), v2, rtol=1e-8)
 
+    json_data = res.as_json()
+    json_data = json.loads(json.dumps(json_data))
+    new_eq_state = EquilibriumState.from_json(json_data)
+    assert new_eq_state == res
+
     # Volume derivatives
     settings = BulkSettings(dP_dT=VOLUME_WEIGHTED, dP_dV=VOLUME_WEIGHTED,
                             d2P_dV2=VOLUME_WEIGHTED, d2P_dT2=VOLUME_WEIGHTED,
                             d2P_dTdV=VOLUME_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
+    assert new_eq_state != res
 
     v, v2 = (92138.35889956845, 1664153.2082311283)
     assert_close(res.dP_dT(), v, rtol=1e-8)
@@ -1313,6 +1347,11 @@ def test_equilibrium_ternary_air_PR():
     assert_close1d(res.bulk.zs_no_water(), [0.20999959359505813, 0.7900004064049418, 0.0])
     assert_close2d([i.zs_no_water() for i in res.phases], [[0.20999959359505813, 0.7900004064049418, 0.0]])
 
+    json_data = res.as_json()
+    json_data = json.loads(json.dumps(json_data))
+    new_eq_state = EquilibriumState.from_json(json_data)
+    assert new_eq_state == res
+
 def test_Phase_to_EquilibriumState():
     constants = ChemicalConstantsPackage(atomss=[{'O': 2}, {'N': 2}, {'H': 2, 'O': 1}], CASs=['7782-44-7', '7727-37-9', '7732-18-5'], Gfgs=[0.0, 0.0, -228554.325], Hfgs=[0.0, 0.0, -241822.0], MWs=[31.9988, 28.0134, 18.01528], names=['oxygen', 'nitrogen', 'water'], omegas=[0.021, 0.04, 0.344], Pcs=[5042945.25, 3394387.5, 22048320.0], Sfgs=[0.0, 0.0, -44.499999999999964], Tbs=[90.188, 77.355, 373.124], Tcs=[154.58, 126.2, 647.14], Tms=[54.36, 63.15, 273.15], Vcs=[7.34e-05, 8.95e-05, 5.6e-05])
 
@@ -1349,3 +1388,14 @@ def test_Phase_to_EquilibriumState():
         assert_close1d(state.dfugacities_dP(), phase.dfugacities_dP())
         assert_close1d(state.dphis_dzs(), phase.dphis_dzs())
         assert_close1d(state.dlnphis_dns(), phase.dlnphis_dns())
+
+        json_data = state.as_json()
+        json_data = json.loads(json.dumps(json_data))
+        new_eq_state = EquilibriumState.from_json(json_data)
+        assert new_eq_state == state
+
+
+        json_data = phase.as_json()
+        json_data = json.loads(json.dumps(json_data))
+        new_eq_state = EquilibriumState.from_json(json_data)
+        assert new_eq_state == phase
