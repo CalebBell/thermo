@@ -69,10 +69,9 @@ References
 __all__ = ['GibbsExcess', 'IdealSolution']
 from chemicals.utils import d2xs_to_dxdn_partials, dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, normalize, object_data
 from fluids.constants import R, R_inv
-from fluids.numerics import exp, log, trunc_exp, derivative, jacobian, hessian
+from fluids.numerics import derivative, exp, hessian, jacobian, log, trunc_exp
 from fluids.numerics import numpy as np
 
-from thermo import serialize
 from thermo.fitting import fit_customized
 from thermo.serialize import JsonOptEncodable
 
@@ -328,7 +327,7 @@ class GibbsExcess:
         IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
         '''
         # Other classes with different parameters should expose them here too
-        s = f'{self.__class__.__name__}(T={repr(self.T)}, xs={repr(self.xs)})'
+        s = f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r})'
         return s
 
     def __eq__(self, other):
@@ -391,7 +390,7 @@ class GibbsExcess:
         d = object_data(self)
         ans = hash_any_primitive((self.__class__.__name__, d))
         return ans
-    
+
     def as_json(self, cache=None, option=0):
         r'''Method to create a JSON-friendly representation of the Gibbs Excess
         model which can be stored, and reloaded later.
@@ -448,9 +447,9 @@ class GibbsExcess:
     def _custom_from_json(self, *args):
         vectorized = self.vectorized
         if vectorized and hasattr(self, 'cmp_group_idx'):
-            setattr(self, 'cmp_group_idx', tuple(array(v) for v in getattr(self, 'cmp_group_idx')))
+            self.cmp_group_idx = tuple(array(v) for v in self.cmp_group_idx)
         if vectorized and hasattr(self, 'group_cmp_idx'):
-            setattr(self, 'group_cmp_idx', tuple(array(v) for v in getattr(self, 'group_cmp_idx')))
+            self.group_cmp_idx = tuple(array(v) for v in self.group_cmp_idx)
 
     def HE(self):
         r'''Calculate and return the excess entropy of a liquid phase using an
@@ -1028,7 +1027,7 @@ class GibbsExcess:
                     **fit_kwargs)
         return res
 
-        
+
 derivatives_added = [('dGE_dT', 'GE', 1),
  ('d2GE_dT2', 'GE', 2),
  ('d3GE_dT3', 'GE', 3),

@@ -84,7 +84,7 @@ from chemicals.refractivity import RI
 from chemicals.safety import LFL, STEL, TWA, UFL, Carcinogen, Ceiling, Skin, T_autoignition, T_flash
 from chemicals.solubility import solubility_parameter
 from chemicals.triple import Pt, Tt
-from chemicals.utils import Parachor, hash_any_primitive, property_molar_to_mass
+from chemicals.utils import Parachor, hash_any_primitive
 from fluids.constants import R
 
 from thermo.chemical import user_chemical_property_lookup
@@ -101,14 +101,21 @@ from thermo.heat_capacity import (
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.permittivity import PermittivityLiquid
 from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
-from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityGasMixture, ThermalConductivityLiquid, ThermalConductivityLiquidMixture, ThermalConductivitySolid
+from thermo.serialize import JsonOptEncodable
+from thermo.thermal_conductivity import (
+    ThermalConductivityGas,
+    ThermalConductivityGasMixture,
+    ThermalConductivityLiquid,
+    ThermalConductivityLiquidMixture,
+    ThermalConductivitySolid,
+)
 from thermo.unifac import UNIFAC_RQ, UNIFAC_group_assignment_DDBST, Van_der_Waals_area, Van_der_Waals_volume
 from thermo.utils import identify_phase
+from thermo.utils.mixture_property import MixtureProperty
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.viscosity import ViscosityGas, ViscosityGasMixture, ViscosityLiquid, ViscosityLiquidMixture
 from thermo.volume import VolumeGas, VolumeGasMixture, VolumeLiquid, VolumeLiquidMixture, VolumeSolid, VolumeSolidMixture
-from thermo.utils.mixture_property import MixtureProperty
-from thermo.serialize import JsonOptEncodable
+
 CAS_H2O = '7732-18-5'
 
 
@@ -128,7 +135,7 @@ warn_chemicals_msg ="""`chemicals <https://github.com/CalebBell/chemicals>`_ is 
             fairly easily once the data entry is complete."""
 
 
-class ChemicalConstantsPackage():
+class ChemicalConstantsPackage:
     non_vector_properties = ('atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
                  'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs',
                  'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass',
@@ -186,7 +193,7 @@ class ChemicalConstantsPackage():
         for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
             # keys are stored as strings and not ints
             d[k] = [{str(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
-        
+
 
         # This is not so much a performance optimization as an improvement on file size
         # and readability. Do not remove it! Comparing against an empty list is the
@@ -1374,9 +1381,9 @@ Parameters
 """
 for name, (var_type, desc, units, return_desc) in constants_docstrings.items():
     type_name = var_type if type(var_type) is str else var_type.__name__
-    new = """{} : {}
-    {}, {}.
-""".format(name, type_name, desc, units)
+    new = f"""{name} : {type_name}
+    {desc}, {units}.
+"""
     constants_doc += new
 
 try:
@@ -1868,7 +1875,7 @@ class PropertyCorrelationsPackage:
             else:
                 iter_props = self.pure_correlations
 
-            s = '%s(' %(self.__class__.__name__)
+            s = f'{self.__class__.__name__}('
             s += 'constants=constants, skip_missing=True,\n'
             for prop in iter_props:
                 prop_attr = getattr(self, prop)

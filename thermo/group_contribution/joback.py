@@ -203,11 +203,8 @@ class JOBACK:
         self.mub = mub
 
     def __repr__(self):
-        return """JOBACK(i={!r}, name={!r}, Tc={!r}, Pc={!r}, Vc={!r}, Tb={!r}, Tm={!r}, Hform={!r}, Gform={!r},
-Cpa={!r}, Cpb={!r}, Cpc={!r}, Cpd={!r}, Hfus={!r}, Hvap={!r}, mua={!r}, mub={!r})""".format(
-        self.i, self.name, self.Tc, self.Pc, self.Vc, self.Tb, self.Tm,
-        self.Hform, self.Gform, self.Cpa, self.Cpb, self.Cpc, self.Cpd,
-        self.Hfus, self.Hvap, self.mua, self.mub)
+        return f"""JOBACK(i={self.i!r}, name={self.name!r}, Tc={self.Tc!r}, Pc={self.Pc!r}, Vc={self.Vc!r}, Tb={self.Tb!r}, Tm={self.Tm!r}, Hform={self.Hform!r}, Gform={self.Gform!r},
+Cpa={self.Cpa!r}, Cpb={self.Cpb!r}, Cpc={self.Cpc!r}, Cpd={self.Cpd!r}, Hfus={self.Hfus!r}, Hvap={self.Hvap!r}, mua={self.mua!r}, mub={self.mub!r})"""
 
 joback_groups_str_dict = {'-CH3': JOBACK(i=1, name='-CH3', Tc=0.0141, Pc=-0.0012, Vc=65.0, Tb=23.58, Tm=-5.1, Hform=-76.45, Gform=-43.96,
  Cpa=19.5, Cpb=-0.00808, Cpc=0.000153, Cpd=-9.67e-08, Hfus=0.908, Hvap=2.373, mua=548.29, mub=-1.719),

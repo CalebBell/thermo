@@ -31,11 +31,11 @@ __all__ = ['Flash']
 
 from math import floor, log10, nan
 
-from chemicals.utils import mixing_simple, property_mass_to_molar, rho_to_Vm, hash_any_primitive
+from chemicals.utils import hash_any_primitive, mixing_simple, property_mass_to_molar, rho_to_Vm
 from fluids.constants import R
 from fluids.numerics import linspace, logspace
 from fluids.numerics import numpy as np
-from thermo.serialize import JsonOptEncodable, object_lookups
+
 from thermo import phases
 from thermo.equilibrium import EquilibriumState
 from thermo.flash.flash_utils import (
@@ -50,6 +50,7 @@ from thermo.flash.flash_utils import (
     incipient_phase_one_sided_secant,
 )
 from thermo.phase_identification import identify_sort_phases
+from thermo.serialize import JsonOptEncodable
 from thermo.utils import has_matplotlib
 
 try:
@@ -325,8 +326,8 @@ class Flash:
             T = float(T)
             flash_specs['T'] = T
             if T < self.T_MIN_FLASH_ANY:
-                raise ValueError("Specified temperature ({} K) is below the minimum temeprature ({} K) "
-                                 "supported by any of the provided phases".format(T, self.T_MIN_FLASH_ANY))
+                raise ValueError(f"Specified temperature ({T} K) is below the minimum temeprature ({self.T_MIN_FLASH_ANY} K) "
+                                 "supported by any of the provided phases")
             # if T <= 0.0:
             #     raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
         if P_spec:
@@ -422,7 +423,6 @@ class Flash:
             else:
                 g, liquids = None, [other_phase]
             flash_convergence = {'iterations': iterations, 'err': err}
-#
             return dest(T, Psub, zs, gas=g, liquids=liquids, solids=[s],
                                     betas=[1-SF, SF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
@@ -435,14 +435,13 @@ class Flash:
             else:
                 g, liquids = None, [other_phase]
             flash_convergence = {'iterations': iterations, 'err': err}
-#
             return dest(Tsub, P, zs, gas=g, liquids=liquids, solids=[s],
                                     betas=[1-SF, SF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     settings=settings, flasher=self)
         elif VF_spec and any([H_spec, S_spec, U_spec, G_spec, A_spec]):
-            spec_var, spec_val = [(k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs')][0]
+            spec_var, spec_val = next((k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs'))
             T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, zs=zs, solution=solution, hot_start=hot_start)
             flash_convergence = {'iterations': iterations, 'err': err, 'inner_flash_convergence': {'iterations': iters_inner, 'err': err_inner}}
             return dest(T, Psat, zs, gas=gas, liquids=[liquid], solids=[],
@@ -1183,7 +1182,7 @@ class Flash:
                 norm = None
             else:
                 norm = LogNorm()
-            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm) #
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm)
             cbar = fig.colorbar(im, ax=ax)
             cbar.set_label(prop)
 
@@ -1357,7 +1356,7 @@ class Flash:
 
         if len(zs) > 4:
             zs = '...'
-        plt.title('PT system flashes, zs=%s' %zs)
+        plt.title(f'PT system flashes, zs={zs}')
         if show:
             plt.show()
         else:
@@ -1469,10 +1468,10 @@ class Flash:
         plt.semilogy(Ts, P_bubbles, label='TP bubble point curve')
         plt.xlabel('System temperature, K')
         plt.ylabel('System pressure, Pa')
-        plt.title('PT system curve, zs=%s' %zs)
+        plt.title(f'PT system curve, zs={zs}')
         if branch:
             for VF, Ps in zip(branches, branch_Ps):
-                plt.semilogy(Ts, Ps, label='TP curve for VF=%s'%VF)
+                plt.semilogy(Ts, Ps, label=f'TP curve for VF={VF}')
         plt.legend(loc='best')
         if show:
             plt.show()
@@ -1585,10 +1584,10 @@ class Flash:
         plt.plot(Ps, T_bubbles, label='PT bubble point curve')
         plt.xlabel('System pressure, Pa')
         plt.ylabel('System temperature, K')
-        plt.title('PT system curve, zs=%s' %zs)
+        plt.title(f'PT system curve, zs={zs}')
         if branch:
             for VF, Ts in zip(branches, branch_Ts):
-                plt.plot(Ps, Ts, label='PT curve for VF=%s'%VF)
+                plt.plot(Ps, Ts, label=f'PT curve for VF={VF}')
         plt.legend(loc='best')
 
         if show:
@@ -1684,9 +1683,9 @@ class Flash:
         cb.update_ticks()
         # plt.tight_layout()
         if is_T_spec:
-            text = "Bubble pressure vs composition (left) and dew pressure vs composition (right) at %s K" %T
+            text = f"Bubble pressure vs composition (left) and dew pressure vs composition (right) at {T} K"
         else:
-            text = "Bubble temperature vs composition (left) and dew temperature vs composition (right) at %s Pa" %P
+            text = f"Bubble temperature vs composition (left) and dew temperature vs composition (right) at {P} Pa"
         fig.suptitle(text, fontsize=14)
         fig.subplots_adjust(top=0.85)
         plt.show()
@@ -1759,7 +1758,7 @@ class Flash:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
         names = self.constants.aliases
-        plt.title('Txy diagram at P=%s Pa' %P)
+        plt.title(f'Txy diagram at P={P} Pa')
         plt.plot(z1, Ts_dew, label='Dew temperature, K')
         plt.plot(z1, Ts_bubble, label='Bubble temperature, K')
         plt.xlabel(f'Mole fraction {names[0]}')
@@ -1838,7 +1837,7 @@ class Flash:
 
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
-        plt.title('Pxy diagram at T=%s K' %T)
+        plt.title(f'Pxy diagram at T={T} K')
         plt.plot(z1, Ps_dew, label='Dew pressure')
         plt.plot(z1, Ps_bubble, label='Bubble pressure')
         plt.xlabel(f'Mole fraction {names[0]}')
@@ -1914,9 +1913,9 @@ class Flash:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
         if T is not None:
-            plt.title('xy diagram at T=%s K (varying P)' %T)
+            plt.title(f'xy diagram at T={T} K (varying P)')
         else:
-            plt.title('xy diagram at P=%s Pa (varying T)' %P)
+            plt.title(f'xy diagram at P={P} Pa (varying T)')
         names = self.constants.aliases
         plt.xlabel(f'Liquid mole fraction {names[0]}')
         plt.ylabel(f'Vapor mole fraction {names[0]}')

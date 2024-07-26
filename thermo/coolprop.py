@@ -34,7 +34,6 @@ import os
 from math import exp, log
 
 from chemicals.utils import mark_numba_incompatible
-from fluids.numerics import assert_close1d
 from fluids.numerics import numpy as np
 
 from thermo.base import data_dir
@@ -49,9 +48,6 @@ from thermo.base import data_dir
 #has_CoolProp = False # For testing
 
 CPiP_min = 17
-global _PropsSI
-
-global _has_CoolProp
 _has_CoolProp = None
 @mark_numba_incompatible
 def has_CoolProp():
@@ -72,7 +68,6 @@ def PropsSI(*args, **kwargs):
         from CoolProp.CoolProp import PropsSI as _PropsSI
     return _PropsSI(*args, **kwargs)
 
-global _HAPropsSI
 _HAPropsSI = None
 @mark_numba_incompatible
 def HAPropsSI(*args, **kwargs):
@@ -81,7 +76,6 @@ def HAPropsSI(*args, **kwargs):
         from CoolProp.CoolProp import HAPropsSI as _HAPropsSI
     return _HAPropsSI(*args, **kwargs)
 
-global _PhaseSI
 _PhaseSI = None
 @mark_numba_incompatible
 def PhaseSI(*args, **kwargs):
@@ -90,7 +84,6 @@ def PhaseSI(*args, **kwargs):
         from CoolProp.CoolProp import PhaseSI as _PhaseSI
     return _PhaseSI(*args, **kwargs)
 
-global _AbstractState
 _AbstractState = None
 @mark_numba_incompatible
 def AbstractState(*args, **kwargs):
@@ -230,7 +223,7 @@ def store_coolprop_fluids():
 
     data = {CASRN: coolprop_fluids[CASRN].as_json() for CASRN in coolprop_dict}
     ver = CoolProp.__version__
-    file = open(os.path.join(data_dir, 'CoolPropFluids%s.json' %ver), 'w')
+    file = open(os.path.join(data_dir, f'CoolPropFluids{ver}.json'), 'w')
     json.dump(data, file)
     file.close()
 
@@ -240,7 +233,7 @@ def load_coolprop_fluids(depth=0):
 
     import CoolProp
     ver = CoolProp.__version__
-    pth = os.path.join(data_dir, 'CoolPropFluids%s.json' %ver)
+    pth = os.path.join(data_dir, f'CoolPropFluids{ver}.json')
     try:
         file = open(pth)
     except:
@@ -418,7 +411,7 @@ def CoolProp_json_alpha0_to_kwargs(json_data, as_np=False):
             # Not relevant
             continue
         else:
-            raise ValueError("Unrecognized alpha0 type %s" %(d['type']))
+            raise ValueError("Unrecognized alpha0 type {}".format(d['type']))
 
     if as_np:
         for k, v in kwargs.items():

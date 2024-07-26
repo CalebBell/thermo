@@ -23,10 +23,12 @@ SOFTWARE.
 
 __all__ = ['standard_entropy', 'S0_basis_converter', 'standard_state_ideal_gas_formation']
 
-from fluids.numerics import quad
-from chemicals.reaction import standard_formation_reaction
-from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityLiquid, HeatCapacityGas
 from chemicals.elements import periodic_table
+from chemicals.reaction import standard_formation_reaction
+from fluids.numerics import quad
+
+from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolid
+
 
 def standard_entropy(c=None, dS_trans_s=None, dH_trans_s=None, T_trans_s=None,
                      Cp_s_fun=None,
@@ -287,11 +289,11 @@ def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp,
     S_calc = reactant_coeff*Sf_ref + reactant_coeff*dS_compound
     # if the compound is an element it will need special handling to go from solid liquid to gas if needed
 
-    solid_ele = set(['C'])
-    liquid_ele = set([''])
+    solid_ele = {'C'}
+    liquid_ele = {''}
 
     for coeff, ele_data in zip(elemental_counts, elemental_composition):
-        ele = list(ele_data.keys())[0]
+        ele = next(iter(ele_data.keys()))
         element_obj = periodic_table[ele]
 #         element = Chemical(element_obj.CAS_standard)
         solid_obj = element_HeatCapacitySolid_cache(element_obj.CAS_standard)

@@ -47,6 +47,7 @@ from chemicals.utils import normalize, remove_zeros
 from fluids.constants import R
 from fluids.numerics import UnconvergedError, brenth, derivative, exp, log, secant
 from fluids.numerics import numpy as np
+
 from thermo.serialize import JsonOptEncodable
 
 DIRECT_1P = 'Direct 1 Phase'
@@ -341,7 +342,7 @@ class StabilityTester:
                        for k in cmps]
         return pure_guesses
 
-    def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)): #
+    def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)):
         # First K is vapor-like phase; second, liquid like
         cmps = range(self.N)
         Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in cmps]
@@ -744,9 +745,8 @@ class PropertyPackage:
             if Hm < Hm_low:
                 raise ValueError('The requested molar enthalpy cannot be found'
                                  ' with this bounded solver because the lower '
-                                 'temperature bound {:g} K has an enthalpy ({:g} '
-                                 'J/mol) higher than that requested ({:g} J/mol)'.format(
-                                                             T_low, Hm_low, Hm))
+                                 f'temperature bound {T_low:g} K has an enthalpy ({Hm_low:g} '
+                                 f'J/mol) higher than that requested ({Hm:g} J/mol)')
             if Hm_high is None:
                 pkg_high = self.to(T=T_high, P=P, zs=zs)
                 pkg_high._post_flash()
@@ -754,9 +754,8 @@ class PropertyPackage:
             if Hm > Hm_high:
                 raise ValueError('The requested molar enthalpy cannot be found'
                                  ' with this bounded solver because the upper '
-                                 'temperature bound {:g} K has an enthalpy ({:g} '
-                                 'J/mol) lower than that requested ({:g} J/mol)'.format(
-                                                             T_high, Hm_high, Hm))
+                                 f'temperature bound {T_high:g} K has an enthalpy ({Hm_high:g} '
+                                 f'J/mol) lower than that requested ({Hm:g} J/mol)')
 
 
     def flash_PS_zs_bounded(self, P, Sm, zs, T_low=None, T_high=None,
@@ -815,9 +814,8 @@ class PropertyPackage:
             if Sm < Sm_low:
                 raise ValueError('The requested molar entropy cannot be found'
                                  ' with this bounded solver because the lower '
-                                 'temperature bound {:g} K has an entropy ({:g} '
-                                 'J/mol/K) higher than that requested ({:g} J/mol/K)'.format(
-                                                             T_low, Sm_low, Sm))
+                                 f'temperature bound {T_low:g} K has an entropy ({Sm_low:g} '
+                                 f'J/mol/K) higher than that requested ({Sm:g} J/mol/K)')
             if Sm_high is None:
                 pkg_high = self.to(T=T_high, P=P, zs=zs)
                 pkg_high._post_flash()
@@ -825,9 +823,8 @@ class PropertyPackage:
             if Sm > Sm_high:
                 raise ValueError('The requested molar entropy cannot be found'
                                  ' with this bounded solver because the upper '
-                                 'temperature bound {:g} K has an entropy ({:g} '
-                                 'J/mol/K) lower than that requested ({:g} J/mol/K)'.format(
-                                                             T_high, Sm_high, Sm))
+                                 f'temperature bound {T_high:g} K has an entropy ({Sm_high:g} '
+                                 f'J/mol/K) lower than that requested ({Sm:g} J/mol/K)')
 
     def flash_TS_zs_bounded(self, T, Sm, zs, P_low=None, P_high=None,
                             Sm_low=None, Sm_high=None):
@@ -876,9 +873,8 @@ class PropertyPackage:
             if Sm > Sm_low:
                 raise ValueError('The requested molar entropy cannot be found'
                                  ' with this bounded solver because the lower '
-                                 'pressure bound {:g} Pa has an entropy ({:g} '
-                                 'J/mol/K) lower than that requested ({:g} J/mol/K)'.format(
-                                                             P_low, Sm_low, Sm))
+                                 f'pressure bound {P_low:g} Pa has an entropy ({Sm_low:g} '
+                                 f'J/mol/K) lower than that requested ({Sm:g} J/mol/K)')
             if Sm_high is None:
                 pkg_high = self.to(T=T, P=P_high, zs=zs)
                 pkg_high._post_flash()
@@ -886,9 +882,8 @@ class PropertyPackage:
             if Sm < Sm_high:
                 raise ValueError('The requested molar entropy cannot be found'
                                  ' with this bounded solver because the upper '
-                                 'pressure bound {:g} Pa has an entropy ({:g} '
-                                 'J/mol/K) upper than that requested ({:g} J/mol/K)'.format(
-                                                             P_high, Sm_high, Sm))
+                                 f'pressure bound {P_high:g} Pa has an entropy ({Sm_high:g} '
+                                 f'J/mol/K) upper than that requested ({Sm:g} J/mol/K)')
     @property
     def Hm_reactive(self):
         Hm = self.Hm

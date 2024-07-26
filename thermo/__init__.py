@@ -97,6 +97,7 @@ if not numerics.is_micropython:
         phase_identification,
         phases,
         property_package,
+        redlich_kister,
         regular_solution,
         stream,
         thermal_conductivity,
@@ -107,7 +108,6 @@ if not numerics.is_micropython:
         viscosity,
         volume,
         wilson,
-        redlich_kister,
     )
     from .activity import *  # noqa: F403
     from .bulk import *  # noqa: F403
@@ -138,6 +138,7 @@ if not numerics.is_micropython:
     from .phase_identification import *  # noqa: F403
     from .phases import *  # noqa: F403
     from .property_package import *  # noqa: F403
+    from .redlich_kister import *  # noqa: F403
     from .regular_solution import *  # noqa: F403
     from .stream import *  # noqa: F403
     from .thermal_conductivity import *  # noqa: F403
@@ -148,7 +149,6 @@ if not numerics.is_micropython:
     from .viscosity import *  # noqa: F403
     from .volume import *  # noqa: F403
     from .wilson import *  # noqa: F403
-    from .redlich_kister import * # noqa: F403
 
     #from chemicals import *
 
@@ -271,7 +271,6 @@ if not numerics.is_micropython:
         # pytest timings are hard to measure with lazy loading
         complete_lazy_loading()
 
-    global vectorized, numba, units, numba_vectorized
     if numerics.PY37:
         def __getattr__(name):
             global vectorized, numba, units, numba_vectorized

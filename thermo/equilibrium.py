@@ -40,14 +40,15 @@ EquilibriumState
 __all__ = ['EquilibriumState']
 
 from chemicals.elements import mass_fractions, periodic_table
-from chemicals.utils import SG, Vm_to_rho, mixing_simple, normalize, vapor_mass_quality, zs_to_ws, object_data, hash_any_primitive
+from chemicals.utils import SG, Vm_to_rho, hash_any_primitive, mixing_simple, normalize, vapor_mass_quality, zs_to_ws
 from fluids.constants import N_A, R
 from fluids.numerics import log
 from fluids.numerics import numpy as np
-from thermo.serialize import arrays_to_lists, object_lookups
-from thermo.bulk import Bulk, default_settings, JsonOptEncodable
+
+from thermo.bulk import Bulk, JsonOptEncodable, default_settings
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
 from thermo.phases import Phase, derivatives_jacobian, derivatives_thermodynamic, derivatives_thermodynamic_mass, gas_phases, liquid_phases, solid_phases
+from thermo.serialize import object_lookups
 
 all_phases = gas_phases + liquid_phases + solid_phases
 
@@ -223,7 +224,7 @@ class EquilibriumState:
                   'liquid0', 'liquid1', 'liquid2', 'bulk', 'flash_specs', 'flash_convergence',
                  'flasher', 'settings', 'constants', 'correlations', '__dict__')
 
-    obj_references = ('liquid_bulk', 'solid_bulk', 'bulk', 'gas', 'liquids', 'phases', 
+    obj_references = ('liquid_bulk', 'solid_bulk', 'bulk', 'gas', 'liquids', 'phases',
                     'solids',  'settings', 'constants', 'correlations', 'flasher',
                       'liquid0', 'liquid1', 'liquid2')
 
@@ -250,9 +251,9 @@ class EquilibriumState:
 
     def __repr__(self):
         s = f'{self.__class__.__name__}(T={self.T}, P={self.P}, zs={self.zs}, betas={self.betas}'
-        s += ', gas=%s' %(self.gas.__repr__())
-        s += ', liquids=%s' %(self.liquids.__repr__())
-        s += ', solids=%s' %(self.solids.__repr__())
+        s += f', gas={self.gas.__repr__()}'
+        s += f', liquids={self.liquids.__repr__()}'
+        s += f', solids={self.solids.__repr__()}'
         s += ')'
         return s
 
@@ -3265,8 +3266,8 @@ def _make_getter_correlations(name):
     def get_correlation(self):
         return getattr(self.correlations, name)
 
-    text = """Wrapper to obtain the list of %s objects of the associated
-:obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`.""" %(name)
+    text = f"""Wrapper to obtain the list of {name} objects of the associated
+:obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`."""
     try:
         get_correlation.__doc__ = text
     except:
@@ -3330,12 +3331,12 @@ for name in ChemicalConstantsPackage.properties:
             type_name = var_type if type(var_type) is str else var_type.__name__
             if return_desc is None:
                 return_desc = desc
-            full_desc = """{}, {}.
+            full_desc = f"""{desc}, {units}.
 
 Returns
 -------
-{} : {}
-    {}, {}.""".format(desc, units, name, type_name, return_desc, units)
+{name} : {type_name}
+    {return_desc}, {units}."""
 #            print(full_desc)
             getter.__doc__ = full_desc
         except:
@@ -3490,11 +3491,11 @@ def _make_getter_atom_fraction(element_symbol):
 
 for ele in periodic_table:
     getter = _make_getter_atom_fraction(ele.symbol)
-    name = '%s_atom_fraction' %(ele.name)
+    name = f'{ele.name}_atom_fraction'
 
-    _add_attrs_doc =  r"""Method to calculate and return the mole fraction that
-            is %s element, [-]
-            """ %(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the mole fraction that
+            is {ele.name} element, [-]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3514,11 +3515,11 @@ def _make_getter_atom_mass_fraction(element_symbol):
     return get_atom_mass_fraction
 for ele in periodic_table:
     getter = _make_getter_atom_mass_fraction(ele.symbol)
-    name = '%s_atom_mass_fraction' %(ele.name)
+    name = f'{ele.name}_atom_mass_fraction'
 
-    _add_attrs_doc =  r"""Method to calculate and return the mass fraction of the phase
-            that is %s element, [-]
-            """ %(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the mass fraction of the phase
+            that is {ele.name} element, [-]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3538,11 +3539,11 @@ def _make_getter_atom_mass_flow(element_symbol):
 
 for ele in periodic_table:
     getter = _make_getter_atom_mass_flow(ele.symbol)
-    name = '%s_atom_mass_flow' %(ele.name)
+    name = f'{ele.name}_atom_mass_flow'
 
-    _add_attrs_doc =  r"""Method to calculate and return the mass flow of atoms
-            that are %s element, [kg/s]
-            """ %(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the mass flow of atoms
+            that are {ele.name} element, [kg/s]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3562,11 +3563,11 @@ def _make_getter_atom_flow(element_symbol):
 
 for ele in periodic_table:
     getter = _make_getter_atom_flow(ele.symbol)
-    name = '%s_atom_flow' %(ele.name)
+    name = f'{ele.name}_atom_flow'
 
-    _add_attrs_doc =  r"""Method to calculate and return the mole flow that is
-            %s, [mol/s]
-            """ %(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the mole flow that is
+            {ele.name}, [mol/s]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3586,11 +3587,11 @@ def _make_getter_atom_count_flow(element_symbol):
 
 for ele in periodic_table:
     getter = _make_getter_atom_count_flow(ele.symbol)
-    name = '%s_atom_count_flow' %(ele.name)
+    name = f'{ele.name}_atom_count_flow'
 
-    _add_attrs_doc =  r"""Method to calculate and return the number of atoms in the
-            flow which are %s, [atoms/s]
-            """ %(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the number of atoms in the
+            flow which are {ele.name}, [atoms/s]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3618,10 +3619,10 @@ def _make_getter_partial_pressure(CAS):
     return get
 for _name, _CAS in _comonent_specific_properties.items():
     getter = _make_getter_partial_pressure(_CAS)
-    name = '%s_partial_pressure' %(_name)
+    name = f'{_name}_partial_pressure'
 
-    _add_attrs_doc =  r"""Method to calculate and return the ideal partial pressure of %s, [Pa]
-            """ %(_name)
+    _add_attrs_doc =  rf"""Method to calculate and return the ideal partial pressure of {_name}, [Pa]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3640,14 +3641,14 @@ def _make_getter_component_molar_weight(CAS):
 
 for _name, _CAS in _comonent_specific_properties.items():
     getter = _make_getter_component_molar_weight(_CAS)
-    name = '%s_molar_weight' %(_name)
+    name = f'{_name}_molar_weight'
 
-    _add_attrs_doc =  r"""Method to calculate and return the effective quantiy
-    of {} in the phase as a molar weight, [g/mol].
+    _add_attrs_doc =  rf"""Method to calculate and return the effective quantiy
+    of {_name} in the phase as a molar weight, [g/mol].
 
     This is the molecular weight of the phase times the mass fraction of the
-    {} component.
-            """.format(_name, _name)
+    {_name} component.
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3659,6 +3660,7 @@ object_lookups[ChemicalConstantsPackage.__full_path__] = ChemicalConstantsPackag
 object_lookups[PropertyCorrelationsPackage.__full_path__] = PropertyCorrelationsPackage
 
 from thermo.chemical_package import mix_properties_to_classes, properties_to_classes
+
 for o in mix_properties_to_classes.values():
     object_lookups[o.__full_path__] = o
 for o in properties_to_classes.values():

@@ -88,21 +88,21 @@ from .names import (
     EXP_STABLEPOLY_FIT,
     EXP_STABLEPOLY_FIT_LN_TAU,
     HEOS_FIT,
+    HO1972,
     IAPWS,
+    JANAF_FIT,
     LINEAR,
+    MIXING_LOG_MASS,
+    MIXING_LOG_MOLAR,
     NEGLECT_P,
     POLY_FIT,
     POLY_FIT_LN_TAU,
     REFPROP_FIT,
     STABLEPOLY_FIT,
     STABLEPOLY_FIT_LN_TAU,
+    UNARY,
     VDI_PPDS,
     VDI_TABULAR,
-    MIXING_LOG_MOLAR,
-    MIXING_LOG_MASS,
-    UNARY,
-    HO1972,
-    JANAF_FIT
 )
 from .t_dependent_property import *
 from .tp_dependent_property import *

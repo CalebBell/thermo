@@ -82,7 +82,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     __slots__ = ('eos_class', 'eos_kwargs', 'vectorized', 'HeatCapacityGases', 'N',
     'Hfs', 'Gfs', 'Sfs', 'Cpgs_poly_fit', '_Cpgs_data', 'composition_independent',
-     'eos_mix', 'T', 'P' 'zs', '_model_hash_ignore_phase', '_model_hash')
+     'eos_mix', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
     ideal_gas_basis = True
 
     pure_references = ('HeatCapacityGases',)
@@ -101,7 +101,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     def _custom_as_json(self, d, cache):
         d['eos_class'] = d['eos_class'].__full_path__
-        
+
     def _custom_from_json(self, *args):
         self.eos_class = eos_mix_full_path_dict[self.eos_class]
 
@@ -155,7 +155,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         self.composition_independent = eos_class is IGMIX
         if T is None: T = 298.15
         if P is None: P = 101325.0
-        if zs is None: 
+        if zs is None:
             if vectorized:
                 v = 1.0 / N
                 zs = full(N, v)

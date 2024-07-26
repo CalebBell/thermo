@@ -88,6 +88,7 @@ from fluids.constants import R
 from fluids.numerics import (
     NotBoundedError,
     OscillationError,
+    SolverInterface,
     UnconvergedError,
     assert_close,
     assert_close1d,
@@ -97,6 +98,7 @@ from fluids.numerics import (
     damping_maintain_sign,
     exp,
     fsolve,
+    gdem,
     isclose,
     isinf,
     isnan,
@@ -118,8 +120,6 @@ from fluids.numerics import (
     translate_bound_f_jac,
     trunc_exp,
     trunc_log,
-    SolverInterface,
-    gdem,
 )
 from fluids.numerics import numpy as np
 
@@ -845,7 +845,7 @@ def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_g
     dspec_diter_s = f'd{spec}_d{iter_var}'
     dspec_diter_callables = [getattr(phase.__class__, dspec_diter_s) for phase in phases]
 
-    dspec_dn_s = 'd%s_dns' %(spec)
+    dspec_dn_s = f'd{spec}_dns'
     dspec_dn_callables = [getattr(phase.__class__, dspec_dn_s) for phase in phases]
 
     jac = True
@@ -1686,7 +1686,7 @@ def dew_P_newton(P_guess, T, zs, liquid_phase, gas_phase,
 #    ys = [exp(lnKsP[i])*xs[i] for i in cmps]
     return lnKsP[-1], xs, zs, iterations
 
-def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_var='P', V_over_F=1, #
+def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_var='P', V_over_F=1,
                              maxiter=200, xtol=1E-10, ytol=None, hot_start=None
                              ):
     # Bound the problem
@@ -1826,7 +1826,7 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
     for i in cmps:
         JN[i] = -comp_factor
 
-    s = 'dlnphis_d%s' %(iter_var)
+    s = f'dlnphis_d{iter_var}'
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
     dlnphis_diter_var_const = getattr(const_phase.__class__, s)
     dlnphis_dzs = iter_phase.__class__.dlnphis_dzs
@@ -1996,7 +1996,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
         else:
             iter_msg, const_msg = g_undefined_P_msg, l_undefined_P_msg
 
-    s = 'dlnphis_d%s' %(iter_var)
+    s = f'dlnphis_d{iter_var}'
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
     dlnphis_diter_var_const = getattr(const_phase.__class__, s)
 
@@ -2166,7 +2166,7 @@ def existence_3P_Michelsen_Mollerup(guess, fixed_val, zs, iter_phase, liquid0, l
     elif iter_var == 'P':
         iter_msg, const_msg = g_undefined_P_msg, l_undefined_P_msg
 
-    s = 'dlnphis_d%s' %(iter_var)
+    s = f'dlnphis_d{iter_var}'
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
     dlnphis_diter_var_liquid0 = getattr(liquid0.__class__, s)
 #    dlnphis_diter_var_liquid1 = getattr(liquid1.__class__, s)
@@ -4133,7 +4133,6 @@ def TPV_double_solve_1P(zs, phase, guesses, spec_vals,
         # print(kwargs, errs)
         return errs, jac
 
-#
     states, iterations = newton_system(to_solve, x0=guesses, jac=True, xtol=xtol,
              ytol=ytol, maxiter=maxiter, damping_func=damping_maintain_sign)
     phase = cache[0]
@@ -4493,7 +4492,6 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
         return val, info[0], info[1], info[2]
 
 
-global cm_flash
 cm_flash = None
 def cm_flash_tol():
     global cm_flash
@@ -5211,7 +5209,7 @@ def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check
         has_P = True
     else:
         raise ValueError("This algorithm requires T or P as a specification")
-    other_spec, other_spec_value = list(specs_working.keys())[0], list(specs_working.values())[0]
+    other_spec, other_spec_value = next(iter(specs_working.keys())), next(iter(specs_working.values()))
     zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
 
     (negative_bound, positive_bound, negative_bound_res, positive_bound_res,

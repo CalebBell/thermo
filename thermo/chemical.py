@@ -71,7 +71,7 @@ from chemicals.virial import B_from_Z
 from chemicals.volume import ideal_gas
 from fluids.constants import epsilon_0
 from fluids.core import Bond, Capillary, Grashof, Jakob, Peclet_heat, Prandtl, Reynolds, Weber, nu_mu_converter, thermal_diffusivity
-from fluids.numerics import exp, log, newton, secant
+from fluids.numerics import exp, log, secant
 
 from thermo import functional_groups
 from thermo.electrochem import conductivity, conductivity_methods
@@ -99,7 +99,7 @@ REFPROP = ('Tb', 101325, 'l', 0, 0, True)
 CHEMSEP = (298., 101325, 'g', 0, 0, True) # It has an option to add Hf to the reference
 PRO_II = (298.15, 101325, 'gas', 0, 0, True)
 HYSYS = (298.15, 101325, 'calc', 'Hf', 0, True)
-UNISIM = HYSYS #
+UNISIM = HYSYS
 SUPERPRO = (298.15, 101325, 'calc', 0, 0, True) # No support for entropy found, 0 assumed
 # note soecifying a phase works for chemicals but not mixtures.
 
@@ -755,11 +755,11 @@ class Chemical: # pragma: no cover
             self.formula = ID['formula']
             # DO NOT REMOVE molecular_weight until the database gets updated with consistent MWs
             self.MW = ID['MW'] if 'MW' in ID else molecular_weight(simple_formula_parser(self.formula))
-            self.PubChem = ID['PubChem'] if 'PubChem' in ID else None
-            self.smiles = ID['smiles'] if 'smiles' in ID else None
-            self.InChI = ID['InChI'] if 'InChI' in ID else None
-            self.InChI_Key = ID['InChI_Key'] if 'InChI_Key' in ID else None
-            self.synonyms = ID['synonyms'] if 'synonyms' in ID else None
+            self.PubChem = ID.get('PubChem', None)
+            self.smiles = ID.get('smiles', None)
+            self.InChI = ID.get('InChI', None)
+            self.InChI_Key = ID.get('InChI_Key', None)
+            self.synonyms = ID.get('synonyms', None)
         else:
             self.ID = ID
             # Identification
@@ -3249,15 +3249,15 @@ class Chemical: # pragma: no cover
 # Add the functional groups
 def _make_getter_group(name):
     def get(self):
-        base_name = 'is_%s' %(name)
+        base_name = f'is_{name}'
         ref = getattr(functional_groups, base_name)
         return ref(self.rdkitmol)
 
     return get
 for _name in group_names:
     getter = property(_make_getter_group(_name))
-    name = 'is_%s' %(_name)
-    _add_attrs_doc =  r"""Method to return whether or not this chemical is in the category %s, [-]
-            """ %(_name)
+    name = f'is_{_name}'
+    _add_attrs_doc =  rf"""Method to return whether or not this chemical is in the category {_name}, [-]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(Chemical, name, getter)

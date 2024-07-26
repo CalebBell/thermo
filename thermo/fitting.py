@@ -57,11 +57,12 @@ try:
 except:
     pass
 try:
-    from random import uniform, Random
+    from random import Random, uniform
 except:
     pass
 
 from math import log, pi
+
 
 def split_data(x, y, folds=5, seed=42):
     pts = len(x)
@@ -567,9 +568,7 @@ def poly_check_params(coeffs, domain=None):
         return False
     if not is_poly_positive(coeffs_d2, domain):
         return False
-    if not is_poly_negative(coeffs_d3, domain):
-        return False
-    return True
+    return is_poly_negative(coeffs_d3, domain)
 
 def alpha_poly_objf(params, Trs, alphas_over_a, domain=None):
     try:

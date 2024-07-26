@@ -22,17 +22,16 @@ SOFTWARE.
 
 __all__ = ['MixtureProperty']
 
-from chemicals.utils import hash_any_primitive, normalize, ws_to_zs, zs_to_ws
-from fluids.numerics import derivative, linspace, trunc_log, trunc_exp
+from chemicals.utils import hash_any_primitive, mixing_simple, normalize, ws_to_zs, zs_to_ws
+from fluids.numerics import derivative, linspace, trunc_exp, trunc_log
 from fluids.numerics import numpy as np
 
-from chemicals.utils import mixing_simple
-from thermo.redlich_kister import redlich_kister_T_dependence, redlich_kister_excess_inner, redlich_kister_build_structure
-from thermo.eos_mix import GCEOSMIX
-from thermo.utils.functional import has_matplotlib
-from thermo.utils.names import POLY_FIT, LINEAR, MIXING_LOG_MOLAR, MIXING_LOG_MASS
-from thermo.utils.t_dependent_property import json_mixture_correlation_lookup, ENABLE_MIXTURE_JSON
+from thermo.redlich_kister import redlich_kister_build_structure, redlich_kister_excess_inner, redlich_kister_T_dependence
 from thermo.serialize import JsonOptEncodable
+from thermo.utils.functional import has_matplotlib
+from thermo.utils.names import LINEAR, MIXING_LOG_MASS, MIXING_LOG_MOLAR
+from thermo.utils.t_dependent_property import ENABLE_MIXTURE_JSON, json_mixture_correlation_lookup
+
 try:
     from itertools import product
 except:
@@ -53,7 +52,7 @@ class MixtureProperty:
 
     pure_references = ()
     pure_reference_types = ()
-    obj_references = () 
+    obj_references = ()
     json_version = 1
     non_json_attributes = ['TP_zs_ws_cached', 'prop_cached']
     vectorized = False
@@ -70,14 +69,14 @@ class MixtureProperty:
 
     def __repr__(self):
         clsname = self.__class__.__name__
-        base = '%s(' % (clsname)
+        base = f'{clsname}('
         for k in self.custom_args:
             v = getattr(self, k)
             if v is not None:
                 base += f'{k}={v}, '
-        base += 'CASs=%s, ' %(self.CASs)
-        base += 'correct_pressure_pure=%s, ' %(self._correct_pressure_pure)
-        base += 'method="%s", ' %(self.method)
+        base += f'CASs={self.CASs}, '
+        base += f'correct_pressure_pure={self._correct_pressure_pure}, '
+        base += f'method="{self.method}", '
         for attr in self.pure_references:
             base += f'{attr}={getattr(self, attr)}, '
 
@@ -129,7 +128,7 @@ class MixtureProperty:
 
         # Attempt to load json data
         CASs = self.CASs
-        if CASs and not None in CASs and ENABLE_MIXTURE_JSON:
+        if CASs and None not in CASs and ENABLE_MIXTURE_JSON:
             cls_name = self.__class__.__name__
             outer = []
             for CAS1 in CASs:
@@ -149,7 +148,7 @@ class MixtureProperty:
                     rk_dicts_ij = outer[i][j].get('redlick_kister_parameters', {})
                     if rk_dicts_ij:
                         # What to do about other data sets?
-                        first_data = list(rk_dicts_ij.values())[0]
+                        first_data = next(iter(rk_dicts_ij.values()))
                         if first_data['N_T'] > N_T:
                             N_T = first_data['N_T']
                         if first_data['N_terms'] > N_terms:
@@ -169,7 +168,7 @@ class MixtureProperty:
                 kwargs['redlick_kister_parameters']['Combined Json'] = {'N_T': N_T, 'N_terms': N_terms, 'coeffs': rk_struct}
 
         if kwargs:
-            mixture_excess_models = set(['redlick_kister_parameters'])
+            mixture_excess_models = {'redlick_kister_parameters'}
             # Iterate over all the dictionaries in reverse such that the first one is left as the default
             for key in reversed(list(kwargs.keys())):
                 if key in mixture_excess_models:
@@ -232,7 +231,7 @@ class MixtureProperty:
             excess = redlich_kister_excess_inner(N_T, N_terms, Ais_matrix_for_calc, zs)
             base_property = mixing_simple(zs, pure_props)
             return base_property + excess
-        raise ValueError("Unknown method; methods are %s" %(self.all_methods))
+        raise ValueError(f"Unknown method; methods are {self.all_methods}")
 
     def calculate_pures_corrected(self, T, P, fallback=False, objs=None):
         if self._correct_pressure_pure:
@@ -932,10 +931,10 @@ class MixtureProperty:
                                     xs_plot.append(x0)
                             except:
                                 pass
-                    plt.plot(xs_plot, properties, label=method + ' at %g K and %g Pa' %(T, P) )
+                    plt.plot(xs_plot, properties, label=method + f' at {T:g} K and {P:g} Pa' )
                 else:
                     properties = [func(T, P, [x0, 1.0 - x0], None, method) for x0 in xs]
-                    plt.plot(xs, properties, label=method + ' at %g K and %g Pa' %(T, P))
+                    plt.plot(xs, properties, label=method + f' at {T:g} K and {P:g} Pa')
         plt.legend(loc='best')
         plt.ylabel(prop_name + ', ' + self.units)
         plt.xlabel('Mole fraction x0')
@@ -983,7 +982,6 @@ class MixtureProperty:
             raise Exception('Optional dependency matplotlib is required for plotting')
         else:
             import matplotlib.pyplot as plt
-            from mpl_toolkits.mplot3d import Axes3D
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
         if zs is None or ws is None:
@@ -1059,7 +1057,6 @@ class MixtureProperty:
             raise Exception('Optional dependency matplotlib is required for plotting')
         else:
             import matplotlib.pyplot as plt
-            from mpl_toolkits.mplot3d import Axes3D
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
 

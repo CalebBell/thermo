@@ -168,7 +168,7 @@ class UNIFAC_subgroup:
                  'priority', 'atoms', 'bonds']
 
     def __repr__(self):   # pragma: no cover
-        return '<%s>' %self.group
+        return f'<{self.group}>'
 
     def __init__(self, group_id, group, main_group_id, main_group, R, Q, smarts=None,
                  priority=None, atoms=None, bonds=None, hydrogen_from_smarts=False):
@@ -2498,7 +2498,6 @@ for d in (UFSG, DOUFSG, NISTUFSG, NISTKTUFSG, LLEUFSG, LUFSG, PSRKSG, VTPRSG):
                 group.priority = priority_from_atoms(group.atoms, group.bonds)
 
 
-global _unifac_ip_loaded
 _unifac_ip_loaded = False
 def load_unifac_ip():
     global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP
@@ -3154,7 +3153,7 @@ def chemgroups_to_matrix(chemgroups):
     all_keys = set()
     [all_keys.update(i.keys()) for i in chemgroups]
     for k in sorted(list(all_keys)):
-        matrix.append([l[k] if k in l else 0 for l in chemgroups])
+        matrix.append([l.get(k, 0) for l in chemgroups])
 #        matrix.append([float(l[k]) if k in l else 0.0 for l in chemgroups]) # Cannot notice performance improvement
     return matrix
 
@@ -3165,7 +3164,7 @@ def unifac_psis(T, N_groups, version, psi_a, psi_b, psi_c, psis=None):
 
     mT_inv = -1.0/T
 
-    if version == 4 or version == 5:
+    if version in (4, 5):
         T0 = 298.15
         TmT0 = T - T0
         B = T*log(T0/T) + T - T0
@@ -3191,7 +3190,7 @@ def unifac_dpsis_dT(T, N_groups, version, psi_a, psi_b, psi_c, psis, dpsis_dT=No
 
     T2_inv = 1.0/(T*T)
 
-    if version == 4 or version == 5:
+    if version in (4, 5):
         T0 = 298.15
         mT_inv = -1.0/T
         T2_inv = mT_inv*mT_inv
@@ -3220,7 +3219,7 @@ def unifac_d2psis_dT2(T, N_groups, version, psi_a, psi_b, psi_c, psis, d2psis_dT
     if d2psis_dT2 is None:
         d2psis_dT2 = [[0.0]*N_groups for _ in range(N_groups)] # numba: delete
 #        d2psis_dT2 = zeros((N_groups, N_groups)) # numba: uncomment
-    if version == 4 or version == 5:
+    if version in (4, 5):
         T0 = 298.15
         T_inv = 1.0/T
         T2_inv = T_inv*T_inv
@@ -3255,7 +3254,7 @@ def unifac_d3psis_dT3(T, N_groups, version, psi_a, psi_b, psi_c, psis, d3psis_dT
 #        d3psis_dT3 = zeros((N_groups, N_groups)) # numba: uncomment
 
 
-    if version == 4 or version == 5:
+    if version in (4, 5):
         T0 = 298.15
         T_inv = 1.0/T
         nT3_inv = -T_inv*T_inv*T_inv
@@ -4073,7 +4072,7 @@ def unifac_gammas_from_args(xs, N, N_groups, vs, rs, qs, Qs,
         Vis, rx_sum_inv = unifac_Vis(rs=rs, xs=xs, N=N)
         Fis, qx_sum_inv = unifac_Vis(rs=qs, xs=xs, N=N)
 
-        if version == 1 or version == 3 or version == 4:
+        if version in (1, 3, 4):
             Vis_modified, r34x_sum_inv = unifac_Vis(rs=rs_34, xs=xs, N=N)
         else:
             Vis_modified = Vis
@@ -4402,21 +4401,21 @@ class UNIFAC(GibbsExcess):
 
     gammas_from_args = staticmethod(unifac_gammas_from_args)
 
-    _cached_calculated_attributes = ('_Fis', '_Fs', '_Fs_pure', '_Gs', '_Gs_pure', '_Hs', '_Hs_pure', '_Theta_Psi_sum_invs', '_Theta_Psi_sums', 
-            '_Theta_pure_Psi_sum_invs', '_Theta_pure_Psi_sums', '_Thetas', '_Thetas_sum_inv', '_VSXS', '_Vis', '_Vis_modified', '_Ws', 
-            '_Xs', '_Xs_sum_inv', '_d2Fis_dxixjs', '_d2Thetas_dxixjs', '_d2Vis_dxixjs', '_d2Vis_modified_dxixjs', 
-            '_d2lnGammas_subgroups_dT2', '_d2lnGammas_subgroups_dTdxs', '_d2lnGammas_subgroups_dxixjs', '_d2lnGammas_subgroups_pure_dT2', 
-            '_d2lngammas_c_dxixjs', '_d2lngammas_r_dT2', '_d2lngammas_r_dTdxs', '_d2lngammas_r_dxixjs', '_d2psis_dT2', '_d3Fis_dxixjxks', 
-            '_d3GE_dT3', '_d3Vis_dxixjxks', '_d3Vis_modified_dxixjxks', '_d3lnGammas_subgroups_dT3', '_d3lnGammas_subgroups_pure_dT3', 
-            '_d3lngammas_c_dxixjxks', '_d3lngammas_r_dT3', '_d3psis_dT3', '_dFis_dxs', '_dThetas_dxs', '_dVis_dxs', '_dVis_modified_dxs', 
-            '_dgammas_dxs', '_dlnGammas_subgroups_dT', '_dlnGammas_subgroups_dxs', '_dlnGammas_subgroups_pure_dT', '_dlngammas_c_dxs', 
-            '_dlngammas_r_dT', '_dlngammas_r_dxs', '_dpsis_dT', '_lnGammas_subgroups', '_lnGammas_subgroups_pure', '_lngammas_c', 
+    _cached_calculated_attributes = ('_Fis', '_Fs', '_Fs_pure', '_Gs', '_Gs_pure', '_Hs', '_Hs_pure', '_Theta_Psi_sum_invs', '_Theta_Psi_sums',
+            '_Theta_pure_Psi_sum_invs', '_Theta_pure_Psi_sums', '_Thetas', '_Thetas_sum_inv', '_VSXS', '_Vis', '_Vis_modified', '_Ws',
+            '_Xs', '_Xs_sum_inv', '_d2Fis_dxixjs', '_d2Thetas_dxixjs', '_d2Vis_dxixjs', '_d2Vis_modified_dxixjs',
+            '_d2lnGammas_subgroups_dT2', '_d2lnGammas_subgroups_dTdxs', '_d2lnGammas_subgroups_dxixjs', '_d2lnGammas_subgroups_pure_dT2',
+            '_d2lngammas_c_dxixjs', '_d2lngammas_r_dT2', '_d2lngammas_r_dTdxs', '_d2lngammas_r_dxixjs', '_d2psis_dT2', '_d3Fis_dxixjxks',
+            '_d3GE_dT3', '_d3Vis_dxixjxks', '_d3Vis_modified_dxixjxks', '_d3lnGammas_subgroups_dT3', '_d3lnGammas_subgroups_pure_dT3',
+            '_d3lngammas_c_dxixjxks', '_d3lngammas_r_dT3', '_d3psis_dT3', '_dFis_dxs', '_dThetas_dxs', '_dVis_dxs', '_dVis_modified_dxs',
+            '_dgammas_dxs', '_dlnGammas_subgroups_dT', '_dlnGammas_subgroups_dxs', '_dlnGammas_subgroups_pure_dT', '_dlngammas_c_dxs',
+            '_dlngammas_r_dT', '_dlngammas_r_dxs', '_dpsis_dT', '_lnGammas_subgroups', '_lnGammas_subgroups_pure', '_lngammas_c',
             '_lngammas_r', '_psis', '_qx_sum_inv', '_rx_sum_inv')
 
     __slots__ = GibbsExcess.__slots__ + _cached_calculated_attributes + ('N_groups', 'Qs', 'cmp_group_idx', 'cmp_v_count', 'cmp_v_count_inv', 'group_cmp_idx',
             'psi_a', 'psi_b', 'psi_c', 'qs', 'r34x_sum_inv', 'rs', 'rs_34', 'skip_comb', 'version', 'vs',
             '_Xs_pure', '_Thetas_pure')
-            
+
 
     recalculable_attributes = GibbsExcess.recalculable_attributes + _cached_calculated_attributes
 
@@ -4608,8 +4607,7 @@ class UNIFAC(GibbsExcess):
         psi_abc = (self.psi_a, self.psi_b, self.psi_c)
         s = 'UNIFAC('
         s += f'T={self.T}, xs={self.xs}, rs={self.rs}, qs={self.qs}'
-        s += ', Qs={}, vs={}, psi_abc={}, version={}'.format(self.Qs, self.vs,
-                                                        psi_abc, self.version)
+        s += f', Qs={self.Qs}, vs={self.vs}, psi_abc={psi_abc}, version={self.version}'
         s += ')'
         return s
 

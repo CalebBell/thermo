@@ -349,7 +349,7 @@ class FlashPureVLS(Flash):
         elif callable(solution):
             fun = solution
         else:
-            raise ValueError("Did not recognize solution %s" %(solution))
+            raise ValueError(f"Did not recognize solution {solution}")
 
         if self.phase_count == 1:
             phase = self.phases[0].to(zs=zs, T=T, P=P, V=V)
@@ -471,7 +471,6 @@ class FlashPureVLS(Flash):
         if self.VL_only_CEOSs_same:
             # Two phase pure eoss are two phase up to the critical point only! Then one phase
             Psat = self.eos_pure_STP.Psat(T)
-        #
         else:
             try:
                 Psat = self.correlations.VaporPressures[0](T)
@@ -941,21 +940,17 @@ class FlashPureVLS(Flash):
                     uncertain_solution = True
 
             if VL_liq is not None:
-                s += '({}, {}) VL 2 Phase solution: ({:g}, {:g}); '.format(
-                        VL_liq.__class__.__name__, VL_gas.__class__.__name__,
-                        spec_val_l, spec_val_g)
+                s += f'({VL_liq.__class__.__name__}, {VL_gas.__class__.__name__}) VL 2 Phase solution: ({spec_val_l:g}, {spec_val_g:g}); '
                 VL_min_spec, VL_max_spec = min(spec_val_l, spec_val_g), max(spec_val_l, spec_val_g),
                 if VL_min_spec <= spec_val <= VL_max_spec:
                     had_solution = True
             if SF is not None:
-                s += '({}, {}) VL 2 Phase solution: ({:g}, {:g}); '.format(
-                        VS_flash.phases[0].__class__.__name__, VS_flash.solid0.__class__.__name__,
-                        spec_val_s, spec_other)
+                s += f'({VS_flash.phases[0].__class__.__name__}, {VS_flash.solid0.__class__.__name__}) VL 2 Phase solution: ({spec_val_s:g}, {spec_other:g}); '
                 S_min_spec, S_max_spec = min(spec_val_s, spec_other), max(spec_val_s, spec_other),
                 if S_min_spec <= spec_val <= S_max_spec:
                     had_solution = True
             if had_solution:
-                raise UnconvergedError("Could not converge but solution detected in bounds: %s" %s)
+                raise UnconvergedError(f"Could not converge but solution detected in bounds: {s}")
             elif uncertain_solution:
                 raise UnconvergedError("Could not converge and unable to detect if solution detected in bounds")
             else:
@@ -1131,8 +1126,8 @@ class FlashPureVLS(Flash):
         dfug_dT_idx = props.index('dfugacity_dT')
         dfug_dP_idx = props.index('dfugacity_dP')
 
-        dspec_dT_var = 'd%s_dT' %(spec_var)
-        dspec_dP_var = 'd%s_dP' %(spec_var)
+        dspec_dT_var = f'd{spec_var}_dT'
+        dspec_dP_var = f'd{spec_var}_dP'
         dspec_dT_idx = props.index(dspec_dT_var)
         dspec_dP_idx = props.index(dspec_dP_var)
 
@@ -1154,7 +1149,7 @@ class FlashPureVLS(Flash):
                 dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
             except ZeroDivisionError:
                 at_critical = True
-                dPsat_dT = self.constants.Pcs[0] #
+                dPsat_dT = self.constants.Pcs[0]
 
             dv_g = dPsat_dT*gas_props[dspec_dP_idx][i] + gas_props[dspec_dT_idx][i]
             dv_l = dPsat_dT*liq_props[dspec_dP_idx][i] + liq_props[dspec_dT_idx][i]
@@ -1261,8 +1256,8 @@ class FlashPureVLS(Flash):
         return self.flash_VF_HSGUA_bounded(T_guess, T_low, T_high, fixed_var_val, spec_val, fixed_var=fixed_var, spec_var=spec_var)
 
     def _VF_HSGUA_der_root(self, guess, low, high, fixed_var_val, spec_val, fixed_var='VF', spec_var='H'):
-        dspec_dT_var = 'd%s_dT' % (spec_var)
-        dspec_dP_var = 'd%s_dP' % (spec_var)
+        dspec_dT_var = f'd{spec_var}_dT'
+        dspec_dP_var = f'd{spec_var}_dP'
         VF = fixed_var_val
 
         val_cache = [None, 0]
@@ -1296,8 +1291,8 @@ class FlashPureVLS(Flash):
         return T_zero, val_cache[0]
 
     def flash_VF_HSGUA_bounded(self, guess, low, high, fixed_var_val, spec_val, fixed_var='VF', spec_var='H'):
-        dspec_dT_var = 'd%s_dT' % (spec_var)
-        dspec_dP_var = 'd%s_dP' % (spec_var)
+        dspec_dT_var = f'd{spec_var}_dT'
+        dspec_dP_var = f'd{spec_var}_dP'
         VF = fixed_var_val
 
         cache = [0]
@@ -1321,7 +1316,6 @@ class FlashPureVLS(Flash):
 
             return err, dv
 
-        #
         try:
             T_calc = newton(to_solve, guess, fprime=True, low=low, high=high, xtol=1e-12, require_eval=True)
         except:

@@ -413,7 +413,7 @@ class TPDependentProperty(TDependentProperty):
             Tmin, Tmax = self.T_limits[method]
             validity = Tmin < T < Tmax
         else:
-            raise ValueError("method '%s' not valid" %method)
+            raise ValueError(f"method '{method}' not valid")
         return validity
 
     def interpolate_P(self, T, P, name):
@@ -468,7 +468,7 @@ class TPDependentProperty(TDependentProperty):
                 properties2 = [[self.interpolation_property(p) for p in r] for r in properties]
             else:
                 properties2 = properties
-            
+
             # The data table must be sorted now, after transform the data may not be in ascending order
 
             Ts2_sorted_indices = np.argsort(Ts2)

@@ -80,7 +80,7 @@ from chemicals.interface import (
     sigma_IAPWS,
 )
 from chemicals.miscdata import lookup_VDI_tabular_data
-from chemicals.utils import Vm_to_rho, mixing_simple, none_and_length_check, property_molar_to_mass
+from chemicals.utils import Vm_to_rho, none_and_length_check, property_molar_to_mass
 from fluids.numerics import isnan
 
 from thermo.heat_capacity import HeatCapacityLiquid

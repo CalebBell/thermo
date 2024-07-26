@@ -73,13 +73,14 @@ Bulk Settings Class
 
 __all__ = ['Bulk', 'BulkSettings', 'default_settings']
 
-from chemicals.utils import Joule_Thomson, isobaric_expansion, isothermal_compressibility, object_data, speed_of_sound, hash_any_primitive
+from chemicals.utils import Joule_Thomson, hash_any_primitive, isobaric_expansion, isothermal_compressibility, object_data, speed_of_sound
 from fluids.constants import R, atm
 from fluids.numerics import exp, log, sqrt
 from fluids.two_phase_voidage import gas_liquid_viscosity
-from thermo.serialize import arrays_to_lists, JsonOptEncodable, object_lookups
+
 from thermo.phase_identification import DENSITY_MASS, PROP_SORT, S_ID_D2P_DVDT, VL_ID_PIP, WATER_NOT_SPECIAL
 from thermo.phases import Phase
+from thermo.serialize import JsonOptEncodable, object_lookups
 
 """Class designed to have multiple phases.
 

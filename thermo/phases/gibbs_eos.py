@@ -37,7 +37,8 @@ class GibbsEOS(Phase):
         T, P = symbols('T, P')
         G = symbols('G', cls=Function)
         V = diff(G(T, P), P)
-        diff(V, P)'''
+        diff(V, P)
+        '''
         return self.d2G_dP2()
 
     dV_dP_T = dV_dP

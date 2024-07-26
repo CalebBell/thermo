@@ -204,8 +204,6 @@ from fluids.numerics import UnconvergedError, broyden2, catanh, exp, log, newton
 from fluids.numerics import numpy as np
 from fluids.numerics.arrays import det, subset_matrix
 
-from thermo import serialize
-from thermo.serialize import JsonOptEncodable
 from thermo.eos import (
     APISRK,
     GCEOS,
@@ -283,6 +281,7 @@ from thermo.eos_mix_methods import (
     a_alpha_quadratic_terms,
     eos_mix_dV_dzs,
 )
+from thermo.serialize import JsonOptEncodable
 
 try:
     (zeros, array, npexp, npsqrt, empty, full, npwhere, npmin, npmax, ndarray, dot, prodsum) = (
@@ -411,17 +410,17 @@ class GCEOSMIX(GCEOS):
 
 
     def __repr__(self):
-        s = f'{self.__class__.__name__}(Tcs={repr(self.Tcs)}, Pcs={repr(self.Pcs)}, omegas={repr(self.omegas)}, '
+        s = f'{self.__class__.__name__}(Tcs={self.Tcs!r}, Pcs={self.Pcs!r}, omegas={self.omegas!r}, '
         for k, v in self.kwargs.items():
-            s += f'{k}={repr(v)}, '
+            s += f'{k}={v!r}, '
 
-        s += 'zs=%s, ' %(repr(self.zs))
+        s += f'zs={repr(self.zs)}, '
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            s += f'P={self.P!r}, V={repr(self.V)}'
+            s += f'P={self.P!r}, V={self.V!r}'
         elif self.V is not None:
-            s += f'T={self.T!r}, V={repr(self.V)}'
+            s += f'T={self.T!r}, V={self.V!r}'
         else:
-            s += f'T={self.T!r}, P={repr(self.P)}'
+            s += f'T={self.T!r}, P={self.P!r}'
         s += ')'
         return s
 
@@ -443,7 +442,7 @@ class GCEOSMIX(GCEOS):
             except:
                 pass
         try:
-            setattr(self, 'one_minus_kijs',  one_minus_kijs(self.kijs))
+            self.one_minus_kijs = one_minus_kijs(self.kijs)
         except:
             pass
 
@@ -1726,8 +1725,8 @@ class GCEOSMIX(GCEOS):
         xs = [zi/(1.0 + VF*(Ki - 1.0)) for zi, Ki in zip(zs, Ks)]
         ys = [Ki*xi for Ki, xi in zip(Ks, xs)]
 
-        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True) #
-        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True) #
+        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True)
+        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True)
 
 #        eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
 #        eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
@@ -1872,9 +1871,9 @@ class GCEOSMIX(GCEOS):
 
         err_RR = Rachford_Rice_flash_error(VF, zs, Ks)
 
-        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True) #
+        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True)
         eos_g.fugacities()
-        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True) #
+        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True)
         eos_l.fugacities()
 
         if not near_critical:
@@ -2797,7 +2796,7 @@ class GCEOSMIX(GCEOS):
         '''
         N = self.N
         return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
-        
+
     @property
     def d3b_dninjnks(self):
         r'''Helper method for calculating the third partial mole number
@@ -2860,7 +2859,7 @@ class GCEOSMIX(GCEOS):
         '''
         N = self.N
         return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
-        
+
     @property
     def d3delta_dzizjzks(self):
         r'''Helper method for calculating the third composition derivatives
@@ -2882,7 +2881,7 @@ class GCEOSMIX(GCEOS):
         '''
         N = self.N
         return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
-            
+
     @property
     def da_alpha_dzs(self):
         r'''Helper method for calculating the composition derivatives of
@@ -3060,7 +3059,7 @@ class GCEOSMIX(GCEOS):
         This derivative is checked numerically.
         '''
         N = self.N
-        return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)] 
+        return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
 
     @property
     def d3a_alpha_dninjnks(self):
@@ -3092,7 +3091,7 @@ class GCEOSMIX(GCEOS):
         N = self.N
         zs = self.zs
         a_alpha6 = -6.0*a_alpha
-        matrix = zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)] 
+        matrix = zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
         for i in range(N):
             l = []
             for j in range(N):
@@ -3132,7 +3131,7 @@ class GCEOSMIX(GCEOS):
         except:
             da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         return 2.0*da_alpha_dT_j_rows if self.vectorized else [i + i for i in da_alpha_dT_j_rows]
-        
+
     @property
     def da_alpha_dT_dns(self):
         r'''Helper method for calculating the mole number derivatives of
@@ -7526,7 +7525,7 @@ class PRMIX(GCEOSMIX, PR):
 
             dE_dxs_i = []
             a_alpha_ijs_i = a_alpha_ijs[i]
-            for k in range(0, i+1):
+            for k in range(i+1):
                 # Sign was wrong in article - should be a plus
                 second = t2*(t31*a_alpha_j_rows[k] - t32*a_alpha_ijs_i[k] - bs[i]*bs[k]*a_alpha2)
                 dE_dxs[i][k] = dE_dxs[k][i] = t30*t50s[k] + second
@@ -7619,7 +7618,7 @@ class PRMIX(GCEOSMIX, PR):
         This derivative is checked numerically.
         '''
         N = self.N
-        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)] 
+        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)]
 
     @property
     def d2delta_dninjs(self):
@@ -10405,7 +10404,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         This derivative is checked numerically.
         '''
         N = self.N
-        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)] 
+        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)]
 
     @property
     def d2delta_dninjs(self):
@@ -10426,7 +10425,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         This derivative is checked numerically.
         '''
         N = self.N
-        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)] 
+        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)]
 
     @property
     def d3delta_dninjnks(self):

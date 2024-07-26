@@ -845,7 +845,7 @@ class Wilson(GibbsExcess):
 
     def __repr__(self):
 
-        s = f'{self.__class__.__name__}(T={repr(self.T)}, xs={repr(self.xs)}'
+        s = f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}'
         for i, attr in enumerate(self._model_attributes):
             if self.lambda_coeffs_nonzero[i]:
                 s += f', {attr}={getattr(self, attr)}'

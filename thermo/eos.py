@@ -293,10 +293,9 @@ from fluids.numerics import (
 )
 from fluids.numerics import numpy as np
 
-from thermo import serialize
-from thermo.serialize import JsonOptEncodable
 from thermo.eos_alpha_functions import Mathias_Copeman_poly_a_alpha, Poly_a_alpha, Soave_1979_a_alpha, Twu91_a_alpha, TwuPR95_a_alpha, TwuSRK95_a_alpha
 from thermo.eos_volume import volume_solutions_halley, volume_solutions_ideal, volume_solutions_mpmath, volume_solutions_mpmath_float, volume_solutions_NR
+from thermo.serialize import JsonOptEncodable
 
 R2 = R*R
 R_2 = 0.5*R
@@ -998,16 +997,16 @@ class GCEOS:
         >>> eos
         PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1000000.0)
         '''
-        s = f'{self.__class__.__name__}(Tc={repr(self.Tc)}, Pc={repr(self.Pc)}, omega={repr(self.omega)}, '
+        s = f'{self.__class__.__name__}(Tc={self.Tc!r}, Pc={self.Pc!r}, omega={self.omega!r}, '
         for k, v in self.kwargs.items():
             s += f'{k}={v}, '
 
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            s += f'P={self.P!r}, V={repr(self.V)}'
+            s += f'P={self.P!r}, V={self.V!r}'
         elif self.V is not None:
-            s += f'T={self.T!r}, V={repr(self.V)}'
+            s += f'T={self.T!r}, V={self.V!r}'
         else:
-            s += f'T={self.T!r}, P={repr(self.P)}'
+            s += f'T={self.T!r}, P={self.P!r}'
         s += ')'
         return s
 
@@ -1131,7 +1130,7 @@ class GCEOS:
                     T = mp.mpf(T)
                 self.P = float(R*T/(V-self.b) - self.a_alpha/(V*V + self.delta*V + self.epsilon))
                 if self.P <= 0.0:
-                    raise ValueError("TV inputs result in negative pressure of %f Pa" %(self.P))
+                    raise ValueError(f"TV inputs result in negative pressure of {self.P:f} Pa")
 #                self.P = R*self.T/(V-self.b) - self.a_alpha/(V*(V + self.delta) + self.epsilon)
             else:
                 raise ValueError("Two specs are required")
@@ -1263,10 +1262,10 @@ class GCEOS:
             # Even in the case of three real roots, it is still the min/max that make sense
             print([self.T, self.P, b, self.delta, self.epsilon, self.a_alpha, 'coordinates of failure'])
             if self.multicomponent:
-                extra = ', zs is %s' %(self.zs)
+                extra = f', zs is {self.zs}'
             else:
                 extra = ''
-            raise ValueError(f'No acceptable roots were found; the roots are {Vs!s}, T is {str(self.T)} K, P is {str(self.P)} Pa, a_alpha is {str([self.a_alpha])}, b is {str([self.b])}{extra}')
+            raise ValueError(f'No acceptable roots were found; the roots are {Vs!s}, T is {self.T!s} K, P is {self.P!s} Pa, a_alpha is {[self.a_alpha]!s}, b is {[self.b]!s}{extra}')
 
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha,
@@ -2135,7 +2134,7 @@ class GCEOS:
             if timing:
                 ax.set_title('Volume timings; max %.2e us' %(max_err*1e6))
             else:
-                ax.set_title('Volume solution validation; max err %.4e' %(max_err))
+                ax.set_title(f'Volume solution validation; max err {max_err:.4e}')
             if show:
                 plt.show()
 
@@ -2323,7 +2322,7 @@ class GCEOS:
         norm = LogNorm() if base_positive else None
         im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm)
         cbar = fig.colorbar(im, ax=ax)
-        cbar.set_label('%s' %base_property)
+        cbar.set_label(f'{base_property}')
 
         if Psat:
             plt.plot(Ts_Psats, Psats, label='Psat')
@@ -2349,7 +2348,7 @@ class GCEOS:
             plt.legend()
 
 
-        ax.set_title('%s vs minimum Gibbs validation' %(base_property))
+        ax.set_title(f'{base_property} vs minimum Gibbs validation')
         if show:
             plt.show()
 
@@ -2453,10 +2452,10 @@ class GCEOS:
                 plt.plot(Ts, props)
 
             ax.set_xlabel('Temperature [K]')
-            ax.set_ylabel(r'%s' %(prop))
+            ax.set_ylabel(rf'{prop}')
 
 
-            ax.set_title(r'Saturation %s curve' %(prop))
+            ax.set_title(rf'Saturation {prop} curve')
             if show:
                 plt.show()
 
@@ -2546,14 +2545,14 @@ class GCEOS:
                 # Trust the fit - do not continue if no good
                 continue
             except Exception as e:
-                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e, self)
+                raise ValueError(f"Failed to converge at {T:.16f} K with unexpected error", e, self)
 
             try:
                 Psat_polished = self.Psat(T, polish=True)
                 Psats_num.append(Psat_polished)
             except Exception as e:
                 failed = True
-                raise ValueError("Failed to converge at %.16f K with unexpected error" %(T), e, self)
+                raise ValueError(f"Failed to converge at {T:.16f} K with unexpected error", e, self)
 
             Ts_worked.append(T)
         Ts = Ts_worked
@@ -2590,7 +2589,7 @@ class GCEOS:
             if trunc_err_high is not None and max_err > trunc_err_high:
                 max_err = trunc_err_high
 
-            ax1.set_title('Vapor pressure validation; max rel err %.4e' %(max_err))
+            ax1.set_title(f'Vapor pressure validation; max rel err {max_err:.4e}')
             if show:
                 plt.show()
 
@@ -2834,7 +2833,7 @@ class GCEOS:
                 try:
                     Tsat = newton(to_solve_newton, guess, fprime=True, maxiter=100,
                                   xtol=4e-13, require_eval=False, damping=1.0, low=low, high=high)
-                    assert Tsat != low and Tsat != high
+                    assert Tsat not in (low, high)
                 except:
                     Tsat = newton(to_solve_newton, guess, fprime=True, maxiter=250, # the wider range can take more iterations
                                   xtol=4e-13, require_eval=False, damping=1.0, low=low, high=high*2)
@@ -2924,7 +2923,7 @@ class GCEOS:
             Psat_ranges_low = self.Psat_ranges_low
             if x > Psat_ranges_low[-1]:
                 if not polish:
-                    raise NoSolutionError("T %.8f K is too low for equations to converge" %(T))
+                    raise NoSolutionError(f"T {T:.8f} K is too low for equations to converge")
                 else:
                     # Needs to still be here for generating better data
                     x = Psat_ranges_low[-1]
@@ -2943,7 +2942,7 @@ class GCEOS:
                     if polish:
                         Psat = 1e-100
                     else:
-                        raise NoSolutionError("T %.8f K is too low for equations to converge" %(T))
+                        raise NoSolutionError(f"T {T:.8f} K is too low for equations to converge")
             except OverflowError:
                 # coefficients sometimes overflow before T is lowered to 0.32Tr
                 # For
@@ -3074,7 +3073,7 @@ class GCEOS:
                     converged = False
 
             if not converged:
-                raise ValueError("Could not converge at T=%.6f K" %(T))
+                raise ValueError(f"Could not converge at T={T:.6f} K")
 
         return Psat
 
@@ -3160,7 +3159,7 @@ class GCEOS:
             Psat_ranges_low = self.Psat_ranges_low
             x = alpha/Tr - 1.
             if x > Psat_ranges_low[-1]:
-                raise NoSolutionError("T %.8f K is too low for equations to converge" %(T))
+                raise NoSolutionError(f"T {T:.8f} K is too low for equations to converge")
 
             for i in range(len(Psat_ranges_low)):
                 if x < Psat_ranges_low[i]:
@@ -10035,7 +10034,7 @@ class SRK(GCEOS):
             x30 = b*x12
             T_calc = -Tc*(2.*a*m*x9*(V*x21*x21*x21*(V + b)*(P*x2 + P*x7 + x17 + x18 + x22 + x23 - x24))**0.5*(m + 1.) - x20*x21*(-P*x16*x6 + x1*x22 + x10*x26 + x13*x28 - x13*x30 + x15*x23 + x15*x24 + x19*x26 + x22*x3 + x25*x5 + x25 + x27*x5 + x27 + x28*x29 + x28*x5 - x29*x30 - x30*x5))/(x20*x9)
             if abs(T_calc.imag) > 1e-12:
-                raise ValueError("Calculated imaginary temperature %s" %(T_calc))
+                raise ValueError(f"Calculated imaginary temperature {T_calc}")
             return T_calc
         else:
             return Tc*(-2*a*m*sqrt(V*(V - b)**3*(V + b)*(P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a))*(m + 1)*(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4)*(P*R*Tc*V**4 + 2*P*R*Tc*V**3*b + P*R*Tc*V**2*b**2 - P*V**3*a*m**2 + P*V*a*b**2*m**2 + R*Tc*V**2*a*m**2 + 2*R*Tc*V**2*a*m + R*Tc*V**2*a + R*Tc*V*a*b*m**2 + 2*R*Tc*V*a*b*m + R*Tc*V*a*b + V*a**2*m**4 + 2*V*a**2*m**3 + V*a**2*m**2 - a**2*b*m**4 - 2*a**2*b*m**3 - a**2*b*m**2))/((R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4))

@@ -68,6 +68,7 @@ from chemicals.virial import (
 from fluids.constants import R
 from fluids.numerics import log, newton
 from fluids.numerics import numpy as np
+
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import IdealGasDeparturePhase, Phase
 from thermo.serialize import JsonOptEncodable
@@ -347,8 +348,8 @@ class VirialCSP:
         d = self.__dict__
         ans = hash_any_primitive((self.__class__.__name__, self.state_hash(), self.model_hash(), d))
         return ans
-    
-    
+
+
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)

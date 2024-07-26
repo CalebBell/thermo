@@ -30,7 +30,6 @@ from fluids.numerics import numpy as np
 
 from thermo.chemical import Chemical
 
-global pd
 pd = None
 def pandas():
     global pd
@@ -288,25 +287,25 @@ def tabulate_streams(names=None, *args, **kwargs):
 
     if kwargs.get('Mole flows', True):
         for i, CAS in enumerate(CASs):
-            s = 'Mole flow, mol/s %s' %IDs[CAS]
+            s = f'Mole flow, mol/s {IDs[CAS]}'
             vals = [j[i] for j in mole_flows]
             dat[s] = vals
 
     if kwargs.get('Mass flows', True):
         for i, CAS in enumerate(CASs):
-            s = 'Mass flow, kg/s %s' %IDs[CAS]
+            s = f'Mass flow, kg/s {IDs[CAS]}'
             vals = [j[i] for j in mass_flows]
             dat[s] = vals
 
     if kwargs.get('Mass fractions', True):
         for i, CAS in enumerate(CASs):
-            s = 'Mass fraction %s' %IDs[CAS]
+            s = f'Mass fraction {IDs[CAS]}'
             vals = [j[i] for j in mass_fractions]
             dat[s] = vals
 
     if kwargs.get('Mole fractions', True):
         for i, CAS in enumerate(CASs):
-            s = 'Mole fraction %s' %IDs[CAS]
+            s = f'Mole fraction {IDs[CAS]}'
             vals = [j[i] for j in mole_fractions]
             dat[s] = vals
 

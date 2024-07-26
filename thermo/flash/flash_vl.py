@@ -349,7 +349,6 @@ class FlashVL(Flash):
         if liquid is None:
             raise ValueError("Liquid model is required")
 
-        #
         self.phases = [gas, liquid]
 
         self._finish_initialization_base()
@@ -852,9 +851,7 @@ class FlashVL(Flash):
 
         if selection_fun_1P is None:
             def selection_fun_1P(new, prev):
-                if new[-1] < prev[-1]:
-                    return True
-                return False
+                return new[-1] < prev[-1]
 
         if 0:
             try:

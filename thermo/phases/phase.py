@@ -39,12 +39,12 @@ from chemicals.utils import (
     isentropic_exponent_PT,
     isentropic_exponent_PV,
     isentropic_exponent_TV,
+    mixing_simple,
     normalize,
     object_data,
     phase_identification_parameter,
     property_molar_to_mass,
     speed_of_sound,
-    mixing_simple
 )
 from chemicals.virial import B_from_Z
 from fluids.constants import R, R_inv
@@ -66,8 +66,7 @@ from fluids.numerics import (
 from fluids.numerics import numpy as np
 
 from thermo import phases
-from thermo.phases.phase_utils import object_lookups
-from thermo.serialize import arrays_to_lists, JsonOptEncodable
+from thermo.serialize import JsonOptEncodable
 from thermo.utils import POLY_FIT
 
 try:
@@ -184,7 +183,7 @@ class Phase:
         __full_path__ = None
 
     def __str__(self):
-        s =  '<%s, ' %(self.__class__.__name__)
+        s =  f'<{self.__class__.__name__}, '
         try:
             s += f'T={self.T:g} K, P={self.P:g} Pa'
         except:
@@ -1316,7 +1315,7 @@ class Phase:
         phis = self.phis()
         dlnphis_dns = self.dlnphis_dns()
         P, zs, N = self.P, self.zs, self.N
-        matrix = zeros((N, N)) if self.vectorized else [[0.0]*N for _ in range(N)] 
+        matrix = zeros((N, N)) if self.vectorized else [[0.0]*N for _ in range(N)]
         for i in range(N):
             phi_P = P*phis[i]
             ziPphi = phi_P*zs[i]
@@ -4216,8 +4215,7 @@ class Phase:
         CASs = self.CASs
         T = self.T
         zs = self.zs
-        from thermo.chemical_utils import standard_state_ideal_gas_formation, _standard_state_ideal_gas_formation_direct
-        from thermo import Chemical
+        from thermo.chemical_utils import _standard_state_ideal_gas_formation_direct
         H_chemicals = []
         S_chemicals = []
         G_chemicals = []
@@ -6284,16 +6282,16 @@ for a, a_str, a_units, a_name in zip(*prop_iter):
             def _der(self, property=a, differentiate_by=b, at_constant=c):
                 return self._derivs_jacobian(a=property, b=differentiate_by, c=at_constant)
             t = f'd{a}_d{b}_{c}'
-            doc = r"""Method to calculate and return the {} derivative of {} of the phase at constant {}.
+            doc = rf"""Method to calculate and return the {b_name} derivative of {a_name} of the phase at constant {c_name}.
 
     .. math::
-        \left(\frac{{\partial {}}}{{\partial {}}}\right)_{{{}}}
+        \left(\frac{{\partial {a_str}}}{{\partial {b_str}}}\right)_{{{c}}}
 
 Returns
 -------
-{} : float
-    The {} derivative of {} of the phase at constant {}, [{}/{}]
-""".format(b_name, a_name, c_name, a_str, b_str, c, t, b_name, a_name, c_name, a_units, b_units)
+{t} : float
+    The {b_name} derivative of {a_name} of the phase at constant {c_name}, [{a_units}/{b_units}]
+"""
             setattr(Phase, t, _der)
             try:
                 _der.__doc__ = doc
@@ -6342,19 +6340,19 @@ for attr in derivatives_thermodynamic:
         at_constant = 'T' if diff_by == 'P' else 'P'
     s = f'{base}_mass_{end}'
 
-    if not '2' in attr:
+    if '2' not in attr:
         # TODO docs for second mass derivatives
 
-        doc = r"""Method to calculate and return the {} derivative of mass {} of the phase at constant {}.
+        doc = rf"""Method to calculate and return the {prop_names[diff_by]} derivative of mass {prop_names[prop]} of the phase at constant {prop_names[at_constant]}.
 
         .. math::
-            \left(\frac{{\partial {}_{{\text{{mass}}}}}}{{\partial {}}}\right)_{{{}}}
+            \left(\frac{{\partial {prop}_{{\text{{mass}}}}}}{{\partial {diff_by}}}\right)_{{{at_constant}}}
 
     Returns
     -------
-    {} : float
-        The {} derivative of mass {} of the phase at constant {}, [{}/{}]
-    """.format(prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop, diff_by, at_constant, s, prop_names[diff_by], prop_names[prop], prop_names[at_constant], prop_units[prop], prop_units[diff_by])
+    {s} : float
+        The {prop_names[diff_by]} derivative of mass {prop_names[prop]} of the phase at constant {prop_names[at_constant]}, [{prop_units[prop]}/{prop_units[diff_by]}]
+    """
         try:
             _der.__doc__ = doc#'Automatically generated derivative. %s %s' %(base, end)
         except:

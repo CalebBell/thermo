@@ -24,16 +24,18 @@ __all__ = ['IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97', 'IAPWS06']
 
 from cmath import log as logc
 from math import exp
-from fluids.numerics import secant, newton
+
 from chemicals import iapws
 from chemicals.interface import sigma_IAPWS
 from chemicals.thermal_conductivity import k_IAPWS
 from chemicals.utils import Vm_to_rho, rho_to_Vm
 from chemicals.viscosity import mu_IAPWS
+from fluids.numerics import secant
 
-from thermo.phases.helmholtz_eos import HelmholtzEOS
 from thermo.phases.gibbs_eos import GibbsEOS
+from thermo.phases.helmholtz_eos import HelmholtzEOS
 from thermo.phases.phase import Phase
+
 # from thermo.chemical_package import iapws_correlations
 
 class IAPWS95(HelmholtzEOS):

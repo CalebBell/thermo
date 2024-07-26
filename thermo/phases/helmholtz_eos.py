@@ -50,7 +50,7 @@ class HelmholtzEOS(Phase):
         >>> phase
         IAPWS95Gas(T=300, P=100000.0, zs=[1.0])
         '''
-        base = '%s('  %(self.__class__.__name__)
+        base = f'{self.__class__.__name__}('
         iter_props = ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs') if self.__class__.__name__ not in ('IAPWS95Gas', 'IAPWS95Liquid') else ('T', 'P', 'zs')
         for s in iter_props:
             if hasattr(self, s) and getattr(self, s) is not None:
@@ -172,7 +172,6 @@ class HelmholtzEOS(Phase):
         x2 = rho*(d2A_ddelta2*x0 + rho_red*rho_inv*rho_inv)
         x3 = dA_ddelta + x1
         dlnphi_dV_T = x0*(2.0*dA_ddelta + x1 + x2 - (x2 + x3)/(rho*x0*x3 + 1.0) - 1.0/delta)
-#
         dlnphi_dV_T *= -1.0/(self._V*self._V)
 
         return [dlnphi_dV_T]
