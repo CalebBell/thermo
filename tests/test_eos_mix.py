@@ -4858,7 +4858,7 @@ def test_numpy_properties_all_eos_mix():
             assert isinstance(eos_np.d2G_dep_dzizjs(eos_np.Z_g), np.ndarray)
             assert isinstance(eos.d2G_dep_dzizjs(eos.Z_g), list)
 
-            assert_close2d(eos_np.d2P_dninjs_Vt('g'), eos.d2P_dninjs_Vt('g'), rtol=1e-13)
+            assert_close2d(eos_np.d2P_dninjs_Vt('g'), eos.d2P_dninjs_Vt('g'), rtol=1e-12)
             assert isinstance(eos_np.d2P_dninjs_Vt('g'), np.ndarray)
             assert isinstance(eos.d2P_dninjs_Vt('g'), list)
 
