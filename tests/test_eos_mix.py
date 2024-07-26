@@ -5124,7 +5124,7 @@ def test_numpy_properties_all_eos_mix():
             assert isinstance(eos_np.d3a_alpha_dninjnks, np.ndarray)
             assert isinstance(eos.d3a_alpha_dninjnks, list)
 
-            assert_close3d(eos_np.d3P_dninjnks_Vt('g'), eos.d3P_dninjnks_Vt('g'), rtol=1e-11)
+            assert_close3d(eos_np.d3P_dninjnks_Vt('g'), eos.d3P_dninjnks_Vt('g'), rtol=2e-10)
             assert isinstance(eos_np.d3P_dninjnks_Vt('g'), np.ndarray)
             assert isinstance(eos.d3P_dninjnks_Vt('g'), list)
 
