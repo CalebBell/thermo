@@ -135,7 +135,7 @@ warn_chemicals_msg ="""`chemicals <https://github.com/CalebBell/chemicals>`_ is 
             fairly easily once the data entry is complete."""
 
 
-class ChemicalConstantsPackage():
+class ChemicalConstantsPackage:
     non_vector_properties = ('atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
                  'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs',
                  'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass',

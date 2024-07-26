@@ -447,9 +447,9 @@ class GibbsExcess:
     def _custom_from_json(self, *args):
         vectorized = self.vectorized
         if vectorized and hasattr(self, 'cmp_group_idx'):
-            setattr(self, 'cmp_group_idx', tuple(array(v) for v in getattr(self, 'cmp_group_idx')))
+            self.cmp_group_idx = tuple(array(v) for v in self.cmp_group_idx)
         if vectorized and hasattr(self, 'group_cmp_idx'):
-            setattr(self, 'group_cmp_idx', tuple(array(v) for v in getattr(self, 'group_cmp_idx')))
+            self.group_cmp_idx = tuple(array(v) for v in self.group_cmp_idx)
 
     def HE(self):
         r'''Calculate and return the excess entropy of a liquid phase using an

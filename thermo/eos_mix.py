@@ -442,7 +442,7 @@ class GCEOSMIX(GCEOS):
             except:
                 pass
         try:
-            setattr(self, 'one_minus_kijs',  one_minus_kijs(self.kijs))
+            self.one_minus_kijs = one_minus_kijs(self.kijs)
         except:
             pass
 

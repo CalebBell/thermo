@@ -210,22 +210,22 @@ def json_default(obj):
 JSON_DEFAULT = 0
 JSON_DROP_RECALCULABLE = 1
 
-class JsonOptEncodable():
+class JsonOptEncodable:
     json_version = 1
-    '''This attribute will be encoded into the produced json blob.
+    """This attribute will be encoded into the produced json blob.
     It is specific to each object. When backwards incompatible changes are made
     to an object's structure, be sure to increment this to avoid deserializations
-    producing broken objects.'''
+    producing broken objects."""
 
     obj_references = None
-    '''If this attribute is not None, instead of inspecting each object for whether it is a json-supported type,
+    """If this attribute is not None, instead of inspecting each object for whether it is a json-supported type,
     only these attribute names are inspected for recursion. These are also the only references
     subject to deduplication.
-    '''
+    """
 
     non_json_attributes = []
-    '''List of attributes to remove from a dict
-    '''
+    """List of attributes to remove from a dict
+    """
 
     def _custom_as_json(self, cache):
         # Handle anything custom

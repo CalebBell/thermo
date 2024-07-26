@@ -202,8 +202,8 @@ class StreamArgs:
     '''
 
     flashed = False
-    '''`flashed` can be checked to quickly determine if an object is already flashed. It is always False for `StreamArgs`,
-    and True for `EquilibriumState` and `EquilibriumStream`'''
+    """`flashed` can be checked to quickly determine if an object is already flashed. It is always False for `StreamArgs`,
+    and True for `EquilibriumState` and `EquilibriumStream`"""
     __full_path__ = f"{__module__}.{__qualname__}"
 
     __slots__ = ('specifications', 'multiple_composition_basis', 'Vf_TP', 'Q_TP', 'flasher', '_state_cache', '_flash')
