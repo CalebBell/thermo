@@ -172,7 +172,6 @@ class HelmholtzEOS(Phase):
         x2 = rho*(d2A_ddelta2*x0 + rho_red*rho_inv*rho_inv)
         x3 = dA_ddelta + x1
         dlnphi_dV_T = x0*(2.0*dA_ddelta + x1 + x2 - (x2 + x3)/(rho*x0*x3 + 1.0) - 1.0/delta)
-#
         dlnphi_dV_T *= -1.0/(self._V*self._V)
 
         return [dlnphi_dV_T]

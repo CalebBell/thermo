@@ -4402,15 +4402,15 @@ class UNIFAC(GibbsExcess):
 
     gammas_from_args = staticmethod(unifac_gammas_from_args)
 
-    _cached_calculated_attributes = ('_Fis', '_Fs', '_Fs_pure', '_Gs', '_Gs_pure', '_Hs', '_Hs_pure', '_Theta_Psi_sum_invs', '_Theta_Psi_sums', 
-            '_Theta_pure_Psi_sum_invs', '_Theta_pure_Psi_sums', '_Thetas', '_Thetas_sum_inv', '_VSXS', '_Vis', '_Vis_modified', '_Ws', 
-            '_Xs', '_Xs_sum_inv', '_d2Fis_dxixjs', '_d2Thetas_dxixjs', '_d2Vis_dxixjs', '_d2Vis_modified_dxixjs', 
-            '_d2lnGammas_subgroups_dT2', '_d2lnGammas_subgroups_dTdxs', '_d2lnGammas_subgroups_dxixjs', '_d2lnGammas_subgroups_pure_dT2', 
-            '_d2lngammas_c_dxixjs', '_d2lngammas_r_dT2', '_d2lngammas_r_dTdxs', '_d2lngammas_r_dxixjs', '_d2psis_dT2', '_d3Fis_dxixjxks', 
-            '_d3GE_dT3', '_d3Vis_dxixjxks', '_d3Vis_modified_dxixjxks', '_d3lnGammas_subgroups_dT3', '_d3lnGammas_subgroups_pure_dT3', 
-            '_d3lngammas_c_dxixjxks', '_d3lngammas_r_dT3', '_d3psis_dT3', '_dFis_dxs', '_dThetas_dxs', '_dVis_dxs', '_dVis_modified_dxs', 
-            '_dgammas_dxs', '_dlnGammas_subgroups_dT', '_dlnGammas_subgroups_dxs', '_dlnGammas_subgroups_pure_dT', '_dlngammas_c_dxs', 
-            '_dlngammas_r_dT', '_dlngammas_r_dxs', '_dpsis_dT', '_lnGammas_subgroups', '_lnGammas_subgroups_pure', '_lngammas_c', 
+    _cached_calculated_attributes = ('_Fis', '_Fs', '_Fs_pure', '_Gs', '_Gs_pure', '_Hs', '_Hs_pure', '_Theta_Psi_sum_invs', '_Theta_Psi_sums',
+            '_Theta_pure_Psi_sum_invs', '_Theta_pure_Psi_sums', '_Thetas', '_Thetas_sum_inv', '_VSXS', '_Vis', '_Vis_modified', '_Ws',
+            '_Xs', '_Xs_sum_inv', '_d2Fis_dxixjs', '_d2Thetas_dxixjs', '_d2Vis_dxixjs', '_d2Vis_modified_dxixjs',
+            '_d2lnGammas_subgroups_dT2', '_d2lnGammas_subgroups_dTdxs', '_d2lnGammas_subgroups_dxixjs', '_d2lnGammas_subgroups_pure_dT2',
+            '_d2lngammas_c_dxixjs', '_d2lngammas_r_dT2', '_d2lngammas_r_dTdxs', '_d2lngammas_r_dxixjs', '_d2psis_dT2', '_d3Fis_dxixjxks',
+            '_d3GE_dT3', '_d3Vis_dxixjxks', '_d3Vis_modified_dxixjxks', '_d3lnGammas_subgroups_dT3', '_d3lnGammas_subgroups_pure_dT3',
+            '_d3lngammas_c_dxixjxks', '_d3lngammas_r_dT3', '_d3psis_dT3', '_dFis_dxs', '_dThetas_dxs', '_dVis_dxs', '_dVis_modified_dxs',
+            '_dgammas_dxs', '_dlnGammas_subgroups_dT', '_dlnGammas_subgroups_dxs', '_dlnGammas_subgroups_pure_dT', '_dlngammas_c_dxs',
+            '_dlngammas_r_dT', '_dlngammas_r_dxs', '_dpsis_dT', '_lnGammas_subgroups', '_lnGammas_subgroups_pure', '_lngammas_c',
             '_lngammas_r', '_psis', '_qx_sum_inv', '_rx_sum_inv')
 
     __slots__ = GibbsExcess.__slots__ + _cached_calculated_attributes + ('N_groups', 'Qs', 'cmp_group_idx', 'cmp_v_count', 'cmp_v_count_inv', 'group_cmp_idx',

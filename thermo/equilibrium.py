@@ -223,7 +223,7 @@ class EquilibriumState:
                   'liquid0', 'liquid1', 'liquid2', 'bulk', 'flash_specs', 'flash_convergence',
                  'flasher', 'settings', 'constants', 'correlations', '__dict__')
 
-    obj_references = ('liquid_bulk', 'solid_bulk', 'bulk', 'gas', 'liquids', 'phases', 
+    obj_references = ('liquid_bulk', 'solid_bulk', 'bulk', 'gas', 'liquids', 'phases',
                     'solids',  'settings', 'constants', 'correlations', 'flasher',
                       'liquid0', 'liquid1', 'liquid2')
 

@@ -1686,7 +1686,7 @@ def dew_P_newton(P_guess, T, zs, liquid_phase, gas_phase,
 #    ys = [exp(lnKsP[i])*xs[i] for i in cmps]
     return lnKsP[-1], xs, zs, iterations
 
-def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_var='P', V_over_F=1, #
+def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var='T', fixed_var='P', V_over_F=1,
                              maxiter=200, xtol=1E-10, ytol=None, hot_start=None
                              ):
     # Bound the problem
@@ -4133,7 +4133,6 @@ def TPV_double_solve_1P(zs, phase, guesses, spec_vals,
         # print(kwargs, errs)
         return errs, jac
 
-#
     states, iterations = newton_system(to_solve, x0=guesses, jac=True, xtol=xtol,
              ytol=ytol, maxiter=maxiter, damping_func=damping_maintain_sign)
     phase = cache[0]

@@ -1157,10 +1157,10 @@ class TDependentProperty:
            {'A': 2.1e-5, 'B': 1.29, 'C': 488.0, 'D': 0.0}, # near dippr kg 1-heptene
            {'A': 4.5e-5, 'B': 1.2, 'C': 420.0, 'D': 0.0}, # near dippr kg propene
            {'A': 1.7e-6, 'B': 1.67, 'C': 660.0, 'D': -95400.0}, # near dippr kg acetic acid
-           {'A': 0.0, 'B': 4000.0, 'C': 0.75, 'D': 0.0}, #
-           {'A': 1e9, 'B': -5.0, 'C': -1500, 'D': 1e6}, #
-           {'A': 0.0, 'B': 3600.0, 'C': 0.73, 'D': 0.0}, #
-           {'A': 0.0076, 'B': 0.51, 'C': 2175, 'D': 185000.0}, #
+           {'A': 0.0, 'B': 4000.0, 'C': 0.75, 'D': 0.0},
+           {'A': 1e9, 'B': -5.0, 'C': -1500, 'D': 1e6},
+           {'A': 0.0, 'B': 3600.0, 'C': 0.73, 'D': 0.0},
+           {'A': 0.0076, 'B': 0.51, 'C': 2175, 'D': 185000.0},
         ]}),
      'DIPPR104': (['A', 'B'],
       ['C', 'D', 'E'],
@@ -1225,13 +1225,13 @@ class TDependentProperty:
           {'A': 0.67524, 'B': 0.24431, 'C': 645.61,'D': 0.26239},  # near some chemsep liquid densities
           {'A': 0.5251, 'B': 0.20924, 'C': 736.61,'D': 0.18363},  # near some chemsep liquid densities
 
-          {'A': 0.13, 'B': 0.23, 'C': 910.,'D': 0.29},  #
-          {'A': 9.0, 'B': 0.5, 'C': 2400.,'D': 0.58},  #
-          {'A': 1.0, 'B': 0.14, 'C': 1000.0,'D': 0.1},  #
-          {'A': 0.24, 'B': 0.05, 'C': 6000.0,'D': 0.2},  #
-          {'A': 6.5, 'B': 0.5, 'C': 3.5, 'D': 0.2},  #
-          {'A': 15.0, 'B': 0.3, 'C': 7000.0, 'D': 0.3},  #
-          {'A': 0.1, 'B': 0.05, 'C': 3300.0, 'D': 0.1},  #
+          {'A': 0.13, 'B': 0.23, 'C': 910.,'D': 0.29},
+          {'A': 9.0, 'B': 0.5, 'C': 2400.,'D': 0.58},
+          {'A': 1.0, 'B': 0.14, 'C': 1000.0,'D': 0.1},
+          {'A': 0.24, 'B': 0.05, 'C': 6000.0,'D': 0.2},
+          {'A': 6.5, 'B': 0.5, 'C': 3.5, 'D': 0.2},
+          {'A': 15.0, 'B': 0.3, 'C': 7000.0, 'D': 0.3},
+          {'A': 0.1, 'B': 0.05, 'C': 3300.0, 'D': 0.1},
           ]}),
      'DIPPR105_inv': (['A', 'B', 'C', 'D'],
       [],
@@ -1263,7 +1263,7 @@ class TDependentProperty:
      'DIPPR106_inv': (['Tc', 'A', 'B'],
         ['C', 'D', 'E'],
         {'f': lambda T, **kwargs: 1.0/EQ106(T, order=0, **kwargs),},
-        {'fit_params': ['A', 'B', 'C', 'D', 'E'], 
+        {'fit_params': ['A', 'B', 'C', 'D', 'E'],
         }),
      'YawsSigma': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
@@ -1299,7 +1299,6 @@ class TDependentProperty:
           {'A': 820000.0, 'B': 375000, 'C': 1750.0, 'D': -1e6, 'E': 275.},
           {'A': 150000.0, 'B': 145000, 'C': 1225.0, 'D': -5.75e7, 'E': 7.75},
         ]}),
-      #
      'DIPPR114': (['Tc', 'A', 'B', 'C', 'D'],
       [],
       {'f': EQ114,
@@ -2103,7 +2102,7 @@ class TDependentProperty:
                     do_K_fold = False
 
 
-            model_skipped_parameter_combinations = skipped_parameter_combinations.get(model, None)
+            model_skipped_parameter_combinations = skipped_parameter_combinations.get(model)
 
             for i in range(start_idx, len(optional_args)+1):
                 our_fit_parameters = optional_args[0:i]
@@ -2691,29 +2690,29 @@ class TDependentProperty:
             raise ValueError("No polynomial fit defined")
 
         if method == POLY_FIT:
-            return f'{self.__class__.__name__}(load_data=False, poly_fit=({repr(self.poly_fit_Tmin)}, {repr(self.poly_fit_Tmax)}, {repr(self.poly_fit_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, poly_fit=({self.poly_fit_Tmin!r}, {self.poly_fit_Tmax!r}, {self.poly_fit_coeffs!r}))'
         elif method == EXP_POLY_FIT:
-            return f'{self.__class__.__name__}(load_data=False, exp_poly_fit=({repr(self.exp_poly_fit_Tmin)}, {repr(self.exp_poly_fit_Tmax)}, {repr(self.exp_poly_fit_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, exp_poly_fit=({self.exp_poly_fit_Tmin!r}, {self.exp_poly_fit_Tmax!r}, {self.exp_poly_fit_coeffs!r}))'
         elif method == POLY_FIT_LN_TAU:
-            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.poly_fit_ln_tau_Tc)}, poly_fit_ln_tau=({repr(self.poly_fit_ln_tau_Tmin)}, {repr(self.poly_fit_ln_tau_Tmax)}, {repr(self.poly_fit_ln_tau_Tc)}, {repr(self.poly_fit_ln_tau_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, Tc={self.poly_fit_ln_tau_Tc!r}, poly_fit_ln_tau=({self.poly_fit_ln_tau_Tmin!r}, {self.poly_fit_ln_tau_Tmax!r}, {self.poly_fit_ln_tau_Tc!r}, {self.poly_fit_ln_tau_coeffs!r}))'
         elif method == EXP_POLY_FIT_LN_TAU:
-            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.exp_poly_fit_ln_tau_Tc)}, exp_poly_fit_ln_tau=({repr(self.exp_poly_fit_ln_tau_Tmin)}, {repr(self.exp_poly_fit_ln_tau_Tmax)}, {repr(self.exp_poly_fit_ln_tau_Tc)}, {repr(self.exp_poly_fit_ln_tau_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, Tc={self.exp_poly_fit_ln_tau_Tc!r}, exp_poly_fit_ln_tau=({self.exp_poly_fit_ln_tau_Tmin!r}, {self.exp_poly_fit_ln_tau_Tmax!r}, {self.exp_poly_fit_ln_tau_Tc!r}, {self.exp_poly_fit_ln_tau_coeffs!r}))'
         elif method == STABLEPOLY_FIT:
-            return f'{self.__class__.__name__}(load_data=False, stablepoly_fit=({repr(self.stablepoly_fit_Tmin)}, {repr(self.stablepoly_fit_Tmax)}, {repr(self.stablepoly_fit_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, stablepoly_fit=({self.stablepoly_fit_Tmin!r}, {self.stablepoly_fit_Tmax!r}, {self.stablepoly_fit_coeffs!r}))'
         elif method == EXP_STABLEPOLY_FIT:
-            return f'{self.__class__.__name__}(load_data=False, exp_stablepoly_fit=({repr(self.exp_stablepoly_fit_Tmin)}, {repr(self.exp_stablepoly_fit_Tmax)}, {repr(self.exp_stablepoly_fit_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, exp_stablepoly_fit=({self.exp_stablepoly_fit_Tmin!r}, {self.exp_stablepoly_fit_Tmax!r}, {self.exp_stablepoly_fit_coeffs!r}))'
         elif method == STABLEPOLY_FIT_LN_TAU:
-            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.stablepoly_fit_ln_tau_Tc)}, stablepoly_fit_ln_tau=({repr(self.stablepoly_fit_ln_tau_Tmin)}, {repr(self.stablepoly_fit_ln_tau_Tmax)}, {repr(self.stablepoly_fit_ln_tau_Tc)}, {repr(self.stablepoly_fit_ln_tau_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, Tc={self.stablepoly_fit_ln_tau_Tc!r}, stablepoly_fit_ln_tau=({self.stablepoly_fit_ln_tau_Tmin!r}, {self.stablepoly_fit_ln_tau_Tmax!r}, {self.stablepoly_fit_ln_tau_Tc!r}, {self.stablepoly_fit_ln_tau_coeffs!r}))'
         elif method == EXP_STABLEPOLY_FIT_LN_TAU:
-            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.exp_stablepoly_fit_ln_tau_Tc)}, exp_stablepoly_fit_ln_tau=({repr(self.exp_stablepoly_fit_ln_tau_Tmin)}, {repr(self.exp_stablepoly_fit_ln_tau_Tmax)}, {repr(self.exp_stablepoly_fit_ln_tau_Tc)}, {repr(self.exp_stablepoly_fit_ln_tau_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, Tc={self.exp_stablepoly_fit_ln_tau_Tc!r}, exp_stablepoly_fit_ln_tau=({self.exp_stablepoly_fit_ln_tau_Tmin!r}, {self.exp_stablepoly_fit_ln_tau_Tmax!r}, {self.exp_stablepoly_fit_ln_tau_Tc!r}, {self.exp_stablepoly_fit_ln_tau_coeffs!r}))'
         elif method == CHEB_FIT:
-            return f'{self.__class__.__name__}(load_data=False, cheb_fit=({repr(self.cheb_fit_Tmin)}, {repr(self.cheb_fit_Tmax)}, {repr(self.cheb_fit_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, cheb_fit=({self.cheb_fit_Tmin!r}, {self.cheb_fit_Tmax!r}, {self.cheb_fit_coeffs!r}))'
         elif method == EXP_CHEB_FIT:
-            return f'{self.__class__.__name__}(load_data=False, exp_cheb_fit=({repr(self.exp_cheb_fit_Tmin)}, {repr(self.exp_cheb_fit_Tmax)}, {repr(self.exp_cheb_fit_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, exp_cheb_fit=({self.exp_cheb_fit_Tmin!r}, {self.exp_cheb_fit_Tmax!r}, {self.exp_cheb_fit_coeffs!r}))'
         elif method == CHEB_FIT_LN_TAU:
-            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.cheb_fit_ln_tau_Tc)}, cheb_fit_ln_tau=({repr(self.cheb_fit_ln_tau_Tmin)}, {repr(self.cheb_fit_ln_tau_Tmax)}, {repr(self.cheb_fit_ln_tau_Tc)}, {repr(self.cheb_fit_ln_tau_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, Tc={self.cheb_fit_ln_tau_Tc!r}, cheb_fit_ln_tau=({self.cheb_fit_ln_tau_Tmin!r}, {self.cheb_fit_ln_tau_Tmax!r}, {self.cheb_fit_ln_tau_Tc!r}, {self.cheb_fit_ln_tau_coeffs!r}))'
         elif method == EXP_CHEB_FIT_LN_TAU:
-            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.exp_cheb_fit_ln_tau_Tc)}, exp_cheb_fit_ln_tau=({repr(self.exp_cheb_fit_ln_tau_Tmin)}, {repr(self.exp_cheb_fit_ln_tau_Tmax)}, {repr(self.exp_cheb_fit_ln_tau_Tc)}, {repr(self.exp_cheb_fit_ln_tau_coeffs)}))'
+            return f'{self.__class__.__name__}(load_data=False, Tc={self.exp_cheb_fit_ln_tau_Tc!r}, exp_cheb_fit_ln_tau=({self.exp_cheb_fit_ln_tau_Tmin!r}, {self.exp_cheb_fit_ln_tau_Tmax!r}, {self.exp_cheb_fit_ln_tau_Tc!r}, {self.exp_cheb_fit_ln_tau_coeffs!r}))'
 
     def _base_calculate(self, T, method):
         if method in self.correlations:

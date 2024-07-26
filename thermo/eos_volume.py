@@ -1086,7 +1086,7 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
             + 0.5*csqrt((x9*(-4.*x0*t1*t1*t1 + t2*t2))+0.0j)
             )+0.0j)**third
 
-    x20 = -t1/x19#
+    x20 = -t1/x19
     x22 = x5 + x5
     x25 = 4.*x0*x20
     return ((x0*x20 - x19 + x5)*third,
@@ -1247,7 +1247,6 @@ def volume_solutions_a2(T, P, b, delta, epsilon, a_alpha):
        :scale: 70 %
        :alt: SRK EOS decane volume error high pressure
     '''
-    #
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
     B = etas = b*P_RT_inv

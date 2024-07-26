@@ -1783,7 +1783,7 @@ class VolumeSolid(TDependentProperty):
     """Maximum value of Heat capacity; arbitrarily set to 0.002, as the largest
     in the data is 0.00136."""
 
-    ranked_methods = [CRC_INORG_S, GOODMAN]  #
+    ranked_methods = [CRC_INORG_S, GOODMAN]
     """Default rankings of the available methods."""
 
     custom_args = ('MW', 'Tt', 'Vml_Tt')

@@ -377,7 +377,7 @@ class RegularSolution(GibbsExcess):
 
 
     def __repr__(self):
-        s = f'{self.__class__.__name__}(T={repr(self.T)}, xs={repr(self.xs)}, Vs={self.Vs}, SPs={self.SPs}'
+        s = f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}, Vs={self.Vs}, SPs={self.SPs}'
         if not self._lambda_coeffs_zero:
             s += f' , lambda_coeffs={self.lambda_coeffs})'
         else:

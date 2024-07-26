@@ -998,16 +998,16 @@ class GCEOS:
         >>> eos
         PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1000000.0)
         '''
-        s = f'{self.__class__.__name__}(Tc={repr(self.Tc)}, Pc={repr(self.Pc)}, omega={repr(self.omega)}, '
+        s = f'{self.__class__.__name__}(Tc={self.Tc!r}, Pc={self.Pc!r}, omega={self.omega!r}, '
         for k, v in self.kwargs.items():
             s += f'{k}={v}, '
 
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            s += f'P={self.P!r}, V={repr(self.V)}'
+            s += f'P={self.P!r}, V={self.V!r}'
         elif self.V is not None:
-            s += f'T={self.T!r}, V={repr(self.V)}'
+            s += f'T={self.T!r}, V={self.V!r}'
         else:
-            s += f'T={self.T!r}, P={repr(self.P)}'
+            s += f'T={self.T!r}, P={self.P!r}'
         s += ')'
         return s
 
@@ -1266,7 +1266,7 @@ class GCEOS:
                 extra = ', zs is %s' %(self.zs)
             else:
                 extra = ''
-            raise ValueError(f'No acceptable roots were found; the roots are {Vs!s}, T is {str(self.T)} K, P is {str(self.P)} Pa, a_alpha is {str([self.a_alpha])}, b is {str([self.b])}{extra}')
+            raise ValueError(f'No acceptable roots were found; the roots are {Vs!s}, T is {self.T!s} K, P is {self.P!s} Pa, a_alpha is {[self.a_alpha]!s}, b is {[self.b]!s}{extra}')
 
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha,

@@ -155,7 +155,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         self.composition_independent = eos_class is IGMIX
         if T is None: T = 298.15
         if P is None: P = 101325.0
-        if zs is None: 
+        if zs is None:
             if vectorized:
                 v = 1.0 / N
                 zs = full(N, v)

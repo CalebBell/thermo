@@ -307,7 +307,7 @@ class JsonOptEncodable():
                 else:
                     num = len(id_to_num_str) # May change as we do as_json so we must re-check the length
                     num_str = f'pyid_{num}'
-                    id_to_num_str[id(o)] = num_str 
+                    id_to_num_str[id(o)] = num_str
                     num_to_object[num_str] = o.as_json(cache)
                 d[obj_name] = num_str
 

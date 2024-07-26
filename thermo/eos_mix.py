@@ -411,17 +411,17 @@ class GCEOSMIX(GCEOS):
 
 
     def __repr__(self):
-        s = f'{self.__class__.__name__}(Tcs={repr(self.Tcs)}, Pcs={repr(self.Pcs)}, omegas={repr(self.omegas)}, '
+        s = f'{self.__class__.__name__}(Tcs={self.Tcs!r}, Pcs={self.Pcs!r}, omegas={self.omegas!r}, '
         for k, v in self.kwargs.items():
-            s += f'{k}={repr(v)}, '
+            s += f'{k}={v!r}, '
 
         s += 'zs=%s, ' %(repr(self.zs))
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            s += f'P={self.P!r}, V={repr(self.V)}'
+            s += f'P={self.P!r}, V={self.V!r}'
         elif self.V is not None:
-            s += f'T={self.T!r}, V={repr(self.V)}'
+            s += f'T={self.T!r}, V={self.V!r}'
         else:
-            s += f'T={self.T!r}, P={repr(self.P)}'
+            s += f'T={self.T!r}, P={self.P!r}'
         s += ')'
         return s
 
@@ -1726,8 +1726,8 @@ class GCEOSMIX(GCEOS):
         xs = [zi/(1.0 + VF*(Ki - 1.0)) for zi, Ki in zip(zs, Ks)]
         ys = [Ki*xi for Ki, xi in zip(Ks, xs)]
 
-        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True) #
-        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True) #
+        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True)
+        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True)
 
 #        eos_g = self.to_TP_zs(T=T, P=P, zs=ys)
 #        eos_l = self.to_TP_zs(T=T, P=P, zs=xs)
@@ -1872,9 +1872,9 @@ class GCEOSMIX(GCEOS):
 
         err_RR = Rachford_Rice_flash_error(VF, zs, Ks)
 
-        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True) #
+        eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_g=True)
         eos_g.fugacities()
-        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True) #
+        eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True)
         eos_l.fugacities()
 
         if not near_critical:
@@ -3060,7 +3060,7 @@ class GCEOSMIX(GCEOS):
         This derivative is checked numerically.
         '''
         N = self.N
-        return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)] 
+        return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
 
     @property
     def d3a_alpha_dninjnks(self):
@@ -3092,7 +3092,7 @@ class GCEOSMIX(GCEOS):
         N = self.N
         zs = self.zs
         a_alpha6 = -6.0*a_alpha
-        matrix = zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)] 
+        matrix = zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
         for i in range(N):
             l = []
             for j in range(N):
@@ -7619,7 +7619,7 @@ class PRMIX(GCEOSMIX, PR):
         This derivative is checked numerically.
         '''
         N = self.N
-        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)] 
+        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)]
 
     @property
     def d2delta_dninjs(self):
@@ -10405,7 +10405,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         This derivative is checked numerically.
         '''
         N = self.N
-        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)] 
+        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)]
 
     @property
     def d2delta_dninjs(self):
@@ -10426,7 +10426,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         This derivative is checked numerically.
         '''
         N = self.N
-        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)] 
+        return zeros((N, N)) if self.vectorized else [[0.0]*N for i in range(N)]
 
     @property
     def d3delta_dninjnks(self):

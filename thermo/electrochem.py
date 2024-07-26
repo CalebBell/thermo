@@ -597,7 +597,6 @@ def Laliberte_density(T, ws, CASRNs):
         c4s.append(float(dat[7]))
 
     return Laliberte_density_mix(T, ws, c0s, c1s, c2s, c3s, c4s)
-#
 
 ### Laliberty Heat Capacity Functions
 

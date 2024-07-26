@@ -1281,7 +1281,7 @@ class StreamArgs:
         s = f'{self.__class__.__name__}(flasher={self.flasher is not None}, '
         for k, v in self.specifications.items():
             if v is not None:
-                s += f'{k}={repr(v)}, '
+                s += f'{k}={v!r}, '
         s = s[:-2]
         s += ')'
         return s

@@ -341,7 +341,7 @@ class StabilityTester:
                        for k in cmps]
         return pure_guesses
 
-    def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)): #
+    def Wilson_guesses(self, T, P, zs, powers=(1, -1, 1/3., -1/3.)):
         # First K is vapor-like phase; second, liquid like
         cmps = range(self.N)
         Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in cmps]

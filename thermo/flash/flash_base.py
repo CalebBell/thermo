@@ -422,7 +422,6 @@ class Flash:
             else:
                 g, liquids = None, [other_phase]
             flash_convergence = {'iterations': iterations, 'err': err}
-#
             return dest(T, Psub, zs, gas=g, liquids=liquids, solids=[s],
                                     betas=[1-SF, SF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
@@ -435,7 +434,6 @@ class Flash:
             else:
                 g, liquids = None, [other_phase]
             flash_convergence = {'iterations': iterations, 'err': err}
-#
             return dest(Tsub, P, zs, gas=g, liquids=liquids, solids=[s],
                                     betas=[1-SF, SF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
@@ -1183,7 +1181,7 @@ class Flash:
                 norm = None
             else:
                 norm = LogNorm()
-            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm) #
+            im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm)
             cbar = fig.colorbar(im, ax=ax)
             cbar.set_label(prop)
 

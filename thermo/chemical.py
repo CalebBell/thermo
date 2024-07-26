@@ -99,7 +99,7 @@ REFPROP = ('Tb', 101325, 'l', 0, 0, True)
 CHEMSEP = (298., 101325, 'g', 0, 0, True) # It has an option to add Hf to the reference
 PRO_II = (298.15, 101325, 'gas', 0, 0, True)
 HYSYS = (298.15, 101325, 'calc', 'Hf', 0, True)
-UNISIM = HYSYS #
+UNISIM = HYSYS
 SUPERPRO = (298.15, 101325, 'calc', 0, 0, True) # No support for entropy found, 0 assumed
 # note soecifying a phase works for chemicals but not mixtures.
 

@@ -349,7 +349,6 @@ class FlashVL(Flash):
         if liquid is None:
             raise ValueError("Liquid model is required")
 
-        #
         self.phases = [gas, liquid]
 
         self._finish_initialization_base()

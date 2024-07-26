@@ -1316,7 +1316,7 @@ class Phase:
         phis = self.phis()
         dlnphis_dns = self.dlnphis_dns()
         P, zs, N = self.P, self.zs, self.N
-        matrix = zeros((N, N)) if self.vectorized else [[0.0]*N for _ in range(N)] 
+        matrix = zeros((N, N)) if self.vectorized else [[0.0]*N for _ in range(N)]
         for i in range(N):
             phi_P = P*phis[i]
             ziPphi = phi_P*zs[i]

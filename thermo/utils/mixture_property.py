@@ -53,7 +53,7 @@ class MixtureProperty:
 
     pure_references = ()
     pure_reference_types = ()
-    obj_references = () 
+    obj_references = ()
     json_version = 1
     non_json_attributes = ['TP_zs_ws_cached', 'prop_cached']
     vectorized = False

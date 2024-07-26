@@ -471,7 +471,6 @@ class FlashPureVLS(Flash):
         if self.VL_only_CEOSs_same:
             # Two phase pure eoss are two phase up to the critical point only! Then one phase
             Psat = self.eos_pure_STP.Psat(T)
-        #
         else:
             try:
                 Psat = self.correlations.VaporPressures[0](T)
@@ -1150,7 +1149,7 @@ class FlashPureVLS(Flash):
                 dPsat_dT = (dfg_T - dfl_T)/(dfl_P - dfg_P)
             except ZeroDivisionError:
                 at_critical = True
-                dPsat_dT = self.constants.Pcs[0] #
+                dPsat_dT = self.constants.Pcs[0]
 
             dv_g = dPsat_dT*gas_props[dspec_dP_idx][i] + gas_props[dspec_dT_idx][i]
             dv_l = dPsat_dT*liq_props[dspec_dP_idx][i] + liq_props[dspec_dT_idx][i]
@@ -1317,7 +1316,6 @@ class FlashPureVLS(Flash):
 
             return err, dv
 
-        #
         try:
             T_calc = newton(to_solve, guess, fprime=True, low=low, high=high, xtol=1e-12, require_eval=True)
         except:

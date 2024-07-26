@@ -2242,7 +2242,7 @@ class GibbsExcessLiquid(Phase):
 
                 H = 0.0
                 for i in range(self.N):
-                    H += zs[i]*(Cpl_integrals_pure[i] - Hvaps_T_ref[i]) #
+                    H += zs[i]*(Cpl_integrals_pure[i] - Hvaps_T_ref[i])
                     # If we can use the liquid heat capacity and prove its consistency
 
                     # This bit is the differential with respect to pressure
@@ -2521,7 +2521,7 @@ class GibbsExcessLiquid(Phase):
             for i in cmps:
                 Sg298_to_T = Cpig_integrals_over_T_pure[i]
                 Svap = -Hvaps[i]*T_inv # Do the transition at the temperature of the liquid
-                S += zs[i]*(Sg298_to_T + Svap - R*log(P*P_REF_IG_INV)) #
+                S += zs[i]*(Sg298_to_T + Svap - R*log(P*P_REF_IG_INV))
 #        self._S =
         S = S + self.GibbsExcessModel.SE()
         return S

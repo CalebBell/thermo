@@ -328,7 +328,7 @@ class GibbsExcess:
         IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
         '''
         # Other classes with different parameters should expose them here too
-        s = f'{self.__class__.__name__}(T={repr(self.T)}, xs={repr(self.xs)})'
+        s = f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r})'
         return s
 
     def __eq__(self, other):
