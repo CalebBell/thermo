@@ -74,7 +74,7 @@ from chemicals.identifiers import sorted_CAS_key
 from chemicals.interface import PPDS14, ISTExpansion, Jasper, REFPROP_sigma, Somayajulu, Watson_sigma
 from chemicals.phase_change import PPDS12, Alibakhshi, Watson, Watson_n
 from chemicals.thermal_conductivity import PPDS3, PPDS8, Chemsep_16
-from chemicals.utils import hash_any_primitive, property_molar_to_mass
+from chemicals.utils import hash_any_primitive
 from chemicals.vapor_pressure import (
     Antoine,
     Antoine_AB_coeffs_from_point,
@@ -184,7 +184,6 @@ from fluids.numerics import (
     trunc_exp,
     trunc_log,
     polyint_over_x_stable,
-    horner_log,
     horner_stable_log,
 )
 from fluids.numerics import numpy as np
@@ -192,7 +191,6 @@ from fluids.numerics import numpy as np
 import thermo
 from thermo.base import source_path
 from thermo.coolprop import coolprop_fluids
-from thermo.eos import GCEOS
 from thermo.eos_alpha_functions import (
     Almeida_alpha_pure,
     Androulakis_alpha_pure,
@@ -3181,7 +3179,7 @@ class TDependentProperty:
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
-            from scipy.interpolate import interp1d, PchipInterpolator
+            from scipy.interpolate import interp1d
             Ts, properties = self.tabular_data[name]
 
             if self.interpolation_T is not None:  # Transform ths Ts with interpolation_T if set

@@ -204,7 +204,6 @@ from fluids.numerics import UnconvergedError, broyden2, catanh, exp, log, newton
 from fluids.numerics import numpy as np
 from fluids.numerics.arrays import det, subset_matrix
 
-from thermo import serialize
 from thermo.serialize import JsonOptEncodable
 from thermo.eos import (
     APISRK,
@@ -7526,7 +7525,7 @@ class PRMIX(GCEOSMIX, PR):
 
             dE_dxs_i = []
             a_alpha_ijs_i = a_alpha_ijs[i]
-            for k in range(0, i+1):
+            for k in range(i+1):
                 # Sign was wrong in article - should be a plus
                 second = t2*(t31*a_alpha_j_rows[k] - t32*a_alpha_ijs_i[k] - bs[i]*bs[k]*a_alpha2)
                 dE_dxs[i][k] = dE_dxs[k][i] = t30*t50s[k] + second

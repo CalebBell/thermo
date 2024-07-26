@@ -567,9 +567,7 @@ def poly_check_params(coeffs, domain=None):
         return False
     if not is_poly_positive(coeffs_d2, domain):
         return False
-    if not is_poly_negative(coeffs_d3, domain):
-        return False
-    return True
+    return is_poly_negative(coeffs_d3, domain)
 
 def alpha_poly_objf(params, Trs, alphas_over_a, domain=None):
     try:

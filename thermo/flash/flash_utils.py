@@ -5209,7 +5209,7 @@ def incipient_liquid_bounded_PT_sat(flasher, specs, zs_existing, zs_added, check
         has_P = True
     else:
         raise ValueError("This algorithm requires T or P as a specification")
-    other_spec, other_spec_value = list(specs_working.keys())[0], list(specs_working.values())[0]
+    other_spec, other_spec_value = next(iter(specs_working.keys())), next(iter(specs_working.values()))
     zs_existing = flash_mixing_remove_overlap(zs_existing, zs_added)
 
     (negative_bound, positive_bound, negative_bound_res, positive_bound_res,

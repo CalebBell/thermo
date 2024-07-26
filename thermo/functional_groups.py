@@ -2594,9 +2594,7 @@ def is_branched_alkane(mol):
         return False
     alkane_matches = mol.GetSubstructMatches(smarts_mol_cache(alkane_smarts))
     only_aliphatic = substructures_are_entire_structure(mol, alkane_matches)
-    if only_aliphatic and mol.GetSubstructMatches(smarts_mol_cache(branched_alkane_smarts)):
-        return True
-    return False
+    return bool(only_aliphatic and mol.GetSubstructMatches(smarts_mol_cache(branched_alkane_smarts)))
 
 
 hardcoded_organic_smiles = frozenset([

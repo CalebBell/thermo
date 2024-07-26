@@ -28,9 +28,8 @@ from fluids.numerics import numpy as np
 
 from chemicals.utils import mixing_simple
 from thermo.redlich_kister import redlich_kister_T_dependence, redlich_kister_excess_inner, redlich_kister_build_structure
-from thermo.eos_mix import GCEOSMIX
 from thermo.utils.functional import has_matplotlib
-from thermo.utils.names import POLY_FIT, LINEAR, MIXING_LOG_MOLAR, MIXING_LOG_MASS
+from thermo.utils.names import LINEAR, MIXING_LOG_MOLAR, MIXING_LOG_MASS
 from thermo.utils.t_dependent_property import json_mixture_correlation_lookup, ENABLE_MIXTURE_JSON
 from thermo.serialize import JsonOptEncodable
 try:
@@ -149,7 +148,7 @@ class MixtureProperty:
                     rk_dicts_ij = outer[i][j].get('redlick_kister_parameters', {})
                     if rk_dicts_ij:
                         # What to do about other data sets?
-                        first_data = list(rk_dicts_ij.values())[0]
+                        first_data = next(iter(rk_dicts_ij.values()))
                         if first_data['N_T'] > N_T:
                             N_T = first_data['N_T']
                         if first_data['N_terms'] > N_terms:
@@ -983,7 +982,6 @@ class MixtureProperty:
             raise Exception('Optional dependency matplotlib is required for plotting')
         else:
             import matplotlib.pyplot as plt
-            from mpl_toolkits.mplot3d import Axes3D
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
         if zs is None or ws is None:
@@ -1059,7 +1057,6 @@ class MixtureProperty:
             raise Exception('Optional dependency matplotlib is required for plotting')
         else:
             import matplotlib.pyplot as plt
-            from mpl_toolkits.mplot3d import Axes3D
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
 

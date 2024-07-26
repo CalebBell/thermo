@@ -291,7 +291,7 @@ def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp,
     liquid_ele = {''}
 
     for coeff, ele_data in zip(elemental_counts, elemental_composition):
-        ele = list(ele_data.keys())[0]
+        ele = next(iter(ele_data.keys()))
         element_obj = periodic_table[ele]
 #         element = Chemical(element_obj.CAS_standard)
         solid_obj = element_HeatCapacitySolid_cache(element_obj.CAS_standard)

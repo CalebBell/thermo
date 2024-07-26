@@ -97,7 +97,7 @@ def redlich_kister_excess_inner(N, N_terms, a_tensor, xs):
             inner = 0.0
             factor = 1.0
             diff = (xs[i] - xs[j])
-            for k in range(0, N_terms):
+            for k in range(N_terms):
                 inner += a_tensor[i][j][k]*factor
                 factor *= diff
             outer += inner*xs[j]

@@ -84,7 +84,7 @@ from chemicals.refractivity import RI
 from chemicals.safety import LFL, STEL, TWA, UFL, Carcinogen, Ceiling, Skin, T_autoignition, T_flash
 from chemicals.solubility import solubility_parameter
 from chemicals.triple import Pt, Tt
-from chemicals.utils import Parachor, hash_any_primitive, property_molar_to_mass
+from chemicals.utils import Parachor, hash_any_primitive
 from fluids.constants import R
 
 from thermo.chemical import user_chemical_property_lookup

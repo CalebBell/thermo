@@ -24,7 +24,7 @@ __all__ = ['IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97', 'IAPWS06']
 
 from cmath import log as logc
 from math import exp
-from fluids.numerics import secant, newton
+from fluids.numerics import secant
 from chemicals import iapws
 from chemicals.interface import sigma_IAPWS
 from chemicals.thermal_conductivity import k_IAPWS

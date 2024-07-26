@@ -155,7 +155,7 @@ from chemicals.thermal_conductivity import (
     Sheffy_Johnson,
     Stiel_Thodos_dense,
 )
-from chemicals.utils import mixing_simple, none_and_length_check
+from chemicals.utils import none_and_length_check
 from fluids.constants import R
 from fluids.numerics import horner, sqrt
 

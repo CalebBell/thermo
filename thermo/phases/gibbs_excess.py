@@ -1299,7 +1299,6 @@ class GibbsExcessLiquid(Phase):
 
     @staticmethod
     def _dVms_sat_dT_at(T, Vms_sat_data, cmps):
-        Vms_sat_data = Vms_sat_data
         Vms_sat_dT = []
         Tmins, Tmaxes, dcoeffs = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[7]
         for i in cmps:

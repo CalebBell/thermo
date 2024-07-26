@@ -40,11 +40,11 @@ EquilibriumState
 __all__ = ['EquilibriumState']
 
 from chemicals.elements import mass_fractions, periodic_table
-from chemicals.utils import SG, Vm_to_rho, mixing_simple, normalize, vapor_mass_quality, zs_to_ws, object_data, hash_any_primitive
+from chemicals.utils import SG, Vm_to_rho, mixing_simple, normalize, vapor_mass_quality, zs_to_ws, hash_any_primitive
 from fluids.constants import N_A, R
 from fluids.numerics import log
 from fluids.numerics import numpy as np
-from thermo.serialize import arrays_to_lists, object_lookups
+from thermo.serialize import object_lookups
 from thermo.bulk import Bulk, default_settings, JsonOptEncodable
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
 from thermo.phases import Phase, derivatives_jacobian, derivatives_thermodynamic, derivatives_thermodynamic_mass, gas_phases, liquid_phases, solid_phases

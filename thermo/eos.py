@@ -293,7 +293,6 @@ from fluids.numerics import (
 )
 from fluids.numerics import numpy as np
 
-from thermo import serialize
 from thermo.serialize import JsonOptEncodable
 from thermo.eos_alpha_functions import Mathias_Copeman_poly_a_alpha, Poly_a_alpha, Soave_1979_a_alpha, Twu91_a_alpha, TwuPR95_a_alpha, TwuSRK95_a_alpha
 from thermo.eos_volume import volume_solutions_halley, volume_solutions_ideal, volume_solutions_mpmath, volume_solutions_mpmath_float, volume_solutions_NR

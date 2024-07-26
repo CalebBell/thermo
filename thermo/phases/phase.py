@@ -66,8 +66,7 @@ from fluids.numerics import (
 from fluids.numerics import numpy as np
 
 from thermo import phases
-from thermo.phases.phase_utils import object_lookups
-from thermo.serialize import arrays_to_lists, JsonOptEncodable
+from thermo.serialize import JsonOptEncodable
 from thermo.utils import POLY_FIT
 
 try:
@@ -4216,8 +4215,7 @@ class Phase:
         CASs = self.CASs
         T = self.T
         zs = self.zs
-        from thermo.chemical_utils import standard_state_ideal_gas_formation, _standard_state_ideal_gas_formation_direct
-        from thermo import Chemical
+        from thermo.chemical_utils import _standard_state_ideal_gas_formation_direct
         H_chemicals = []
         S_chemicals = []
         G_chemicals = []

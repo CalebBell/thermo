@@ -35,7 +35,7 @@ from chemicals.utils import mixing_simple, property_mass_to_molar, rho_to_Vm, ha
 from fluids.constants import R
 from fluids.numerics import linspace, logspace
 from fluids.numerics import numpy as np
-from thermo.serialize import JsonOptEncodable, object_lookups
+from thermo.serialize import JsonOptEncodable
 from thermo import phases
 from thermo.equilibrium import EquilibriumState
 from thermo.flash.flash_utils import (
@@ -440,7 +440,7 @@ class Flash:
                                     constants=constants, correlations=correlations,
                                     settings=settings, flasher=self)
         elif VF_spec and any([H_spec, S_spec, U_spec, G_spec, A_spec]):
-            spec_var, spec_val = [(k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs')][0]
+            spec_var, spec_val = next((k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs'))
             T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, zs=zs, solution=solution, hot_start=hot_start)
             flash_convergence = {'iterations': iterations, 'err': err, 'inner_flash_convergence': {'iterations': iters_inner, 'err': err_inner}}
             return dest(T, Psat, zs, gas=gas, liquids=[liquid], solids=[],

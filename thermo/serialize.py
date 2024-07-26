@@ -337,7 +337,7 @@ class JsonOptEncodable():
         new = original_obj.__new__(original_obj)
         cache[ref_name] = new
         search_recurse = new.obj_references if new.obj_references is not None else list(d.keys())
-        if 'vectorized' in d and d['vectorized']:
+        if d.get('vectorized'):
             d = naive_lists_to_arrays(d)
 
         for obj_name in search_recurse:

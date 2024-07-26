@@ -71,7 +71,7 @@ from chemicals.virial import B_from_Z
 from chemicals.volume import ideal_gas
 from fluids.constants import epsilon_0
 from fluids.core import Bond, Capillary, Grashof, Jakob, Peclet_heat, Prandtl, Reynolds, Weber, nu_mu_converter, thermal_diffusivity
-from fluids.numerics import exp, log, newton, secant
+from fluids.numerics import exp, log, secant
 
 from thermo import functional_groups
 from thermo.electrochem import conductivity, conductivity_methods

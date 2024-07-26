@@ -34,7 +34,6 @@ import os
 from math import exp, log
 
 from chemicals.utils import mark_numba_incompatible
-from fluids.numerics import assert_close1d
 from fluids.numerics import numpy as np
 
 from thermo.base import data_dir

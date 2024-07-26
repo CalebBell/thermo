@@ -48,7 +48,6 @@ from chemicals.utils import (
 )
 from chemicals.volume import ideal_gas
 from fluids.constants import R
-from fluids.pump import residential_power_frequencies, voltages_1_phase_residential, voltages_3_phase
 from thermo.serialize import JsonOptEncodable
 from thermo.equilibrium import EquilibriumState
 from thermo.mixture import Mixture
@@ -396,7 +395,8 @@ class StreamArgs:
     @energy.setter
     def energy(self, energy):
         r'''Set the flowing energy of the stream [W]. This variable can set either the
-        flow rate, or act as an enthalpy spec if another flow rate specification is specified.'''
+        flow rate, or act as an enthalpy spec if another flow rate specification is specified.
+        '''
         if energy is None:
             self.specifications['energy'] = energy
             return None
@@ -411,7 +411,8 @@ class StreamArgs:
     @energy_reactive.setter
     def energy_reactive(self, energy_reactive):
         r'''Set the flowing energy of the stream on a reactive basis [W]. This variable can set either the
-        flow rate, or act as an enthalpy spec if another flow rate specification is specified.'''
+        flow rate, or act as an enthalpy spec if another flow rate specification is specified.
+        '''
         if energy_reactive is None:
             self.specifications['energy_reactive'] = energy_reactive
             return None
@@ -1442,9 +1443,7 @@ class StreamArgs:
         '''If no variables have been specified, True,
         otherwis False.
         '''
-        if self.composition_specified or self.state_specs or self.flow_specified:
-            return False
-        return True
+        return not (self.composition_specified or self.state_specs or self.flow_specified)
 
 
     @property
@@ -1469,9 +1468,7 @@ class StreamArgs:
             return True
         if s['Qls'] is not None and None not in s['Qls']:
             return True
-        if s['Qgs'] is not None and None not in s['Qgs']:
-            return True
-        return False
+        return bool(s['Qgs'] is not None and None not in s['Qgs'])
 
     def clear_state_specs(self):
         '''Removes any state specification(s) that are set, otherwise
@@ -1621,9 +1618,7 @@ class StreamArgs:
             state_vars += 1
         if s['H_reactive'] is not None:
             state_vars += 1
-        if state_vars == 2:
-            return True
-        return False
+        return state_vars == 2
 
     @property
     def non_pressure_spec_specified(self):
@@ -1643,9 +1638,7 @@ class StreamArgs:
                                               self.H_mass, self.H, self.S_mass, self.S,
                                               self.U_mass, self.U, self.A_mass, self.A, self.G_mass, self.G,
                                               self.energy, self.energy_reactive, self.H_reactive))
-        if sum(state_vars) >= 1:
-            return True
-        return False
+        return sum(state_vars) >= 1
 
 
     def clear_flow_spec(self):
@@ -1733,9 +1726,7 @@ class StreamArgs:
             return True
         if s['Ql'] is not None:
             return True
-        if s['Qg'] is not None:
-            return True
-        return False
+        return s['Qg'] is not None
 
     def update(self, **kwargs):
         """Update the specifications of the StreamArgs instance with new values provided as keyword arguments.
@@ -1784,7 +1775,7 @@ class StreamArgs:
             state specs of this object [-]
         hot_start : EquilibriumState, optional
             Flash at nearby conditions that may be used to initialize the flash [-]
-        
+
         Returns
         -------
         stream : EquilibriumStream
@@ -1806,7 +1797,7 @@ class StreamArgs:
         ----------
         hot_start : EquilibriumState, optional
             Flash at nearby conditions that may be used to initialize the flash [-]
-        
+
         Returns
         -------
         flash : EquilibriumState
@@ -1895,7 +1886,8 @@ class StreamArgs:
     def value(self, name):
         r'''Wrapper around getattr that obtains a property specified. This method
         exists to unify e.g. H() on a EquilibriumState with H here which is a property.
-        Either object can simply be called obj.value("H"). [various]'''
+        Either object can simply be called obj.value("H"). [various]
+        '''
         v = getattr(self, name)
         try:
             v = v()

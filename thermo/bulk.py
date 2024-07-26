@@ -77,7 +77,7 @@ from chemicals.utils import Joule_Thomson, isobaric_expansion, isothermal_compre
 from fluids.constants import R, atm
 from fluids.numerics import exp, log, sqrt
 from fluids.two_phase_voidage import gas_liquid_viscosity
-from thermo.serialize import arrays_to_lists, JsonOptEncodable, object_lookups
+from thermo.serialize import JsonOptEncodable, object_lookups
 from thermo.phase_identification import DENSITY_MASS, PROP_SORT, S_ID_D2P_DVDT, VL_ID_PIP, WATER_NOT_SPECIAL
 from thermo.phases import Phase
 

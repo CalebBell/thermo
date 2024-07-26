@@ -72,7 +72,6 @@ from fluids.constants import R, R_inv
 from fluids.numerics import exp, log, trunc_exp, derivative, jacobian, hessian
 from fluids.numerics import numpy as np
 
-from thermo import serialize
 from thermo.fitting import fit_customized
 from thermo.serialize import JsonOptEncodable
 
