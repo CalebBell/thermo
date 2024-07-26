@@ -1490,9 +1490,9 @@ class TDependentProperty:
 
     def as_string(self, tabular=True, references=True, json_parameters=False):
         clsname = self.__class__.__name__
-        base = '{}('.format(clsname)
+        base = f'{clsname}('
         if self.CASRN:
-            base += 'CASRN="{}", '.format(self.CASRN)
+            base += f'CASRN="{self.CASRN}", '
         for k in self.custom_args:
             v = getattr(self, k)
             if v is not None:
@@ -1500,29 +1500,29 @@ class TDependentProperty:
                     continue
                 base += f'{k}={v}, '
 
-        extrap_str = '"{}"'.format(self.extrapolation) if self.extrapolation is not None else 'None'
-        base += 'extrapolation={}, '.format(extrap_str)
+        extrap_str = f'"{self.extrapolation}"' if self.extrapolation is not None else 'None'
+        base += f'extrapolation={extrap_str}, '
 
         if self._extrapolation_min != self.DEFAULT_EXTRAPOLATION_MIN:
-            extrap_str = '{}'.format(self._extrapolation_min) if self._extrapolation_min is not None else 'None'
-            base += 'extrapolation_min={}, '.format(extrap_str)
+            extrap_str = f'{self._extrapolation_min}' if self._extrapolation_min is not None else 'None'
+            base += f'extrapolation_min={extrap_str}, '
         if self._extrapolation_max != self.DEFAULT_EXTRAPOLATION_MAX:
-            extrap_str = '{}'.format(self._extrapolation_max) if self._extrapolation_max is not None else 'None'
-            base += 'extrapolation_max={}, '.format(extrap_str)
+            extrap_str = f'{self._extrapolation_max}' if self._extrapolation_max is not None else 'None'
+            base += f'extrapolation_max={extrap_str}, '
 
-        method_str = '"{}"'.format(self.method) if self.method is not None else 'None'
-        base += 'method={}, '.format(method_str)
+        method_str = f'"{self.method}"' if self.method is not None else 'None'
+        base += f'method={method_str}, '
         if self.tabular_data and tabular:
             if not (len(self.tabular_data) == 1 and VDI_TABULAR in self.tabular_data):
-                base += 'tabular_data={}, '.format(self.tabular_data)
+                base += f'tabular_data={self.tabular_data}, '
 
         if self.P_dependent:
-            method_P_str = '"{}"'.format(self.method_P) if self.method_P is not None else 'None'
-            base += 'method_P={}, '.format(method_P_str)
+            method_P_str = f'"{self.method_P}"' if self.method_P is not None else 'None'
+            base += f'method_P={method_P_str}, '
             if self.tabular_data_P and tabular:
-                base += 'tabular_data_P={}, '.format(self.tabular_data_P)
+                base += f'tabular_data_P={self.tabular_data_P}, '
             if 'tabular_extrapolation_permitted' in self.__dict__ and tabular:
-                base += 'tabular_extrapolation_permitted={}, '.format(self.tabular_extrapolation_permitted)
+                base += f'tabular_extrapolation_permitted={self.tabular_extrapolation_permitted}, '
 
 
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
@@ -2775,7 +2775,7 @@ class TDependentProperty:
                     return self.calculate(T, a_method)
             return self.calculate(T, method_names[-1])
         else:
-            raise ValueError("Unknown method; methods are {}".format(self.all_methods))
+            raise ValueError(f"Unknown method; methods are {self.all_methods}")
 
     def _base_calculate_P(self, T, P, method):
         if method in self.tabular_data_P:
@@ -4407,7 +4407,7 @@ class TDependentProperty:
                 prop = self.interpolation_property_inv(prop)
             val = float(prop)
         else:
-            raise RuntimeError("Unknown extrapolation '{}'".format(extrapolation))
+            raise RuntimeError(f"Unknown extrapolation '{extrapolation}'")
 
         if self._extrapolation_min is not None and val < self._extrapolation_min:
             val = self._extrapolation_min
@@ -4885,5 +4885,5 @@ class TDependentProperty:
                 Ts, properties = self.tabular_data[method]
                 validity = Ts[0] < T < Ts[-1]
         else:
-            raise ValueError("method '{}' not valid".format(method))
+            raise ValueError(f"method '{method}' not valid")
         return validity

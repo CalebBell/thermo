@@ -845,7 +845,7 @@ def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_g
     dspec_diter_s = f'd{spec}_d{iter_var}'
     dspec_diter_callables = [getattr(phase.__class__, dspec_diter_s) for phase in phases]
 
-    dspec_dn_s = 'd{}_dns'.format(spec)
+    dspec_dn_s = f'd{spec}_dns'
     dspec_dn_callables = [getattr(phase.__class__, dspec_dn_s) for phase in phases]
 
     jac = True
@@ -1826,7 +1826,7 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
     for i in cmps:
         JN[i] = -comp_factor
 
-    s = 'dlnphis_d{}'.format(iter_var)
+    s = f'dlnphis_d{iter_var}'
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
     dlnphis_diter_var_const = getattr(const_phase.__class__, s)
     dlnphis_dzs = iter_phase.__class__.dlnphis_dzs
@@ -1996,7 +1996,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
         else:
             iter_msg, const_msg = g_undefined_P_msg, l_undefined_P_msg
 
-    s = 'dlnphis_d{}'.format(iter_var)
+    s = f'dlnphis_d{iter_var}'
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
     dlnphis_diter_var_const = getattr(const_phase.__class__, s)
 
@@ -2166,7 +2166,7 @@ def existence_3P_Michelsen_Mollerup(guess, fixed_val, zs, iter_phase, liquid0, l
     elif iter_var == 'P':
         iter_msg, const_msg = g_undefined_P_msg, l_undefined_P_msg
 
-    s = 'dlnphis_d{}'.format(iter_var)
+    s = f'dlnphis_d{iter_var}'
     dlnphis_diter_var_iter = getattr(iter_phase.__class__, s)
     dlnphis_diter_var_liquid0 = getattr(liquid0.__class__, s)
 #    dlnphis_diter_var_liquid1 = getattr(liquid1.__class__, s)

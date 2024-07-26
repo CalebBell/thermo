@@ -349,7 +349,7 @@ class FlashPureVLS(Flash):
         elif callable(solution):
             fun = solution
         else:
-            raise ValueError("Did not recognize solution {}".format(solution))
+            raise ValueError(f"Did not recognize solution {solution}")
 
         if self.phase_count == 1:
             phase = self.phases[0].to(zs=zs, T=T, P=P, V=V)
@@ -950,7 +950,7 @@ class FlashPureVLS(Flash):
                 if S_min_spec <= spec_val <= S_max_spec:
                     had_solution = True
             if had_solution:
-                raise UnconvergedError("Could not converge but solution detected in bounds: {}".format(s))
+                raise UnconvergedError(f"Could not converge but solution detected in bounds: {s}")
             elif uncertain_solution:
                 raise UnconvergedError("Could not converge and unable to detect if solution detected in bounds")
             else:
@@ -1126,8 +1126,8 @@ class FlashPureVLS(Flash):
         dfug_dT_idx = props.index('dfugacity_dT')
         dfug_dP_idx = props.index('dfugacity_dP')
 
-        dspec_dT_var = 'd{}_dT'.format(spec_var)
-        dspec_dP_var = 'd{}_dP'.format(spec_var)
+        dspec_dT_var = f'd{spec_var}_dT'
+        dspec_dP_var = f'd{spec_var}_dP'
         dspec_dT_idx = props.index(dspec_dT_var)
         dspec_dP_idx = props.index(dspec_dP_var)
 
@@ -1256,8 +1256,8 @@ class FlashPureVLS(Flash):
         return self.flash_VF_HSGUA_bounded(T_guess, T_low, T_high, fixed_var_val, spec_val, fixed_var=fixed_var, spec_var=spec_var)
 
     def _VF_HSGUA_der_root(self, guess, low, high, fixed_var_val, spec_val, fixed_var='VF', spec_var='H'):
-        dspec_dT_var = 'd{}_dT'.format(spec_var)
-        dspec_dP_var = 'd{}_dP'.format(spec_var)
+        dspec_dT_var = f'd{spec_var}_dT'
+        dspec_dP_var = f'd{spec_var}_dP'
         VF = fixed_var_val
 
         val_cache = [None, 0]
@@ -1291,8 +1291,8 @@ class FlashPureVLS(Flash):
         return T_zero, val_cache[0]
 
     def flash_VF_HSGUA_bounded(self, guess, low, high, fixed_var_val, spec_val, fixed_var='VF', spec_var='H'):
-        dspec_dT_var = 'd{}_dT'.format(spec_var)
-        dspec_dP_var = 'd{}_dP'.format(spec_var)
+        dspec_dT_var = f'd{spec_var}_dT'
+        dspec_dP_var = f'd{spec_var}_dP'
         VF = fixed_var_val
 
         cache = [0]

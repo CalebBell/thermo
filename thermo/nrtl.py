@@ -738,9 +738,9 @@ class NRTL(GibbsExcess):
         for i, attr in enumerate(self._model_attributes[:6]):
             if self.tau_coeffs_nonzero[i]:
                 s += f', {attr}={getattr(self, attr)}'
-        s += ', alpha_cs={}'.format(self.alpha_cs)
+        s += f', alpha_cs={self.alpha_cs}'
         if not self.alpha_temperature_independent:
-            s += ', alpha_ds={}'.format(self.alpha_ds)
+            s += f', alpha_ds={self.alpha_ds}'
         s += ')'
         return s
 

@@ -250,9 +250,9 @@ class EquilibriumState:
 
     def __repr__(self):
         s = f'{self.__class__.__name__}(T={self.T}, P={self.P}, zs={self.zs}, betas={self.betas}'
-        s += ', gas={}'.format(self.gas.__repr__())
-        s += ', liquids={}'.format(self.liquids.__repr__())
-        s += ', solids={}'.format(self.solids.__repr__())
+        s += f', gas={self.gas.__repr__()}'
+        s += f', liquids={self.liquids.__repr__()}'
+        s += f', solids={self.solids.__repr__()}'
         s += ')'
         return s
 
@@ -3265,8 +3265,8 @@ def _make_getter_correlations(name):
     def get_correlation(self):
         return getattr(self.correlations, name)
 
-    text = """Wrapper to obtain the list of {} objects of the associated
-:obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`.""".format(name)
+    text = f"""Wrapper to obtain the list of {name} objects of the associated
+:obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`."""
     try:
         get_correlation.__doc__ = text
     except:
@@ -3490,11 +3490,11 @@ def _make_getter_atom_fraction(element_symbol):
 
 for ele in periodic_table:
     getter = _make_getter_atom_fraction(ele.symbol)
-    name = '{}_atom_fraction'.format(ele.name)
+    name = f'{ele.name}_atom_fraction'
 
-    _add_attrs_doc =  r"""Method to calculate and return the mole fraction that
-            is {} element, [-]
-            """.format(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the mole fraction that
+            is {ele.name} element, [-]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3514,11 +3514,11 @@ def _make_getter_atom_mass_fraction(element_symbol):
     return get_atom_mass_fraction
 for ele in periodic_table:
     getter = _make_getter_atom_mass_fraction(ele.symbol)
-    name = '{}_atom_mass_fraction'.format(ele.name)
+    name = f'{ele.name}_atom_mass_fraction'
 
-    _add_attrs_doc =  r"""Method to calculate and return the mass fraction of the phase
-            that is {} element, [-]
-            """.format(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the mass fraction of the phase
+            that is {ele.name} element, [-]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3538,11 +3538,11 @@ def _make_getter_atom_mass_flow(element_symbol):
 
 for ele in periodic_table:
     getter = _make_getter_atom_mass_flow(ele.symbol)
-    name = '{}_atom_mass_flow'.format(ele.name)
+    name = f'{ele.name}_atom_mass_flow'
 
-    _add_attrs_doc =  r"""Method to calculate and return the mass flow of atoms
-            that are {} element, [kg/s]
-            """.format(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the mass flow of atoms
+            that are {ele.name} element, [kg/s]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3562,11 +3562,11 @@ def _make_getter_atom_flow(element_symbol):
 
 for ele in periodic_table:
     getter = _make_getter_atom_flow(ele.symbol)
-    name = '{}_atom_flow'.format(ele.name)
+    name = f'{ele.name}_atom_flow'
 
-    _add_attrs_doc =  r"""Method to calculate and return the mole flow that is
-            {}, [mol/s]
-            """.format(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the mole flow that is
+            {ele.name}, [mol/s]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3586,11 +3586,11 @@ def _make_getter_atom_count_flow(element_symbol):
 
 for ele in periodic_table:
     getter = _make_getter_atom_count_flow(ele.symbol)
-    name = '{}_atom_count_flow'.format(ele.name)
+    name = f'{ele.name}_atom_count_flow'
 
-    _add_attrs_doc =  r"""Method to calculate and return the number of atoms in the
-            flow which are {}, [atoms/s]
-            """.format(ele.name)
+    _add_attrs_doc =  rf"""Method to calculate and return the number of atoms in the
+            flow which are {ele.name}, [atoms/s]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3618,10 +3618,10 @@ def _make_getter_partial_pressure(CAS):
     return get
 for _name, _CAS in _comonent_specific_properties.items():
     getter = _make_getter_partial_pressure(_CAS)
-    name = '{}_partial_pressure'.format(_name)
+    name = f'{_name}_partial_pressure'
 
-    _add_attrs_doc =  r"""Method to calculate and return the ideal partial pressure of {}, [Pa]
-            """.format(_name)
+    _add_attrs_doc =  rf"""Method to calculate and return the ideal partial pressure of {_name}, [Pa]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)
@@ -3640,7 +3640,7 @@ def _make_getter_component_molar_weight(CAS):
 
 for _name, _CAS in _comonent_specific_properties.items():
     getter = _make_getter_component_molar_weight(_CAS)
-    name = '{}_molar_weight'.format(_name)
+    name = f'{_name}_molar_weight'
 
     _add_attrs_doc =  rf"""Method to calculate and return the effective quantiy
     of {_name} in the phase as a molar weight, [g/mol].

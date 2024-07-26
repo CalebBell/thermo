@@ -224,7 +224,7 @@ def store_coolprop_fluids():
 
     data = {CASRN: coolprop_fluids[CASRN].as_json() for CASRN in coolprop_dict}
     ver = CoolProp.__version__
-    file = open(os.path.join(data_dir, 'CoolPropFluids{}.json'.format(ver)), 'w')
+    file = open(os.path.join(data_dir, f'CoolPropFluids{ver}.json'), 'w')
     json.dump(data, file)
     file.close()
 
@@ -234,7 +234,7 @@ def load_coolprop_fluids(depth=0):
 
     import CoolProp
     ver = CoolProp.__version__
-    pth = os.path.join(data_dir, 'CoolPropFluids{}.json'.format(ver))
+    pth = os.path.join(data_dir, f'CoolPropFluids{ver}.json')
     try:
         file = open(pth)
     except:

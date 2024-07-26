@@ -184,7 +184,7 @@ class Phase:
         __full_path__ = None
 
     def __str__(self):
-        s =  '<{}, '.format(self.__class__.__name__)
+        s =  f'<{self.__class__.__name__}, '
         try:
             s += f'T={self.T:g} K, P={self.P:g} Pa'
         except:

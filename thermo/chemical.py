@@ -3249,15 +3249,15 @@ class Chemical: # pragma: no cover
 # Add the functional groups
 def _make_getter_group(name):
     def get(self):
-        base_name = 'is_{}'.format(name)
+        base_name = f'is_{name}'
         ref = getattr(functional_groups, base_name)
         return ref(self.rdkitmol)
 
     return get
 for _name in group_names:
     getter = property(_make_getter_group(_name))
-    name = 'is_{}'.format(_name)
-    _add_attrs_doc =  r"""Method to return whether or not this chemical is in the category {}, [-]
-            """.format(_name)
+    name = f'is_{_name}'
+    _add_attrs_doc =  rf"""Method to return whether or not this chemical is in the category {_name}, [-]
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(Chemical, name, getter)

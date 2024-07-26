@@ -1868,7 +1868,7 @@ class PropertyCorrelationsPackage:
             else:
                 iter_props = self.pure_correlations
 
-            s = '{}('.format(self.__class__.__name__)
+            s = f'{self.__class__.__name__}('
             s += 'constants=constants, skip_missing=True,\n'
             for prop in iter_props:
                 prop_attr = getattr(self, prop)

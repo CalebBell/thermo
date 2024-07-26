@@ -70,14 +70,14 @@ class MixtureProperty:
 
     def __repr__(self):
         clsname = self.__class__.__name__
-        base = '{}('.format(clsname)
+        base = f'{clsname}('
         for k in self.custom_args:
             v = getattr(self, k)
             if v is not None:
                 base += f'{k}={v}, '
-        base += 'CASs={}, '.format(self.CASs)
-        base += 'correct_pressure_pure={}, '.format(self._correct_pressure_pure)
-        base += 'method="{}", '.format(self.method)
+        base += f'CASs={self.CASs}, '
+        base += f'correct_pressure_pure={self._correct_pressure_pure}, '
+        base += f'method="{self.method}", '
         for attr in self.pure_references:
             base += f'{attr}={getattr(self, attr)}, '
 
@@ -232,7 +232,7 @@ class MixtureProperty:
             excess = redlich_kister_excess_inner(N_T, N_terms, Ais_matrix_for_calc, zs)
             base_property = mixing_simple(zs, pure_props)
             return base_property + excess
-        raise ValueError("Unknown method; methods are {}".format(self.all_methods))
+        raise ValueError(f"Unknown method; methods are {self.all_methods}")
 
     def calculate_pures_corrected(self, T, P, fallback=False, objs=None):
         if self._correct_pressure_pure:
@@ -932,10 +932,10 @@ class MixtureProperty:
                                     xs_plot.append(x0)
                             except:
                                 pass
-                    plt.plot(xs_plot, properties, label=method + ' at {:g} K and {:g} Pa'.format(T, P) )
+                    plt.plot(xs_plot, properties, label=method + f' at {T:g} K and {P:g} Pa' )
                 else:
                     properties = [func(T, P, [x0, 1.0 - x0], None, method) for x0 in xs]
-                    plt.plot(xs, properties, label=method + ' at {:g} K and {:g} Pa'.format(T, P))
+                    plt.plot(xs, properties, label=method + f' at {T:g} K and {P:g} Pa')
         plt.legend(loc='best')
         plt.ylabel(prop_name + ', ' + self.units)
         plt.xlabel('Mole fraction x0')

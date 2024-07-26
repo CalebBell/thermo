@@ -2409,8 +2409,8 @@ class Stream(Mixture):
         if not all(components_in_self):
             for i, in_self in enumerate(components_in_self):
                 if not in_self and other.zs[i] > 0:
-                    raise Exception('Not all components to be removed are \
-present in the first stream; {} is not present.'.format(other.IDs[i]))
+                    raise Exception(f'Not all components to be removed are \
+present in the first stream; {other.IDs[i]} is not present.')
 
         # Calculate the mole flows of each species
         ns_self = list(self.ns)
@@ -2425,8 +2425,8 @@ present in the first stream; {} is not present.'.format(other.IDs[i]))
                 relative_difference_product = abs(ns_self[i] - nj)/n_product
                 relative_difference_self = abs(ns_self[i] - nj)/ns_self[i]
                 if ns_self[i] - nj < 0 and (relative_difference_product > 1E-12 or relative_difference_self > 1E-9):
-                    raise Exception('Attempting to remove more {} than is in the \
-first stream.'.format(self.IDs[i]))
+                    raise Exception(f'Attempting to remove more {self.IDs[i]} than is in the \
+first stream.')
                 if ns_self[i] - nj < 0.:
                     ns_self[i] = 0.
                 elif relative_difference_product < 1E-12:
@@ -2583,7 +2583,7 @@ class EquilibriumStream(EquilibriumState):
 
     def __repr__(self):
         flow_spec, flow_spec_val = self.flow_spec
-        s = '{}({}={}, '.format(self.__class__.__name__, flow_spec, flow_spec_val)
+        s = f'{self.__class__.__name__}({flow_spec}={flow_spec_val}, '
         s += 'flasher=flasher'
         s += ', existing_flash={}'.format(EquilibriumState.__repr__(self).replace('EquilibriumStream', 'EquilibriumState'))
         s += ')'

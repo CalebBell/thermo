@@ -168,7 +168,7 @@ class UNIFAC_subgroup:
                  'priority', 'atoms', 'bonds']
 
     def __repr__(self):   # pragma: no cover
-        return '<{}>'.format(self.group)
+        return f'<{self.group}>'
 
     def __init__(self, group_id, group, main_group_id, main_group, R, Q, smarts=None,
                  priority=None, atoms=None, bonds=None, hydrogen_from_smarts=False):

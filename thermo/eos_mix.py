@@ -415,7 +415,7 @@ class GCEOSMIX(GCEOS):
         for k, v in self.kwargs.items():
             s += f'{k}={v!r}, '
 
-        s += 'zs={}, '.format(repr(self.zs))
+        s += f'zs={repr(self.zs)}, '
         if hasattr(self, 'no_T_spec') and self.no_T_spec:
             s += f'P={self.P!r}, V={self.V!r}'
         elif self.V is not None:
