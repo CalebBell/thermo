@@ -271,7 +271,6 @@ if not numerics.is_micropython:
         # pytest timings are hard to measure with lazy loading
         complete_lazy_loading()
 
-    global vectorized, numba, units, numba_vectorized
     if numerics.PY37:
         def __getattr__(name):
             global vectorized, numba, units, numba_vectorized

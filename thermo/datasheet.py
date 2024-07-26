@@ -30,7 +30,6 @@ from fluids.numerics import numpy as np
 
 from thermo.chemical import Chemical
 
-global pd
 pd = None
 def pandas():
     global pd

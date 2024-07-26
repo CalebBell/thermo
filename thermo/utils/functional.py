@@ -29,7 +29,6 @@ from fluids.constants import R
 from fluids.numerics import assert_close, log, trunc_log
 from fluids.numerics import numpy as np
 
-global _has_matplotlib
 _has_matplotlib = None
 def has_matplotlib():
     global _has_matplotlib

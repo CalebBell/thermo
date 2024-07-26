@@ -4492,7 +4492,6 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
         return val, info[0], info[1], info[2]
 
 
-global cm_flash
 cm_flash = None
 def cm_flash_tol():
     global cm_flash

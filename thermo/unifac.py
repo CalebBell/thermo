@@ -2498,7 +2498,6 @@ for d in (UFSG, DOUFSG, NISTUFSG, NISTKTUFSG, LLEUFSG, LUFSG, PSRKSG, VTPRSG):
                 group.priority = priority_from_atoms(group.atoms, group.bonds)
 
 
-global _unifac_ip_loaded
 _unifac_ip_loaded = False
 def load_unifac_ip():
     global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP

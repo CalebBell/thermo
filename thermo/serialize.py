@@ -171,7 +171,6 @@ def _load_json():
     import json
     json_loaded = True
 
-global json, orjson
 orjson = None
 
 if PY37:

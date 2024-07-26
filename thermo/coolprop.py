@@ -49,9 +49,6 @@ from thermo.base import data_dir
 #has_CoolProp = False # For testing
 
 CPiP_min = 17
-global _PropsSI
-
-global _has_CoolProp
 _has_CoolProp = None
 @mark_numba_incompatible
 def has_CoolProp():
@@ -72,7 +69,6 @@ def PropsSI(*args, **kwargs):
         from CoolProp.CoolProp import PropsSI as _PropsSI
     return _PropsSI(*args, **kwargs)
 
-global _HAPropsSI
 _HAPropsSI = None
 @mark_numba_incompatible
 def HAPropsSI(*args, **kwargs):
@@ -81,7 +77,6 @@ def HAPropsSI(*args, **kwargs):
         from CoolProp.CoolProp import HAPropsSI as _HAPropsSI
     return _HAPropsSI(*args, **kwargs)
 
-global _PhaseSI
 _PhaseSI = None
 @mark_numba_incompatible
 def PhaseSI(*args, **kwargs):
@@ -90,7 +85,6 @@ def PhaseSI(*args, **kwargs):
         from CoolProp.CoolProp import PhaseSI as _PhaseSI
     return _PhaseSI(*args, **kwargs)
 
-global _AbstractState
 _AbstractState = None
 @mark_numba_incompatible
 def AbstractState(*args, **kwargs):

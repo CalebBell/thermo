@@ -33,8 +33,6 @@ from thermo.phases.phase import Phase
 SORTED_DICT = sys.version_info >= (3, 6)
 # Emperically measured to be ~140 KB/instance, do not want to cache too many - 35 is 5 MB
 max_CoolProp_states = 35
-global CoolProp
-global CoolProp_constants_set
 CoolProp_constants_set = False
 def set_coolprop_constants():
     global CPPT_INPUTS, CPrhoT_INPUTS, CPrhoP_INPUTS, CPiP, CPiT, CPiDmolar, CPiHmolar, CPiSmolar
