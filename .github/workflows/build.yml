@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11', '3.12', 'pypy3.9']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', 'pypy3.9']
         os: [windows-latest, ubuntu-latest, macos-13, macos-latest]
         architecture: ['x86', 'x64']
         exclude:
@@ -32,9 +32,6 @@ jobs:
           # no python builds available on linux 32 bit
           - os: ubuntu-latest
             architecture: x86
-          # 3.7 is oldest supported Python on ubuntu 22.04
-          - os: ubuntu-latest
-            python-version: 3.6
           # scipy dropped 32 bit windows builds 
           - os: windows-latest
             architecture: x86
@@ -57,8 +54,6 @@ jobs:
 
           # These are arm - old versions of Python are not supported
           - os: macos-latest
-            python-version: 3.6
-          - os: macos-latest
             python-version: 3.7
           - os: macos-latest
             python-version: 3.8
@@ -67,8 +62,6 @@ jobs:
           - os: macos-latest
             python-version: 3.10
     
-          - os: macos-13
-            python-version: 3.6 # missing cumulative_trapezoid too old SciPy
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}
@@ -116,7 +109,7 @@ jobs:
         python -m pip install wheel
         pip install -r requirements_test.txt
     - name: Add numba
-      if: ${{ matrix.python-version == '3.6' || matrix.python-version == '3.7' || matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10' || matrix.python-version == '3.11' || matrix.python-version == '3.12'  }}
+      if: ${{ matrix.python-version == '3.7' || matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10' || matrix.python-version == '3.11' || matrix.python-version == '3.12'  }}
       run: |
         pip install numba
     - name: Install thermo

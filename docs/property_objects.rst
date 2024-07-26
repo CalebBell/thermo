@@ -279,9 +279,9 @@ Optionally, some derivatives and integrals can be provided for new methods as we
 >>> A, B, C = 3.45604+5, 1044.038, -53.893
 >>> expr = 10**(A - B/(T + C))
 >>> f = lambdify(T, expr)
->>> f_der = lambdify(T, diff(expr, T))
->>> f_der2 = lambdify(T, diff(expr, T, 2))
->>> f_der3 = lambdify(T, diff(expr, T, 3))
+>>> f_der = lambdify(T, diff(expr, T), 'math')
+>>> f_der2 = lambdify(T, diff(expr, T, 2), 'math')
+>>> f_der3 = lambdify(T, diff(expr, T, 3), 'math')
 >>> obj.add_method(f=f, f_der=f_der, f_der2=f_der2, f_der3=f_der3, name='WebBookSymPy', Tmin=177.70, Tmax=264.93)
 >>> obj.method, obj(200), obj.T_dependent_property_derivative(200.0, order=2)
 ('WebBookSymPy', 20.43298036, 0.2276285)

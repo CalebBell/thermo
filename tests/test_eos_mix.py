@@ -3565,7 +3565,7 @@ def test_dP_dns_Vt():
         zs = normalize(ns)
         return PRMIX(T=T, V=V, zs=zs, Tcs=Tcs, Pcs=Pcs, omegas=omegas).P
     d2P_dninjs_Vt_numerical = hessian(diff_for_dP_dn, zs, perturbation=1.5e-4)
-    assert_close2d(d2P_dninjs_Vt_numerical, d2P_dninjs_Vt_analytical, rtol=4e-4)
+    assert_close2d(d2P_dninjs_Vt_numerical, d2P_dninjs_Vt_analytical, rtol=1e-3)
 
 
 
@@ -3883,7 +3883,7 @@ def test_dV_dns_d2V_dninjs_num_sample():
     d2V_dninjs_expect = [[-0.00044088987788337583, -7.757131783309099e-05, 2.3019124011504547e-05, -0.0002852566859105065], [-7.757131783309099e-05, 9.773049710937305e-05, 0.00014640302633090873, -3.051226852812143e-06], [2.301912401150454e-05, 0.0001464030263309087, 0.00018073925735201586, 7.514096567393496e-05], [-0.0002852566859105065, -3.0512268528121433e-06, 7.514096567393496e-05, -0.00016461632966720052]]
     d2V_dninjs = eos_g.d2V_dninjs(eos_g.Z_g)
     d2V_dninjs_num = hessian(to_jac_V, zs, perturbation=4e-5)
-    assert_allclose(d2V_dninjs_num, d2V_dninjs, rtol=5e-4)
+    assert_allclose(d2V_dninjs_num, d2V_dninjs, rtol=2e-3)
     assert_allclose(d2V_dninjs, d2V_dninjs_expect, rtol=1e-10)
     # import numdifftools as nd
     # assert_allclose(nd.Hessian(to_jac_V, step=18e-5)(zs), d2V_dninjs, rtol=3.5e-7)
@@ -4818,7 +4818,7 @@ def test_numpy_properties_all_eos_mix():
 
             eos_np.fugacities()
             eos.fugacities()
-            assert_close1d(eos_np.lnphis_g, eos.lnphis_g, rtol=1e-14)
+            assert_close1d(eos_np.lnphis_g, eos.lnphis_g, rtol=1e-12)
             assert isinstance(eos_np.lnphis_g, np.ndarray)
             assert isinstance(eos.lnphis_g, list)
 

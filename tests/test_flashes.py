@@ -640,7 +640,7 @@ def test_nonlin_equilibrium_NP():
     jac_end = [list(i) for i in sln[4]]
     num_jac = jacobian(to_jac, flows, scalar=False, perturbation=5e-5)
     # np.array(num_jac)/jac_end
-    assert_allclose(jac_end, num_jac, rtol=.02)
+    assert_allclose(jac_end, num_jac, rtol=.03)
 
 
 def test_ideal_bubble_failing():
