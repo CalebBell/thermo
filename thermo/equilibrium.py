@@ -40,14 +40,15 @@ EquilibriumState
 __all__ = ['EquilibriumState']
 
 from chemicals.elements import mass_fractions, periodic_table
-from chemicals.utils import SG, Vm_to_rho, mixing_simple, normalize, vapor_mass_quality, zs_to_ws, hash_any_primitive
+from chemicals.utils import SG, Vm_to_rho, hash_any_primitive, mixing_simple, normalize, vapor_mass_quality, zs_to_ws
 from fluids.constants import N_A, R
 from fluids.numerics import log
 from fluids.numerics import numpy as np
-from thermo.serialize import object_lookups
-from thermo.bulk import Bulk, default_settings, JsonOptEncodable
+
+from thermo.bulk import Bulk, JsonOptEncodable, default_settings
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
 from thermo.phases import Phase, derivatives_jacobian, derivatives_thermodynamic, derivatives_thermodynamic_mass, gas_phases, liquid_phases, solid_phases
+from thermo.serialize import object_lookups
 
 all_phases = gas_phases + liquid_phases + solid_phases
 
@@ -3659,6 +3660,7 @@ object_lookups[ChemicalConstantsPackage.__full_path__] = ChemicalConstantsPackag
 object_lookups[PropertyCorrelationsPackage.__full_path__] = PropertyCorrelationsPackage
 
 from thermo.chemical_package import mix_properties_to_classes, properties_to_classes
+
 for o in mix_properties_to_classes.values():
     object_lookups[o.__full_path__] = o
 for o in properties_to_classes.values():

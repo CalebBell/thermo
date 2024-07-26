@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 from fluids.numerics import log, trunc_exp
-from thermo.serialize import object_lookups
+
 from thermo.activity import IdealSolution
 from thermo.eos import eos_full_path_dict
 from thermo.eos_mix import eos_mix_full_path_dict
@@ -43,6 +43,7 @@ from thermo.eos_mix_methods import (
 )
 from thermo.nrtl import NRTL, nrtl_gammas_from_args
 from thermo.regular_solution import RegularSolution, regular_solution_gammas
+from thermo.serialize import object_lookups
 from thermo.unifac import UNIFAC, unifac_gammas_from_args
 from thermo.uniquac import UNIQUAC, uniquac_gammas_from_args
 from thermo.wilson import Wilson, wilson_gammas_from_args

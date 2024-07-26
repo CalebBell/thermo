@@ -101,14 +101,21 @@ from thermo.heat_capacity import (
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.permittivity import PermittivityLiquid
 from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
-from thermo.thermal_conductivity import ThermalConductivityGas, ThermalConductivityGasMixture, ThermalConductivityLiquid, ThermalConductivityLiquidMixture, ThermalConductivitySolid
+from thermo.serialize import JsonOptEncodable
+from thermo.thermal_conductivity import (
+    ThermalConductivityGas,
+    ThermalConductivityGasMixture,
+    ThermalConductivityLiquid,
+    ThermalConductivityLiquidMixture,
+    ThermalConductivitySolid,
+)
 from thermo.unifac import UNIFAC_RQ, UNIFAC_group_assignment_DDBST, Van_der_Waals_area, Van_der_Waals_volume
 from thermo.utils import identify_phase
+from thermo.utils.mixture_property import MixtureProperty
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.viscosity import ViscosityGas, ViscosityGasMixture, ViscosityLiquid, ViscosityLiquidMixture
 from thermo.volume import VolumeGas, VolumeGasMixture, VolumeLiquid, VolumeLiquidMixture, VolumeSolid, VolumeSolidMixture
-from thermo.utils.mixture_property import MixtureProperty
-from thermo.serialize import JsonOptEncodable
+
 CAS_H2O = '7732-18-5'
 
 

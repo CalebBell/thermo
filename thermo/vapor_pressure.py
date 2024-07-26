@@ -64,7 +64,7 @@ from math import e, inf
 
 from chemicals import miscdata, vapor_pressure
 from chemicals.dippr import EQ101
-from chemicals.iapws import iapws95_dPsat_dT, iapws95_Psat, iapws95_Tc, iapws11_Psub, iapws95_Tt
+from chemicals.iapws import iapws11_Psub, iapws95_dPsat_dT, iapws95_Psat, iapws95_Tc, iapws95_Tt
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals.vapor_pressure import (

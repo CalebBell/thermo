@@ -57,11 +57,12 @@ try:
 except:
     pass
 try:
-    from random import uniform, Random
+    from random import Random, uniform
 except:
     pass
 
 from math import log, pi
+
 
 def split_data(x, y, folds=5, seed=42):
     pts = len(x)

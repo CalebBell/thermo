@@ -34,6 +34,7 @@ __all__ = ['redlich_kister_reverse','redlich_kister_reverse_2d', 'redlich_kister
 'redlich_kister_excess_binary', 'redlich_kister_fitting_to_use']
 from math import log
 
+
 def redlich_kister_reverse_2d(data_2d):
     data_2d = [d.copy() for d in data_2d]
     params = len(data_2d)

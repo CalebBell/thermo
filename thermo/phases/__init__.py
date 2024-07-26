@@ -184,11 +184,10 @@ from thermo.phases.combined import CombinedPhase
 from thermo.phases.coolprop_phase import CoolPropGas, CoolPropLiquid, CoolPropPhase
 from thermo.phases.gibbs_excess import GibbsExcessLiquid, GibbsExcessSolid
 from thermo.phases.helmholtz_eos import HelmholtzEOS
-from thermo.phases.iapws_phase import IAPWS95, IAPWS97, IAPWS95Gas, IAPWS95Liquid, IAPWS06
+from thermo.phases.iapws_phase import IAPWS06, IAPWS95, IAPWS97, IAPWS95Gas, IAPWS95Liquid
 from thermo.phases.ideal_gas import IdealGas
 from thermo.phases.petroleum import ChaoSeader, GraysonStreed
 from thermo.phases.phase import IdealGasDeparturePhase, Phase, derivatives_jacobian, derivatives_thermodynamic, derivatives_thermodynamic_mass
-from thermo.serialize import object_lookups
 from thermo.phases.virial_phase import (
     VIRIAL_B_ABBOTT,
     VIRIAL_B_MENG,
@@ -206,6 +205,7 @@ from thermo.phases.virial_phase import (
     VirialCSP,
     VirialGas,
 )
+from thermo.serialize import object_lookups
 
 __all__ = ('air_phase', 'ceos', 'combined', 'coolprop_phase', 'gibbs_excess',
 'helmholtz_eos', 'iapws_phase', 'ideal_gas', 'petroleum', 'phase', 'virial_phase',

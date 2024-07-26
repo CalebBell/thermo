@@ -163,7 +163,19 @@ from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import thermal_conductivity_Magomedov
 from thermo.heat_capacity import HeatCapacityGas
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, HO1972, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR, MixtureProperty, TDependentProperty, TPDependentProperty
+from thermo.utils import (
+    COOLPROP,
+    DIPPR_PERRY_8E,
+    HO1972,
+    LINEAR,
+    NEGLECT_P,
+    REFPROP_FIT,
+    VDI_PPDS,
+    VDI_TABULAR,
+    MixtureProperty,
+    TDependentProperty,
+    TPDependentProperty,
+)
 from thermo.viscosity import ViscosityGas
 from thermo.volume import VolumeGas
 

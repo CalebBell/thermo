@@ -39,12 +39,12 @@ from chemicals.utils import (
     isentropic_exponent_PT,
     isentropic_exponent_PV,
     isentropic_exponent_TV,
+    mixing_simple,
     normalize,
     object_data,
     phase_identification_parameter,
     property_molar_to_mass,
     speed_of_sound,
-    mixing_simple
 )
 from chemicals.virial import B_from_Z
 from fluids.constants import R, R_inv

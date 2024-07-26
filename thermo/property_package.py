@@ -47,6 +47,7 @@ from chemicals.utils import normalize, remove_zeros
 from fluids.constants import R
 from fluids.numerics import UnconvergedError, brenth, derivative, exp, log, secant
 from fluids.numerics import numpy as np
+
 from thermo.serialize import JsonOptEncodable
 
 DIRECT_1P = 'Direct 1 Phase'

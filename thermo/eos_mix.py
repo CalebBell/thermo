@@ -204,7 +204,6 @@ from fluids.numerics import UnconvergedError, broyden2, catanh, exp, log, newton
 from fluids.numerics import numpy as np
 from fluids.numerics.arrays import det, subset_matrix
 
-from thermo.serialize import JsonOptEncodable
 from thermo.eos import (
     APISRK,
     GCEOS,
@@ -282,6 +281,7 @@ from thermo.eos_mix_methods import (
     a_alpha_quadratic_terms,
     eos_mix_dV_dzs,
 )
+from thermo.serialize import JsonOptEncodable
 
 try:
     (zeros, array, npexp, npsqrt, empty, full, npwhere, npmin, npmax, ndarray, dot, prodsum) = (

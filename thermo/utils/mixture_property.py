@@ -22,16 +22,16 @@ SOFTWARE.
 
 __all__ = ['MixtureProperty']
 
-from chemicals.utils import hash_any_primitive, normalize, ws_to_zs, zs_to_ws
-from fluids.numerics import derivative, linspace, trunc_log, trunc_exp
+from chemicals.utils import hash_any_primitive, mixing_simple, normalize, ws_to_zs, zs_to_ws
+from fluids.numerics import derivative, linspace, trunc_exp, trunc_log
 from fluids.numerics import numpy as np
 
-from chemicals.utils import mixing_simple
-from thermo.redlich_kister import redlich_kister_T_dependence, redlich_kister_excess_inner, redlich_kister_build_structure
-from thermo.utils.functional import has_matplotlib
-from thermo.utils.names import LINEAR, MIXING_LOG_MOLAR, MIXING_LOG_MASS
-from thermo.utils.t_dependent_property import json_mixture_correlation_lookup, ENABLE_MIXTURE_JSON
+from thermo.redlich_kister import redlich_kister_build_structure, redlich_kister_excess_inner, redlich_kister_T_dependence
 from thermo.serialize import JsonOptEncodable
+from thermo.utils.functional import has_matplotlib
+from thermo.utils.names import LINEAR, MIXING_LOG_MASS, MIXING_LOG_MOLAR
+from thermo.utils.t_dependent_property import ENABLE_MIXTURE_JSON, json_mixture_correlation_lookup
+
 try:
     from itertools import product
 except:

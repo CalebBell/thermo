@@ -35,7 +35,6 @@ from math import e
 
 import chemicals
 import fluids
-from chemicals.elements import solid_allotrope_map, allotrope_CAS_to_name
 from chemicals.dippr import (
     EQ100,
     EQ101,
@@ -56,6 +55,7 @@ from chemicals.dippr import (
     EQ106_fitting_jacobian,
     EQ107_fitting_jacobian,
 )
+from chemicals.elements import allotrope_CAS_to_name, solid_allotrope_map
 from chemicals.heat_capacity import (
     Poling,
     Poling_integral,
@@ -160,7 +160,6 @@ from fluids.numerics import (
     horner_backwards_ln_tau_and_der3,
     horner_stable,
     horner_stable_and_der,
-    mean_squared_error,
     horner_stable_and_der2,
     horner_stable_and_der3,
     horner_stable_and_der4,
@@ -168,23 +167,24 @@ from fluids.numerics import (
     horner_stable_ln_tau_and_der,
     horner_stable_ln_tau_and_der2,
     horner_stable_ln_tau_and_der3,
+    horner_stable_log,
     inf,
     interp,
     isinf,
     isnan,
     linspace,
     log,
+    mean_squared_error,
     polyder,
     polyint,
     polyint_over_x,
+    polyint_over_x_stable,
     polyint_stable,
     polynomial_offset_scale,
     quad,
     secant,
     trunc_exp,
     trunc_log,
-    polyint_over_x_stable,
-    horner_stable_log,
 )
 from fluids.numerics import numpy as np
 
@@ -214,7 +214,8 @@ from thermo.eos_alpha_functions import (
     Twu91_alpha_pure,
     Yu_Lu_alpha_pure,
 )
-from thermo.fitting import BIC, AICc, fit_customized, assemble_fit_test_groups, split_data, round_to_digits
+from thermo.fitting import BIC, AICc, assemble_fit_test_groups, fit_customized, round_to_digits, split_data
+from thermo.serialize import JsonOptEncodable
 from thermo.utils.functional import has_matplotlib
 from thermo.utils.names import (
     CHEB_FIT,
@@ -226,18 +227,17 @@ from thermo.utils.names import (
     EXP_STABLEPOLY_FIT,
     EXP_STABLEPOLY_FIT_LN_TAU,
     HEOS_FIT,
-    UNARY,
     HO1972,
+    JANAF_FIT,
     NEGLECT_P,
     POLY_FIT,
     POLY_FIT_LN_TAU,
     REFPROP_FIT,
     STABLEPOLY_FIT,
     STABLEPOLY_FIT_LN_TAU,
+    UNARY,
     VDI_TABULAR,
-    JANAF_FIT,
 )
-from thermo.serialize import JsonOptEncodable
 
 """This section is intended to be used in being able to add new data without
 changing code for each object.

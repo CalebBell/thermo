@@ -69,7 +69,7 @@ References
 __all__ = ['GibbsExcess', 'IdealSolution']
 from chemicals.utils import d2xs_to_dxdn_partials, dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, normalize, object_data
 from fluids.constants import R, R_inv
-from fluids.numerics import exp, log, trunc_exp, derivative, jacobian, hessian
+from fluids.numerics import derivative, exp, hessian, jacobian, log, trunc_exp
 from fluids.numerics import numpy as np
 
 from thermo.fitting import fit_customized

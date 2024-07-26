@@ -88,6 +88,7 @@ from fluids.constants import R
 from fluids.numerics import (
     NotBoundedError,
     OscillationError,
+    SolverInterface,
     UnconvergedError,
     assert_close,
     assert_close1d,
@@ -97,6 +98,7 @@ from fluids.numerics import (
     damping_maintain_sign,
     exp,
     fsolve,
+    gdem,
     isclose,
     isinf,
     isnan,
@@ -118,8 +120,6 @@ from fluids.numerics import (
     translate_bound_f_jac,
     trunc_exp,
     trunc_log,
-    SolverInterface,
-    gdem,
 )
 from fluids.numerics import numpy as np
 

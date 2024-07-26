@@ -119,13 +119,24 @@ from chemicals.viscosity import (
     dPPDS9_dT,
     viscosity_gas_Gharagheizi,
 )
-from fluids.numerics import brenth, exp, sqrt, horner, isinf, isnan, log
+from fluids.numerics import brenth, exp, horner, isinf, isnan, log, sqrt
 
 from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_viscosity
-from thermo.utils import (COOLPROP, DIPPR_PERRY_8E, LINEAR, NEGLECT_P, REFPROP_FIT, VDI_PPDS, VDI_TABULAR,
-                          MIXING_LOG_MOLAR, MIXING_LOG_MASS, MixtureProperty, TPDependentProperty)
+from thermo.utils import (
+    COOLPROP,
+    DIPPR_PERRY_8E,
+    LINEAR,
+    MIXING_LOG_MASS,
+    MIXING_LOG_MOLAR,
+    NEGLECT_P,
+    REFPROP_FIT,
+    VDI_PPDS,
+    VDI_TABULAR,
+    MixtureProperty,
+    TPDependentProperty,
+)
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import VolumeGas, VolumeLiquid
 

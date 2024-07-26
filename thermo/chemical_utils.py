@@ -23,10 +23,12 @@ SOFTWARE.
 
 __all__ = ['standard_entropy', 'S0_basis_converter', 'standard_state_ideal_gas_formation']
 
-from fluids.numerics import quad
-from chemicals.reaction import standard_formation_reaction
-from thermo.heat_capacity import HeatCapacitySolid, HeatCapacityLiquid, HeatCapacityGas
 from chemicals.elements import periodic_table
+from chemicals.reaction import standard_formation_reaction
+from fluids.numerics import quad
+
+from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolid
+
 
 def standard_entropy(c=None, dS_trans_s=None, dH_trans_s=None, T_trans_s=None,
                      Cp_s_fun=None,

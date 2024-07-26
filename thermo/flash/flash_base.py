@@ -31,11 +31,11 @@ __all__ = ['Flash']
 
 from math import floor, log10, nan
 
-from chemicals.utils import mixing_simple, property_mass_to_molar, rho_to_Vm, hash_any_primitive
+from chemicals.utils import hash_any_primitive, mixing_simple, property_mass_to_molar, rho_to_Vm
 from fluids.constants import R
 from fluids.numerics import linspace, logspace
 from fluids.numerics import numpy as np
-from thermo.serialize import JsonOptEncodable
+
 from thermo import phases
 from thermo.equilibrium import EquilibriumState
 from thermo.flash.flash_utils import (
@@ -50,6 +50,7 @@ from thermo.flash.flash_utils import (
     incipient_phase_one_sided_secant,
 )
 from thermo.phase_identification import identify_sort_phases
+from thermo.serialize import JsonOptEncodable
 from thermo.utils import has_matplotlib
 
 try:

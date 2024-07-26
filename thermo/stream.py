@@ -35,23 +35,23 @@ from chemicals.exceptions import OverspeficiedError
 from chemicals.utils import (
     Vfs_to_zs,
     Vm_to_rho,
+    hash_any_primitive,
     mixing_simple,
     normalize,
+    object_data,
     property_mass_to_molar,
     property_molar_to_mass,
     solve_flow_composition_mix,
     ws_to_zs,
     zs_to_Vfs,
     zs_to_ws,
-    object_data,
-    hash_any_primitive,
 )
 from chemicals.volume import ideal_gas
 from fluids.constants import R
-from thermo.serialize import JsonOptEncodable
+
 from thermo.equilibrium import EquilibriumState
 from thermo.mixture import Mixture
-from thermo.serialize import object_lookups
+from thermo.serialize import JsonOptEncodable, object_lookups
 
 
 class StreamArgs:

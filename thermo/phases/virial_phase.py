@@ -68,6 +68,7 @@ from chemicals.virial import (
 from fluids.constants import R
 from fluids.numerics import log, newton
 from fluids.numerics import numpy as np
+
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import IdealGasDeparturePhase, Phase
 from thermo.serialize import JsonOptEncodable
