@@ -13,23 +13,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', 'pypy3.9']
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11', '3.12', 'pypy3.9']
+        os: [windows-latest, ubuntu-latest, macos-13, macos-latest]
         architecture: ['x86', 'x64']
         exclude:
-          # Failures due to lack of numpy wheels
-          # numpy.distutils.system_info.NotFoundError: No lapack/blas resources found.
-          # even 32 bit pypy2 or pypy3 doesn't work
+          # Only test pypy on Linux
           - os: windows-latest
             python-version: pypy3.9
           - os: macos-latest
             python-version: pypy3.9
-          # no python builds available on macos 32 bit
+          - os: macos-13
+            python-version: pypy3.9
+          # no python builds available on macos 32 bit, arm or x64
           - os: macos-latest
+            architecture: x86
+          - os: macos-13
             architecture: x86
           # no python builds available on linux 32 bit
           - os: ubuntu-latest
             architecture: x86
+          # 3.7 is oldest supported Python on ubuntu 22.04
+          - os: ubuntu-latest
+            python-version: 3.6
           # scipy dropped 32 bit windows builds 
           - os: windows-latest
             architecture: x86
@@ -43,12 +48,31 @@ jobs:
           - os: windows-latest
             architecture: x86
             python-version: 3.11
-          - os: ubuntu-latest
+          - os: windows-latest
+            architecture: x86
+            python-version: 3.12
+          - os: windows-latest
+            architecture: x86
+            python-version: 3.13
+
+          # These are arm - old versions of Python are not supported
+          - os: macos-latest
             python-version: 3.6
+          - os: macos-latest
+            python-version: 3.7
+          - os: macos-latest
+            python-version: 3.8
+          - os: macos-latest
+            python-version: 3.9
+          - os: macos-latest
+            python-version: 3.10
+    
+          - os: macos-13
+            python-version: 3.6 # missing cumulative_trapezoid too old SciPy
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5 
       with:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
@@ -77,6 +101,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements_test.txt') }}
         restore-keys: |
           ${{ runner.os }}-${{ runner.architecture }}-${{ runner.python-version }}pip-
+
     - name: Install Ubuntu dependencies
       if: startsWith(runner.os, 'Linux')
       run: |
@@ -91,14 +116,14 @@ jobs:
         python -m pip install wheel
         pip install -r requirements_test.txt
     - name: Add numba
-      if: ${{ matrix.python-version == '3.6' || matrix.python-version == '3.7' || matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10' || matrix.python-version == '3.11' }}
+      if: ${{ matrix.python-version == '3.6' || matrix.python-version == '3.7' || matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10' || matrix.python-version == '3.11' || matrix.python-version == '3.12'  }}
       run: |
         pip install numba
     - name: Install thermo
       run: |
         pip install .
     - name: Generate Files
-      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == 'pypy3.9' }}
+      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == '3.12' || matrix.python-version == 'pypy3.9' }}
       run: |
         python dev/dump_UNIFAC_assignments_to_sqlite.py
     - name: Uninstall thermo
