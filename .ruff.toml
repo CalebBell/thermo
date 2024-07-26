@@ -10,12 +10,27 @@ exclude = [
 #   "UP031",
 #   "UP032",
 # ]
+
+
+
+[lint]
 select = ["ALL"]
+
 extend-ignore = [
+    "FIX002", # TODO are OK
+    "FIX004", # HACK is OK
+    
     "D415", # First docstring line should end with a period, question mark, or exclamation point
     "DTZ004", # utcfromtimestamp makes sense for atmosphere model
     "PGH003", # type ignoring makes sense for numba-related things
     "S102", # Yes, exec is dangerous but it can be quite useful as well
+
+    "PYI056", # changing __all__
+
+    "RUF012", # not using typing today
+    "PERF403", # obvious, use an autofix if one becomes available
+    "PERF203", # `try`-`except` within a loop incurs performance overhead
+    "PERF401", # PERF401 Use a list comprehension to create a transformed list
 
     # chemicals specific
     "E701", # lots of this here
@@ -139,13 +154,15 @@ extend-ignore = [
     "TRY002",  
     "TRY003",  
     "TRY004",  
-    "TRY200",  
+    "B904",  
     "TRY201",  
     "TRY300",  
     "TRY301",  
     "TRY400",  
     "Q000",  
     "Q002",  
+    
+    "PYI024", # PYI024 Use `typing.NamedTuple` instead of `collections.namedtuple
 ]
-[mccabe]
+[lint.mccabe]
 max-complexity = 10
