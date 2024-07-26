@@ -101,7 +101,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     def _custom_as_json(self, d, cache):
         d['eos_class'] = d['eos_class'].__full_path__
-        
+
     def _custom_from_json(self, *args):
         self.eos_class = eos_mix_full_path_dict[self.eos_class]
 

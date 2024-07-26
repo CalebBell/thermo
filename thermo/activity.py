@@ -391,7 +391,7 @@ class GibbsExcess:
         d = object_data(self)
         ans = hash_any_primitive((self.__class__.__name__, d))
         return ans
-    
+
     def as_json(self, cache=None, option=0):
         r'''Method to create a JSON-friendly representation of the Gibbs Excess
         model which can be stored, and reloaded later.
@@ -1028,7 +1028,7 @@ class GibbsExcess:
                     **fit_kwargs)
         return res
 
-        
+
 derivatives_added = [('dGE_dT', 'GE', 1),
  ('d2GE_dT2', 'GE', 2),
  ('d3GE_dT3', 'GE', 3),

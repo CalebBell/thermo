@@ -4416,7 +4416,7 @@ class UNIFAC(GibbsExcess):
     __slots__ = GibbsExcess.__slots__ + _cached_calculated_attributes + ('N_groups', 'Qs', 'cmp_group_idx', 'cmp_v_count', 'cmp_v_count_inv', 'group_cmp_idx',
             'psi_a', 'psi_b', 'psi_c', 'qs', 'r34x_sum_inv', 'rs', 'rs_34', 'skip_comb', 'version', 'vs',
             '_Xs_pure', '_Thetas_pure')
-            
+
 
     recalculable_attributes = GibbsExcess.recalculable_attributes + _cached_calculated_attributes
 
@@ -4608,8 +4608,7 @@ class UNIFAC(GibbsExcess):
         psi_abc = (self.psi_a, self.psi_b, self.psi_c)
         s = 'UNIFAC('
         s += f'T={self.T}, xs={self.xs}, rs={self.rs}, qs={self.qs}'
-        s += ', Qs={}, vs={}, psi_abc={}, version={}'.format(self.Qs, self.vs,
-                                                        psi_abc, self.version)
+        s += f', Qs={self.Qs}, vs={self.vs}, psi_abc={psi_abc}, version={self.version}'
         s += ')'
         return s
 

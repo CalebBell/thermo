@@ -347,8 +347,8 @@ class VirialCSP:
         d = self.__dict__
         ans = hash_any_primitive((self.__class__.__name__, self.state_hash(), self.model_hash(), d))
         return ans
-    
-    
+
+
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)

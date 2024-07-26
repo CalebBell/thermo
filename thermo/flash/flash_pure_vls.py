@@ -941,16 +941,12 @@ class FlashPureVLS(Flash):
                     uncertain_solution = True
 
             if VL_liq is not None:
-                s += '({}, {}) VL 2 Phase solution: ({:g}, {:g}); '.format(
-                        VL_liq.__class__.__name__, VL_gas.__class__.__name__,
-                        spec_val_l, spec_val_g)
+                s += f'({VL_liq.__class__.__name__}, {VL_gas.__class__.__name__}) VL 2 Phase solution: ({spec_val_l:g}, {spec_val_g:g}); '
                 VL_min_spec, VL_max_spec = min(spec_val_l, spec_val_g), max(spec_val_l, spec_val_g),
                 if VL_min_spec <= spec_val <= VL_max_spec:
                     had_solution = True
             if SF is not None:
-                s += '({}, {}) VL 2 Phase solution: ({:g}, {:g}); '.format(
-                        VS_flash.phases[0].__class__.__name__, VS_flash.solid0.__class__.__name__,
-                        spec_val_s, spec_other)
+                s += f'({VS_flash.phases[0].__class__.__name__}, {VS_flash.solid0.__class__.__name__}) VL 2 Phase solution: ({spec_val_s:g}, {spec_other:g}); '
                 S_min_spec, S_max_spec = min(spec_val_s, spec_other), max(spec_val_s, spec_other),
                 if S_min_spec <= spec_val <= S_max_spec:
                     had_solution = True

@@ -1623,7 +1623,7 @@ class TDependentProperty:
 
         self.T_cached = None
         # No need to set self.prop_cached
-        
+
         for correlation_name in TDependentProperty.correlation_models.keys():
             # Should be lazy created?
             correlation_key = TDependentProperty.correlation_parameters[correlation_name]
@@ -2318,8 +2318,8 @@ class TDependentProperty:
     @method.setter
     def method(self, method):
         if method not in self.all_methods and method is not None:
-            raise ValueError("Method '{}' is not available for this chemical; "
-                             "available methods are {}".format(method, self.all_methods))
+            raise ValueError(f"Method '{method}' is not available for this chemical; "
+                             f"available methods are {self.all_methods}")
         self.T_cached = None
         self._method = method
 
@@ -2691,65 +2691,29 @@ class TDependentProperty:
             raise ValueError("No polynomial fit defined")
 
         if method == POLY_FIT:
-            return '{}(load_data=False, poly_fit=({}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.poly_fit_Tmin), repr(self.poly_fit_Tmax),
-                  repr(self.poly_fit_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, poly_fit=({repr(self.poly_fit_Tmin)}, {repr(self.poly_fit_Tmax)}, {repr(self.poly_fit_coeffs)}))'
         elif method == EXP_POLY_FIT:
-            return '{}(load_data=False, exp_poly_fit=({}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.exp_poly_fit_Tmin), repr(self.exp_poly_fit_Tmax),
-                  repr(self.exp_poly_fit_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, exp_poly_fit=({repr(self.exp_poly_fit_Tmin)}, {repr(self.exp_poly_fit_Tmax)}, {repr(self.exp_poly_fit_coeffs)}))'
         elif method == POLY_FIT_LN_TAU:
-            return '{}(load_data=False, Tc={}, poly_fit_ln_tau=({}, {}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.poly_fit_ln_tau_Tc),
-                  repr(self.poly_fit_ln_tau_Tmin), repr(self.poly_fit_ln_tau_Tmax),
-                  repr(self.poly_fit_ln_tau_Tc),
-                  repr(self.poly_fit_ln_tau_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.poly_fit_ln_tau_Tc)}, poly_fit_ln_tau=({repr(self.poly_fit_ln_tau_Tmin)}, {repr(self.poly_fit_ln_tau_Tmax)}, {repr(self.poly_fit_ln_tau_Tc)}, {repr(self.poly_fit_ln_tau_coeffs)}))'
         elif method == EXP_POLY_FIT_LN_TAU:
-            return '{}(load_data=False, Tc={}, exp_poly_fit_ln_tau=({}, {}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.exp_poly_fit_ln_tau_Tc),
-                  repr(self.exp_poly_fit_ln_tau_Tmin), repr(self.exp_poly_fit_ln_tau_Tmax),
-                  repr(self.exp_poly_fit_ln_tau_Tc),
-                  repr(self.exp_poly_fit_ln_tau_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.exp_poly_fit_ln_tau_Tc)}, exp_poly_fit_ln_tau=({repr(self.exp_poly_fit_ln_tau_Tmin)}, {repr(self.exp_poly_fit_ln_tau_Tmax)}, {repr(self.exp_poly_fit_ln_tau_Tc)}, {repr(self.exp_poly_fit_ln_tau_coeffs)}))'
         elif method == STABLEPOLY_FIT:
-            return '{}(load_data=False, stablepoly_fit=({}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.stablepoly_fit_Tmin), repr(self.stablepoly_fit_Tmax),
-                  repr(self.stablepoly_fit_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, stablepoly_fit=({repr(self.stablepoly_fit_Tmin)}, {repr(self.stablepoly_fit_Tmax)}, {repr(self.stablepoly_fit_coeffs)}))'
         elif method == EXP_STABLEPOLY_FIT:
-            return '{}(load_data=False, exp_stablepoly_fit=({}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.exp_stablepoly_fit_Tmin), repr(self.exp_stablepoly_fit_Tmax),
-                  repr(self.exp_stablepoly_fit_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, exp_stablepoly_fit=({repr(self.exp_stablepoly_fit_Tmin)}, {repr(self.exp_stablepoly_fit_Tmax)}, {repr(self.exp_stablepoly_fit_coeffs)}))'
         elif method == STABLEPOLY_FIT_LN_TAU:
-            return '{}(load_data=False, Tc={}, stablepoly_fit_ln_tau=({}, {}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.stablepoly_fit_ln_tau_Tc),
-                  repr(self.stablepoly_fit_ln_tau_Tmin), repr(self.stablepoly_fit_ln_tau_Tmax),
-                  repr(self.stablepoly_fit_ln_tau_Tc),
-                  repr(self.stablepoly_fit_ln_tau_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.stablepoly_fit_ln_tau_Tc)}, stablepoly_fit_ln_tau=({repr(self.stablepoly_fit_ln_tau_Tmin)}, {repr(self.stablepoly_fit_ln_tau_Tmax)}, {repr(self.stablepoly_fit_ln_tau_Tc)}, {repr(self.stablepoly_fit_ln_tau_coeffs)}))'
         elif method == EXP_STABLEPOLY_FIT_LN_TAU:
-            return '{}(load_data=False, Tc={}, exp_stablepoly_fit_ln_tau=({}, {}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.exp_stablepoly_fit_ln_tau_Tc),
-                  repr(self.exp_stablepoly_fit_ln_tau_Tmin), repr(self.exp_stablepoly_fit_ln_tau_Tmax),
-                  repr(self.exp_stablepoly_fit_ln_tau_Tc),
-                  repr(self.exp_stablepoly_fit_ln_tau_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.exp_stablepoly_fit_ln_tau_Tc)}, exp_stablepoly_fit_ln_tau=({repr(self.exp_stablepoly_fit_ln_tau_Tmin)}, {repr(self.exp_stablepoly_fit_ln_tau_Tmax)}, {repr(self.exp_stablepoly_fit_ln_tau_Tc)}, {repr(self.exp_stablepoly_fit_ln_tau_coeffs)}))'
         elif method == CHEB_FIT:
-            return '{}(load_data=False, cheb_fit=({}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.cheb_fit_Tmin), repr(self.cheb_fit_Tmax),
-                  repr(self.cheb_fit_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, cheb_fit=({repr(self.cheb_fit_Tmin)}, {repr(self.cheb_fit_Tmax)}, {repr(self.cheb_fit_coeffs)}))'
         elif method == EXP_CHEB_FIT:
-            return '{}(load_data=False, exp_cheb_fit=({}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.exp_cheb_fit_Tmin), repr(self.exp_cheb_fit_Tmax),
-                  repr(self.exp_cheb_fit_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, exp_cheb_fit=({repr(self.exp_cheb_fit_Tmin)}, {repr(self.exp_cheb_fit_Tmax)}, {repr(self.exp_cheb_fit_coeffs)}))'
         elif method == CHEB_FIT_LN_TAU:
-            return '{}(load_data=False, Tc={}, cheb_fit_ln_tau=({}, {}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.cheb_fit_ln_tau_Tc),
-                  repr(self.cheb_fit_ln_tau_Tmin), repr(self.cheb_fit_ln_tau_Tmax),
-                  repr(self.cheb_fit_ln_tau_Tc),
-                  repr(self.cheb_fit_ln_tau_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.cheb_fit_ln_tau_Tc)}, cheb_fit_ln_tau=({repr(self.cheb_fit_ln_tau_Tmin)}, {repr(self.cheb_fit_ln_tau_Tmax)}, {repr(self.cheb_fit_ln_tau_Tc)}, {repr(self.cheb_fit_ln_tau_coeffs)}))'
         elif method == EXP_CHEB_FIT_LN_TAU:
-            return '{}(load_data=False, Tc={}, exp_cheb_fit_ln_tau=({}, {}, {}, {}))'.format(self.__class__.__name__,
-                  repr(self.exp_cheb_fit_ln_tau_Tc),
-                  repr(self.exp_cheb_fit_ln_tau_Tmin), repr(self.exp_cheb_fit_ln_tau_Tmax),
-                  repr(self.exp_cheb_fit_ln_tau_Tc),
-                  repr(self.exp_cheb_fit_ln_tau_coeffs))
+            return f'{self.__class__.__name__}(load_data=False, Tc={repr(self.exp_cheb_fit_ln_tau_Tc)}, exp_cheb_fit_ln_tau=({repr(self.exp_cheb_fit_ln_tau_Tmin)}, {repr(self.exp_cheb_fit_ln_tau_Tmax)}, {repr(self.exp_cheb_fit_ln_tau_Tc)}, {repr(self.exp_cheb_fit_ln_tau_coeffs)}))'
 
     def _base_calculate(self, T, method):
         if method in self.correlations:
@@ -3918,14 +3882,14 @@ class TDependentProperty:
                 except:
                     if self.RAISE_PROPERTY_CALCULATION_ERROR:
                         raise RuntimeError(
-                            "Failed to extrapolate {}th derivative of {} method '{}' "
-                            "at T={} K for component with CASRN '{}'".format(order, self.name.lower(), method, T, self.CASRN)
+                            f"Failed to extrapolate {order}th derivative of {self.name.lower()} method '{method}' "
+                            f"at T={T} K for component with CASRN '{self.CASRN}'"
                         )
                     return None
             elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(
-                    "{} method '{}' is not valid at T={} K "
-                    "for component with CASRN '{}'".format(self.name, method, T, self.CASRN)
+                    f"{self.name} method '{method}' is not valid at T={T} K "
+                    f"for component with CASRN '{self.CASRN}'"
                 )
             else:
                 return None
@@ -3934,8 +3898,8 @@ class TDependentProperty:
         except:
             if self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(
-                    "Failed to evaluate {}th derivative of {} method '{}' "
-                    "at T={} K for component with CASRN '{}'".format(order, self.name.lower(), method, T, self.CASRN)
+                    f"Failed to evaluate {order}th derivative of {self.name.lower()} method '{method}' "
+                    f"at T={T} K for component with CASRN '{self.CASRN}'"
                 )
 
     def calculate_integral(self, T1, T2, method):
@@ -4036,15 +4000,15 @@ class TDependentProperty:
                     except: # pragma: no cover
                         if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
-                                "Failed to extrapolate integral of {} method '{}' "
-                                "between T={} to {} K for component with CASRN '{}'".format(self.name.lower(), method, T1, Tmin, self.CASRN)
+                                f"Failed to extrapolate integral of {self.name.lower()} method '{method}' "
+                                f"between T={T1} to {Tmin} K for component with CASRN '{self.CASRN}'"
                             )
                         else:
                             return None
                 elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
-                        "{} method '{}' is not valid between T={} to T={} K "
-                        "for component with CASRN '{}'".format(self.name, method, T1, Tmin, self.CASRN)
+                        f"{self.name} method '{method}' is not valid between T={T1} to T={Tmin} K "
+                        f"for component with CASRN '{self.CASRN}'"
                     )
                 else:
                     return None
@@ -4060,15 +4024,15 @@ class TDependentProperty:
                     except:
                         if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
-                                "Failed to extrapolate integral of {} method '{}' "
-                                "between T={} to {} K for component with CASRN '{}'".format(self.name.lower(), method, Tmax, T2, self.CASRN)
+                                f"Failed to extrapolate integral of {self.name.lower()} method '{method}' "
+                                f"between T={Tmax} to {T2} K for component with CASRN '{self.CASRN}'"
                             )
                         else:
                             return None
                 elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
-                        "{} method '{}' is not valid between T={} to T={} K "
-                        "for component with CASRN '{}'".format(self.name, method, T2, Tmax, self.CASRN)
+                        f"{self.name} method '{method}' is not valid between T={T2} to T={Tmax} K "
+                        f"for component with CASRN '{self.CASRN}'"
                     )
                 else:
                     return None
@@ -4078,8 +4042,8 @@ class TDependentProperty:
         except: # pragma: no cover
             if self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(
-                    "Failed to evaluate integral of {} method '{}' "
-                    "between T={} to {} K for component with CASRN '{}'".format(self.name.lower(), method, Tmax, T2, self.CASRN)
+                    f"Failed to evaluate integral of {self.name.lower()} method '{method}' "
+                    f"between T={Tmax} to {T2} K for component with CASRN '{self.CASRN}'"
                 )
             else:
                 return None
@@ -4185,15 +4149,15 @@ class TDependentProperty:
                     except:
                         if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
-                                "Failed to extrapolate integral-over-T of {} method '{}' "
-                                "between T={} to {} K for component with CASRN '{}'".format(self.name.lower(), method, T1, Tmin, self.CASRN)
+                                f"Failed to extrapolate integral-over-T of {self.name.lower()} method '{method}' "
+                                f"between T={T1} to {Tmin} K for component with CASRN '{self.CASRN}'"
                             )
                         else:
                             return None
                 elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
-                        "{} method '{}' is not valid between T={} to T={} K "
-                        "for component with CASRN '{}'".format(self.name, method, T1, Tmin, self.CASRN)
+                        f"{self.name} method '{method}' is not valid between T={T1} to T={Tmin} K "
+                        f"for component with CASRN '{self.CASRN}'"
                     )
                 else:
                     return None
@@ -4209,15 +4173,15 @@ class TDependentProperty:
                     except: # pragma: no cover
                         if self.RAISE_PROPERTY_CALCULATION_ERROR:
                             raise RuntimeError(
-                                "Failed to extrapolate integral-over-T of {} method '{}' "
-                                "between T={} to {} K for component with CASRN '{}'".format(self.name.lower(), method, Tmax, T2, self.CASRN)
+                                f"Failed to extrapolate integral-over-T of {self.name.lower()} method '{method}' "
+                                f"between T={Tmax} to {T2} K for component with CASRN '{self.CASRN}'"
                             )
                         else:
                             return None
                 elif self.RAISE_PROPERTY_CALCULATION_ERROR:
                     raise RuntimeError(
-                        "{} method '{}' is not valid between T={} to T={} K "
-                        "for component with CASRN '{}'".format(self.name, method, T2, Tmax, self.CASRN)
+                        f"{self.name} method '{method}' is not valid between T={T2} to T={Tmax} K "
+                        f"for component with CASRN '{self.CASRN}'"
                     )
                 else:
                     return None
@@ -4227,8 +4191,8 @@ class TDependentProperty:
         except:
             if self.RAISE_PROPERTY_CALCULATION_ERROR:
                 raise RuntimeError(
-                    "Failed to evaluate integral-over-T of {} method '{}' "
-                    "between T={} to {} K for component with CASRN '{}'".format(self.name.lower(), method, Tmax, T2, self.CASRN)
+                    f"Failed to evaluate integral-over-T of {self.name.lower()} method '{method}' "
+                    f"between T={Tmax} to {T2} K for component with CASRN '{self.CASRN}'"
                 )
             else:
                 return None

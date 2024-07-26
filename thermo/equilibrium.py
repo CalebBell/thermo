@@ -3330,12 +3330,12 @@ for name in ChemicalConstantsPackage.properties:
             type_name = var_type if type(var_type) is str else var_type.__name__
             if return_desc is None:
                 return_desc = desc
-            full_desc = """{}, {}.
+            full_desc = f"""{desc}, {units}.
 
 Returns
 -------
-{} : {}
-    {}, {}.""".format(desc, units, name, type_name, return_desc, units)
+{name} : {type_name}
+    {return_desc}, {units}."""
 #            print(full_desc)
             getter.__doc__ = full_desc
         except:
@@ -3642,12 +3642,12 @@ for _name, _CAS in _comonent_specific_properties.items():
     getter = _make_getter_component_molar_weight(_CAS)
     name = '%s_molar_weight' %(_name)
 
-    _add_attrs_doc =  r"""Method to calculate and return the effective quantiy
-    of {} in the phase as a molar weight, [g/mol].
+    _add_attrs_doc =  rf"""Method to calculate and return the effective quantiy
+    of {_name} in the phase as a molar weight, [g/mol].
 
     This is the molecular weight of the phase times the mass fraction of the
-    {} component.
-            """.format(_name, _name)
+    {_name} component.
+            """
     getter.__doc__ = _add_attrs_doc
     setattr(EquilibriumState, name, getter)
     setattr(Phase, name, getter)

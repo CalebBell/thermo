@@ -468,7 +468,7 @@ class TPDependentProperty(TDependentProperty):
                 properties2 = [[self.interpolation_property(p) for p in r] for r in properties]
             else:
                 properties2 = properties
-            
+
             # The data table must be sorted now, after transform the data may not be in ascending order
 
             Ts2_sorted_indices = np.argsort(Ts2)

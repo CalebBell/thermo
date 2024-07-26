@@ -2797,7 +2797,7 @@ class GCEOSMIX(GCEOS):
         '''
         N = self.N
         return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
-        
+
     @property
     def d3b_dninjnks(self):
         r'''Helper method for calculating the third partial mole number
@@ -2860,7 +2860,7 @@ class GCEOSMIX(GCEOS):
         '''
         N = self.N
         return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
-        
+
     @property
     def d3delta_dzizjzks(self):
         r'''Helper method for calculating the third composition derivatives
@@ -2882,7 +2882,7 @@ class GCEOSMIX(GCEOS):
         '''
         N = self.N
         return zeros((N, N, N)) if self.vectorized else [[[0.0]*N for _ in range(N)] for _ in range(N)]
-            
+
     @property
     def da_alpha_dzs(self):
         r'''Helper method for calculating the composition derivatives of
@@ -3132,7 +3132,7 @@ class GCEOSMIX(GCEOS):
         except:
             da_alpha_dT_j_rows = self._da_alpha_dT_j_rows
         return 2.0*da_alpha_dT_j_rows if self.vectorized else [i + i for i in da_alpha_dT_j_rows]
-        
+
     @property
     def da_alpha_dT_dns(self):
         r'''Helper method for calculating the mole number derivatives of

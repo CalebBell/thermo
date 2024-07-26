@@ -186,7 +186,7 @@ class ChemicalConstantsPackage():
         for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
             # keys are stored as strings and not ints
             d[k] = [{str(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
-        
+
 
         # This is not so much a performance optimization as an improvement on file size
         # and readability. Do not remove it! Comparing against an empty list is the
@@ -1374,9 +1374,9 @@ Parameters
 """
 for name, (var_type, desc, units, return_desc) in constants_docstrings.items():
     type_name = var_type if type(var_type) is str else var_type.__name__
-    new = """{} : {}
-    {}, {}.
-""".format(name, type_name, desc, units)
+    new = f"""{name} : {type_name}
+    {desc}, {units}.
+"""
     constants_doc += new
 
 try:

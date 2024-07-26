@@ -895,7 +895,7 @@ class StreamArgs:
     def ns(self):
         r'''Mole flows of the stream if specified [mol/s]'''
         return self.specifications['ns']
-    
+
     @ns.setter
     def ns(self, arg):
         r'''Set the mole flows of the stream [mol/s]'''
@@ -1769,7 +1769,7 @@ class StreamArgs:
         """
         for key, value in kwargs.items():
             setattr(self, key, value)
-    
+
     def stream(self, existing_flash=None, hot_start=None):
         r'''Create and return an EquilibriumStream object using the set specifications.
         If `existing_flash` is provided, that :obj:`EquilibriumState` object will be used
