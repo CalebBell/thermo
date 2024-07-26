@@ -10,6 +10,14 @@
 
 ### Fixed
 
+## [0.3.0] - 2024-07-26
+
+### Changed
+- Compatibility with NumPy 2.0 and SciPy 1.14. Note this causes somewhat different results when extrapolating tabular data (Temperature and pressure dependent - temperature dependent only behaves the same)
+- Fluids version dependency now >= 1.0.26
+- Chemicals version dependency now >= 1.2.0
+- General code cleanup and further documentation
+
 ## [0.2.26] - 2023-09-17
 
 ### Changed
