@@ -1487,9 +1487,9 @@ def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
     anion_zs, cation_zs, z_water = ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust=adjust)
     new_zi = cation_zs[cation_index] if positive else anion_zs[anion_index]
     if increase is True and new_zi < old_zi:
-        raise ValueError('Adjusting specified ion %s resulted in a decrease of its quantity but an increase was specified' % selected_ion.formula)
+        raise ValueError('Adjusting specified ion {} resulted in a decrease of its quantity but an increase was specified'.format(selected_ion.formula))
     elif increase is False and new_zi > old_zi:
-        raise ValueError('Adjusting specified ion %s resulted in a increase of its quantity but an decrease was specified' % selected_ion.formula)
+        raise ValueError('Adjusting specified ion {} resulted in a increase of its quantity but an decrease was specified'.format(selected_ion.formula))
     return anion_zs, cation_zs, z_water
 
 
@@ -1497,7 +1497,7 @@ def ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust):
     main_tot = sum([zs[i]*charges[i] for i in range(len(charges)) if i != adjust])
     zs[adjust] = -main_tot/charges[adjust]
     if zs[adjust] < 0:
-        raise ValueError('A negative value of %f ion mole fraction was required to balance the charge' %zs[adjust])
+        raise ValueError('A negative value of {:f} ion mole fraction was required to balance the charge'.format(zs[adjust]))
 
     z_water = 1. - sum(zs[0:-1])
     anion_zs = zs[0:n_anions]
@@ -1528,7 +1528,7 @@ def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions,
         else:
             adjust = impacts.index(min(impacts))
     else:
-        raise ValueError('Allowable methods are %s' %charge_balance_methods)
+        raise ValueError('Allowable methods are {}'.format(charge_balance_methods))
     return ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust)
 
 
@@ -1563,7 +1563,7 @@ def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions,
         multiplier = -cation_balance_error/anion_balance_error
         anion_zs = [i*multiplier for i in anion_zs]
     else:
-        raise Exception('Allowable methods are %s' %charge_balance_methods)
+        raise Exception('Allowable methods are {}'.format(charge_balance_methods))
     z_water = 1. - sum(anion_zs) - sum(cation_zs)
     return anion_zs, cation_zs, z_water
 

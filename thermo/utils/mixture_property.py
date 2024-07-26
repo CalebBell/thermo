@@ -70,14 +70,14 @@ class MixtureProperty:
 
     def __repr__(self):
         clsname = self.__class__.__name__
-        base = '%s(' % (clsname)
+        base = '{}('.format(clsname)
         for k in self.custom_args:
             v = getattr(self, k)
             if v is not None:
                 base += f'{k}={v}, '
-        base += 'CASs=%s, ' %(self.CASs)
-        base += 'correct_pressure_pure=%s, ' %(self._correct_pressure_pure)
-        base += 'method="%s", ' %(self.method)
+        base += 'CASs={}, '.format(self.CASs)
+        base += 'correct_pressure_pure={}, '.format(self._correct_pressure_pure)
+        base += 'method="{}", '.format(self.method)
         for attr in self.pure_references:
             base += f'{attr}={getattr(self, attr)}, '
 
@@ -129,7 +129,7 @@ class MixtureProperty:
 
         # Attempt to load json data
         CASs = self.CASs
-        if CASs and not None in CASs and ENABLE_MIXTURE_JSON:
+        if CASs and None not in CASs and ENABLE_MIXTURE_JSON:
             cls_name = self.__class__.__name__
             outer = []
             for CAS1 in CASs:
@@ -169,7 +169,7 @@ class MixtureProperty:
                 kwargs['redlick_kister_parameters']['Combined Json'] = {'N_T': N_T, 'N_terms': N_terms, 'coeffs': rk_struct}
 
         if kwargs:
-            mixture_excess_models = set(['redlick_kister_parameters'])
+            mixture_excess_models = {'redlick_kister_parameters'}
             # Iterate over all the dictionaries in reverse such that the first one is left as the default
             for key in reversed(list(kwargs.keys())):
                 if key in mixture_excess_models:
@@ -232,7 +232,7 @@ class MixtureProperty:
             excess = redlich_kister_excess_inner(N_T, N_terms, Ais_matrix_for_calc, zs)
             base_property = mixing_simple(zs, pure_props)
             return base_property + excess
-        raise ValueError("Unknown method; methods are %s" %(self.all_methods))
+        raise ValueError("Unknown method; methods are {}".format(self.all_methods))
 
     def calculate_pures_corrected(self, T, P, fallback=False, objs=None):
         if self._correct_pressure_pure:
@@ -932,10 +932,10 @@ class MixtureProperty:
                                     xs_plot.append(x0)
                             except:
                                 pass
-                    plt.plot(xs_plot, properties, label=method + ' at %g K and %g Pa' %(T, P) )
+                    plt.plot(xs_plot, properties, label=method + ' at {:g} K and {:g} Pa'.format(T, P) )
                 else:
                     properties = [func(T, P, [x0, 1.0 - x0], None, method) for x0 in xs]
-                    plt.plot(xs, properties, label=method + ' at %g K and %g Pa' %(T, P))
+                    plt.plot(xs, properties, label=method + ' at {:g} K and {:g} Pa'.format(T, P))
         plt.legend(loc='best')
         plt.ylabel(prop_name + ', ' + self.units)
         plt.xlabel('Mole fraction x0')

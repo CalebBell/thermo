@@ -107,5 +107,5 @@ def mark_plot_unsupported(plot_fig, reason, color='r'):
 
 def flash_rounding(x):
     if isinstance(x, float):
-        return float('%.10e' %(x))
+        return float('{:.10e}'.format(x))
     return x

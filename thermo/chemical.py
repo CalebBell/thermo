@@ -755,11 +755,11 @@ class Chemical: # pragma: no cover
             self.formula = ID['formula']
             # DO NOT REMOVE molecular_weight until the database gets updated with consistent MWs
             self.MW = ID['MW'] if 'MW' in ID else molecular_weight(simple_formula_parser(self.formula))
-            self.PubChem = ID['PubChem'] if 'PubChem' in ID else None
-            self.smiles = ID['smiles'] if 'smiles' in ID else None
-            self.InChI = ID['InChI'] if 'InChI' in ID else None
-            self.InChI_Key = ID['InChI_Key'] if 'InChI_Key' in ID else None
-            self.synonyms = ID['synonyms'] if 'synonyms' in ID else None
+            self.PubChem = ID.get('PubChem', None)
+            self.smiles = ID.get('smiles', None)
+            self.InChI = ID.get('InChI', None)
+            self.InChI_Key = ID.get('InChI_Key', None)
+            self.synonyms = ID.get('synonyms', None)
         else:
             self.ID = ID
             # Identification
@@ -3249,15 +3249,15 @@ class Chemical: # pragma: no cover
 # Add the functional groups
 def _make_getter_group(name):
     def get(self):
-        base_name = 'is_%s' %(name)
+        base_name = 'is_{}'.format(name)
         ref = getattr(functional_groups, base_name)
         return ref(self.rdkitmol)
 
     return get
 for _name in group_names:
     getter = property(_make_getter_group(_name))
-    name = 'is_%s' %(_name)
-    _add_attrs_doc =  r"""Method to return whether or not this chemical is in the category %s, [-]
-            """ %(_name)
+    name = 'is_{}'.format(_name)
+    _add_attrs_doc =  r"""Method to return whether or not this chemical is in the category {}, [-]
+            """.format(_name)
     getter.__doc__ = _add_attrs_doc
     setattr(Chemical, name, getter)

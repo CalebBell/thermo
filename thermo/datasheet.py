@@ -288,25 +288,25 @@ def tabulate_streams(names=None, *args, **kwargs):
 
     if kwargs.get('Mole flows', True):
         for i, CAS in enumerate(CASs):
-            s = 'Mole flow, mol/s %s' %IDs[CAS]
+            s = 'Mole flow, mol/s {}'.format(IDs[CAS])
             vals = [j[i] for j in mole_flows]
             dat[s] = vals
 
     if kwargs.get('Mass flows', True):
         for i, CAS in enumerate(CASs):
-            s = 'Mass flow, kg/s %s' %IDs[CAS]
+            s = 'Mass flow, kg/s {}'.format(IDs[CAS])
             vals = [j[i] for j in mass_flows]
             dat[s] = vals
 
     if kwargs.get('Mass fractions', True):
         for i, CAS in enumerate(CASs):
-            s = 'Mass fraction %s' %IDs[CAS]
+            s = 'Mass fraction {}'.format(IDs[CAS])
             vals = [j[i] for j in mass_fractions]
             dat[s] = vals
 
     if kwargs.get('Mole fractions', True):
         for i, CAS in enumerate(CASs):
-            s = 'Mole fraction %s' %IDs[CAS]
+            s = 'Mole fraction {}'.format(IDs[CAS])
             vals = [j[i] for j in mole_fractions]
             dat[s] = vals
 

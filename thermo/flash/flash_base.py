@@ -1355,7 +1355,7 @@ class Flash:
 
         if len(zs) > 4:
             zs = '...'
-        plt.title('PT system flashes, zs=%s' %zs)
+        plt.title('PT system flashes, zs={}'.format(zs))
         if show:
             plt.show()
         else:
@@ -1467,10 +1467,10 @@ class Flash:
         plt.semilogy(Ts, P_bubbles, label='TP bubble point curve')
         plt.xlabel('System temperature, K')
         plt.ylabel('System pressure, Pa')
-        plt.title('PT system curve, zs=%s' %zs)
+        plt.title('PT system curve, zs={}'.format(zs))
         if branch:
             for VF, Ps in zip(branches, branch_Ps):
-                plt.semilogy(Ts, Ps, label='TP curve for VF=%s'%VF)
+                plt.semilogy(Ts, Ps, label='TP curve for VF={}'.format(VF))
         plt.legend(loc='best')
         if show:
             plt.show()
@@ -1583,10 +1583,10 @@ class Flash:
         plt.plot(Ps, T_bubbles, label='PT bubble point curve')
         plt.xlabel('System pressure, Pa')
         plt.ylabel('System temperature, K')
-        plt.title('PT system curve, zs=%s' %zs)
+        plt.title('PT system curve, zs={}'.format(zs))
         if branch:
             for VF, Ts in zip(branches, branch_Ts):
-                plt.plot(Ps, Ts, label='PT curve for VF=%s'%VF)
+                plt.plot(Ps, Ts, label='PT curve for VF={}'.format(VF))
         plt.legend(loc='best')
 
         if show:
@@ -1682,9 +1682,9 @@ class Flash:
         cb.update_ticks()
         # plt.tight_layout()
         if is_T_spec:
-            text = "Bubble pressure vs composition (left) and dew pressure vs composition (right) at %s K" %T
+            text = "Bubble pressure vs composition (left) and dew pressure vs composition (right) at {} K".format(T)
         else:
-            text = "Bubble temperature vs composition (left) and dew temperature vs composition (right) at %s Pa" %P
+            text = "Bubble temperature vs composition (left) and dew temperature vs composition (right) at {} Pa".format(P)
         fig.suptitle(text, fontsize=14)
         fig.subplots_adjust(top=0.85)
         plt.show()
@@ -1757,7 +1757,7 @@ class Flash:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
         names = self.constants.aliases
-        plt.title('Txy diagram at P=%s Pa' %P)
+        plt.title('Txy diagram at P={} Pa'.format(P))
         plt.plot(z1, Ts_dew, label='Dew temperature, K')
         plt.plot(z1, Ts_bubble, label='Bubble temperature, K')
         plt.xlabel(f'Mole fraction {names[0]}')
@@ -1836,7 +1836,7 @@ class Flash:
 
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
-        plt.title('Pxy diagram at T=%s K' %T)
+        plt.title('Pxy diagram at T={} K'.format(T))
         plt.plot(z1, Ps_dew, label='Dew pressure')
         plt.plot(z1, Ps_bubble, label='Bubble pressure')
         plt.xlabel(f'Mole fraction {names[0]}')
@@ -1912,9 +1912,9 @@ class Flash:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
         if T is not None:
-            plt.title('xy diagram at T=%s K (varying P)' %T)
+            plt.title('xy diagram at T={} K (varying P)'.format(T))
         else:
-            plt.title('xy diagram at P=%s Pa (varying T)' %P)
+            plt.title('xy diagram at P={} Pa (varying T)'.format(P))
         names = self.constants.aliases
         plt.xlabel(f'Liquid mole fraction {names[0]}')
         plt.ylabel(f'Vapor mole fraction {names[0]}')

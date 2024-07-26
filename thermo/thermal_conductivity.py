@@ -1444,6 +1444,7 @@ class ThermalConductivitySolid(TDependentProperty):
 
     See Also
     --------
+
     Examples
     --------
     >>> obj = ThermalConductivitySolid(CASRN='142-82-5')
@@ -1451,6 +1452,7 @@ class ThermalConductivitySolid(TDependentProperty):
     References
     ----------
     '''
+
     name = 'solid thermal conductivity'
     units = 'W/m/K'
     interpolation_T = None

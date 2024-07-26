@@ -57,20 +57,20 @@ from thermo.serialize import object_lookups
 
 class StreamArgs:
     '''Creates an StreamArgs object, which is a holder and specification
-    tracking/counting utility object for the purposes of making 
-    heat and material balances. Unlike :obj:`EquilibriumStream`, this 
+    tracking/counting utility object for the purposes of making
+    heat and material balances. Unlike :obj:`EquilibriumStream`, this
     object is mutable and doesn't require any specifications. Specifications
     can be set as they become available, and then a :obj:`EquilibriumStream`
     can be generated from the method :obj:`StreamArgs.flash`.
 
     The specification tracking is the key purpose of this object. Once a
-    `T` and `P` have been set, `V` **can't** be set because there are no 
+    `T` and `P` have been set, `V` **can't** be set because there are no
     degrees of freedom.
     Another state specification mst be removed by setting it to None
     before a new specification can be set. The specifications supported are the same
     as those of :obj:`EquilibriumStream`.
     Handling flow flow vs. composition is fuzzier because of the common use cases
-    where a flow rate may be known, but not composition; or the composition but not 
+    where a flow rate may be known, but not composition; or the composition but not
     the flow, however later when the product
     flows are known it is desireable to set it. To allow this,
     the variables `ns`, `ms`, `Qls`, and `Qgs` are allowed to overwrite an existing
@@ -201,6 +201,7 @@ class StreamArgs:
         and a partial list of mass fractions. This can be useful for some
         problems
     '''
+
     flashed = False
     '''`flashed` can be checked to quickly determine if an object is already flashed. It is always False for `StreamArgs`,
     and True for `EquilibriumState` and `EquilibriumStream`'''
@@ -394,7 +395,7 @@ class StreamArgs:
 
     @energy.setter
     def energy(self, energy):
-        r'''Set the flowing energy of the stream [W]. This variable can set either the 
+        r'''Set the flowing energy of the stream [W]. This variable can set either the
         flow rate, or act as an enthalpy spec if another flow rate specification is specified.'''
         if energy is None:
             self.specifications['energy'] = energy
@@ -409,7 +410,7 @@ class StreamArgs:
         return self.specifications['energy_reactive']
     @energy_reactive.setter
     def energy_reactive(self, energy_reactive):
-        r'''Set the flowing energy of the stream on a reactive basis [W]. This variable can set either the 
+        r'''Set the flowing energy of the stream on a reactive basis [W]. This variable can set either the
         flow rate, or act as an enthalpy spec if another flow rate specification is specified.'''
         if energy_reactive is None:
             self.specifications['energy_reactive'] = energy_reactive
@@ -1287,13 +1288,13 @@ class StreamArgs:
         return s
 
     def reconcile_flows(self, n_tol=2e-15, m_tol=2e-15):
-        """Evaluate the flow specifications provided to the StreamArgs instance 
+        """Evaluate the flow specifications provided to the StreamArgs instance
         in the event the original inputs are overspecified, in the assumption that
         the inputs are internally consistent. If they are not consistent to the
         tolerances of this function, the :obj:`StreamArgs` instance will raise an
         error.
 
-        Examples this function can check are both `ms` and `m` provided, 
+        Examples this function can check are both `ms` and `m` provided,
         or `ms` with one missing value and `m` provided (`ms` will be modified
         with the calculated value of the previously missing flow), if both
         `ms` and `ns` are set but with only some values in `ms` and some in `ns`
@@ -1492,7 +1493,7 @@ class StreamArgs:
     @property
     def state_specs(self):
         '''List of state specifications which have been set, as tuples
-        of ('specification_name', specification_value). Energy is 
+        of ('specification_name', specification_value). Energy is
         included regardless of whether it is being used as a state
         specification.
 
@@ -1542,7 +1543,7 @@ class StreamArgs:
     @property
     def non_pressure_state_specs(self):
         '''List of state specifications which have been set, as tuples
-        of ('specification_name', specification_value), excluding pressure. 
+        of ('specification_name', specification_value), excluding pressure.
         Energy is included regardless of whether it is being used as a state
         specification.
 
@@ -1627,7 +1628,7 @@ class StreamArgs:
     @property
     def non_pressure_spec_specified(self):
         '''Whether there is at least one state specification excluding a pressure
-        specification. 
+        specification.
         Energy is included regardless of whether it is being used as a state
         specification.
 
@@ -1779,7 +1780,7 @@ class StreamArgs:
         Parameters
         ----------
         existing_flash : EquilibriumState, optional
-            Existing flash which will be used instead of the composition and 
+            Existing flash which will be used instead of the composition and
             state specs of this object [-]
         hot_start : EquilibriumState, optional
             Flash at nearby conditions that may be used to initialize the flash [-]
@@ -2268,7 +2269,7 @@ class Stream(Mixture):
         except:
             pass
 
-        if self.phase == 'l/g' or self.phase == 'l':
+        if self.phase in ('l/g', 'l'):
             self.nl = nl = n*(1. - self.V_over_F)
             self.nls = [xi*nl for xi in self.xs]
             self.mls = [ni*MWi*1E-3 for ni, MWi in zip(self.nls, self.MWs)]
@@ -2278,7 +2279,7 @@ class Stream(Mixture):
             else:
                 self.Ql = None
 
-        if self.phase == 'l/g' or self.phase == 'g':
+        if self.phase in ('l/g', 'g'):
             self.ng = ng = n*self.V_over_F
             self.ngs = [yi*ng for yi in self.ys]
             self.mgs = [ni*MWi*1E-3 for ni, MWi in zip(self.ngs, self.MWs)]
@@ -2409,7 +2410,7 @@ class Stream(Mixture):
             for i, in_self in enumerate(components_in_self):
                 if not in_self and other.zs[i] > 0:
                     raise Exception('Not all components to be removed are \
-present in the first stream; %s is not present.' %other.IDs[i])
+present in the first stream; {} is not present.'.format(other.IDs[i]))
 
         # Calculate the mole flows of each species
         ns_self = list(self.ns)
@@ -2424,8 +2425,8 @@ present in the first stream; %s is not present.' %other.IDs[i])
                 relative_difference_product = abs(ns_self[i] - nj)/n_product
                 relative_difference_self = abs(ns_self[i] - nj)/ns_self[i]
                 if ns_self[i] - nj < 0 and (relative_difference_product > 1E-12 or relative_difference_self > 1E-9):
-                    raise Exception('Attempting to remove more %s than is in the \
-first stream.' %self.IDs[i])
+                    raise Exception('Attempting to remove more {} than is in the \
+first stream.'.format(self.IDs[i]))
                 if ns_self[i] - nj < 0.:
                     ns_self[i] = 0.
                 elif relative_difference_product < 1E-12:
@@ -2576,14 +2577,15 @@ class EquilibriumStream(EquilibriumState):
         Previously calculated :obj:`EquilibriumState` at the exact conditions, will be used
         instead of performing a new flash calculation if provided [-]
     '''
+
     flashed = True
     __full_path__ = f"{__module__}.{__qualname__}"
 
     def __repr__(self):
         flow_spec, flow_spec_val = self.flow_spec
-        s = '%s(%s=%s, ' %(self.__class__.__name__, flow_spec, flow_spec_val)
+        s = '{}({}={}, '.format(self.__class__.__name__, flow_spec, flow_spec_val)
         s += 'flasher=flasher'
-        s += ', existing_flash=%s' %EquilibriumState.__repr__(self).replace('EquilibriumStream', 'EquilibriumState')
+        s += ', existing_flash={}'.format(EquilibriumState.__repr__(self).replace('EquilibriumStream', 'EquilibriumState'))
         s += ')'
         return s
 
@@ -2988,6 +2990,7 @@ class EnergyStream:
     >>> EnergyStream(Q=None)
     EnergyStream(Q=None)
     '''
+
     __full_path__ = f"{__module__}.{__qualname__}"
 
     obj_references = []
@@ -3137,10 +3140,10 @@ def _mole_balance_process_ns(f, ns, compounds, use_mass=True, use_volume=True):
     return ns
 
 def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
-    r'''Basic function for performing material balances between a set of 
-    inputs and outputs. The API of the function is to accept 
+    r'''Basic function for performing material balances between a set of
+    inputs and outputs. The API of the function is to accept
     two lists of {EquilibriumStream, StreamArgs} objects.
-    The objects are subjected to the condition 
+    The objects are subjected to the condition
     :math:`\text{material in} = \text{material out}`
 
     If an overdetermined set of inputs is provided (flow known for all objects),
@@ -3150,8 +3153,8 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
     anything), objects are unchanged and the function returns False.
 
     More usefully, if there is exactly one unknown flow, that unknown will be calculated.
-    This means the :obj:`StreamArgs` object with the unknown flow will have the balanced 
-    mole flow `n` set to it. 
+    This means the :obj:`StreamArgs` object with the unknown flow will have the balanced
+    mole flow `n` set to it.
     In certain cases where StreamArgs is used with `multiple_composition_basis`, it can also
     calculate for a single component flow as part of the specs `ns`, `ms`, `Qls`, or `Qgs`
     if that is the unknown.
@@ -3405,10 +3408,10 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
 
 
 def energy_balance(inlets, outlets, reactive=False, use_mass=False):
-    r'''Basic function for performing energy balances between a set of 
-    inputs and outputs. The API of the function is to accept 
+    r'''Basic function for performing energy balances between a set of
+    inputs and outputs. The API of the function is to accept
     two lists of {EnergyStream, EquilibriumStream, StreamArgs} objects.
-    The objects are subjected to the condition 
+    The objects are subjected to the condition
     :math:`\text{energy in} =  \text{energy out}`
 
     If an overdetermined set of inputs is provided (energy known for all objects),
@@ -3629,7 +3632,7 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
             H_mass_in_unknown_0 = unknown_state_0.H_mass() if not reactive else unknown_state_0.H_reactive_mass()
             H_mass_in_unknown_1 = unknown_state_1.H_mass() if not reactive else unknown_state_1.H_reactive_mass()
             energy_in_known = sum(v for v in all_energy_in if v is not None)
-            m_in_known = sum(v.m for i, v in enumerate(inlets) if (i != in_unknown_idx_0 and i != in_unknown_idx_1 and not isinstance(v, EnergyStream)))
+            m_in_known = sum(v.m for i, v in enumerate(inlets) if (i not in (in_unknown_idx_0, in_unknown_idx_1) and not isinstance(v, EnergyStream)))
             m_out_known = sum(v.m for i, v in enumerate(outlets) if not isinstance(v, EnergyStream))
 
             inlets[in_unknown_idx_0].m = (H_mass_in_unknown_1*m_in_known - H_mass_in_unknown_1*m_out_known - energy_in_known + outlet_energy)/(H_mass_in_unknown_0 - H_mass_in_unknown_1)
@@ -3648,7 +3651,7 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
             H_mass_out_unknown_0 = unknown_state_0.H_mass() if not reactive else unknown_state_0.H_reactive_mass()
             H_mass_out_unknown_1 = unknown_state_1.H_mass() if not reactive else unknown_state_1.H_reactive_mass()
             energy_out_known = sum(v for v in all_energy_out if v is not None)
-            m_out_known = sum(v.m for i, v in enumerate(outlets) if (i != out_unknown_idx_0 and i != out_unknown_idx_1 and not isinstance(v, EnergyStream)))
+            m_out_known = sum(v.m for i, v in enumerate(outlets) if (i not in (out_unknown_idx_0, out_unknown_idx_1) and not isinstance(v, EnergyStream)))
             m_in_known = sum(v.m for i, v in enumerate(inlets) if not isinstance(v, EnergyStream))
 
             outlets[out_unknown_idx_0].m = (H_mass_out_unknown_1*m_out_known - H_mass_out_unknown_1*m_in_known - energy_out_known + inlet_energy)/(H_mass_out_unknown_0 - H_mass_out_unknown_1)

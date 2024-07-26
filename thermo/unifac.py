@@ -168,7 +168,7 @@ class UNIFAC_subgroup:
                  'priority', 'atoms', 'bonds']
 
     def __repr__(self):   # pragma: no cover
-        return '<%s>' %self.group
+        return '<{}>'.format(self.group)
 
     def __init__(self, group_id, group, main_group_id, main_group, R, Q, smarts=None,
                  priority=None, atoms=None, bonds=None, hydrogen_from_smarts=False):
@@ -3154,7 +3154,7 @@ def chemgroups_to_matrix(chemgroups):
     all_keys = set()
     [all_keys.update(i.keys()) for i in chemgroups]
     for k in sorted(list(all_keys)):
-        matrix.append([l[k] if k in l else 0 for l in chemgroups])
+        matrix.append([l.get(k, 0) for l in chemgroups])
 #        matrix.append([float(l[k]) if k in l else 0.0 for l in chemgroups]) # Cannot notice performance improvement
     return matrix
 
@@ -3165,7 +3165,7 @@ def unifac_psis(T, N_groups, version, psi_a, psi_b, psi_c, psis=None):
 
     mT_inv = -1.0/T
 
-    if version == 4 or version == 5:
+    if version in (4, 5):
         T0 = 298.15
         TmT0 = T - T0
         B = T*log(T0/T) + T - T0
@@ -3191,7 +3191,7 @@ def unifac_dpsis_dT(T, N_groups, version, psi_a, psi_b, psi_c, psis, dpsis_dT=No
 
     T2_inv = 1.0/(T*T)
 
-    if version == 4 or version == 5:
+    if version in (4, 5):
         T0 = 298.15
         mT_inv = -1.0/T
         T2_inv = mT_inv*mT_inv
@@ -3220,7 +3220,7 @@ def unifac_d2psis_dT2(T, N_groups, version, psi_a, psi_b, psi_c, psis, d2psis_dT
     if d2psis_dT2 is None:
         d2psis_dT2 = [[0.0]*N_groups for _ in range(N_groups)] # numba: delete
 #        d2psis_dT2 = zeros((N_groups, N_groups)) # numba: uncomment
-    if version == 4 or version == 5:
+    if version in (4, 5):
         T0 = 298.15
         T_inv = 1.0/T
         T2_inv = T_inv*T_inv
@@ -3255,7 +3255,7 @@ def unifac_d3psis_dT3(T, N_groups, version, psi_a, psi_b, psi_c, psis, d3psis_dT
 #        d3psis_dT3 = zeros((N_groups, N_groups)) # numba: uncomment
 
 
-    if version == 4 or version == 5:
+    if version in (4, 5):
         T0 = 298.15
         T_inv = 1.0/T
         nT3_inv = -T_inv*T_inv*T_inv
@@ -4073,7 +4073,7 @@ def unifac_gammas_from_args(xs, N, N_groups, vs, rs, qs, Qs,
         Vis, rx_sum_inv = unifac_Vis(rs=rs, xs=xs, N=N)
         Fis, qx_sum_inv = unifac_Vis(rs=qs, xs=xs, N=N)
 
-        if version == 1 or version == 3 or version == 4:
+        if version in (1, 3, 4):
             Vis_modified, r34x_sum_inv = unifac_Vis(rs=rs_34, xs=xs, N=N)
         else:
             Vis_modified = Vis

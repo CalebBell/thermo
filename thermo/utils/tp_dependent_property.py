@@ -413,7 +413,7 @@ class TPDependentProperty(TDependentProperty):
             Tmin, Tmax = self.T_limits[method]
             validity = Tmin < T < Tmax
         else:
-            raise ValueError("method '%s' not valid" %method)
+            raise ValueError("method '{}' not valid".format(method))
         return validity
 
     def interpolate_P(self, T, P, name):

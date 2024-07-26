@@ -287,8 +287,8 @@ def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp,
     S_calc = reactant_coeff*Sf_ref + reactant_coeff*dS_compound
     # if the compound is an element it will need special handling to go from solid liquid to gas if needed
 
-    solid_ele = set(['C'])
-    liquid_ele = set([''])
+    solid_ele = {'C'}
+    liquid_ele = {''}
 
     for coeff, ele_data in zip(elemental_counts, elemental_composition):
         ele = list(ele_data.keys())[0]

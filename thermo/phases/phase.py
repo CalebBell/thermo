@@ -184,7 +184,7 @@ class Phase:
         __full_path__ = None
 
     def __str__(self):
-        s =  '<%s, ' %(self.__class__.__name__)
+        s =  '<{}, '.format(self.__class__.__name__)
         try:
             s += f'T={self.T:g} K, P={self.P:g} Pa'
         except:
@@ -6342,7 +6342,7 @@ for attr in derivatives_thermodynamic:
         at_constant = 'T' if diff_by == 'P' else 'P'
     s = f'{base}_mass_{end}'
 
-    if not '2' in attr:
+    if '2' not in attr:
         # TODO docs for second mass derivatives
 
         doc = rf"""Method to calculate and return the {prop_names[diff_by]} derivative of mass {prop_names[prop]} of the phase at constant {prop_names[at_constant]}.

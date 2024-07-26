@@ -490,7 +490,7 @@ PROPERTY_TRANSFORM_D2LN = 'd2lnxdT2'
 PROPERTY_TRANSFORM_D_X = 'dxdToverx'
 PROPERTY_TRANSFORM_D2_X = 'd2xdT2overx'
 
-skipped_parameter_combinations = {'REFPROP_sigma': set([('sigma1',), ('sigma1', 'n1', 'sigma2')])}
+skipped_parameter_combinations = {'REFPROP_sigma': {('sigma1',), ('sigma1', 'n1', 'sigma2')}}
 
 DEFAULT_PHASE_TRANSITIONS = 'Default phase transitions'
 
@@ -1490,9 +1490,9 @@ class TDependentProperty:
 
     def as_string(self, tabular=True, references=True, json_parameters=False):
         clsname = self.__class__.__name__
-        base = '%s(' % (clsname)
+        base = '{}('.format(clsname)
         if self.CASRN:
-            base += 'CASRN="%s", ' %(self.CASRN)
+            base += 'CASRN="{}", '.format(self.CASRN)
         for k in self.custom_args:
             v = getattr(self, k)
             if v is not None:
@@ -1500,29 +1500,29 @@ class TDependentProperty:
                     continue
                 base += f'{k}={v}, '
 
-        extrap_str = '"%s"' %(self.extrapolation) if self.extrapolation is not None else 'None'
-        base += 'extrapolation=%s, ' %(extrap_str)
+        extrap_str = '"{}"'.format(self.extrapolation) if self.extrapolation is not None else 'None'
+        base += 'extrapolation={}, '.format(extrap_str)
 
         if self._extrapolation_min != self.DEFAULT_EXTRAPOLATION_MIN:
-            extrap_str = '%s' %(self._extrapolation_min) if self._extrapolation_min is not None else 'None'
-            base += 'extrapolation_min=%s, ' %(extrap_str)
+            extrap_str = '{}'.format(self._extrapolation_min) if self._extrapolation_min is not None else 'None'
+            base += 'extrapolation_min={}, '.format(extrap_str)
         if self._extrapolation_max != self.DEFAULT_EXTRAPOLATION_MAX:
-            extrap_str = '%s' %(self._extrapolation_max) if self._extrapolation_max is not None else 'None'
-            base += 'extrapolation_max=%s, ' %(extrap_str)
+            extrap_str = '{}'.format(self._extrapolation_max) if self._extrapolation_max is not None else 'None'
+            base += 'extrapolation_max={}, '.format(extrap_str)
 
-        method_str = '"%s"' %(self.method) if self.method is not None else 'None'
-        base += 'method=%s, ' %(method_str)
+        method_str = '"{}"'.format(self.method) if self.method is not None else 'None'
+        base += 'method={}, '.format(method_str)
         if self.tabular_data and tabular:
             if not (len(self.tabular_data) == 1 and VDI_TABULAR in self.tabular_data):
-                base += 'tabular_data=%s, ' %(self.tabular_data)
+                base += 'tabular_data={}, '.format(self.tabular_data)
 
         if self.P_dependent:
-            method_P_str = '"%s"' %(self.method_P) if self.method_P is not None else 'None'
-            base += 'method_P=%s, ' %(method_P_str)
+            method_P_str = '"{}"'.format(self.method_P) if self.method_P is not None else 'None'
+            base += 'method_P={}, '.format(method_P_str)
             if self.tabular_data_P and tabular:
-                base += 'tabular_data_P=%s, ' %(self.tabular_data_P)
+                base += 'tabular_data_P={}, '.format(self.tabular_data_P)
             if 'tabular_extrapolation_permitted' in self.__dict__ and tabular:
-                base += 'tabular_extrapolation_permitted=%s, ' %(self.tabular_extrapolation_permitted)
+                base += 'tabular_extrapolation_permitted={}, '.format(self.tabular_extrapolation_permitted)
 
 
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
@@ -1783,7 +1783,7 @@ class TDependentProperty:
         for method, index in zip(methods, indexes):
             method_dat = {}
             n = cls._fit_force_n.get(method, None)
-            max_n_method = fit_max_n[method] if method in fit_max_n else max_n
+            max_n_method = fit_max_n.get(method, max_n)
             for CAS in index:
                 print(CAS)
                 obj = cls(CASRN=CAS)
@@ -2184,7 +2184,7 @@ class TDependentProperty:
                 best_fit_aic, stats_aic, aic_aic, _, parameters_aic, _ = min(all_fits, key=sel)
                 sel = lambda x: x[3]
                 best_fit_bic, stats_bic, _, bic_bic, parameters_bic, _ = min(all_fits, key=sel)
-                if parameters_aic <= parameters_bic and not (1e200 in [v[2] for v in all_fits]) and not parameters_aic == 1:
+                if parameters_aic <= parameters_bic and 1e200 not in [v[2] for v in all_fits] and not parameters_aic == 1:
                     # aic score is unreliable for points = parameters + 1
                     best_fit, stats  = best_fit_aic, stats_aic
                 else:
@@ -2775,7 +2775,7 @@ class TDependentProperty:
                     return self.calculate(T, a_method)
             return self.calculate(T, method_names[-1])
         else:
-            raise ValueError("Unknown method; methods are %s" %(self.all_methods))
+            raise ValueError("Unknown method; methods are {}".format(self.all_methods))
 
     def _base_calculate_P(self, T, P, method):
         if method in self.tabular_data_P:
@@ -4396,7 +4396,7 @@ class TDependentProperty:
             v0, n = coeffs
             T_lim = T_low if low else T_high
             val = Watson(T, Hvap_ref=v0, T_ref=T_lim, Tc=self.Tc, exponent=n)
-        elif extrapolation == 'EXP_POLY_LN_TAU2' or extrapolation == 'EXP_POLY_LN_TAU3':
+        elif extrapolation in ('EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
             val = exp_horner_backwards_ln_tau(T, self.Tc, coeffs)
         elif extrapolation == 'interp1d':
             extrapolator = coeffs
@@ -4407,7 +4407,7 @@ class TDependentProperty:
                 prop = self.interpolation_property_inv(prop)
             val = float(prop)
         else:
-            raise RuntimeError("Unknown extrapolation '%s'" %extrapolation)
+            raise RuntimeError("Unknown extrapolation '{}'".format(extrapolation))
 
         if self._extrapolation_min is not None and val < self._extrapolation_min:
             val = self._extrapolation_min
@@ -4487,7 +4487,7 @@ class TDependentProperty:
                 if order in (0, 1, 2, 3):
                     A, B, C = coeffs
                     return EQ106(T, self.Tc, A, B, C, order=order)
-            elif extrapolation == 'EXP_POLY_LN_TAU2' or extrapolation == 'EXP_POLY_LN_TAU3':
+            elif extrapolation in ('EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
                 if order == 1:
                     return exp_horner_backwards_ln_tau_and_der(T, self.Tc, coeffs)[1]
                 elif order == 2:
@@ -4885,5 +4885,5 @@ class TDependentProperty:
                 Ts, properties = self.tabular_data[method]
                 validity = Ts[0] < T < Ts[-1]
         else:
-            raise ValueError("method '%s' not valid" %method)
+            raise ValueError("method '{}' not valid".format(method))
         return validity

@@ -41,7 +41,7 @@ failed_wrapping = False
 
 
 for name in dir(thermo):
-    if name == '__getattr__' or name == '__test__':
+    if name in ('__getattr__', '__test__'):
         continue
     obj = getattr(thermo, name)
     if isinstance(obj, types.FunctionType):
@@ -62,8 +62,8 @@ for name in dir(thermo):
             obj = wrap_numpydoc_obj(obj)
         except Exception as e:
             failed_wrapping = True
-            print('Current implementation of %s contains documentation not '
-                  'parseable and cound not be wrapped to use pint:' %str(obj))
+            print('Current implementation of {} contains documentation not '
+                  'parseable and cound not be wrapped to use pint:'.format(str(obj)))
             print(e)
     elif isinstance(obj, str):
         continue

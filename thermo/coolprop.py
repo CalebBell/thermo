@@ -230,7 +230,7 @@ def store_coolprop_fluids():
 
     data = {CASRN: coolprop_fluids[CASRN].as_json() for CASRN in coolprop_dict}
     ver = CoolProp.__version__
-    file = open(os.path.join(data_dir, 'CoolPropFluids%s.json' %ver), 'w')
+    file = open(os.path.join(data_dir, 'CoolPropFluids{}.json'.format(ver)), 'w')
     json.dump(data, file)
     file.close()
 
@@ -240,7 +240,7 @@ def load_coolprop_fluids(depth=0):
 
     import CoolProp
     ver = CoolProp.__version__
-    pth = os.path.join(data_dir, 'CoolPropFluids%s.json' %ver)
+    pth = os.path.join(data_dir, 'CoolPropFluids{}.json'.format(ver))
     try:
         file = open(pth)
     except:
@@ -418,7 +418,7 @@ def CoolProp_json_alpha0_to_kwargs(json_data, as_np=False):
             # Not relevant
             continue
         else:
-            raise ValueError("Unrecognized alpha0 type %s" %(d['type']))
+            raise ValueError("Unrecognized alpha0 type {}".format(d['type']))
 
     if as_np:
         for k, v in kwargs.items():

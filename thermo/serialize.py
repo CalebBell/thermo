@@ -220,7 +220,7 @@ class JsonOptEncodable():
 
     obj_references = None
     '''If this attribute is not None, instead of inspecting each object for whether it is a json-supported type,
-    only these attribute names are inspected for recursion. These are also the only references 
+    only these attribute names are inspected for recursion. These are also the only references
     subject to deduplication.
     '''
 

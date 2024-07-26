@@ -93,17 +93,17 @@ def lnphis_direct(zs, model, T, P, N, *args):
         for i in range(N):
             lnphis[i] = 0.0
         return lnphis
-    elif model == 10200 or model == 10201 or model == 10204 or model == 10205 or model == 10206:
+    elif model in (10200, 10201, 10204, 10205, 10206):
         return PR_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 10100 or model == 10104 or model == 10105:
+    elif model in (10100, 10104, 10105):
         return SRK_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10002:
         return RK_lnphis_fastest(zs, T, P, N, *args)
     elif model == 10001:
         return VDW_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 11202 or model == 11203 or model == 11207:
+    elif model in (11202, 11203, 11207):
         return PR_translated_lnphis_fastest(zs, T, P, N, *args)
-    elif model == 11101 or model == 11102 or model == 11103:
+    elif model in (11101, 11102, 11103):
         return SRK_translated_lnphis_fastest(zs, T, P, N, *args)
     # so far only used by the test test_UNIFAC_lnphis_direct
     elif 20000 <= model <= 29999: # numba: delete
