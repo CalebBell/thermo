@@ -28,8 +28,8 @@ jobs:
             distro: ubuntu_latest
           - arch: aarch64
             distro: ubuntu_latest
-          # - arch: riscv64
-          #   distro: ubuntu_latest
+          - arch: riscv64
+            distro: ubuntu_latest
           - arch: s390x
             distro: ubuntu_latest
           - arch: ppc64le
@@ -39,13 +39,12 @@ jobs:
             distro: ubuntu22.04
           - arch: aarch64
             distro: ubuntu22.04
-          # - arch: riscv64
-          #   distro: ubuntu22.04
+          - arch: riscv64
+            distro: ubuntu22.04
           - arch: s390x
             distro: ubuntu22.04
           - arch: ppc64le
             distro: ubuntu22.04
-          # ubuntu with riscv64 has three failures and a crash on test_SolverInterface_basics in scipy's root function; also test_is_poly_positive and test_bend_rounded_Miller_Re_correction
           # ubuntu20.04 is too old, fluids dropped support with numpy 2.0 compat
 
           - arch: armv6
