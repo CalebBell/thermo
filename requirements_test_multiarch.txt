@@ -1,0 +1,10 @@
+sympy
+fluids>=1.0.26
+chemicals>=1.2.0
+pytest
+pint
+IPython
+sphinx
+mpmath
+fuzzywuzzy
+pytz
