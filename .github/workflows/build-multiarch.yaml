@@ -86,12 +86,15 @@ jobs:
                 # If the exit status is 0 (True), this means the option is not supported
                 python3 -m pip install wheel
                 pip3 install -r requirements_test_multiarch.txt 
+                pip3 install .
+                python3 dev/dump_UNIFAC_assignments_to_sqlite.py
+                pip3 uninstall -y thermo
               else
                 # If the exit status is 1 (False), this means the option is supported
                 python3 -m pip install wheel --break-system-packages
                 pip3 install -r requirements_test_multiarch.txt --break-system-packages
+                pip3 install .  --break-system-packages
+                python3 dev/dump_UNIFAC_assignments_to_sqlite.py
+                pip3 uninstall -y thermo  --break-system-packages
               fi
-              pip3 install .
-              python3 dev/dump_UNIFAC_assignments_to_sqlite.py
-              pip3 uninstall -y thermo
               python3 -m pytest . -v -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
