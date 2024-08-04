@@ -91,4 +91,7 @@ jobs:
                 python3 -m pip install wheel --break-system-packages
                 pip3 install -r requirements_test_multiarch.txt --break-system-packages
               fi
+              pip3 install .
+              python3 dev/dump_UNIFAC_assignments_to_sqlite.py
+              pip3 uninstall -y thermo
               python3 -m pytest . -v -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
