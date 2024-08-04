@@ -62,11 +62,6 @@ jobs:
           # fedora-latest doesn't work not sure why
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: all
       - name: Run on ${{ matrix.arch }}
         uses: uraimo/run-on-arch-action@v2
         with:
