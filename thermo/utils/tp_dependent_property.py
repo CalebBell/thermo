@@ -485,7 +485,7 @@ class TPDependentProperty(TDependentProperty):
 
             # Only allow linear extrapolation, but with whatever transforms are specified
             # extrapolator = RectBivariateSpline(Ts2_sorted, Ps2_sorted, properties2_sorted.T, kx=1, ky=1, s=0)  # interpolation if fill value is missing
-            extrapolator = RegularGridInterpolator((Ts2_sorted, Ps2_sorted), properties2_sorted.T, method='slinear', fill_value=None, bounds_error=False)  # interpolation if fill value is missing
+            extrapolator = RegularGridInterpolator((Ts2_sorted, Ps2_sorted), properties2_sorted.T, method='linear', fill_value=None, bounds_error=False)  # interpolation if fill value is missing
             # If more than 5 property points, create a spline interpolation
             if len(properties) >= 5:
                 spline = RectBivariateSpline(Ts2_sorted, Ps2_sorted, properties2_sorted.T, kx=3, ky=3, s=0)
