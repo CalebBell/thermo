@@ -17,21 +17,12 @@ jobs:
         os: [ubuntu-latest]
         architecture: ['x64']
         include:
-          - numpy: '1.16.5'
-            scipy: '1.7.3'
-            python-version: '3.7'
-          - numpy: '1.18.5'
-            scipy: '1.7.3'
-            python-version: '3.7'
           - numpy: '1.18.5'
             scipy: '1.8.1'
             python-version: '3.8'
           - numpy: '1.18.5'
             scipy: '1.9.3'
             python-version: '3.8'
-          - numpy: '1.20.3'
-            scipy: '1.7.3'
-            python-version: '3.7'
           - numpy: '1.20.3'
             scipy: '1.7.3'
             python-version: '3.8'
