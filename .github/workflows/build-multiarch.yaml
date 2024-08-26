@@ -2,7 +2,7 @@ name: Build Multiarch
 
 on:
   push:
-    branches: [master, release, multi_arch_test]
+    branches: [release]
   pull_request:
     branches: [master, release]
 
