@@ -1,0 +1,100 @@
+name: Build Multiarch
+
+on:
+  push:
+    branches: [release]
+  pull_request:
+    branches: [master, release]
+
+jobs:
+  multi-arch-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: armv6
+            distro: bookworm
+          - arch: armv7
+            distro: bookworm
+          - arch: aarch64
+            distro: bookworm
+          - arch: s390x
+            distro: bookworm
+          - arch: ppc64le
+            distro: bookworm
+
+          - arch: armv7
+            distro: ubuntu_latest
+          - arch: aarch64
+            distro: ubuntu_latest
+          - arch: riscv64
+            distro: ubuntu_latest
+          - arch: s390x
+            distro: ubuntu_latest
+          - arch: ppc64le
+            distro: ubuntu_latest
+
+          - arch: armv7
+            distro: ubuntu22.04
+          - arch: aarch64
+            distro: ubuntu22.04
+          - arch: riscv64
+            distro: ubuntu22.04
+          - arch: s390x
+            distro: ubuntu22.04
+          - arch: ppc64le
+            distro: ubuntu22.04
+          # ubuntu20.04 is too old, fluids dropped support with numpy 2.0 compat
+
+          - arch: armv6
+            distro: alpine_latest
+          - arch: armv7
+            distro: alpine_latest
+          - arch: aarch64
+            distro: alpine_latest
+          - arch: riscv64
+            distro: alpine_latest
+          - arch: s390x
+            distro: alpine_latest
+          - arch: ppc64le
+            distro: alpine_latest
+          # fedora-latest doesn't work not sure why
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: all
+      - name: Run on ${{ matrix.arch }}
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          githubToken: ${{ github.token }}
+          install: |
+            if [[ "${{ matrix.distro }}" == "alpine_latest" ]]; then
+              apk update
+              apk add python3 py3-pip py3-scipy py3-matplotlib py3-numpy py3-pandas py3-sqlalchemy
+            elif [[ "${{ matrix.distro }}" == "ubuntu_latest" || "${{ matrix.distro }}" == "ubuntu20.04" ||  "${{ matrix.distro }}" == "ubuntu22.04" || "${{ matrix.distro }}" == "bookworm" ]]; then
+              apt-get update
+              apt-get install -y libatlas-base-dev liblapack-dev gfortran libgmp-dev libmpfr-dev libsuitesparse-dev ccache libmpc-dev python3 python3-pip python3-scipy python3-matplotlib python3-numpy python3-pandas python3-sqlalchemy
+            fi
+          run: |
+              if python3 -c "import subprocess; exit('no such option' not in subprocess.getoutput('pip3 install --break-system-packages'))"; then
+                # If the exit status is 0 (True), this means the option is not supported
+                python3 -m pip install wheel
+                pip3 install -r requirements_test_multiarch.txt 
+                pip3 install .
+                python3 dev/dump_UNIFAC_assignments_to_sqlite.py
+                pip3 uninstall -y thermo
+              else
+                # If the exit status is 1 (False), this means the option is supported
+                python3 -m pip install wheel --break-system-packages
+                pip3 install -r requirements_test_multiarch.txt --break-system-packages
+                pip3 install .  --break-system-packages
+                python3 dev/dump_UNIFAC_assignments_to_sqlite.py
+                pip3 uninstall -y thermo  --break-system-packages
+              fi
+              python3 -m pytest . -v -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
