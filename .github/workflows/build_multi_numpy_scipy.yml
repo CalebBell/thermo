@@ -1,7 +1,7 @@
 name: Build-Test-Multi-Scipy-Numpy
 on:
   push:
-    branches: [master, release, multi_numpy_scipy_test]
+    branches: [release]
   pull_request:
     branches: [master, release]
     
