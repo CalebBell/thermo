@@ -1,0 +1,120 @@
+name: Build-Test-Multi-Scipy-Numpy
+on:
+  push:
+    branches: [release]
+  pull_request:
+    branches: [master, release]
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        numpy: ['2.0.1'] #['1.16.5', '1.18.5', '1.20.3', '1.22.4', '1.24.4', '1.26.4', '2.0.1']
+        scipy: ['1.14.0'] #['1.7.3', '1.8.1', '1.9.3', '1.10.1', '1.12.0', '1.14.0']
+        python-version: ['3.10'] #['3.7', '3.8', '3.9', '3.10']
+        os: [ubuntu-latest]
+        architecture: ['x64']
+        include:
+          - numpy: '1.18.5'
+            scipy: '1.8.1'
+            python-version: '3.8'
+          - numpy: '1.18.5'
+            scipy: '1.9.3'
+            python-version: '3.8'
+          - numpy: '1.20.3'
+            scipy: '1.7.3'
+            python-version: '3.8'
+          - numpy: '1.20.3'
+            scipy: '1.8.1'
+            python-version: '3.8'
+          - numpy: '1.20.3'
+            scipy: '1.9.3'
+            python-version: '3.8'
+          - numpy: '1.20.3'
+            scipy: '1.10.1'
+            python-version: '3.8'
+          - numpy: '1.22.4'
+            scipy: '1.7.3'
+            python-version: '3.8'
+          - numpy: '1.22.4'
+            scipy: '1.9.3'
+            python-version: '3.8'
+          - numpy: '1.22.4'
+            scipy: '1.10.1'
+            python-version: '3.8'
+          - numpy: '1.24.4'
+            scipy: '1.8.1'
+            python-version: '3.8'
+          - numpy: '1.24.4'
+            scipy: '1.9.3'
+            python-version: '3.10'
+          - numpy: '1.24.4'
+            scipy: '1.10.1'
+            python-version: '3.8'
+          - numpy: '1.24.4'
+            scipy: '1.12.0'
+            python-version: '3.9'
+          - numpy: '1.26.4'
+            scipy: '1.10.1'
+            python-version: '3.9'
+          - numpy: '1.26.4'
+            scipy: '1.12.0'
+            python-version: '3.9'
+          - numpy: '1.26.4'
+            scipy: '1.14.0'
+            python-version: '3.10'
+          - numpy: '2.0.1'
+            scipy: '1.14.0'
+            python-version: '3.10'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}
+      uses: actions/setup-python@v5 
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.architecture }}
+    - name: cache Linux
+      uses: actions/cache@v4
+      if: startsWith(runner.os, 'Linux')
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements_test.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ runner.architecture }}-${{ runner.python-version }}pip-
+    - name: Install Ubuntu dependencies
+      if: startsWith(runner.os, 'Linux')
+      run: |
+        # Taken from scipy
+        sudo apt-get update
+        sudo apt-get install -y libopenblas-dev libatlas-base-dev liblapack-dev gfortran libgmp-dev libmpfr-dev libsuitesparse-dev ccache libmpc-dev
+    
+    - name: Install dependencies
+      run: |
+        python -c "import platform; print(platform.platform()); print(platform.architecture())"
+        python -m pip install --upgrade pip
+        python -m pip install wheel
+        pip install -r requirements_test.txt
+        pip install numpy==${{ matrix.numpy }} scipy==${{ matrix.scipy }}
+    - name: Add numba
+      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10' || matrix.python-version == '3.11' || matrix.python-version == '3.12'  }}
+      run: |
+        pip install numba
+    - name: Install thermo
+      run: |
+        pip install .
+    - name: Generate Files
+      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == '3.12' || matrix.python-version == 'pypy3.9' }}
+      run: |
+        python dev/dump_UNIFAC_assignments_to_sqlite.py
+    - name: Uninstall thermo
+      run: |
+        pip uninstall -y thermo
+    - name: Test with pytest
+      run: |
+        pytest . -v --cov-report html --cov=thermo --cov-report term-missing -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
+        COVERALLS_PARALLEL: true
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
