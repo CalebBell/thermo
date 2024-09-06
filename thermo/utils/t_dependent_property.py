@@ -54,6 +54,7 @@ from chemicals.dippr import (
     EQ105_fitting_jacobian,
     EQ106_fitting_jacobian,
     EQ107_fitting_jacobian,
+    INTEGRAL_OVER_T_CALCULATION,
 )
 from chemicals.elements import allotrope_CAS_to_name, solid_allotrope_map
 from chemicals.heat_capacity import (
@@ -825,7 +826,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
        'initial_guesses': [
            {'A': 1.0, 'B': 0.0, 'C': 0.0, 'D': 0.0, 'E': 0.0, 'F': 0.0, 'G': 0.0},
@@ -847,7 +848,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A']},
       ),
     'linear': ([],
@@ -855,7 +856,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B']},
       ),
     'quadratic': ([],
@@ -863,7 +864,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C']},
       ),
     'cubic': ([],
@@ -871,7 +872,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D']},
       ),
     'quintic': ([],
@@ -879,7 +880,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E']},
       ),
 
@@ -1121,7 +1122,7 @@ class TDependentProperty:
       {'f': EQ102,
        'f_der': lambda T, **kwargs: EQ102(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ102(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ102(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ102(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
      {'fit_params': ['A', 'B', 'C', 'D'],
       'fit_jac': EQ102_fitting_jacobian,
       'initial_guesses': [
@@ -1165,7 +1166,7 @@ class TDependentProperty:
       {'f': EQ104,
        'f_der': lambda T, **kwargs: EQ104(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ104(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ104(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ104(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
 
 
      {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
@@ -1276,7 +1277,7 @@ class TDependentProperty:
       {'f': EQ107,
        'f_der': lambda T, **kwargs: EQ107(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ107(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ107(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ107(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E'],
        'fit_jac': EQ107_fitting_jacobian,
        'initial_guesses':[
@@ -1302,7 +1303,7 @@ class TDependentProperty:
       {'f': EQ114,
        'f_der': lambda T, **kwargs: EQ114(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ114(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ114(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ114(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
      {'fit_params': ['A', 'B', 'C', 'D'], 'initial_guesses': [
           {'A': 65.0, 'B': 30000, 'C': -850, 'D': 2000.0},
           {'A': 150.0, 'B': -45000, 'C': -2500, 'D': 6000.0},
@@ -1324,14 +1325,14 @@ class TDependentProperty:
       {'f': EQ116,
        'f_der': lambda T, **kwargs: EQ116(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ116(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ116(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ116(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
      'DIPPR127': (['A', 'B', 'C', 'D', 'E', 'F', 'G'],
       [],
       {'f': EQ127,
        'f_der': lambda T, **kwargs: EQ127(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ127(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ127(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ127(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'initial_guesses': [
           {'A': 35000.0, 'B': 1e8, 'C': -3e3, 'D': 5e5, 'E': -500.0, 'F': 7.5e7, 'G': -2500.0},
           {'A': 35000.0, 'B': 1e5, 'C': -7.5e3, 'D': 2e5, 'E': -800.0, 'F': 2e5, 'G': -2500.0},
