@@ -414,7 +414,7 @@ class VolumeLiquid(TPDependentProperty):
                    'Psat', 'eos')
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
                  omega=None, dipole=None, Psat=None, CASRN='', eos=None,
-                 has_hydroxyl=None, extrapolation='constant', **kwargs):
+                 has_hydroxyl=False, extrapolation='constant', **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
