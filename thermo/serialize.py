@@ -334,8 +334,13 @@ class JsonOptEncodable:
         del d['py/object']
         del d['json_version']
         original_obj = object_lookups[class_name]
-        new = original_obj.__new__(original_obj)
-        cache[ref_name] = new
+        try:
+            new = original_obj.__new__(original_obj)
+            cache[ref_name] = new
+        except:
+            new = original_obj.from_json(d)
+            cache[ref_name] = new
+            return new
         search_recurse = new.obj_references if new.obj_references is not None else list(d.keys())
         if d.get('vectorized'):
             d = naive_lists_to_arrays(d)

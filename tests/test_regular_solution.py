@@ -56,7 +56,7 @@ def test_4_components():
      [0.01601, 0.01022, 0.0, 0.00698],
      [0.0152, 0.00544, 0.02579, 0.0]]
 
-    GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    GE = RegularSolution(T=T, xs=xs, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs)
     assert eval(str(GE)).GE() == GE.GE()
 
     GE2 = RegularSolution.from_json(GE.as_json())
@@ -64,7 +64,7 @@ def test_4_components():
 
 
     # Test with no interaction parameters
-    GE3 = RegularSolution(T, xs, Vs, SPs)
+    GE3 = RegularSolution(T=T, xs=xs, Vs=Vs, SPs=SPs)
     GE4 = eval(str(GE3))
     assert GE3 == GE4
     assert GE4.GE() == GE3.GE()
@@ -199,7 +199,7 @@ def test_create_many_components_regular_solution():
     T = 300.0
     lambda_coeffs = [[random()*1e-4 for _ in range(N)] for _ in range(N)]
 
-    GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    GE = RegularSolution(T=T, xs=xs, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs)
 
 
 def test_numpy_inputs():
@@ -214,8 +214,8 @@ def test_numpy_inputs():
      [0.01601, 0.01022, 0.0, 0.00698],
      [0.0152, 0.00544, 0.02579, 0.0]]
 
-    model = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
-    modelnp =  RegularSolution(T, np.array(xs), np.array(Vs), np.array(SPs), np.array(lambda_coeffs))
+    model = RegularSolution(T=T, xs=xs, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs)
+    modelnp =  RegularSolution(T=T, xs=np.array(xs), Vs=np.array(Vs), SPs=np.array(SPs), lambda_coeffs=np.array(lambda_coeffs))
     modelnp2 = modelnp.to_T_xs(T=model.T*(1.0-1e-16), xs=np.array(xs))
     check_np_output_activity(model, modelnp, modelnp2)
 

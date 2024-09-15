@@ -332,7 +332,7 @@ class RegularSolution(GibbsExcess):
 
         return (obj.N, obj.T, obj.Vs, obj.SPs, obj.lambda_coeffs, xsVs, Hi_sums, dGE_dxs)
 
-    def __init__(self, T, xs, Vs, SPs, lambda_coeffs=None):
+    def __init__(self, *, xs, Vs, SPs, T=GibbsExcess.T_DEFAULT, lambda_coeffs=None):
         # lambda_coeffs is N*N of zeros for no interaction parameters
         self.T = T
         self.xs = xs

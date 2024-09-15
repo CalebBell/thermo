@@ -315,7 +315,7 @@ class GibbsExcessLiquid(Phase):
                  henry_es=None, henry_fs=None,
                  henry_mode='solvents_with_parameters',
 
-                 T=None, P=None, zs=None,
+                 T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
                  Psat_extrpolation='AB',
                  equilibrium_basis=None,
                  caloric_basis=None,
@@ -340,6 +340,8 @@ class GibbsExcessLiquid(Phase):
         allow flashes with different properties from different phases.
         '''
         self.N = N = len(VaporPressures)
+        if zs is None:
+            zs = [1.0/N]*N
         if henry_components is None:
             henry_components = [False]*self.N
         self.has_henry_components = any(henry_components)
@@ -3394,7 +3396,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                          'Psat_extrpolation') + pure_references
 
     def __init__(self, SublimationPressures, VolumeSolids=None,
-                 GibbsExcessModel=IdealSolution(),
+                 GibbsExcessModel=IdealSolution,
                  eos_pure_instances=None,
                  VolumeLiquidMixture=None,
                  HeatCapacityGases=None,
@@ -3402,7 +3404,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                  use_Poynting=False,
                  use_phis_sat=False,
                  Hfs=None, Gfs=None, Sfs=None,
-                 T=None, P=None, zs=None,
+                 T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
                  ):
         super().__init__(VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
               HeatCapacityGases=HeatCapacityGases, EnthalpyVaporizations=EnthalpySublimations,

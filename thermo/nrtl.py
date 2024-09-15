@@ -603,7 +603,7 @@ class NRTL(GibbsExcess):
 
     gammas_from_args = staticmethod(nrtl_gammas_from_args)
 
-    def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
+    def __init__(self, *, xs, T=GibbsExcess.T_DEFAULT, tau_coeffs=None, alpha_coeffs=None,
                  ABEFGHCD=None, tau_as=None, tau_bs=None, tau_es=None,
                  tau_fs=None, tau_gs=None, tau_hs=None, alpha_cs=None,
                  alpha_ds=None):

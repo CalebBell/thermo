@@ -282,7 +282,7 @@ class GibbsExcess:
     immutable.
 
     '''
-
+    T_DEFAULT = 298.15
     _x_infinite_dilution = 0.0
     """When set, this will be the limiting mole fraction used to approximate
     the :obj:`gammas_infinite_dilution` calculation. This is important
@@ -886,7 +886,7 @@ class GibbsExcess:
         self._gammas = gammas
         return gammas
 
-    def _gammas_dGE_dxs(self):
+    def gammas_dGE_dxs(self):
         try:
             del self._gammas
         except:
@@ -1115,16 +1115,11 @@ class IdealSolution(GibbsExcess):
         N = self.N
         return (N,)
 
-    def __init__(self, T=None, xs=None):
-        if T is not None:
-            self.T = T
-        if xs is not None:
-            self.xs = xs
-            self.N = len(xs)
-            self.vectorized = type(xs) is not list
-        else:
-            self.vectorized = False
-            self.N = None
+    def __init__(self, *, xs, T=GibbsExcess.T_DEFAULT):
+        self.T = T
+        self.xs = xs
+        self.N = len(xs)
+        self.vectorized = type(xs) is not list
 
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`IdealSolution` instance at

@@ -85,7 +85,7 @@ class IAPWS95(HelmholtzEOS):
     _Ar_func = staticmethod(iapws.iapws95_Ar)
 
 
-    def __init__(self, T=None, P=None, zs=None):
+    def __init__(self, T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None):
         self.T = T
         self.P = P
         self._rho_mass = rho_mass = iapws.iapws95_rho(T, P)

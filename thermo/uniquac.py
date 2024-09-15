@@ -549,7 +549,7 @@ class UNIQUAC(GibbsExcess):
                  self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F))
         return s
 
-    def __init__(self, T, xs, rs, qs, tau_coeffs=None, ABCDEF=None,
+    def __init__(self, *, xs, rs, qs, T=GibbsExcess.T_DEFAULT, tau_coeffs=None, ABCDEF=None,
                  tau_as=None, tau_bs=None, tau_cs=None, tau_ds=None,
                  tau_es=None, tau_fs=None):
         self.T = T

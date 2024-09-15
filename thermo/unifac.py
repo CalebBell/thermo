@@ -4612,7 +4612,7 @@ class UNIFAC(GibbsExcess):
         return s
 
 
-    def __init__(self, T, xs, rs, qs, Qs, vs, psi_coeffs=None, psi_abc=None,
+    def __init__(self, *, xs, rs, qs, Qs, vs, T=GibbsExcess.T_DEFAULT, psi_coeffs=None, psi_abc=None,
                  version=0):
         self.T = T
         self.xs = xs

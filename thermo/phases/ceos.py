@@ -133,7 +133,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         return base
 
     def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
-                 Gfs=None, Sfs=None, T=None, P=None, zs=None):
+                 Gfs=None, Sfs=None, T=IdealGasDeparturePhase.T_DEFAULT, P=IdealGasDeparturePhase.P_DEFAULT, zs=None):
         self.eos_class = eos_class
         self.eos_kwargs = eos_kwargs
         self.vectorized = vectorized = (

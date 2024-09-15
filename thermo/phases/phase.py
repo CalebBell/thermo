@@ -132,6 +132,9 @@ class Phase:
 
     T_MIN_FLASH = 1e-300
 
+    T_DEFAULT = T_REF_IG
+    P_DEFAULT = P_REF_IG
+
     force_phase = None
     """Attribute which can be set to a global Phase object to force the phases
     identification routines to label it a certain phase. Accepts values of ('g', 'l', 's')."""

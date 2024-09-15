@@ -754,7 +754,7 @@ class Wilson(GibbsExcess):
             f_mat.append(f_row)
         return (a_mat, b_mat, c_mat, d_mat, e_mat, f_mat)
 
-    def __init__(self, T, xs, lambda_coeffs=None, ABCDEF=None, lambda_as=None, lambda_bs=None,
+    def __init__(self, *, xs, T=GibbsExcess.T_DEFAULT, lambda_coeffs=None, ABCDEF=None, lambda_as=None, lambda_bs=None,
                  lambda_cs=None, lambda_ds=None, lambda_es=None, lambda_fs=None):
         self.T = T
         self.xs = xs

@@ -185,7 +185,7 @@ def test_madeup_NRTL():
     taus = make_taus(N)
     xs = normalize([random() for i in range(N)])
     T = 350.0
-    GE = NRTL(T, xs, taus, alphas)
+    GE = NRTL(T=T, xs=xs, tau_coeffs=taus, alpha_coeffs=alphas)
     # Run the various checks for storing/loading
     assert eval(str(GE)).GE() == GE.GE()
 
@@ -232,12 +232,12 @@ def test_water_ethanol_methanol_madeup():
     T = 273.15+70
     dT = T*1e-8
     xs = [.2, .3, .5]
-    GE = NRTL(T, xs, taus, alphas)
+    GE = NRTL(T=T, xs=xs, tau_coeffs=taus, alpha_coeffs=alphas)
     assert eval(str(GE)).GE() == GE.GE()
 
     assert object_data(NRTL.from_json(GE.as_json())) == object_data(GE)
 
-    GEnp = NRTL(T, np.array(xs), np.array(taus), np.array(alphas))
+    GEnp = NRTL(T=T, xs=np.array(xs), tau_coeffs=np.array(taus), alpha_coeffs=np.array(alphas))
     assert_close(GEnp.GE(), GE.GE(), rtol=1e-12)
 
     # gammas
@@ -423,7 +423,7 @@ def test_NRTL_numpy_output():
     T = 273.15+70
     dT = T*1e-8
     xs = [.2, .3, .5]
-    model = NRTL(T, xs, taus, alphas)
+    model = NRTL(T=T, xs=xs, tau_coeffs=taus, alpha_coeffs=alphas)
     modelnp = NRTL(T=T, xs=np.array(xs), tau_coeffs=np.array(taus), alpha_coeffs=np.array(alphas))
     modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
 
@@ -491,13 +491,13 @@ def test_NRTL_missing_inputs():
     T = 273.15+70
     dT = T*1e-8
     xs = [.2, .3, .5]
-    GE = NRTL(T, xs, tau_coeffs=taus)
+    GE = NRTL(T=T, xs=xs, tau_coeffs=taus)
     assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
 
-    GE = NRTL(T, xs, taus)
+    GE = NRTL(T=T, xs=xs, tau_coeffs=taus)
     assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
 
-    GE = NRTL(T, xs, alpha_coeffs=alphas)
+    GE = NRTL(T=T, xs=xs, alpha_coeffs=alphas)
     assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
 
 def test_NRTL_chemsep():

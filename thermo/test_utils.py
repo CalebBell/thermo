@@ -41,7 +41,7 @@ def check_np_output_activity(model, modelnp, modelnp2):
     #        assert type(getattr(modelnp, attr)()) is float
     #        assert type(getattr(modelnp2, attr)()) is float
 
-    vec_attrs = ['dGE_dxs', 'gammas', '_gammas_dGE_dxs',
+    vec_attrs = ['dGE_dxs', 'gammas', 'gammas_dGE_dxs',
                  'd2GE_dTdxs', 'dHE_dxs', 'gammas_infinite_dilution', 'dHE_dns',
                 'dnHE_dns', 'dSE_dxs', 'dSE_dns', 'dnSE_dns', 'dGE_dns', 'dnGE_dns', 'd2GE_dTdns',
                 'd2nGE_dTdns', 'dgammas_dT']

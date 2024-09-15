@@ -967,7 +967,7 @@ class VirialGas(IdealGasDeparturePhase):
                         'cross_B_model', 'cross_C_model') + pure_references
 
     def __init__(self, model, HeatCapacityGases=None, Hfs=None, Gfs=None,
-                 T=None, P=None, zs=None,
+                 T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
                  cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz'):
         self.model = model.to(T=T)
         self.HeatCapacityGases = HeatCapacityGases

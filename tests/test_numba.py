@@ -167,7 +167,7 @@ def test_NRTL_numpy_output():
     T = 273.15+70
     dT = T*1e-8
     xs = [.2, .3, .5]
-    model = NRTL(T, xs, taus, alphas)
+    model = NRTL(T=T, xs=xs, taus=taus, alphas=alphas)
     modelnp = NRTLnp(T=T, xs=np.array(xs), tau_coeffs=np.array(taus), alpha_coeffs=np.array(alphas))
     modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
 
