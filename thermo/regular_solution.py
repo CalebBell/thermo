@@ -61,6 +61,7 @@ __all__ = ['RegularSolution', 'regular_solution_gammas',
 def regular_solution_Hi_sums(SPs, Vs, xsVs, coeffs, N, Hi_sums=None):
     if Hi_sums is None:
         Hi_sums = [0.0]*N
+    # Symmetric calculation of Hi
     for i in range(N):
         t = 0.0
         for j in range(N):
