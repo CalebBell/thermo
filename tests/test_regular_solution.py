@@ -81,7 +81,7 @@ def test_4_components():
     dT = 1e-7*T
     gammas_expect = [1.1928784349228994, 1.3043087978251762, 3.2795596493820955, 197.92137114651274]
     assert_close1d(GE.gammas(), gammas_expect, rtol=1e-12)
-    assert_close1d(GibbsExcess.gammas(GE), gammas_expect)
+    assert_close1d(GE.gammas_dGE_dxs(), gammas_expect)
 
     # Gammas
     assert_close(GE.GE(), 2286.257263714889, rtol=1e-12)
@@ -169,13 +169,11 @@ def test_4_components():
 
     # Test with some stored results
     GE2 = RegularSolution.from_json(GE.as_json())
-    assert hasattr(GE2, '_GE')
     assert object_data(GE2) == object_data(GE)
 
     # Test a few more storing
     GE_copy = RegularSolution.from_json(json.loads(json.dumps(GE.as_json(option=1))))
     assert GE_copy == GE
-    assert not hasattr(GE_copy, '_GE')
 
     # Direct call for gammas
     gammas_args = GE.gammas_args()

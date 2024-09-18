@@ -73,23 +73,27 @@ def regular_solution_Hi_sums(SPs, Vs, xsVs, coeffs, N, Hi_sums=None):
 
 
 def regular_solution_GE(SPs, xsVs, coeffs, N, xsVs_sum_inv):
-    # This can have its speed improved
     num = 0.0
+    tots = [0.0]*N
+    tot2s = [0.0]*N
+
     for i in range(N):
-        coeffsi = coeffs[i]
         tot = 0.0
         for j in range(N):
             SPi_m_SPj = SPs[i] - SPs[j]
-            tot += xsVs[j]*SPi_m_SPj*SPi_m_SPj
-        tot *= 0.5
+            tot += xsVs[j] * SPi_m_SPj * SPi_m_SPj
+        tots[i] = tot
 
+    for i in range(N):
         tot2 = 0.0
         for j in range(N):
-            # could facot out a the  xsVs[j]*SPs[j] into a single term
-            tot2 += xsVs[j]*SPs[j]*coeffsi[j]
-        num += (tot + tot2*SPs[i])*xsVs[i]
-    GE = num*xsVs_sum_inv
-    return GE
+            tot2 += xsVs[j] * SPs[j] * coeffs[i][j]
+        tot2s[i] = tot2
+
+    for i in range(N):
+        num += (0.5 * tots[i] + tot2s[i] * SPs[i]) * xsVs[i]
+
+    return num * xsVs_sum_inv
 
 
 def regular_solution_dGE_dxs(Vs, Hi_sums, N, xsVs_sum_inv, GE, dGE_dxs=None):
