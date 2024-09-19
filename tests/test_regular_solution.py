@@ -199,6 +199,11 @@ def test_create_many_components_regular_solution():
 
     GE = RegularSolution(T=T, xs=xs, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs)
 
+    assert_close1d(GE.SPs, SPs)
+    assert_close1d(GE.xs, xs)
+    assert_close1d(GE.Vs, Vs)
+    assert_close2d(GE.lambda_coeffs, lambda_coeffs)
+
 
 def test_numpy_inputs():
     xs = [.4, .3, .2, .1]

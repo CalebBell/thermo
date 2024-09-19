@@ -57,6 +57,19 @@ __all__ = ['RegularSolution', 'regular_solution_gammas',
            'regular_solution_gammas_binaries',
            'regular_solution_gammas_binaries_jac']
 
+def regular_solution_His(SPs, coeffs, N, His=None):
+    if His is None:
+        His = [[0.0]*N for _ in range(N)]
+    # Symmetric calculation of Hi
+    for i in range(N):
+        Hi_row = His[i]
+        for j in range(N):
+            # Hi does not depend on composition at all and can be stored as a matrix.
+            SPi_m_SPj = SPs[i] - SPs[j]
+            Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
+            Hi_row[j] = Hi
+    return His
+
 
 def regular_solution_Hi_sums(SPs, Vs, xsVs, coeffs, N, Hi_sums=None):
     if Hi_sums is None:
@@ -69,6 +82,17 @@ def regular_solution_Hi_sums(SPs, Vs, xsVs, coeffs, N, Hi_sums=None):
             SPi_m_SPj = SPs[i] - SPs[j]
             Hi = SPs[i]*SPs[j]*(coeffs[i][j] + coeffs[j][i]) + SPi_m_SPj*SPi_m_SPj
             t += xsVs[j]*Hi
+        Hi_sums[i] = Vs[i]*t
+    return Hi_sums
+
+def regular_solution_Hi_sums_fast(Vs, xsVs, His, N, Hi_sums=None):
+    if Hi_sums is None:
+        Hi_sums = [0.0]*N
+    for i in range(N):
+        t = 0.0
+        Hi_row = His[i]
+        for j in range(N):
+            t += xsVs[j]*Hi_row[j]
         Hi_sums[i] = Vs[i]*t
     return Hi_sums
 
@@ -321,7 +345,7 @@ class RegularSolution(GibbsExcess):
     _cached_calculated_attributes = ('_Hi_sums', '_d3GE_dxixjxks')
     _model_attributes = ('Vs', 'SPs', 'lambda_coeffs')
 
-    __slots__ = GibbsExcess.__slots__ + ('xsVs_sum', 'xsVs_sum_inv', 'lambda_coeffs', '_lambda_coeffs_zero', 'SPs', 'Vs', 'xsVs') + _cached_calculated_attributes
+    __slots__ = GibbsExcess.__slots__ + ('xsVs_sum', 'xsVs_sum_inv', 'lambda_coeffs', 'His', '_lambda_coeffs_zero', 'SPs', 'Vs', 'xsVs') + _cached_calculated_attributes
     recalculable_attributes = GibbsExcess.recalculable_attributes + _cached_calculated_attributes
 
     def gammas_args(self, T=None):
@@ -380,6 +404,9 @@ class RegularSolution(GibbsExcess):
         self.xsVs_sum = xsVs_sum
         self.xsVs_sum_inv = 1.0/xsVs_sum
 
+        # factored out His matrix, used for Hi_sums calculation to be faster
+        self.His = regular_solution_His(SPs, lambda_coeffs, N, His=([[0.0]*N for _ in range(N)] if not vectorized else zeros((N,N))))
+
 
     def __repr__(self):
         s = f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}, Vs={self.Vs}, SPs={self.SPs}'
@@ -419,6 +446,7 @@ class RegularSolution(GibbsExcess):
         new.lambda_coeffs = self.lambda_coeffs
         new._lambda_coeffs_zero = self._lambda_coeffs_zero
         new.vectorized = vectorized = self.vectorized
+        new.His = self.His
 
         if not vectorized:
             xsVs = []
@@ -536,7 +564,8 @@ class RegularSolution(GibbsExcess):
         else:
             Hi_sums = zeros(self.N)
 
-        regular_solution_Hi_sums(self.SPs, self.Vs, self.xsVs, self.lambda_coeffs, self.N, Hi_sums)
+        Hi_sums = regular_solution_Hi_sums_fast(self.Vs, self.xsVs, His=self.His, N=self.N, Hi_sums=Hi_sums)
+        # regular_solution_Hi_sums(self.SPs, self.Vs, self.xsVs, self.lambda_coeffs, self.N, Hi_sums)
         self._Hi_sums = Hi_sums
         return Hi_sums
 

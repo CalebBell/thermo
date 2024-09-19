@@ -709,7 +709,7 @@ class NRTL(GibbsExcess):
         # especially important for reducing the size of the __repr__ string.
         self.tau_coeffs_nonzero = tau_coeffs_nonzero = [True]*6 if not vectorized else ones(6, bool)
         for k, coeffs in enumerate([self.tau_as, self.tau_bs, self.tau_es,
-                           self.tau_fs, self.tau_gs, self.tau_hs]):
+                                    self.tau_fs, self.tau_gs, self.tau_hs]):
             nonzero = False
             for i in range(N):
                 r = coeffs[i]
