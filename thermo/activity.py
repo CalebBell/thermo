@@ -1031,6 +1031,7 @@ class GibbsExcess:
 derivatives_added = [('dGE_dT', 'GE', 1),
  ('d2GE_dT2', 'GE', 2),
  ('d3GE_dT3', 'GE', 3),
+ ('d4GE_dT4', 'GE', 4),
 ]
 for create_derivative, derive_attr, order in derivatives_added:
     def numerical_derivative(self, derive_attr=derive_attr, n=order, ):
@@ -1049,6 +1050,8 @@ for create_derivative, derive_attr, order in derivatives_added:
 first_comp_derivatives = [
     ('dGE_dxs', 'GE'),
     ('d2GE_dTdxs', 'dGE_dT'),
+    ('d3GE_dT2dxs', 'd2GE_dT2'),
+    ('d4GE_dT3dxs', 'd3GE_dT3'),
 ]
 for create_derivative, derive_attr in first_comp_derivatives:
     def numerical_derivative(self, derive_attr=derive_attr):
@@ -1064,6 +1067,9 @@ for create_derivative, derive_attr in first_comp_derivatives:
 
 second_comp_derivatives = [
     ('d2GE_dxixjs', 'GE'),
+    ('d3GE_dTdxixjs', 'dGE_dT'),
+    ('d4GE_dT2dxixjs', 'd2GE_dT2'),
+    ('d5GE_dT3dxixjs', 'd3GE_dT3'),
 ]
 for create_derivative, derive_attr in second_comp_derivatives:
     def numerical_derivative(self, derive_attr=derive_attr):

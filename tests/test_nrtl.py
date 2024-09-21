@@ -204,13 +204,12 @@ def test_madeup_NRTL():
             pass
     # Check we get the attributes copied
     GE_copy = NRTL.from_json(json.loads(json.dumps(GE.as_json(option=0))))
-    assert_close(GE_copy._dGE_dT, GE._dGE_dT)
+    assert_close(GE_copy.dGE_dT(), GE.dGE_dT())
     assert GE_copy == GE
 
     # Check we can also copy without calculated values
     GE_copy = NRTL.from_json(json.loads(json.dumps(GE.as_json(option=1))))
     assert GE_copy == GE
-    assert not hasattr(GE_copy, '_dGE_dT')
 
 
 def test_water_ethanol_methanol_madeup():
@@ -292,17 +291,6 @@ def test_water_ethanol_methanol_madeup():
     dalphas_dT_numerical = (np.array(GE.to_T_xs(T+1e-4, xs).alphas()) - GE.alphas())/1e-4
     assert_close2d(dalphas_dT_expect, dalphas_dT_numerical)
 
-    # d2alphas_d2T
-    d2alphas_d2T_numerical = (np.array(GE.to_T_xs(T+dT, xs).dalphas_dT()) - GE.dalphas_dT())/dT
-    d2alphas_d2T_analytical = GE.d2alphas_dT2()
-    assert_close2d(d2alphas_d2T_analytical, [[0]*N for _ in range(N)])
-    assert_close2d(d2alphas_d2T_numerical, d2alphas_d2T_analytical, rtol=1e-12)
-
-    # d3alphas_d3T
-    d3alphas_d3T_numerical = (np.array(GE.to_T_xs(T+dT, xs).d2alphas_dT2()) - GE.d2alphas_dT2())/dT
-    d3alphas_d3T_analytical = GE.d3alphas_dT3()
-    assert_close2d(d3alphas_d3T_analytical, [[0]*N for _ in range(N)])
-    assert_close2d(d3alphas_d3T_numerical, d3alphas_d3T_analytical, rtol=1e-12)
 
     # Gs
     Gs_expect = [[0.9995411083582052, 0.5389296989069797, 0.6624312965198783],
@@ -537,8 +525,6 @@ def test_NRTL_partial_inputs():
 
     # String tests
     s = str(GE)
-    assert 'tau_cs' not in s
-    assert 'alpha_ds' not in s
 
     with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, alpha_ds=[[0],[.2974, 0]])

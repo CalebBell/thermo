@@ -1034,14 +1034,6 @@ class NRTL(GibbsExcess):
         '''Keep it as a function in case this needs to become more complicated.'''
         return self.alpha_ds
 
-    def d2alphas_dT2(self):
-        '''Keep it as a function in case this needs to become more complicated.'''
-        return self.zero_coeffs
-
-    def d3alphas_dT3(self):
-        '''Keep it as a function in case this needs to become more complicated.'''
-        return self.zero_coeffs
-
     def Gs(self):
         r'''Calculates and return the `G` terms in the NRTL model for a
         specified temperature.
@@ -1515,9 +1507,6 @@ class NRTL(GibbsExcess):
         dtaus_dT = self.dtaus_dT()
         d2taus_dT2 = self.d2taus_dT2()
 
-        alphas = self.alphas()
-        dalphas_dT = self.dalphas_dT()
-
         Gs = self.Gs()
         dGs_dT = self.dGs_dT()
         d2Gs_dT2 = self.d2Gs_dT2()
@@ -1657,7 +1646,6 @@ class NRTL(GibbsExcess):
             pass
         T, xs, N = self.T, self.xs, self.N
         taus = self.taus()
-        alphas = self.alphas()
         Gs = self.Gs()
         xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()

@@ -202,11 +202,12 @@ def wilson_gammas(xs, N, lambdas, xj_Lambda_ijs_inv, gammas=None, vec0=None):
     for i in range(N):
         vec0[i] = xs[i]*xj_Lambda_ijs_inv[i]
 
+    for j in range(N):
+        const_j = vec0[j]
+        for i in range(N):
+            gammas[i] += lambdas[j][i]*const_j
     for i in range(N):
-        tot2 = 1.0
-        for j in range(N):
-            tot2 -= lambdas[j][i]*vec0[j]
-        gammas[i] = exp(tot2)*xj_Lambda_ijs_inv[i]
+        gammas[i] = exp(1.0 - gammas[i])*xj_Lambda_ijs_inv[i]
 
     return gammas
 

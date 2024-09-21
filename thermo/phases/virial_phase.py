@@ -987,7 +987,7 @@ class VirialGas(IdealGasDeparturePhase):
         self.cross_C_coefficients = cross_C_model == 'Orentlicher-Prausnitz'
 
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
-            self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
+            self.Sfs = [(Hfi - Gfi)*(1.0/298.15) for Hfi, Gfi in zip(Hfs, Gfs)]
         else:
             self.Sfs = None
 
@@ -997,7 +997,7 @@ class VirialGas(IdealGasDeparturePhase):
                 break
         if zs is not None:
             self.zs = zs
-            self.vectorized = vectorized = type(zs) is ndarray
+            self.vectorized = type(zs) is ndarray
         if T is not None:
             self.T = T
             self.model.T = T
