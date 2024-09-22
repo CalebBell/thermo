@@ -636,8 +636,8 @@ class UNIQUAC(GibbsExcess):
     _x_infinite_dilution = 1e-12
     model_id = 300
 
-    _model_attributes = ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_C',
-                        'tau_coeffs_D', 'tau_coeffs_E', 'tau_coeffs_F',
+    _model_attributes = ('tau_as', 'tau_bs', 'tau_cs',
+                        'tau_ds', 'tau_es', 'tau_fs',
                         'rs', 'qs')
     _cached_calculated_attributes = ('_qsxs_sum_inv', '_thetaj_d3taus_dT3_jis',
                  '_thetas', '_d2taus_dT2', '_thetaj_dtaus_dT_jis', '_thetaj_taus_jis', '_thetaj_d2taus_dT2_jis',
@@ -663,8 +663,8 @@ class UNIQUAC(GibbsExcess):
 
     def __repr__(self):
         s = '{}(T={}, xs={}, rs={}, qs={}, ABCDEF={})'.format(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
-                (self.tau_coeffs_A,  self.tau_coeffs_B, self.tau_coeffs_C,
-                 self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F))
+                (self.tau_as,  self.tau_bs, self.tau_cs,
+                 self.tau_ds, self.tau_es, self.tau_fs))
         return s
 
     def __init__(self, *, xs, rs, qs, T=GibbsExcess.T_DEFAULT, tau_coeffs=None, ABCDEF=None,
@@ -711,45 +711,45 @@ class UNIQUAC(GibbsExcess):
 
         if tau_coeffs is not None:
             if not vectorized:
-                self.tau_coeffs_A = [[i[0] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_B = [[i[1] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_C = [[i[2] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_D = [[i[3] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_E = [[i[4] for i in l] for l in tau_coeffs]
-                self.tau_coeffs_F = [[i[5] for i in l] for l in tau_coeffs]
+                self.tau_as = [[i[0] for i in l] for l in tau_coeffs]
+                self.tau_bs = [[i[1] for i in l] for l in tau_coeffs]
+                self.tau_cs = [[i[2] for i in l] for l in tau_coeffs]
+                self.tau_ds = [[i[3] for i in l] for l in tau_coeffs]
+                self.tau_es = [[i[4] for i in l] for l in tau_coeffs]
+                self.tau_fs = [[i[5] for i in l] for l in tau_coeffs]
             else:
-                self.tau_coeffs_A = array(tau_coeffs[:,:,0], order='C', copy=True)
-                self.tau_coeffs_B = array(tau_coeffs[:,:,1], order='C', copy=True)
-                self.tau_coeffs_C = array(tau_coeffs[:,:,2], order='C', copy=True)
-                self.tau_coeffs_D = array(tau_coeffs[:,:,3], order='C', copy=True)
-                self.tau_coeffs_E = array(tau_coeffs[:,:,4], order='C', copy=True)
-                self.tau_coeffs_F = array(tau_coeffs[:,:,5], order='C', copy=True)
+                self.tau_as = array(tau_coeffs[:,:,0], order='C', copy=True)
+                self.tau_bs = array(tau_coeffs[:,:,1], order='C', copy=True)
+                self.tau_cs = array(tau_coeffs[:,:,2], order='C', copy=True)
+                self.tau_ds = array(tau_coeffs[:,:,3], order='C', copy=True)
+                self.tau_es = array(tau_coeffs[:,:,4], order='C', copy=True)
+                self.tau_fs = array(tau_coeffs[:,:,5], order='C', copy=True)
         else:
             len_ABCDEF = len(ABCDEF)
             if len_ABCDEF == 0 or ABCDEF[0] is None:
-                self.tau_coeffs_A = zero_coeffs
+                self.tau_as = zero_coeffs
             else:
-                self.tau_coeffs_A = ABCDEF[0]
+                self.tau_as = ABCDEF[0]
             if len_ABCDEF < 2 or ABCDEF[1] is None:
-                self.tau_coeffs_B = zero_coeffs
+                self.tau_bs = zero_coeffs
             else:
-                self.tau_coeffs_B = ABCDEF[1]
+                self.tau_bs = ABCDEF[1]
             if len_ABCDEF < 3 or ABCDEF[2] is None:
-                self.tau_coeffs_C = zero_coeffs
+                self.tau_cs = zero_coeffs
             else:
-                self.tau_coeffs_C = ABCDEF[2]
+                self.tau_cs = ABCDEF[2]
             if len_ABCDEF < 4 or ABCDEF[3] is None:
-                self.tau_coeffs_D = zero_coeffs
+                self.tau_ds = zero_coeffs
             else:
-                self.tau_coeffs_D = ABCDEF[3]
+                self.tau_ds = ABCDEF[3]
             if len_ABCDEF < 5 or ABCDEF[4] is None:
-                self.tau_coeffs_E = zero_coeffs
+                self.tau_es = zero_coeffs
             else:
-                self.tau_coeffs_E = ABCDEF[4]
+                self.tau_es = ABCDEF[4]
             if len_ABCDEF < 6 or ABCDEF[5] is None:
-                self.tau_coeffs_F = zero_coeffs
+                self.tau_fs = zero_coeffs
             else:
-                self.tau_coeffs_F = ABCDEF[5]
+                self.tau_fs = ABCDEF[5]
 
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`UNIQUAC` instance at
@@ -783,9 +783,9 @@ class UNIQUAC(GibbsExcess):
         new.N = self.N
         new.zero_coeffs = self.zero_coeffs
 
-        (new.tau_coeffs_A, new.tau_coeffs_B, new.tau_coeffs_C,
-         new.tau_coeffs_D, new.tau_coeffs_E, new.tau_coeffs_F) = (self.tau_coeffs_A, self.tau_coeffs_B, self.tau_coeffs_C,
-                         self.tau_coeffs_D, self.tau_coeffs_E, self.tau_coeffs_F)
+        (new.tau_as, new.tau_bs, new.tau_cs,
+         new.tau_ds, new.tau_es, new.tau_fs) = (self.tau_as, self.tau_bs, self.tau_cs,
+                         self.tau_ds, self.tau_es, self.tau_fs)
 
         if T == self.T:
             try:
@@ -829,12 +829,12 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
         # 87% of the time of this routine is the exponential.
-        A = self.tau_coeffs_A
-        B = self.tau_coeffs_B
-        C = self.tau_coeffs_C
-        D = self.tau_coeffs_D
-        E = self.tau_coeffs_E
-        F = self.tau_coeffs_F
+        A = self.tau_as
+        B = self.tau_bs
+        C = self.tau_cs
+        D = self.tau_ds
+        E = self.tau_es
+        F = self.tau_fs
         T = self.T
         N = self.N
         if not self.vectorized:
@@ -869,11 +869,11 @@ class UNIQUAC(GibbsExcess):
         except AttributeError:
             pass
 
-        B = self.tau_coeffs_B
-        C = self.tau_coeffs_C
-        D = self.tau_coeffs_D
-        E = self.tau_coeffs_E
-        F = self.tau_coeffs_F
+        B = self.tau_bs
+        C = self.tau_cs
+        D = self.tau_ds
+        E = self.tau_es
+        F = self.tau_fs
 
         T, N = self.T, self.N
         try:
@@ -914,10 +914,10 @@ class UNIQUAC(GibbsExcess):
             return self._d2taus_dT2
         except AttributeError:
             pass
-        B = self.tau_coeffs_B
-        C = self.tau_coeffs_C
-        E = self.tau_coeffs_E
-        F = self.tau_coeffs_F
+        B = self.tau_bs
+        C = self.tau_cs
+        E = self.tau_es
+        F = self.tau_fs
         T, N = self.T, self.N
 
         try:
@@ -966,10 +966,10 @@ class UNIQUAC(GibbsExcess):
             pass
 
         T, N = self.T, self.N
-        B = self.tau_coeffs_B
-        C = self.tau_coeffs_C
-        E = self.tau_coeffs_E
-        F = self.tau_coeffs_F
+        B = self.tau_bs
+        C = self.tau_cs
+        E = self.tau_es
+        F = self.tau_fs
 
         try:
             taus = self._taus

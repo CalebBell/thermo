@@ -376,8 +376,8 @@ def test_Uniquac_numpy_output_correct_array_internal_ownership():
 
     tau_coeffs = [[[A[i][j], B[i][j], C[i][j], D[i][j], E[i][j], F[i][j]] for j in range(N)] for i in range(N)]
     modelnp = UNIQUAC(T=T,rs=np.array(rs), qs=np.array(qs), xs=np.array(xs), tau_coeffs=np.array(tau_coeffs))
-    for name in ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_C',
-                 'tau_coeffs_D', 'tau_coeffs_E', 'tau_coeffs_F'):
+    for name in ('tau_as', 'tau_bs', 'tau_cs',
+                 'tau_ds', 'tau_es', 'tau_fs'):
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata
