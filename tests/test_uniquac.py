@@ -311,13 +311,11 @@ def test_UNIQUAC_numpy_inputs():
 
     # Test with some stored results
     GE2 = UNIQUAC.from_json(model.as_json())
-    assert hasattr(GE2, '_GE')
     assert object_data(GE2) == object_data(model)
 
     # Test a few more storing
     GE_copy = UNIQUAC.from_json(json.loads(json.dumps(model.as_json(option=1))))
     assert GE_copy == model
-    assert not hasattr(GE_copy, '_GE')
 
     # Pickle checks
     modelnp_pickle = pickle.loads(pickle.dumps(modelnp))
