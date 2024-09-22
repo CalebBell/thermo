@@ -306,6 +306,124 @@ def uniquac_d2GE_dTdxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dt
         d2GE_dTdxs[i] = R*(-T*Ttot + tot)
     return d2GE_dTdxs
 
+def uniquac_d2GE_dxixjs(N, T, xs, qs, taus, phis, thetas, dphis_dxs, d2phis_dxixjs,
+                        dthetas_dxs, d2thetas_dxixjs,
+                        thetaj_taus_jis, d2GE_dxixjs=None):
+    if d2GE_dxixjs is None:
+        d2GE_dxixjs = [[0.0]*N for _ in range(N)] # numba: delete
+#        d2GE_dxixjs = zeros((N, N)) # numba: uncomment
+    RT = R*T
+    z = 10
+
+    # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
+
+    # You want to index by [i][k]
+    tau_mk_dthetam_xi = [[0.0]*N for _ in range(N)] # numba: delete
+#    tau_mk_dthetam_xi = zeros((N, N)) # numba: uncomment
+
+    for i in range(N):
+        for j in range(N):
+            sum_value = 0.0
+            for m in range(N):
+                sum_value += taus[m][j] * dthetas_dxs[m][i]
+            tau_mk_dthetam_xi[i][j] = sum_value
+
+    for i in range(N):
+        for j in range(N):
+            ij_min = min(i, j)
+            ij_max = max(i, j)
+            tot = 0.0
+            for (m, n) in [(i, j), (j, i)]:
+                # 10-12
+                # checked numerically already good!
+                tot += qs[m]*z/(2.0*thetas[m])*(dthetas_dxs[m][n] - thetas[m]/phis[m]*dphis_dxs[m][n])
+
+                # 0 -1
+                # checked numerically
+                if i != j:
+                    tot +=  dphis_dxs[m][n]/phis[m]
+
+                # 6-8
+                # checked numerically already good!
+                tot -= qs[m]*tau_mk_dthetam_xi[n][m]/thetaj_taus_jis[m]
+
+            if i == j:
+                # equivalent of 0-1 term
+                tot += 3*dphis_dxs[i][i]/phis[i] - 3.0/xs[i]
+
+            # 2-4 - two calculations
+            # checked numerically Don't ask questions...
+            for m in range(N):
+                # This one looks like m != j should not be part
+                if i < j:
+                    if m != i:
+                        tot += xs[m]/phis[m]*d2phis_dxixjs[i][j][m]
+                else:
+                    if m != j:
+                        tot += xs[m]/phis[m]*d2phis_dxixjs[i][j][m]
+#                v += xs[i]/phis[i]*d2phis_dxixjs[i][j][i]
+
+            # 5-6
+            # Now good, checked numerically
+            tot -= xs[ij_min]**2/phis[ij_min]**2*(dphis_dxs[ij_min][ij_min]/xs[ij_min] - phis[ij_min]/xs[ij_min]**2)*dphis_dxs[ij_min][ij_max]
+
+            # 4-5
+            # Now good, checked numerically
+            if i != j:
+                tot += xs[ij_min]**2/phis[ij_min]*(d2phis_dxixjs[i][j][ij_min]/xs[ij_min] - dphis_dxs[ij_min][ij_max]/xs[ij_min]**2)
+            else:
+                tot += xs[i]*d2phis_dxixjs[i][i][i]/phis[i] - 2.0*dphis_dxs[i][i]/phis[i] + 2.0/xs[i]
+
+
+            # Now good, checked numerically
+            # This one looks like m != j should not be part
+            # 8
+            for m in range(N):
+#                    if m != i and m != j:
+                if i < j:
+                    if m != i:
+                        tot -= xs[m]/phis[m]**2*(dphis_dxs[m][i]*dphis_dxs[m][j])
+                else:
+                    if m != j:
+                        tot -= xs[m]/phis[m]**2*(dphis_dxs[m][i]*dphis_dxs[m][j])
+            # 9
+#                v -= xs[i]*dphis_dxs[i][i]*dphis_dxs[i][j]/phis[i]**2
+
+            for k in range(N):
+                # 12-15
+                # Good, checked with sympy/numerically
+                thing = 0.0
+                for m in range(N):
+                    thing  += taus[m][k]*d2thetas_dxixjs[i][j][m]
+                tot -= qs[k]*xs[k]*thing/thetaj_taus_jis[k]
+
+                # 15-18
+                # Good, checked with sympy/numerically
+                tot -= qs[k]*xs[k]*tau_mk_dthetam_xi[i][k]*-1*tau_mk_dthetam_xi[j][k]/thetaj_taus_jis[k]**2
+
+                # 18-21
+                # Good, checked with sympy/numerically
+                tot += qs[k]*xs[k]*z/(2.0*thetas[k])*(dthetas_dxs[k][i]/phis[k]
+                                - thetas[k]*dphis_dxs[k][i]/phis[k]**2   )*dphis_dxs[k][j]
+
+                # 21-24
+                tot += qs[k]*xs[k]*z*phis[k]/(2.0*thetas[k])*(
+                        d2thetas_dxixjs[i][j][k]/phis[k]
+                        - 1.0/phis[k]**2*(
+                                thetas[k]*d2phis_dxixjs[i][j][k]
+                                + dphis_dxs[k][i]*dthetas_dxs[k][j] + dphis_dxs[k][j]*dthetas_dxs[k][i])
+                        + 2.0*thetas[k]*dphis_dxs[k][i]*dphis_dxs[k][j]/phis[k]**3
+                        )
+
+                # 24-27
+                # 10-13 in latest checking - but very suspiscious that the values are so low
+                tot -= qs[k]*xs[k]*z*phis[k]*dthetas_dxs[k][j]/(2.0*thetas[k]**2)*(
+                        dthetas_dxs[k][i]/phis[k] - thetas[k]*dphis_dxs[k][i]/phis[k]**2
+                        )
+
+            d2GE_dxixjs[i][j] = RT*tot
+    return d2GE_dxixjs
+
 def uniquac_gammas_from_args(xs, N, T, z, rs, qs, taus, gammas=None):
     phis, rsxs_sum_inv = uniquac_phis(N, xs, rs, phis=None)
     phis_inv = [0.0]*N
@@ -1501,125 +1619,30 @@ class UNIQUAC(GibbsExcess):
             return self._d2GE_dxixjs
         except AttributeError:
             pass
-        z, T, xs, N = self.z, self.T, self.xs, self.N
+
+        T, N = self.T, self.N
+        xs = self.xs
         qs = self.qs
         taus = self.taus()
         phis = self.phis()
         thetas = self.thetas()
-
         dphis_dxs = self.dphis_dxs()
         d2phis_dxixjs = self.d2phis_dxixjs()
-
         dthetas_dxs = self.dthetas_dxs()
         d2thetas_dxixjs = self.d2thetas_dxixjs()
-
         thetaj_taus_jis = self.thetaj_taus_jis()
-        RT = R*T
 
-        # index style - [THE THETA FOR WHICH THE DERIVATIVE IS BEING CALCULATED][THE VARIABLE BEING CHANGED CAUsING THE DIFFERENCE]
+        if not self.vectorized:
+            d2GE_dxixjs = [[0.0]*N for _ in range(N)]
+        else:
+            d2GE_dxixjs = zeros((N, N))
 
-        # You want to index by [i][k]
-        tau_mk_dthetam_xi = [[sum([taus[m][j]*dthetas_dxs[m][i] for m in range(N)]) for j in range(N)] for i in range(N)]
-
-
-        d2GE_dxixjs = []
-        for i in range(N):
-            dG_row = []
-            for j in range(N):
-                ij_min = min(i, j)
-                ij_max = max(i, j)
-                tot = 0.0
-                for (m, n) in [(i, j), (j, i)]:
-                    # 10-12
-                    # checked numerically already good!
-                    tot += qs[m]*z/(2.0*thetas[m])*(dthetas_dxs[m][n] - thetas[m]/phis[m]*dphis_dxs[m][n])
-
-                    # 0 -1
-                    # checked numerically
-                    if i != j:
-                        tot +=  dphis_dxs[m][n]/phis[m]
-
-                    # 6-8
-                    # checked numerically already good!
-                    tot -= qs[m]*tau_mk_dthetam_xi[n][m]/thetaj_taus_jis[m]
-
-                if i == j:
-                    # equivalent of 0-1 term
-                    tot += 3*dphis_dxs[i][i]/phis[i] - 3.0/xs[i]
-
-                # 2-4 - two calculations
-                # checked numerically Don't ask questions...
-                for m in range(N):
-                    # This one looks like m != j should not be part
-                    if i < j:
-                        if m != i:
-                            tot += xs[m]/phis[m]*d2phis_dxixjs[i][j][m]
-                    else:
-                        if m != j:
-                            tot += xs[m]/phis[m]*d2phis_dxixjs[i][j][m]
-#                v += xs[i]/phis[i]*d2phis_dxixjs[i][j][i]
-
-                # 5-6
-                # Now good, checked numerically
-                tot -= xs[ij_min]**2/phis[ij_min]**2*(dphis_dxs[ij_min][ij_min]/xs[ij_min] - phis[ij_min]/xs[ij_min]**2)*dphis_dxs[ij_min][ij_max]
-
-                # 4-5
-                # Now good, checked numerically
-                if i != j:
-                    tot += xs[ij_min]**2/phis[ij_min]*(d2phis_dxixjs[i][j][ij_min]/xs[ij_min] - dphis_dxs[ij_min][ij_max]/xs[ij_min]**2)
-                else:
-                    tot += xs[i]*d2phis_dxixjs[i][i][i]/phis[i] - 2.0*dphis_dxs[i][i]/phis[i] + 2.0/xs[i]
-
-
-                # Now good, checked numerically
-                # This one looks like m != j should not be part
-                # 8
-                for m in range(N):
-#                    if m != i and m != j:
-                    if i < j:
-                        if m != i:
-                            tot -= xs[m]/phis[m]**2*(dphis_dxs[m][i]*dphis_dxs[m][j])
-                    else:
-                        if m != j:
-                            tot -= xs[m]/phis[m]**2*(dphis_dxs[m][i]*dphis_dxs[m][j])
-                # 9
-#                v -= xs[i]*dphis_dxs[i][i]*dphis_dxs[i][j]/phis[i]**2
-
-                for k in range(N):
-                    # 12-15
-                    # Good, checked with sympy/numerically
-                    thing = 0.0
-                    for m in range(N):
-                        thing  += taus[m][k]*d2thetas_dxixjs[i][j][m]
-                    tot -= qs[k]*xs[k]*thing/thetaj_taus_jis[k]
-
-                    # 15-18
-                    # Good, checked with sympy/numerically
-                    tot -= qs[k]*xs[k]*tau_mk_dthetam_xi[i][k]*-1*tau_mk_dthetam_xi[j][k]/thetaj_taus_jis[k]**2
-
-                    # 18-21
-                    # Good, checked with sympy/numerically
-                    tot += qs[k]*xs[k]*z/(2.0*thetas[k])*(dthetas_dxs[k][i]/phis[k]
-                                   - thetas[k]*dphis_dxs[k][i]/phis[k]**2   )*dphis_dxs[k][j]
-
-                    # 21-24
-                    tot += qs[k]*xs[k]*z*phis[k]/(2.0*thetas[k])*(
-                            d2thetas_dxixjs[i][j][k]/phis[k]
-                            - 1.0/phis[k]**2*(
-                                    thetas[k]*d2phis_dxixjs[i][j][k]
-                                    + dphis_dxs[k][i]*dthetas_dxs[k][j] + dphis_dxs[k][j]*dthetas_dxs[k][i])
-                            + 2.0*thetas[k]*dphis_dxs[k][i]*dphis_dxs[k][j]/phis[k]**3
-                            )
-
-                    # 24-27
-                    # 10-13 in latest checking - but very suspiscious that the values are so low
-                    tot -= qs[k]*xs[k]*z*phis[k]*dthetas_dxs[k][j]/(2.0*thetas[k]**2)*(
-                            dthetas_dxs[k][i]/phis[k] - thetas[k]*dphis_dxs[k][i]/phis[k]**2
-                            )
-
-#                debug_row.append(debug)
-                dG_row.append(RT*tot)
-            d2GE_dxixjs.append(dG_row)
+        self._d2GE_dxixjs = uniquac_d2GE_dxixjs(N=N, T=T, xs=xs, qs=qs, taus=taus, phis=phis, thetas=thetas, 
+                                                dphis_dxs=dphis_dxs, d2phis_dxixjs=d2phis_dxixjs, dthetas_dxs=dthetas_dxs, 
+                                                d2thetas_dxixjs=d2thetas_dxixjs, thetaj_taus_jis=thetaj_taus_jis, 
+                                                d2GE_dxixjs=d2GE_dxixjs)
+        return self._d2GE_dxixjs
+                
 #            debug_mat.append(debug_row)
         if self.vectorized:
             d2GE_dxixjs = array(d2GE_dxixjs)

@@ -194,6 +194,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  'uniquac.uniquac_thetaj_taus_ijs',
                  'uniquac.uniquac_d2phis_dxixjs',
                  'uniquac.uniquac_dGE_dxs',
+                 'uniquac.uniquac_d2GE_dxixjs',
                  'uniquac.uniquac_d2GE_dTdxs',
                  'uniquac.UNIQUAC_gammas_binaries',
                  'uniquac.uniquac_gammas_from_args',
