@@ -1880,11 +1880,14 @@ def UNIQUAC_gammas(xs, rs, qs, taus):
         - q_i \ln\left( \sum_j^N \theta_j \tau_{ji}\right)+ q_i - q_i\sum_j^N
         \frac{\theta_j \tau_{ij}}{\sum_k^N \theta_k \tau_{kj}}
 
+    .. math::
         \theta_i = \frac{x_i q_i}{\displaystyle\sum_{j=1}^{n} x_j q_j}
 
-         \Phi_i = \frac{x_i r_i}{\displaystyle\sum_{j=1}^{n} x_j r_j}
+    .. math::
+        \Phi_i = \frac{x_i r_i}{\displaystyle\sum_{j=1}^{n} x_j r_j}
 
-         l_i = \frac{z}{2}(r_i - q_i) - (r_i - 1)
+    .. math::
+        l_i = \frac{z}{2}(r_i - q_i) - (r_i - 1)
 
     Parameters
     ----------
@@ -1925,15 +1928,19 @@ def UNIQUAC_gammas(xs, rs, qs, taus):
     .. math::
         \ln \gamma_i = \ln \gamma_i^{res} + \ln \gamma_i^{comb}
 
+    .. math::
         \ln \gamma_i^{res} = q_i \left(1 - \ln\frac{\sum_j^N q_j x_j \tau_{ji}}
         {\sum_j^N q_j x_j}- \sum_j \frac{q_k x_j \tau_{ij}}{\sum_k q_k x_k
         \tau_{kj}}\right)
 
+    .. math::
         \ln \gamma_i^{comb} = (1 - V_i + \ln V_i) - \frac{z}{2}q_i\left(1 -
         \frac{V_i}{F_i} + \ln \frac{V_i}{F_i}\right)
 
+    .. math::
         V_i = \frac{r_i}{\sum_j^N r_j x_j}
 
+    .. math::
         F_i = \frac{q_i}{\sum_j q_j x_j}
 
 

@@ -4567,7 +4567,6 @@ class UNIFAC(GibbsExcess):
 
         # Convert group counts into a list, sorted by index (lowest subgroup index is first element, highest subgroup index is the last)
         subgroup_list = list(sorted(group_counts.keys()))
-        group_counts_list = [c for _, c in sorted(zip(group_counts.keys(), group_counts.values()))]
 
         Qs = [subgroups[group].Q for group in subgroup_list]
         vs = chemgroups_to_matrix(chemgroups)
