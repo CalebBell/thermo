@@ -349,7 +349,7 @@ def uniquac_d2GE_dxixjs(N, T, xs, qs, taus, phis, thetas, dphis_dxs, d2phis_dxix
 
             if i == j:
                 # equivalent of 0-1 term
-                tot += 3*dphis_dxs[i][i]/phis[i] - 3.0/xs[i]
+                tot += 3.0*dphis_dxs[i][i]/phis[i] - 3.0/xs[i]
 
             # 2-4 - two calculations
             # checked numerically Don't ask questions...
@@ -365,12 +365,12 @@ def uniquac_d2GE_dxixjs(N, T, xs, qs, taus, phis, thetas, dphis_dxs, d2phis_dxix
 
             # 5-6
             # Now good, checked numerically
-            tot -= xs[ij_min]**2/phis[ij_min]**2*(dphis_dxs[ij_min][ij_min]/xs[ij_min] - phis[ij_min]/xs[ij_min]**2)*dphis_dxs[ij_min][ij_max]
+            tot -= xs[ij_min]*xs[ij_min]/(phis[ij_min]*phis[ij_min])*(dphis_dxs[ij_min][ij_min]/xs[ij_min] - phis[ij_min]/(xs[ij_min]*xs[ij_min]))*dphis_dxs[ij_min][ij_max]
 
             # 4-5
             # Now good, checked numerically
             if i != j:
-                tot += xs[ij_min]**2/phis[ij_min]*(d2phis_dxixjs[i][j][ij_min]/xs[ij_min] - dphis_dxs[ij_min][ij_max]/xs[ij_min]**2)
+                tot += xs[ij_min]*xs[ij_min]/phis[ij_min]*(d2phis_dxixjs[i][j][ij_min]/xs[ij_min] - dphis_dxs[ij_min][ij_max]/(xs[ij_min]*xs[ij_min]))
             else:
                 tot += xs[i]*d2phis_dxixjs[i][i][i]/phis[i] - 2.0*dphis_dxs[i][i]/phis[i] + 2.0/xs[i]
 
@@ -382,10 +382,10 @@ def uniquac_d2GE_dxixjs(N, T, xs, qs, taus, phis, thetas, dphis_dxs, d2phis_dxix
 #                    if m != i and m != j:
                 if i < j:
                     if m != i:
-                        tot -= xs[m]/phis[m]**2*(dphis_dxs[m][i]*dphis_dxs[m][j])
+                        tot -= xs[m]/(phis[m]*phis[m])*(dphis_dxs[m][i]*dphis_dxs[m][j])
                 else:
                     if m != j:
-                        tot -= xs[m]/phis[m]**2*(dphis_dxs[m][i]*dphis_dxs[m][j])
+                        tot -= xs[m]/(phis[m]*phis[m])*(dphis_dxs[m][i]*dphis_dxs[m][j])
             # 9
 #                v -= xs[i]*dphis_dxs[i][i]*dphis_dxs[i][j]/phis[i]**2
 
@@ -399,26 +399,26 @@ def uniquac_d2GE_dxixjs(N, T, xs, qs, taus, phis, thetas, dphis_dxs, d2phis_dxix
 
                 # 15-18
                 # Good, checked with sympy/numerically
-                tot -= qs[k]*xs[k]*tau_mk_dthetam_xi[i][k]*-1*tau_mk_dthetam_xi[j][k]/thetaj_taus_jis[k]**2
+                tot -= qs[k]*xs[k]*tau_mk_dthetam_xi[i][k]*-1*tau_mk_dthetam_xi[j][k]/(thetaj_taus_jis[k]*thetaj_taus_jis[k])
 
                 # 18-21
                 # Good, checked with sympy/numerically
                 tot += qs[k]*xs[k]*z/(2.0*thetas[k])*(dthetas_dxs[k][i]/phis[k]
-                                - thetas[k]*dphis_dxs[k][i]/phis[k]**2   )*dphis_dxs[k][j]
+                                - thetas[k]*dphis_dxs[k][i]/(phis[k]*phis[k])   )*dphis_dxs[k][j]
 
                 # 21-24
                 tot += qs[k]*xs[k]*z*phis[k]/(2.0*thetas[k])*(
                         d2thetas_dxixjs[i][j][k]/phis[k]
-                        - 1.0/phis[k]**2*(
+                        - 1.0/(phis[k]*phis[k])*(
                                 thetas[k]*d2phis_dxixjs[i][j][k]
                                 + dphis_dxs[k][i]*dthetas_dxs[k][j] + dphis_dxs[k][j]*dthetas_dxs[k][i])
-                        + 2.0*thetas[k]*dphis_dxs[k][i]*dphis_dxs[k][j]/phis[k]**3
+                        + 2.0*thetas[k]*dphis_dxs[k][i]*dphis_dxs[k][j]/(phis[k]*phis[k]*phis[k])
                         )
 
                 # 24-27
                 # 10-13 in latest checking - but very suspiscious that the values are so low
-                tot -= qs[k]*xs[k]*z*phis[k]*dthetas_dxs[k][j]/(2.0*thetas[k]**2)*(
-                        dthetas_dxs[k][i]/phis[k] - thetas[k]*dphis_dxs[k][i]/phis[k]**2
+                tot -= qs[k]*xs[k]*z*phis[k]*dthetas_dxs[k][j]/(2.0*thetas[k]*thetas[k])*(
+                        dthetas_dxs[k][i]/phis[k] - thetas[k]*dphis_dxs[k][i]/(phis[k]*phis[k])
                         )
 
             d2GE_dxixjs[i][j] = RT*tot
