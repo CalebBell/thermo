@@ -3510,13 +3510,11 @@ def unifac_Theta_pure_Psi_sums(N, N_groups, psis, Thetas_pure, Theta_pure_Psi_su
 #        Theta_pure_Psi_sums = zeros((N, N_groups)) # numba: uncomment
 
     for i in range(N):
-        row = Theta_pure_Psi_sums[i]
-        Thetas_pure_i = Thetas_pure[i]
         for k in range(N_groups):
             tot = 0.0
             for m in range(N_groups):
-                tot += Thetas_pure_i[m]*psis[m][k]
-            row[k] = (tot)
+                tot += Thetas_pure[i][m]*psis[m][k]
+            Theta_pure_Psi_sums[i][k] = (tot)
     return Theta_pure_Psi_sums
 
 def unifac_lnGammas_subgroups(N_groups, Qs, psis, Thetas, Theta_Psi_sums, Theta_Psi_sum_invs, lnGammas_subgroups=None):
@@ -3652,11 +3650,10 @@ def unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas,
     if dlnGammas_subgroups_dT is None:
         dlnGammas_subgroups_dT = [0.0]*N_groups
     for i in range(N_groups):
-        psisi, dpsis_dTi = psis[i], dpsis_dT[i]
         tot = 0.0
         for j in range(N_groups):
-            tot += (psisi[j]*Theta_dPsidT_sum[j]*Theta_Psi_sum_invs[j]
-                   - dpsis_dTi[j])*Theta_Psi_sum_invs[j]*Thetas[j]
+            tot += (psis[i][j]*Theta_dPsidT_sum[j]*Theta_Psi_sum_invs[j]
+                   - dpsis_dT[i][j])*Theta_Psi_sum_invs[j]*Thetas[j]
 
         v = Qs[i]*(tot - Theta_dPsidT_sum[i]*Theta_Psi_sum_invs[i])
         dlnGammas_subgroups_dT[i] = v
@@ -3763,10 +3760,9 @@ def unifac_Xs_pure(N, N_groups, vs, cmp_v_count_inv, Xs_pure=None):
         Xs_pure = [[0.0]*N for _ in range(N_groups)] # numba: delete
 #        Xs_pure = zeros((N_groups, N)) # numba: uncomment
     for i in range(N_groups):
-        row = Xs_pure[i]
         vsi = vs[i]
         for j in range(N):
-            row[j] = vsi[j]*cmp_v_count_inv[j]
+            Xs_pure[i][j] = vsi[j]*cmp_v_count_inv[j]
     return Xs_pure
 
 def unifac_Thetas_pure(N, N_groups, Xs_pure, Qs, Thetas_pure=None):
@@ -3777,13 +3773,12 @@ def unifac_Thetas_pure(N, N_groups, Xs_pure, Qs, Thetas_pure=None):
     for i in range(N):
         # groups = self.cmp_group_idx[i]
         tot = 0.0
-        row = Thetas_pure[i]
         for j in range(N_groups):
             tot += Qs[j]*Xs_pure[j][i]
 
         tot_inv = 1.0/tot
         for j in range(N_groups):
-            row[j] = Qs[j]*Xs_pure[j][i]*tot_inv
+            Thetas_pure[i][j] = Qs[j]*Xs_pure[j][i]*tot_inv
     return Thetas_pure
 
 
@@ -3793,26 +3788,23 @@ def unifac_lnGammas_subgroups_pure(N, N_groups, Qs, Thetas_pure, cmp_group_idx, 
 #        lnGammas_subgroups_pure = zeros((N_groups, N)) # numba: uncomment
 
     for k in range(N_groups):
-        row = lnGammas_subgroups_pure[k]
         for i in group_cmp_idx[k]:
-            groups2 = cmp_group_idx[i]
-            Thetas_purei = Thetas_pure[i]
 
             psisk = psis[k]
             log_sum = 0.0
-            for m in groups2:
-                log_sum += Thetas_purei[m]*psis[m][k]
+            for m in cmp_group_idx[i]:
+                log_sum += Thetas_pure[i][m]*psis[m][k]
             log_sum = log(log_sum)
 
             last = 0.0
-            for m in groups2:
+            for m in cmp_group_idx[i]:
                 sub_subs = 0.0
                 for n in range(N_groups):
-                    sub_subs += Thetas_purei[n]*psis[n][m]
-                last += Thetas_purei[m]*psisk[m]/sub_subs
+                    sub_subs += Thetas_pure[i][n]*psis[n][m]
+                last += Thetas_pure[i][m]*psisk[m]/sub_subs
 
             v = Qs[k]*(1.0 - log_sum - last)
-            row[i] = v
+            lnGammas_subgroups_pure[k][i] = v
     return lnGammas_subgroups_pure
 
 def unifac_dlnGammas_subgroups_pure_dT(N, N_groups, Qs, psis, dpsis_dT,

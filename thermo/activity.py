@@ -893,6 +893,55 @@ class GibbsExcess:
             pass
         return GibbsExcess.gammas(self)
 
+    def lngammas(self):
+        r'''Calculate and return the natural logarithm of the activity coefficients
+        of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \ln \gamma_i = \frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}
+
+        Returns
+        -------
+        log_gammas : list[float]
+            Natural logarithm of activity coefficients, [-]
+
+        Notes
+        -----
+        '''
+        GE = self.GE()
+        dG_dxs = self.dGE_dxs()
+        dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
+        RT_inv = 1.0/(R * self.T)
+        if not self.vectorized:
+            return [dG_dn * RT_inv for dG_dn in dG_dns]
+        else:
+            return array(dG_dns) * RT_inv
+
+    def dlngammas_dT(self):
+        r'''Calculate and return the temperature derivatives of the natural logarithm
+        of activity coefficients of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial \ln \gamma_i}{\partial T} = \frac{1}{\gamma_i} \frac{\partial \gamma_i}{\partial T}
+
+        Returns
+        -------
+        dlog_gammas_dT : list[float]
+            Temperature derivatives of the natural logarithm of activity coefficients, [1/K]
+
+        Notes
+        -----
+        This method uses the chain rule to calculate the temperature derivative
+        of log activity coefficients.
+        '''
+        gammas = self.gammas()
+        dgammas_dT = self.dgammas_dT()
+        
+        if not self.vectorized:
+            return [dgamma_dT / gamma for gamma, dgamma_dT in zip(gammas, dgammas_dT)]
+        else:
+            return dgammas_dT / gammas
+    
     def dgammas_dns(self):
         r'''Calculate and return the mole number derivative of activity
         coefficients of a liquid phase using an activity coefficient model.

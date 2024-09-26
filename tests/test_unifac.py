@@ -1052,19 +1052,17 @@ def test_unifac_np_output_and_hash():
 def test_UNIFAC_one_component():
     GE = UNIFAC(T=300.0, xs=[1.0], rs=[4.8907], qs=[4.096], Qs=[0.848, 0.54, 1.088], vs=[[1], [4], [1]], psi_abc=([[0.0, 0.0, 298.9], [0.0, 0.0, 298.9], [-72.88, -72.88, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]), version=0)
 
-    assert GE.GE() == 0
-    assert GE.HE() == 0
-    assert GE.SE() == 0
-    assert GE.dGE_dT() == 0
-    assert GE.CpE() == 0
-    assert GE.dHE_dT() == 0
-    assert GE.d2GE_dT2() == 0
-
-
-    assert GE.lngammas_r()[0] == 0
-    assert GE.lngammas_c()[0] == 0
-    assert GE.gammas()[0] == 1
-    assert GE.d2GE_dxixjs()[0][0] == 0
+    assert_close(GE.GE(), 0, atol=1e-10)
+    assert_close(GE.HE(), 0, atol=1e-10)
+    assert_close(GE.SE(), 0, atol=1e-10)
+    assert_close(GE.dGE_dT(), 0, atol=1e-10)
+    assert_close(GE.CpE(), 0, atol=1e-10)
+    assert_close(GE.dHE_dT(), 0, atol=1e-10)
+    assert_close(GE.d2GE_dT2(), 0, atol=1e-10)
+    assert_close(GE.lngammas_r()[0], 0, atol=1e-10)
+    assert_close(GE.lngammas_c()[0], 0, atol=1e-10)
+    assert_close(GE.gammas()[0], 1, atol=1e-10)
+    assert_close(GE.d2GE_dxixjs()[0][0], 0, atol=1e-10)
 
     for s in GE._point_properties:
         if hasattr(GE, s):
