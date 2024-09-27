@@ -4319,12 +4319,24 @@ class UNIFAC(GibbsExcess):
     psi_abc : tuple(list[list[float]], 3), optional
         `psi` interaction parameters between each subgroup; indexed
         [subgroup][subgroup], not symmetrical; first arg is the matrix for `a`,
-        then `b`, and then `c`. Only one of `psi_abc` or `psi_coeffs` is
-        required, [-]
+        then `b`, and then `c`. Only one of `psi_abc` or `psi_coeffs` 
+        or `psi_a` and `psi_b` and `psi_c` is required, [-]
     psi_coeffs : list[list[tuple(float, 3)]], optional
         `psi` interaction parameters between each subgroup; indexed
         [subgroup][subgroup][letter], not symmetrical. Only one of `psi_abc`
-        or `psi_coeffs` is required, [-]
+        or `psi_coeffs` or `psi_a` and `psi_b` and `psi_c` is required, [-]
+    psi_a : list[list[float]], optional
+        `psi` a term interaction parameters between each subgroup; indexed
+        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or 
+        `psi_a` and `psi_b` and `psi_c` is required, [-]
+    psi_b : list[list[float]], optional
+        `psi` b term interaction parameters between each subgroup; indexed
+        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or 
+        `psi_a` and `psi_b` and `psi_c` is required, [-]
+    psi_c : list[list[float]], optional
+        `psi` c term interaction parameters between each subgroup; indexed
+        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or 
+        `psi_a` and `psi_b` and `psi_c` is required, [-]
     version : int, optional
         Which version of the model to use [-]
 
@@ -4499,7 +4511,7 @@ class UNIFAC(GibbsExcess):
         >>> chemgroups = [{9: 6}, {78: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}]
         >>> GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1, interaction_data=DOUFIP2006, subgroups=DOUFSG)
         >>> GE
-        UNIFAC(T=373.15, xs=[0.2, 0.3, 0.1, 0.4], rs=[2.2578, 4.2816, 2.3373, 2.4951999999999996], qs=[2.5926, 5.181, 2.7308, 2.6616], Qs=[1.0608, 0.7081, 0.4321, 0.8927, 1.67, 0.8635], vs=[[0, 0, 1, 1], [0, 0, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 6, 0, 0]], psi_abc=([[0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [16.07, 16.07, 0.0, 3972.0, 146.2, 134.6], [1606.0, 1606.0, 3049.0, 0.0, -250.0, 3121.0], [199.0, 199.0, -57.53, 653.3, 0.0, 168.2], [170.9, 170.9, -2.619, 2601.0, 464.5, 0.0]], [[0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [-0.2998, -0.2998, 0.0, -13.16, -1.237, -1.231], [-4.746, -4.746, -12.77, 0.0, 2.857, -13.69], [-0.8709, -0.8709, 1.212, -1.412, 0.0, -0.8197], [-0.8062, -0.8062, 1.094, -1.25, 0.1542, 0.0]], [[0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.01208, 0.004237, 0.001488], [0.0009181, 0.0009181, 0.01435, 0.0, -0.006022, 0.01446], [0.0, 0.0, -0.003715, 0.000954, 0.0, 0.0], [0.001291, 0.001291, -0.001557, -0.006309, 0.0, 0.0]]), version=1)
+        UNIFAC(T=373.15, xs=[0.2, 0.3, 0.1, 0.4], rs=[2.2578, 4.2816, 2.3373, 2.4951999999999996], qs=[2.5926, 5.181, 2.7308, 2.6616], Qs=[1.0608, 0.7081, 0.4321, 0.8927, 1.67, 0.8635], vs=[[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0], [6.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 0.0], [0.0, 6.0, 0.0, 0.0]], psi_a=[[0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [16.07, 16.07, 0.0, 3972.0, 146.2, 134.6], [1606.0, 1606.0, 3049.0, 0.0, -250.0, 3121.0], [199.0, 199.0, -57.53, 653.3, 0.0, 168.2], [170.9, 170.9, -2.619, 2601.0, 464.5, 0.0]], psi_b=[[0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [-0.2998, -0.2998, 0.0, -13.16, -1.237, -1.231], [-4.746, -4.746, -12.77, 0.0, 2.857, -13.69], [-0.8709, -0.8709, 1.212, -1.412, 0.0, -0.8197], [-0.8062, -0.8062, 1.094, -1.25, 0.1542, 0.0]], psi_c=[[0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.01208, 0.004237, 0.001488], [0.0009181, 0.0009181, 0.01435, 0.0, -0.006022, 0.01446], [0.0, 0.0, -0.003715, 0.000954, 0.0, 0.0], [0.001291, 0.001291, -0.001557, -0.006309, 0.0, 0.0]], version=1)
         '''
         if subgroups is None:
             if version == 0:
@@ -4595,16 +4607,15 @@ class UNIFAC(GibbsExcess):
 
     def __repr__(self):  # pragma: no cover
 
-        psi_abc = (self.psi_a, self.psi_b, self.psi_c)
         s = 'UNIFAC('
         s += f'T={self.T}, xs={self.xs}, rs={self.rs}, qs={self.qs}'
-        s += f', Qs={self.Qs}, vs={self.vs}, psi_abc={psi_abc}, version={self.version}'
+        s += f', Qs={self.Qs}, vs={self.vs}, psi_a={self.psi_a}, psi_b={self.psi_b}, psi_c={self.psi_c}, version={self.version}'
         s += ')'
         return s
 
 
     def __init__(self, *, xs, rs, qs, Qs, vs, T=GibbsExcess.T_DEFAULT, psi_coeffs=None, psi_abc=None,
-                 version=0):
+                 psi_a=None, psi_b=None, psi_c=None, version=0):
         self.T = T
         self.xs = xs
         self.vectorized = vectorized = type(xs) is not list
@@ -4617,21 +4628,27 @@ class UNIFAC(GibbsExcess):
 
         # [subgroup][component] = number of subgroup in component where subgroup
         # is an index, numbered sequentially by the number of subgroups in the mixture
-        self.vs = vs
+        # Use floats for slight speed increase
+        self.vs = [[float(vi) for vi in row] for row in vs] if not vectorized else np.array(vs, dtype=np.float64)
 
 
         # each psi_letter is a matrix of [subgroup_length][subgroups_length]
         # the diagonal is zero
         # Indexed by index of the subgroup in the mixture, again sorted lowest first
+        spec_count = int(psi_coeffs is not None) + int(psi_abc is not None) + int(psi_a is not None or psi_b is not None or psi_c is not None)
+        if spec_count != 1:
+            raise ValueError("Provide exactly one of `psi_coeffs` or `psi_abc` or `psi_a`/`psi_b`/`psi_c`")
+
         if psi_abc is not None:
             self.psi_a, self.psi_b, self.psi_c = psi_abc
-
-        else:
-            if psi_coeffs is None:
-                raise ValueError("Missing psis")
+        elif psi_a is not None and psi_b is not None and psi_c is not None:
+            self.psi_a, self.psi_b, self.psi_c = psi_a, psi_b, psi_c
+        elif psi_coeffs is not None:
             self.psi_a = [[i[0] for i in l] for l in psi_coeffs]
             self.psi_b = [[i[1] for i in l] for l in psi_coeffs]
             self.psi_c = [[i[2] for i in l] for l in psi_coeffs]
+        else:
+            raise ValueError("When `psi_a`/`psi_b`/`psi_c` are provided all must be input")
         self.N_groups = N_groups = len(self.psi_a)
         self.N = N = len(rs)
         self.version = version

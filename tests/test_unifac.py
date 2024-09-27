@@ -526,18 +526,6 @@ def test_UNIFAC_class():
     assert_close1d(dlngammas_dT, dlngammas_dT_expect, rtol=1e-12)
     assert_close1d(dlngammas_dT, dlngammas_dT_numerical, rtol=1e-7)
 
-    d2lngammas_dT2_numerical = [i[0] for i in jacobian(lambda T: GE.to_T_xs(T=T[0], xs=GE.xs).dlngammas_dT(), [GE.T], scalar=False, perturbation=3e-8)]
-    d2lngammas_dT2_expect = [1.99884565597294e-05, -4.178009193040629e-06, 1.4025477728224088e-05, -1.8554400546398206e-06]
-    d2lngammas_dT2 = GE.d2lngammas_dT2()
-    assert_close1d(d2lngammas_dT2, d2lngammas_dT2_expect, rtol=1e-12)
-    assert_close1d(d2lngammas_dT2, d2lngammas_dT2_numerical, rtol=1e-6)
-
-    d3lngammas_dT3_numerical = [i[0] for i in jacobian(lambda T: GE.to_T_xs(T=T[0], xs=GE.xs).d2lngammas_dT2(), [GE.T], scalar=False, perturbation=3e-8)]
-    d3lngammas_dT3_expect = [6.533220785904886e-07, 1.975132199760568e-07, -6.045635266026704e-07, 5.7595328721413586e-08]
-    d3lngammas_dT3 = GE.d3lngammas_dT3()
-    assert_close1d(d3lngammas_dT3, d3lngammas_dT3_expect, rtol=1e-13)
-    assert_close1d(d3lngammas_dT3, d3lngammas_dT3_numerical, rtol=1e-6)
-
     dGE_dT_expect = -2.9382799850394155
     dGE_dT_numerical = derivative(lambda T: GE.to_T_xs(T=T, xs=GE.xs).GE(), GE.T, dx=1e-5)
     dGE_dT = GE.dGE_dT()
@@ -650,22 +638,15 @@ def test_UNIFAC_class():
     assert_close1d(d2GE_dTdxs, d2GE_dTdxs_numerical, rtol=4e-6)
 
     dgammas_dT_expect = [-0.0028808414751430728, -0.004980437077194825, -0.002968030663089562, -0.00197318207426701]
-    dgammas_dT_super = GibbsExcess.dgammas_dT(GE)
-    del GE._dgammas_dT
-    assert_close1d(dgammas_dT_super, GE.dgammas_dT(), rtol=1e-10)
     assert_close1d(dgammas_dT_expect, GE.dgammas_dT(), rtol=1e-9)
 
     dgammas_dns_expect = [[-0.8096374397244642, -0.5585134719755915, -0.36851059971043854, 0.9158314737715368], [-0.6881622698759399, -1.6783287994157854, 0.8459473500316345, 1.3913408969918841], [-0.31657050204549925, 0.58980247484899, -0.47162031569240825, -0.16616152619088537], [1.05581451874053, 1.3018124232255708, -0.22298830023947544, -1.448519501729566]]
-    dgammas_dns_super = GibbsExcess.dgammas_dns(GE)
-    del GE._dgammas_dns
-    assert_close2d(dgammas_dns_super, GE.dgammas_dns(), rtol=1e-10)
-    assert_close2d(GibbsExcess.dgammas_dns(GE), dgammas_dns_expect, rtol=1e-10)
+    assert_close2d(GE.dgammas_dns(), dgammas_dns_expect, rtol=1e-10)
 
     def to_jac_gammas(xs):
         return GE.to_T_xs(T, xs).gammas()
 
     dgammas_dxs_expect = [[-1.0547171101004926, -0.8035931423516144, -0.6135902700864654, 0.6707518033955142], [-0.13910739679148804, -1.12927392633131, 1.395002223116095, 1.940395770076354], [-0.5017802621239354, 0.40459271477056125, -0.6568300757708443, -0.35137128626931663], [0.8739284010815254, 1.1199263055665736, -0.4048744178984713, -1.630405619388567]]
-
     dgammas_dxs_num = jacobian(to_jac_gammas, xs, scalar=False, perturbation=1e-6)
     assert_close2d(GE.dgammas_dxs(), dgammas_dxs_expect, rtol=1e-11)
     assert_close2d(GE.dgammas_dxs(), dgammas_dxs_num, rtol=2e-6)
@@ -681,6 +662,19 @@ def test_UNIFAC_class():
     gammas_args_at_T = GE.gammas_args(T=T_another)
     gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
     assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
+
+    d2lngammas_dT2_numerical = [i[0] for i in jacobian(lambda T: GE.to_T_xs(T=T[0], xs=GE.xs).dlngammas_dT(), [GE.T], scalar=False, perturbation=3e-8)]
+    d2lngammas_dT2_expect = [1.99884565597294e-05, -4.178009193040629e-06, 1.4025477728224088e-05, -1.8554400546398206e-06]
+    d2lngammas_dT2 = GE.d2lngammas_dT2()
+    assert_close1d(d2lngammas_dT2, d2lngammas_dT2_expect, rtol=1e-12)
+    assert_close1d(d2lngammas_dT2, d2lngammas_dT2_numerical, rtol=1e-6)
+
+    d3lngammas_dT3_numerical = [i[0] for i in jacobian(lambda T: GE.to_T_xs(T=T[0], xs=GE.xs).d2lngammas_dT2(), [GE.T], scalar=False, perturbation=3e-8)]
+    d3lngammas_dT3_expect = [6.533220785904886e-07, 1.975132199760568e-07, -6.045635266026704e-07, 5.7595328721413586e-08]
+    d3lngammas_dT3 = GE.d3lngammas_dT3()
+    assert_close1d(d3lngammas_dT3, d3lngammas_dT3_expect, rtol=1e-13)
+    assert_close1d(d3lngammas_dT3, d3lngammas_dT3_numerical, rtol=1e-6)
+
 
 def test_UNIFAC_class_Lyngby():
     T = 373.15
@@ -787,17 +781,11 @@ def test_VTPR_GE():
 
     # Derivatives - skip_comb
     dgammas_dT_expect = [-0.000908456121317832, -0.002432810818717207]
-    dgammas_dT_super = GibbsExcess.dgammas_dT(GE)
-    del GE._dgammas_dT
-    assert_close1d(dgammas_dT_super, GE.dgammas_dT(), rtol=1e-10)
     assert_close1d(dgammas_dT_expect, GE.dgammas_dT(), rtol=1e-9)
 
     dgammas_dns_expect = [[-0.17331531861998678, 0.288858864366645],
      [0.3349150621627528, -0.5581917702712555]]
 
-    dgammas_dns_super = GibbsExcess.dgammas_dns(GE)
-    del GE._dgammas_dns
-    assert_close2d(dgammas_dns_super, GE.dgammas_dns(), rtol=1e-10)
     assert_close2d(GE.dgammas_dns(), dgammas_dns_expect, rtol=1e-10)
 
     def to_jac_gammas(xs):
@@ -974,7 +962,7 @@ def test_UNIFAC_initialization():
     gammas_expect = [1.4938332119259123, 1.960091090828185, 1.4125828059033487, 1.651847113952877]
     assert_close1d(GE.gammas(), gammas_expect)
 
-    psi_coeffs = [[(GE.psi_a[i][j], GE.psi_b[i][j], GE.psi_c[i][j]) for j in range(GE.N_groups)] for i in range(GE.N_groups)]
+    psi_coeffs = [[[GE.psi_a[i][j], GE.psi_b[i][j], GE.psi_c[i][j]] for j in range(GE.N_groups)] for i in range(GE.N_groups)]
     kwargs = dict(T=T, xs=xs, rs=[3.1878, 4.0464, 2.5735, 2.5755], qs=[2.4000000000000004, 3.24, 2.336, 2.588], Qs=[0.848, 0.54, 0.4, 1.2, 1.488], vs=[[0, 0, 1, 1], [0, 6, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], version=0)
 
     # make a new instance without any dictionary
@@ -1036,13 +1024,44 @@ def test_unifac_np_output_and_hash():
     # Check we get the attributes copied
     model.GE(), model.dGE_dT()
     GE_copy = UNIFAC.from_json(json.loads(json.dumps(model.as_json(option=0))))
-    assert_close(GE_copy._dGE_dT, model._dGE_dT)
     assert GE_copy == model
 
     # Check we can also copy without calculated values
     GE_copy = UNIFAC.from_json(json.loads(json.dumps(model.as_json(option=1))))
     assert GE_copy == model
-    assert not hasattr(GE_copy, '_dGE_dT')
+
+def test_UNIFAC_init_psi_a_psi_b_psi_c():
+    N = 4
+    T = 373.15
+    xs = [0.2, 0.3, 0.1, 0.4]
+    chemgroups = [{9:6}, {78:6}, {1:1, 18:1}, {1:1, 2:1, 14:1}]
+    model_ref = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1,
+                               interaction_data=DOUFIP2006, subgroups=DOUFSG)
+    model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, psi_a=model_ref.psi_a, psi_b=model_ref.psi_b, psi_c=model_ref.psi_c, version=1)
+    assert model_ref == model_2
+
+    GE = model_ref
+    psi_coeffs = [[[GE.psi_a[i][j], GE.psi_b[i][j], GE.psi_c[i][j]] for j in range(GE.N_groups)] for i in range(GE.N_groups)]
+
+    with pytest.raises(ValueError):
+        model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, psi_b=model_ref.psi_b, psi_c=model_ref.psi_c, version=1)
+    with pytest.raises(ValueError):
+        model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, psi_a=model_ref.psi_a, psi_c=model_ref.psi_c, version=1)
+    with pytest.raises(ValueError):
+        model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, psi_a=model_ref.psi_a, psi_b=model_ref.psi_b, version=1)
+    with pytest.raises(ValueError):
+        model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, psi_abc=(model_ref.psi_a, model_ref.psi_b, model_ref.psi_c), psi_a=model_ref.psi_a, psi_b=model_ref.psi_b, psi_c=model_ref.psi_c, version=1)
+    with pytest.raises(ValueError):
+        model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, psi_coeffs=psi_coeffs, psi_abc=(model_ref.psi_a, model_ref.psi_b, model_ref.psi_c), psi_a=model_ref.psi_a, psi_b=model_ref.psi_b, psi_c=model_ref.psi_c, version=1)
+    with pytest.raises(ValueError):
+        model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, psi_coeffs=psi_coeffs, psi_a=model_ref.psi_a, psi_b=model_ref.psi_b, psi_c=model_ref.psi_c, version=1)
+    with pytest.raises(ValueError):
+        model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, psi_coeffs=psi_coeffs, psi_b=model_ref.psi_b, psi_c=model_ref.psi_c, version=1)
+    with pytest.raises(ValueError):
+        model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, psi_coeffs=psi_coeffs, psi_c=model_ref.psi_c, version=1)
+    with pytest.raises(ValueError):
+        model_2 = UNIFAC(T=T, xs=xs, rs=model_ref.rs, qs=model_ref.qs, Qs=model_ref.Qs, vs=model_ref.vs, version=1)
+
 
 
 

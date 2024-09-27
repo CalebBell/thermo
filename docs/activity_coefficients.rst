@@ -104,7 +104,7 @@ Initializing the object for the first time is a not a high performance operation
 Note also that the :obj:`__repr__ <thermo.activity.GibbsExcess.__repr__>` string for each model is designed to allow lossless reconstruction of the model. This is very useful when building test cases.
 
 >>> GE.to_T_xs(T=400.0, xs=[.1, .9])
-UNIFAC(T=400.0, xs=[0.1, 0.9], rs=[4.4998000000000005, 3.2479], qs=[3.856, 2.876], Qs=[0.848, 0.54, 1.488], vs=[[2, 1], [4, 1], [0, 1]], psi_abc=([[0.0, 0.0, 476.4], [0.0, 0.0, 476.4], [26.76, 26.76, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]), version=0)
+UNIFAC(T=400.0, xs=[0.1, 0.9], rs=[4.4998000000000005, 3.2479], qs=[3.856, 2.876], Qs=[0.848, 0.54, 1.488], vs=[[2.0, 1.0], [4.0, 1.0], [0.0, 1.0]], psi_a=[[0.0, 0.0, 476.4], [0.0, 0.0, 476.4], [26.76, 26.76, 0.0]], psi_b=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], psi_c=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], version=0)
 
 When working with small numbers of components (5 or under), PyPy offers the best performance and using the model with Python lists as inputs is the fastest way to perform the calculations even in CPython.
 

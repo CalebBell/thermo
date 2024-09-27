@@ -3360,9 +3360,9 @@ class TDependentProperty:
         self.method = name
 
 
-    def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
+    def add_correlation(self, name, model, Tmin, Tmax, select=True, **kwargs):
         r'''Method to add a new set of emperical fit equation coefficients to
-        the object and select it for future property calculations.
+        the object and select it for future property calculations (optionally).
 
         A number of hardcoded `model` names are implemented; other models
         are not supported.
@@ -3379,6 +3379,8 @@ class TDependentProperty:
             Maximum temperature to use the method at, [K]
         kwargs : dict
             Various keyword arguments accepted by the model, [-]
+        select: bool
+            Whether to set the method as the default, [-]
 
         Notes
         -----
@@ -3428,7 +3430,8 @@ class TDependentProperty:
         self.correlations[name] = (call, model_kwargs, model, None)
         if model in self.correlation_extra_handling_models:
             self._optimize_added_correlation(name, model)
-        self.method = name
+        if select:
+            self.method = name
 
     try:
         _text = '\n'
@@ -4642,6 +4645,7 @@ class TDependentProperty:
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used."""
         load_data = kwargs.pop('load_data', True)
+        self.correlations = {}
         self.load_all_methods(load_data)
 
         self.extrapolation = extrapolation
@@ -4649,7 +4653,6 @@ class TDependentProperty:
         self._extrapolation_max = kwargs.pop('extrapolation_max', None)
 
 
-        self.correlations = {}
 
         poly_fit = kwargs.pop('poly_fit', None)
         exp_poly_fit = kwargs.pop('exp_poly_fit', None)
