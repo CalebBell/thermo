@@ -892,6 +892,18 @@ class GibbsExcess:
         except:
             pass
         return GibbsExcess.gammas(self)
+    
+    def gammas_numerical(self):
+        # for testing purposes
+        def nGE_func(ns):
+            total_n = sum(ns)
+            xs = [n / total_n for n in ns]
+            return total_n * self.to_T_xs(T=self.T, xs=xs).GE()
+        dnGE_dns = jacobian(nGE_func, self.xs, perturbation=1e-7)
+        
+        RT_inv = 1.0/(self.T *R)
+        gammas = np.exp(np.array(dnGE_dns)*RT_inv) if self.vectorized else [exp(v*RT_inv) for v in dnGE_dns]
+        return gammas
 
     def lngammas(self):
         r'''Calculate and return the natural logarithm of the activity coefficients
