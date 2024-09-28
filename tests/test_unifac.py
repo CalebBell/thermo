@@ -961,6 +961,8 @@ def test_UNIFAC_initialization():
 
     gammas_expect = [1.4938332119259123, 1.960091090828185, 1.4125828059033487, 1.651847113952877]
     assert_close1d(GE.gammas(), gammas_expect)
+    assert_close1d(GE.gammas_numerical(), GE.gammas(), rtol=1e-5)
+
 
     psi_coeffs = [[[GE.psi_a[i][j], GE.psi_b[i][j], GE.psi_c[i][j]] for j in range(GE.N_groups)] for i in range(GE.N_groups)]
     kwargs = dict(T=T, xs=xs, rs=[3.1878, 4.0464, 2.5735, 2.5755], qs=[2.4000000000000004, 3.24, 2.336, 2.588], Qs=[0.848, 0.54, 0.4, 1.2, 1.488], vs=[[0, 0, 1, 1], [0, 6, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], version=0)

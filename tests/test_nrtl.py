@@ -242,6 +242,8 @@ def test_water_ethanol_methanol_madeup():
     # gammas
     assert_close1d(GE.gammas(), [1.7795902383749216, 1.1495597830749005, 1.0736702352016942])
     assert_close1d(GEnp.gammas(), GE.gammas(), rtol=1e-12)
+    assert_close1d(GEnp.gammas_numerical(), GE.gammas(), rtol=1e-5)
+    assert_close1d(GE.gammas_numerical(), GE.gammas(), rtol=1e-5)
 
     ### Tau and derivatives
     taus_expected = [[0.06687993075720595, 1.9456413587531054, 1.2322559725492486],

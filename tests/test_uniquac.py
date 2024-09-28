@@ -257,6 +257,10 @@ def test_UNIQUAC_madeup_ternary():
     assert_close2d(d2GE_dxixjs_numerical, d2GE_dxixjs_analytical, rtol=1e-4)
     assert_close2d(d2GE_dxixjs_analytical, d2GE_dxixjs_sympy, rtol=1e-12)
 
+
+    assert_close1d(GE.gammas_numerical(), GE.gammas(), rtol=1e-5)
+
+
     # Check json storage again, with some results
     GE2 = UNIQUAC.from_json(GE.as_json())
     assert object_data(GE2) == object_data(GE)

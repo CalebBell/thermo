@@ -122,6 +122,9 @@ def test_DDBST_example():
     assert_close1d(GE.gammas(), gammas_expect, rtol=1e-12)
     assert_close1d(GE.gammas_dGE_dxs(), gammas_expect)
 
+    assert_close1d(GE.gammas_numerical(), GE.gammas(), rtol=1e-5)
+
+
     lambdas = GE.lambdas()
     lambdas_expect = [[1.0, 1.1229699812593041, 0.7391181616283594],
                      [3.2694762162029805, 1.0, 1.1674967844769508],
