@@ -269,7 +269,7 @@ class VirialCSP:
         >>> from thermo import VirialCSP
         >>> model = VirialCSP(Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
         >>> model
-        VirialCSP(Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
+        VirialCSP(Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA', T=298.15)
         '''
         try:
             Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
@@ -366,7 +366,7 @@ class VirialCSP:
                  B_model_Meng_as=None,
                  B_model_Tsonopoulos_extended_as=None,
                  B_model_Tsonopoulos_extended_bs=None,
-                 T=None,
+                 T=298.15,
                  ):
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -375,6 +375,8 @@ class VirialCSP:
         self.N = N = len(Tcs)
         self.vectorized = vectorized = type(Tcs) is ndarray
         self.T = T
+        if T is None:
+            raise ValueError("T must be defined")
 
         self.B_model = B_model
         self.cross_B_model = cross_B_model
@@ -432,7 +434,7 @@ class VirialCSP:
         self.C_zero = C_model == VIRIAL_C_ZERO
         self.B_zero = B_model == VIRIAL_B_ZERO
 
-    def to(self, T=None):
+    def to(self, T):
         r'''Method to construct a new object at a new temperature.
 
         Parameters
@@ -1848,7 +1850,7 @@ class VirialGas(IdealGasDeparturePhase):
         new.cross_C_model = self.cross_C_model
 
         new.HeatCapacityGases = self.HeatCapacityGases
-        new.model = model = self.model.to(T=None)
+        new.model = model = self.model.to(T=T if T is not None else 298.15)
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
