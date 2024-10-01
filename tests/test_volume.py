@@ -250,8 +250,8 @@ def test_VolumeLiquid():
     assert False is U.test_method_validity(1430, U.method)
 
     # Test lower limit for BHIRUD_NORMAL
-    fake = VolumeLiquid(Tc=1000)
-    assert False is fake.test_method_validity(349.5, 'BHIRUD_NORMAL')
+    fake = VolumeLiquid(Tc=1000, Pc=1e9, omega=.2)
+    assert not fake.test_method_validity(349.5, BHIRUD_NORMAL)
 
 
 

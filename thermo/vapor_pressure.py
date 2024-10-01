@@ -813,7 +813,7 @@ class SublimationPressure(TDependentProperty):
             Sublimation pressure at T, [Pa]
         '''
         if method == PSUB_CLAPEYRON:
-            Psub = max(Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t), 1e-200)
+            Psub = Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t)
         elif method == IAPWS:
             Psub = iapws11_Psub(T)
         elif method == ALCOCK_ELEMENTS:

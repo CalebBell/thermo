@@ -407,7 +407,7 @@ class ViscosityLiquid(TPDependentProperty):
                     self.CP_f = CP_f
                     methods.append(COOLPROP)
                     methods_P.append(COOLPROP)
-                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
+                    T_limits[COOLPROP] = (max(CP_f.Tmin, CP_f.Tt), self.CP_f.Tc)
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (l)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
@@ -486,7 +486,7 @@ class ViscosityLiquid(TPDependentProperty):
 
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
-            T_limits[LETSOU_STIEL] = (self.Tc/4, self.Tc)
+            T_limits[LETSOU_STIEL] = (0.25*self.Tc, self.Tc)
         if all((self.MW, self.Tm, self.Tc, self.Pc, self.Vc, self.omega, self.Vml)):
             methods.append(PRZEDZIECKI_SRIDHAR)
             T_limits[PRZEDZIECKI_SRIDHAR] = (self.Tm, self.Tc)
@@ -589,53 +589,7 @@ class ViscosityLiquid(TPDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        try:
-            low, high = self.T_limits[method]
-            return low <= T <= high
-        except:
-            pass
-        if method == DUTT_PRASAD:
-            if T < self.DUTT_PRASAD_Tmin or T > self.DUTT_PRASAD_Tmax:
-                return False
-        elif method == VISWANATH_NATARAJAN_3:
-            if T < self.VISWANATH_NATARAJAN_3_Tmin or T > self.VISWANATH_NATARAJAN_3_Tmax:
-                return False
-        elif method == VISWANATH_NATARAJAN_2:
-            if T < self.VISWANATH_NATARAJAN_2_Tmin or T > self.VISWANATH_NATARAJAN_2_Tmax:
-                return False
-        elif method == VISWANATH_NATARAJAN_2E:
-            if T < self.VISWANATH_NATARAJAN_2E_Tmin or T > self.VISWANATH_NATARAJAN_2E_Tmax:
-                return False
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_313_Tmin or T > self.Perrys2_313_Tmax:
-                return False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tc:
-                return False
-        elif method in (LETSOU_STIEL, PRZEDZIECKI_SRIDHAR):
-            if T > self.Tc:
-                return False
-            # No lower limit
-        elif method == VDI_PPDS:
-            # If the derivative is positive, return invalid.
-            # This is very important as no maximum temperatures are specified.
-            if self.Tc and T > self.Tc:
-                return False
-            A, B, C, D, E = self.VDI_PPDS_coeffs
-            term = (C - T)/(T - D)
-            # Derived with sympy
-            return True
-            try:
-                if term > 0:
-                    der = E*((-C + T)/(D - T))**(1/3.)*(A + 4*B*(-C + T)/(D - T))*(C - D)*exp(((-C + T)/(D - T))**(1/3.)*(A + B*(-C + T)/(D - T)))/(3*(C - T)*(D - T))
-                else:
-                    der = E*((C - T)/(D - T))**(1/3.)*(-A*(C - D)*(D - T)**6 + B*(C - D)*(C - T)*(D - T)**5 + 3*B*(C - T)**2*(D - T)**5 - 3*B*(C - T)*(D - T)**6)*exp(-((C - T)/(D - T))**(1/3.)*(A*(D - T) - B*(C - T))/(D - T))/(3*(C - T)*(D - T)**7)
-                return der < 0
-            except:
-                return False
-        else:
-            return super().test_method_validity(T, method)
-        return True
+        return super().test_method_validity(T, method)
 
     def calculate_P(self, T, P, method):
         r'''Method to calculate pressure-dependent liquid viscosity at
@@ -915,7 +869,8 @@ class ViscosityGas(TPDependentProperty):
             methods.append(GHARAGHEIZI)
             methods.append(YOON_THODOS)
             methods.append(STIEL_THODOS)
-            T_limits[YOON_THODOS] = T_limits[STIEL_THODOS] = T_limits[GHARAGHEIZI] = (1e-3, 5E3)
+            T_limits[YOON_THODOS] = T_limits[STIEL_THODOS] = (1e-3, 5E3)
+            T_limits[GHARAGHEIZI] = (20.0, 2e3)
             # GHARAGHEIZI turns nonsesical at ~15 K, YOON_THODOS fine to 0 K,
             # same as STIEL_THODOS
         if all([self.Tc, self.Pc, self.Zc, self.MW]):
@@ -1001,26 +956,7 @@ class ViscosityGas(TPDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        validity = True
-        if method in (YOON_THODOS, STIEL_THODOS, LUCAS_GAS):
-            if T < 0 or T > 5000:
-                # Arbitrary limit
-                return False
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_312_Tmin or T > self.Perrys2_312_Tmax:
-                return False
-        elif method == GHARAGHEIZI:
-            if T < 20 or T > 2E3:
-                validity = False
-                # Doesn't do so well as the other methods
-        elif method == COOLPROP:
-            if T < self.CP_f.Tmin or T > self.CP_f.Tmax:
-                return False
-        elif method == VDI_PPDS:
-            pass # Polynomial always works
-        else:
-            return super().test_method_validity(T, method)
-        return validity
+        return super().test_method_validity(T, method)
 
     def calculate_P(self, T, P, method):
         r'''Method to calculate pressure-dependent gas viscosity

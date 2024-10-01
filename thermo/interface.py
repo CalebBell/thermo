@@ -472,32 +472,7 @@ class SurfaceTension(TDependentProperty):
         validity : bool
             Whether or not a method is valid
         '''
-        validity = True
-        if method == STREFPROP:
-            if T < self.STREFPROP_Tmin or T > self.STREFPROP_Tmax:
-                validity = False
-        elif method == VDI_PPDS:
-            if T > self.VDI_PPDS_Tc:
-                # Could also check for low temp, but not necessary as it extrapolates
-                validity = False
-        elif method == SOMAYAJULU2:
-            if T < self.SOMAYAJULU2_Tt or T > self.SOMAYAJULU2_Tc:
-                validity = False
-        elif method == SOMAYAJULU:
-            if T < self.SOMAYAJULU_Tt or T > self.SOMAYAJULU_Tc:
-                validity = False
-        elif method == JASPER:
-            if T < self.JASPER_Tmin or T > self.JASPER_Tmax:
-                validity = False
-        elif method in [BROCK_BIRD, SASTRI_RAO, PITZER, ZUO_STENBY, MIQUEU]:
-            if T > self.Tc:
-                validity = False
-        elif method == ALEEM:
-            if T > self.Tb + self.Hvap_Tb/self.Cpl_Tb:
-                validity = False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
+        return super().test_method_validity(T, method)
 
 
 

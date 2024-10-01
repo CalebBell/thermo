@@ -479,7 +479,7 @@ class VolumeLiquid(TPDependentProperty):
                 methods.append(COOLPROP)
                 methods_P.append(COOLPROP)
                 self.CP_f = coolprop_fluids[CASRN]
-                T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc)
+                T_limits[COOLPROP] = (max(self.CP_f.Tt,self.CP_f.Tmin), self.CP_f.Tc)
             if CASRN in volume.rho_data_CRC_inorg_l.index:
                 methods.append(CRC_INORG_L)
                 self.CRC_INORG_L_MW, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax = volume.rho_values_CRC_inorg_l[volume.rho_data_CRC_inorg_l.index.get_loc(CASRN)].tolist()
@@ -524,7 +524,8 @@ class VolumeLiquid(TPDependentProperty):
         if all((self.Tc, self.Pc, self.omega)):
             methods.append(YAMADA_GUNN)
             methods.append(BHIRUD_NORMAL)
-            T_limits[YAMADA_GUNN] = T_limits[BHIRUD_NORMAL] = (0.0, self.Tc)
+            # Has bad interpolation behavior lower than roughly this
+            T_limits[YAMADA_GUNN] = T_limits[BHIRUD_NORMAL] = (0.35*self.Tc, self.Tc)
         if all((self.Tc, self.Vc, self.omega)):
             methods.append(TOWNSEND_HALES)
             methods.append(HTCOSTALD)
@@ -683,28 +684,11 @@ class VolumeLiquid(TPDependentProperty):
             Whether or not a method is valid
         '''
         validity = True
-        if method == DIPPR_PERRY_8E:
-            if T < self.DIPPR_Tmin or T > self.DIPPR_Tmax:
-                validity = False
-        elif method == VDI_PPDS:
-            validity = T <= self.VDI_PPDS_Tc
-        elif method == CRC_INORG_L:
-            if T < self.CRC_INORG_L_Tm or T > self.CRC_INORG_L_Tmax:
-                validity = False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tmin or T < self.CP_f.Tt or T > self.CP_f.Tc:
-                return False
-        elif method in (RACKETT, YAMADA_GUNN, TOWNSEND_HALES,
+        if method in (RACKETT, YAMADA_GUNN, TOWNSEND_HALES,
                         HTCOSTALD, YEN_WOODS_SAT, MMSNM0, MMSNM0FIT,
                         CAMPBELL_THODOS, HTCOSTALDFIT, RACKETTFIT):
             if T >= self.Tc:
                 validity = False
-        elif method == BHIRUD_NORMAL:
-            if T/self.Tc < 0.35:
-                validity = False
-            # Has bad interpolation behavior lower than roughly this
-        elif method == CRC_INORG_L_CONST:
-            pass  # Weird range, consider valid for all conditions
         elif method == EOS:
             if T >= self.eos[0].Tc:
                 validity = False
