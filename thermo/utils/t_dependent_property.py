@@ -3678,7 +3678,7 @@ class TDependentProperty:
         if method in self.correlations:
             call, kwargs, model, extra = self.correlations[method]
             # polynomial 4 work out of the box, others need a bit of work
-            if method == 'stable_polynomial':
+            if model == 'stable_polynomial':
                 if order == 1:
                     return horner_stable_and_der(T, kwargs['coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
@@ -3687,27 +3687,27 @@ class TDependentProperty:
                     return horner_stable_and_der3(T, kwargs['coeffs'], extra['offset'], extra['scale'])[3]
                 if order == 4:
                     return horner_stable_and_der4(T, kwargs['coeffs'], extra['offset'], extra['scale'])[4]
-            if method == 'exp_stable_polynomial':
+            if model == 'exp_stable_polynomial':
                 if order == 1:
                     return exp_horner_stable_and_der(T, kwargs['coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
                     return exp_horner_stable_and_der2(T, kwargs['coeffs'], extra['offset'], extra['scale'])[2]
                 if order == 3:
                     return exp_horner_stable_and_der3(T, kwargs['coeffs'], extra['offset'], extra['scale'])[3]
-            elif method == 'stable_polynomial_ln_tau':
+            elif model == 'stable_polynomial_ln_tau':
                 if order == 1:
                     return horner_stable_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
                     return horner_stable_ln_tau_and_der2(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[2]
                 if order == 3:
                     return horner_stable_ln_tau_and_der3(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[3]
-            elif method == 'exp_stable_polynomial_ln_tau':
+            elif model == 'exp_stable_polynomial_ln_tau':
                 if order == 1:
                     return exp_horner_stable_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
                     return exp_horner_stable_ln_tau_and_der2(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[2]
 
-            elif method == 'chebyshev':
+            elif model == 'chebyshev':
                 if order == 1:
                     return chebval(T, extra['d1_coeffs'], extra['offset'], extra['scale'])
                 if order == 2:
@@ -3716,14 +3716,14 @@ class TDependentProperty:
                     return chebval(T, extra['d3_coeffs'], extra['offset'], extra['scale'])
                 if order == 4:
                     return chebval(T, extra['d4_coeffs'], extra['offset'], extra['scale'])
-            elif method == 'exp_chebyshev':
+            elif model == 'exp_chebyshev':
                 if order == 1:
                     return exp_cheb_and_der(T, kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
                     return exp_cheb_and_der2(T, kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['offset'], extra['scale'])[2]
                 if order == 3:
                     return exp_cheb_and_der3(T, kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['d3_coeffs'], extra['offset'], extra['scale'])[3]
-            elif method == 'chebyshev_ln_tau':
+            elif model == 'chebyshev_ln_tau':
                 if order == 1:
                     return chebval_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
@@ -3731,7 +3731,7 @@ class TDependentProperty:
                 if order == 3:
                     return chebval_ln_tau_and_der3(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['d3_coeffs'], extra['offset'], extra['scale'])[3]
 
-            elif method == 'exp_chebyshev_ln_tau':
+            elif model == 'exp_chebyshev_ln_tau':
                 if order == 1:
                     return exp_cheb_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:

@@ -759,7 +759,7 @@ def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy():
     dSs = []
     dHs = []
     pairs = [(252, 400), (252, 1000), (252, 2000), (Tmin, Tmax), (1, 10000), (1, 300), (1000, 10000)]
-    dSs_expect = [15.587741399855702, 49.537011711414834, 81.56764797150367, 81.67860031367769, 377.40462102946975, 187.9790605246881, 145.72976380712763]
+    dSs_expect = [15.587741399855446, 49.53701171038426, 81.56763739024905, 81.67858973242306, 377.4045671786281, 187.97907173107453, 145.72969875093]
 
     for (T1, T2), dS_expect in zip(pairs, dSs_expect):
         dS = obj.T_dependent_property_integral_over_T(T1, T2)
@@ -769,7 +769,7 @@ def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy():
     for T1, T2 in pairs:
         dH = obj.T_dependent_property_integral(T1, T2)
         dHs.append(dH)
-    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.5550873382, 9924.4462248903, 665908.1651110547]
+    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.1907885703, 9924.44653308318, 665907.8005040939]
     assert_close1d(dHs, dHs_expect, rtol=1e-13)
 
     # Essentially what writting this test discovered is that there kind of is a numerical problem with so many parameters;
@@ -794,8 +794,8 @@ def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy_fixed():
     dSs = []
     dHs = []
     pairs = [(252, 400), (252, 1000), (252, 2000), (Tmin, Tmax), (1, 10000), (1, 300), (1000, 10000)]
-    dSs_expect = [15.587741399857379, 49.53701171701344, 81.56762248012049, 81.67857482229452, 377.4045955380866, 187.97906052468775, 145.72973831014585]
-    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.5550873382, 9924.4462248903, 665908.1651110547]
+    dSs_expect = [15.587741399857379, 49.53701171701343, 81.56762248012046, 81.67857482229451, 377.4045522684995, 187.97907173107427, 145.72968383417225]
+    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.1907885703, 9924.44653308318, 665907.8005040939]
 
     for (T1, T2), dS_expect in zip(pairs, dSs_expect):
         dS = obj.T_dependent_property_integral_over_T(T1, T2)
