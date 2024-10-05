@@ -777,7 +777,14 @@ def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy():
     # With more math work calculating them without rounding errors is probably possible. However, it will be slow
     # It is already slow!!
     # See test_HeatCapacityGas_stable_polynomial_parameters_with_entropy_fixed for how the situation is to be handled.
-    assert_close1d(dSs, dSs_expect, rtol=1e-6)
+    assert_close1d(dSs, dSs_expect, rtol=2e-6)
+
+
+
+    assert_close(obj.correlations['test'][3]['int_T_log_coeff'], 33.94307866530403, rtol=1e-13)
+    assert_close1d(obj.correlations['test'][3]['int_T_coeffs'], 
+        [-0.04919816763192373, 0.11263751330617944, 0.131110452463151, -0.45423261676208426, -0.06004401011932714, 0.7411591719219359, -0.0785488258334226, -0.7638508616073523, 0.17966145346872509, 0.5368869720259681, -0.23898457409814, -0.11605650605633855, -0.004958115052431822, 0.09069587616249919, 0.03437954094260931, -0.1659396644681692, 0.2085834185127169, -0.14463942032307386, -0.00890484161209315, 0.08206677765701897, 0.2691963085962925, -1.2154266047764395, 1.5349439248270755, 6.923550077860796, 3.225469171838455],
+        rtol=2e-13)
 
 
 @pytest.mark.meta_T_dept

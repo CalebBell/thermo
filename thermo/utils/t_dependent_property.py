@@ -186,6 +186,7 @@ from fluids.numerics import (
     secant,
     trunc_exp,
     trunc_log,
+    poly_convert,
 )
 from fluids.numerics import numpy as np
 
@@ -3287,8 +3288,7 @@ class TDependentProperty:
             elif is_Cp:
                 # Only setup the integral coefficients if the model is a heat capacity model
                 int_T_coeffs_unstable, extra['int_T_log_coeff'] = polyint_over_x_stable(coeffs, Tmin, Tmax)
-                from numpy.polynomial.polynomial import Polynomial
-                extra['int_T_coeffs'] = Polynomial(int_T_coeffs_unstable[::-1]).convert(domain=(Tmin, Tmax)).coef.tolist()[::-1]
+                extra['int_T_coeffs']  = poly_convert(int_T_coeffs_unstable[::-1], Tmin, Tmax)[::-1]
 
         elif model == 'exp_stable_polynomial':
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
