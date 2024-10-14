@@ -577,6 +577,18 @@ def test_NRTL_gammas_binaries_jac():
     jac_calc = NRTL_gammas_binaries_jac([.3, .7, .4, .6], 2, 3, .2, .4)
     assert_close2d(expect, jac_calc, rtol=1e-12)
 
+    
+    # Test with provided calc array
+    calc_provided = np.zeros((4, 4))
+    jac_calc_same_array = NRTL_gammas_binaries_jac([.3, .7, .4, .6], 2, 3, .2, .4, calc_provided)
+    assert_close2d(expect, jac_calc_same_array, rtol=1e-12)
+    assert calc_provided is jac_calc_same_array
+    
+    # Test with different input, reusing the calc array
+    new_expect = NRTL_gammas_binaries_jac([.2, .8, .6, .4], 1, 4, .3, .5)
+    jac_calc_reused = NRTL_gammas_binaries_jac([.2, .8, .6, .4], 1, 4, .3, .5, calc_provided)
+    assert_close2d(new_expect, jac_calc_reused, rtol=1e-12)
+    assert calc_provided is jac_calc_reused
     # The optimized code was generated as follows with sympy
     """
     from sympy import *
@@ -627,6 +639,25 @@ def test_NRTL_regression_basics():
     assert_close(res['alpha21'], 0.4898957291346906)
     assert stats['MAE'] < 0.001
 
+    # regression with multiple alpha values forced
+    forced_alphas = [0.1, 0.2, 0.3, 0.7, 0.9] 
+    expected_taus = [
+        (-2.0482635713094823, 4.507094631730519),
+        (-0.7915760197977199, 2.9274685163699594),
+        (-0.3043327536515584, 2.3396166105505105),
+        (0.45660391657378036, 1.7122942946463962),
+        (0.6760802269114482, 1.7130983381263352)
+    ]
+
+    for i, forced_alpha in enumerate(forced_alphas):
+        res, stats = NRTL.regress_binary_parameters(gammas=many_gammas_expect, xs=xs_points, use_numba=False,
+                                                    symmetric_alphas=True, multiple_tries=False, force_alpha=forced_alpha)
+
+        assert 'alpha21' not in res
+        assert len(res) == 2  # Should only have tau12 and tau21
+        assert_close(res['tau12'], expected_taus[i][0], rtol=1e-3)
+        assert_close(res['tau21'], expected_taus[i][1], rtol=1e-3)
+        assert stats['MAE'] < 0.05
 
 def test_NRTL_one_component():
     GE = NRTL(T=350.0, xs=[1.0], ABEFGHCD=([[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]]))
