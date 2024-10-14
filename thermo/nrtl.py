@@ -1720,7 +1720,7 @@ class NRTL(GibbsExcess):
 
     @classmethod
     def regress_binary_parameters(cls, gammas, xs, symmetric_alphas=False,
-                                  use_numba=False,
+                                  use_numba=False, force_alpha=None,
                                   do_statistics=True, **kwargs):
         # Load the functions either locally or with numba
         if use_numba:
@@ -1730,6 +1730,8 @@ class NRTL(GibbsExcess):
             work_func = NRTL_gammas_binaries
             jac_func = NRTL_gammas_binaries_jac
 
+        if force_alpha is not None:
+            symmetric_alphas = True
         # Allocate all working memory
         pts = len(xs)
         gammas_iter = zeros(pts*2)
@@ -1737,11 +1739,13 @@ class NRTL(GibbsExcess):
 
         # Plain objective functions
         if symmetric_alphas:
-            def fitting_func(xs, tau12, tau21, alpha):
+            def fitting_func(xs, tau12, tau21, alpha=force_alpha):
                 return work_func(xs, tau12, tau21, alpha, alpha, gammas_iter)
-
-            def analytical_jac(xs, tau12, tau21, alpha):
-                return delete(jac_func(xs, tau12, tau21, alpha, alpha, jac_iter), 3, axis=1)
+            def analytical_jac(xs, tau12, tau21, alpha=force_alpha):
+                out = jac_func(xs, tau12, tau21, alpha, alpha, jac_iter)
+                if force_alpha is not None:
+                    return delete(out, [2,3], axis=1)
+                return delete(out, 3, axis=1)
 
         else:
             def fitting_func(xs, tau12, tau21, alpha12, alpha21):
@@ -1764,12 +1768,17 @@ class NRTL(GibbsExcess):
         # Objective functions for leastsq maximum speed
         if symmetric_alphas:
             def func_wrapped_for_leastsq(params):
-                return work_func(xs_working, params[0], params[1], params[2], params[2], gammas_iter) - gammas_working
+                alpha = params[2] if force_alpha is None else force_alpha
+                return work_func(xs_working, params[0], params[1], alpha, alpha, gammas_iter) - gammas_working
 
             def jac_wrapped_for_leastsq(params):
-                out = jac_func(xs_working, params[0], params[1], params[2], params[2], jac_iter)
-                new_out = delete(out, 3, axis=1)
-                new_out[:, 2] = out[:, 2] + out[:, 3]
+                alpha = params[2] if force_alpha is None else force_alpha
+                out = jac_func(xs_working, params[0], params[1], alpha, alpha, jac_iter)
+                if force_alpha is None:
+                    new_out = delete(out, 3, axis=1)
+                    new_out[:, 2] = out[:, 2] + out[:, 3]
+                else:
+                    new_out = delete(out, [2,3], axis=1)
                 return new_out
 
         else:
@@ -1780,7 +1789,10 @@ class NRTL(GibbsExcess):
                 return jac_func(xs_working, params[0], params[1], params[2], params[3], jac_iter)
 
         if symmetric_alphas:
-            use_fit_parameters = ['tau12', 'tau21', 'alpha12']
+            if force_alpha is not None:
+                use_fit_parameters = ['tau12', 'tau21']
+            else:
+                use_fit_parameters = ['tau12', 'tau21', 'alpha12']
         else:
             use_fit_parameters = ['tau12', 'tau21', 'alpha12', 'alpha21']
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
