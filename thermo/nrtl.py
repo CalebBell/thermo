@@ -528,7 +528,7 @@ class NRTL(GibbsExcess):
     Examples
     --------
     The DDBST has published numerous problems showing this model a simple
-    binary system, Example P05.01b in [2]_, shows how to use parameters from
+    binary ethanol-water system, Example P05.01b in [2]_, shows how to use parameters from
     the DDBST which are in units of calorie and need the gas constant as a
     multiplier:
 
