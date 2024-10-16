@@ -236,7 +236,9 @@ def test_numpy_inputs():
     assert modelnp_pickle == modelnp
     model_pickle = pickle.loads(pickle.dumps(model))
     assert model_pickle == model
+
 def test_regular_solution_gammas_binaries():
+    from thermo.regular_solution import MIN_LAMBDA_REGULAR_SOLUTION
     kwargs = dict(xs=[.1, .9, 0.3, 0.7, .85, .15], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7], Ts=[300.0, 400.0, 500.0], lambda12=0.1759, lambda21=0.7991)
     gammas_expect = [6818.906971998236, 1.105437709428331, 62.66284813913256, 2.0118436126911754, 1.1814344452004402, 137.6232341969005]
     gammas_1 = regular_solution_gammas_binaries(**kwargs)
@@ -250,7 +252,28 @@ def test_regular_solution_gammas_binaries():
 
     assert gammas_out is gammas_1
 
+
+    # Test case 2: Check with pre-allocated array
+    gammas_preallocated = [0.0] * len(gammas_expect)
+    gammas_out = regular_solution_gammas_binaries(gammas=gammas_preallocated, **kwargs)
+    assert_close1d(gammas_out, gammas_expect, rtol=1e-13)
+    assert gammas_out is gammas_preallocated
+
+    # Test case 3: Verify behavior with lambda values outside bounds
+    kwargs_small_lambda = kwargs.copy()
+    kwargs_small_lambda['lambda12'] = MIN_LAMBDA_REGULAR_SOLUTION - 1
+    kwargs_small_lambda['lambda21'] = MIN_LAMBDA_REGULAR_SOLUTION - 1
+    gammas_small_lambda = regular_solution_gammas_binaries(**kwargs_small_lambda)
+    kwargs_small_lambda['lambda12'] = MIN_LAMBDA_REGULAR_SOLUTION
+    kwargs_small_lambda['lambda21'] = MIN_LAMBDA_REGULAR_SOLUTION
+    gammas_min_lambda = regular_solution_gammas_binaries(**kwargs_small_lambda)
+    assert_close1d(gammas_small_lambda, gammas_min_lambda, rtol=1e-13)
+
+
+
+
 def test_regular_solution_gammas_binaries_jac():
+    from thermo.regular_solution import MIN_LAMBDA_REGULAR_SOLUTION
     kwargs = dict(xs=[.1, .9, 0.3, 0.7, .85, .15], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7], Ts=[300.0, 400.0, 500.0], lambda12=0.1759, lambda21=0.7991)
 
     res = regular_solution_gammas_binaries_jac(**kwargs)
@@ -269,6 +292,26 @@ def test_regular_solution_gammas_binaries_jac():
     res = regular_solution_gammas_binaries_jac(jac=res, **kwargs)
     assert res is jac
     assert_close2d(res, res_expect, rtol=1e-13)
+
+
+    # Test case 2: Check with pre-allocated array
+    jac_preallocated = np.zeros((len(res_expect), 2))
+    res_preallocated = regular_solution_gammas_binaries_jac(jac=jac_preallocated, **kwargs)
+    assert_close2d(res_preallocated, res_expect, rtol=1e-13)
+    assert res_preallocated is jac_preallocated
+
+    # Test case 3: Verify behavior with lambda values outside bounds
+    kwargs_small_lambda = kwargs.copy()
+    kwargs_small_lambda['lambda12'] = MIN_LAMBDA_REGULAR_SOLUTION - 1
+    kwargs_small_lambda['lambda21'] = MIN_LAMBDA_REGULAR_SOLUTION - 1
+    jac_small_lambda = regular_solution_gammas_binaries_jac(**kwargs_small_lambda)
+    kwargs_small_lambda['lambda12'] = MIN_LAMBDA_REGULAR_SOLUTION
+    kwargs_small_lambda['lambda21'] = MIN_LAMBDA_REGULAR_SOLUTION
+    jac_min_lambda = regular_solution_gammas_binaries_jac(**kwargs_small_lambda)
+    assert_close2d(jac_small_lambda, jac_min_lambda, rtol=1e-13)
+
+
+
     """
     # from math import *
     # from fluids.constants import R

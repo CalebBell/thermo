@@ -728,11 +728,16 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         extra_user_guess = [{k: v for k, v in zip(use_fit_parameters, p0)}]
         all_iter_guesses = hardcoded_guesses + extra_user_guess
         array_init_guesses = []
+        array_init_guesses_dedup = set()
         err_func_init = fit_func_dict['MeanRelErr']
         for hardcoded in all_iter_guesses:
             ph = [None]*len(fit_parameters)
             for i, k in enumerate(use_fit_parameters):
                 ph[i] = hardcoded[k]
+            ph_tuple = tuple(ph)
+            if ph_tuple in array_init_guesses_dedup:
+                continue
+            array_init_guesses_dedup.add(ph_tuple)
             array_init_guesses.append(ph)
 
             calc = fitting_func(Ts, *ph)

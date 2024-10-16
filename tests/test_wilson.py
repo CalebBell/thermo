@@ -845,6 +845,7 @@ def test_Wilson_chemsep():
     assert_close1d(gammas, [1.9573311040154513, 1.1600677182620136], rtol=1e-12)
 
 def test_wilson_gammas_binaries():
+    from thermo.wilson import MIN_LAMBDA_WILSON
     GE = Wilson(T=343.15, xs=[0.252, 0.748], lambda_as=[[0.0, -1.1769274893976625], [1.1769274893976625, 0.0]], lambda_bs=[[0.0, -192.38082765657816], [-480.8011032813958, 0.0]])
     lambdas = GE.lambdas()
     lambda12 = lambdas[0][1]
@@ -859,3 +860,44 @@ def test_wilson_gammas_binaries():
 
     all_gammas = wilson_gammas_binaries(xs, lambda12, lambda21)
     assert_close1d(all_gammas, gammas_object, rtol=1e-13)
+
+
+    # Test with provided calc array
+    calc = [0.0] * len(xs)
+    all_gammas_calc = wilson_gammas_binaries(xs, lambda12, lambda21, calc)
+    assert_close1d(all_gammas_calc, gammas_object, rtol=1e-13)
+    assert calc is all_gammas_calc
+
+    # Test with lambda values below MIN_LAMBDA_WILSON
+    small_lambda = MIN_LAMBDA_WILSON / 2
+    all_gammas_small = wilson_gammas_binaries(xs, small_lambda, small_lambda)
+    assert_close1d(all_gammas_small, wilson_gammas_binaries(xs, MIN_LAMBDA_WILSON, MIN_LAMBDA_WILSON), rtol=1e-13)
+
+    # Test symmetry
+    xs_sym = [0.3, 0.7, 0.7, 0.3]
+    gammas_sym = wilson_gammas_binaries(xs_sym, 0.5, 0.5)
+    assert_close(gammas_sym[0], gammas_sym[3], rtol=1e-13)
+    assert_close(gammas_sym[1], gammas_sym[2], rtol=1e-13)
+
+    # Test pure component limits
+    xs_pure = [1.0, 0.0, 0.0, 1.0]
+    gammas_pure = wilson_gammas_binaries(xs_pure, lambda12, lambda21)
+    assert_close(gammas_pure[0], 1.0, rtol=1e-13)
+    assert_close(gammas_pure[3], 1.0, rtol=1e-13)
+
+
+
+def test_wilson_gammas_binaries_jac():
+    # Test case 1: Basic functionality
+    xs = [0.3, 0.7, 0.6, 0.4]
+    lambda12, lambda21 = 0.5, 0.8
+    result = wilson_gammas_binaries_jac(xs, lambda12, lambda21)
+    result_expect = [[-0.8424580059652174, -0.8056552909015487], [-0.23224685226885827, -0.08884046635001594], [-0.1394660113000506, -0.23052233272735637], [-0.7579967143808015, -0.5011548524831746]]
+    assert_close2d(result, result_expect, rtol=1e-10)
+    assert result.shape == (4, 2)
+
+    # Test case 3: Check with pre-allocated array
+    calc = np.zeros((4, 2))
+    result_preallocated = wilson_gammas_binaries_jac(xs, lambda12, lambda21, calc)
+    assert result_preallocated is calc
+    assert_close2d(result_preallocated, result, rtol=1e-10)

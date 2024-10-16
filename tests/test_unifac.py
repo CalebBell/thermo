@@ -1127,7 +1127,7 @@ def test_unifac_sql_connection_check_threading_false():
     from thermo import unifac
     # and the interface has init the database connection
     unifac.init_ddbst_UNIFAC_db()
-    assert unifac.UNIFAC_DDBST_ASSIGNMENT_CURSOR is not None
+    assert unifac.thread_local_storage.cursor is not None
     # when user querying UNIFAC from different threads
 
     def worker(raised_exception: threading.Event):
@@ -1142,4 +1142,31 @@ def test_unifac_sql_connection_check_threading_false():
     t.join()
     # then no exception is raised on any thread
     assert not raised.is_set()
+def test_recursive_use_of_cursors():
+    import threading
+    # given is the module interface
+    from thermo import unifac
+    unifac.init_ddbst_UNIFAC_db()
+    assert unifac.thread_local_storage.cursor is not None
 
+    def worker(raised_exception: threading.Event):
+        try:
+            unifac.UNIFAC_group_assignment_DDBST('50-14-6', 'UNIFAC')
+            # one more query
+            unifac.UNIFAC_group_assignment_DDBST('50-14-6', 'UNIFAC')
+        except Exception as e:
+            print(f'Thread {threading.current_thread().name}: Error: {e}')
+            raised_exception.set()
+
+    raised = threading.Event()
+    
+    threads = []
+    for i in range(8):  # one more threading
+        t = threading.Thread(target=worker, args=(raised,), name=f'Thread-{i+1}')
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    assert not raised.is_set()

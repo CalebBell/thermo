@@ -155,6 +155,7 @@ from fluids.numerics import numpy as np
 
 from thermo.activity import GibbsExcess
 from thermo.group_contribution.group_contribution_base import str_group_assignment_to_dict
+import threading
 
 try:
     array, zeros, npexp, array_equal = np.array, np.zeros, np.exp, np.array_equal
@@ -2615,16 +2616,19 @@ def load_group_assignments_DDBST():
                     storage[key] = d_data
 
 ## Database lookup
-UNIFAC_DDBST_ASSIGNMENT_CURSOR = None
+
+thread_local_storage = threading.local()
 
 def init_ddbst_UNIFAC_db():
-    global UNIFAC_DDBST_ASSIGNMENT_CURSOR
-    import sqlite3
-    conn = sqlite3.connect(
-        os.path.join(os.path.dirname(__file__), 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite'),
-        check_same_thread=False,
-    )
-    UNIFAC_DDBST_ASSIGNMENT_CURSOR = conn.cursor()
+    ''' Initialize the database connection and cursor for the current thread if not already done. '''
+    if not hasattr(thread_local_storage, 'conn'):
+        # Create a new connection and cursor for the thread
+        import sqlite3
+        thread_local_storage.conn = sqlite3.connect(
+            os.path.join(os.path.dirname(__file__), 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite'),
+            check_same_thread=False,
+        )
+        thread_local_storage.cursor = thread_local_storage.conn.cursor()
 
 def UNIFAC_group_assignment_DDBST(CAS, model):
     r'''Lookup the group assignment of a compound in either the 'UNIFAC'
@@ -2640,7 +2644,7 @@ def UNIFAC_group_assignment_DDBST(CAS, model):
 
     Returns
     -------
-    asssignments : dict
+    assignments : dict
         The group assignments and their counts; note that an empty dictionary
         indicates the fragmentation is not available, [-]
 
@@ -2653,11 +2657,11 @@ def UNIFAC_group_assignment_DDBST(CAS, model):
     {1: 5, 2: 8, 3: 6, 4: 1, 6: 1, 7: 1, 8: 2, 14: 1}
 
     '''
-    if UNIFAC_DDBST_ASSIGNMENT_CURSOR is None:
+    if not hasattr(thread_local_storage, 'cursor'):
         init_ddbst_UNIFAC_db()
     CASi = CAS_to_int(CAS)
-    UNIFAC_DDBST_ASSIGNMENT_CURSOR.execute("SELECT * FROM DDBST WHERE `index`=?", (str(CASi),))
-    result = UNIFAC_DDBST_ASSIGNMENT_CURSOR.fetchone()
+    thread_local_storage.cursor.execute("SELECT * FROM DDBST WHERE `index`=?", (str(CASi),))
+    result = thread_local_storage.cursor.fetchone()
     if result is None:
         return {}
     if model == 'UNIFAC':
