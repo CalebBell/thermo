@@ -775,8 +775,8 @@ class SublimationPressure(TDependentProperty):
             T_limits[IAPWS] = (50.0, iapws95_Tt)
         if load_data and CASRN is not None and CASRN in vapor_pressure.Psub_data_Alcock_elements.index:
             methods.append(ALCOCK_ELEMENTS)
-            A, B, C, D, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psub_values_Alcock_elements[vapor_pressure.Psub_data_Alcock_elements.index.get_loc(CASRN)].tolist()
-            self.Alcock_coeffs = [A, B, C, D, 1.0]
+            A, B, C, D, E, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psub_values_Alcock_elements[vapor_pressure.Psub_data_Alcock_elements.index.get_loc(CASRN)].tolist()
+            self.Alcock_coeffs = [A, B, C, D, E]
             T_limits[ALCOCK_ELEMENTS] = (Alcock_Tmin, Alcock_Tmax)
         if load_data and CASRN is not None and CASRN in vapor_pressure.Psub_data_Landolt_Antoine.index:
             methods.append(LANDOLT)

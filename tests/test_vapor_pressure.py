@@ -948,3 +948,20 @@ def test_vapor_pressure_landolt():
     obj = VaporPressure(CASRN="62-53-3", Tb=457.25, Tc=705.0, Pc=5630000.0, omega=0.382,
                         extrapolation="AntoineAB|DIPPR101_ABC", method="LANDOLT")
     assert_close(obj(400), 17243.29241464641, rtol=1e-12)
+
+
+
+
+@pytest.mark.meta_T_dept
+def test_fixed_Alcock_Psat():
+    from fluids.constants import atm
+    from math import log10
+    T = 1800
+    # coefficients in the paper, the precise section
+    A, B, C, D = 2.719, -15107, 0.8036, -0.1033
+    expect = atm*10**(A + B/T + C*log10(T) + D*T*1e-3)
+    # calculate the value from thermo
+    obj = VaporPressure(CASRN="7440-31-5", Tb=2859.15, Tc=7400.0, Pc=609980000.0, omega=0.101, method="ALCOCK_ELEMENTS")
+    assert_close(obj(T), 57.80106223852368)
+    assert_close(obj(T), expect, rtol=1e-10)
+

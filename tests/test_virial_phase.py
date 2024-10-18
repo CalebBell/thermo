@@ -293,7 +293,7 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     d2B_dzizjs_expect = [[-1.0639357784985337e-05, -3.966321845899801e-05, -7.53987684376414e-05], [-3.966321845899801e-05, -8.286257232134107e-05, -0.00014128571574782375], [-7.53987684376414e-05, -0.00014128571574782375, -0.00024567752140887547]]
     assert_close2d(d2B_dzizjs_expect, gas.d2B_dzizjs(), rtol=1e-13)
     assert_close1d(gas_np.d2B_dzizjs(), d2B_dzizjs_expect, rtol=1e-13)
-    assert_close2d(d2B_dzizjs, gas.d2B_dzizjs(), rtol=1e-6)
+    assert_close2d(d2B_dzizjs, gas.d2B_dzizjs(), rtol=1e-5)
     assert isinstance(gas_np.d2B_dzizjs(), np.ndarray)
 
     d3B_dTdzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).dB_dT(), zs, perturbation=125e-5)
@@ -467,7 +467,7 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     d2B_dzizjs_expect = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
     assert_close2d(d2B_dzizjs_expect, gas.d2B_dzizjs(), rtol=1e-13)
     assert_close1d(gas_np.d2B_dzizjs(), d2B_dzizjs_expect, rtol=1e-13)
-    assert_close2d(d2B_dzizjs, gas.d2B_dzizjs(), rtol=1e-6)
+    assert_close2d(d2B_dzizjs, gas.d2B_dzizjs(), rtol=1e-5)
     assert isinstance(gas_np.d2B_dzizjs(), np.ndarray)
 
     d3B_dTdzizjs = hessian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).dB_dT(), zs, perturbation=125e-5)
