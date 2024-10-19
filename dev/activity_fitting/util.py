@@ -1,3 +1,4 @@
+from tqdm import tqdm
 from fluids.numerics import linspace
 from math import ceil
 from thermo import UNIFAC, NRTL, RegularSolution, ChemicalConstantsPackage
@@ -74,7 +75,7 @@ def write_to_csv(filename, data, fieldnames):
     write_to_csv('example.csv', data, fieldnames)
     """
     with open(filename, 'w', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore', delimiter='\t')
         
         writer.writeheader()  # Write the header row
         for row in data:
@@ -280,9 +281,11 @@ def main():
     n_jobs = 16  # Adjust this based on your system
 
     # Prepare chemical data
+    compounds =list(dippr_compounds())[0:80]
+    # compounds=['124-18-5', '64-17-5', '108-88-3', '7732-18-5', '106-97-8']
     chemicals = constants_as_chemicals(
         set.union(*[set(task['required_constants']) for tasks in REGISTERED_TASKS.values() for task in tasks]),
-        compounds=['124-18-5', '64-17-5', '108-88-3', '7732-18-5', '106-97-8']
+        compounds=compounds
     )
 
     # Create batches of chemical pairs
@@ -294,8 +297,8 @@ def main():
     # Process batches
 
     # Process batches in parallel
-    batch_results_list = Parallel(n_jobs=n_jobs, verbose=100)(
-        delayed(process_batch)(batch) for batch in chemical_batches
+    batch_results_list = Parallel(n_jobs=n_jobs, verbose=0)(
+        delayed(process_batch)(batch) for batch in tqdm(chemical_batches, desc="Processing batches", unit="batch")
     )
 
     # Collect results per task
@@ -316,4 +319,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-main()
+# main()
