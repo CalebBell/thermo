@@ -815,6 +815,9 @@ class RegularSolution(GibbsExcess):
                                                       func_wrapped_for_leastsq=func_wrapped_for_leastsq,
                                                        jac_wrapped_for_leastsq=jac_wrapped_for_leastsq,
                                                       **kwargs)
+
+
+                                                      
     _gamma_parameter_guesses = [#{'lambda12': 1.0, 'lambda21': 1.0}, # 1 is always tried!
                                 {'lambda12': 1e7, 'lambda21': -1e7},
                                 {'lambda12': 0.01, 'lambda21': 0.01},

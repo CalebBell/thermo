@@ -46,6 +46,8 @@ def batch_pairs(chemicals, batch_size):
     for i in range(0, len(total_combinations), batch_size):
         yield total_combinations[i:i+batch_size]
 
+STATS_METADATA =  ['MAE', 'STDEV']
+WRITE_STATS = True
 
 def write_to_csv(filename, data, fieldnames):
     """
@@ -74,6 +76,8 @@ def write_to_csv(filename, data, fieldnames):
     >>> fieldnames = ['name', 'age', 'city']
     write_to_csv('example.csv', data, fieldnames)
     """
+    if WRITE_STATS:
+        fieldnames = fieldnames + STATS_METADATA
     with open(filename, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore', delimiter='\t')
         
@@ -165,7 +169,7 @@ def register_task(model, name, key, metadata, required_constants):
     return decorator
 
 RS = 'Regular Solution'
-REGULAR_SOLUTION_METADATA = ['CAS1', 'CAS2', 'lambda12', 'lambda21', 'MAE', 'STDEV']
+REGULAR_SOLUTION_METADATA = ['CAS1', 'CAS2', 'lambda12', 'lambda21']
 REGULAR_SOLUTION_SYMMETRIC_298 = 'RSSYM298'
 REGULAR_SOLUTION_ASYMMETRIC_298 = 'RSASYM298'
 REGULAR_SOLUTION_SYMMETRIC_373 = 'RSSYM373'
@@ -233,6 +237,102 @@ def fit_binary_regular_solution_to_UNIFAC_DORTMUND(Vml_STPs, solubility_paramete
 
 
 
+
+NRTL_MODEL = 'NRTL'
+NRTL_METADATA_B = ['CAS1', 'CAS2', 'tau12_b', 'tau21_b', 'alpha12', 'alpha21']
+NRTL_METADATA_A = ['CAS1', 'CAS2', 'tau12_a', 'tau21_a', 'alpha12', 'alpha21']
+
+NRTL_FORCED_ALPHA_298 = 'NRTLFA298'
+NRTL_SYMMETRIC_ALPHA_298 = 'NRTLSYMALPHA298'
+NRTL_ASYMMETRIC_ALPHA_298 = 'NRTLASYMALPHA298'
+
+NRTL_FORCED_ALPHA_323 = 'NRTLFA323'
+NRTL_SYMMETRIC_ALPHA_323 = 'NRTLSYMALPHA323'
+NRTL_ASYMMETRIC_ALPHA_323 = 'NRTLASYMALPHA323'
+
+NRTL_FORCED_ALPHA_373 = 'NRTLFA373'
+NRTL_SYMMETRIC_ALPHA_373 = 'NRTLSYMALPHA373'
+NRTL_ASYMMETRIC_ALPHA_373 = 'NRTLASYMALPHA373'
+
+def fit_nrtl_binary(Ts, xs, gammas, symmetric_alpha=True, force_alpha=None):
+    kwargs = {
+        'gammas': gammas,
+        'xs': xs,
+        'symmetric_alphas': symmetric_alpha,
+        'multiple_tries': True
+    }
+    if force_alpha is not None:
+        kwargs['force_alpha'] = force_alpha
+
+    res, stats = NRTL.regress_binary_parameters(**kwargs)
+    res.update(stats)
+    tau12, tau21 = res['tau12'], res['tau21']
+    alpha12 = res.get('alpha12', force_alpha)
+    alpha21 = res.get('alpha21', alpha12)
+    
+    res['alpha12'] = alpha12
+    res['alpha21'] = alpha21
+    res['tau12_a'] = tau12
+    res['tau21_a'] = tau21
+    res['tau12_b'] = Ts[0] * tau12
+    res['tau21_b'] = Ts[0] * tau21
+    return res
+
+def fit_all_nrtl_options_to_gammas(Ts, xs, gammas):
+    res_forced_alpha = fit_nrtl_binary(Ts, xs, gammas, force_alpha=0.3)
+    res_fit_sym_alpha = fit_nrtl_binary(Ts, xs, gammas, symmetric_alpha=True)
+    res_fit_asym_alpha = fit_nrtl_binary(Ts, xs, gammas, symmetric_alpha=False)
+    return res_forced_alpha, res_fit_sym_alpha, res_fit_asym_alpha
+
+def fit_all_nrtl_to_model(model, xs=None, Ts=[298.15, 323.15, 373.15], 
+                          names=[
+                              (NRTL_FORCED_ALPHA_298, NRTL_SYMMETRIC_ALPHA_298, NRTL_ASYMMETRIC_ALPHA_298),
+                              (NRTL_FORCED_ALPHA_323, NRTL_SYMMETRIC_ALPHA_323, NRTL_ASYMMETRIC_ALPHA_323),
+                              (NRTL_FORCED_ALPHA_373, NRTL_SYMMETRIC_ALPHA_373, NRTL_ASYMMETRIC_ALPHA_373)
+                          ]):
+    if xs is None:
+        xs = get_binary_xs()
+    params = {}
+    for T, key_tuple in zip(Ts, names):
+        many_gammas_expect = [model.to_T_xs(T=T, xs=x_binary).gammas() for x_binary in xs]
+        Ts_pts = [T] * len(xs)
+        results = fit_all_nrtl_options_to_gammas(Ts_pts, xs, many_gammas_expect)
+        for key, result in zip(key_tuple, results):
+            params[key] = result
+    return params
+
+NRTL_UNIFAC_CONSTANTS = ['UNIFAC_groups']
+@register_task(NRTL_MODEL, "UNIFAC Forced Alpha 298K", NRTL_FORCED_ALPHA_298, NRTL_METADATA_A, NRTL_UNIFAC_CONSTANTS)
+@register_task(NRTL_MODEL, "UNIFAC Symmetric Alpha 298K", NRTL_SYMMETRIC_ALPHA_298, NRTL_METADATA_A, NRTL_UNIFAC_CONSTANTS)
+@register_task(NRTL_MODEL, "UNIFAC Asymmetric Alpha 298K", NRTL_ASYMMETRIC_ALPHA_298, NRTL_METADATA_A, NRTL_UNIFAC_CONSTANTS)
+@register_task(NRTL_MODEL, "UNIFAC Forced Alpha 323K", NRTL_FORCED_ALPHA_323, NRTL_METADATA_A, NRTL_UNIFAC_CONSTANTS)
+@register_task(NRTL_MODEL, "UNIFAC Symmetric Alpha 323K", NRTL_SYMMETRIC_ALPHA_323, NRTL_METADATA_A, NRTL_UNIFAC_CONSTANTS)
+@register_task(NRTL_MODEL, "UNIFAC Asymmetric Alpha 323K", NRTL_ASYMMETRIC_ALPHA_323, NRTL_METADATA_A, NRTL_UNIFAC_CONSTANTS)
+@register_task(NRTL_MODEL, "UNIFAC Forced Alpha 373K", NRTL_FORCED_ALPHA_373, NRTL_METADATA_A, NRTL_UNIFAC_CONSTANTS)
+@register_task(NRTL_MODEL, "UNIFAC Symmetric Alpha 373K", NRTL_SYMMETRIC_ALPHA_373, NRTL_METADATA_A, NRTL_UNIFAC_CONSTANTS)
+@register_task(NRTL_MODEL, "UNIFAC Asymmetric Alpha 373K", NRTL_ASYMMETRIC_ALPHA_373, NRTL_METADATA_A, NRTL_UNIFAC_CONSTANTS)
+def fit_binary_nrtl_to_UNIFAC(UNIFAC_groups):
+    model = UNIFAC.from_subgroups(T=298.15, xs=[0.5, 0.5], chemgroups=UNIFAC_groups)
+    fits = fit_all_nrtl_to_model(model)
+    return fits
+
+NRTL_UNIFAC_DORTMUND_CONSTANTS = ['UNIFAC_Dortmund_groups']
+@register_task(NRTL_MODEL, "Dortmund UNIFAC Forced Alpha 298K", NRTL_FORCED_ALPHA_298, NRTL_METADATA_A, NRTL_UNIFAC_DORTMUND_CONSTANTS)
+@register_task(NRTL_MODEL, "Dortmund UNIFAC Symmetric Alpha 298K", NRTL_SYMMETRIC_ALPHA_298, NRTL_METADATA_A, NRTL_UNIFAC_DORTMUND_CONSTANTS)
+@register_task(NRTL_MODEL, "Dortmund UNIFAC Asymmetric Alpha 298K", NRTL_ASYMMETRIC_ALPHA_298, NRTL_METADATA_A, NRTL_UNIFAC_DORTMUND_CONSTANTS)
+@register_task(NRTL_MODEL, "Dortmund UNIFAC Forced Alpha 323K", NRTL_FORCED_ALPHA_323, NRTL_METADATA_A, NRTL_UNIFAC_DORTMUND_CONSTANTS)
+@register_task(NRTL_MODEL, "Dortmund UNIFAC Symmetric Alpha 323K", NRTL_SYMMETRIC_ALPHA_323, NRTL_METADATA_A, NRTL_UNIFAC_DORTMUND_CONSTANTS)
+@register_task(NRTL_MODEL, "Dortmund UNIFAC Asymmetric Alpha 323K", NRTL_ASYMMETRIC_ALPHA_323, NRTL_METADATA_A, NRTL_UNIFAC_DORTMUND_CONSTANTS)
+@register_task(NRTL_MODEL, "Dortmund UNIFAC Forced Alpha 373K", NRTL_FORCED_ALPHA_373, NRTL_METADATA_A, NRTL_UNIFAC_DORTMUND_CONSTANTS)
+@register_task(NRTL_MODEL, "Dortmund UNIFAC Symmetric Alpha 373K", NRTL_SYMMETRIC_ALPHA_373, NRTL_METADATA_A, NRTL_UNIFAC_DORTMUND_CONSTANTS)
+@register_task(NRTL_MODEL, "Dortmund UNIFAC Asymmetric Alpha 373K", NRTL_ASYMMETRIC_ALPHA_373, NRTL_METADATA_A, NRTL_UNIFAC_DORTMUND_CONSTANTS)
+def fit_binary_nrtl_to_UNIFAC_DORTMUND(UNIFAC_Dortmund_groups):
+    model = UNIFAC.from_subgroups(T=298.15, xs=[0.5, 0.5], chemgroups=UNIFAC_Dortmund_groups, version=1)
+    fits = fit_all_nrtl_to_model(model)
+    return fits
+
+
+
 def process_batch(batch):
     """
     Process a batch of chemical pairs for all tasks.
@@ -281,8 +381,8 @@ def main():
     n_jobs = 16  # Adjust this based on your system
 
     # Prepare chemical data
-    compounds =list(dippr_compounds())[0:80]
-    # compounds=['124-18-5', '64-17-5', '108-88-3', '7732-18-5', '106-97-8']
+    # compounds =list(dippr_compounds())[0:80]
+    compounds=['124-18-5', '64-17-5', '108-88-3', '7732-18-5', '106-97-8']
     chemicals = constants_as_chemicals(
         set.union(*[set(task['required_constants']) for tasks in REGISTERED_TASKS.values() for task in tasks]),
         compounds=compounds
@@ -300,11 +400,14 @@ def main():
     batch_results_list = Parallel(n_jobs=n_jobs, verbose=0)(
         delayed(process_batch)(batch) for batch in tqdm(chemical_batches, desc="Processing batches", unit="batch")
     )
+    print('Completed parallel fitting')
+    print('-'*1000)
 
     # Collect results per task
     for batch_results in batch_results_list:
         for task_name, results in batch_results.items():
             task_results[task_name].extend(results)
+    
 
             
     # Write results to CSV per task
