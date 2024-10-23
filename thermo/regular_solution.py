@@ -96,6 +96,19 @@ def regular_solution_Hi_sums_fast(Vs, xsVs, His, N, Hi_sums=None):
         Hi_sums[i] = Vs[i]*t
     return Hi_sums
 
+def regular_solution_Aijs(SPs, coeffs, Aijs=None):
+    N = len(SPs)
+    if Aijs is None:
+        Aijs = [[0.0]*N for i in range(N)] # numba: delete
+#        Aijs = zeros((N, N)) # numba: uncomment
+    for i in range(N):
+        for j in range(N):
+            d = SPs[i] - SPs[j]
+            Aijs[i][j] = 0.5*d*d + SPs[i]*SPs[j]*coeffs[i][j]
+    return Aijs
+
+
+
 
 def regular_solution_GE(SPs, xsVs, coeffs, N, xsVs_sum_inv):
     num = 0.0
@@ -118,6 +131,14 @@ def regular_solution_GE(SPs, xsVs, coeffs, N, xsVs_sum_inv):
     for i in range(N):
         num += (0.5 * tots[i] + tot2s[i] * SPs[i]) * xsVs[i]
 
+    return num * xsVs_sum_inv
+
+def regular_solution_GE_from_Aijs(xsVs, Aijs, xsVs_sum_inv):
+    N = len(xsVs)
+    num = 0.0
+    for i in range(N):
+        for j in range(N):
+            num += xsVs[i]*xsVs[j]*Aijs[i][j]
     return num * xsVs_sum_inv
 
 
@@ -226,7 +247,7 @@ class RegularSolution(GibbsExcess):
         G^E = \frac{\sum_m \sum_n (x_m x_n V_m V_n A_{mn})}{\sum_m x_m V_m}
 
     .. math::
-        A_{mn} = 0.5(\delta_m - \delta_n)^2 - \delta_m \delta_n k_{mn}
+        A_{mn} = 0.5(\delta_m - \delta_n)^2 + \delta_m \delta_n k_{mn}
 
     In the above equation, :math:`\delta` represents the solubility parameters,
     and :math:`k_{mn}` is the interaction coefficient between `m` and `n`.
@@ -277,6 +298,18 @@ class RegularSolution(GibbsExcess):
 
     .. math::
         \delta = \sqrt{\frac{\Delta H_{vap} - RT}{V_m}}
+
+    Note that some sources use the convention of a negation for the calculation
+    of `A_{mn}`.
+
+    .. math::
+        A_{mn} = 0.5(\delta_m - \delta_n)^2 - \delta_m \delta_n k_{mn}
+    
+    Coefficients from models in that form can be used with this model simply
+    by negating the `k_{mn}` parameters:
+
+    .. math::
+        k_{mn} = -k_{mn\text{ other form}}
 
     Examples
     --------
@@ -345,7 +378,7 @@ class RegularSolution(GibbsExcess):
     _cached_calculated_attributes = ('_Hi_sums', '_d3GE_dxixjxks')
     _model_attributes = ('Vs', 'SPs', 'lambda_coeffs')
 
-    __slots__ = GibbsExcess.__slots__ + ('xsVs_sum', 'xsVs_sum_inv', 'lambda_coeffs', 'His', '_lambda_coeffs_zero', 'SPs', 'Vs', 'xsVs') + _cached_calculated_attributes
+    __slots__ = GibbsExcess.__slots__ + ('xsVs_sum', 'xsVs_sum_inv', 'lambda_coeffs', 'His', 'Aijs', '_lambda_coeffs_zero', 'SPs', 'Vs', 'xsVs') + _cached_calculated_attributes
     recalculable_attributes = GibbsExcess.recalculable_attributes + _cached_calculated_attributes
 
     def gammas_args(self, T=None):
@@ -404,6 +437,9 @@ class RegularSolution(GibbsExcess):
         self.xsVs_sum = xsVs_sum
         self.xsVs_sum_inv = 1.0/xsVs_sum
 
+        # As
+        self.Aijs = regular_solution_Aijs(self.SPs, self.lambda_coeffs)
+
         # factored out His matrix, used for Hi_sums calculation to be faster
         self.His = regular_solution_His(SPs, lambda_coeffs, N, His=([[0.0]*N for _ in range(N)] if not vectorized else zeros((N,N))))
 
@@ -446,6 +482,7 @@ class RegularSolution(GibbsExcess):
         new.lambda_coeffs = self.lambda_coeffs
         new._lambda_coeffs_zero = self._lambda_coeffs_zero
         new.vectorized = vectorized = self.vectorized
+        new.Aijs = self.Aijs
         new.His = self.His
 
         if not vectorized:
@@ -510,7 +547,7 @@ class RegularSolution(GibbsExcess):
             return self._GE
         except AttributeError:
             pass
-        GE = self._GE = regular_solution_GE(self.SPs, self.xsVs, self.lambda_coeffs, self.N, self.xsVs_sum_inv)
+        GE = self._GE = regular_solution_GE_from_Aijs(self.xsVs, self.Aijs, self.xsVs_sum_inv)
         return GE
 
 
