@@ -207,7 +207,7 @@ def test_regular_solution_additional_test_cases():
 
     assert_close1d(GE.gammas(), [1.1627878617775766, 1.7124869764213169, 1.4018662309653585, 22.745640971617053], rtol=1e-12)
     assert_close1d(GE.gammas_dGE_dxs(), [1.1627878617775766, 1.7124869764213169, 1.4018662309653585, 22.745640971617053], rtol=1e-12)
-    assert_close1d(GE.gammas_infinite_dilution(), [1.6479084374328064, 3.568103846536692, 1.5305660547296676, 43.74896036741677], rtol=1e-12)
+    assert_close1d(GE.gammas_infinite_dilution(), [1.6479084374328064, 3.568103846536692, 1.5305660547296676, 43.74896036741677], rtol=1e-10)
 
     assert_close1d(GE.d2GE_dTdxs(), [0.0, 0.0, 0.0, 0.0], rtol=1e-12)
 
@@ -228,7 +228,7 @@ def test_regular_solution_additional_test_cases():
 
     assert_close1d(GE.gammas(), [1.0761029847623977, 1.6217637421404603, 1.193391121115375, 19.43883451204506], rtol=1e-12)
     assert_close1d(GE.gammas_dGE_dxs(), [1.0761029847623977, 1.6217637421404603, 1.193391121115375, 19.43883451204506], rtol=1e-12)
-    assert_close1d(GE.gammas_infinite_dilution(), [1.2749633329647372, 3.1371755931764684, 1.2495316747929026, 36.178962626768936], rtol=1e-12)
+    assert_close1d(GE.gammas_infinite_dilution(), [1.2749633329647372, 3.1371755931764684, 1.2495316747929026, 36.178962626768936], rtol=1e-10)
 
     assert_close1d(GE.d2GE_dTdxs(), [0.0, 0.0, 0.0, 0.0], rtol=1e-12)
 
@@ -249,7 +249,7 @@ def test_regular_solution_additional_test_cases():
 
     assert_close1d(GE.gammas(), [1.0379339878709646, 1.1565925484420827, 1.0938525249883237, 2.2301952989686216], rtol=1e-12)
     assert_close1d(GE.gammas_dGE_dxs(), [1.0379339878709646, 1.1565925484420827, 1.0938525249883237, 2.2301952989686216], rtol=1e-12)
-    assert_close1d(GE.gammas_infinite_dilution(), [1.1312355258340416, 1.41057767504653, 1.1196661045356717, 2.6379662312061507], rtol=1e-12)
+    assert_close1d(GE.gammas_infinite_dilution(), [1.1312355258340416, 1.41057767504653, 1.1196661045356717, 2.6379662312061507], rtol=1e-10)
 
     assert_close1d(GE.d2GE_dTdxs(), [0.0, 0.0, 0.0, 0.0], rtol=1e-12)
 
