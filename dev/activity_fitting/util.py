@@ -1,7 +1,7 @@
 from tqdm import tqdm
 from fluids.numerics import linspace
 from math import ceil
-from thermo import UNIFAC, NRTL, RegularSolution, ChemicalConstantsPackage
+from thermo import UNIFAC, NRTL, RegularSolution, FloryHuggins, ChemicalConstantsPackage
 from chemicals.identifiers import dippr_compounds, search_chemical
 from chemicals.utils import hash_any_primitive
 from functools import wraps
@@ -377,12 +377,12 @@ def process_chemical_pair(chem1, chem2):
     return pair_results
 
 def main():
-    batch_size = 500
+    batch_size = 20
     n_jobs = 16  # Adjust this based on your system
 
     # Prepare chemical data
-    # compounds =list(dippr_compounds())[0:80]
-    compounds=['124-18-5', '64-17-5', '108-88-3', '7732-18-5', '106-97-8']
+    compounds =list(dippr_compounds())[0:80]
+    # compounds=['124-18-5', '64-17-5', '108-88-3', '7732-18-5', '106-97-8']
     chemicals = constants_as_chemicals(
         set.union(*[set(task['required_constants']) for tasks in REGISTERED_TASKS.values() for task in tasks]),
         compounds=compounds
