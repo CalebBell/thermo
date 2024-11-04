@@ -374,8 +374,9 @@ def test_specific_chemical_failures():
     # D2O - failed on Hf, Gf
     Chemical('7789-20-0')
 
-    # Tc failure
-    Chemical('132259-10-0')
+    # Air should not exist
+    with pytest.raises(Exception):
+        Chemical('132259-10-0')
 
 def test_chemical_issue96():
     assert Chemical('neon', T=310.9277777777778, P=275790).rho is not None
