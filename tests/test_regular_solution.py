@@ -433,10 +433,39 @@ def test_FloryHuggins():
     assert_close(GE.dGE_dT(), -1.3654856671723135)
     assert_close(GE.GE(), 2851.6940458559634)
 
+    # Test at new temperature and composition
+    GE2 = GE.to_T_xs(T=350.0, xs=[0.3, 0.3, 0.4])
+    
+    # Check basic property copying
+    assert GE2.Vs == GE.Vs
+    assert GE2.Aijs is GE.Aijs
+    assert GE2.His is GE.His
+
+
 
     GE = FloryHuggins(T=298.15, xs=[0.1, 0.2, .3, .4], Vs=[0.05868e-3, 0.01807e-3, .01e-3, .015e-3], SPs=[26140.0, 47860.0, 25000, 29000])
     assert_close3d(GE.d3GE_dxixjxks(), 
             [[[4682.268003264035, -60243.275483154124, 23822.555766391255, 11165.425283221184], [-60243.275483154124, 15377.860774237011, -4713.424419068196, -6544.967488966422], [23822.555766391255, -4713.424419068196, 8028.151243405697, 7620.37590806656], [11165.425283221184, -6544.967488966422, 7620.37590806656, 6034.659174784874]], [[-60243.275483154124, 15377.860774237011, -4713.424419068196, -6544.967488966422], [15377.860774237011, 31481.39619239953, 3857.240312914296, 8439.073451792432], [-4713.424419068196, 3857.240312914296, 156.82387703512063, 252.36498431714358], [-6544.967488966422, 8439.073451792432, 252.36498431714358, 785.1252189005604]], [[23822.555766391255, -4713.424419068196, 8028.151243405697, 7620.37590806656], [-4713.424419068196, 3857.240312914296, 156.82387703512063, 252.36498431714358], [8028.151243405697, 156.82387703512063, 2052.0131749207917, 2284.417753313513], [7620.37590806656, 252.36498431714358, 2284.417753313513, 2447.0061228868267]], [[11165.425283221184, -6544.967488966422, 7620.37590806656, 6034.659174784874], [-6544.967488966422, 8439.073451792432, 252.36498431714358, 785.1252189005604], [7620.37590806656, 252.36498431714358, 2284.417753313513, 2447.0061228868267], [6034.659174784874, 785.1252189005604, 2447.0061228868267, 2517.2521834821773]]])
+
+    # Check the repr feature
+    hash(GE)
+    assert eval(str(GE)).GE() == GE.GE()
+    GE2 = FloryHuggins.from_json(GE.as_json())
+    GE2.model_hash() # need to compute this or it won't match
+    assert object_data(GE2) == object_data(GE)
+    assert hash(GE) == hash(GE2)
+    assert GE2.state_hash() == GE.state_hash()
+
+    # numpy tests
+    modelnp = FloryHuggins(T=298.15, xs=np.array([0.1, 0.2, .3, .4]), Vs=np.array([0.05868e-3, 0.01807e-3, .01e-3, .015e-3]), SPs=np.array([26140.0, 47860.0, 25000, 29000]))
+    modelnp2 = modelnp.to_T_xs(T=modelnp.T*(1.0-2e-16), xs=modelnp.xs)
+    check_np_output_activity(GE, modelnp, modelnp2)
+
+    # # Pickle checks
+    modelnp_pickle = pickle.loads(pickle.dumps(modelnp))
+    assert modelnp_pickle == modelnp
+    model_pickle = pickle.loads(pickle.dumps(GE))
+    assert model_pickle == GE
 
 def test_FloryHuggins_very_painful_discovery_why_derivatives_not_working():
     GE = FloryHuggins(T=298.15, xs=[0.1, 0.2, .7], Vs=[0.05868e-3, 0.01807e-3, .01e-3], SPs=[26140.0, 47860.0, 25000])
@@ -515,3 +544,72 @@ def test_FloryHuggins_bulk():
 
     assert_close1d(GE.d2GE_dTdxs(), [-8.603179325936576, -8.839722642631493, -8.693768555620448, -11.448558794380846], rtol=1e-12)
 
+
+
+
+
+def test_hansen():
+    GE = Hansen(T=298.15, xs=[0.1, 0.2, 0.7], Vs=[0.00001806861809178579, 0.00005867599253092197, 0.00019583836334716688], delta_d=[15500.0, 15800.0, 15700.0], delta_p=[16000.0, 8800.0, 0.0], delta_h=[42300.0, 19400.0, 0.0])
+    def basic_checks(GE):
+        assert_close(GE.GE(), 1535.289806166052, rtol=1e-12)
+        assert_close(GE.dGE_dT(), -1.8033466594907037, rtol=1e-12)
+        assert_close(GE.d2GE_dT2(), 0.0, rtol=1e-12)
+        assert_close(GE.d3GE_dT3(), 0.0, rtol=1e-12)
+        assert_close1d(GE.dGE_dxs(), [2808.8577796977524, 2050.0323153458125, -2335.08494925039], rtol=1e-12)
+        assert_close2d(GE.d2GE_dxixjs(), [[-2565.4618655079526, -4032.467086102314, -2022.7391797587563], [-4032.467086102314, -5725.419190797466, -1329.4664040466637], [-2022.7391797587563, -1329.4664040466637, -2872.5569011674006]], rtol=5e-3)
+        assert_close1d(GE.gammas(), [8.440828466583636, 6.215049686485893, 1.059754569789273], rtol=1e-12)
+        assert_close1d(GE.gammas_dGE_dxs(), [8.440828466583636, 6.215049686485893, 1.059754569789273], rtol=1e-12)
+        assert_close1d(GE.gammas_infinite_dilution(), [8.43922245454429, 8.3046371474743, 21372.922653838257], rtol=1e-8)
+        assert_close1d(GE.d2GE_dTdxs(), [-18.62936149437263, -11.077596921521437, -8.627648205574845], rtol=1e-10)
+    basic_checks(GE)
+
+    # Check the repr feature
+    hash(GE)
+    assert eval(str(GE)).GE() == GE.GE()
+    GE2 = Hansen.from_json(GE.as_json())
+    GE2.model_hash() # need to compute this or it won't match
+    assert object_data(GE2) == object_data(GE)
+    assert hash(GE) == hash(GE2)
+    assert GE2.state_hash() == GE.state_hash()
+
+    # numpy tests
+    modelnp = Hansen(T=298.15, xs=np.array([0.1, 0.2, 0.7]), Vs=np.array([0.00001806861809178579, 0.00005867599253092197, 0.00019583836334716688]), 
+                    delta_d=np.array([15500.0, 15800.0, 15700.0]), delta_p=np.array([16000.0, 8800.0, 0.0]), delta_h=np.array([42300.0, 19400.0, 0.0]))
+    basic_checks(modelnp)
+    modelnp2 = modelnp.to_T_xs(T=modelnp.T*(1.0-2e-16), xs=modelnp.xs)
+    basic_checks(modelnp2)
+    check_np_output_activity(GE, modelnp, modelnp2)
+
+
+    # # Pickle checks
+    modelnp_pickle = pickle.loads(pickle.dumps(modelnp))
+    assert modelnp_pickle == modelnp
+    model_pickle = pickle.loads(pickle.dumps(GE))
+    assert model_pickle == GE
+
+    # Test at new temperature and composition
+    GE2 = GE.to_T_xs(T=350.0, xs=[0.3, 0.3, 0.4])
+    
+    # Check basic property copying
+    assert GE2.Vs == GE.Vs
+    assert GE2.delta_d == GE.delta_d
+    assert GE2.delta_p == GE.delta_p
+    assert GE2.delta_h == GE.delta_h
+    assert GE2.alpha == GE.alpha
+    assert GE2.N == GE.N
+    assert GE2.Aijs is GE.Aijs
+    assert GE2.His is GE.His
+
+
+def test_hansen_4_components():
+    GE = Hansen(T=298.15, xs=[0.4, 0.3, 0.2, 0.1], Vs=[0.00007401429647338668, 0.00008050481841759284, 0.00004074923154522018, 0.00001806861809178579], delta_d=[15500.0, 17800.0, 14700.0, 15500.0], delta_p=[10400.0, 3100.0, 12300.0, 16000.0], delta_h=[7000.0, 5700.0, 22300.0, 42300.0])
+    assert_close(GE.GE(), 1091.1793973093831, rtol=1e-12)
+    assert_close(GE.dGE_dT(), -0.7092139721671984, rtol=1e-12)
+    assert_close(GE.d2GE_dT2(), 0.0, rtol=1e-12)
+    assert_close(GE.d3GE_dT3(), 0.0, rtol=1e-12)
+    assert_close1d(GE.dGE_dxs(), [-2248.4224908768606, -1588.3667895462709, -729.6159134360269, 1340.2458360882529], rtol=1e-12)
+    assert_close2d(GE.d2GE_dxixjs(), [[-3017.799708308594, -2041.3476891966825, -2227.6134445986563, -2139.1015060021423], [-2041.3476891966825, -4742.943746948989, -681.0688178170785, -1033.2106627560217], [-2227.6134445986563, -681.0688178170785, -4668.93137118455, -4498.04732180892], [-2139.1015060021423, -1033.2106627560217, -4498.04732180892, -4137.437640129403]], rtol=5e-3)
+    assert_close1d(GE.gammas(), [1.097457987713046, 1.4322692226443197, 2.025215786863174, 4.6676189435647295], rtol=1e-12)
+    assert_close1d(GE.gammas_dGE_dxs(), [1.097457987713046, 1.4322692226443197, 2.025215786863174, 4.6676189435647295], rtol=1e-12)
+    assert_close1d(GE.gammas_infinite_dilution(), [1.3876605163393116, 2.554734591753295, 2.5135666705238293, 4.994913561254703], rtol=1e-8)
+    assert_close1d(GE.d2GE_dTdxs(), [-8.412664267695877, -8.560753751475001, -9.033924810384095, -12.83599795722768], rtol=1e-10)

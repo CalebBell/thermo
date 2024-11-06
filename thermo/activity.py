@@ -1118,7 +1118,7 @@ for create_derivative, derive_attr in first_comp_derivatives:
     def numerical_derivative(self, derive_attr=derive_attr):
         perturbation = 1e-7
         def func(xs):
-            if xs == self.xs:
+            if not self.vectorized and xs == self.xs:
                 obj = self
             else:
                 obj = self.to_T_xs(xs=xs, T=self.T)
@@ -1136,7 +1136,7 @@ for create_derivative, derive_attr in second_comp_derivatives:
     def numerical_derivative(self, derive_attr=derive_attr):
         perturbation = 1e-5
         def func(xs):
-            if xs == self.xs:
+            if not self.vectorized and xs == self.xs:
                 obj = self
             else:
                 obj = self.to_T_xs(xs=xs, T=self.T)

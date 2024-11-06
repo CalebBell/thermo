@@ -42,7 +42,7 @@ from thermo.eos_mix_methods import (
     VDW_lnphis_fastest,
 )
 from thermo.nrtl import NRTL, nrtl_gammas_from_args
-from thermo.regular_solution import RegularSolution, regular_solution_gammas
+from thermo.regular_solution import RegularSolution, Hansen, FloryHuggins, regular_solution_gammas
 from thermo.serialize import object_lookups
 from thermo.unifac import UNIFAC, unifac_gammas_from_args
 from thermo.uniquac import UNIQUAC, uniquac_gammas_from_args
@@ -53,6 +53,8 @@ activity_pointer_reference_dicts = {
     'thermo.wilson.Wilson': Wilson,
     'thermo.unifac.UNIFAC': UNIFAC,
     'thermo.regular_solution.RegularSolution': RegularSolution,
+    'thermo.regular_solution.FloryHuggins': FloryHuggins,
+    'thermo.regular_solution.Hansen': Hansen,
     'thermo.uniquac.UNIQUAC': UNIQUAC,
     'thermo.nrtl.NRTL': NRTL,
 }

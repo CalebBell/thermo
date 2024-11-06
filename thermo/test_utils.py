@@ -24,7 +24,7 @@ from math import log10
 
 import numpy as np
 from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
-
+from thermo.activity import GibbsExcess
 
 def check_np_output_activity(model, modelnp, modelnp2):
     # model is flat, scalar, list-based model
@@ -56,6 +56,9 @@ def check_np_output_activity(model, modelnp, modelnp2):
 
     mat_attrs = ['d2GE_dxixjs', 'd2nGE_dninjs', 'dgammas_dns']
     for attr in mat_attrs:
+        if model.__class__.d2GE_dxixjs is GibbsExcess.d2GE_dxixjs_numerical:
+            # no point in checking numerical derivatives of second order, too imprecise
+            continue
 #        print(attr)
         assert_close2d(getattr(model, attr)(), getattr(modelnp, attr)(), rtol=1e-12)
         assert_close2d(getattr(modelnp2, attr)(), getattr(modelnp, attr)(), rtol=1e-12)

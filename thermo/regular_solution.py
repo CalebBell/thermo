@@ -44,6 +44,14 @@ Flory Huggins Class
     :undoc-members:
     :show-inheritance:
     :exclude-members:
+Hansen Class
+============
+
+.. autoclass:: Hansen
+    :members: to_T_xs, GE, dGE_dT, d2GE_dT2, d3GE_dT3, d2GE_dTdxs, dGE_dxs, d2GE_dxixjs
+    :undoc-members:
+    :show-inheritance:
+    :exclude-members:
 
 
 
@@ -67,7 +75,7 @@ except (ImportError, AttributeError):
 __all__ = ['RegularSolution', 'regular_solution_gammas',
            'regular_solution_gammas_binaries',
            'regular_solution_gammas_binaries_jac',
-           'FloryHuggins']
+           'FloryHuggins', 'Hansen']
 
 def regular_solution_His(SPs, coeffs, N, His=None):
     if His is None:
@@ -1454,3 +1462,257 @@ class FloryHuggins(GibbsExcess):
         self._d3GE_dxixjxks = d3GE_dxixjxks
         return d3GE_dxixjxks
     
+def hansen_Aijs_His(delta_d, delta_p, delta_h, output=None, alpha=1.0, multiplier=1.0):
+    """Calculate either Aijs or His matrix for Hansen model using specified multiplier.
+    Supports `alpha` as a scaling factor.
+    
+    Parameters
+    ----------
+    delta_d : list[float]
+        Hansen dispersive parameters for each component, [Pa^0.5]
+    delta_p : list[float]
+        Hansen polar parameters for each component, [Pa^0.5]
+    delta_h : list[float]
+        Hansen hydrogen bonding parameters for each component, [Pa^0.5]
+    output : list[list[float]], optional
+        Pre-allocated symmetric matrix to store results
+    alpha : float, optional
+        Optional scaling factor, defaults to 1.0, [-]
+    multiplier : float
+        Multiplier to convert between Aijs (0.5) and His (1.0) calculations, [-]
+        
+    Returns
+    -------
+    output : list[list[float]]
+        Calculated symmetric matrix of interaction parameters, [Pa]
+    
+    Notes
+    -----
+    The calculations produce a symmetric matrix where each element represents the
+    interaction energy between components i and j. The total interaction energy
+    includes dispersive, polar, and hydrogen bonding contributions, with the polar
+    and hydrogen bonding terms weighted by 0.25 to account for their relative
+    contributions to the total cohesive energy.
+    """
+    N = len(delta_d)
+    if output is None:
+        output = [[0.0]*N for _ in range(N)]
+    if alpha is None:
+        alpha = 1.0
+    
+    factor = alpha * multiplier
+    for i in range(N):
+        for j in range(N):
+            term_d = (delta_d[i] - delta_d[j])
+            term_d *= term_d
+            term_p = (delta_p[i] - delta_p[j])
+            term_p *= 0.25*term_p
+            term_h = (delta_h[i] - delta_h[j])
+            term_h *= 0.25*term_h
+            output[i][j] = factor * (term_d + term_p + term_h)
+    return output
+
+def hansen_Aijs(delta_d, delta_p, delta_h, Aijs=None, alpha=None):
+    return hansen_Aijs_His(delta_d, delta_p, delta_h, Aijs, alpha, 0.5)
+
+def hansen_His(delta_d, delta_p, delta_h, His=None, alpha=None):
+    return hansen_Aijs_His(delta_d, delta_p, delta_h, His, alpha, 1.0)
+
+class Hansen(GibbsExcess):
+    r"""Class for representing a liquid with excess Gibbs energy represented by the 
+    Hansen model. This model extends the Flory-Huggins approach by considering three
+    different types of molecular interactions: dispersive, polar, and hydrogen bonding.
+    
+    The excess Gibbs energy is calculated using:
+    
+    .. math::
+        G^E = RT\sum_i x_i \ln\left(\frac{V_i}{\sum_j x_j V_j}\right) + \frac{\sum_m \sum_n (x_m x_n V_m V_n A_{mn})}{\sum_m x_m V_m}
+    
+    Where the interaction parameters A_{mn} are calculated using Hansen parameters:
+    
+    .. math::
+        A_{mn} = \alpha \left[ (\delta_{d,m} - \delta_{d,n})^2 + 0.25(\delta_{p,m} - \delta_{p,n})^2 + 0.25(\delta_{h,m} - \delta_{h,n})^2 \right]
+
+    The alpha term can be taken as 1, adjusted to fit a particular data set, or set to 0.6
+    as recommended in [1]_.
+    
+    Parameters
+    ----------
+    T : float
+        Temperature, [K]
+    xs : list[float]
+        Mole fractions, [-]
+    Vs : list[float]
+        Molar volumes of each component at a reference temperature (often 298.15 K), [m^3/mol]
+    delta_d : list[float]
+        Hansen dispersive parameters for each component, [Pa^0.5]
+    delta_p : list[float]
+        Hansen polar parameters for each component, [Pa^0.5]
+    delta_h : list[float]
+        Hansen hydrogen bonding parameters for each component, [Pa^0.5]
+    alpha : float, optional
+        Optional scaling factor for the interaction terms, defaults to 1.0, [-]
+        
+    Notes
+    -----
+    The Hansen model uses the same mathematical framework as the Flory-Huggins model
+    but replaces the single solubility parameter with three Hansen parameters that
+    better account for different types of molecular interactions. The excess Gibbs
+    energy derivatives follow the same form as the Flory-Huggins model with the
+    modified interaction parameters.
+
+    The `delta` and `Vs` terms can be specified in units of cm^3/mol and MPa^0.5
+    and the 
+    
+    Examples
+    --------
+
+    [2]_ presents a number of examplese in their supporting material. No specific
+    concentration was specified for what mole fraction was used to evaluate infinite
+    dilution coefficients, however 2-3% seems to fit the data points provided in many
+    cases. The 0.6 `alpha` also seems to have been used in their paper.
+
+    1-nitropropane as solvent, 2-methylbutane as solute from [2]_ - expected 
+    infinite dilution activity coefficient of 3.5:
+
+    >>> xs = [.97, 0.03]
+    >>> Vs = [89, 115.2]
+    >>> Vs = [Vi*1e-6 for Vi in Vs]
+    >>> delta_d = [16.6, 14.5]
+    >>> delta_p = [12.3, 0.0]
+    >>> delta_h = [5.5, 0.0]
+    >>> delta_factor = 1000
+    >>> delta_d = [v*delta_factor for v in delta_d]
+    >>> delta_p = [v*delta_factor for v in delta_p]
+    >>> delta_h = [v*delta_factor for v in delta_h]
+    >>> GE = Hansen(T=298.15, xs=xs, Vs=Vs, delta_d=delta_d, delta_p=delta_p, delta_h=delta_h, alpha=0.6)
+    >>> GE.gammas()[1]
+    3.48957861
+    >>> GE.gammas_infinite_dilution()[1]
+    3.8654190
+    >>> GE.GE()
+    96.67
+
+    The conversion factors can also be omitted as they cancel out:
+
+    >>> GE = Hansen(T=298.15, xs=[.97, 0.03], Vs=[89, 115.2], delta_d=[16.6, 14.5], delta_p=[12.3, 0.0], delta_h=[5.5, 0.0], alpha=0.6)
+    >>> GE.GE()
+    96.67
+
+
+    References
+    ----------
+    .. [1] Lindvig, Thomas, Michael L Michelsen, and Georgios M Kontogeorgis. "A 
+       Flory-Huggins Model Based on the Hansen Solubility Parameters." Fluid 
+       Phase Equilibria 203, no. 1 (December 1, 2002): 247-60. 
+       https://doi.org/10.1016/S0378-3812(02)00184-X.
+    .. [2] Brouwer, Thomas, and Boelo Schuur. "Model Performances Evaluated for Infinite
+       Dilution Activity Coefficients Prediction at 298.15 K." Industrial & Engineering
+       Chemistry Research 58, no. 20 (May 22, 2019): 8903-14. 
+       https://doi.org/10.1021/acs.iecr.9b00727.
+    .. [3] Hansen, Charles M. Hansen Solubility Parameters: A User's Handbook. 
+       CRC press, 2007.
+    """
+    model_id = 420
+    _cached_calculated_attributes = RegularSolution._cached_calculated_attributes
+    _model_attributes = tuple(v for v in RegularSolution._model_attributes if v not in ('SPs','lambda_coeffs',))  + ('delta_d', 'delta_p', 'delta_h', 'alpha')
+
+
+
+    __slots__ = tuple(v for v in RegularSolution.__slots__ if v not in ('SPs','lambda_coeffs',)) + ('delta_d', 'delta_p', 'delta_h', 'alpha')
+    recalculable_attributes = RegularSolution.recalculable_attributes
+
+    def __init__(self, *, xs, Vs, delta_d, delta_p, delta_h, T=GibbsExcess.T_DEFAULT, alpha=1.0):
+        self.T = T
+        self.xs = xs
+        self.Vs = Vs
+        self.delta_d = delta_d
+        self.delta_p = delta_p
+        self.delta_h = delta_h
+        self.alpha = alpha
+        self.N = N = len(Vs)
+        self.vectorized = vectorized = type(Vs) is not list
+
+        if not vectorized:
+            xsVs = []
+            xsVs_sum = 0.0
+            for i in range(N):
+                xV = xs[i]*Vs[i]
+                xsVs_sum += xV
+                xsVs.append(xV)
+        else:
+            xsVs = xs*Vs
+            xsVs_sum = float(npsum(xsVs))
+            
+        self.xsVs = xsVs
+        self.xsVs_sum = xsVs_sum
+        self.xsVs_sum_inv = 1.0/xsVs_sum
+
+        self.Aijs = hansen_Aijs(self.delta_d, self.delta_p, self.delta_h, alpha=self.alpha)
+        self.His = hansen_His(self.delta_d, self.delta_p, self.delta_h, alpha=self.alpha)
+        
+    def __repr__(self):
+        return (f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}, '
+                f'Vs={self.Vs!r}, delta_d={self.delta_d!r}, '
+                f'delta_p={self.delta_p!r}, delta_h={self.delta_h!r}, '
+                f'alpha={self.alpha!r})')
+                
+    def to_T_xs(self, T, xs):
+        r'''Method to construct a new :obj:`Hansen` instance at
+        temperature `T`, and mole fractions `xs`
+        with the same parameters as the existing object.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        xs : list[float]
+            Mole fractions of each component, [-]
+
+        Returns
+        -------
+        obj : RegularSolution
+            New :obj:`Hansen` object at the specified conditions [-]
+
+        Notes
+        -----
+        '''
+        new = self.__class__.__new__(self.__class__)
+        new.T = T
+        new.xs = xs
+        new.delta_d = self.delta_d
+        new.delta_p = self.delta_p
+        new.delta_h = self.delta_h
+        new.Vs = Vs = self.Vs
+        new.N = N = self.N
+        new.alpha = self.alpha
+        new.vectorized = vectorized = self.vectorized
+        new.Aijs = self.Aijs
+        new.His = self.His
+
+        if not vectorized:
+            xsVs = []
+            xsVs_sum = 0.0
+            for i in range(N):
+                xV = xs[i]*Vs[i]
+                xsVs_sum += xV
+                xsVs.append(xV)
+        else:
+            xsVs = xs*Vs
+            xsVs_sum = float(npsum(xsVs))
+            
+
+        new.xsVs = xsVs
+        new.xsVs_sum = xsVs_sum
+        new.xsVs_sum_inv = 1.0 / xsVs_sum
+        return new
+
+    Hi_sums = FloryHuggins.Hi_sums
+    GE = FloryHuggins.GE
+    dGE_dT = FloryHuggins.dGE_dT  
+    d2GE_dT2 = FloryHuggins.d2GE_dT2
+    d3GE_dT3 = FloryHuggins.d3GE_dT3
+    d2GE_dTdxs = FloryHuggins.d2GE_dTdxs
+    dGE_dxs = FloryHuggins.dGE_dxs
+    d2GE_dxixjs = GibbsExcess.d2GE_dxixjs_numerical
+    # d3GE_dxixjxks = GibbsExcess.d3GE_dxixjxks_numerical # don't have this one
