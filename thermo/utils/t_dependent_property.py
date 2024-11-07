@@ -547,7 +547,6 @@ class TDependentProperty:
         * 'linear' - fits the model at its temperature limits to a linear model
         * 'nolimit' - attempt to evaluate the model outside of its limits;
           this will error in most cases and return None
-        * 'interp1d' - SciPy's :obj:`interp1d <scipy.interpolate.interp1d>` is used to extrapolate
         * 'AntoineAB' - fits the model to :obj:`Antoine <chemicals.vapor_pressure.Antoine>`'s
           equation at the temperature limits using only the A and B coefficient
         * 'DIPPR101_ABC' - fits the model at its temperature limits to the
@@ -648,10 +647,6 @@ class TDependentProperty:
     tabular_extrapolation_pts = 20
     """The number of points to calculate at and use when doing a tabular
     extrapolation calculation."""
-
-    interp1d_extrapolate_kind = 'linear'
-    """The `kind` parameter for scipy's interp1d function,
-    when it is used for extrapolation."""
 
     P_dependent = False
     forced = False
@@ -4258,27 +4253,6 @@ class TDependentProperty:
             d0 = self.calculate_derivative(T, method=method, order=1)
             d1 = self.calculate_derivative(T, method=method, order=2)
             coefficients = EQ106_ABC(T, self.Tc, v, d0, d1)
-        elif extrapolation == 'interp1d':
-            from scipy.interpolate import interp1d
-            interpolation_T = self.interpolation_T
-            interpolation_property = self.interpolation_property
-            if method in self.tabular_data:
-                Ts, properties = self.tabular_data[method]
-            else:
-                Ts = linspace(Tmin, Tmax, self.tabular_extrapolation_pts)
-                properties = [self.calculate(T, method=method) for T in Ts]
-
-            if interpolation_T is not None:  # Transform ths Ts with interpolation_T if set
-                Ts_interp = [interpolation_T(T) for T in Ts]
-            else:
-                Ts_interp = Ts
-            if interpolation_property is not None:  # Transform ths props with interpolation_property if set
-                properties_interp = [interpolation_property(p) for p in properties]
-            else:
-                properties_interp = properties
-            # Only allow linear extrapolation, but with whatever transforms are specified
-            extrapolator = interp1d(Ts_interp, properties_interp, fill_value='extrapolate', kind=self.interp1d_extrapolate_kind)
-            coefficients = extrapolator
         else:
             raise ValueError("Could not recognize extrapolation setting")
         return coefficients
@@ -4401,14 +4375,6 @@ class TDependentProperty:
             val = Watson(T, Hvap_ref=v0, T_ref=T_lim, Tc=self.Tc, exponent=n)
         elif extrapolation in ('EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
             val = exp_horner_backwards_ln_tau(T, self.Tc, coeffs)
-        elif extrapolation == 'interp1d':
-            extrapolator = coeffs
-            interpolation_T = self.interpolation_T
-            if interpolation_T is not None: T = interpolation_T(T)
-            prop = extrapolator(T)
-            if self.interpolation_property is not None:
-                prop = self.interpolation_property_inv(prop)
-            val = float(prop)
         else:
             raise RuntimeError(f"Unknown extrapolation '{extrapolation}'")
 

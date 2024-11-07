@@ -112,8 +112,8 @@ def test_ThermalConductivityLiquid():
         assert EtOH.T_dependent_property(5000) is None
 
     EtOH.method = VDI_TABULAR
-    EtOH.extrapolation = 'interp1d'
-    assert_close(EtOH.T_dependent_property(600.), 0.040117737789202995)
+    EtOH.extrapolation = 'linear'
+    assert_close(EtOH.T_dependent_property(600.), 0.041664538669993256)
     EtOH.extrapolation = None
     assert None is EtOH.T_dependent_property(600.0)
 
@@ -256,8 +256,8 @@ def test_ThermalConductivityGas():
 
     # Test tabular limits/extrapolation
     EtOH.method = VDI_TABULAR
-    EtOH.extrapolation = 'interp1d'
-    assert_close(EtOH.T_dependent_property(600.), 0.05755089974293061)
+    EtOH.extrapolation = 'linear'
+    assert_close(EtOH.T_dependent_property(600.), 0.056874565330318774)
 
     EtOH.extrapolation = None
     assert None is EtOH.T_dependent_property(600.0)

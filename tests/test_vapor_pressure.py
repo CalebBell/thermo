@@ -160,8 +160,8 @@ def test_VaporPressure_water():
     Ps = [3533.918074415897, 4865.419832056078, 6612.2351036034115, 8876.854141719203, 11780.097759775277, 15462.98385942125, 20088.570250257424, 25843.747665059742, 32940.95821687677, 41619.81654904555]
     w.add_tabular_data(Ts=Ts, properties=Ps)
     assert_close(w.T_dependent_property(305.), 4715.122890601165)
-    w.extrapolation = 'interp1d'
-    assert_close(w.T_dependent_property(200.), 0.5364148240126076)
+    w.extrapolation = 'Arrhenius'
+    assert_close(w.T_dependent_property(200.), 0.5245145425443402)
 
     Ts_bad = [300, 325, 350]
     Ps_bad = [1, -1, 1j]
@@ -806,7 +806,7 @@ def test_VaporPressure_weird_signatures():
     assert_close(dln, obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D2LN), rtol=1e-5)
 
     # Extrapolations
-    for extrapolation in ('interp1d', 'DIPPR101_ABC', 'AntoineAB'):
+    for extrapolation in ('Arrhenius', 'DIPPR101_ABC', 'AntoineAB'):
         obj.extrapolation = extrapolation
         for T in (100, 1000):
             assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN),

@@ -60,8 +60,8 @@ def test_Permittivity_class():
     permittivities = [87.75556413000001, 83.530500320000016, 79.48208925000003, 75.610330919999996, 71.915225330000013, 68.396772480000024, 65.05497237000003, 61.889825000000044, 58.901330369999997, 56.08948848]
     w.add_tabular_data(Ts=Ts, properties=permittivities)
     assert_close(w.T_dependent_property(305.), 75.95500925000006)
-    w.extrapolation = 'interp1d'
-    assert_close(w.T_dependent_property(200.), 115.79462395999997)
+    w.extrapolation = 'linear'
+    assert_close(w.T_dependent_property(200.), 116.38076077348933)
 
     w.extrapolation_coeffs.clear()
     assert w.T_dependent_property(800.0) is not None

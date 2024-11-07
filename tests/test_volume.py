@@ -204,8 +204,8 @@ def test_VolumeLiquid():
         assert EtOH.T_dependent_property(600) is None
 
     EtOH.method = VDI_TABULAR
-    EtOH.extrapolation = 'interp1d'
-    assert_close(EtOH.T_dependent_property(700.), 0.0005648005718236466)
+    EtOH.extrapolation = 'linear'
+    assert_close(EtOH.T_dependent_property(700.), 0.000942059982827252)
 
     with pytest.raises(Exception):
         EtOH.test_method_validity(300, 'BADMETHOD')
