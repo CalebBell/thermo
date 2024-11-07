@@ -746,7 +746,7 @@ class SublimationPressure(TDependentProperty):
     custom_args = ('Tt', 'Pt', 'Hsub_t')
 
     def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None,
-                 extrapolation='linear', **kwargs):
+                 extrapolation='Arrhenius', **kwargs):
         self.CASRN = CASRN
         self.Tt = Tt
         self.Pt = Pt

@@ -438,8 +438,8 @@ def test_FloryHuggins():
     
     # Check basic property copying
     assert GE2.Vs == GE.Vs
-    assert GE2.Aijs is GE.Aijs
-    assert GE2.His is GE.His
+    assert GE2.Aijs == GE.Aijs
+    assert GE2.His == GE.His
 
 
 
@@ -597,8 +597,8 @@ def test_hansen():
     assert GE2.delta_h == GE.delta_h
     assert GE2.alpha == GE.alpha
     assert GE2.N == GE.N
-    assert GE2.Aijs is GE.Aijs
-    assert GE2.His is GE.His
+    assert GE2.Aijs == GE.Aijs
+    assert GE2.His == GE.His
 
 
 def test_hansen_4_components():

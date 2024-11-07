@@ -170,7 +170,7 @@ def test_ViscosityLiquid():
                                         Psat=VaporPressure(CASRN="67-56-1",
                                 Tb=337.65, Tc=512.5, Pc=8084000.0, omega=0.559,
                             extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY"),
-                                extrapolation="constant", method="DIPPR_PERRY_8E"), extrapolation="linear")
+                                extrapolation="constant", method="DIPPR_PERRY_8E"), extrapolation="Arrhenius")
     res = obj.calculate(230, PRZEDZIECKI_SRIDHAR)
 
 

@@ -109,11 +109,11 @@ When extrapolation is turned on, it is used automatically if a property is reque
 >>> ethanol_psat(100.0), ethanol_psat(1000)
 (1.047582e-11, 1779196575.4962692)
 
-The default extrapolation methods may be changed in the future, but can be manually specified also by changing the value of the :obj:`extrapolation <thermo.utils.TDependentProperty.extrapolation>` attribute. For example, if the `linear` extrapolation method is set, extrapolation will be linear instead of using those fit equations. Because not all properties are suitable for linear extrapolation, some methods have a default `transform` to make the property behave as linearly as possible. This is also used in tabular interpolation:
+The default extrapolation methods may be changed in the future, but can be manually specified also by changing the value of the :obj:`extrapolation <thermo.utils.TDependentProperty.extrapolation>` attribute. For example, if the `Arrhenius` extrapolation method is set, extrapolation will be Arrhenius instead of using those fit equations. 
 
->>> ethanol_psat.extrapolation = 'linear'
+>>> ethanol_psat.extrapolation = 'Arrhenius'
 >>> ethanol_psat(100.0), ethanol_psat(1000)
-(1.0475e-11, 385182009.4)
+(1.04758e-11, 385272476.5)
 
 The low-temperature linearly extrapolated value is actually the same as before, because it performs a 1/T transform and a log(P) transform on the output, which results in the fit being the same as the default equation for vapor pressure.
 
@@ -473,7 +473,7 @@ The same temperature limits and low-pressure extrapolation methods are available
 >>> water_mu.valid_methods(T=480) # doctest: +SKIP
 ['DIPPR_PERRY_8E', 'COOLPROP', 'VDI_PPDS', 'LETSOU_STIEL']
 >>> water_mu.extrapolation
-'linear'
+'Arrhenius'
 
 To better understand what methods are available, the :obj:`valid_methods_P <thermo.utils.TDependentProperty.valid_methods_P>` method checks all available high-pressure correlations against their temperature and pressure limits.
 

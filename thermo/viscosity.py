@@ -357,7 +357,7 @@ class ViscosityLiquid(TPDependentProperty):
 
     DEFAULT_EXTRAPOLATION_MIN = 1e-5
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
-                 omega=None, Psat=None, Vml=None, extrapolation='linear',
+                 omega=None, Psat=None, Vml=None, extrapolation='Arrhenius',
                  extrapolation_min=DEFAULT_EXTRAPOLATION_MIN,
                  **kwargs):
         self.CASRN = CASRN

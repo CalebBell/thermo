@@ -100,6 +100,11 @@ from chemicals.vapor_pressure import (
     dWagner_dT,
     dWagner_original_dT,
     dYaws_Psat_dT,
+    Arrhenius_parameters, 
+    Arrhenius_extrapolation, 
+    dArrhenius_extrapolation_dT, 
+    d2Arrhenius_extrapolation_dT2, 
+    d3Arrhenius_extrapolation_dT3
 )
 from chemicals.viscosity import (
     PPDS5,
@@ -176,6 +181,7 @@ from fluids.numerics import (
     linspace,
     log,
     mean_squared_error,
+    sort_paired_lists,
     polyder,
     polyint,
     polyint_over_x,
@@ -561,6 +567,8 @@ class TDependentProperty:
           :obj:`EQ106 <chemicals.dippr.EQ106>`'s
           equation at the temperature limits using only the A, B, and C
           coefficient.
+        * 'Arrhenius': fits the model at its temperature limits to an Arrhenius 
+          linear model in 1/T and log(property) space
 
     It is possible to use different extrapolation methods for the
     low-temperature and the high-temperature region. Specify the extrapolation
@@ -3175,13 +3183,10 @@ class TDependentProperty:
         key = (name, id(self.interpolation_T), id(self.interpolation_property), id(self.interpolation_property_inv))
 
         # If the interpolator and extrapolator has already been created, load it
-#        if isinstance(self.tabular_data_interpolators, dict) and key in self.tabular_data_interpolators:
-#            extrapolator, spline = self.tabular_data_interpolators[key]
-
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
-            from scipy.interpolate import interp1d
+            from scipy.interpolate import make_interp_spline
             Ts, properties = self.tabular_data[name]
 
             if self.interpolation_T is not None:  # Transform ths Ts with interpolation_T if set
@@ -3193,18 +3198,17 @@ class TDependentProperty:
             else:
                 properties_interp = properties
             # Only allow linear extrapolation, but with whatever transforms are specified
-            extrapolator = interp1d(Ts_interp, properties_interp, fill_value='extrapolate')
+            # extrapolator = interp1d(Ts_interp, properties_interp, fill_value='extrapolate')
+            # extrapolator = lambda T: interp(T, Ts_interp, properties_interp, extrapolate=True)
+            extrapolator = (Ts_interp, properties_interp)
             # If more than 5 property points, create a spline interpolation
             if len(properties) >= 5:
-                # TODO: switch interpolator
-                spline = interp1d(Ts_interp, properties_interp, kind='cubic')
+                Ts_interp_sorted, properties_interp_sorted = sort_paired_lists(Ts_interp, properties_interp)
+                spline = make_interp_spline(Ts_interp_sorted, properties_interp_sorted)
+                # spline = interp1d(Ts_interp, properties_interp, kind='cubic')
                 # spline = PchipInterpolator(Ts_interp, properties_interp)
             else:
                 spline = None
-#            if isinstance(self.tabular_data_interpolators, dict):
-#                self.tabular_data_interpolators[key] = (extrapolator, spline)
-#            else:
-#                self.tabular_data_interpolators = {key: (extrapolator, spline)}
             self.tabular_data_interpolators[key] = (extrapolator, spline)
 
         # Load the stores values, tor checking which interpolation strategy to
@@ -3212,7 +3216,7 @@ class TDependentProperty:
         Ts, properties = self.tabular_data[name]
 
         if T < Ts[0] or T > Ts[-1] or not spline:
-            tool = extrapolator
+            tool = lambda T: interp(T, extrapolator[0], extrapolator[1], extrapolate=True)
         else:
             tool = spline
 
@@ -4205,16 +4209,17 @@ class TDependentProperty:
         Tmin, Tmax = T_limits[method]
         T = Tmin if low else Tmax
         if extrapolation == 'linear':
-            interpolation_T = self.interpolation_T
-            interpolation_property = self.interpolation_property
             v = self.calculate(T, method=method)
-            if interpolation_property is not None: v = interpolation_property(v)
-            d = self._calculate_derivative_transformed(T=T, method=method, order=1, interpolation_property=self.interpolation_property, interpolation_T=self.interpolation_T)
+            d = self.calculate_derivative(T, method)
             coefficients = (v, d)
         elif extrapolation == 'log(linear)':
             v = log(self.calculate(T, method=method))
             d = self._calculate_derivative_transformed(T=T, method=method, order=1, interpolation_property=lambda x: log(x))
             coefficients = (v, d)
+        elif extrapolation == 'Arrhenius':
+            P = self.calculate(T, method)
+            dP_dT = self.calculate_derivative(T, method)
+            coefficients = Arrhenius_parameters(T, P, dP_dT)
         elif extrapolation == 'constant':
             coefficients = self.calculate(T, method=method)
         elif extrapolation == 'nolimit':
@@ -4364,20 +4369,16 @@ class TDependentProperty:
             extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
         if extrapolation == 'linear':
             v, d = coeffs
-            interpolation_T = self.interpolation_T
-            interpolation_property_inv = self.interpolation_property_inv
             T_lim = T_low if low else T_high
-            if interpolation_T is not None:
-                T_lim = interpolation_T(T_lim)
-                T = interpolation_T(T)
             val = v + d * (T - T_lim)
-            if interpolation_property_inv is not None:
-                val = interpolation_property_inv(val)
         elif extrapolation == 'log(linear)':
             v, d = coeffs
             T_lim = T_low if low else T_high
             val = v + d * (T - T_lim)
             val = exp(val)
+        elif extrapolation == 'Arrhenius':
+            T_ref, P_ref, slope = coeffs
+            val = Arrhenius_extrapolation(T, T_ref, P_ref, slope)
         elif extrapolation == 'constant':
             val = coeffs
         elif extrapolation == 'AntoineAB':
@@ -4460,7 +4461,7 @@ class TDependentProperty:
             raise ValueError("Not outside normal range")
         if extrapolation == 'constant':
             return 0.
-        elif extrapolation in ('linear', 'DIPPR101_ABC', 'AntoineAB', 'DIPPR106_AB', 'DIPPR106_ABC', 'EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
+        elif extrapolation in ('linear', 'Arrhenius', 'DIPPR101_ABC', 'AntoineAB', 'DIPPR106_AB', 'DIPPR106_ABC', 'EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
             key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs
             if key in extrapolation_coeffs:
@@ -4469,8 +4470,15 @@ class TDependentProperty:
                 extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             if extrapolation == 'linear':
                 if order == 1:
-                    if self.interpolation_T is None and self.interpolation_property_inv is None:
-                        return coeffs[1]
+                    return coeffs[1]
+            elif extrapolation == 'Arrhenius':
+                T_ref, P_ref, slope = coeffs
+                if order == 1:
+                    return dArrhenius_extrapolation_dT(T, T_ref, P_ref, slope)
+                elif order == 2:
+                    return d2Arrhenius_extrapolation_dT2(T, T_ref, P_ref, slope)
+                elif order == 3:
+                    return d3Arrhenius_extrapolation_dT3(T, T_ref, P_ref, slope)
             elif extrapolation == 'DIPPR101_ABC':
                 if order in (0, 1, 2, 3):
                     A, B, C = coeffs
