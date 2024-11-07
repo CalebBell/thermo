@@ -2867,17 +2867,14 @@ class TDependentProperty:
         if transform == PROPERTY_TRANSFORM_LN:
             if method == EXP_POLY_FIT:
                 return horner(self.exp_poly_fit_coeffs, T)
-
             return log(self.calculate(T, method))
-        elif transform == PROPERTY_TRANSFORM_DLN:
-            if method == EXP_POLY_FIT:
-                return horner_and_der(self.exp_poly_fit_coeffs, T)[1]
-            return derivative(lambda T: log(self.calculate(T, method)), T, dx=T*1e-6)
         elif transform == PROPERTY_TRANSFORM_D2LN:
             if method == EXP_POLY_FIT:
                 return horner_and_der2(self.exp_poly_fit_coeffs, T)[2]
             return derivative(lambda T: log(self.calculate(T, method)), T, n=2, dx=T*1e-6)
-        elif transform == PROPERTY_TRANSFORM_D_X:
+        elif transform == PROPERTY_TRANSFORM_D_X or transform == PROPERTY_TRANSFORM_DLN:
+            if method == EXP_POLY_FIT:
+                return horner_and_der(self.exp_poly_fit_coeffs, T)[1]
             v = self.calculate(T, method)
             der = self.calculate_derivative(T, method)
             return der/v
