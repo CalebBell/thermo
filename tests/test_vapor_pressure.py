@@ -785,44 +785,44 @@ def test_VaporPressure_extrapolate_derivatives():
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_weird_signatures():
-    from thermo.utils import PROPERTY_TRANSFORM_D2_X, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_LN
+    from thermo.utils import TRANSFORM_SECOND_DERIVATIVE_RATIO, TRANSFORM_SECOND_LOG_DERIVATIVE, TRANSFORM_DERIVATIVE_RATIO, TRANSFORM_LOG_DERIVATIVE, TRANSFORM_LOG
 
     obj = VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
 
     # Within range
-    assert_close(obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_LN),
+    assert_close(obj.T_dependent_property_transform(300, TRANSFORM_LOG),
                  log(obj.T_dependent_property(300)))
 
-    assert_close(obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D_X),
+    assert_close(obj.T_dependent_property_transform(300, TRANSFORM_DERIVATIVE_RATIO),
                  obj.T_dependent_property_derivative(300)/obj.T_dependent_property(300))
 
-    assert_close(obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D2_X),
+    assert_close(obj.T_dependent_property_transform(300, TRANSFORM_SECOND_DERIVATIVE_RATIO),
                  obj.T_dependent_property_derivative(300, 2)/obj.T_dependent_property(300))
 
     dln = derivative(lambda T: log(obj(T)), 300, dx=300*1e-6)
-    assert_close(dln, obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_DLN))
+    assert_close(dln, obj.T_dependent_property_transform(300, TRANSFORM_LOG_DERIVATIVE))
 
     dln = derivative(lambda T: log(obj(T)), 300, n=2, dx=300*1e-5)
-    assert_close(dln, obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D2LN), rtol=1e-5)
+    assert_close(dln, obj.T_dependent_property_transform(300, TRANSFORM_SECOND_LOG_DERIVATIVE), rtol=1e-5)
 
     # Extrapolations
     for extrapolation in ('Arrhenius', 'DIPPR101_ABC', 'AntoineAB'):
         obj.extrapolation = extrapolation
         for T in (100, 1000):
-            assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN),
+            assert_close(obj.T_dependent_property_transform(T, TRANSFORM_LOG),
                          log(obj.T_dependent_property(T)))
 
-            assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D_X),
+            assert_close(obj.T_dependent_property_transform(T, TRANSFORM_DERIVATIVE_RATIO),
                          obj.T_dependent_property_derivative(T)/obj.T_dependent_property(T))
 
-            assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2_X),
+            assert_close(obj.T_dependent_property_transform(T, TRANSFORM_SECOND_DERIVATIVE_RATIO),
                          obj.T_dependent_property_derivative(T, 2)/obj.T_dependent_property(T))
 
             dln = derivative(lambda T: log(obj(T)), T, dx=T*1e-6)
-            assert_close(dln, obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_DLN))
+            assert_close(dln, obj.T_dependent_property_transform(T, TRANSFORM_LOG_DERIVATIVE))
 
             dln = derivative(lambda T: log(obj(T)), T, n=2, dx=T*1e-5)
-            assert_close(dln, obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2LN), rtol=4e-4)
+            assert_close(dln, obj.T_dependent_property_transform(T, TRANSFORM_SECOND_LOG_DERIVATIVE), rtol=4e-4)
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_WebBook():

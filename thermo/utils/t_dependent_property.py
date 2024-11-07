@@ -21,8 +21,8 @@ SOFTWARE.
 '''
 
 
-__all__ = ['TDependentProperty', 'PROPERTY_TRANSFORM_LN', 'PROPERTY_TRANSFORM_DLN',
-           'PROPERTY_TRANSFORM_D2LN', 'PROPERTY_TRANSFORM_D_X', 'PROPERTY_TRANSFORM_D2_X']
+__all__ = ['TDependentProperty', 'TRANSFORM_LOG', 'TRANSFORM_LOG_DERIVATIVE',
+           'TRANSFORM_SECOND_LOG_DERIVATIVE', 'TRANSFORM_DERIVATIVE_RATIO', 'TRANSFORM_SECOND_DERIVATIVE_RATIO']
 
 import os
 
@@ -489,12 +489,12 @@ class ConstantLocalMethod:
     def f_int_over_T(self, Ta, Tb):
         return self.value * log(Tb/Ta)
 
-# Intended for internal use only; should be interned
-PROPERTY_TRANSFORM_LN = 'lnx'
-PROPERTY_TRANSFORM_DLN = 'dlnxoverdT'
-PROPERTY_TRANSFORM_D2LN = 'd2lnxdT2'
-PROPERTY_TRANSFORM_D_X = 'dxdToverx'
-PROPERTY_TRANSFORM_D2_X = 'd2xdT2overx'
+# Intended for internal use only
+TRANSFORM_LOG = 'log_transform'
+TRANSFORM_LOG_DERIVATIVE = 'logarithmic_derivative'
+TRANSFORM_SECOND_LOG_DERIVATIVE = 'second_logarithmic_derivative'
+TRANSFORM_DERIVATIVE_RATIO = 'derivative_over_value'
+TRANSFORM_SECOND_DERIVATIVE_RATIO = 'second_derivative_over_value'
 
 skipped_parameter_combinations = {'REFPROP_sigma': {('sigma1',), ('sigma1', 'n1', 'sigma2')}}
 
@@ -2864,21 +2864,21 @@ class TDependentProperty:
 
 
     def calculate_transform(self, T, method, transform):
-        if transform == PROPERTY_TRANSFORM_LN:
+        if transform == TRANSFORM_LOG:
             if method == EXP_POLY_FIT:
                 return horner(self.exp_poly_fit_coeffs, T)
             return log(self.calculate(T, method))
-        elif transform == PROPERTY_TRANSFORM_D2LN:
+        elif transform == TRANSFORM_SECOND_LOG_DERIVATIVE:
             if method == EXP_POLY_FIT:
                 return horner_and_der2(self.exp_poly_fit_coeffs, T)[2]
             return derivative(lambda T: log(self.calculate(T, method)), T, n=2, dx=T*1e-6)
-        elif transform == PROPERTY_TRANSFORM_D_X or transform == PROPERTY_TRANSFORM_DLN:
+        elif transform == TRANSFORM_DERIVATIVE_RATIO or transform == TRANSFORM_LOG_DERIVATIVE:
             if method == EXP_POLY_FIT:
                 return horner_and_der(self.exp_poly_fit_coeffs, T)[1]
             v = self.calculate(T, method)
             der = self.calculate_derivative(T, method)
             return der/v
-        elif transform == PROPERTY_TRANSFORM_D2_X:
+        elif transform == TRANSFORM_SECOND_DERIVATIVE_RATIO:
             v = self.calculate(T, method)
             der = self.calculate_derivative(T, method, order=2)
             return der/v
@@ -2921,21 +2921,21 @@ class TDependentProperty:
         else:
             extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
 
-        if transform == PROPERTY_TRANSFORM_LN:
+        if transform == TRANSFORM_LOG:
             if extrapolation == 'AntoineAB':
                 A, B = coeffs
                 return A - B/T
             elif extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 return A + B/T + C*trunc_log(T)
-        elif transform == PROPERTY_TRANSFORM_DLN:
+        elif transform == TRANSFORM_LOG_DERIVATIVE:
             if extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 return (-B/T + C)/T
             if extrapolation == 'AntoineAB':
                 A, B = coeffs
                 return B/(T*T)
-        elif transform == PROPERTY_TRANSFORM_D2LN:
+        elif transform == TRANSFORM_SECOND_LOG_DERIVATIVE:
             if extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 T_inv = 1.0/T
@@ -2943,14 +2943,14 @@ class TDependentProperty:
             if extrapolation == 'AntoineAB':
                 A, B = coeffs
                 return -2.0*B/(T*T*T)
-        elif transform == PROPERTY_TRANSFORM_D_X:
+        elif transform == TRANSFORM_DERIVATIVE_RATIO:
             if extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 return (-B + C*T)/(T*T)
             if extrapolation == 'AntoineAB':
                 A, B = coeffs
                 return B/(T*T)
-        elif transform ==PROPERTY_TRANSFORM_D2_X:
+        elif transform ==TRANSFORM_SECOND_DERIVATIVE_RATIO:
             if extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 T2 = T*T
@@ -2963,17 +2963,17 @@ class TDependentProperty:
 
 
 
-        if transform == PROPERTY_TRANSFORM_LN:
+        if transform == TRANSFORM_LOG:
             return log(self.extrapolate(T, method))
-        elif transform == PROPERTY_TRANSFORM_DLN:
+        elif transform == TRANSFORM_LOG_DERIVATIVE:
             return derivative(lambda T: log(self.extrapolate(T, method)), T, dx=T*1e-6)
-        elif transform == PROPERTY_TRANSFORM_D2LN:
+        elif transform == TRANSFORM_SECOND_LOG_DERIVATIVE:
             return derivative(lambda T: log(self.extrapolate(T, method)), T, n=2, dx=T*1e-6)
-        elif transform == PROPERTY_TRANSFORM_D_X:
+        elif transform == TRANSFORM_DERIVATIVE_RATIO:
             v = self.extrapolate(T, method)
             der = self.extrapolate_derivative(T, method, order=1)
             return der/v
-        elif transform == PROPERTY_TRANSFORM_D2_X:
+        elif transform == TRANSFORM_SECOND_DERIVATIVE_RATIO:
             v = self.extrapolate(T, method)
             der = self.extrapolate_derivative(T, method, order=2)
             return der/v
