@@ -1540,7 +1540,7 @@ def test_GibbsExcessLiquid_RegularSolution():
     [0.01601, 0.01022, 0.0, 0.00698],
     [0.0152, 0.00544, 0.02579, 0.0]]
 
-    GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    GE = RegularSolution(T=T, xs=xs, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs)
     chemicals = ['acetone', 'chloroform', 'methanol', 'water']
     constants, properties = ChemicalConstantsPackage.from_IDs(chemicals)
     liquid = GibbsExcessLiquid(

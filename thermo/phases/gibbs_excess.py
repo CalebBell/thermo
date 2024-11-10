@@ -37,7 +37,7 @@ from thermo.nrtl import nrtl_dtaus_dT as dln_henries_dT
 from thermo.nrtl import nrtl_taus as ln_henries
 from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
 from thermo.phases.phase import Phase
-from thermo.utils import POLY_FIT, PROPERTY_TRANSFORM_D2_X, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_LN
+from thermo.utils import POLY_FIT, TRANSFORM_SECOND_DERIVATIVE_RATIO, TRANSFORM_SECOND_LOG_DERIVATIVE, TRANSFORM_DERIVATIVE_RATIO, TRANSFORM_LOG_DERIVATIVE, TRANSFORM_LOG
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.volume import VolumeLiquid, VolumeSolid
 
@@ -315,7 +315,7 @@ class GibbsExcessLiquid(Phase):
                  henry_es=None, henry_fs=None,
                  henry_mode='solvents_with_parameters',
 
-                 T=None, P=None, zs=None,
+                 T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
                  Psat_extrpolation='AB',
                  equilibrium_basis=None,
                  caloric_basis=None,
@@ -340,6 +340,8 @@ class GibbsExcessLiquid(Phase):
         allow flashes with different properties from different phases.
         '''
         self.N = N = len(VaporPressures)
+        if zs is None:
+            zs = [1.0/N]*N
         if henry_components is None:
             henry_components = [False]*self.N
         self.has_henry_components = any(henry_components)
@@ -1081,7 +1083,7 @@ class GibbsExcessLiquid(Phase):
             self._lnPsats = lnPsats
             return lnPsats
 
-        self._lnPsats = lnPsats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN)
+        self._lnPsats = lnPsats = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_LOG)
                                    for VaporPressure in self.VaporPressures]
         if self.has_henry_components:
             Hs, henry_components = self.Henry_constants(), self.henry_components
@@ -1112,7 +1114,7 @@ class GibbsExcessLiquid(Phase):
                         dPsat_dT = dPsat_dT*T + c
                 dlnPsats_dT.append(dPsat_dT)
             return dlnPsats_dT
-        dlnPsats_dT = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_DLN) for VaporPressure in self.VaporPressures]
+        dlnPsats_dT = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_LOG_DERIVATIVE) for VaporPressure in self.VaporPressures]
         if self.has_henry_components:
             Hs, dHs, henry_components = self.Henry_constants(), self.dHenry_constants_dT(), self.henry_components
             for i in range(N):
@@ -1144,7 +1146,7 @@ class GibbsExcessLiquid(Phase):
                         d2lnPsat_dT2 = d2lnPsat_dT2*T + c
                 d2lnPsats_dT2.append(d2lnPsat_dT2)
             return d2lnPsats_dT2
-        d2lnPsats_dT2 = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2LN) for VaporPressure in self.VaporPressures]
+        d2lnPsats_dT2 = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_SECOND_LOG_DERIVATIVE) for VaporPressure in self.VaporPressures]
         if self.has_henry_components:
             Hs, dHs, d2Hs, henry_components = self.Henry_constants(), self.dHenry_constants_dT(), self.d2Henry_constants_dT2(), self.henry_components
             for i in range(N):
@@ -1180,7 +1182,7 @@ class GibbsExcessLiquid(Phase):
             return dPsat_dT_over_Psats
 
         # dPsat_dT_over_Psats = [i/j for i, j in zip(self.dPsats_dT(), self.Psats())]
-        dPsat_dT_over_Psats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D_X) for VaporPressure in self.VaporPressures]
+        dPsat_dT_over_Psats = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_DERIVATIVE_RATIO) for VaporPressure in self.VaporPressures]
 
         if self.has_henry_components:
             Hs, dHenry_constants_dT, henry_components = self.Henry_constants(), self.dHenry_constants_dT(), self.henry_components
@@ -1228,7 +1230,7 @@ class GibbsExcessLiquid(Phase):
             return d2Psat_dT2_over_Psats
 
         # d2Psat_dT2_over_Psats = [i/j for i, j in zip(self.d2Psats_dT2(), self.Psats())]
-        d2Psat_dT2_over_Psats = [VaporPressure.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2_X) for VaporPressure in self.VaporPressures]
+        d2Psat_dT2_over_Psats = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_SECOND_DERIVATIVE_RATIO) for VaporPressure in self.VaporPressures]
         if self.has_henry_components:
             Hs, d2Henry_constants_dT2, henry_components = self.Henry_constants(), self.d2Henry_constants_dT2(), self.henry_components
             for i in range(N):
@@ -3394,7 +3396,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                          'Psat_extrpolation') + pure_references
 
     def __init__(self, SublimationPressures, VolumeSolids=None,
-                 GibbsExcessModel=IdealSolution(),
+                 GibbsExcessModel=IdealSolution,
                  eos_pure_instances=None,
                  VolumeLiquidMixture=None,
                  HeatCapacityGases=None,
@@ -3402,7 +3404,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                  use_Poynting=False,
                  use_phis_sat=False,
                  Hfs=None, Gfs=None, Sfs=None,
-                 T=None, P=None, zs=None,
+                 T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
                  ):
         super().__init__(VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
               HeatCapacityGases=HeatCapacityGases, EnthalpyVaporizations=EnthalpySublimations,

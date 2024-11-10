@@ -564,7 +564,7 @@ class MixtureProperty:
             zs = normalize(ns)
             prop = self.mixture_property(T, P, zs)
             return prop*n_tot
-        return derivative(prop_extensive, zs[i], dx=1E-6, args=[list(zs), i])
+        return derivative(prop_extensive, zs[i], dx=1E-6, args=(list(zs), i))
 
 
     def calculate_derivative_T(self, T, P, zs, ws, method, order=1):
@@ -601,7 +601,7 @@ class MixtureProperty:
             Calculated derivative property at constant pressure,
             [`units/K^order`]
         '''
-        return derivative(self.calculate, T, dx=1e-6, args=[P, zs, ws, method], n=order, order=1+order*2)
+        return derivative(self.calculate, T, dx=1e-6, args=(P, zs, ws, method), n=order, order=1+order*2)
 
     def calculate_derivative_P(self, P, T, zs, ws, method, order=1):
         r'''Method to calculate a derivative of a mixture property with respect

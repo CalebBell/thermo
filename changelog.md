@@ -10,6 +10,17 @@
 
 ### Fixed
 
+
+## [0.4.0] - 2024-11-10
+
+### Changed
+- Fluids version dependency now >= 1.0.27
+- Chemicals version dependency now >= 1.3.0
+- General code cleanup and further documentation
+- Add Flory Huggins and Hansen activity coefficient models
+- Further progress on removing legacy scipy interp1d method
+- Clean up in code of vapor pressure extrapolation
+
 ## [0.3.0] - 2024-07-26
 
 ### Changed

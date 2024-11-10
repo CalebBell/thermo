@@ -72,7 +72,7 @@ class DryAirLemmon(HelmholtzEOS):
     _d4Ar_ddelta3dtau_func = staticmethod(air.lemmon2000_air_d4Ar_ddelta3dtau)
     _d4Ar_ddeltadtau3_func = staticmethod(air.lemmon2000_air_d4Ar_ddeltadtau3)
 
-    def __init__(self, T=None, P=None, zs=None):
+    def __init__(self, T=HelmholtzEOS.T_DEFAULT, P=HelmholtzEOS.T_DEFAULT, zs=None):
         self.T = T
         self.P = P
         self._rho = rho = air.lemmon2000_rho(T, P)

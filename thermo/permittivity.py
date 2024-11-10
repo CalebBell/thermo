@@ -131,6 +131,10 @@ class PermittivityLiquid(TDependentProperty):
 
     _fit_max_n = {CRC: 4}
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(CRC_CONSTANT)
+    extra_correlations_internal.add(CRC)
+
     @staticmethod
     def _method_indexes():
         '''Returns a dictionary of method: index for all methods
@@ -160,26 +164,23 @@ class PermittivityLiquid(TDependentProperty):
         altered once the class is initialized. This method can be called again
         to reset the parameters.
         '''
-        methods = []
+        self.all_methods = methods = set()
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         if load_data and CASRN:
             if CASRN in permittivity.permittivity_data_CRC.index:
-                methods.append(CRC_CONSTANT)
-                self.CRC_CONSTANT_T, self.CRC_permittivity, A, B, C, D, Tmin, Tmax = permittivity.permittivity_values_CRC[permittivity.permittivity_data_CRC.index.get_loc(CASRN)].tolist()
+                CRC_CONSTANT_T, CRC_permittivity, A, B, C, D, Tmin, Tmax = permittivity.permittivity_values_CRC[permittivity.permittivity_data_CRC.index.get_loc(CASRN)].tolist()
+                self.add_correlation(name=CRC_CONSTANT,model='DIPPR100',Tmin=CRC_CONSTANT_T,Tmax=CRC_CONSTANT_T, A=CRC_permittivity, select=False)
                 if isnan(Tmin) and isnan(Tmax):
-                    Tmin, Tmax = self.CRC_CONSTANT_T, self.CRC_CONSTANT_T
-                T_limits[CRC_CONSTANT] = (self.CRC_CONSTANT_T, self.CRC_CONSTANT_T)
-                self.CRC_coeffs = [0 if isnan(x) else x for x in [A, B, C, D] ]
-                self.CRC_Tmin = Tmin
-                self.CRC_Tmax = Tmax
-                if self.CRC_coeffs[0] and not isnan(Tmin):
-                    methods.append(CRC)
-                    T_limits[CRC] = (Tmin, Tmax)
+                    Tmin, Tmax = CRC_CONSTANT_T, CRC_CONSTANT_T
+                CRC_coeffs = [0.0 if isnan(x) else x for x in [A, B, C, D] ]
+                if CRC_coeffs[0] and not isnan(Tmin):
+                    self.add_correlation(name=CRC, model='DIPPR100',Tmin=Tmin,Tmax=Tmax, A=CRC_coeffs[0], B=CRC_coeffs[1], C=CRC_coeffs[2],D=CRC_coeffs[3], select=False)
+
         if CASRN == '7732-18-5':
-            methods.append(IAPWS)
+            methods.add(IAPWS)
             T_limits[IAPWS] = (273.15, 873.15)
-        self.all_methods = set(methods)
+
 
     def calculate(self, T, method):
         r'''Method to calculate permittivity of a liquid at temperature `T`
@@ -200,12 +201,7 @@ class PermittivityLiquid(TDependentProperty):
         epsilon : float
             Relative permittivity of the liquid at T, [-]
         '''
-        if method == CRC:
-            A, B, C, D = self.CRC_coeffs
-            epsilon = A + T*(B + T*(C + D*T))
-        elif method == CRC_CONSTANT:
-            epsilon = self.CRC_permittivity
-        elif method == IAPWS:
+        if method == IAPWS:
             if T <= iapws95_Tc:
                 rho = iapws95_rhol_sat(T)
             else:
@@ -213,7 +209,7 @@ class PermittivityLiquid(TDependentProperty):
                 rho = iapws95_rho(T, iapws95_Pc)
             epsilon = permittivity_IAPWS(T, rho)
         else:
-            epsilon = self._base_calculate(T, self._method)
+            epsilon = self._base_calculate(T, method)
         return epsilon
 
     def test_method_validity(self, T, method):

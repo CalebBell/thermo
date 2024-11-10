@@ -21,8 +21,8 @@ SOFTWARE.
 '''
 
 
-__all__ = ['TDependentProperty', 'PROPERTY_TRANSFORM_LN', 'PROPERTY_TRANSFORM_DLN',
-           'PROPERTY_TRANSFORM_D2LN', 'PROPERTY_TRANSFORM_D_X', 'PROPERTY_TRANSFORM_D2_X']
+__all__ = ['TDependentProperty', 'TRANSFORM_LOG', 'TRANSFORM_LOG_DERIVATIVE',
+           'TRANSFORM_SECOND_LOG_DERIVATIVE', 'TRANSFORM_DERIVATIVE_RATIO', 'TRANSFORM_SECOND_DERIVATIVE_RATIO']
 
 import os
 
@@ -54,6 +54,7 @@ from chemicals.dippr import (
     EQ105_fitting_jacobian,
     EQ106_fitting_jacobian,
     EQ107_fitting_jacobian,
+    INTEGRAL_OVER_T_CALCULATION,
 )
 from chemicals.elements import allotrope_CAS_to_name, solid_allotrope_map
 from chemicals.heat_capacity import (
@@ -99,6 +100,11 @@ from chemicals.vapor_pressure import (
     dWagner_dT,
     dWagner_original_dT,
     dYaws_Psat_dT,
+    Arrhenius_parameters, 
+    Arrhenius_extrapolation, 
+    dArrhenius_extrapolation_dT, 
+    d2Arrhenius_extrapolation_dT2, 
+    d3Arrhenius_extrapolation_dT3
 )
 from chemicals.viscosity import (
     PPDS5,
@@ -175,6 +181,7 @@ from fluids.numerics import (
     linspace,
     log,
     mean_squared_error,
+    sort_paired_lists,
     polyder,
     polyint,
     polyint_over_x,
@@ -185,6 +192,7 @@ from fluids.numerics import (
     secant,
     trunc_exp,
     trunc_log,
+    poly_convert,
 )
 from fluids.numerics import numpy as np
 
@@ -481,12 +489,12 @@ class ConstantLocalMethod:
     def f_int_over_T(self, Ta, Tb):
         return self.value * log(Tb/Ta)
 
-# Intended for internal use only; should be interned
-PROPERTY_TRANSFORM_LN = 'lnx'
-PROPERTY_TRANSFORM_DLN = 'dlnxoverdT'
-PROPERTY_TRANSFORM_D2LN = 'd2lnxdT2'
-PROPERTY_TRANSFORM_D_X = 'dxdToverx'
-PROPERTY_TRANSFORM_D2_X = 'd2xdT2overx'
+# Intended for internal use only
+TRANSFORM_LOG = 'log_transform'
+TRANSFORM_LOG_DERIVATIVE = 'logarithmic_derivative'
+TRANSFORM_SECOND_LOG_DERIVATIVE = 'second_logarithmic_derivative'
+TRANSFORM_DERIVATIVE_RATIO = 'derivative_over_value'
+TRANSFORM_SECOND_DERIVATIVE_RATIO = 'second_derivative_over_value'
 
 skipped_parameter_combinations = {'REFPROP_sigma': {('sigma1',), ('sigma1', 'n1', 'sigma2')}}
 
@@ -539,7 +547,6 @@ class TDependentProperty:
         * 'linear' - fits the model at its temperature limits to a linear model
         * 'nolimit' - attempt to evaluate the model outside of its limits;
           this will error in most cases and return None
-        * 'interp1d' - SciPy's :obj:`interp1d <scipy.interpolate.interp1d>` is used to extrapolate
         * 'AntoineAB' - fits the model to :obj:`Antoine <chemicals.vapor_pressure.Antoine>`'s
           equation at the temperature limits using only the A and B coefficient
         * 'DIPPR101_ABC' - fits the model at its temperature limits to the
@@ -559,6 +566,8 @@ class TDependentProperty:
           :obj:`EQ106 <chemicals.dippr.EQ106>`'s
           equation at the temperature limits using only the A, B, and C
           coefficient.
+        * 'Arrhenius': fits the model at its temperature limits to an Arrhenius 
+          linear model in 1/T and log(property) space
 
     It is possible to use different extrapolation methods for the
     low-temperature and the high-temperature region. Specify the extrapolation
@@ -638,10 +647,6 @@ class TDependentProperty:
     tabular_extrapolation_pts = 20
     """The number of points to calculate at and use when doing a tabular
     extrapolation calculation."""
-
-    interp1d_extrapolate_kind = 'linear'
-    """The `kind` parameter for scipy's interp1d function,
-    when it is used for extrapolation."""
 
     P_dependent = False
     forced = False
@@ -825,7 +830,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
        'initial_guesses': [
            {'A': 1.0, 'B': 0.0, 'C': 0.0, 'D': 0.0, 'E': 0.0, 'F': 0.0, 'G': 0.0},
@@ -847,7 +852,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A']},
       ),
     'linear': ([],
@@ -855,7 +860,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B']},
       ),
     'quadratic': ([],
@@ -863,7 +868,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C']},
       ),
     'cubic': ([],
@@ -871,7 +876,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D']},
       ),
     'quintic': ([],
@@ -879,7 +884,7 @@ class TDependentProperty:
       {'f': EQ100,
        'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E']},
       ),
 
@@ -1121,7 +1126,7 @@ class TDependentProperty:
       {'f': EQ102,
        'f_der': lambda T, **kwargs: EQ102(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ102(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ102(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ102(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
      {'fit_params': ['A', 'B', 'C', 'D'],
       'fit_jac': EQ102_fitting_jacobian,
       'initial_guesses': [
@@ -1165,7 +1170,7 @@ class TDependentProperty:
       {'f': EQ104,
        'f_der': lambda T, **kwargs: EQ104(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ104(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ104(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ104(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
 
 
      {'fit_params': ['A', 'B', 'C', 'D', 'E'], 'initial_guesses': [
@@ -1276,7 +1281,7 @@ class TDependentProperty:
       {'f': EQ107,
        'f_der': lambda T, **kwargs: EQ107(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ107(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ107(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ107(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E'],
        'fit_jac': EQ107_fitting_jacobian,
        'initial_guesses':[
@@ -1302,7 +1307,7 @@ class TDependentProperty:
       {'f': EQ114,
        'f_der': lambda T, **kwargs: EQ114(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ114(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ114(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ114(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
      {'fit_params': ['A', 'B', 'C', 'D'], 'initial_guesses': [
           {'A': 65.0, 'B': 30000, 'C': -850, 'D': 2000.0},
           {'A': 150.0, 'B': -45000, 'C': -2500, 'D': 6000.0},
@@ -1324,14 +1329,14 @@ class TDependentProperty:
       {'f': EQ116,
        'f_der': lambda T, **kwargs: EQ116(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ116(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ116(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ116(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E']}),
      'DIPPR127': (['A', 'B', 'C', 'D', 'E', 'F', 'G'],
       [],
       {'f': EQ127,
        'f_der': lambda T, **kwargs: EQ127(T, order=1, **kwargs),
        'f_int': lambda T, **kwargs: EQ127(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ127(T, order=-1j, **kwargs)},
+       'f_int_over_T': lambda T, **kwargs: EQ127(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G'], 'initial_guesses': [
           {'A': 35000.0, 'B': 1e8, 'C': -3e3, 'D': 5e5, 'E': -500.0, 'F': 7.5e7, 'G': -2500.0},
           {'A': 35000.0, 'B': 1e5, 'C': -7.5e3, 'D': 2e5, 'E': -800.0, 'F': 2e5, 'G': -2500.0},
@@ -2859,24 +2864,21 @@ class TDependentProperty:
 
 
     def calculate_transform(self, T, method, transform):
-        if transform == PROPERTY_TRANSFORM_LN:
+        if transform == TRANSFORM_LOG:
             if method == EXP_POLY_FIT:
                 return horner(self.exp_poly_fit_coeffs, T)
-
             return log(self.calculate(T, method))
-        elif transform == PROPERTY_TRANSFORM_DLN:
-            if method == EXP_POLY_FIT:
-                return horner_and_der(self.exp_poly_fit_coeffs, T)[1]
-            return derivative(lambda T: log(self.calculate(T, method)), T, dx=T*1e-6)
-        elif transform == PROPERTY_TRANSFORM_D2LN:
+        elif transform == TRANSFORM_SECOND_LOG_DERIVATIVE:
             if method == EXP_POLY_FIT:
                 return horner_and_der2(self.exp_poly_fit_coeffs, T)[2]
             return derivative(lambda T: log(self.calculate(T, method)), T, n=2, dx=T*1e-6)
-        elif transform == PROPERTY_TRANSFORM_D_X:
+        elif transform == TRANSFORM_DERIVATIVE_RATIO or transform == TRANSFORM_LOG_DERIVATIVE:
+            if method == EXP_POLY_FIT:
+                return horner_and_der(self.exp_poly_fit_coeffs, T)[1]
             v = self.calculate(T, method)
             der = self.calculate_derivative(T, method)
             return der/v
-        elif transform == PROPERTY_TRANSFORM_D2_X:
+        elif transform == TRANSFORM_SECOND_DERIVATIVE_RATIO:
             v = self.calculate(T, method)
             der = self.calculate_derivative(T, method, order=2)
             return der/v
@@ -2919,21 +2921,21 @@ class TDependentProperty:
         else:
             extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
 
-        if transform == PROPERTY_TRANSFORM_LN:
+        if transform == TRANSFORM_LOG:
             if extrapolation == 'AntoineAB':
                 A, B = coeffs
                 return A - B/T
             elif extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 return A + B/T + C*trunc_log(T)
-        elif transform == PROPERTY_TRANSFORM_DLN:
+        elif transform == TRANSFORM_LOG_DERIVATIVE:
             if extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 return (-B/T + C)/T
             if extrapolation == 'AntoineAB':
                 A, B = coeffs
                 return B/(T*T)
-        elif transform == PROPERTY_TRANSFORM_D2LN:
+        elif transform == TRANSFORM_SECOND_LOG_DERIVATIVE:
             if extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 T_inv = 1.0/T
@@ -2941,14 +2943,14 @@ class TDependentProperty:
             if extrapolation == 'AntoineAB':
                 A, B = coeffs
                 return -2.0*B/(T*T*T)
-        elif transform == PROPERTY_TRANSFORM_D_X:
+        elif transform == TRANSFORM_DERIVATIVE_RATIO:
             if extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 return (-B + C*T)/(T*T)
             if extrapolation == 'AntoineAB':
                 A, B = coeffs
                 return B/(T*T)
-        elif transform ==PROPERTY_TRANSFORM_D2_X:
+        elif transform ==TRANSFORM_SECOND_DERIVATIVE_RATIO:
             if extrapolation == 'DIPPR101_ABC':
                 A, B, C = coeffs
                 T2 = T*T
@@ -2961,17 +2963,17 @@ class TDependentProperty:
 
 
 
-        if transform == PROPERTY_TRANSFORM_LN:
+        if transform == TRANSFORM_LOG:
             return log(self.extrapolate(T, method))
-        elif transform == PROPERTY_TRANSFORM_DLN:
+        elif transform == TRANSFORM_LOG_DERIVATIVE:
             return derivative(lambda T: log(self.extrapolate(T, method)), T, dx=T*1e-6)
-        elif transform == PROPERTY_TRANSFORM_D2LN:
+        elif transform == TRANSFORM_SECOND_LOG_DERIVATIVE:
             return derivative(lambda T: log(self.extrapolate(T, method)), T, n=2, dx=T*1e-6)
-        elif transform == PROPERTY_TRANSFORM_D_X:
+        elif transform == TRANSFORM_DERIVATIVE_RATIO:
             v = self.extrapolate(T, method)
             der = self.extrapolate_derivative(T, method, order=1)
             return der/v
-        elif transform == PROPERTY_TRANSFORM_D2_X:
+        elif transform == TRANSFORM_SECOND_DERIVATIVE_RATIO:
             v = self.extrapolate(T, method)
             der = self.extrapolate_derivative(T, method, order=2)
             return der/v
@@ -3173,13 +3175,10 @@ class TDependentProperty:
         key = (name, id(self.interpolation_T), id(self.interpolation_property), id(self.interpolation_property_inv))
 
         # If the interpolator and extrapolator has already been created, load it
-#        if isinstance(self.tabular_data_interpolators, dict) and key in self.tabular_data_interpolators:
-#            extrapolator, spline = self.tabular_data_interpolators[key]
-
         if key in self.tabular_data_interpolators:
             extrapolator, spline = self.tabular_data_interpolators[key]
         else:
-            from scipy.interpolate import interp1d
+            from scipy.interpolate import make_interp_spline
             Ts, properties = self.tabular_data[name]
 
             if self.interpolation_T is not None:  # Transform ths Ts with interpolation_T if set
@@ -3191,18 +3190,17 @@ class TDependentProperty:
             else:
                 properties_interp = properties
             # Only allow linear extrapolation, but with whatever transforms are specified
-            extrapolator = interp1d(Ts_interp, properties_interp, fill_value='extrapolate')
+            # extrapolator = interp1d(Ts_interp, properties_interp, fill_value='extrapolate')
+            # extrapolator = lambda T: interp(T, Ts_interp, properties_interp, extrapolate=True)
+            extrapolator = (Ts_interp, properties_interp)
             # If more than 5 property points, create a spline interpolation
             if len(properties) >= 5:
-                # TODO: switch interpolator
-                spline = interp1d(Ts_interp, properties_interp, kind='cubic')
+                Ts_interp_sorted, properties_interp_sorted = sort_paired_lists(Ts_interp, properties_interp)
+                spline = make_interp_spline(Ts_interp_sorted, properties_interp_sorted)
+                # spline = interp1d(Ts_interp, properties_interp, kind='cubic')
                 # spline = PchipInterpolator(Ts_interp, properties_interp)
             else:
                 spline = None
-#            if isinstance(self.tabular_data_interpolators, dict):
-#                self.tabular_data_interpolators[key] = (extrapolator, spline)
-#            else:
-#                self.tabular_data_interpolators = {key: (extrapolator, spline)}
             self.tabular_data_interpolators[key] = (extrapolator, spline)
 
         # Load the stores values, tor checking which interpolation strategy to
@@ -3210,7 +3208,7 @@ class TDependentProperty:
         Ts, properties = self.tabular_data[name]
 
         if T < Ts[0] or T > Ts[-1] or not spline:
-            tool = extrapolator
+            tool = lambda T: interp(T, extrapolator[0], extrapolator[1], extrapolate=True)
         else:
             tool = spline
 
@@ -3286,8 +3284,7 @@ class TDependentProperty:
             elif is_Cp:
                 # Only setup the integral coefficients if the model is a heat capacity model
                 int_T_coeffs_unstable, extra['int_T_log_coeff'] = polyint_over_x_stable(coeffs, Tmin, Tmax)
-                from numpy.polynomial.polynomial import Polynomial
-                extra['int_T_coeffs'] = Polynomial(int_T_coeffs_unstable[::-1]).convert(domain=(Tmin, Tmax)).coef.tolist()[::-1]
+                extra['int_T_coeffs']  = poly_convert(int_T_coeffs_unstable[::-1], Tmin, Tmax)[::-1]
 
         elif model == 'exp_stable_polynomial':
             extra['offset'], extra['scale'] = offset, scale = polynomial_offset_scale(Tmin, Tmax)
@@ -3359,9 +3356,9 @@ class TDependentProperty:
         self.method = name
 
 
-    def add_correlation(self, name, model, Tmin, Tmax, **kwargs):
+    def add_correlation(self, name, model, Tmin, Tmax, select=True, **kwargs):
         r'''Method to add a new set of emperical fit equation coefficients to
-        the object and select it for future property calculations.
+        the object and select it for future property calculations (optionally).
 
         A number of hardcoded `model` names are implemented; other models
         are not supported.
@@ -3378,6 +3375,8 @@ class TDependentProperty:
             Maximum temperature to use the method at, [K]
         kwargs : dict
             Various keyword arguments accepted by the model, [-]
+        select: bool
+            Whether to set the method as the default, [-]
 
         Notes
         -----
@@ -3427,7 +3426,8 @@ class TDependentProperty:
         self.correlations[name] = (call, model_kwargs, model, None)
         if model in self.correlation_extra_handling_models:
             self._optimize_added_correlation(name, model)
-        self.method = name
+        if select:
+            self.method = name
 
     try:
         _text = '\n'
@@ -3674,7 +3674,7 @@ class TDependentProperty:
         if method in self.correlations:
             call, kwargs, model, extra = self.correlations[method]
             # polynomial 4 work out of the box, others need a bit of work
-            if method == 'stable_polynomial':
+            if model == 'stable_polynomial':
                 if order == 1:
                     return horner_stable_and_der(T, kwargs['coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
@@ -3683,27 +3683,27 @@ class TDependentProperty:
                     return horner_stable_and_der3(T, kwargs['coeffs'], extra['offset'], extra['scale'])[3]
                 if order == 4:
                     return horner_stable_and_der4(T, kwargs['coeffs'], extra['offset'], extra['scale'])[4]
-            if method == 'exp_stable_polynomial':
+            if model == 'exp_stable_polynomial':
                 if order == 1:
                     return exp_horner_stable_and_der(T, kwargs['coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
                     return exp_horner_stable_and_der2(T, kwargs['coeffs'], extra['offset'], extra['scale'])[2]
                 if order == 3:
                     return exp_horner_stable_and_der3(T, kwargs['coeffs'], extra['offset'], extra['scale'])[3]
-            elif method == 'stable_polynomial_ln_tau':
+            elif model == 'stable_polynomial_ln_tau':
                 if order == 1:
                     return horner_stable_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
                     return horner_stable_ln_tau_and_der2(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[2]
                 if order == 3:
                     return horner_stable_ln_tau_and_der3(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[3]
-            elif method == 'exp_stable_polynomial_ln_tau':
+            elif model == 'exp_stable_polynomial_ln_tau':
                 if order == 1:
                     return exp_horner_stable_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
                     return exp_horner_stable_ln_tau_and_der2(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])[2]
 
-            elif method == 'chebyshev':
+            elif model == 'chebyshev':
                 if order == 1:
                     return chebval(T, extra['d1_coeffs'], extra['offset'], extra['scale'])
                 if order == 2:
@@ -3712,14 +3712,14 @@ class TDependentProperty:
                     return chebval(T, extra['d3_coeffs'], extra['offset'], extra['scale'])
                 if order == 4:
                     return chebval(T, extra['d4_coeffs'], extra['offset'], extra['scale'])
-            elif method == 'exp_chebyshev':
+            elif model == 'exp_chebyshev':
                 if order == 1:
                     return exp_cheb_and_der(T, kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
                     return exp_cheb_and_der2(T, kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['offset'], extra['scale'])[2]
                 if order == 3:
                     return exp_cheb_and_der3(T, kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['d3_coeffs'], extra['offset'], extra['scale'])[3]
-            elif method == 'chebyshev_ln_tau':
+            elif model == 'chebyshev_ln_tau':
                 if order == 1:
                     return chebval_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
@@ -3727,7 +3727,7 @@ class TDependentProperty:
                 if order == 3:
                     return chebval_ln_tau_and_der3(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['d2_coeffs'], extra['d3_coeffs'], extra['offset'], extra['scale'])[3]
 
-            elif method == 'exp_chebyshev_ln_tau':
+            elif model == 'exp_chebyshev_ln_tau':
                 if order == 1:
                     return exp_cheb_ln_tau_and_der(T, kwargs['Tc'], kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
                 if order == 2:
@@ -4201,16 +4201,17 @@ class TDependentProperty:
         Tmin, Tmax = T_limits[method]
         T = Tmin if low else Tmax
         if extrapolation == 'linear':
-            interpolation_T = self.interpolation_T
-            interpolation_property = self.interpolation_property
             v = self.calculate(T, method=method)
-            if interpolation_property is not None: v = interpolation_property(v)
-            d = self._calculate_derivative_transformed(T=T, method=method, order=1, interpolation_property=self.interpolation_property, interpolation_T=self.interpolation_T)
+            d = self.calculate_derivative(T, method)
             coefficients = (v, d)
         elif extrapolation == 'log(linear)':
             v = log(self.calculate(T, method=method))
             d = self._calculate_derivative_transformed(T=T, method=method, order=1, interpolation_property=lambda x: log(x))
             coefficients = (v, d)
+        elif extrapolation == 'Arrhenius':
+            P = self.calculate(T, method)
+            dP_dT = self.calculate_derivative(T, method)
+            coefficients = Arrhenius_parameters(T, P, dP_dT)
         elif extrapolation == 'constant':
             coefficients = self.calculate(T, method=method)
         elif extrapolation == 'nolimit':
@@ -4249,27 +4250,6 @@ class TDependentProperty:
             d0 = self.calculate_derivative(T, method=method, order=1)
             d1 = self.calculate_derivative(T, method=method, order=2)
             coefficients = EQ106_ABC(T, self.Tc, v, d0, d1)
-        elif extrapolation == 'interp1d':
-            from scipy.interpolate import interp1d
-            interpolation_T = self.interpolation_T
-            interpolation_property = self.interpolation_property
-            if method in self.tabular_data:
-                Ts, properties = self.tabular_data[method]
-            else:
-                Ts = linspace(Tmin, Tmax, self.tabular_extrapolation_pts)
-                properties = [self.calculate(T, method=method) for T in Ts]
-
-            if interpolation_T is not None:  # Transform ths Ts with interpolation_T if set
-                Ts_interp = [interpolation_T(T) for T in Ts]
-            else:
-                Ts_interp = Ts
-            if interpolation_property is not None:  # Transform ths props with interpolation_property if set
-                properties_interp = [interpolation_property(p) for p in properties]
-            else:
-                properties_interp = properties
-            # Only allow linear extrapolation, but with whatever transforms are specified
-            extrapolator = interp1d(Ts_interp, properties_interp, fill_value='extrapolate', kind=self.interp1d_extrapolate_kind)
-            coefficients = extrapolator
         else:
             raise ValueError("Could not recognize extrapolation setting")
         return coefficients
@@ -4360,20 +4340,16 @@ class TDependentProperty:
             extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
         if extrapolation == 'linear':
             v, d = coeffs
-            interpolation_T = self.interpolation_T
-            interpolation_property_inv = self.interpolation_property_inv
             T_lim = T_low if low else T_high
-            if interpolation_T is not None:
-                T_lim = interpolation_T(T_lim)
-                T = interpolation_T(T)
             val = v + d * (T - T_lim)
-            if interpolation_property_inv is not None:
-                val = interpolation_property_inv(val)
         elif extrapolation == 'log(linear)':
             v, d = coeffs
             T_lim = T_low if low else T_high
             val = v + d * (T - T_lim)
             val = exp(val)
+        elif extrapolation == 'Arrhenius':
+            T_ref, P_ref, slope = coeffs
+            val = Arrhenius_extrapolation(T, T_ref, P_ref, slope)
         elif extrapolation == 'constant':
             val = coeffs
         elif extrapolation == 'AntoineAB':
@@ -4396,14 +4372,6 @@ class TDependentProperty:
             val = Watson(T, Hvap_ref=v0, T_ref=T_lim, Tc=self.Tc, exponent=n)
         elif extrapolation in ('EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
             val = exp_horner_backwards_ln_tau(T, self.Tc, coeffs)
-        elif extrapolation == 'interp1d':
-            extrapolator = coeffs
-            interpolation_T = self.interpolation_T
-            if interpolation_T is not None: T = interpolation_T(T)
-            prop = extrapolator(T)
-            if self.interpolation_property is not None:
-                prop = self.interpolation_property_inv(prop)
-            val = float(prop)
         else:
             raise RuntimeError(f"Unknown extrapolation '{extrapolation}'")
 
@@ -4456,7 +4424,7 @@ class TDependentProperty:
             raise ValueError("Not outside normal range")
         if extrapolation == 'constant':
             return 0.
-        elif extrapolation in ('linear', 'DIPPR101_ABC', 'AntoineAB', 'DIPPR106_AB', 'DIPPR106_ABC', 'EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
+        elif extrapolation in ('linear', 'Arrhenius', 'DIPPR101_ABC', 'AntoineAB', 'DIPPR106_AB', 'DIPPR106_ABC', 'EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
             key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs
             if key in extrapolation_coeffs:
@@ -4465,8 +4433,15 @@ class TDependentProperty:
                 extrapolation_coeffs[key] = coeffs = self._get_extrapolation_coeffs(*key)
             if extrapolation == 'linear':
                 if order == 1:
-                    if self.interpolation_T is None and self.interpolation_property_inv is None:
-                        return coeffs[1]
+                    return coeffs[1]
+            elif extrapolation == 'Arrhenius':
+                T_ref, P_ref, slope = coeffs
+                if order == 1:
+                    return dArrhenius_extrapolation_dT(T, T_ref, P_ref, slope)
+                elif order == 2:
+                    return d2Arrhenius_extrapolation_dT2(T, T_ref, P_ref, slope)
+                elif order == 3:
+                    return d3Arrhenius_extrapolation_dT3(T, T_ref, P_ref, slope)
             elif extrapolation == 'DIPPR101_ABC':
                 if order in (0, 1, 2, 3):
                     A, B, C = coeffs
@@ -4641,6 +4616,7 @@ class TDependentProperty:
         if an interpolation transform is altered, the old interpolator which
         had been created is no longer used."""
         load_data = kwargs.pop('load_data', True)
+        self.correlations = {}
         self.load_all_methods(load_data)
 
         self.extrapolation = extrapolation
@@ -4648,7 +4624,6 @@ class TDependentProperty:
         self._extrapolation_max = kwargs.pop('extrapolation_max', None)
 
 
-        self.correlations = {}
 
         poly_fit = kwargs.pop('poly_fit', None)
         exp_poly_fit = kwargs.pop('exp_poly_fit', None)

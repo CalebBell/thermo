@@ -90,7 +90,7 @@ class IdealGas(Phase):
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs') + pure_references
 
-    def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, T=None, P=None, zs=None):
+    def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
         self.Gfs = Gfs

@@ -419,8 +419,8 @@ def test_PR_density_derivatives():
         else:
             return e.drho_dP_g
 
-    d2rho_dP2_l_num = derivative(d_rho_dP_second, 1e6, dx=100, order=3, args=('l'))
-    d2rho_dP2_g_num = derivative(d_rho_dP_second, 1e6, dx=1, order=3, args=('g'))
+    d2rho_dP2_l_num = derivative(d_rho_dP_second, 1e6, dx=100, order=3, args=('l',))
+    d2rho_dP2_g_num = derivative(d_rho_dP_second, 1e6, dx=1, order=3, args=('g',))
     assert_close(d2rho_dP2_l_num, d2rho_dP2_l)
     assert_close(d2rho_dP2_g_num, d2rho_dP2_g)
 
@@ -458,10 +458,10 @@ def test_PR_density_derivatives():
     assert_close(eos.drho_dT_g, -4.726333387638189)
     assert_close(eos.drho_dT_l, -17.25710231057694)
 
-    ans_numeric = derivative(drho_dT, eos.T, n=1, dx=1e-2, args=['V_l'])
+    ans_numeric = derivative(drho_dT, eos.T, n=1, dx=1e-2, args=('V_l',))
     assert_close(ans_numeric, eos.drho_dT_l)
 
-    ans_numeric = derivative(drho_dT, eos.T, n=1, dx=1e-2, args=['V_g'])
+    ans_numeric = derivative(drho_dT, eos.T, n=1, dx=1e-2, args=('V_g',))
     assert_close(ans_numeric, eos.drho_dT_g)
 
 
@@ -477,9 +477,9 @@ def test_PR_density_derivatives():
     assert_close(d2rho_dT2_l, -0.13964119596352564)
     assert_close(d2rho_dT2_g, 0.20229767021600575)
 
-    ans_numeric = derivative(drho_dT_second, eos.T, n=1, dx=3e-2, args=['l'])
+    ans_numeric = derivative(drho_dT_second, eos.T, n=1, dx=3e-2, args=('l',))
     assert_close(d2rho_dT2_l, ans_numeric)
-    ans_numeric = derivative(drho_dT_second, eos.T, n=1, dx=1e-3, args=['g'])
+    ans_numeric = derivative(drho_dT_second, eos.T, n=1, dx=1e-3, args=('g',))
     assert_close(d2rho_dT2_g, ans_numeric)
 
     # Sympy and numerical derivative quite agree!

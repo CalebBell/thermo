@@ -282,7 +282,7 @@ class GibbsExcess:
     immutable.
 
     '''
-
+    T_DEFAULT = 298.15
     _x_infinite_dilution = 0.0
     """When set, this will be the limiting mole fraction used to approximate
     the :obj:`gammas_infinite_dilution` calculation. This is important
@@ -886,13 +886,74 @@ class GibbsExcess:
         self._gammas = gammas
         return gammas
 
-    def _gammas_dGE_dxs(self):
+    def gammas_dGE_dxs(self):
         try:
             del self._gammas
         except:
             pass
         return GibbsExcess.gammas(self)
+    
+    def gammas_numerical(self):
+        # for testing purposes
+        def nGE_func(ns):
+            total_n = sum(ns)
+            xs = [n / total_n for n in ns]
+            return total_n * self.to_T_xs(T=self.T, xs=xs).GE()
+        dnGE_dns = jacobian(nGE_func, self.xs, perturbation=1e-7)
+        
+        RT_inv = 1.0/(self.T *R)
+        gammas = np.exp(np.array(dnGE_dns)*RT_inv) if self.vectorized else [exp(v*RT_inv) for v in dnGE_dns]
+        return gammas
 
+    def lngammas(self):
+        r'''Calculate and return the natural logarithm of the activity coefficients
+        of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \ln \gamma_i = \frac{\frac{\partial n_i G^E}{\partial n_i }}{RT}
+
+        Returns
+        -------
+        log_gammas : list[float]
+            Natural logarithm of activity coefficients, [-]
+
+        Notes
+        -----
+        '''
+        GE = self.GE()
+        dG_dxs = self.dGE_dxs()
+        dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
+        RT_inv = 1.0/(R * self.T)
+        if not self.vectorized:
+            return [dG_dn * RT_inv for dG_dn in dG_dns]
+        else:
+            return array(dG_dns) * RT_inv
+
+    def dlngammas_dT(self):
+        r'''Calculate and return the temperature derivatives of the natural logarithm
+        of activity coefficients of a liquid phase using an activity coefficient model.
+
+        .. math::
+            \frac{\partial \ln \gamma_i}{\partial T} = \frac{1}{\gamma_i} \frac{\partial \gamma_i}{\partial T}
+
+        Returns
+        -------
+        dlog_gammas_dT : list[float]
+            Temperature derivatives of the natural logarithm of activity coefficients, [1/K]
+
+        Notes
+        -----
+        This method uses the chain rule to calculate the temperature derivative
+        of log activity coefficients.
+        '''
+        gammas = self.gammas()
+        dgammas_dT = self.dgammas_dT()
+        
+        if not self.vectorized:
+            return [dgamma_dT / gamma for gamma, dgamma_dT in zip(gammas, dgammas_dT)]
+        else:
+            return dgammas_dT / gammas
+    
     def dgammas_dns(self):
         r'''Calculate and return the mole number derivative of activity
         coefficients of a liquid phase using an activity coefficient model.
@@ -1031,6 +1092,7 @@ class GibbsExcess:
 derivatives_added = [('dGE_dT', 'GE', 1),
  ('d2GE_dT2', 'GE', 2),
  ('d3GE_dT3', 'GE', 3),
+ ('d4GE_dT4', 'GE', 4),
 ]
 for create_derivative, derive_attr, order in derivatives_added:
     def numerical_derivative(self, derive_attr=derive_attr, n=order, ):
@@ -1049,12 +1111,14 @@ for create_derivative, derive_attr, order in derivatives_added:
 first_comp_derivatives = [
     ('dGE_dxs', 'GE'),
     ('d2GE_dTdxs', 'dGE_dT'),
+    ('d3GE_dT2dxs', 'd2GE_dT2'),
+    ('d4GE_dT3dxs', 'd3GE_dT3'),
 ]
 for create_derivative, derive_attr in first_comp_derivatives:
     def numerical_derivative(self, derive_attr=derive_attr):
         perturbation = 1e-7
         def func(xs):
-            if xs == self.xs:
+            if not self.vectorized and xs == self.xs:
                 obj = self
             else:
                 obj = self.to_T_xs(xs=xs, T=self.T)
@@ -1064,12 +1128,15 @@ for create_derivative, derive_attr in first_comp_derivatives:
 
 second_comp_derivatives = [
     ('d2GE_dxixjs', 'GE'),
+    ('d3GE_dTdxixjs', 'dGE_dT'),
+    ('d4GE_dT2dxixjs', 'd2GE_dT2'),
+    ('d5GE_dT3dxixjs', 'd3GE_dT3'),
 ]
 for create_derivative, derive_attr in second_comp_derivatives:
     def numerical_derivative(self, derive_attr=derive_attr):
         perturbation = 1e-5
         def func(xs):
-            if xs == self.xs:
+            if not self.vectorized and xs == self.xs:
                 obj = self
             else:
                 obj = self.to_T_xs(xs=xs, T=self.T)
@@ -1115,16 +1182,11 @@ class IdealSolution(GibbsExcess):
         N = self.N
         return (N,)
 
-    def __init__(self, T=None, xs=None):
-        if T is not None:
-            self.T = T
-        if xs is not None:
-            self.xs = xs
-            self.N = len(xs)
-            self.vectorized = type(xs) is not list
-        else:
-            self.vectorized = False
-            self.N = None
+    def __init__(self, *, xs, T=GibbsExcess.T_DEFAULT):
+        self.T = T
+        self.xs = xs
+        self.N = len(xs)
+        self.vectorized = type(xs) is not list
 
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`IdealSolution` instance at

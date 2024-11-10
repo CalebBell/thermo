@@ -32,6 +32,7 @@ from fluids.numerics import assert_close, assert_close1d, derivative, linspace
 
 from thermo.coolprop import has_CoolProp
 from thermo.utils import TDependentProperty
+from chemicals.vapor_pressure import Arrhenius_extrapolation, Arrhenius_parameters
 from thermo.vapor_pressure import *
 from thermo.vapor_pressure import (
     AMBROSE_WALTON,
@@ -159,8 +160,8 @@ def test_VaporPressure_water():
     Ps = [3533.918074415897, 4865.419832056078, 6612.2351036034115, 8876.854141719203, 11780.097759775277, 15462.98385942125, 20088.570250257424, 25843.747665059742, 32940.95821687677, 41619.81654904555]
     w.add_tabular_data(Ts=Ts, properties=Ps)
     assert_close(w.T_dependent_property(305.), 4715.122890601165)
-    w.extrapolation = 'interp1d'
-    assert_close(w.T_dependent_property(200.), 0.5364148240126076)
+    w.extrapolation = 'Arrhenius'
+    assert_close(w.T_dependent_property(200.), 0.5245145425443402)
 
     Ts_bad = [300, 325, 350]
     Ps_bad = [1, -1, 1j]
@@ -508,18 +509,14 @@ def test_VaporPressure_analytical_derivatives():
 def test_VaporPressure_no_isnan():
     assert not isnan(VaporPressure(CASRN='4390-04-9').Tmin)
 
-def test_VaporPressure_linear_extrapolation_non_negative():
+def test_VaporPressure_Arrhenius_extrapolation_non_negative():
     ethanol_psat = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
 
-    # Make sure the constants are set to guard against future changes to defaults
     ethanol_psat.method = WAGNER_MCGARRY
-    ethanol_psat.interpolation_T = (lambda T: 1/T)
-    ethanol_psat.interpolation_property = (lambda P: log(P))
-    ethanol_psat.interpolation_property_inv = (lambda P: exp(P))
-    ethanol_psat.extrapolation = 'linear'
+    ethanol_psat.extrapolation = 'Arrhenius'
 
-    assert_close(ethanol_psat(700), 59005875.32878946, rtol=1e-4)
-    assert_close(ethanol_psat(100), 1.0475828451230242e-11, rtol=1e-4)
+    assert_close(ethanol_psat(700), 59005875.32878946, rtol=3e-4)
+    assert_close(ethanol_psat(100), 1.0475828451230242e-11, rtol=3e-4)
 
     assert ethanol_psat.T_limits['WAGNER_MCGARRY'][0] == ethanol_psat.WAGNER_MCGARRY_Tmin
     assert ethanol_psat.T_limits['WAGNER_MCGARRY'][1] == ethanol_psat.WAGNER_MCGARRY_Tc
@@ -788,44 +785,44 @@ def test_VaporPressure_extrapolate_derivatives():
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_weird_signatures():
-    from thermo.utils import PROPERTY_TRANSFORM_D2_X, PROPERTY_TRANSFORM_D2LN, PROPERTY_TRANSFORM_D_X, PROPERTY_TRANSFORM_DLN, PROPERTY_TRANSFORM_LN
+    from thermo.utils import TRANSFORM_SECOND_DERIVATIVE_RATIO, TRANSFORM_SECOND_LOG_DERIVATIVE, TRANSFORM_DERIVATIVE_RATIO, TRANSFORM_LOG_DERIVATIVE, TRANSFORM_LOG
 
     obj = VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))
 
     # Within range
-    assert_close(obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_LN),
+    assert_close(obj.T_dependent_property_transform(300, TRANSFORM_LOG),
                  log(obj.T_dependent_property(300)))
 
-    assert_close(obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D_X),
+    assert_close(obj.T_dependent_property_transform(300, TRANSFORM_DERIVATIVE_RATIO),
                  obj.T_dependent_property_derivative(300)/obj.T_dependent_property(300))
 
-    assert_close(obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D2_X),
+    assert_close(obj.T_dependent_property_transform(300, TRANSFORM_SECOND_DERIVATIVE_RATIO),
                  obj.T_dependent_property_derivative(300, 2)/obj.T_dependent_property(300))
 
     dln = derivative(lambda T: log(obj(T)), 300, dx=300*1e-6)
-    assert_close(dln, obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_DLN))
+    assert_close(dln, obj.T_dependent_property_transform(300, TRANSFORM_LOG_DERIVATIVE))
 
     dln = derivative(lambda T: log(obj(T)), 300, n=2, dx=300*1e-5)
-    assert_close(dln, obj.T_dependent_property_transform(300, PROPERTY_TRANSFORM_D2LN), rtol=1e-5)
+    assert_close(dln, obj.T_dependent_property_transform(300, TRANSFORM_SECOND_LOG_DERIVATIVE), rtol=1e-5)
 
     # Extrapolations
-    for extrapolation in ('interp1d', 'DIPPR101_ABC', 'AntoineAB'):
+    for extrapolation in ('Arrhenius', 'DIPPR101_ABC', 'AntoineAB'):
         obj.extrapolation = extrapolation
         for T in (100, 1000):
-            assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_LN),
+            assert_close(obj.T_dependent_property_transform(T, TRANSFORM_LOG),
                          log(obj.T_dependent_property(T)))
 
-            assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D_X),
+            assert_close(obj.T_dependent_property_transform(T, TRANSFORM_DERIVATIVE_RATIO),
                          obj.T_dependent_property_derivative(T)/obj.T_dependent_property(T))
 
-            assert_close(obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2_X),
+            assert_close(obj.T_dependent_property_transform(T, TRANSFORM_SECOND_DERIVATIVE_RATIO),
                          obj.T_dependent_property_derivative(T, 2)/obj.T_dependent_property(T))
 
             dln = derivative(lambda T: log(obj(T)), T, dx=T*1e-6)
-            assert_close(dln, obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_DLN))
+            assert_close(dln, obj.T_dependent_property_transform(T, TRANSFORM_LOG_DERIVATIVE))
 
             dln = derivative(lambda T: log(obj(T)), T, n=2, dx=T*1e-5)
-            assert_close(dln, obj.T_dependent_property_transform(T, PROPERTY_TRANSFORM_D2LN), rtol=4e-4)
+            assert_close(dln, obj.T_dependent_property_transform(T, TRANSFORM_SECOND_LOG_DERIVATIVE), rtol=4e-4)
 
 @pytest.mark.meta_T_dept
 def test_VaporPressure_WebBook():
@@ -873,21 +870,21 @@ def test_accurate_vapor_pressure_H2O2():
 
 @pytest.mark.meta_T_dept
 def test_sublimation_pressure_iapws():
-    obj = SublimationPressure(CASRN="7732-18-5", Tt=273.16, Pt=611.654771008, Hsub_t=51065.16012541218, extrapolation="linear", method="IAPWS")
+    obj = SublimationPressure(CASRN="7732-18-5", Tt=273.16, Pt=611.654771008, Hsub_t=51065.16012541218, extrapolation="Arrhenius", method="IAPWS")
     assert_close(obj(240), 27.26684427485674, rtol=1e-13)
     assert obj.T_limits['IAPWS'][0] == 50
     assert obj.T_limits['IAPWS'][1] == 273.16
 
 @pytest.mark.meta_T_dept
 def test_sublimation_pressure_alcock():
-    obj = SublimationPressure(CASRN="7440-62-2", Tt=2183.15, Pt=3.008394450145412, Hsub_t=190913.3611650746, extrapolation="linear", method="ALCOCK_ELEMENTS")
+    obj = SublimationPressure(CASRN="7440-62-2", Tt=2183.15, Pt=3.008394450145412, Hsub_t=190913.3611650746, extrapolation="Arrhenius", method="ALCOCK_ELEMENTS")
     assert_close(obj(1018), 2.7958216156724275e-14, rtol=1e-12)
 
 
 @pytest.mark.meta_T_dept
 def test_sublimation_pressure_pickle_issue():
     # Check that it pickles
-    obj = SublimationPressure(CASRN="7732-18-5", Tt=273.16, Pt=611.654771008, Hsub_t=51065.16012541231, extrapolation="linear", method="Fit 2023",
+    obj = SublimationPressure(CASRN="7732-18-5", Tt=273.16, Pt=611.654771008, Hsub_t=51065.16012541231, extrapolation="Arrhenius", method="Fit 2023",
         DIPPR101_parameters={'Fit 2023': {'A': 32.947884114692506, 'B': -6712.991488636315, 'C': 0.0, 'D': 0.0, 'E': 0.0, 'Tmax': 161.465, 'Tmin': 154.965}})
     model_pickle = pickle.loads(pickle.dumps(obj))
 
@@ -912,24 +909,24 @@ def test_sublimation_pressure_custom_fit():
 @pytest.mark.meta_T_dept
 def test_sublimation_pressure_landolt():
     # methane
-    obj = SublimationPressure(CASRN="74-82-8", Tt=90.6941, Pt=11696.0641152, Hsub_t=9669.32184157482, extrapolation="linear", method="LANDOLT")
+    obj = SublimationPressure(CASRN="74-82-8", Tt=90.6941, Pt=11696.0641152, Hsub_t=9669.32184157482, extrapolation="Arrhenius", method="LANDOLT")
     assert_close(obj(80), 2113.6314607955483, rtol=1e-12)
 
     # benzene
-    obj = SublimationPressure(CASRN="71-43-2", Tt=278.674, Pt=4784.60513165, Hsub_t=44400.0, extrapolation="linear", method="LANDOLT")
+    obj = SublimationPressure(CASRN="71-43-2", Tt=278.674, Pt=4784.60513165, Hsub_t=44400.0, extrapolation="Arrhenius", method="LANDOLT")
     assert_close(obj(270), 2573.7097987788748)
 
 
     # 2-bromonapthalene
-    obj = SublimationPressure(CASRN="580-13-2", Tt=328.15, Pt=14.95627484078953, Hsub_t=75656.084, extrapolation="linear", method="LANDOLT")
+    obj = SublimationPressure(CASRN="580-13-2", Tt=328.15, Pt=14.95627484078953, Hsub_t=75656.084, extrapolation="Arrhenius", method="LANDOLT")
     assert_close(obj(280), 0.5126876513974122)
 
     # Dinitrogen oxide (Nitrous oxide)
-    obj = SublimationPressure(CASRN="10024-97-2", Tt=182.33, Pt=87837.3103401, Hsub_t=23128.43978202224, extrapolation="linear", method="LANDOLT")
+    obj = SublimationPressure(CASRN="10024-97-2", Tt=182.33, Pt=87837.3103401, Hsub_t=23128.43978202224, extrapolation="Arrhenius", method="LANDOLT")
     assert_close(obj(150), 2945.2163686099707)
 
     # 9-Methylcarbazole
-    obj = SublimationPressure(CASRN="1484-12-4", Tt=362.485, Pt=7.4604138453786435, Hsub_t=95500.0, extrapolation="linear", method="LANDOLT")
+    obj = SublimationPressure(CASRN="1484-12-4", Tt=362.485, Pt=7.4604138453786435, Hsub_t=95500.0, extrapolation="Arrhenius", method="LANDOLT")
     assert_close(obj(320), 0.1177826093493645, rtol=1e-12)
 
 @pytest.mark.meta_T_dept
@@ -948,3 +945,77 @@ def test_vapor_pressure_landolt():
     obj = VaporPressure(CASRN="62-53-3", Tb=457.25, Tc=705.0, Pc=5630000.0, omega=0.382,
                         extrapolation="AntoineAB|DIPPR101_ABC", method="LANDOLT")
     assert_close(obj(400), 17243.29241464641, rtol=1e-12)
+
+
+
+
+@pytest.mark.meta_T_dept
+def test_fixed_Alcock_Psat():
+    from fluids.constants import atm
+    from math import log10
+    T = 1800
+    # coefficients in the paper, the precise section
+    A, B, C, D = 2.719, -15107, 0.8036, -0.1033
+    expect = atm*10**(A + B/T + C*log10(T) + D*T*1e-3)
+    # calculate the value from thermo
+    obj = VaporPressure(CASRN="7440-31-5", Tb=2859.15, Tc=7400.0, Pc=609980000.0, omega=0.101, method="ALCOCK_ELEMENTS")
+    assert_close(obj(T), 57.80106223852368)
+    assert_close(obj(T), expect, rtol=1e-10)
+
+
+@pytest.mark.meta_T_dept
+def test_Arrhenius_extrapolation_Psat():
+    coeffs = [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 
+            4.935674274379539e-10, -2.443464113936029e-07, 7.893819658700523e-05,
+            -0.016615779444332356, 2.1842496316772264, -134.19766175812708]
+    obj = VaporPressure(exp_poly_fit=(175.7, 512.49, coeffs))
+    obj.extrapolation = 'Arrhenius|Arrhenius'
+
+    # Test within normal range
+    assert_close(obj(300), 18601.061401014867, rtol=1e-13)
+    assert_close(obj(175.7),0.18954151196135177, rtol=1e-13)
+    assert_close(obj(512.49), 8079019.193648369, rtol=1e-13)
+    assert_close(obj(100),6.469108649190738e-11, rtol=5e-6)
+    assert_close(obj(600), 28512380.520630386, rtol=5e-6)
+
+
+    # Test continuity at lower bound
+    eps = 1e-10
+    T_low = 175.7
+    assert_close(obj(T_low - eps), obj(T_low + eps), rtol=1e-10)
+    assert_close(obj.T_dependent_property_derivative(T_low - eps),
+                obj.T_dependent_property_derivative(T_low + eps), rtol=5e-6)
+
+    # Test continuity at upper bound
+    T_high = 512.49
+    assert_close(obj(T_high - eps), obj(T_high + eps), rtol=1e-10)
+    assert_close(obj.T_dependent_property_derivative(T_high - eps),
+                obj.T_dependent_property_derivative(T_high + eps), rtol=5e-6)
+
+    # Get coefficients for low temperature extrapolation
+    coeffs = Arrhenius_parameters(obj.Tmin, obj.T_dependent_property(obj.Tmin), obj.T_dependent_property_derivative(obj.Tmin))
+    for T_low in (20, 30, 50, 80, 120, 150, 175.6):
+        # Calculate extrapolated value
+        P_extrap = Arrhenius_extrapolation(T_low, *coeffs)
+        # Verify against object
+        assert_close(obj(T_low), P_extrap, rtol=5e-5)
+
+    # Test high temperature extrapolation too
+    coeffs_high = Arrhenius_parameters(obj.Tmax, obj.T_dependent_property(obj.Tmax), obj.T_dependent_property_derivative(obj.Tmax))
+    for T_high in (513, 550, 600, 650, 700, 800, 1000, 2000):
+        P_extrap_high = Arrhenius_extrapolation(T_high, *coeffs_high)
+        # Verify against object
+        assert_close(obj(T_high), P_extrap_high, rtol=5e-5)
+
+
+    # Test points across the entire range including extrapolation
+    Ts = linspace(10, 1000, 150)
+    Ps = [obj(T) for T in Ts]
+
+    # Check each pair of consecutive points
+    for i in range(len(Ts)-1):
+        assert Ps[i+1] > Ps[i], f"Pressure decreased between T={Ts[i]} and T={Ts[i+1]}"
+
+    # Check all derivatives are positive
+    for T in Ts:
+        assert obj.T_dependent_property_derivative(T) > 0, f"Negative derivative at T={T}"

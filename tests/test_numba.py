@@ -167,7 +167,7 @@ def test_NRTL_numpy_output():
     T = 273.15+70
     dT = T*1e-8
     xs = [.2, .3, .5]
-    model = NRTL(T, xs, taus, alphas)
+    model = NRTL(T=T, xs=xs, tau_coeffs=taus, alpha_coeffs=alphas)
     modelnp = NRTLnp(T=T, xs=np.array(xs), tau_coeffs=np.array(taus), alpha_coeffs=np.array(alphas))
     modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
 
@@ -330,14 +330,14 @@ def test_RegularSolution_numba():
     T = 300.0
     lambda_coeffs = [[random()*1e-4 for _ in range(N)] for _ in range(N)]
 
-    GE = RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    GE = RegularSolution(T=T, xs=xs, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs)
     xsnp = np.array(xs)
     xs2np = np.array(xs2)
     Vsnp = np.array(Vs)
     SPsnp = np.array(SPs)
     lambda_coeffsnp = np.array(lambda_coeffs)
 
-    GE = RegularSolution(T, xsnp, Vsnp, SPsnp, lambda_coeffsnp)
+    GE = RegularSolution(T=T, xs=xsnp, Vs=Vsnp, SPs=SPsnp, lambda_coeffs=lambda_coeffsnp)
     GE.gammas()
     GE.to_T_xs(T=T+1.0, xs=xs2np).gammas()
 
@@ -358,7 +358,7 @@ def test_RegularSolution_gammas_numba():
      [0.01601, 0.01022, 0.0, 0.00698],
      [0.0152, 0.00544, 0.02579, 0.0]]
 
-    GE = thermo.regular_solution.RegularSolution(T, xs, Vs, SPs, lambda_coeffs)
+    GE = thermo.regular_solution.RegularSolution(T=T, xs=xs, Vs=Vs, SPs=SPs, lambda_coeffs=lambda_coeffs)
     assert_close1d(GE.gammas(),
                thermo.numba.regular_solution.regular_solution_gammas(T=T, xs=np.array(xs), Vs=np.array(Vs), SPs=np.array(SPs), lambda_coeffs=np.array(lambda_coeffs), N=N), rtol=1e-12)
 

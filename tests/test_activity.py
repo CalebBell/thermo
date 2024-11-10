@@ -45,7 +45,7 @@ def test_IdealSolution():
 
 
     assert_close(GE.gammas(), [1]*4, atol=0)
-    assert_close(GE._gammas_dGE_dxs(), [1]*4, atol=0)
+    assert_close(GE.gammas_dGE_dxs(), [1]*4, atol=0)
     assert_close(GE.gammas_infinite_dilution(), [1]*4, atol=0)
 
 

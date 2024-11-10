@@ -341,7 +341,7 @@ class VaporPressure(TDependentProperty):
     """Maximum valid value of vapor pressure. Set slightly above the critical
     point estimated for Iridium; Mercury's 160 MPa critical point is the
     highest known."""
-
+    
     ranked_methods = [IAPWS, HEOS_FIT, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                       ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, LANDOLT, AMBROSE_WALTON,
@@ -746,7 +746,7 @@ class SublimationPressure(TDependentProperty):
     custom_args = ('Tt', 'Pt', 'Hsub_t')
 
     def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None,
-                 extrapolation='linear', **kwargs):
+                 extrapolation='Arrhenius', **kwargs):
         self.CASRN = CASRN
         self.Tt = Tt
         self.Pt = Pt
@@ -775,8 +775,8 @@ class SublimationPressure(TDependentProperty):
             T_limits[IAPWS] = (50.0, iapws95_Tt)
         if load_data and CASRN is not None and CASRN in vapor_pressure.Psub_data_Alcock_elements.index:
             methods.append(ALCOCK_ELEMENTS)
-            A, B, C, D, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psub_values_Alcock_elements[vapor_pressure.Psub_data_Alcock_elements.index.get_loc(CASRN)].tolist()
-            self.Alcock_coeffs = [A, B, C, D, 1.0]
+            A, B, C, D, E, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psub_values_Alcock_elements[vapor_pressure.Psub_data_Alcock_elements.index.get_loc(CASRN)].tolist()
+            self.Alcock_coeffs = [A, B, C, D, E]
             T_limits[ALCOCK_ELEMENTS] = (Alcock_Tmin, Alcock_Tmax)
         if load_data and CASRN is not None and CASRN in vapor_pressure.Psub_data_Landolt_Antoine.index:
             methods.append(LANDOLT)
@@ -813,7 +813,7 @@ class SublimationPressure(TDependentProperty):
             Sublimation pressure at T, [Pa]
         '''
         if method == PSUB_CLAPEYRON:
-            Psub = max(Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t), 1e-200)
+            Psub = Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t)
         elif method == IAPWS:
             Psub = iapws11_Psub(T)
         elif method == ALCOCK_ELEMENTS:

@@ -3,7 +3,7 @@ scipy
 numpydoc
 pint
 nbsphinx
-fluids>=1.0.26
+fluids>=1.0.27
 chemicals>=1.2.0
 IPython
 ipython

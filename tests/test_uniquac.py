@@ -33,7 +33,7 @@ from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert
 
 from thermo import *
 from thermo.test_utils import check_np_output_activity
-from thermo.uniquac import UNIQUAC
+from thermo.uniquac import UNIQUAC, UNIQUAC_gammas_binaries
 
 
 def test_UNIQUAC_functional():
@@ -257,6 +257,10 @@ def test_UNIQUAC_madeup_ternary():
     assert_close2d(d2GE_dxixjs_numerical, d2GE_dxixjs_analytical, rtol=1e-4)
     assert_close2d(d2GE_dxixjs_analytical, d2GE_dxixjs_sympy, rtol=1e-12)
 
+
+    assert_close1d(GE.gammas_numerical(), GE.gammas(), rtol=1e-5)
+
+
     # Check json storage again, with some results
     GE2 = UNIQUAC.from_json(GE.as_json())
     assert object_data(GE2) == object_data(GE)
@@ -311,13 +315,11 @@ def test_UNIQUAC_numpy_inputs():
 
     # Test with some stored results
     GE2 = UNIQUAC.from_json(model.as_json())
-    assert hasattr(GE2, '_GE')
     assert object_data(GE2) == object_data(model)
 
     # Test a few more storing
     GE_copy = UNIQUAC.from_json(json.loads(json.dumps(model.as_json(option=1))))
     assert GE_copy == model
-    assert not hasattr(GE_copy, '_GE')
 
     # Pickle checks
     modelnp_pickle = pickle.loads(pickle.dumps(modelnp))
@@ -378,8 +380,8 @@ def test_Uniquac_numpy_output_correct_array_internal_ownership():
 
     tau_coeffs = [[[A[i][j], B[i][j], C[i][j], D[i][j], E[i][j], F[i][j]] for j in range(N)] for i in range(N)]
     modelnp = UNIQUAC(T=T,rs=np.array(rs), qs=np.array(qs), xs=np.array(xs), tau_coeffs=np.array(tau_coeffs))
-    for name in ('tau_coeffs_A', 'tau_coeffs_B', 'tau_coeffs_C',
-                 'tau_coeffs_D', 'tau_coeffs_E', 'tau_coeffs_F'):
+    for name in ('tau_as', 'tau_bs', 'tau_cs',
+                 'tau_ds', 'tau_es', 'tau_fs'):
         obj = getattr(modelnp, name)
         assert obj.flags.c_contiguous
         assert obj.flags.owndata
@@ -426,3 +428,35 @@ def test_UNIQUAC_one_component():
         if hasattr(GE, s):
             res = getattr(GE, s)()
             # print(res, s)
+
+
+
+def test_UNIQUAC_gammas_binaries():
+    from thermo.uniquac import MIN_TAU_UNIQUAC
+    # Test case 1: Basic functionality
+    xs = [0.3, 0.7, 0.6, 0.4]
+    rs = [1.0, 1.2]
+    qs = [0.92, 1.4]
+    tau12, tau21 = 0.5, 0.8
+    result = UNIQUAC_gammas_binaries(xs, rs, qs, tau12, tau21)
+    result_expect = [1.6562577325302086, 1.0555363922914553, 1.2574464998707497, 1.3364948745678582]
+    assert_close1d(result, result_expect)
+
+    # Test case 2: Check with pre-allocated array
+    calc = [0.0] * len(xs)
+    result_preallocated = UNIQUAC_gammas_binaries(xs, rs, qs, tau12, tau21, calc)
+    assert result_preallocated is calc
+    assert_close1d(result_preallocated, result, rtol=1e-10)
+
+    # Test case 3: Verify behavior with tau values below MIN_TAU_UNIQUAC
+    small_tau = MIN_TAU_UNIQUAC / 2
+    result_small = UNIQUAC_gammas_binaries(xs, rs, qs, small_tau, small_tau)
+    result_min = UNIQUAC_gammas_binaries(xs, rs, qs, MIN_TAU_UNIQUAC, MIN_TAU_UNIQUAC)
+    assert_close1d(result_small, result_min, rtol=1e-10)
+
+    # Test case 5: Check with extreme composition values
+    xs_extreme = [1e-10, 1-1e-10, 0.5, 0.5, 1-1e-10, 1e-10]
+    result_extreme = UNIQUAC_gammas_binaries(xs_extreme, rs, qs, tau12, tau21)
+    result_extreme_expect = [2.2041059944622607, 0.9999999999999996, 1.3739022573095299, 1.1986386949839702, 0.9999999999999996, 4.118354252967927]
+    assert_close1d(result_extreme, result_extreme_expect, rtol=1e-10)
+

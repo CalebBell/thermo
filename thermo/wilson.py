@@ -202,11 +202,12 @@ def wilson_gammas(xs, N, lambdas, xj_Lambda_ijs_inv, gammas=None, vec0=None):
     for i in range(N):
         vec0[i] = xs[i]*xj_Lambda_ijs_inv[i]
 
+    for j in range(N):
+        const_j = vec0[j]
+        for i in range(N):
+            gammas[i] += lambdas[j][i]*const_j
     for i in range(N):
-        tot2 = 1.0
-        for j in range(N):
-            tot2 -= lambdas[j][i]*vec0[j]
-        gammas[i] = exp(tot2)*xj_Lambda_ijs_inv[i]
+        gammas[i] = exp(1.0 - gammas[i])*xj_Lambda_ijs_inv[i]
 
     return gammas
 
@@ -754,7 +755,7 @@ class Wilson(GibbsExcess):
             f_mat.append(f_row)
         return (a_mat, b_mat, c_mat, d_mat, e_mat, f_mat)
 
-    def __init__(self, T, xs, lambda_coeffs=None, ABCDEF=None, lambda_as=None, lambda_bs=None,
+    def __init__(self, *, xs, T=GibbsExcess.T_DEFAULT, lambda_coeffs=None, ABCDEF=None, lambda_as=None, lambda_bs=None,
                  lambda_cs=None, lambda_ds=None, lambda_es=None, lambda_fs=None):
         self.T = T
         self.xs = xs

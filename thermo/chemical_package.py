@@ -82,7 +82,7 @@ from chemicals.phase_change import Hfus, Tb, Tm
 from chemicals.reaction import Gibbs_formation, Hfg, Hfl, Hfs, S0g
 from chemicals.refractivity import RI
 from chemicals.safety import LFL, STEL, TWA, UFL, Carcinogen, Ceiling, Skin, T_autoignition, T_flash
-from chemicals.solubility import solubility_parameter
+from chemicals.solubility import solubility_parameter, hansen_delta_d, hansen_delta_p, hansen_delta_h
 from chemicals.triple import Pt, Tt
 from chemicals.utils import Parachor, hash_any_primitive
 from fluids.constants import R

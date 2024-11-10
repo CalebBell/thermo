@@ -185,7 +185,7 @@ def test_madeup_NRTL():
     taus = make_taus(N)
     xs = normalize([random() for i in range(N)])
     T = 350.0
-    GE = NRTL(T, xs, taus, alphas)
+    GE = NRTL(T=T, xs=xs, tau_coeffs=taus, alpha_coeffs=alphas)
     # Run the various checks for storing/loading
     assert eval(str(GE)).GE() == GE.GE()
 
@@ -204,13 +204,12 @@ def test_madeup_NRTL():
             pass
     # Check we get the attributes copied
     GE_copy = NRTL.from_json(json.loads(json.dumps(GE.as_json(option=0))))
-    assert_close(GE_copy._dGE_dT, GE._dGE_dT)
+    assert_close(GE_copy.dGE_dT(), GE.dGE_dT())
     assert GE_copy == GE
 
     # Check we can also copy without calculated values
     GE_copy = NRTL.from_json(json.loads(json.dumps(GE.as_json(option=1))))
     assert GE_copy == GE
-    assert not hasattr(GE_copy, '_dGE_dT')
 
 
 def test_water_ethanol_methanol_madeup():
@@ -232,17 +231,19 @@ def test_water_ethanol_methanol_madeup():
     T = 273.15+70
     dT = T*1e-8
     xs = [.2, .3, .5]
-    GE = NRTL(T, xs, taus, alphas)
+    GE = NRTL(T=T, xs=xs, tau_coeffs=taus, alpha_coeffs=alphas)
     assert eval(str(GE)).GE() == GE.GE()
 
     assert object_data(NRTL.from_json(GE.as_json())) == object_data(GE)
 
-    GEnp = NRTL(T, np.array(xs), np.array(taus), np.array(alphas))
+    GEnp = NRTL(T=T, xs=np.array(xs), tau_coeffs=np.array(taus), alpha_coeffs=np.array(alphas))
     assert_close(GEnp.GE(), GE.GE(), rtol=1e-12)
 
     # gammas
     assert_close1d(GE.gammas(), [1.7795902383749216, 1.1495597830749005, 1.0736702352016942])
     assert_close1d(GEnp.gammas(), GE.gammas(), rtol=1e-12)
+    assert_close1d(GEnp.gammas_numerical(), GE.gammas(), rtol=1e-5)
+    assert_close1d(GE.gammas_numerical(), GE.gammas(), rtol=1e-5)
 
     ### Tau and derivatives
     taus_expected = [[0.06687993075720595, 1.9456413587531054, 1.2322559725492486],
@@ -292,17 +293,6 @@ def test_water_ethanol_methanol_madeup():
     dalphas_dT_numerical = (np.array(GE.to_T_xs(T+1e-4, xs).alphas()) - GE.alphas())/1e-4
     assert_close2d(dalphas_dT_expect, dalphas_dT_numerical)
 
-    # d2alphas_d2T
-    d2alphas_d2T_numerical = (np.array(GE.to_T_xs(T+dT, xs).dalphas_dT()) - GE.dalphas_dT())/dT
-    d2alphas_d2T_analytical = GE.d2alphas_dT2()
-    assert_close2d(d2alphas_d2T_analytical, [[0]*N for _ in range(N)])
-    assert_close2d(d2alphas_d2T_numerical, d2alphas_d2T_analytical, rtol=1e-12)
-
-    # d3alphas_d3T
-    d3alphas_d3T_numerical = (np.array(GE.to_T_xs(T+dT, xs).d2alphas_dT2()) - GE.d2alphas_dT2())/dT
-    d3alphas_d3T_analytical = GE.d3alphas_dT3()
-    assert_close2d(d3alphas_d3T_analytical, [[0]*N for _ in range(N)])
-    assert_close2d(d3alphas_d3T_numerical, d3alphas_d3T_analytical, rtol=1e-12)
 
     # Gs
     Gs_expect = [[0.9995411083582052, 0.5389296989069797, 0.6624312965198783],
@@ -423,7 +413,7 @@ def test_NRTL_numpy_output():
     T = 273.15+70
     dT = T*1e-8
     xs = [.2, .3, .5]
-    model = NRTL(T, xs, taus, alphas)
+    model = NRTL(T=T, xs=xs, tau_coeffs=taus, alpha_coeffs=alphas)
     modelnp = NRTL(T=T, xs=np.array(xs), tau_coeffs=np.array(taus), alpha_coeffs=np.array(alphas))
     modelnp2 = modelnp.to_T_xs(T=T, xs=np.array(xs))
 
@@ -491,13 +481,13 @@ def test_NRTL_missing_inputs():
     T = 273.15+70
     dT = T*1e-8
     xs = [.2, .3, .5]
-    GE = NRTL(T, xs, tau_coeffs=taus)
+    GE = NRTL(T=T, xs=xs, tau_coeffs=taus)
     assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
 
-    GE = NRTL(T, xs, taus)
+    GE = NRTL(T=T, xs=xs, tau_coeffs=taus)
     assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
 
-    GE = NRTL(T, xs, alpha_coeffs=alphas)
+    GE = NRTL(T=T, xs=xs, alpha_coeffs=alphas)
     assert_close1d(GE.gammas(), [1, 1, 1], rtol=1e-13)
 
 def test_NRTL_chemsep():
@@ -537,8 +527,6 @@ def test_NRTL_partial_inputs():
 
     # String tests
     s = str(GE)
-    assert 'tau_cs' not in s
-    assert 'alpha_ds' not in s
 
     with pytest.raises(ValueError):
         NRTL(T=T, xs=xs, tau_bs=tau_bs, alpha_cs=alpha_cs, alpha_ds=[[0],[.2974, 0]])
@@ -589,6 +577,18 @@ def test_NRTL_gammas_binaries_jac():
     jac_calc = NRTL_gammas_binaries_jac([.3, .7, .4, .6], 2, 3, .2, .4)
     assert_close2d(expect, jac_calc, rtol=1e-12)
 
+    
+    # Test with provided calc array
+    calc_provided = np.zeros((4, 4))
+    jac_calc_same_array = NRTL_gammas_binaries_jac([.3, .7, .4, .6], 2, 3, .2, .4, calc_provided)
+    assert_close2d(expect, jac_calc_same_array, rtol=1e-12)
+    assert calc_provided is jac_calc_same_array
+    
+    # Test with different input, reusing the calc array
+    new_expect = NRTL_gammas_binaries_jac([.2, .8, .6, .4], 1, 4, .3, .5)
+    jac_calc_reused = NRTL_gammas_binaries_jac([.2, .8, .6, .4], 1, 4, .3, .5, calc_provided)
+    assert_close2d(new_expect, jac_calc_reused, rtol=1e-12)
+    assert calc_provided is jac_calc_reused
     # The optimized code was generated as follows with sympy
     """
     from sympy import *
@@ -639,6 +639,25 @@ def test_NRTL_regression_basics():
     assert_close(res['alpha21'], 0.4898957291346906)
     assert stats['MAE'] < 0.001
 
+    # regression with multiple alpha values forced
+    forced_alphas = [0.1, 0.2, 0.3, 0.7, 0.9] 
+    expected_taus = [
+        (-2.0482635713094823, 4.507094631730519),
+        (-0.7915760197977199, 2.9274685163699594),
+        (-0.3043327536515584, 2.3396166105505105),
+        (0.45660391657378036, 1.7122942946463962),
+        (0.6760802269114482, 1.7130983381263352)
+    ]
+
+    for i, forced_alpha in enumerate(forced_alphas):
+        res, stats = NRTL.regress_binary_parameters(gammas=many_gammas_expect, xs=xs_points, use_numba=False,
+                                                    symmetric_alphas=True, multiple_tries=False, force_alpha=forced_alpha)
+
+        assert 'alpha21' not in res
+        assert len(res) == 2  # Should only have tau12 and tau21
+        assert_close(res['tau12'], expected_taus[i][0], rtol=1e-3)
+        assert_close(res['tau21'], expected_taus[i][1], rtol=1e-3)
+        assert stats['MAE'] < 0.05
 
 def test_NRTL_one_component():
     GE = NRTL(T=350.0, xs=[1.0], ABEFGHCD=([[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]], [[0.0]]))

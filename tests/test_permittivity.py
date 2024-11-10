@@ -48,7 +48,11 @@ def test_Permittivity_class():
     assert False is PermittivityLiquid(CASRN='7732-18-5').test_method_validity(228.15, 'CRC_CONSTANT')
     assert False is PermittivityLiquid(CASRN='7732-18-5').test_method_validity(228.15, 'CRC')
 
+    assert_close(PermittivityLiquid(CASRN='7732-18-5').calculate(T=300, method='CRC_CONSTANT'), 80.1)
 
+
+    assert PermittivityLiquid(CASRN='100-06-1').all_methods == {'CRC_CONSTANT'}
+    assert_close(PermittivityLiquid(CASRN='100-06-1').calculate(T=300, method='CRC_CONSTANT'), 17.3)
 
     # Tabular data
     w = PermittivityLiquid(CASRN='7732-18-5')
@@ -56,8 +60,8 @@ def test_Permittivity_class():
     permittivities = [87.75556413000001, 83.530500320000016, 79.48208925000003, 75.610330919999996, 71.915225330000013, 68.396772480000024, 65.05497237000003, 61.889825000000044, 58.901330369999997, 56.08948848]
     w.add_tabular_data(Ts=Ts, properties=permittivities)
     assert_close(w.T_dependent_property(305.), 75.95500925000006)
-    w.extrapolation = 'interp1d'
-    assert_close(w.T_dependent_property(200.), 115.79462395999997)
+    w.extrapolation = 'linear'
+    assert_close(w.T_dependent_property(200.), 116.38076077348933)
 
     w.extrapolation_coeffs.clear()
     assert w.T_dependent_property(800.0) is not None
@@ -69,8 +73,8 @@ def test_Permittivity_class():
 
     # Case where a nan was stored
     obj = PermittivityLiquid(CASRN='57-10-3')
-    assert not isnan(obj.CRC_Tmin)
-    assert not isnan(obj.CRC_Tmax)
+    assert not isnan(obj.T_limits['CRC_CONSTANT'][0])
+    assert not isnan(obj.T_limits['CRC_CONSTANT'][1])
 
 @pytest.mark.slow
 @pytest.mark.fuzz
@@ -85,7 +89,7 @@ def test_Permittivity_class_fuzz():
     for i in permittivity_data_CRC.index:
         a = PermittivityLiquid(CASRN=i)
         if 'CRC' in a.all_methods:
-            sums_min += a.calculate(a.CRC_Tmin, 'CRC')
-            sums_avg += a.calculate((a.CRC_Tmax+a.CRC_Tmin)/2., 'CRC')
-            sums_max += a.calculate(a.CRC_Tmax, 'CRC')
+            sums_min += a.calculate(a.T_limits['CRC'][0], 'CRC')
+            sums_avg += a.calculate((a.T_limits['CRC'][1]+a.T_limits['CRC'][0])/2., 'CRC')
+            sums_max += a.calculate(a.T_limits['CRC'][1], 'CRC')
     assert_close1d([sums_min, sums_avg, sums_max], [10582.970609439253, 8312.897581451223, 6908.073524704013])

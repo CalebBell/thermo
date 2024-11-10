@@ -934,13 +934,11 @@ class StreamArgs:
         m = s['m']
         if m is not None:
             zs = self.zs_calc
-            try:
+            if zs is not None:
                 MWs = self.flasher.constants.MWs
                 MW = mixing_simple(MWs, zs)
                 n = property_molar_to_mass(m, MW)
                 return [n*zi for zi in zs]
-            except:
-                pass
         ms = s['ms']
         if ms is not None and None not in ms:
             zs = self.zs_calc

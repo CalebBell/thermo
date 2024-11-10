@@ -129,7 +129,7 @@ def redlich_kister_build_structure(N, shape, data, indexes):
     Returns
     -------
     structure : list[list[data]] of shape [N, N, *shape]
-        Output structurez
+        Output structure
 
     Notes
     -----

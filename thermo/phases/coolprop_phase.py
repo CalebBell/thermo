@@ -195,7 +195,7 @@ class CoolPropPhase(Phase):
     model_attributes = ('backend', 'fluid', 'Hfs', 'Gfs', 'Sfs')
 
     def __init__(self, backend, fluid,
-                 T=None, P=None, zs=None,  Hfs=None,
+                 T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,  Hfs=None,
                  Gfs=None, Sfs=None,):
         if not CoolProp_constants_set:
             if has_CoolProp():

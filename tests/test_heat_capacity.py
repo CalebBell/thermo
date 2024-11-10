@@ -759,7 +759,7 @@ def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy():
     dSs = []
     dHs = []
     pairs = [(252, 400), (252, 1000), (252, 2000), (Tmin, Tmax), (1, 10000), (1, 300), (1000, 10000)]
-    dSs_expect = [15.587741399855702, 49.537011711414834, 81.56764797150367, 81.67860031367769, 377.40462102946975, 187.9790605246881, 145.72976380712763]
+    dSs_expect = [15.587741399855446, 49.53701171038426, 81.56763739024905, 81.67858973242306, 377.4045671786281, 187.97907173107453, 145.72969875093]
 
     for (T1, T2), dS_expect in zip(pairs, dSs_expect):
         dS = obj.T_dependent_property_integral_over_T(T1, T2)
@@ -769,7 +769,7 @@ def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy():
     for T1, T2 in pairs:
         dH = obj.T_dependent_property_integral(T1, T2)
         dHs.append(dH)
-    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.5550873382, 9924.4462248903, 665908.1651110547]
+    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.1907885703, 9924.44653308318, 665907.8005040939]
     assert_close1d(dHs, dHs_expect, rtol=1e-13)
 
     # Essentially what writting this test discovered is that there kind of is a numerical problem with so many parameters;
@@ -777,7 +777,14 @@ def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy():
     # With more math work calculating them without rounding errors is probably possible. However, it will be slow
     # It is already slow!!
     # See test_HeatCapacityGas_stable_polynomial_parameters_with_entropy_fixed for how the situation is to be handled.
-    assert_close1d(dSs, dSs_expect, rtol=1e-6)
+    assert_close1d(dSs, dSs_expect, rtol=2e-6)
+
+
+
+    assert_close(obj.correlations['test'][3]['int_T_log_coeff'], 33.94307866530403, rtol=1e-13)
+    assert_close1d(obj.correlations['test'][3]['int_T_coeffs'], 
+        [-0.04919816763192373, 0.11263751330617944, 0.131110452463151, -0.45423261676208426, -0.06004401011932714, 0.7411591719219359, -0.0785488258334226, -0.7638508616073523, 0.17966145346872509, 0.5368869720259681, -0.23898457409814, -0.11605650605633855, -0.004958115052431822, 0.09069587616249919, 0.03437954094260931, -0.1659396644681692, 0.2085834185127169, -0.14463942032307386, -0.00890484161209315, 0.08206677765701897, 0.2691963085962925, -1.2154266047764395, 1.5349439248270755, 6.923550077860796, 3.225469171838455],
+        rtol=4e-3)
 
 
 @pytest.mark.meta_T_dept
@@ -794,8 +801,8 @@ def test_HeatCapacityGas_stable_polynomial_parameters_with_entropy_fixed():
     dSs = []
     dHs = []
     pairs = [(252, 400), (252, 1000), (252, 2000), (Tmin, Tmax), (1, 10000), (1, 300), (1000, 10000)]
-    dSs_expect = [15.587741399857379, 49.53701171701344, 81.56762248012049, 81.67857482229452, 377.4045955380866, 187.97906052468775, 145.72973831014585]
-    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.5550873382, 9924.4462248903, 665908.1651110547]
+    dSs_expect = [15.587741399857379, 49.53701171701343, 81.56762248012046, 81.67857482229451, 377.4045522684995, 187.97907173107427, 145.72968383417225]
+    dHs_expect = [4997.762485980464, 27546.16190448647, 74335.86952819106, 74363.78317065322, 701770.1907885703, 9924.44653308318, 665907.8005040939]
 
     for (T1, T2), dS_expect in zip(pairs, dSs_expect):
         dS = obj.T_dependent_property_integral_over_T(T1, T2)

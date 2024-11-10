@@ -528,7 +528,7 @@ class NRTL(GibbsExcess):
     Examples
     --------
     The DDBST has published numerous problems showing this model a simple
-    binary system, Example P05.01b in [2]_, shows how to use parameters from
+    binary ethanol-water system, Example P05.01b in [2]_, shows how to use parameters from
     the DDBST which are in units of calorie and need the gas constant as a
     multiplier:
 
@@ -603,7 +603,7 @@ class NRTL(GibbsExcess):
 
     gammas_from_args = staticmethod(nrtl_gammas_from_args)
 
-    def __init__(self, T, xs, tau_coeffs=None, alpha_coeffs=None,
+    def __init__(self, *, xs, T=GibbsExcess.T_DEFAULT, tau_coeffs=None, alpha_coeffs=None,
                  ABEFGHCD=None, tau_as=None, tau_bs=None, tau_es=None,
                  tau_fs=None, tau_gs=None, tau_hs=None, alpha_cs=None,
                  alpha_ds=None):
@@ -709,7 +709,7 @@ class NRTL(GibbsExcess):
         # especially important for reducing the size of the __repr__ string.
         self.tau_coeffs_nonzero = tau_coeffs_nonzero = [True]*6 if not vectorized else ones(6, bool)
         for k, coeffs in enumerate([self.tau_as, self.tau_bs, self.tau_es,
-                           self.tau_fs, self.tau_gs, self.tau_hs]):
+                                    self.tau_fs, self.tau_gs, self.tau_hs]):
             nonzero = False
             for i in range(N):
                 r = coeffs[i]
@@ -1033,14 +1033,6 @@ class NRTL(GibbsExcess):
     def dalphas_dT(self):
         '''Keep it as a function in case this needs to become more complicated.'''
         return self.alpha_ds
-
-    def d2alphas_dT2(self):
-        '''Keep it as a function in case this needs to become more complicated.'''
-        return self.zero_coeffs
-
-    def d3alphas_dT3(self):
-        '''Keep it as a function in case this needs to become more complicated.'''
-        return self.zero_coeffs
 
     def Gs(self):
         r'''Calculates and return the `G` terms in the NRTL model for a
@@ -1515,9 +1507,6 @@ class NRTL(GibbsExcess):
         dtaus_dT = self.dtaus_dT()
         d2taus_dT2 = self.d2taus_dT2()
 
-        alphas = self.alphas()
-        dalphas_dT = self.dalphas_dT()
-
         Gs = self.Gs()
         dGs_dT = self.dGs_dT()
         d2Gs_dT2 = self.d2Gs_dT2()
@@ -1657,7 +1646,6 @@ class NRTL(GibbsExcess):
             pass
         T, xs, N = self.T, self.xs, self.N
         taus = self.taus()
-        alphas = self.alphas()
         Gs = self.Gs()
         xj_Gs_jis_inv = self.xj_Gs_jis_inv()
         xj_Gs_taus_jis = self.xj_Gs_taus_jis()
@@ -1732,7 +1720,7 @@ class NRTL(GibbsExcess):
 
     @classmethod
     def regress_binary_parameters(cls, gammas, xs, symmetric_alphas=False,
-                                  use_numba=False,
+                                  use_numba=False, force_alpha=None,
                                   do_statistics=True, **kwargs):
         # Load the functions either locally or with numba
         if use_numba:
@@ -1742,6 +1730,8 @@ class NRTL(GibbsExcess):
             work_func = NRTL_gammas_binaries
             jac_func = NRTL_gammas_binaries_jac
 
+        if force_alpha is not None:
+            symmetric_alphas = True
         # Allocate all working memory
         pts = len(xs)
         gammas_iter = zeros(pts*2)
@@ -1749,11 +1739,13 @@ class NRTL(GibbsExcess):
 
         # Plain objective functions
         if symmetric_alphas:
-            def fitting_func(xs, tau12, tau21, alpha):
+            def fitting_func(xs, tau12, tau21, alpha=force_alpha):
                 return work_func(xs, tau12, tau21, alpha, alpha, gammas_iter)
-
-            def analytical_jac(xs, tau12, tau21, alpha):
-                return delete(jac_func(xs, tau12, tau21, alpha, alpha, jac_iter), 3, axis=1)
+            def analytical_jac(xs, tau12, tau21, alpha=force_alpha):
+                out = jac_func(xs, tau12, tau21, alpha, alpha, jac_iter)
+                if force_alpha is not None:
+                    return delete(out, [2,3], axis=1)
+                return delete(out, 3, axis=1)
 
         else:
             def fitting_func(xs, tau12, tau21, alpha12, alpha21):
@@ -1776,12 +1768,17 @@ class NRTL(GibbsExcess):
         # Objective functions for leastsq maximum speed
         if symmetric_alphas:
             def func_wrapped_for_leastsq(params):
-                return work_func(xs_working, params[0], params[1], params[2], params[2], gammas_iter) - gammas_working
+                alpha = params[2] if force_alpha is None else force_alpha
+                return work_func(xs_working, params[0], params[1], alpha, alpha, gammas_iter) - gammas_working
 
             def jac_wrapped_for_leastsq(params):
-                out = jac_func(xs_working, params[0], params[1], params[2], params[2], jac_iter)
-                new_out = delete(out, 3, axis=1)
-                new_out[:, 2] = out[:, 2] + out[:, 3]
+                alpha = params[2] if force_alpha is None else force_alpha
+                out = jac_func(xs_working, params[0], params[1], alpha, alpha, jac_iter)
+                if force_alpha is None:
+                    new_out = delete(out, 3, axis=1)
+                    new_out[:, 2] = out[:, 2] + out[:, 3]
+                else:
+                    new_out = delete(out, [2,3], axis=1)
                 return new_out
 
         else:
@@ -1792,7 +1789,10 @@ class NRTL(GibbsExcess):
                 return jac_func(xs_working, params[0], params[1], params[2], params[3], jac_iter)
 
         if symmetric_alphas:
-            use_fit_parameters = ['tau12', 'tau21', 'alpha12']
+            if force_alpha is not None:
+                use_fit_parameters = ['tau12', 'tau21']
+            else:
+                use_fit_parameters = ['tau12', 'tau21', 'alpha12']
         else:
             use_fit_parameters = ['tau12', 'tau21', 'alpha12', 'alpha21']
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,

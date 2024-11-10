@@ -155,6 +155,7 @@ from fluids.numerics import numpy as np
 
 from thermo.activity import GibbsExcess
 from thermo.group_contribution.group_contribution_base import str_group_assignment_to_dict
+import threading
 
 try:
     array, zeros, npexp, array_equal = np.array, np.zeros, np.exp, np.array_equal
@@ -2615,16 +2616,19 @@ def load_group_assignments_DDBST():
                     storage[key] = d_data
 
 ## Database lookup
-UNIFAC_DDBST_ASSIGNMENT_CURSOR = None
+
+thread_local_storage = threading.local()
 
 def init_ddbst_UNIFAC_db():
-    global UNIFAC_DDBST_ASSIGNMENT_CURSOR
-    import sqlite3
-    conn = sqlite3.connect(
-        os.path.join(os.path.dirname(__file__), 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite'),
-        check_same_thread=False,
-    )
-    UNIFAC_DDBST_ASSIGNMENT_CURSOR = conn.cursor()
+    ''' Initialize the database connection and cursor for the current thread if not already done. '''
+    if not hasattr(thread_local_storage, 'conn'):
+        # Create a new connection and cursor for the thread
+        import sqlite3
+        thread_local_storage.conn = sqlite3.connect(
+            os.path.join(os.path.dirname(__file__), 'Phase Change', 'DDBST_UNIFAC_assignments.sqlite'),
+            check_same_thread=False,
+        )
+        thread_local_storage.cursor = thread_local_storage.conn.cursor()
 
 def UNIFAC_group_assignment_DDBST(CAS, model):
     r'''Lookup the group assignment of a compound in either the 'UNIFAC'
@@ -2640,7 +2644,7 @@ def UNIFAC_group_assignment_DDBST(CAS, model):
 
     Returns
     -------
-    asssignments : dict
+    assignments : dict
         The group assignments and their counts; note that an empty dictionary
         indicates the fragmentation is not available, [-]
 
@@ -2653,11 +2657,11 @@ def UNIFAC_group_assignment_DDBST(CAS, model):
     {1: 5, 2: 8, 3: 6, 4: 1, 6: 1, 7: 1, 8: 2, 14: 1}
 
     '''
-    if UNIFAC_DDBST_ASSIGNMENT_CURSOR is None:
+    if not hasattr(thread_local_storage, 'cursor'):
         init_ddbst_UNIFAC_db()
     CASi = CAS_to_int(CAS)
-    UNIFAC_DDBST_ASSIGNMENT_CURSOR.execute("SELECT * FROM DDBST WHERE `index`=?", (str(CASi),))
-    result = UNIFAC_DDBST_ASSIGNMENT_CURSOR.fetchone()
+    thread_local_storage.cursor.execute("SELECT * FROM DDBST WHERE `index`=?", (str(CASi),))
+    result = thread_local_storage.cursor.fetchone()
     if result is None:
         return {}
     if model == 'UNIFAC':
@@ -3510,13 +3514,11 @@ def unifac_Theta_pure_Psi_sums(N, N_groups, psis, Thetas_pure, Theta_pure_Psi_su
 #        Theta_pure_Psi_sums = zeros((N, N_groups)) # numba: uncomment
 
     for i in range(N):
-        row = Theta_pure_Psi_sums[i]
-        Thetas_pure_i = Thetas_pure[i]
         for k in range(N_groups):
             tot = 0.0
             for m in range(N_groups):
-                tot += Thetas_pure_i[m]*psis[m][k]
-            row[k] = (tot)
+                tot += Thetas_pure[i][m]*psis[m][k]
+            Theta_pure_Psi_sums[i][k] = (tot)
     return Theta_pure_Psi_sums
 
 def unifac_lnGammas_subgroups(N_groups, Qs, psis, Thetas, Theta_Psi_sums, Theta_Psi_sum_invs, lnGammas_subgroups=None):
@@ -3652,11 +3654,10 @@ def unifac_dlnGammas_subgroups_dT(N_groups, Qs, psis, dpsis_dT, Thetas,
     if dlnGammas_subgroups_dT is None:
         dlnGammas_subgroups_dT = [0.0]*N_groups
     for i in range(N_groups):
-        psisi, dpsis_dTi = psis[i], dpsis_dT[i]
         tot = 0.0
         for j in range(N_groups):
-            tot += (psisi[j]*Theta_dPsidT_sum[j]*Theta_Psi_sum_invs[j]
-                   - dpsis_dTi[j])*Theta_Psi_sum_invs[j]*Thetas[j]
+            tot += (psis[i][j]*Theta_dPsidT_sum[j]*Theta_Psi_sum_invs[j]
+                   - dpsis_dT[i][j])*Theta_Psi_sum_invs[j]*Thetas[j]
 
         v = Qs[i]*(tot - Theta_dPsidT_sum[i]*Theta_Psi_sum_invs[i])
         dlnGammas_subgroups_dT[i] = v
@@ -3763,10 +3764,9 @@ def unifac_Xs_pure(N, N_groups, vs, cmp_v_count_inv, Xs_pure=None):
         Xs_pure = [[0.0]*N for _ in range(N_groups)] # numba: delete
 #        Xs_pure = zeros((N_groups, N)) # numba: uncomment
     for i in range(N_groups):
-        row = Xs_pure[i]
         vsi = vs[i]
         for j in range(N):
-            row[j] = vsi[j]*cmp_v_count_inv[j]
+            Xs_pure[i][j] = vsi[j]*cmp_v_count_inv[j]
     return Xs_pure
 
 def unifac_Thetas_pure(N, N_groups, Xs_pure, Qs, Thetas_pure=None):
@@ -3777,13 +3777,12 @@ def unifac_Thetas_pure(N, N_groups, Xs_pure, Qs, Thetas_pure=None):
     for i in range(N):
         # groups = self.cmp_group_idx[i]
         tot = 0.0
-        row = Thetas_pure[i]
         for j in range(N_groups):
             tot += Qs[j]*Xs_pure[j][i]
 
         tot_inv = 1.0/tot
         for j in range(N_groups):
-            row[j] = Qs[j]*Xs_pure[j][i]*tot_inv
+            Thetas_pure[i][j] = Qs[j]*Xs_pure[j][i]*tot_inv
     return Thetas_pure
 
 
@@ -3793,26 +3792,23 @@ def unifac_lnGammas_subgroups_pure(N, N_groups, Qs, Thetas_pure, cmp_group_idx, 
 #        lnGammas_subgroups_pure = zeros((N_groups, N)) # numba: uncomment
 
     for k in range(N_groups):
-        row = lnGammas_subgroups_pure[k]
         for i in group_cmp_idx[k]:
-            groups2 = cmp_group_idx[i]
-            Thetas_purei = Thetas_pure[i]
 
             psisk = psis[k]
             log_sum = 0.0
-            for m in groups2:
-                log_sum += Thetas_purei[m]*psis[m][k]
+            for m in cmp_group_idx[i]:
+                log_sum += Thetas_pure[i][m]*psis[m][k]
             log_sum = log(log_sum)
 
             last = 0.0
-            for m in groups2:
+            for m in cmp_group_idx[i]:
                 sub_subs = 0.0
                 for n in range(N_groups):
-                    sub_subs += Thetas_purei[n]*psis[n][m]
-                last += Thetas_purei[m]*psisk[m]/sub_subs
+                    sub_subs += Thetas_pure[i][n]*psis[n][m]
+                last += Thetas_pure[i][m]*psisk[m]/sub_subs
 
             v = Qs[k]*(1.0 - log_sum - last)
-            row[i] = v
+            lnGammas_subgroups_pure[k][i] = v
     return lnGammas_subgroups_pure
 
 def unifac_dlnGammas_subgroups_pure_dT(N, N_groups, Qs, psis, dpsis_dT,
@@ -4327,12 +4323,24 @@ class UNIFAC(GibbsExcess):
     psi_abc : tuple(list[list[float]], 3), optional
         `psi` interaction parameters between each subgroup; indexed
         [subgroup][subgroup], not symmetrical; first arg is the matrix for `a`,
-        then `b`, and then `c`. Only one of `psi_abc` or `psi_coeffs` is
-        required, [-]
+        then `b`, and then `c`. Only one of `psi_abc` or `psi_coeffs` 
+        or `psi_a` and `psi_b` and `psi_c` is required, [-]
     psi_coeffs : list[list[tuple(float, 3)]], optional
         `psi` interaction parameters between each subgroup; indexed
         [subgroup][subgroup][letter], not symmetrical. Only one of `psi_abc`
-        or `psi_coeffs` is required, [-]
+        or `psi_coeffs` or `psi_a` and `psi_b` and `psi_c` is required, [-]
+    psi_a : list[list[float]], optional
+        `psi` a term interaction parameters between each subgroup; indexed
+        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or 
+        `psi_a` and `psi_b` and `psi_c` is required, [-]
+    psi_b : list[list[float]], optional
+        `psi` b term interaction parameters between each subgroup; indexed
+        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or 
+        `psi_a` and `psi_b` and `psi_c` is required, [-]
+    psi_c : list[list[float]], optional
+        `psi` c term interaction parameters between each subgroup; indexed
+        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or 
+        `psi_a` and `psi_b` and `psi_c` is required, [-]
     version : int, optional
         Which version of the model to use [-]
 
@@ -4507,7 +4515,7 @@ class UNIFAC(GibbsExcess):
         >>> chemgroups = [{9: 6}, {78: 6}, {1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}]
         >>> GE = UNIFAC.from_subgroups(T=T, xs=xs, chemgroups=chemgroups, version=1, interaction_data=DOUFIP2006, subgroups=DOUFSG)
         >>> GE
-        UNIFAC(T=373.15, xs=[0.2, 0.3, 0.1, 0.4], rs=[2.2578, 4.2816, 2.3373, 2.4951999999999996], qs=[2.5926, 5.181, 2.7308, 2.6616], Qs=[1.0608, 0.7081, 0.4321, 0.8927, 1.67, 0.8635], vs=[[0, 0, 1, 1], [0, 0, 0, 1], [6, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 6, 0, 0]], psi_abc=([[0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [16.07, 16.07, 0.0, 3972.0, 146.2, 134.6], [1606.0, 1606.0, 3049.0, 0.0, -250.0, 3121.0], [199.0, 199.0, -57.53, 653.3, 0.0, 168.2], [170.9, 170.9, -2.619, 2601.0, 464.5, 0.0]], [[0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [-0.2998, -0.2998, 0.0, -13.16, -1.237, -1.231], [-4.746, -4.746, -12.77, 0.0, 2.857, -13.69], [-0.8709, -0.8709, 1.212, -1.412, 0.0, -0.8197], [-0.8062, -0.8062, 1.094, -1.25, 0.1542, 0.0]], [[0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.01208, 0.004237, 0.001488], [0.0009181, 0.0009181, 0.01435, 0.0, -0.006022, 0.01446], [0.0, 0.0, -0.003715, 0.000954, 0.0, 0.0], [0.001291, 0.001291, -0.001557, -0.006309, 0.0, 0.0]]), version=1)
+        UNIFAC(T=373.15, xs=[0.2, 0.3, 0.1, 0.4], rs=[2.2578, 4.2816, 2.3373, 2.4951999999999996], qs=[2.5926, 5.181, 2.7308, 2.6616], Qs=[1.0608, 0.7081, 0.4321, 0.8927, 1.67, 0.8635], vs=[[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0], [6.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 1.0, 0.0], [0.0, 6.0, 0.0, 0.0]], psi_a=[[0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [0.0, 0.0, 114.2, 2777.0, 433.6, -117.1], [16.07, 16.07, 0.0, 3972.0, 146.2, 134.6], [1606.0, 1606.0, 3049.0, 0.0, -250.0, 3121.0], [199.0, 199.0, -57.53, 653.3, 0.0, 168.2], [170.9, 170.9, -2.619, 2601.0, 464.5, 0.0]], psi_b=[[0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [0.0, 0.0, 0.0933, -4.674, 0.1473, 0.5481], [-0.2998, -0.2998, 0.0, -13.16, -1.237, -1.231], [-4.746, -4.746, -12.77, 0.0, 2.857, -13.69], [-0.8709, -0.8709, 1.212, -1.412, 0.0, -0.8197], [-0.8062, -0.8062, 1.094, -1.25, 0.1542, 0.0]], psi_c=[[0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.001551, 0.0, -0.00098], [0.0, 0.0, 0.0, 0.01208, 0.004237, 0.001488], [0.0009181, 0.0009181, 0.01435, 0.0, -0.006022, 0.01446], [0.0, 0.0, -0.003715, 0.000954, 0.0, 0.0], [0.001291, 0.001291, -0.001557, -0.006309, 0.0, 0.0]], version=1)
         '''
         if subgroups is None:
             if version == 0:
@@ -4567,7 +4575,6 @@ class UNIFAC(GibbsExcess):
 
         # Convert group counts into a list, sorted by index (lowest subgroup index is first element, highest subgroup index is the last)
         subgroup_list = list(sorted(group_counts.keys()))
-        group_counts_list = [c for _, c in sorted(zip(group_counts.keys(), group_counts.values()))]
 
         Qs = [subgroups[group].Q for group in subgroup_list]
         vs = chemgroups_to_matrix(chemgroups)
@@ -4604,16 +4611,15 @@ class UNIFAC(GibbsExcess):
 
     def __repr__(self):  # pragma: no cover
 
-        psi_abc = (self.psi_a, self.psi_b, self.psi_c)
         s = 'UNIFAC('
         s += f'T={self.T}, xs={self.xs}, rs={self.rs}, qs={self.qs}'
-        s += f', Qs={self.Qs}, vs={self.vs}, psi_abc={psi_abc}, version={self.version}'
+        s += f', Qs={self.Qs}, vs={self.vs}, psi_a={self.psi_a}, psi_b={self.psi_b}, psi_c={self.psi_c}, version={self.version}'
         s += ')'
         return s
 
 
-    def __init__(self, T, xs, rs, qs, Qs, vs, psi_coeffs=None, psi_abc=None,
-                 version=0):
+    def __init__(self, *, xs, rs, qs, Qs, vs, T=GibbsExcess.T_DEFAULT, psi_coeffs=None, psi_abc=None,
+                 psi_a=None, psi_b=None, psi_c=None, version=0):
         self.T = T
         self.xs = xs
         self.vectorized = vectorized = type(xs) is not list
@@ -4626,21 +4632,27 @@ class UNIFAC(GibbsExcess):
 
         # [subgroup][component] = number of subgroup in component where subgroup
         # is an index, numbered sequentially by the number of subgroups in the mixture
-        self.vs = vs
+        # Use floats for slight speed increase
+        self.vs = [[float(vi) for vi in row] for row in vs] if not vectorized else np.array(vs, dtype=np.float64)
 
 
         # each psi_letter is a matrix of [subgroup_length][subgroups_length]
         # the diagonal is zero
         # Indexed by index of the subgroup in the mixture, again sorted lowest first
+        spec_count = int(psi_coeffs is not None) + int(psi_abc is not None) + int(psi_a is not None or psi_b is not None or psi_c is not None)
+        if spec_count != 1:
+            raise ValueError("Provide exactly one of `psi_coeffs` or `psi_abc` or `psi_a`/`psi_b`/`psi_c`")
+
         if psi_abc is not None:
             self.psi_a, self.psi_b, self.psi_c = psi_abc
-
-        else:
-            if psi_coeffs is None:
-                raise ValueError("Missing psis")
+        elif psi_a is not None and psi_b is not None and psi_c is not None:
+            self.psi_a, self.psi_b, self.psi_c = psi_a, psi_b, psi_c
+        elif psi_coeffs is not None:
             self.psi_a = [[i[0] for i in l] for l in psi_coeffs]
             self.psi_b = [[i[1] for i in l] for l in psi_coeffs]
             self.psi_c = [[i[2] for i in l] for l in psi_coeffs]
+        else:
+            raise ValueError("When `psi_a`/`psi_b`/`psi_c` are provided all must be input")
         self.N_groups = N_groups = len(self.psi_a)
         self.N = N = len(rs)
         self.version = version

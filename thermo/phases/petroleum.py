@@ -81,8 +81,8 @@ class GraysonStreed(Phase):
             raise ValueError("Two of T, P, or V are needed")
 
     def __init__(self, Tcs, Pcs, omegas, CASs,
-                 GibbsExcessModel=IdealSolution(),
-                 T=None, P=None, zs=None,
+                 GibbsExcessModel=IdealSolution,
+                 T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
                  ):
 
         self.T = T
@@ -96,7 +96,7 @@ class GraysonStreed(Phase):
         self._CASs = CASs
         self.regular = [i not in Grayson_Streed_special_CASs for i in CASs]
 
-        self.GibbsExcessModel = GibbsExcessModel
+        self.GibbsExcessModel = GibbsExcessModel(T=T, xs=zs)
 
     def gammas(self):
         try:

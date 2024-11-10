@@ -685,7 +685,7 @@ def test_two_eos_pure_flash_all_properties():
     assert_close(eq.bulk.Psats(), Psats_expect, rtol=1e-12)
     assert_close1d([i.Psats() for i in eq.phases], [Psats_expect]*2, rtol=1e-12)
 
-    Psubs_expect = [71141.90625119829]
+    Psubs_expect = [71141.7996970027]
     assert_close(eq.Psubs(), Psubs_expect, rtol=1e-12)
     assert_close(eq.bulk.Psubs(), Psubs_expect, rtol=1e-12)
     assert_close1d([i.Psubs() for i in eq.phases], [Psubs_expect]*2, rtol=1e-12)

@@ -61,7 +61,7 @@ try:
 except:
     pass
 
-from math import log, pi
+from math import log, pi, isinf, isnan
 
 
 def split_data(x, y, folds=5, seed=42):
@@ -728,11 +728,16 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         extra_user_guess = [{k: v for k, v in zip(use_fit_parameters, p0)}]
         all_iter_guesses = hardcoded_guesses + extra_user_guess
         array_init_guesses = []
+        array_init_guesses_dedup = set()
         err_func_init = fit_func_dict['MeanRelErr']
         for hardcoded in all_iter_guesses:
             ph = [None]*len(fit_parameters)
             for i, k in enumerate(use_fit_parameters):
                 ph[i] = hardcoded[k]
+            ph_tuple = tuple(ph)
+            if ph_tuple in array_init_guesses_dedup:
+                continue
+            array_init_guesses_dedup.add(ph_tuple)
             array_init_guesses.append(ph)
 
             calc = fitting_func(Ts, *ph)
@@ -801,11 +806,16 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                 try:
                     if lm_direct:
                         if Dfun is not None:
-                            popt = lmder(func_wrapped_for_leastsq, Dfun, p0, tuple(), False,
+                            popt, info, status = lmder(func_wrapped_for_leastsq, Dfun, p0, tuple(), True,
                                       0, 1.49012e-8, 1.49012e-8, 0.0, solver_kwargs['maxfev'],
-                                      100, None)[0]
+                                      100, None)
+                            # print(info, 'info', status, 'status')
                         else:
-                            popt, _ = leastsq(func_wrapped_for_leastsq, p0, Dfun=Dfun, **solver_kwargs)
+                            popt, status = leastsq(func_wrapped_for_leastsq, p0, Dfun=Dfun, **solver_kwargs)
+                        if Dfun is not None and (not np.all(np.isfinite(info['fjac'])) or not np.all(np.isfinite(info['fvec']))):
+                            # Didn't go smoothly at all
+                            popt, status = leastsq(func_wrapped_for_leastsq, p0, **solver_kwargs)
+
 
                         pcov = None
                     else:
@@ -815,10 +825,13 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                     continue
                 calc = fitting_func(Ts, *popt)
                 curr_err = err_fun_multiple_guesses(data, calc)
+                # print(f'p0 {p0} lead to', curr_err)
                 if curr_err < multiple_tries_best_error:
+                    # print('accepting')
                     best_popt, best_pcov = popt, pcov
                     multiple_tries_best_error = curr_err
                     if curr_err < multiple_tries_max_err:
+                        # print('breaking')
                         break
 
             if best_popt is None:

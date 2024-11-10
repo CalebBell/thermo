@@ -28,7 +28,7 @@ from thermo.phases.phase import Phase
 class CombinedPhase(Phase):
     def __init__(self, phases, equilibrium=None, thermal=None, volume=None,
                  other_props=None,
-                 T=None, P=None, zs=None,
+                 T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
                  ):
         # phases : list[other phases]
         # equilibrium: index
