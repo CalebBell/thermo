@@ -68,6 +68,17 @@ def test_Joback_acetone():
     res = obj.estimate()
     assert res['mul_coeffs'] is None
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_Joback_2_methylphenol_PGL6():
+    # has a known Tb
+    from thermo import Chemical
+    estimator = Joback(Chemical('2-methylphenol').rdkitmol, Tb=464.15)
+    assert 'OK' == estimator.status
+    estimates = estimator.estimate(callables=False)
+    assert_close(estimates['Tc'], 692.639982032995, rtol=1e-13)
+    assert_close(estimates['Pc'], 5029928.072028569, rtol=1e-13)
+    assert_close(estimates['Vc'], 0.0002855, rtol=1e-13)
 
 @pytest.mark.fuzz
 @pytest.mark.slow

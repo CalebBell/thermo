@@ -82,7 +82,7 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 
 ["Primary alkene", "=CH2", "[CX3H2]"],
 ["Secondary alkene acyclic", "=CH-", "[!R;CX3H1;!$([CX3H1](=O))]"],
-["Tertiary alkene acyclic", "=C<", "[$([!R;CX3H0]);!$([!R;CX3H0]=[#8])]"],
+["Tertiary alkene acyclic", "=C<", "[$([!R;#6X3H0]);!$([!R;#6X3H0]=[#8])]"], # corrected to be that of JRgui, match C element instead of aliphatic C (still non ring)
 ["Cumulative alkene", "=C=", "[$([CX2H0](=*)=*)]"],
 ["Terminal alkyne", "≡CH","[$([CX2H1]#[!#7])]"],
 ["Internal alkyne","≡C-","[$([CX2H0]#[!#7])]"],
@@ -92,7 +92,7 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Quaternary cyclic", ">C< (ring)", "[R;CX4H0]"],
 
 ["Secondary alkene cyclic", "=CH- (ring)", "[R;CX3H1,cX3H1]"],
-["Tertiary alkene cyclic", "=C< (ring)","[$([R;CX3H0]);!$([R;CX3H0]=[#8])]"],
+["Tertiary alkene cyclic", "=C< (ring)","[$([R;#6X3H0]);!$([R;#6X3H0]=[#8])]"], # corrected to be that of JRgui, match C element instead of aliphatic C (still ring)
 
 ["Fluoro", "-F", "[F]"],
 ["Chloro", "-Cl", "[Cl]"],
@@ -369,6 +369,21 @@ class Joback:
     >>> Joback.Tb({1: 2, 24: 1})
     322.11
 
+    Example from [3]_ comparing against manually calculated literature values for 2-methylphenol
+    (using a known `Tb` values for extra accuracy):
+
+    >>> J = Joback('CC1=CC=CC=C1O',  Tb=464.15)
+    >>> res = J.estimate(callables=False)
+    >>> [res['Tc'], res['Pc']/1e5, res['Vc']*1e6]
+    [692.64, 50.30, 285.5]
+    >>> J.status # doctest:+SKIP
+    'OK'
+
+    This matches exactly with the values given in [3]_ from Joback's method. They also mention
+    experimental values of Tc = 697.55 K, Pc = 50.10 bar, and Vc = 282 cm³/mol,
+    values all within 1.5%.
+
+
     References
     ----------
     .. [1] Joback, Kevin G. "A Unified Approach to Physical Property Estimation
@@ -378,6 +393,9 @@ class Joback:
        Properties from Group-Contributions." Chemical Engineering
        Communications 57, no. 1-6 (July 1, 1987): 233-43.
        doi:10.1080/00986448708960487.
+    .. [3] Elliott, J. Richard, Vladimir Diky, Thomas A. Knotts IV, and 
+       W. Vincent Wilding. The Properties of Gases and Liquids, Sixth 
+       Edition. 6th edition. New York: McGraw Hill, 2023.
     '''
 
     calculated_Cpig_coeffs = None
@@ -403,7 +421,7 @@ class Joback:
 
         self.counts, self.success, self.status = smarts_fragment(J_BIGGS_JOBACK_SMARTS_id_dict, rdkitmol=self.rdkitmol)
 
-        if Tb is not None:
+        if Tb is None:
             self.Tb_estimated = self.Tb(self.counts)
         else:
             self.Tb_estimated = Tb
