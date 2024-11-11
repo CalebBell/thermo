@@ -70,6 +70,23 @@ def test_Joback_acetone():
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_Joback_formic_acid():
+    ex = Joback('C(=O)O')
+    assert ex.status == 'OK'
+    # values obtained from DDBST http://ddbonline.ddbst.com/OnlinePropertyEstimation/OnlinePropertyEstimation.exe
+    # needed to update smarts to fix it
+    assert_close(ex.Tb(ex.counts), 367.29, rtol=1e-7)
+    assert_close(ex.Tm(ex.counts), 278.0, rtol=1e-6)
+    assert_close(ex.Tc(ex.counts), 561.541, rtol=1e-6)
+    assert_close(ex.Pc(ex.counts, ex.atom_count), 6796390, rtol=1e-6) # Pa from kPa
+    assert_close(ex.Vc(ex.counts), 0.0001065, rtol=1e-7) # m³/mol from cm³/mol
+    assert_close(ex.Hf(ex.counts), -358430, rtol=1e-7) # J/mol from kJ/mol
+    assert_close(ex.Gf(ex.counts), -333990, rtol=1e-7) # J/mol from kJ/mol
+    assert_close(ex.Hfus(ex.counts), 10171, rtol=1e-7)
+    assert_close(ex.Hvap(ex.counts), 34837, rtol=1e-7) # J/mol from kJ/mol
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_Joback_2_methylphenol_PGL6():
     # has a known Tb
     from thermo import Chemical

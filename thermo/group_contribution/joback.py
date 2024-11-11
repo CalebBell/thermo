@@ -100,12 +100,12 @@ J_BIGGS_JOBACK_SMARTS = [["Methyl","-CH3", "[CX4H3]"],
 ["Iodo", "-I", "[I]"],
 
 ["Alcohol","-OH (alcohol)", "[OX2H;!$([OX2H]-[#6]=[O]);!$([OX2H]-a)]"],
-["Phenol","-OH (phenol)", "[$([OX2H]-a)]"],
+["Phenol","-OH (phenol)", "[$([OX2H]-a)]"], # [O;H1;$(O-!@c)] is suggested in JRGui which is slightly less permissive, see https://pubchem.ncbi.nlm.nih.gov/compound/4-Hydroxyaminoquinoline-1-oxide-hydrochloride as example of compound that won't match anymore
 ["Ether acyclic", "-O- (nonring)", "[OX2H0;!R;!$([OX2H0]-[#6]=[#8])]"],
 ["Ether cyclic", "-O- (ring)", "[#8X2H0;R;!$([#8X2H0]~[#6]=[#8])]"],
 ["Carbonyl acyclic", ">C=O (nonring)","[$([CX3H0](=[OX1]));!$([CX3](=[OX1])-[OX2]);!R]=O"],
 ["Carbonyl cyclic", ">C=O (ring)","[$([#6X3H0](=[OX1]));!$([#6X3](=[#8X1])~[#8X2]);R]=O"],
-["Aldehyde","O=CH- (aldehyde)","[CX3H1](=O)"],
+["Aldehyde","O=CH- (aldehyde)","[CH;D2;$(C-!@C)](=O)"], # Updated to the one in JRGui which is much more correct, e.g. formic acid needs the updated change
 ["Carboxylic acid", "-COOH (acid)", "[OX2H]-[C]=O"],
 ["Ester", "-COO- (ester)", "[#6X3H0;!$([#6X3H0](~O)(~O)(~O))](=[#8X1])[#8X2H0]"],
 ["Oxygen double bond other", "=O (other than above)","[OX1H0;!$([OX1H0]~[#6X3]);!$([OX1H0]~[#7X3]~[#8])]"],
