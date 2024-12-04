@@ -21,6 +21,63 @@ SOFTWARE.
 '''
 
 from setuptools import setup
+from wheel.bdist_wheel import bdist_wheel
+import os
+import shutil
+from pathlib import Path
+import tempfile
+
+class bdist_wheel_light(bdist_wheel):
+    description = "Build a light wheel package without test files and large data files"
+    
+    def run(self):
+        # Get absolute path to the project directory
+        pkg_dir = Path(os.path.abspath('thermo'))
+        root_dir = pkg_dir.parent
+        
+        # Files/directories to exclude (paths relative to project root)
+        exclude_files = [
+            'tests',
+            'thermo/Interaction Parameters/PRTranslated_best_henry_T_dep.json',
+            'thermo/Law',
+            'thermo/Misc/constants dump.json',
+            'thermo/Phase Change/DDBST UNIFAC assignments.tsv',
+            '.pylintrc'
+        ]
+        
+        # Also exclude any files with 'polyfits' in the name
+        for path in pkg_dir.rglob('*polyfits*'):
+            rel_path = path.relative_to(root_dir)
+            exclude_files.append(str(rel_path))
+        
+        # Create temporary directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            moved_files = []
+            
+            try:
+                # Move files to temporary location
+                for rel_path in exclude_files:
+                    orig_path = root_dir / rel_path
+                    if orig_path.exists():
+                        # Create path in temp dir maintaining structure
+                        temp_path = Path(temp_dir) / rel_path
+                        temp_path.parent.mkdir(parents=True, exist_ok=True)
+                        
+                        if orig_path.is_dir():
+                            shutil.move(str(orig_path), str(temp_path))
+                        else:
+                            shutil.move(str(orig_path), str(temp_path))
+                        moved_files.append((orig_path, temp_path))
+                
+                # Build the wheel
+                super().run()
+                
+            finally:
+                # Restore moved files
+                for orig_path, temp_path in moved_files:
+                    if temp_path.exists():
+                        orig_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.move(str(temp_path), str(orig_path))
 
 classifiers=[
     'Development Status :: 3 - Alpha',
@@ -85,6 +142,9 @@ setup(
   'flash/*', 'phases/*', 'utils/*','group_contribution/*',
   'Scalar Parameters/*',
   'Interaction Parameters/ChemSep/*',
-  'Vapor Pressure/*', 'Viscosity/*']}
+  'Vapor Pressure/*', 'Viscosity/*']},
+    cmdclass={
+        'bdist_wheel_light': bdist_wheel_light,
+    }  
 )
 

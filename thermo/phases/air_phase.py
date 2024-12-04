@@ -201,7 +201,7 @@ class HumidAirRP1485(VirialGas):
         if T is not None and P is not None and zs is not None:
             self.air = DryAirLemmon(T=T, P=P)
             self.water = IAPWS95(T=T, P=P)
-            Z = Z_from_virial_density_form(T, P, self.B(), self.C())
+            Z = Z_from_virial_density_form(T, P, [self.B(), self.C()])
             self._V = Z*self.R*T/P
             self._MW = DryAirLemmon._MW*psi_a + IAPWS95._MW*psi_w
 

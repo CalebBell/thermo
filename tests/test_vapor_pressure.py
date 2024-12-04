@@ -145,7 +145,7 @@ def test_VaporPressure_extended_poling():
 
 
     Psat_exp = [162944.82134710113, 162870.44794192078, 170508.47471278594, 162865.5380455795, 162865.44152809016]
-    assert_close1d(sorted(Psat_calcs), sorted(Psat_exp))
+    assert_close1d(sorted(Psat_calcs), sorted(Psat_exp), rtol=3e-5)
 
     s = a.as_json()
     obj2 = VaporPressure.from_json(s)

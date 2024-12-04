@@ -1006,7 +1006,7 @@ class VirialGas(IdealGasDeparturePhase):
         if P is not None:
             self.P = P
         if T is not None and P is not None and zs is not None:
-            Z = Z_from_virial_density_form(T, P, self.B(), self.C())
+            Z = Z_from_virial_density_form(T, P, [self.B(), self.C()])
             self._V = Z*self.R*T/P
 
     def __repr__(self):
@@ -1835,7 +1835,7 @@ class VirialGas(IdealGasDeparturePhase):
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
-        Z = Z_from_virial_density_form(T, P, new.B(), new.C())
+        Z = Z_from_virial_density_form(T, P, [new.B(), new.C()])
         new._V = Z*self.R*T/P
         return new
 
@@ -1861,7 +1861,7 @@ class VirialGas(IdealGasDeparturePhase):
                 new.P = P
                 B = new.B()
                 C = new.C()
-                Z = Z_from_virial_density_form(T, P, B, C)
+                Z = Z_from_virial_density_form(T, P, [B, C])
                 new._V = Z*self.R*T/P
             elif V is not None:
                 P = new.P = self.R*T*(V*V + V*new.B() + new.C())/(V*V*V)
