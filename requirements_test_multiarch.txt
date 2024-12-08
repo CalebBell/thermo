@@ -1,6 +1,6 @@
 sympy
-fluids>=1.0.27
-chemicals>=1.3.0
+fluids>=1.1.0
+chemicals>=1.3.2
 pytest
 pint
 IPython
