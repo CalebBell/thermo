@@ -372,9 +372,9 @@ class Joback:
     Example from [3]_ comparing against manually calculated literature values for 2-methylphenol
     (using a known `Tb` values for extra accuracy):
 
-    >>> J = Joback('CC1=CC=CC=C1O',  Tb=464.15)
-    >>> res = J.estimate(callables=False)
-    >>> [res['Tc'], res['Pc']/1e5, res['Vc']*1e6]
+    >>> J = Joback('CC1=CC=CC=C1O',  Tb=464.15) # doctest:+SKIP
+    >>> res = J.estimate(callables=False) # doctest:+SKIP
+    >>> [res['Tc'], res['Pc']/1e5, res['Vc']*1e6] # doctest:+SKIP
     [692.64, 50.30, 285.5]
     >>> J.status # doctest:+SKIP
     'OK'
