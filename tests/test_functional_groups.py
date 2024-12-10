@@ -934,7 +934,7 @@ inorganic_compounds = ["Actinium(III) oxide", "Ag", "Al", "Al2O3", "Aluminium ar
     "Cobalt(II) sulfate", "CoO", "Copper(I) bromide", "Copper(I) chloride", "Copper(I) fluoride", "Copper(II) azide", "Copper(II) bromide",
     "Copper(II) carbonate", "Copper(II) chloride", "Copper(II) nitrate", "Copper(II) oxide", "Copper(II) sulfate", "Copper(II) sulfide", "Copper(I) oxide",
     "Copper(I) sulfate", "Copper(I) sulfide", "Copper oxychloride", "Cr", "Cr2O3", "CrO2", "CrO3", "Cs", "Cu", "Cu2O", "CuO", "Curium(III) oxide",
-    "Cyanogen", "Cyanogen bromide", "Cyanogen chloride", "Cyanogen iodide", "Diammonium phosphate", "Diborane", "Diboron tetrafluoride",
+    "Cyanogen", "Cyanogen bromide", "Cyanogen chloride", "Cyanogen iodide", "Diammonium phosphate", "Diboron tetrafluoride",
     "Dichlorine heptoxide", "Dichlorine monoxide", "Dichlorine tetroxide (chlorine perchlorate)", "Dichlorosilane", "Dimagnesium phosphate",
     "Dinitrogen pentoxide (nitronium nitrate)", "Dinitrogen tetrafluoride", "Dinitrogen tetroxide", "Dinitrogen trioxide", "Diphosphorus tetrafluoride",
     "Diphosphorus tetraiodide", "Disilane", "Disulfur decafluoride", "Dy", "Dy2O3", "Dysprosium(III) chloride", "Er", "Er2O3", "Erbium(III) chloride", "Es",
