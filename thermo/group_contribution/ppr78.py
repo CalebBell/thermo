@@ -108,9 +108,16 @@ EPPR78_GROUPS['CHaro'] = PPR78GroupContribution('CHaro', atoms={'C': 1, 'H': 1},
 EPPR78_GROUPS['Caro'] = PPR78GroupContribution('Caro', atoms={'C': 1}, bonds={AROMATIC_BOND: 2}, smarts='[c]')
 EPPR78_GROUPS['Cfused_aromatic'] = PPR78GroupContribution('Cfused_aromatic', atoms={'C': 1}, bonds={AROMATIC_BOND: 3}, 
     smarts=[ # Unclear definition and assignment - ACENAPHTHENE has 2 fused groups, FLUORANTHENE has 6, NAPHTHACENE, 6, and INDENE 0.
-        '[c;R2,R3,R4,R5,R6;r;H0;$([c;r6;r6])]',
-        '[c;R3,R4,R5,R6;r;H0;$([c;R3])]'
-
+        '[c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a;$([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a]([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a]))]',
+        # '[c;R2,R3,R4,R5,R6;r;H0;$([c;r6;r5])]',
+        # '[c;R2,R3,R4,R5,R6;r;H0;$([c;r6;r4])]',
+        # '[c;R2,R3,R4,R5,R6;r;H0;$([c;r6;r7])]',
+        # '[c;R2,R3,R4,R5,R6;r;H0;$([c;r6;r6;r5])]',
+        # '[c;R2,R3,R4,R5,R6;r;H0;$([c;r5;r5])]',
+        # '[c;R2,R3,R4,R5,R6;r;H0;$([c;r5;r4])]',
+        # '[c;R2,R3,R4,R5,R6;r;H0;$([c;r5;r7])]',
+        # '[c;R2,R3,R4,R5,R6;r;H0;$([c;r7;r7])]',
+        # '[c;R3,R4,R5,R6;r;H0;$([c;R3])]', # this one is bad but I need it for the 
     ], priority=10000)
 EPPR78_GROUPS['CH2cyclic'] = PPR78GroupContribution('CH2cyclic', atoms={'C': 1, 'H': 2}, bonds={}, smarts='[CH2R]')
 # CHcyclic is not also Ccyclic - major difference
