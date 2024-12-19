@@ -27,7 +27,7 @@ from fluids.numerics import *
 from thermo import Chemical
 from chemicals.identifiers import int_to_CAS
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
-from thermo.group_contribution.ppr78 import EPPR78_GROUPS_LIST, EPPR78_GROUPS_BY_ID, PPR78_kij, PPR78_kijs, PPR78_GROUP_IDS, PPR78_GROUPS_LIST, PPR78_INTERACTIONS, PPR78_GROUPS_BY_ID
+from thermo.group_contribution.ppr78 import EPPR78_GROUPS_LIST, EPPR78_GROUPS_BY_ID, PPR78_kijs, PPR78_GROUP_IDS, PPR78_GROUPS_LIST, PPR78_INTERACTIONS, PPR78_GROUPS_BY_ID
 import os
 import pandas as pd
 folder = os.path.join(os.path.dirname(__file__), 'Data')
@@ -572,6 +572,8 @@ def test_SH_group():
     assert success
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_temperature_variation_argon_fluoranthene():
     """Test temperature dependence for Argon/Fluoranthene system."""
     # Test temperatures and expected values
@@ -605,6 +607,8 @@ def test_temperature_variation_argon_fluoranthene():
         assert abs(kij - k_expected) < 0.0001, f"At T={T}K: Expected kij={k_expected}, got {kij}"
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_naphthacene_ethanedithiol():
     """Test for Naphthacene/1,2-Ethanedithiol system using extended PPR78 model.
     Value verified against author's reference calculator."""
