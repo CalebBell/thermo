@@ -676,7 +676,7 @@ def test_known_fragmentations():
         "25103-58-6",  # tert-DODECYL MERCAPTAN
         "206-44-0",
     ]
-    FRAGMENTATION_EXCEPTIONS = []
+    # FRAGMENTATION_EXCEPTIONS = []
 
 
     # Load known fragmentations
