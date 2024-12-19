@@ -749,8 +749,6 @@ def Laliberte_heat_capacity_mix(T, ws, a1s, a2s, a3s, a4s, a5s, a6s):
         Temperature of fluid [K]
     ws : array
         Weight fractions of fluid components other than water
-    CASRNs : array
-        CAS numbers of the fluid components other than water
 
     Returns
     -------
@@ -798,7 +796,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
         Temperature of fluid [K]
     ws : array
         Weight fractions of fluid components other than water
-    CASRNs : array
+    CASRNs : list[str]
         CAS numbers of the fluid components other than water
 
     Returns

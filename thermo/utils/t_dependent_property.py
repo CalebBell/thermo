@@ -4264,6 +4264,9 @@ class TDependentProperty:
 
     @extrapolation.setter
     def extrapolation(self, extrapolation):
+        # backwards compatibility
+        if extrapolation is not None:
+            extrapolation = extrapolation.replace('interp1d', 'linear')
         self._extrapolation = extrapolation
         if extrapolation is None:
             self.extrapolation_split = False

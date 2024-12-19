@@ -874,6 +874,7 @@ def test_JANAF_fit_carbon_exists():
 
 @pytest.mark.slow
 @pytest.mark.fuzz
+@pytest.mark.meta_T_dept
 def test_locked_integral():
     obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528,
                           extrapolation="linear", method="POLY_FIT",
@@ -888,6 +889,7 @@ def test_locked_integral():
 
 @pytest.mark.slow
 @pytest.mark.fuzz
+@pytest.mark.meta_T_dept
 def test_locked_integral_over_T():
     obj = HeatCapacityGas(load_data=False, CASRN="7732-18-5", similarity_variable=0.16652530518537598, MW=18.01528, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))
 
@@ -899,3 +901,12 @@ def test_locked_integral_over_T():
         quad_ans = quad(to_int, T1, T2)[0]
         analytical_ans = obj.T_dependent_property_integral_over_T(T1, T2)
         assert_close(quad_ans, analytical_ans, rtol=1e-5)
+
+@pytest.mark.meta_T_dept
+def test_heat_capacity_interp1d_removed_extrapolation_method_compatibility():
+    EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844, extrapolation='interp1d', method='POLING_POLY')
+    assert_close(EtOH(EtOH.Tmin - 10), 37.421995400002054)
+    assert_close(EtOH(EtOH.Tmax + 10), 142.81153700770574)
+    EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844, extrapolation='interp1d|interp1d', method='POLING_POLY')
+    assert_close(EtOH(EtOH.Tmin - 10), 37.421995400002054)
+    assert_close(EtOH(EtOH.Tmax + 10), 142.81153700770574)    
