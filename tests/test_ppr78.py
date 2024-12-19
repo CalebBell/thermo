@@ -27,7 +27,7 @@ from fluids.numerics import *
 from thermo import Chemical
 from chemicals.identifiers import int_to_CAS
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
-from thermo.group_contribution.ppr78 import EPPR78_GROUPS_LIST, EPPR78_GROUPS_BY_ID, PPR78_kijs, PPR78_GROUP_IDS, PPR78_GROUPS_LIST, PPR78_INTERACTIONS, PPR78_GROUPS_BY_ID
+from thermo.group_contribution.ppr78 import EPPR78_GROUPS_LIST, EPPR78_GROUPS_BY_ID, PPR78_kij, PPR78_kijs, PPR78_GROUP_IDS, PPR78_GROUPS_LIST, PPR78_INTERACTIONS, PPR78_GROUPS_BY_ID
 import os
 import pandas as pd
 folder = os.path.join(os.path.dirname(__file__), 'Data')
