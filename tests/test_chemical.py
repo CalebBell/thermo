@@ -292,7 +292,7 @@ def test_H_Chemical():
 @pytest.mark.meta_Chemical
 @pytest.mark.deprecated
 def test_all_chemicals():
-    for i in pubchem_db.CAS_index.values():
+    for i in pubchem_db:
         c = Chemical(i.CASs)
         print(i.CASs)
 

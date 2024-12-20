@@ -204,6 +204,21 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             hits = list(hits)
         else:
             hits = list(rdkitmol.GetSubstructMatches(patt))
+            if not hits and len(obj.atoms) == 1 and 'H' in obj.atoms:
+                hits = list(rdkitmol_Hs.GetSubstructMatches(patt))
+                # Special handling for H2 molecule
+                if hits:
+                    # If this is a hydrogen-only group (like H2) and the molecule has only H atoms
+                    num_atoms = rdkitmol_Hs.GetNumAtoms()
+                    if num_atoms == H_count and H_count == obj.atoms['H']:
+                        # For H2, return all expected values
+                        counts = {key: 1}  # One instance of this group (H2)
+                        group_assignments = {key: [()]}  # Empty tuple as there are no heavy atoms
+                        matched_atoms = set()  # No heavy atoms to match
+                        success = True
+                        status = 'OK'
+                        return counts, group_assignments, matched_atoms, success, status
+        
         if hits:
             all_matches[key] = hits
             counts[key] = len(hits)
