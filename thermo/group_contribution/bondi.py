@@ -34,14 +34,10 @@ This functionality requires the RDKit library to work.
 '''
 __all__ = []
 
-from thermo.unifac import UFSG, priority_from_atoms
+from thermo.group_contribution.group_contribution_base import priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
 
 # WIP
 
-SINGLE_BOND = 'single'
-DOUBLE_BOND = 'double'
-TRIPLE_BOND = 'triple '
-AROMATIC_BOND = 'aromatic'
 
 GROUP_ID_COUNTER = 0 # temporary
 
@@ -77,10 +73,10 @@ class BondiGroupContribution:
 
 BONDI_GROUPS_BY_ID = {}
 BONDI_GROUPS = {}
-BONDI_GROUPS['C'] = BondiGroupContribution('C', 3.33, 0.0, atoms=UFSG[4].atoms, bonds=UFSG[4].bonds, smarts=UFSG[4].smarts)
-BONDI_GROUPS['CH'] = BondiGroupContribution('CH', 6.78, 0.57, atoms=UFSG[3].atoms, bonds=UFSG[3].bonds, smarts=UFSG[3].smarts)
-BONDI_GROUPS['CH2'] = BondiGroupContribution('CH2', 10.23, 1.35, atoms=UFSG[2].atoms, bonds=UFSG[2].bonds, smarts=UFSG[2].smarts)
-BONDI_GROUPS['CH3'] = BondiGroupContribution('CH3', 13.67, 2.12, atoms=UFSG[1].atoms, bonds=UFSG[1].bonds, smarts=UFSG[1].smarts)
+BONDI_GROUPS['C'] = BondiGroupContribution('C', 3.33, 0.0, smarts='[CX4;H0]', atoms={'C': 1, 'H': 0})
+BONDI_GROUPS['CH'] = BondiGroupContribution('CH', 6.78, 0.57, smarts='[CX4;H1]', atoms={'C': 1, 'H': 1})
+BONDI_GROUPS['CH2'] = BondiGroupContribution('CH2', 10.23, 1.35, smarts='[CX4;H2]', atoms={'C': 1, 'H': 2})
+BONDI_GROUPS['CH3'] = BondiGroupContribution('CH3', 13.67, 2.12, smarts='[CX4;H3]', atoms={'C': 1, 'H': 3})
 
 BONDI_GROUPS['CH4'] = BondiGroupContribution(
     'CH4', 17.12, 2.90,

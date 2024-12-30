@@ -154,8 +154,12 @@ from fluids.numerics import exp, log
 from fluids.numerics import numpy as np
 
 from thermo.activity import GibbsExcess
-from thermo.group_contribution.group_contribution_base import str_group_assignment_to_dict
-import threading
+from thermo.group_contribution.group_contribution_base import str_group_assignment_to_dict, priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
+
+try:
+    import threading
+except:
+    pass
 
 try:
     array, zeros, npexp, array_equal = np.array, np.zeros, np.exp, np.array_equal
@@ -245,41 +249,6 @@ UFMG[51] = ('NCO', [109])
 UFMG[55] = ('SULFONES', [118, 119])
 UFMG[84] = ('IMIDAZOL', [178])
 UFMG[85] = ('BTI', [179])
-
-SINGLE_BOND = 'single'
-DOUBLE_BOND = 'double'
-TRIPLE_BOND = 'triple '
-AROMATIC_BOND = 'aromatic'
-
-def priority_from_atoms(atoms, bonds=None):
-    priority = 0
-
-    if 'H' in atoms:
-        priority += atoms['H']
-
-    if 'C' in atoms:
-        priority += atoms['C']*100
-
-    if 'O' in atoms:
-        priority += atoms['O']*150
-    if 'N' in atoms:
-        priority += atoms['N']*175
-    if 'Cl' in atoms:
-        priority += atoms['Cl']*300
-    if 'F' in atoms:
-        priority += atoms['F']*400
-    if 'Si' in atoms:
-        priority += atoms['Si']*200
-    if 'S' in atoms:
-        priority += atoms['S']*250
-
-    if bonds is not None:
-        priority += bonds.get(SINGLE_BOND, 0)*2
-        priority += bonds.get(DOUBLE_BOND, 0)*10
-        priority += bonds.get(TRIPLE_BOND, 0)*100
-        priority += bonds.get(AROMATIC_BOND, 0)*1000
-    return priority
-
 
 """Rules for bonds:
 All groups that have any any atoms as part of any aromatic ring should have at least one aromatic bond.

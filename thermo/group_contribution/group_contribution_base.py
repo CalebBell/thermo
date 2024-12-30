@@ -23,7 +23,44 @@ SOFTWARE.
 from chemicals.elements import simple_formula_parser
 
 __all__ = ['str_group_assignment_to_dict', 'group_assignment_to_str',
-           'smarts_fragment_priority', 'smarts_fragment']
+           'smarts_fragment_priority', 'smarts_fragment', 'priority_from_atoms',
+           'SINGLE_BOND', 'DOUBLE_BOND', 'TRIPLE_BOND', 'AROMATIC_BOND']
+
+SINGLE_BOND = 'single'
+DOUBLE_BOND = 'double'
+TRIPLE_BOND = 'triple '
+AROMATIC_BOND = 'aromatic'
+
+def priority_from_atoms(atoms, bonds=None):
+    priority = 0
+
+    if 'H' in atoms:
+        priority += atoms['H']
+
+    if 'C' in atoms:
+        priority += atoms['C']*100
+
+    if 'O' in atoms:
+        priority += atoms['O']*150
+    if 'N' in atoms:
+        priority += atoms['N']*175
+    if 'Cl' in atoms:
+        priority += atoms['Cl']*300
+    if 'F' in atoms:
+        priority += atoms['F']*400
+    if 'Si' in atoms:
+        priority += atoms['Si']*200
+    if 'S' in atoms:
+        priority += atoms['S']*250
+
+    if bonds is not None:
+        priority += bonds.get(SINGLE_BOND, 0)*2
+        priority += bonds.get(DOUBLE_BOND, 0)*10
+        priority += bonds.get(TRIPLE_BOND, 0)*100
+        priority += bonds.get(AROMATIC_BOND, 0)*1000
+    return priority
+
+
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
 

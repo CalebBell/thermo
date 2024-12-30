@@ -32,15 +32,10 @@ This functionality requires the RDKit library to work.
 '''
 __all__ = ['PPR78_kij', 'PPR78_kijs', 'PPR78_GROUP_IDS', 'PPR78_INTERACTIONS', 'PPR78_GROUPS', 'fragment_PPR78']
 
-from thermo.unifac import priority_from_atoms
 from math import sqrt
 from fluids.constants import R
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
-
-SINGLE_BOND = 'single'
-DOUBLE_BOND = 'double'
-TRIPLE_BOND = 'triple '
-AROMATIC_BOND = 'aromatic'
+from thermo.group_contribution.group_contribution_base import priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
 
 GROUP_ID_COUNTER = 1
 
