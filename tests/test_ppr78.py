@@ -27,7 +27,7 @@ from fluids.numerics import *
 from thermo import Chemical
 from chemicals.identifiers import int_to_CAS
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
-from thermo.group_contribution.ppr78 import EPPR78_GROUPS_LIST, EPPR78_GROUPS_BY_ID, PPR78_kij, PPR78_kijs, PPR78_GROUP_IDS, PPR78_GROUPS_LIST, PPR78_INTERACTIONS, PPR78_GROUPS_BY_ID
+from thermo.group_contribution.ppr78 import fragment_PPR78, EPPR78_GROUPS_LIST, EPPR78_GROUPS_BY_ID, PPR78_kij, PPR78_kijs, PPR78_GROUP_IDS, PPR78_GROUPS_LIST, PPR78_INTERACTIONS, PPR78_GROUPS_BY_ID, readable_assignment_PPR78, readable_assignment_EPPR78
 import os
 import pandas as pd
 folder = os.path.join(os.path.dirname(__file__), 'Data')
@@ -128,10 +128,6 @@ def test_ppr78_kijs_matrix():
                                 [0.006933513208806096, 0.000827218293750849, 0.0]],
                     rtol=1e-7)
 
-def readable_assignment_PPR78(assignment):
-    return {PPR78_GROUPS_BY_ID[i].group : v for i, v in assignment.items()}
-def readable_assignment_EPPR78(assignment):
-    return {EPPR78_GROUPS_BY_ID[i].group : v for i, v in assignment.items()}
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
@@ -634,6 +630,45 @@ def test_naphthacene_ethanedithiol():
     
     assert abs(kij - 0.1185) < 0.0001, f"Expected kij=0.1185, got {kij}"
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_fragment_PPR78():
+    """Test fragment_PPR78 function"""
+    from rdkit import Chem
+    
+    mols = [
+        Chem.MolFromSmiles('CCO'),         # Ethanol
+        Chem.MolFromSmiles('CCC(=O)C'),    # Methyl ethyl ketone
+        Chem.MolFromSmiles('C(=O)=S'),      # Carbonyl sulfide
+        Chem.MolFromSmiles('S')            # H2S
+    ]
+    
+    # Test original PPR78
+    fragments = fragment_PPR78(mols, version='original')
+    assert fragments[2] is None # No COS in original PPR78
+    assert fragments[0] is None  # Ethanol should fail in original PPR78
+    assert fragments[1] is None  # MEK should fail in original PPR78
+    assert fragments[3] == {'H2S': 1}
+    
+    # Test extended PPR78
+    fragments = fragment_PPR78(mols, version='extended')
+    assert fragments[0] is None  # Ethanol
+    assert fragments[1] is None  # MEK still fails as no ketone group
+    assert fragments[2] == {'COS': 1}  # COS
+    assert fragments[3] == {'H2S': 1}  # H2S
+
+    # Test with empty list
+    assert fragment_PPR78([]) == []
+    
+    # Test with None molecule
+    assert fragment_PPR78([None]) == [None]
+    
+    # Test with invalid version
+    try:
+        fragment_PPR78(mols, version='invalid')
+        assert False, "Should have raised ValueError"
+    except ValueError:
+        pass
 # Test known assignments from the author's spreadsheet
 
 @pytest.mark.rdkit

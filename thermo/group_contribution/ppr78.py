@@ -27,13 +27,15 @@ This functionality requires the RDKit library to work.
 
 .. autofunction:: thermo.group_contribution.PPR78_kij
 .. autofunction:: thermo.group_contribution.PPR78_kijs
+.. autofunction:: thermo.group_contribution.fragment_PPR78
 
 '''
-__all__ = ['PPR78_kij', 'PPR78_kijs', 'PPR78_GROUP_IDS', 'PPR78_INTERACTIONS', 'PPR78_GROUPS']
+__all__ = ['PPR78_kij', 'PPR78_kijs', 'PPR78_GROUP_IDS', 'PPR78_INTERACTIONS', 'PPR78_GROUPS', 'fragment_PPR78']
 
 from thermo.unifac import priority_from_atoms
 from math import sqrt
 from fluids.constants import R
+from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
 
 SINGLE_BOND = 'single'
 DOUBLE_BOND = 'double'
@@ -986,3 +988,75 @@ def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original'):
             kij_matrix[j][i] = kij
             
     return kij_matrix
+
+def readable_assignment_PPR78(assignment):
+    return {PPR78_GROUPS_BY_ID[i].group : v for i, v in assignment.items()}
+
+def readable_assignment_EPPR78(assignment):
+    return {EPPR78_GROUPS_BY_ID[i].group : v for i, v in assignment.items()}
+
+def fragment_PPR78(rdkitmols, version='original'):
+    """Fragment a list of RDKit molecules according to PPR78 or EPPR78 group contribution method.
+    Failed fragmentations (not all atoms had a group in the method) return None.
+    
+    Parameters
+    ----------
+    rdkitmols : list[rdkit.Chem.rdchem.Mol]
+        List of RDKit molecule objects to fragment
+    version : str, optional
+        Version of the method to use ('original' or 'extended'), defaults to 'original'
+        
+    Returns
+    -------
+    list[Union[dict, None]]
+        List of dictionaries containing group counts for each molecule, or None if 
+        fragmentation failed. Dictionary format is {group_name: count}
+        
+    Notes
+    -----
+    Group contributions are calculated using the PPR78 (original) or EPPR78 (extended) 
+    method. Failed fragmentations return None instead of raising an exception.
+    
+    Examples
+    --------
+    >>> from rdkit import Chem  # doctest:+SKIP
+    >>> # Create some test molecules
+    >>> mols = [Chem.MolFromSmiles('CC'), Chem.MolFromSmiles('CCC')]  # doctest:+SKIP
+    >>> # Fragment them using original PPR78
+    >>> fragments = fragment_PPR78(mols)  # doctest:+SKIP
+    """
+    if version not in ('original', 'extended'):
+        raise ValueError("version must be either 'original' or 'extended'")
+    
+    # Select appropriate group catalog
+    catalog = EPPR78_GROUPS_LIST if version == 'extended' else PPR78_GROUPS_LIST
+    
+    results = []
+    for mol in rdkitmols:
+        try:
+            # Handle None/failed molecules
+            if mol is None:
+                results.append(None)
+                continue
+                
+            # Attempt fragmentation
+            assignment, _, _, success, _ = smarts_fragment_priority(
+                catalog=catalog,
+                rdkitmol=mol
+            )
+            
+            # Convert successful assignments to readable format
+            if success:
+                if version == 'extended':
+                    groups = readable_assignment_EPPR78(assignment)
+                else:
+                    groups = readable_assignment_PPR78(assignment)
+                results.append(groups)
+            else:
+                results.append(None)
+                
+        except Exception:
+            # Catch any exceptions and return None for failed molecules
+            results.append(None)
+            
+    return results
