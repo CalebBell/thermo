@@ -961,6 +961,11 @@ DOUFSG[124] = UNIFAC_subgroup(124, 'CHS', 61, 'SULFIDES', 1.1589, 0.7480,
                              atoms=UFSG[104].atoms, bonds=UFSG[104].bonds, smarts=UFSG[104].smarts)
 
 DOUFSG[201] = UNIFAC_subgroup(201, '-S-S-', 93, 'DISULFIDES', 1.0678, 2.2440)
+# new ones after 2018 - based on website update primarily
+DOUFSG[209] = UNIFAC_subgroup(209, 'SO4', 98, 'SO4', 0.9903, 3.5249)
+DOUFSG[210] = UNIFAC_subgroup(210, 'HSO4', 98, 'SO4', 1.5654, 3.8076)
+DOUFSG[211] = UNIFAC_subgroup(211, 'PF6', 99, 'PF6', 3.8183, 3.6018)
+DOUFSG[220] = UNIFAC_subgroup(220, 'C5H4N+', 90, 'PYRIDIN', 2.4873,  2.4457)
 
 #  subgroup = (group, (subgroup ids))
 # http://www.ddbst.com/PublishedParametersUNIFACDO.html#ListOfMainGroups
@@ -1022,12 +1027,16 @@ DOUFMG[84] = ('IMIDAZOL', [178, 184])
 DOUFMG[85] = ('BTI', [179])
 DOUFMG[87] = ('PYRROL', [189])
 DOUFMG[89] = ('BF4', [195])
-DOUFMG[90] = ('PYRIDIN', [196])
+DOUFMG[90] = ('PYRIDIN', [196, 220])
 DOUFMG[91] = ('OTF', [197])
 # Added Rev 6
 DOUFMG[61] = ('SULFIDES', [122, 123, 124])
 DOUFMG[93] = ('DISULFIDES', [201])
-
+# from  
+# Hector, Torben, and Jürgen Gmehling. “Present Status of the Modified UNIFAC Model for the Prediction of Phase Equilibria and Excess Enthalpies for Systems with Ionic Liquids.” Fluid Phase Equilibria 371 (June 15, 2014): 82–92. https://doi.org/10.1016/j.fluid.2014.03.006.
+# and http://www.ddbst.com/PublishedParametersUNIFACDO.html which was updated in 2018
+DOUFMG[98] = ('SO4', [209, 210])
+DOUFMG[99] = ('PF6', [211])
 
 #  subgroup = (subgroup, #maingroup, maingroup, R, Q)
 VTPRSG = {}

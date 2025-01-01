@@ -67,7 +67,7 @@ def test_UNIFAC_data():
     # ['CH2', 'C=C', 'ACH', 'ACCH2', 'OH', 'CH3OH', 'H2O', 'ACOH', 'CH2CO', 'CHO', 'CCOO', 'HCOO', 'CH2O', 'CNH2', 'CNH', '(C)3N', 'ACNH2', 'PYRIDINE', 'CCN', 'COOH', 'CCL', 'CCL2', 'CCL3', 'CCL4', 'ACCL', 'CNO2', 'ACNO2', 'CS2', 'CH3SH', 'FURFURAL', 'DOH', 'I', 'BR', 'C=-C', 'DMSO', 'ACRY', 'CLCC', 'ACF', 'DMF', 'CF2', 'COO', 'SIH2', 'SIO', 'NMP', 'CCLF', 'CON(AM)', 'OCCOH', 'CH2S', 'MORPH', 'THIOPHEN', 'NCO', 'SULFONES', 'IMIDAZOL', 'BTI']
 
 def test_modified_UNIFAC_data():
-    assert len(DOUFIP2006) == 61
+    assert len(DOUFIP2006) == 63
     assert len(DOUFIP2016) == 65
     assert sum([len(i) for i in DOUFIP2016.values()]) == 1516
     assert sum([len(i) for i in DOUFIP2006.values()]) == 1318
