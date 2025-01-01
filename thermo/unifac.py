@@ -128,6 +128,19 @@ Data for VTPR UNIFAC
     Interaction parameters for the VTPRIP UNIFAC model.
 
     :type: dict[int: dict[int: tuple(float, 3)]]
+
+Data for UNIFAC 2.0
+-------------------
+.. py:data:: UF2IP
+
+    Interaction parameters for the unifac 2.0 model - note there is a variant for the Dortmund modified UNIFAC as well.
+    All groups and subgroups are the same as the original model. These are not used by default in this module. The citation is
+    
+    Hayer, Nicolas, Thorsten Wendel, Stephan Mandt, Hans Hasse, and Fabian Jirasek. "Advancing Thermodynamic 
+    Group-Contribution Methods by Machine Learning: UNIFAC 2.0." 
+    Chemical Engineering Journal 504 (January 15, 2025): 158667. https://doi.org/10.1016/j.cej.2024.158667.
+
+    :type: dict[int: dict[int: float]]
 '''
 
 
@@ -2470,7 +2483,7 @@ for d in (UFSG, DOUFSG, NISTUFSG, NISTKTUFSG, LLEUFSG, LUFSG, PSRKSG, VTPRSG):
 
 _unifac_ip_loaded = False
 def load_unifac_ip():
-    global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP
+    global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP, UF2IP
     folder = os.path.join(os.path.dirname(__file__), 'Phase Change')
 
     UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
@@ -2480,6 +2493,12 @@ def load_unifac_ip():
             # Index by both int, order maters, to only one parameter.
             UFIP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
 
+    UF2IP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
+    with open(os.path.join(folder, 'UNIFAC 2.0 interaction parameters.tsv')) as f:
+        for line in f:
+            maingroup1, maingroup2, interaction_parameter = line.strip('\n').split('\t')
+            # Index by both int, order maters, to only one parameter.
+            UF2IP[int(maingroup1)][int(maingroup2)] = float(interaction_parameter)
 
     LLEUFIP = {i: {} for i in list(range(1, 33))}
     with open(os.path.join(folder, 'UNIFAC LLE interaction parameters.tsv')) as f:
@@ -2545,7 +2564,7 @@ def load_unifac_ip():
 if PY37:
     def __getattr__(name):
         if name in ('UFIP', 'LLEUFIP', 'LUFIP', 'DOUFIP2006', 'DOUFIP2016',
-                    'NISTUFIP', 'NISTKTUFIP', 'PSRKIP', 'VTPRIP'):
+                    'NISTUFIP', 'NISTKTUFIP', 'PSRKIP', 'VTPRIP', 'UF2IP'):
             load_unifac_ip()
             return globals()[name]
         raise AttributeError(f"module {__name__} has no attribute {name}")
@@ -4446,7 +4465,8 @@ class UNIFAC(GibbsExcess):
             UNIFAC interaction parameter data; available dictionaries in this
             module include UFIP (original), DOUFIP2006 (Dortmund parameters
             published in 2006), DOUFIP2016 (Dortmund parameters published in
-            2016), and NISTUFIP. The default depends on the given `version`, [-]
+            2016), NISTUFIP, and UF2IP (matrix completion - all interactions are present). 
+            The default depends on the given `version`, [-]
         version : int, optional
             Which version of the model to use. Defaults to 0, [-]
 
