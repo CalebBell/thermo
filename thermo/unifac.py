@@ -919,8 +919,10 @@ DOUFSG[92] = UNIFAC_subgroup(92, 'CONHCH3', 47, 'CONR', 1.5, 1.08,
                              atoms={'O' :1, 'N': 1, 'H': 3, 'C': 2},
                              bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
                              smarts= '[OX1H0;!R]=[CX3H0;!R][NH1X3;!R][CH3;!R]')
+DOUFSG[93] = UNIFAC_subgroup(93, 'HCONHCH3', 49, 'HCONR', 2.4617, 2.192) # N-methylformamide
+DOUFSG[94] = UNIFAC_subgroup(94, 'HCONHCH2', 49, 'HCONR', 2.4617, 1.842) # N-ethylformamide
 
-# 93, 98, 99 missing but inteaction parameters are available.
+# 98, 99 missing but inteaction parameters are available.
 DOUFSG[100] = UNIFAC_subgroup(100, 'CONHCH2', 47, 'CONR', 1.5, 1.08,
                               atoms={'C': 2, 'N': 1, 'O': 1, 'H': 3},
                               bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
