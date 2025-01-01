@@ -195,6 +195,9 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         load_rdkit_modules()
     if rdkitmol is None and smi is None:
         raise Exception('Either an rdkit mol or a smiles string is required')
+    if type(rdkitmol) is str and smi is None:
+        # swap for convinience
+        rdkitmol, smi = smi, rdkitmol
     if smi is not None:
         rdkitmol = Chem.MolFromSmiles(smi)
         if rdkitmol is None:
