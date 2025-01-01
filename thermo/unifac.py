@@ -944,14 +944,16 @@ DOUFSG[113] = UNIFAC_subgroup(113, '(CH2)2CB', 55, 'CARBONAT', 2.42, 2.0018)
 DOUFSG[114] = UNIFAC_subgroup(114, 'CH2CH3CB', 55, 'CARBONAT', 2.42, 2.2497)
 DOUFSG[119] = UNIFAC_subgroup(119, 'H2COCH2', 53, 'EPOXIDES', 1.063, 1.123)
 DOUFSG[153] = UNIFAC_subgroup(153, 'H2COC', 53, 'EPOXIDES', 0.9104, 0.6538)
-DOUFSG[178] = UNIFAC_subgroup(178, 'C3H2N2+', 84, 'IMIDAZOL', 1.7989, 0.64)
-DOUFSG[179] = UNIFAC_subgroup(179, 'BTI-', 85, 'BTI', 5.8504, 5.7513,
+
+# The R and Q values for groups 178, 179, 184, 189, 195, 196, 197 were updated online around ~2019
+DOUFSG[178] = UNIFAC_subgroup(178, 'C3H2N2+', 84, 'IMIDAZOL', 1.3662, 0.6797)
+DOUFSG[179] = UNIFAC_subgroup(179, 'BTI-', 85, 'BTI', 5.6210, 5.9463,
                              atoms=UFSG[179].atoms, bonds=UFSG[179].bonds, smarts=UFSG[179].smarts)
-DOUFSG[184] = UNIFAC_subgroup(184, 'C3H3N2+', 84, 'IMIDAZOL', 2.411, 2.409)
-DOUFSG[189] = UNIFAC_subgroup(189, 'C4H8N+', 87, 'PYRROL', 2.7986, 2.7744)
-DOUFSG[195] = UNIFAC_subgroup(195, 'BF4-', 89, 'BF4', 4.62, 1.1707)
-DOUFSG[196] = UNIFAC_subgroup(196, 'C5H5N+', 90, 'PYRIDIN', 2.4878, 2.474)
-DOUFSG[197] = UNIFAC_subgroup(197, 'OTF-', 91, 'OTF', 3.3854, 2.009)
+DOUFSG[184] = UNIFAC_subgroup(184, 'C3H3N2+', 84, 'IMIDAZOL', 1.8430, 1.6997)
+DOUFSG[189] = UNIFAC_subgroup(189, 'C4H8N+', 87, 'PYRROL', 2.7867, 2.7723)
+DOUFSG[195] = UNIFAC_subgroup(195, 'BF4-', 89, 'BF4', 3.9628, 0.6214)
+DOUFSG[196] = UNIFAC_subgroup(196, 'C5H5N+', 90, 'PYRIDIN', 2.1094, 2.5106)
+DOUFSG[197] = UNIFAC_subgroup(197, 'OTF-', 91, 'OTF', 3.3710, 2.0001)
 # 122, 123, 124, 201 Added Rev. 6
 DOUFSG[122] = UNIFAC_subgroup(122, 'CH3S', 61, 'SULFIDES', 1.6130, 1.3680,
                              atoms=UFSG[102].atoms, bonds=UFSG[102].bonds, smarts=UFSG[102].smarts)
