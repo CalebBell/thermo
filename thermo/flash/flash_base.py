@@ -326,7 +326,7 @@ class Flash:
             T = float(T)
             flash_specs['T'] = T
             if T < self.T_MIN_FLASH_ANY:
-                raise ValueError(f"Specified temperature ({T} K) is below the minimum temeprature ({self.T_MIN_FLASH_ANY} K) "
+                raise ValueError(f"Specified temperature ({T} K) is below the minimum temperature ({self.T_MIN_FLASH_ANY} K) "
                                  "supported by any of the provided phases")
             # if T <= 0.0:
             #     raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
