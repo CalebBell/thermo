@@ -90,13 +90,17 @@ class IdealGas(Phase):
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs') + pure_references
 
-    def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None):
+    def __init__(self, HeatCapacityGases=None, Hfs=None, Gfs=None, Sfs=None, T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None):
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
         self.Gfs = Gfs
-        self.vectorized = vectorized = any(type(v) is ndarray for v in (zs, Hfs, Gfs))
+        self.Sfs = Sfs
+        self.vectorized = vectorized = any(type(v) is ndarray for v in (zs, Hfs, Gfs, Sfs))
 
-        if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
+
+        if Sfs is not None:
+            self.Sfs = Sfs
+        elif Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             T_ref_inv = 1.0/298.15
             self.Sfs = [(Hfi - Gfi)*T_ref_inv for Hfi, Gfi in zip(Hfs, Gfs)]
         else:

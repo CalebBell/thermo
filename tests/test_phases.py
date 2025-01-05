@@ -2971,6 +2971,81 @@ def test_IdealGas_vs_IGMIX():
     assert phase.U_dep() == 0
     assert phase.A_dep() == 0
 
+def test_IdealGas_vs_IGMIX_formation_properties():
+    """Test formation properties consistency between IdealGas and IGMIX for different initialization methods"""
+    # Setup base test data
+    T, P = 350.0, 1e6
+    zs = [0.2, 0.3, 0.5]
+    Hfs = [-10000, -20000, -15000]
+    Gfs = [-8000, -15000, -12000]
+    Sfs = [(Hfs[i] - Gfs[i])/298.15 for i in range(3)]
+    
+    # Setup for IGMIX
+    constants = ChemicalConstantsPackage(
+        Tcs=[508.1, 536.2, 512.5], 
+        Pcs=[4700000.0, 5330000.0, 8084000.0], 
+        omegas=[0.309, 0.216, 0.559],
+        MWs=[58.07914, 119.37764, 32.04186], 
+        CASs=['67-64-1', '67-66-3', '67-56-1'], 
+        names=['acetone', 'chloroform', 'methanol']
+    )
+    
+    HeatCapacityGases = [
+        HeatCapacityGas(poly_fit=(200.0, 1000.0, [-1.332e-21, 6.406e-18, -1.251e-14, 1.227e-11, -5.535e-09, -4.325e-08, 0.001044, -0.1965, 63.842])),
+        HeatCapacityGas(poly_fit=(200.0, 1000.0, [1.539e-21, -8.290e-18, 1.915e-14, -2.471e-11, 1.936e-08, -9.266e-06, 0.002483, -0.2162, 48.150])),
+        HeatCapacityGas(poly_fit=(50.0, 1000.0, [2.351e-21, -9.224e-18, 1.357e-14, -8.311e-12, 4.602e-10, 1.783e-06, -0.0007052, 0.1326, 28.443]))
+    ]
+    
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    
+    # Create all objects with different initialization methods
+    phases = []
+    
+    # Direct initialization
+    phases.append(('IdealGas HG direct', IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs, Gfs=Gfs)))
+    # phases.append(('IGMIX HG direct', CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs, Hfs=Hfs, Gfs=Gfs)))
+    phases.append(('IdealGas HGS direct', IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs, Gfs=Gfs, Sfs=Sfs)))
+    phases.append(('IGMIX HGS direct', CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs, Hfs=Hfs, Gfs=Gfs, Sfs=Sfs)))
+    
+    # Base objects for to/to_TP_zs calls
+    base_ideal_HG = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs, Gfs=Gfs)
+    # base_eos_HG = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs, Hfs=Hfs, Gfs=Gfs)
+    base_ideal_HGS = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs, Gfs=Gfs, Sfs=Sfs)
+    base_eos_HGS = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs, Hfs=Hfs, Gfs=Gfs, Sfs=Sfs)
+    
+    # Via to() calls
+    phases.append(('IdealGas HG to', base_ideal_HG.to(T=T, P=P, zs=zs)))
+    # phases.append(('IGMIX HG to', base_eos_HG.to(T=T, P=P, zs=zs)))
+    phases.append(('IdealGas HGS to', base_ideal_HGS.to(T=T, P=P, zs=zs)))
+    phases.append(('IGMIX HGS to', base_eos_HGS.to(T=T, P=P, zs=zs)))
+    
+    # Via to_TP_zs() calls
+    phases.append(('IdealGas HG to_TP_zs', base_ideal_HG.to_TP_zs(T=T, P=P, zs=zs)))
+    # phases.append(('IGMIX HG to_TP_zs', base_eos_HG.to_TP_zs(T=T, P=P, zs=zs)))
+    phases.append(('IdealGas HGS to_TP_zs', base_ideal_HGS.to_TP_zs(T=T, P=P, zs=zs)))
+    phases.append(('IGMIX HGS to_TP_zs', base_eos_HGS.to_TP_zs(T=T, P=P, zs=zs)))
+    
+    # Reference values from first phase for comparison
+    ref_phase = phases[0][1]
+    
+    # Test all phases against reference values
+    for name, phase in phases:
+        # Basic property checks
+        assert hasattr(phase, 'Hfs'), f"{name} missing Hfs"
+        assert hasattr(phase, 'Gfs'), f"{name} missing Gfs"
+        assert hasattr(phase, 'Sfs'), f"{name} missing Sfs"
+        
+        # Formation property values
+        assert_close1d(phase.Hfs, ref_phase.Hfs, rtol=1e-12), f"{name} Hfs mismatch"
+        assert_close1d(phase.Gfs, ref_phase.Gfs, rtol=1e-12), f"{name} Gfs mismatch"
+        assert_close1d(phase.Sfs, ref_phase.Sfs, rtol=1e-12), f"{name} Gfs mismatch"
+                
+        # # Energy impacts
+        assert_close(phase.H_reactive(), ref_phase.H_reactive(), rtol=1e-12), f"{name} H mismatch"
+        assert_close(phase.G_reactive(), ref_phase.G_reactive(), rtol=1e-12), f"{name} G mismatch"
+        assert_close(phase.S_reactive(), ref_phase.S_reactive(), rtol=1e-12), f"{name} S mismatch"
+        
+
 
 def test_IAPWS97_basics():
     region1_PT = IAPWS97(330, 8e5, [1])
