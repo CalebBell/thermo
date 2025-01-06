@@ -382,7 +382,7 @@ class StreamArgs:
             kwargs['Vfgs'] = [i for i in kwargs['Vfgs']]
         if kwargs['Vfls'] is not None:
             kwargs['Vfls'] = [i for i in kwargs['Vfls']]
-        return StreamArgs(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, flasher=self.flasher,
+        return self.__class__(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, flasher=self.flasher,
                  multiple_composition_basis=self.multiple_composition_basis, **kwargs)
 
     __copy__ = copy
@@ -2996,7 +2996,7 @@ class EnergyStream:
         copy : EnergyStream
             Copied Energy Stream, [-]
         '''
-        return EnergyStream(Q=self.Q)
+        return self.__class__(Q=self.Q)
 
     __copy__ = copy
 
