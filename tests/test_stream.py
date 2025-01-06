@@ -247,7 +247,34 @@ def test_sub_streams():
     assert m.CASs == ['7732-18-5']
 
 
+@pytest.fixture(
+    params=[
+        (StreamArgs,{}),
+        (EnergyStream,dict(Q=0))
+    ],
+    ids="StreamArgs EnergyStream".split()
+)
+def any_type_of_stream(request):
+    return request.param
 
+def test_stream_copy(any_type_of_stream):
+    stream_type, param = any_type_of_stream
+    expected_args = stream_type(**param)
+    # when copied
+    stream_copy = expected_args.copy()
+    # then
+    assert isinstance(stream_copy, stream_type)
+
+def test_child_class_copy(any_type_of_stream):
+    # lets say user wants to enhance StreamArgs class by:
+    stream_type, param = any_type_of_stream
+    class EnhancedStreamArgs(stream_type):
+        pass
+    expected_args = EnhancedStreamArgs(**param)
+    # when copied
+    stream_copy = expected_args.copy()
+    # then
+    assert isinstance(stream_copy, EnhancedStreamArgs)
 
 
 def test_StreamArgs_flow_overspecified():
