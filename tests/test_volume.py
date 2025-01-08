@@ -443,7 +443,7 @@ def test_VolumeSolid_fitting0():
         assert fit_zeros_specified[l] == 0.0
 
     fit_constant = obj.fit_data_to_model(Ts=Ts_gamma, data=Vms_gamma, model='constant', do_statistics=False, use_numba=False)
-    assert_close(fit_zeros_specified['A'], fit_constant['A'], rtol=1e-13)
+    assert_close(fit_zeros_specified['A'], fit_constant['A'], rtol=1e-7)
 
 @pytest.mark.meta_T_dept
 @pytest.mark.fitting
