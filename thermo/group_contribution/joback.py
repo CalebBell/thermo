@@ -130,6 +130,7 @@ second is the group symbol; and the third is the SMARTS matching string.
 J_BIGGS_JOBACK_SMARTS_id_dict = {i+1: j[2] for i, j in enumerate(J_BIGGS_JOBACK_SMARTS)}
 J_BIGGS_JOBACK_SMARTS_str_dict = {i[1]: i[2] for i in J_BIGGS_JOBACK_SMARTS}
 
+
 # Shi Chenyang's JRGUI code indicates he left the following list of smarts in
 # favor of those above by J Biggs
 SHI_CHENYANG_JOBACK_SMARTS =  [
@@ -292,6 +293,7 @@ joback_groups_str_dict = {'-CH3': JOBACK(i=1, name='-CH3', Tc=0.0141, Pc=-0.0012
 joback_groups_id_dict = {}
 for j in joback_groups_str_dict.values():
     joback_groups_id_dict[j.i] = j
+
 
 
 class Joback:

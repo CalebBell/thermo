@@ -691,6 +691,8 @@ UFSG[179] = UNIFAC_subgroup(179, 'BTI', 85, 'BTI', 5.774, 4.932,
                             atoms={'C':2, 'O': 4, 'F': 6, 'S': 2, 'N': 1},
                             smarts='C(F)(F)(F)S(=O)(=O)[N-]S(=O)(=O)C(F)(F)F')
 
+UNIFAC_SUBGROUP_IDS = [k for k in UFSG.keys() if k < 2000]
+UNIFAC_SUBGROUPS = [UFSG[i] for i in UNIFAC_SUBGROUP_IDS]
 
 
 
@@ -969,6 +971,8 @@ DOUFSG[210] = UNIFAC_subgroup(210, 'HSO4', 98, 'SO4', 1.5654, 3.8076)
 DOUFSG[211] = UNIFAC_subgroup(211, 'PF6', 99, 'PF6', 3.8183, 3.6018)
 DOUFSG[220] = UNIFAC_subgroup(220, 'C5H4N+', 90, 'PYRIDIN', 2.4873,  2.4457)
 
+DOUFSG_SUBGROUPS = [DOUFSG[i] for i in [k for k in DOUFSG.keys()]]
+
 #  subgroup = (group, (subgroup ids))
 # http://www.ddbst.com/PublishedParametersUNIFACDO.html#ListOfMainGroups
 DOUFMG = {}
@@ -1052,10 +1056,10 @@ VTPRSG[6] = UNIFAC_subgroup(6, 'CH=CH', 2, 'C=C', None, 1.3221, smarts=DOUFSG[6]
 VTPRSG[7] = UNIFAC_subgroup(7, 'CH2=C', 2, 'C=C', None, 0.9889, smarts=DOUFSG[7].smarts)
 VTPRSG[8] = UNIFAC_subgroup(8, 'CH=C', 2, 'C=C', None, 0.6760, smarts=DOUFSG[8].smarts)
 VTPRSG[70] = UNIFAC_subgroup(70, 'C=C', 2, 'C=C', None, 0.4850, smarts=DOUFSG[70].smarts)
-VTPRSG[97] = UNIFAC_subgroup(97, 'Allene', 2, 'Allene', None, 1.1287, smarts=None)
-VTPRSG[98] = UNIFAC_subgroup(98, '=CHCH=', 2, '=CHCH=', None, 1.7345, smarts=None)
-VTPRSG[99] = UNIFAC_subgroup(99, '=CCH=', 2, '=CCH=', None, 3.5331, smarts=None)
-VTPRSG[250] = UNIFAC_subgroup(250, 'H2C=CH2', 2, 'H2C=CH2', None, 0.6758, smarts=None)
+VTPRSG[97] = UNIFAC_subgroup(97, 'Allene', 2, 'Allene', None, 1.1287, smarts='[CH2]=[CX2]=[CH2]')
+VTPRSG[98] = UNIFAC_subgroup(98, '=CHCH=', 2, '=CHCH=', None, 1.7345, smarts='[CX3;H1;$([C]=[CX3;H1][CX3;H1]=[C])]', atoms={'C': 2, 'H': 2}, bonds={DOUBLE_BOND: 2, SINGLE_BOND: 1})
+VTPRSG[99] = UNIFAC_subgroup(99, '=CCH=', 2, '=CCH=', None, 3.5331, smarts='[CX3;H1;!R;$([C]=[CX3;H1][CX3;H0]=[C])]', atoms={'C': 2, 'H': 1}, bonds={DOUBLE_BOND: 2, SINGLE_BOND: 1})
+VTPRSG[250] = UNIFAC_subgroup(250, 'H2C=CH2', 2, 'H2C=CH2', None, 0.6758, smarts='[CX3H2]=[CX3H2]')
 
 VTPRSG[9] = UNIFAC_subgroup(9, 'ACH', 3, 'ACH', None, 0.4972, smarts=DOUFSG[9].smarts)
 VTPRSG[10] = UNIFAC_subgroup(10, 'AC', 3, 'ACH', None, 0.1885, smarts=DOUFSG[10].smarts)
@@ -1148,28 +1152,30 @@ VTPRSG[142] = UNIFAC_subgroup(142, 'CF2Cl', 70, 'CF2Cl2', None, 1.8506, smarts=N
 VTPRSG[143] = UNIFAC_subgroup(143, 'CF2Cl2', 70, 'CF2Cl2', None, 2.5974, smarts=None)
 VTPRSG[148] = UNIFAC_subgroup(148, 'CF3Br', 70, 'CF2Cl2', None, 2.5104, smarts=None)
 
-VTPRSG[146] = UNIFAC_subgroup(146, 'CF4', 73, 'CF4', None, 1.8400, smarts=None)
-VTPRSG[300] = UNIFAC_subgroup(300, 'NH3', 150, 'NH3', None, 0.7780, smarts=None)
-VTPRSG[306] = UNIFAC_subgroup(306, 'CO2', 151, 'CO2', None, 0.982, smarts=None)
-VTPRSG[307] = UNIFAC_subgroup(307, 'CH4', 152, 'CH4', None, 1.124, smarts=None)
-VTPRSG[308] = UNIFAC_subgroup(308, 'O2', 153, 'O2', None, 0.849, smarts=None)
-VTPRSG[305] = UNIFAC_subgroup(305, 'Ar', 154, 'Ar', None, 1.116, smarts=None)
-VTPRSG[304] = UNIFAC_subgroup(304, 'N2', 155, 'N2', None, 0.93, smarts=None)
-VTPRSG[303] = UNIFAC_subgroup(303, 'H2S', 156, 'H2S', None, 1.202, smarts=None)
-VTPRSG[302] = UNIFAC_subgroup(302, 'H2', 157, 'H2', None, 0.571, smarts=None)
-VTPRSG[309] = UNIFAC_subgroup(309, 'D2', 157, 'D2', None, 0.527, smarts=None)
-VTPRSG[301] = UNIFAC_subgroup(301, 'CO', 158, 'CO', None, 0.8280, smarts=None)
-VTPRSG[310] = UNIFAC_subgroup(310, 'SO2', 160, 'SO2', None, 1.1640, smarts=None)
-VTPRSG[312] = UNIFAC_subgroup(312, 'N2O', 162, 'N2O', None, 0.8880, smarts=None)
-VTPRSG[314] = UNIFAC_subgroup(314, 'He', 164, 'He', None, 0.9850, smarts=None)
-VTPRSG[315] = UNIFAC_subgroup(315, 'Ne', 165, 'Ne', None, 0.9860, smarts=None)
-VTPRSG[319] = UNIFAC_subgroup(319, 'HCl', 169, 'HCl', None, 1.2560, smarts=None)
-VTPRSG[345] = UNIFAC_subgroup(345, 'Hg', 185, 'Hg', None, 7.9616, smarts=None)
+VTPRSG[146] = UNIFAC_subgroup(146, 'CF4', 73, 'CF4', None, 1.8400, smarts='[CX4H0]([FX1])([FX1])([FX1])[FX1]')
+VTPRSG[300] = UNIFAC_subgroup(300, 'NH3', 150, 'NH3', None, 0.7780, smarts='[NX3H3]')
+VTPRSG[306] = UNIFAC_subgroup(306, 'CO2', 151, 'CO2', None, 0.982, smarts='[CX2H0](=[OX1H0])=[OX1H0]')
+VTPRSG[307] = UNIFAC_subgroup(307, 'CH4', 152, 'CH4', None, 1.124, smarts='[CX4H4]')
+VTPRSG[308] = UNIFAC_subgroup(308, 'O2', 153, 'O2', None, 0.849, smarts='[OX1H0]=[OX1H0]')
+VTPRSG[305] = UNIFAC_subgroup(305, 'Ar', 154, 'Ar', None, 1.116, smarts='[ArX0]')
+VTPRSG[304] = UNIFAC_subgroup(304, 'N2', 155, 'N2', None, 0.93, smarts='N#N')
+VTPRSG[303] = UNIFAC_subgroup(303, 'H2S', 156, 'H2S', None, 1.202, smarts='[SH2]')
+VTPRSG[302] = UNIFAC_subgroup(302, 'H2', 157, 'H2', None, 0.571, smarts='[HH]')
+VTPRSG[309] = UNIFAC_subgroup(309, 'D2', 157, 'D2', None, 0.527, smarts='[2H][2H]')
+VTPRSG[301] = UNIFAC_subgroup(301, 'CO', 158, 'CO', None, 0.8280, smarts='[C-]#[O+]')
+VTPRSG[310] = UNIFAC_subgroup(310, 'SO2', 160, 'SO2', None, 1.1640, smarts='[SX3;H0](=[OX1;H0])=[OX1;H0]')
+VTPRSG[312] = UNIFAC_subgroup(312, 'N2O', 162, 'N2O', None, 0.8880, smarts='[NX1H0]#[N+X2H0][O-X1H0]')
+VTPRSG[314] = UNIFAC_subgroup(314, 'He', 164, 'He', None, 0.9850, smarts='[HeX0H0]')
+VTPRSG[315] = UNIFAC_subgroup(315, 'Ne', 165, 'Ne', None, 0.9860, smarts='[NeX0]')
+VTPRSG[319] = UNIFAC_subgroup(319, 'HCl', 169, 'HCl', None, 1.2560, smarts='[ClX1H1]')
+VTPRSG[345] = UNIFAC_subgroup(345, 'Hg', 185, 'Hg', None, 7.9616, smarts='[HgX0]')
 
 # From Present Status of the Group Contribution Equation of State VTPR and Typical Applications for Process Development
 VTPRSG[54] = UNIFAC_subgroup(54, 'CH3NO2', 26, 'CNO2', None, 1.8285, smarts=DOUFSG[54].smarts)
 VTPRSG[55] = UNIFAC_subgroup(55, 'CH2NO2', 26, 'CNO2', None, 1.56, smarts=DOUFSG[55].smarts)
 VTPRSG[56] = UNIFAC_subgroup(56, 'CHNO2', 26, 'CNO2', None, 1.248, smarts=DOUFSG[56].smarts)
+
+VTPRSG_SUBGROUPS = [VTPRSG[i] for i in [k for k in VTPRSG.keys()]]
 
 
 VTPRMG = {1: ("CH2", [1, 2, 3, 4]),
@@ -1491,7 +1497,7 @@ NISTUFSG[201] = UNIFAC_subgroup(201, 'c-CH=CH', 95, 'c-C=C', 1.0897, 0.832)
 NISTUFSG[202] = UNIFAC_subgroup(202, 'c-CH=C', 95, 'c-C=C', 0.8616, 0.644)
 NISTUFSG[203] = UNIFAC_subgroup(203, 'c-C=C', 95, 'c-C=C', 0.5498, 0.244)
 NISTUFSG[204] = UNIFAC_subgroup(204, 'Glycerol', 96, 'Glycerol', 5.4209, 4.4227)
-
+NISTUFSG_SUBGROUPS = [NISTUFSG[i] for i in [k for k in NISTUFSG.keys()]]
 
 PSRKSG = {}
 PSRKSG[1] = UNIFAC_subgroup(1, 'CH3', 1, 'CH2', 0.9011, 0.8480,
@@ -1808,6 +1814,7 @@ PSRKSG[149] = UNIFAC_subgroup(149, 'CLNO', 85, 'CLNO', 1.4800, 1.3400,
 PSRKSG[152] = UNIFAC_subgroup(152, 'CNH2', 14, 'CNH2', 0.9147, 0.6140,
                               # atoms={'C': 1, 'N': 1, 'H': 2}, bonds={DOUBLE_BOND: 1}
                               )
+PSRK_SUBGROUPS = [PSRKSG[i] for i in [k for k in PSRKSG.keys()]]
 
 PSRKMG = {1: ("CH2", [1, 2, 3, 4]),
 2: ("C=C", [5, 6, 7, 8, 70, 109]),
@@ -2099,6 +2106,10 @@ LLEUFSG[56] = UNIFAC_subgroup(56, '(CH2)4SO2', 31, 'TMS', 4.0358, 3.20,
 LLEUFSG[57] = UNIFAC_subgroup(57, 'DMSO', 32, 'DMSO', 2.8266, 2.472,
                              bonds=UFSG[67].bonds, atoms=UFSG[67].atoms,
                               smarts=UFSG[67].smarts)
+
+UNIFAC_LLE_SUBGROUPS = [LLEUFSG[i] for i in [k for k in LLEUFSG.keys()]]
+
+
 # Generated with the following:
 """
 t = 'LLEMG = {'
@@ -2265,6 +2276,8 @@ LUFSG[44] = UNIFAC_subgroup(44, 'CCL3', 20, 'CCL3', 2.6401, 2.184,
 LUFSG[45] = UNIFAC_subgroup(45, 'CCL4', 21, 'CCL4', 3.39, 2.91,
                             atoms=UFSG[52].atoms, bonds=UFSG[52].bonds, smarts=UFSG[52].smarts)
 
+LUFSG_SUBGROUPS = [LUFSG[i] for i in [k for k in LUFSG.keys()]]
+
 LUFMG = {1: ("CH2", [1, 2, 3, 4]),
 2: ("C=C", [5, 6, 7, 8, 9]),
 3: ("ACH", [10, 11]),
@@ -2427,6 +2440,8 @@ NISTKTUFSG[29] = UNIFAC_subgroup(29, ">C< (cy)", 51, 'CH2(cyc)', 0.2195, 0)
 NISTKTUFSG[30] = UNIFAC_subgroup(30, "-CH=CH- (cy)", 52, 'C=C(cyc)', 1.1167, 0.867)
 NISTKTUFSG[31] = UNIFAC_subgroup(31, "CH2=C< (cy)", 52, 'C=C(cyc)', 1.1173, 0.988)
 NISTKTUFSG[32] = UNIFAC_subgroup(32, "-CH=C< (cy)", 52, 'C=C(cyc)', 0.8886, 0.676)
+
+NISTKTUFSG_SUBGROUPS = [NISTKTUFSG[i] for i in [k for k in NISTKTUFSG.keys()]]
 
 NISTKTUFMG = {1: ("C", [1, 2, 3, 4]),
 2: ("C=C", [5, 6, 7, 8, 9]),
