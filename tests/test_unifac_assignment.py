@@ -26,6 +26,7 @@ import pytest
 from fluids.numerics import *
 
 from thermo import Chemical
+from chemicals.identifiers import search_chemical
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
 from thermo.unifac import *
 from thermo.unifac import DOUFSG, UNIFAC_SUBGROUPS, DOUFSG_SUBGROUPS, PSRK_SUBGROUPS, UNIFAC_LLE_SUBGROUPS, VTPRSG_SUBGROUPS
@@ -1006,3 +1007,130 @@ def test_DOUFSG_group_detection():
     assert assignment == {100: 1, 1:2}
     assert success
 
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_VTPRSG_gaseous():
+    test_cases = [
+        (search_chemical('tetrafluoromethane').smiles, {146: 1}),  # CF4
+        (search_chemical('ammonia').smiles, {300: 1}),  # NH3
+        (search_chemical('carbon dioxide').smiles, {306: 1}),  # CO2
+        (search_chemical('methane').smiles, {307: 1}),  # CH4
+        (search_chemical('oxygen').smiles, {308: 1}),  # O2
+        (search_chemical('argon').smiles, {305: 1}),
+        (search_chemical('nitrogen').smiles, {304: 1}),  # N2
+        (search_chemical('hydrogen sulfide').smiles, {303: 1}),  # H2S
+        (search_chemical('hydrogen').smiles, {302: 1}),  # H2
+        (search_chemical('carbon monoxide').smiles, {301: 1}),  # CO
+        (search_chemical('sulfur dioxide').smiles, {310: 1}),  # SO2
+        (search_chemical('nitrous oxide').smiles, {312: 1}),  # N2O
+        (search_chemical('helium').smiles, {314: 1}),
+        (search_chemical('neon').smiles, {315: 1}),
+        (search_chemical('hydrogen chloride').smiles, {319: 1}),  # HCl
+        (search_chemical('mercury').smiles, {345: 1}),
+        (search_chemical('deuterium').smiles, {309: 1}),  # D2
+    ]
+    
+    for smiles, expected in test_cases:
+        rdkitmol = Chem.MolFromSmiles(smiles)
+        assignment, *_, success, status = smarts_fragment_priority(
+            catalog=VTPRSG_SUBGROUPS,
+            rdkitmol=rdkitmol
+        )
+        assert assignment == expected, f"Failed for {smiles}: got {assignment}, expected {expected}"
+        assert success, f"Assignment failed for {smiles}: {status}"
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_VTPRSG_allene():
+    rdkitmol = Chem.MolFromSmiles('C=C=C')
+    assignment, *_, success, status = smarts_fragment_priority(
+        catalog=VTPRSG_SUBGROUPS,
+        rdkitmol=rdkitmol
+    )
+    assert assignment == {97: 1}
+    assert success
+
+
+    rdkitmol = Chem.MolFromSmiles('C=C')
+    assignment, *_, success, status = smarts_fragment_priority(
+        catalog=VTPRSG_SUBGROUPS,
+        rdkitmol=rdkitmol
+    )
+    assert assignment == {250: 1}
+    assert success
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_VTPR_allene_unknown_correct_fragmentations():
+    # can't find any references for what should match, making assumptions only
+    group_98_smarts = VTPRSG[98].smarts
+    group_98_pattern = Chem.MolFromSmarts(group_98_smarts)
+
+    # Create test molecule
+    rdkitmol = Chem.MolFromSmiles('CC=CC=C')
+
+    # Check for matches
+    matches = rdkitmol.GetSubstructMatches(group_98_pattern)
+    assert len(matches) == 1
+
+    group_99_smarts = VTPRSG[99].smarts
+    group_99_pattern = Chem.MolFromSmarts(group_99_smarts)
+
+    # Create test molecule
+    rdkitmol = Chem.MolFromSmiles('CC=CC(=CC)C')
+
+    # Check for matches
+    matches = rdkitmol.GetSubstructMatches(group_99_pattern)
+    assert len(matches) == 1
+
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_ester_assignments():
+    # Dictionary of test cases: chemical name -> expected assignment
+    test_cases = {
+        'methyl 2-methylpropanoate': {129: 1, 1: 3},
+        'methyl 2-hydroxypropanoate': {129: 1, 81: 1, 1: 2},
+        'methyl pivalate': {180: 1, 1: 4},
+        'methyl 2-hydroxy-2-methylpropanoate': {180: 1, 82: 1, 1: 3}
+    }
+    
+    for name, expected_assignment in test_cases.items():
+        # Get SMILES and create RDKit molecule
+        smiles = search_chemical(name).smiles
+        rdkitmol = Chem.MolFromSmiles(smiles)
+        
+        # Get assignment
+        assignment, *_, success, status = smarts_fragment_priority(
+            catalog=VTPRSG_SUBGROUPS,
+            rdkitmol=rdkitmol
+        )
+        
+        # Assert both the assignment and success
+        assert assignment == expected_assignment, f"Failed for {name}: got {assignment}, expected {expected_assignment}"
+        assert success, f"Failed for {name}: matching was not successful"
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_VTPR_fluorocarbon_groups():
+    test_cases = {
+        'difluoromethane': {140: 1},  # CF2H2 (pure R-32)
+        '1,1-difluoroethane': {139: 1, 1: 1}  # CH3-CF2H
+    }
+    
+    for name, expected_assignment in test_cases.items():
+        smiles = search_chemical(name).smiles
+        rdkitmol = Chem.MolFromSmiles(smiles)
+        
+        assignment, *_, success, status = smarts_fragment_priority(
+            catalog=VTPRSG_SUBGROUPS,
+            rdkitmol=rdkitmol
+        )
+        
+        assert assignment == expected_assignment, f"Failed for {name}: got {assignment}, expected {expected_assignment}"
+        assert success, f"Failed for {name}: matching was not successful"

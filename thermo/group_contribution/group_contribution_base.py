@@ -275,6 +275,67 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             all_heavies_matched_by_a_pattern.update(t)
 
     # excludes H
+    DEBUG_VISUALIZATION = False
+    if DEBUG_VISUALIZATION:
+        from rdkit.Chem import Draw
+        import matplotlib.pyplot as plt
+        from matplotlib import colors
+        
+        # First, count total number of matches across all patterns
+        total_matches = sum(len(matches) for matches in all_matches.values())
+        
+        if total_matches > 0:
+            # Calculate grid dimensions - still use 3 columns
+            n_cols = 3
+            n_rows = (total_matches + n_cols - 1) // n_cols
+            
+            fig, axes = plt.subplots(n_rows, n_cols)
+            if n_rows * n_cols > 1:
+                axes = axes.flatten()
+            else:
+                axes = [axes]
+                
+            # Single highlight color since each match gets its own subplot
+            highlight_color = (0.678, 0.847, 0.902)  # lightblue
+            
+            current_ax_idx = 0
+            for group_id, matches in all_matches.items():
+                pattern_obj = group_to_obj[group_id]
+                
+                # Make a subplot for each individual match
+                for match_idx, match in enumerate(matches):
+                    if current_ax_idx < len(axes):
+                        ax = axes[current_ax_idx]
+                        
+                        # Create a copy of the molecule for this visualization
+                        mol_copy = Chem.Mol(rdkitmol)
+                        
+                        # Add atom indices as labels
+                        for atom in mol_copy.GetAtoms():
+                            atom.SetProp('atomLabel', str(atom.GetIdx()))
+                        
+                        # Create the image with this single match highlighted
+                        img = Draw.MolToImage(mol_copy, 
+                                            highlightAtoms=list(match),
+                                            highlightColor=highlight_color)
+                        
+                        ax.imshow(img)
+                        ax.axis('off')
+                        
+                        # Add pattern info as title
+                        ax.set_title(f"Group {group_id}\nMatch {match_idx + 1}\nSMARTS: {pattern_obj.smarts}", 
+                                fontsize=10, pad=10)
+                        
+                        current_ax_idx += 1
+            
+            # Remove empty subplots
+            for idx in range(current_ax_idx, len(axes)):
+                fig.delaxes(axes[idx])
+                
+            plt.tight_layout()
+            plt.show()
+
+
 
     ignore_matches = set()
     matched_atoms, final_group_counts, final_assignments = run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs, H_count)
