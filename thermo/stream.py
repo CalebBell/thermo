@@ -71,11 +71,11 @@ class StreamArgs:
     Handling flow flow vs. composition is fuzzier because of the common use cases
     where a flow rate may be known, but not composition; or the composition but not
     the flow, however later when the product
-    flows are known it is desireable to set it. To allow this,
+    flows are known it is desirable to set it. To allow this,
     the variables `ns`, `ms`, `Qls`, and `Qgs` are allowed to overwrite an existing
     flow and/or composition specification even if if `multiple_composition_basis` is False.
 
-    Eveen if the property wasn't set to this object, but if enough degrees of freedom
+    Even if the property wasn't set to this object, but if enough degrees of freedom
     are known, the actual value can usually be queried by adding `_calc` to the attribute,
     e.g. `H_calc` is available if `T`, `P`, and `zs` are known. This will perform the
     flash if it hasn't already been done.
@@ -382,7 +382,7 @@ class StreamArgs:
             kwargs['Vfgs'] = [i for i in kwargs['Vfgs']]
         if kwargs['Vfls'] is not None:
             kwargs['Vfls'] = [i for i in kwargs['Vfls']]
-        return StreamArgs(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, flasher=self.flasher,
+        return self.__class__(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, flasher=self.flasher,
                  multiple_composition_basis=self.multiple_composition_basis, **kwargs)
 
     __copy__ = copy
@@ -2996,7 +2996,7 @@ class EnergyStream:
         copy : EnergyStream
             Copied Energy Stream, [-]
         '''
-        return EnergyStream(Q=self.Q)
+        return self.__class__(Q=self.Q)
 
     __copy__ = copy
 
