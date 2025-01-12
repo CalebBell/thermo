@@ -710,6 +710,21 @@ def test_UNIFAC_LLE_success():
     assert assignment == {57: 1}
     assert success
 
+def test_UNIFAC_LLE_smarts_assigned_to_all_groups():
+    none_priority_groups = [
+        "Group {} ({})".format(i.group_id, i.group)
+        for i in UNIFAC_LLE_SUBGROUPS 
+        if i.priority is None
+    ]
+    
+    assert len(none_priority_groups) == 0, (
+        "Found {} groups with None priority:\n"
+        "{}".format(
+            len(none_priority_groups), 
+            "\n".join(none_priority_groups)
+        )
+    )
+
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
