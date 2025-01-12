@@ -1004,14 +1004,36 @@ DOUFSG[153] = UNIFAC_subgroup(153, 'H2COC', 53, 'EPOXIDES', 0.9104, 0.6538,
                              smarts='[CX4H2]1[CX4H0][OX2H0]1')  # Example: 1,2-Epoxy-2-methylpropane
 
 # The R and Q values for groups 178, 179, 184, 189, 195, 196, 197 were updated online around ~2019
-DOUFSG[178] = UNIFAC_subgroup(178, 'C3H2N2+', 84, 'IMIDAZOL', 1.3662, 0.6797)
-DOUFSG[179] = UNIFAC_subgroup(179, 'BTI-', 85, 'BTI', 5.6210, 5.9463,
-                             atoms=UFSG[179].atoms, bonds=UFSG[179].bonds, smarts=UFSG[179].smarts)
-DOUFSG[184] = UNIFAC_subgroup(184, 'C3H3N2+', 84, 'IMIDAZOL', 1.8430, 1.6997)
-DOUFSG[189] = UNIFAC_subgroup(189, 'C4H8N+', 87, 'PYRROL', 2.7867, 2.7723)
-DOUFSG[195] = UNIFAC_subgroup(195, 'BF4-', 89, 'BF4', 3.9628, 0.6214)
-DOUFSG[196] = UNIFAC_subgroup(196, 'C5H5N+', 90, 'PYRIDIN', 2.1094, 2.5106)
-DOUFSG[197] = UNIFAC_subgroup(197, 'OTF-', 91, 'OTF', 3.3710, 2.0001)
+# SMARTS are untested and likely need work
+# Imidazolium cations
+DOUFSG[178] = UNIFAC_subgroup(178, 'C3H2N2+', 84, 'IMIDAZOL', 1.3662, 0.6797,
+                             atoms={'C': 3, 'H': 2, 'N': 2},
+                             bonds={AROMATIC_BOND: 5},
+                             smarts='[n+]1c[n]c[cH]1')  # 1,3-disubstituted imidazolium
+DOUFSG[184] = UNIFAC_subgroup(184, 'C3H3N2+', 84, 'IMIDAZOL', 1.8430, 1.6997,
+                             atoms={'C': 3, 'H': 3, 'N': 2},
+                             bonds={AROMATIC_BOND: 5},
+                             smarts='[n+]1[cH][n]c[cH]1')  # 1-substituted imidazolium
+# Pyrrolidinium cation
+DOUFSG[189] = UNIFAC_subgroup(189, 'C4H8N+', 87, 'PYRROL', 2.7867, 2.7723,
+                             atoms={'C': 4, 'H': 8, 'N': 1},
+                             bonds={SINGLE_BOND: 8},
+                             smarts='[N+]1[CH2][CH2][CH2][CH2]1')  # N-substituted pyrrolidinium
+# Tetrafluoroborate anion
+DOUFSG[195] = UNIFAC_subgroup(195, 'BF4-', 89, 'BF4', 3.9628, 0.6214,
+                             atoms={'B': 1, 'F': 4},
+                             bonds={SINGLE_BOND: 4},
+                             smarts='[B-]([F])([F])([F])[F]')
+# Pyridinium cation
+DOUFSG[196] = UNIFAC_subgroup(196, 'C5H5N+', 90, 'PYRIDIN', 2.1094, 2.5106,
+                             atoms={'C': 5, 'H': 5, 'N': 1},
+                             bonds={AROMATIC_BOND: 6},
+                             smarts='[n+]1[cH][cH][cH][cH][cH]1')
+# Triflate anion
+DOUFSG[197] = UNIFAC_subgroup(197, 'OTF-', 91, 'OTF', 3.3710, 2.0001,
+                             atoms={'C': 1, 'F': 3, 'S': 1, 'O': 3},
+                             bonds={SINGLE_BOND: 6, DOUBLE_BOND: 1},
+                             smarts='[O-][S](=[O])(=[O])[C]([F])([F])[F]')
 # 122, 123, 124, 201 Added Rev. 6
 DOUFSG[122] = UNIFAC_subgroup(122, 'CH3S', 61, 'SULFIDES', 1.6130, 1.3680,
                              atoms=UFSG[102].atoms, bonds=UFSG[102].bonds, smarts=UFSG[102].smarts)
@@ -1020,12 +1042,30 @@ DOUFSG[123] = UNIFAC_subgroup(123, 'CH2S', 61, 'SULFIDES', 1.3863, 1.0600,
 DOUFSG[124] = UNIFAC_subgroup(124, 'CHS', 61, 'SULFIDES', 1.1589, 0.7480,
                              atoms=UFSG[104].atoms, bonds=UFSG[104].bonds, smarts=UFSG[104].smarts)
 
-DOUFSG[201] = UNIFAC_subgroup(201, '-S-S-', 93, 'DISULFIDES', 1.0678, 2.2440)
+DOUFSG[201] = UNIFAC_subgroup(201, '-S-S-', 93, 'DISULFIDES', 1.0678, 2.2440,
+                             atoms={'S': 2},
+                             bonds={SINGLE_BOND: 1},
+                             smarts='[SX2][SX2]')
 # new ones after 2018 - based on website update primarily
-DOUFSG[209] = UNIFAC_subgroup(209, 'SO4', 98, 'SO4', 0.9903, 3.5249)
-DOUFSG[210] = UNIFAC_subgroup(210, 'HSO4', 98, 'SO4', 1.5654, 3.8076)
-DOUFSG[211] = UNIFAC_subgroup(211, 'PF6', 99, 'PF6', 3.8183, 3.6018)
-DOUFSG[220] = UNIFAC_subgroup(220, 'C5H4N+', 90, 'PYRIDIN', 2.4873,  2.4457)
+DOUFSG[209] = UNIFAC_subgroup(209, 'SO4', 98, 'SO4', 0.9903, 3.5249,
+                             atoms={'S': 1, 'O': 4},
+                             bonds={DOUBLE_BOND: 2, SINGLE_BOND: 2},
+                             smarts='[O-][S](=[O])(=[O])[O-]')  # Sulfate anion
+
+DOUFSG[210] = UNIFAC_subgroup(210, 'HSO4', 98, 'SO4', 1.5654, 3.8076,
+                             atoms={'S': 1, 'O': 4, 'H': 1},
+                             bonds={DOUBLE_BOND: 2, SINGLE_BOND: 2},
+                             smarts='[O-][S](=[O])(=[O])[OH]')  # Hydrogen sulfate anion
+
+DOUFSG[211] = UNIFAC_subgroup(211, 'PF6', 99, 'PF6', 3.8183, 3.6018,
+                             atoms={'P': 1, 'F': 6},
+                             bonds={SINGLE_BOND: 6},
+                             smarts='[F-][P]([F])([F])([F])([F])[F]')  # Hexafluorophosphate anion
+
+DOUFSG[220] = UNIFAC_subgroup(220, 'C5H4N+', 90, 'PYRIDIN', 2.4873, 2.4457,
+                             atoms={'C': 5, 'H': 4, 'N': 1},
+                             bonds={AROMATIC_BOND: 6},
+                             smarts='[cH]1[cH][cH][cH][cH][n+]1')  # Pyridinium cation
 
 DOUFSG_SUBGROUPS = [DOUFSG[i] for i in [k for k in DOUFSG.keys()]]
 

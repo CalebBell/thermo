@@ -1090,6 +1090,24 @@ def test_DOUFSG_group_detection():
     assert assignment == {114: 1, 1: 1}  # CH2CH3CB + CH3
     assert success
 
+    # Test dimethyl disulfide (CH3-S-S-CH3)
+    rdkitmol = Chemical('dimethyl disulfide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {201: 1, 1: 2}  # One S-S linkage and two CH3 groups
+    assert success
+    
+    # Test diethyl disulfide (CH3CH2-S-S-CH2CH3)
+    rdkitmol = Chemical('diethyl disulfide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {201: 1, 1: 2, 2: 2}  # One S-S linkage, two CH3 groups, two CH2 groups
+    assert success
+    
+    # Test allyl disulfide (CH2=CHCH2-S-S-CH2CH=CH2)
+    rdkitmol = Chemical('allyl disulfide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {201: 1, 2: 2, 5: 2}  # One S-S linkage, two CH2 groups, two CH2=CH groups
+    assert success
+
 
 def test_DOUFSG_smarts_assigned_to_all_groups():
     none_priority_groups = [
