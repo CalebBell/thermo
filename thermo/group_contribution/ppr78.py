@@ -790,7 +790,16 @@ EPPR78_INTERACTIONS_BY_STR = {}
 for (group1, group2), value in EPPR78_INTERACTIONS.items():
     EPPR78_INTERACTIONS_BY_STR[(group1.group, group2.group)] = value
 
-def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2, omega2, version='original'):
+PPR78_INTERACTIONS_BY_ID = {}
+for (group1, group2), value in PPR78_INTERACTIONS.items():
+    PPR78_INTERACTIONS_BY_ID[(group1.group_id, group2.group_id)] = value
+
+EPPR78_INTERACTIONS_BY_ID = {}
+for (group1, group2), value in EPPR78_INTERACTIONS.items():
+    EPPR78_INTERACTIONS_BY_ID[(group1.group_id, group2.group_id)] = value
+
+
+def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2, omega2, version='original', string=True):
     r'''Calculate binary interaction parameter kij(T) between two molecules using the PPR78 method.
 
     This function implements the PPR78 (Predictive Peng-Robinson 1978) method to calculate
@@ -838,6 +847,8 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
         Acentric factor of molecule 2 [-]
     version : str, optional
         Version of the method to use ('original' or 'extended'), defaults to 'original'
+    string : bool
+        Whether the group counts are in the format {'CH3': 2} etc or {5: 2}
 
     Returns
     -------
@@ -858,7 +869,10 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
         raise ValueError("version must be either 'original' or 'extended'")
         
     # Select the appropriate interaction parameters based on version
-    interactions = EPPR78_INTERACTIONS_BY_STR if version == 'extended' else PPR78_INTERACTIONS_BY_STR
+    if string:
+        interactions = EPPR78_INTERACTIONS_BY_STR if version == 'extended' else PPR78_INTERACTIONS_BY_STR
+    else:
+        interactions = EPPR78_INTERACTIONS_BY_ID if version == 'extended' else PPR78_INTERACTIONS_BY_ID
 
     OMEGA_A = 0.4572355289213821893834601962251837888504
     OMEGA_B = 0.0777960739038884559718447100373331839711
@@ -918,7 +932,7 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
     kij_value = (term1 - term2)/denominator
     return kij_value
 
-def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original'):
+def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original', string=True):
     r"""Calculate the binary interaction parameter (kij) matrix for a mixture of components 
     at a specified temperature using the PPR78 method.
     
@@ -937,6 +951,8 @@ def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original'):
         Acentric factors for each component [-]
     version : str, optional
         Version of the method to use ('original' or 'extended'), defaults to 'original'
+    string : bool
+        Whether the group counts are in the format {'CH3': 2} etc or {5: 2}
         
     Returns
     -------
@@ -976,7 +992,8 @@ def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original'):
                 Tcs[j],
                 Pcs[j],
                 omegas[j],
-                version=version
+                version=version,
+                string=string
             )
             # Set both (i,j) and (j,i) due to symmetry
             kij_matrix[i][j] = kij
