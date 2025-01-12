@@ -76,7 +76,7 @@ from chemicals.elements import (
     simple_formula_parser,
 )
 from chemicals.environment import GWP, ODP, logP
-from chemicals.identifiers import CAS_from_any
+from chemicals.identifiers import CAS_from_any, CAS_to_int
 from chemicals.lennard_jones import Stockmayer, molecular_diameter
 from chemicals.phase_change import Hfus, Tb, Tm
 from chemicals.reaction import Gibbs_formation, Hfg, Hfl, Hfs, S0g
@@ -136,7 +136,7 @@ warn_chemicals_msg ="""`chemicals <https://github.com/CalebBell/chemicals>`_ is 
 
 
 class ChemicalConstantsPackage:
-    non_vector_properties = ('atomss', 'Carcinogens', 'CASs', 'Ceilings', 'charges',
+    non_vector_properties = ('atomss', 'Carcinogens', 'CASs', 'CASis', 'Ceilings', 'charges',
                  'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs',
                  'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass',
                  'Hfgs', 'Hfgs_mass', 'Hfus_Tms', 'Hfus_Tms_mass', 'Hsub_Tts',
@@ -636,6 +636,7 @@ class ChemicalConstantsPackage:
         # Properties which were wrong from Mixture, Chemical: Parachor, solubility_parameter
         N = len(IDs)
         CASs = [CAS_from_any(ID) for ID in IDs]
+        CASis = [CAS_to_int(CAS) if CAS else None for CAS in CASs]
         pubchem_db = identifiers.pubchem_db
         metadatas = [pubchem_db.search_CAS(CAS) for CAS in CASs]
         names = [i.common_name.lower() for i in metadatas]
@@ -922,7 +923,7 @@ class ChemicalConstantsPackage:
         logPs = [logP(CASRN=CASs[i]) for i in range(N)]
 
 
-        constants = ChemicalConstantsPackage(CASs=CASs, names=names, MWs=MWs, Tms=Tms,
+        constants = ChemicalConstantsPackage(CASs=CASs, CASis=CASis, names=names, MWs=MWs, Tms=Tms,
                 Tbs=Tbs, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, Zcs=Zcs,
                 rhocs=rhocs, rhocs_mass=rhocs_mass, Hfus_Tms=Hfus_Tms,
                 Hfus_Tms_mass=Hfus_Tms_mass, Hvap_Tbs=Hvap_Tbs,
@@ -1048,6 +1049,8 @@ class ChemicalConstantsPackage:
                  # Groups
                  UNIFAC_groups=None, UNIFAC_Dortmund_groups=None,
                  PSRK_groups=None, UNIFAC_Rs=None, UNIFAC_Qs=None,
+                 # other
+                 CASis=None,
                  ):
         self.N = N = len(MWs)
         self.cmps = range(N)
@@ -1058,6 +1061,7 @@ class ChemicalConstantsPackage:
         if atomss is None: atomss = empty_list
         if Carcinogens is None: Carcinogens = empty_list
         if CASs is None: CASs = empty_list
+        if CASis is None: CASis = empty_list
         if aliases is None: aliases = empty_list
         if Ceilings is None: Ceilings = empty_list
         if charges is None: charges = empty_list
@@ -1153,6 +1157,7 @@ class ChemicalConstantsPackage:
         self.atomss = atomss
         self.Carcinogens = Carcinogens
         self.CASs = CASs
+        self.CASis = CASis
         self.Ceilings = Ceilings
         self.charges = charges
         self.conductivities = conductivities
@@ -1264,6 +1269,7 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'atomss': ("list[dict]", "Breakdown of each component into its elements and their counts, as a dict", "[-]", None),
 'Carcinogens': ("list[dict]", "Status of each component in cancer causing registries", "[-]", None),
 'CASs': ("list[str]", "CAS registration numbers for each component", "[-]", None),
+'CASis': ("list[int]", "CAS registration numbers as integeres for each component", "[-]", None),
 'Ceilings': ("list[tuple[(float, str)]]", "Ceiling exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
 'charges': ("list[float]", "Charge number (valence) for each component", "[-]", None),
 'conductivities': ("list[float]", "Electrical conductivities for each component", "[S/m]", None),
