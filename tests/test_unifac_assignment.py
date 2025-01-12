@@ -29,7 +29,7 @@ from thermo import Chemical
 from chemicals.identifiers import search_chemical
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
 from thermo.unifac import *
-from thermo.unifac import DOUFSG, UNIFAC_SUBGROUPS, DOUFSG_SUBGROUPS, PSRK_SUBGROUPS, UNIFAC_LLE_SUBGROUPS, VTPRSG_SUBGROUPS
+from thermo.unifac import DOUFSG, UNIFAC_SUBGROUPS, LUFSG_SUBGROUPS, DOUFSG_SUBGROUPS, PSRK_SUBGROUPS, UNIFAC_LLE_SUBGROUPS, VTPRSG_SUBGROUPS
 
 try:
     import rdkit
@@ -714,6 +714,20 @@ def test_UNIFAC_LLE_smarts_assigned_to_all_groups():
     none_priority_groups = [
         "Group {} ({})".format(i.group_id, i.group)
         for i in UNIFAC_LLE_SUBGROUPS 
+        if i.priority is None
+    ]
+    
+    assert len(none_priority_groups) == 0, (
+        "Found {} groups with None priority:\n"
+        "{}".format(
+            len(none_priority_groups), 
+            "\n".join(none_priority_groups)
+        )
+    )
+def test_UNIFAC_Larsen_smarts_assigned_to_all_groups():
+    none_priority_groups = [
+        "Group {} ({})".format(i.group_id, i.group)
+        for i in LUFSG_SUBGROUPS 
         if i.priority is None
     ]
     
