@@ -955,16 +955,35 @@ DOUFSG[106] = UNIFAC_subgroup(106, 'AC2S', 52, 'ACS', 1.4621, 0.78,
                              bonds={AROMATIC_BOND: 3},
                              smarts='[cX3;H0][sX2][cX3;H0]')
                              
-DOUFSG[107] = UNIFAC_subgroup(107, 'H2COCH', 53, 'EPOXIDES', 1.3601, 1.8031)
-DOUFSG[108] = UNIFAC_subgroup(108, 'COCH', 53, 'EPOXIDES', 0.683, 0.3418)
-DOUFSG[109] = UNIFAC_subgroup(109, 'HCOCH', 53, 'EPOXIDES', 0.9104, 0.6538)
+DOUFSG[107] = UNIFAC_subgroup(107, 'H2COCH', 53, 'EPOXIDES', 1.3601, 1.8031,
+                             atoms={'C': 2, 'O': 1, 'H': 3}, 
+                             bonds={SINGLE_BOND: 3},
+                             smarts='[CX4H2]1[CX4H1][OX2H0]1')  # Example: 1,2-Epoxybutane
+
+DOUFSG[108] = UNIFAC_subgroup(108, 'COCH', 53, 'EPOXIDES', 0.683, 0.3418,
+                             atoms={'C': 2, 'O': 1, 'H': 1}, 
+                             bonds={SINGLE_BOND: 3},
+                             smarts='[CX4H0]1[CX4H1][OX2H0]1')  # Fully substituted on one carbon
+
+DOUFSG[109] = UNIFAC_subgroup(109, 'HCOCH', 53, 'EPOXIDES', 0.9104, 0.6538,
+                             atoms={'C': 2, 'O': 1, 'H': 2}, 
+                             bonds={SINGLE_BOND: 3},
+                             smarts='[CX4H1]1[CX4H1][OX2H0]1')  # Example: 2,3-Epoxybutane
+
 DOUFSG[110] = UNIFAC_subgroup(110, '(CH2)2SU', 56, 'SULFONE', 2.687, 2.12)
 DOUFSG[111] = UNIFAC_subgroup(111, 'CH2SUCH', 56, 'SULFONE', 2.46, 1.808)
 DOUFSG[112] = UNIFAC_subgroup(112, '(CH3)2CB', 55, 'CARBONAT', 2.42, 2.4976)
 DOUFSG[113] = UNIFAC_subgroup(113, '(CH2)2CB', 55, 'CARBONAT', 2.42, 2.0018)
 DOUFSG[114] = UNIFAC_subgroup(114, 'CH2CH3CB', 55, 'CARBONAT', 2.42, 2.2497)
-DOUFSG[119] = UNIFAC_subgroup(119, 'H2COCH2', 53, 'EPOXIDES', 1.063, 1.123)
-DOUFSG[153] = UNIFAC_subgroup(153, 'H2COC', 53, 'EPOXIDES', 0.9104, 0.6538)
+DOUFSG[119] = UNIFAC_subgroup(119, 'H2COCH2', 53, 'EPOXIDES', 1.063, 1.123,
+                             atoms={'C': 2, 'O': 1, 'H': 4}, 
+                             bonds={SINGLE_BOND: 3},
+                             smarts='[CX4H2]1[CX4H2][OX2H0]1')  # Example: ethylene oxide
+
+DOUFSG[153] = UNIFAC_subgroup(153, 'H2COC', 53, 'EPOXIDES', 0.9104, 0.6538,
+                             atoms={'C': 2, 'O': 1, 'H': 2}, 
+                             bonds={SINGLE_BOND: 3},
+                             smarts='[CX4H2]1[CX4H0][OX2H0]1')  # Example: 1,2-Epoxy-2-methylpropane
 
 # The R and Q values for groups 178, 179, 184, 189, 195, 196, 197 were updated online around ~2019
 DOUFSG[178] = UNIFAC_subgroup(178, 'C3H2N2+', 84, 'IMIDAZOL', 1.3662, 0.6797)
@@ -1820,13 +1839,24 @@ PSRKSG[136] = UNIFAC_subgroup(136, 'H2COCH', 51, 'EPOXY', 1.3652, 1.0080,
                               atoms={'H': 3, 'C': 2, 'O': 1}, bonds={SINGLE_BOND: 3}, smarts='[CX4H2]1[CX4H1][OX2H0]1')
 
 PSRKSG[137] = UNIFAC_subgroup(137, 'HCOCH', 51, 'EPOXY', 1.1378, 0.6960,
-                              atoms={'C': 2, 'O': 1, 'H': 2}, bonds={SINGLE_BOND: 3},  smarts='[CX4H1]1[CX4H1][OX2H0]1')
+                             atoms=DOUFSG[109].atoms,
+                             bonds=DOUFSG[109].bonds,
+                             smarts=DOUFSG[109].smarts)
+
 PSRKSG[138] = UNIFAC_subgroup(138, 'HCOC', 51, 'EPOXY', 0.9104, 0.4680,
-                              atoms={'C': 2, 'O': 1, 'H': 1}, bonds={SINGLE_BOND: 3}, smarts='[CX4H1]1[CX4H0][OX2H0]1')
+                             atoms=DOUFSG[108].atoms,
+                             bonds=DOUFSG[108].bonds,
+                             smarts=DOUFSG[108].smarts) 
+
 PSRKSG[139] = UNIFAC_subgroup(139, 'H2COCH2', 51, 'EPOXY', 1.5926, 1.3200,
-                              atoms={'C': 2, 'H': 4, 'O': 1}, bonds={SINGLE_BOND: 3}, smarts='[CX4H2]1[CX4H2][OX2H0]1')
+                             atoms=DOUFSG[119].atoms,  
+                             bonds=DOUFSG[119].bonds,
+                             smarts=DOUFSG[119].smarts)
+
 PSRKSG[140] = UNIFAC_subgroup(140, 'H2COC', 51, 'EPOXY', 1.1378, 0.7800,
-                              atoms={'C': 2, 'O': 1, 'H': 2}, bonds={SINGLE_BOND: 3}, smarts='[CX4H2]1[CX4H0][OX2H0]1')
+                             atoms=DOUFSG[153].atoms,
+                             bonds=DOUFSG[153].bonds,
+                             smarts=DOUFSG[153].smarts)
 PSRKSG[141] = UNIFAC_subgroup(141, 'COC', 51, 'EPOXY', 0.6829, 0.2400,
                               atoms={'C': 2, 'O': 1}, bonds={SINGLE_BOND: 3}, smarts='[CX4H0]1[CX4H0][OX2H0]1')
 
