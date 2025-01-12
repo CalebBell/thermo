@@ -1072,6 +1072,25 @@ def test_DOUFSG_group_detection():
     assert success
     assert assignment == {1: 2, 9: 2, 106: 1}  # 2 CH3, 2 ACH, and 1 AC2S
 
+    # Test dimethyl carbonate
+    rdkitmol = Chemical('dimethyl carbonate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {112: 1}  # just (CH3)2CB
+    assert success
+    
+    # Test diethyl carbonate
+    rdkitmol = Chemical('diethyl carbonate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {113: 1, 1: 2}  # (CH2)2CB + 2 CH3
+    assert success
+    
+    # Test methyl ethyl carbonate
+    rdkitmol = Chemical('methyl ethyl carbonate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {114: 1, 1: 1}  # CH2CH3CB + CH3
+    assert success
+
+
 def test_DOUFSG_smarts_assigned_to_all_groups():
     none_priority_groups = [
         "Group {} ({})".format(i.group_id, i.group)

@@ -980,9 +980,19 @@ DOUFSG[111] = UNIFAC_subgroup(111, 'CH2SUCH', 56, 'SULFONE', 2.46, 1.808,
                              bonds=UFSG[119].bonds,
                              smarts=UFSG[119].smarts)
 
-DOUFSG[112] = UNIFAC_subgroup(112, '(CH3)2CB', 55, 'CARBONAT', 2.42, 2.4976)
-DOUFSG[113] = UNIFAC_subgroup(113, '(CH2)2CB', 55, 'CARBONAT', 2.42, 2.0018)
-DOUFSG[114] = UNIFAC_subgroup(114, 'CH2CH3CB', 55, 'CARBONAT', 2.42, 2.2497)
+DOUFSG[112] = UNIFAC_subgroup(112, '(CH3)2CB', 55, 'CARBONAT', 2.42, 2.4976,
+                             atoms={'C': 3, 'O': 3, 'H': 6},
+                             bonds={SINGLE_BOND: 4, DOUBLE_BOND: 1},
+                             smarts='[CX4H3][OX2][CX3](=[OX1])[OX2][CX4H3]')  # e.g. dimethyl carbonate
+DOUFSG[113] = UNIFAC_subgroup(113, '(CH2)2CB', 55, 'CARBONAT', 2.42, 2.0018,
+                             atoms={'C': 3, 'O': 3, 'H': 4},
+                             bonds={SINGLE_BOND: 4, DOUBLE_BOND: 1},
+                             smarts='[CX4H2][OX2][CX3](=[OX1])[OX2][CX4H2]')  # e.g. diethyl carbonate
+DOUFSG[114] = UNIFAC_subgroup(114, 'CH2CH3CB', 55, 'CARBONAT', 2.42, 2.2497,
+                             atoms={'C': 3, 'O': 3, 'H': 5},
+                             bonds={SINGLE_BOND: 4, DOUBLE_BOND: 1},
+                             smarts='[CX4H3][OX2][CX3](=[OX1])[OX2][CX4H2]')  # e.g. methyl ethyl carbonate
+                             
 DOUFSG[119] = UNIFAC_subgroup(119, 'H2COCH2', 53, 'EPOXIDES', 1.063, 1.123,
                              atoms={'C': 2, 'O': 1, 'H': 4}, 
                              bonds={SINGLE_BOND: 3},
