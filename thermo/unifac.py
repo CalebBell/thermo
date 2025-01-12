@@ -1936,10 +1936,10 @@ PSRKSG[148] = UNIFAC_subgroup(148, 'O3', 84, 'O3', 1.1000, 1.2700,
                               atoms={'O': 3}, bonds={SINGLE_BOND: 1, DOUBLE_BOND: 1}, smarts='[O-X1H0][O+X2H0]=[OX1H0]')
 PSRKSG[149] = UNIFAC_subgroup(149, 'CLNO', 85, 'CLNO', 1.4800, 1.3400,
                               atoms={'Cl': 1, 'N': 1, 'O': 1}, bonds={SINGLE_BOND: 1, DOUBLE_BOND: 1}, smarts='[NX2H0](=[OX1H0])[ClX1H0]')
-# Can't figure out what 152 is supposed to match!
 PSRKSG[152] = UNIFAC_subgroup(152, 'CNH2', 14, 'CNH2', 0.9147, 0.6140,
-                              # atoms={'C': 1, 'N': 1, 'H': 2}, bonds={DOUBLE_BOND: 1}
-                              )
+                            atoms={'C': 1, 'N': 1, 'H': 2},
+                            bonds={SINGLE_BOND: 1},
+                            smarts='[CX4;H0][NX3;H2]')  # Quaternary carbon with NH2 group
 PSRK_SUBGROUPS = [PSRKSG[i] for i in [k for k in PSRKSG.keys()]]
 
 PSRKMG = {1: ("CH2", [1, 2, 3, 4]),

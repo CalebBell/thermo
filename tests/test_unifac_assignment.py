@@ -918,6 +918,33 @@ def test_PSRK_group_detection():
     assert assignment == {149: 1}
     assert success
 
+    # Test tert-butylamine
+    rdkitmol = Chemical('tert-butylamine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {152: 1, 1: 3}  # One CNH2 (quaternary) and three CH3 groups
+    assert success
+    
+    # Test with methylamine (should NOT match this group)
+    rdkitmol = Chemical('methylamine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_SUBGROUPS, rdkitmol=rdkitmol)
+    assert 152 not in assignment  # Should not match CNH2 (quaternary)
+    assert success
+
+def test_PSRK_smarts_assigned_to_all_groups():
+    none_priority_groups = [
+        "Group {} ({})".format(i.group_id, i.group)
+        for i in PSRK_SUBGROUPS 
+        if i.priority is None
+    ]
+    
+    assert len(none_priority_groups) == 0, (
+        "Found {} groups with None priority:\n"
+        "{}".format(
+            len(none_priority_groups), 
+            "\n".join(none_priority_groups)
+        )
+    )
+
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_DOUFSG_group_detection():
