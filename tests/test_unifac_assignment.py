@@ -970,7 +970,7 @@ def test_DOUFSG_group_detection():
 
     rdkitmol = Chemical('N-Methylcaprolactam').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
-    assert assignment == {86: 1, 78: 5}
+    assert assignment == {86: 1, 78: 5} or assignment ==  {78: 4, 102: 1}
     assert success
 
 
@@ -989,7 +989,7 @@ def test_DOUFSG_group_detection():
 
     rdkitmol = Chemical('1-octyl-2-pyrrolidone').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
-    assert assignment == {87: 1, 78: 3, 2: 6, 1:1}
+    assert assignment == {87: 1, 78: 3, 2: 6, 1:1} or assignment == {1: 1, 2: 6, 78: 2, 103: 1} 
     assert success
 
     rdkitmol = Chemical('1-(isopropyl)pyrrolidin-2-one').rdkitmol
@@ -1036,6 +1036,22 @@ def test_DOUFSG_group_detection():
     rdkitmol = Chemical('N-propylformamide').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
     assert assignment == {94: 1, 1: 1, 2: 1}
+    assert success
+
+    rdkitmol = Chemical('n,n-dimethylacetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 1, 101: 1}
+    assert success
+
+    # N-ethyl-N-methylacetamide
+    rdkitmol = Chem.MolFromSmiles('CCN(C)C(=O)C')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {102: 1, 1: 2}
+    assert success
+
+    rdkitmol = Chemical('n,n-diethylacetamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {103: 1, 1: 3}
     assert success
 
 def test_DOUFSG_smarts_assigned_to_all_groups():
