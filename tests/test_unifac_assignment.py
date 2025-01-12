@@ -1262,18 +1262,17 @@ def test_VTPR_AC_CHO():
     assert assignment == {116: 1, 9: 5}, f"Got {assignment}, expected {{116: 1, 9: 5}}"
     assert success
 
-# def test_VTPR_smarts_assigned_to_all_groups():
-#     # TODO, a few references to Dortmund that don't actually have groups
-#     none_priority_groups = [
-#         "Group {} ({})".format(i.group_id, i.group)
-#         for i in VTPRSG_SUBGROUPS 
-#         if i.priority is None
-#     ]
+def test_VTPR_smarts_assigned_to_all_groups():
+    none_priority_groups = [
+        "Group {} ({})".format(i.group_id, i.group)
+        for i in VTPRSG_SUBGROUPS 
+        if i.priority is None
+    ]
     
-#     assert len(none_priority_groups) == 0, (
-#         "Found {} groups with None priority:\n"
-#         "{}".format(
-#             len(none_priority_groups), 
-#             "\n".join(none_priority_groups)
-#         )
-#     )
+    assert len(none_priority_groups) == 0, (
+        "Found {} groups with None priority:\n"
+        "{}".format(
+            len(none_priority_groups), 
+            "\n".join(none_priority_groups)
+        )
+    )
