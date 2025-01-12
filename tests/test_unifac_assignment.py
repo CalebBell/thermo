@@ -615,7 +615,20 @@ def test_UNIFAC_original():
     assert assignment == {178: 1, 179: 1, 1: 2, 2: 1}
     assert success
 
-
+def test_UNIFAC_SUBGROUPS_smarts_assigned_to_all_groups():
+    none_priority_groups = [
+        "Group {} ({})".format(i.group_id, i.group)
+        for i in UNIFAC_SUBGROUPS 
+        if i.priority is None
+    ]
+    
+    assert len(none_priority_groups) == 0, (
+        "Found {} groups with None priority:\n"
+        "{}".format(
+            len(none_priority_groups), 
+            "\n".join(none_priority_groups)
+        )
+    )
 
 
 @pytest.mark.rdkit
@@ -1007,6 +1020,38 @@ def test_DOUFSG_group_detection():
     assert assignment == {100: 1, 1:2}
     assert success
 
+    # Test N-methylformamide
+    rdkitmol = Chemical('N-methylformamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {93: 1}
+    assert success
+    
+    # Test N-ethylformamide
+    rdkitmol = Chemical('N-ethylformamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {94: 1, 1: 1}  # One CH3 group in addition to the HCONHCH2
+    assert success
+    
+    # Test N-propylformamide (should use HCONHCH2 + CH2 + CH3)
+    rdkitmol = Chemical('N-propylformamide').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {94: 1, 1: 1, 2: 1}
+    assert success
+
+def test_DOUFSG_smarts_assigned_to_all_groups():
+    none_priority_groups = [
+        "Group {} ({})".format(i.group_id, i.group)
+        for i in DOUFSG_SUBGROUPS 
+        if i.priority is None
+    ]
+    
+    assert len(none_priority_groups) == 0, (
+        "Found {} groups with None priority:\n"
+        "{}".format(
+            len(none_priority_groups), 
+            "\n".join(none_priority_groups)
+        )
+    )
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
