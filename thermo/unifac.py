@@ -1144,7 +1144,11 @@ VTPRSG[108] = UNIFAC_subgroup(108, 'COCH', 53, 'EPOXIDES', None, 0.3418, smarts=
 VTPRSG[109] = UNIFAC_subgroup(109, 'HCOCH', 53, 'EPOXIDES', None, 0.6538, smarts=DOUFSG[109].smarts, atoms=DOUFSG[109].atoms)
 VTPRSG[119] = UNIFAC_subgroup(119, 'H2COCH2', 53, 'EPOXIDES', None, 1.123, smarts=DOUFSG[119].smarts, atoms=DOUFSG[119].atoms)
 VTPRSG[153] = UNIFAC_subgroup(153, 'H2COC', 53, 'EPOXIDES', None, 0.6538, smarts=DOUFSG[153].smarts, atoms=DOUFSG[153].atoms)
-VTPRSG[116] = UNIFAC_subgroup(116, 'AC-CHO', 57, 'AC-CHO', None, 1.0, smarts=None)
+VTPRSG[116] = UNIFAC_subgroup(116, 'AC-CHO', 57, 'AC-CHO', None, 1.0,
+              smarts='[cX3]([CX3H1]=O)',  # aromatic carbon connected to aldehyde
+              atoms={'C': 2, 'H': 1, 'O': 1},
+              bonds={SINGLE_BOND: 1, DOUBLE_BOND: 1})
+
 VTPRSG[139] = UNIFAC_subgroup(139, 'CF2H', 68, 'CF2H', None, 1.6643, 
               smarts='[CH1](F)(F)', 
               atoms={'C': 1, 'H': 1, 'F': 2}, 
@@ -1154,10 +1158,19 @@ VTPRSG[140] = UNIFAC_subgroup(140, 'CF2H2', 68, 'CF2H', None, 1.3304,
               smarts='[CH2](F)F', 
               atoms={'C': 1, 'H': 2, 'F': 2}, 
               bonds={SINGLE_BOND: 4})
-VTPRSG[142] = UNIFAC_subgroup(142, 'CF2Cl', 70, 'CF2Cl2', None, 1.8506, smarts=None)
-VTPRSG[143] = UNIFAC_subgroup(143, 'CF2Cl2', 70, 'CF2Cl2', None, 2.5974, smarts=None)
-VTPRSG[148] = UNIFAC_subgroup(148, 'CF3Br', 70, 'CF2Cl2', None, 2.5104, smarts=None)
+VTPRSG[142] = UNIFAC_subgroup(142, 'CF2Cl', 70, 'CF2Cl2', None, 1.8506,
+              smarts='[CX4;H0](F)(F)(Cl)',  # extra attachment to C is just not hydrogen to avoid 139
+              atoms={'C': 1, 'F': 2, 'Cl': 1},
+              bonds={SINGLE_BOND: 3}, priority=10000)
+VTPRSG[143] = UNIFAC_subgroup(143, 'CF2Cl2', 70, 'CF2Cl2', None, 2.5974,
+              smarts='[CX4;H0](F)(F)(Cl)Cl',
+              atoms={'C': 1, 'F': 2, 'Cl': 2},
+              bonds={SINGLE_BOND: 4})
 
+VTPRSG[148] = UNIFAC_subgroup(148, 'CF3Br', 70, 'CF2Cl2', None, 2.5104,
+              smarts='[CX4;H0](F)(F)(F)Br',
+              atoms={'C': 1, 'F': 3, 'Br': 1},
+              bonds={SINGLE_BOND: 4})
 VTPRSG[146] = UNIFAC_subgroup(146, 'CF4', 73, 'CF4', None, 1.8400, smarts='[CX4H0]([FX1])([FX1])([FX1])[FX1]', atoms={'C': 1, 'F': 4})
 VTPRSG[300] = UNIFAC_subgroup(300, 'NH3', 150, 'NH3', None, 0.7780, smarts='[NX3H3]', atoms={'N': 1, 'H': 3})
 VTPRSG[306] = UNIFAC_subgroup(306, 'CO2', 151, 'CO2', None, 0.982, smarts='[CX2H0](=[OX1H0])=[OX1H0]', atoms={'C': 1, 'O': 2})

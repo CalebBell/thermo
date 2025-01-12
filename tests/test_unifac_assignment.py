@@ -1134,3 +1134,67 @@ def test_VTPR_fluorocarbon_groups():
         
         assert assignment == expected_assignment, f"Failed for {name}: got {assignment}, expected {expected_assignment}"
         assert success, f"Failed for {name}: matching was not successful"
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_VTPR_halogenated_methanes():
+    test_cases = {
+        'dichlorodifluoromethane': {143: 1},  # CF2Cl2 (R-12)
+        'bromotrifluoromethane': {148: 1}     # CF3Br (R-13B1)
+    }
+    
+    for name, expected_assignment in test_cases.items():
+        smiles = search_chemical(name).smiles
+        rdkitmol = Chem.MolFromSmiles(smiles)
+        
+        assignment, *_, success, status = smarts_fragment_priority(
+            catalog=VTPRSG_SUBGROUPS,
+            rdkitmol=rdkitmol
+        )
+        
+        assert assignment == expected_assignment, f"Failed for {name}: got {assignment}, expected {expected_assignment}"
+        assert success, f"Failed for {name}: matching was not successful"
+
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_VTPR_CF2Cl_group():
+    rdkitmol = Chem.MolFromSmiles('CCC(F)(F)Cl')
+    
+    assignment, *_, success, status = smarts_fragment_priority(
+        catalog=VTPRSG_SUBGROUPS,
+        rdkitmol=rdkitmol
+    )
+    
+    assert assignment == {142: 1, 1: 1, 2: 1}, f"Got {assignment}, expected {{142: 1, 1: 1, 2: 1}}"
+    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_VTPR_AC_CHO():
+    rdkitmol = Chem.MolFromSmiles('O=Cc1ccccc1')
+    
+    assignment, *_, success, status = smarts_fragment_priority(
+        catalog=VTPRSG_SUBGROUPS,
+        rdkitmol=rdkitmol
+    )
+    
+    assert assignment == {116: 1, 9: 5}, f"Got {assignment}, expected {{116: 1, 9: 5}}"
+    assert success
+
+# def test_VTPR_smarts_assigned_to_all_groups():
+#     # TODO, a few references to Dortmund that don't actually have groups
+#     none_priority_groups = [
+#         "Group {} ({})".format(i.group_id, i.group)
+#         for i in VTPRSG_SUBGROUPS 
+#         if i.priority is None
+#     ]
+    
+#     assert len(none_priority_groups) == 0, (
+#         "Found {} groups with None priority:\n"
+#         "{}".format(
+#             len(none_priority_groups), 
+#             "\n".join(none_priority_groups)
+#         )
+#     )
