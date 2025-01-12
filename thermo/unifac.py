@@ -940,9 +940,21 @@ DOUFSG[100] = UNIFAC_subgroup(100, 'CONHCH2', 47, 'CONR', 1.5, 1.08,
 DOUFSG[101] = UNIFAC_subgroup(101, 'AM(CH3)2', 48, 'CONR2', 2.4748, 1.9643, atoms=UFSG[97].atoms, bonds=UFSG[97].bonds, smarts=UFSG[97].smarts)
 DOUFSG[102] = UNIFAC_subgroup(102, 'AMCH3CH2', 48, 'CONR2', 2.2739, 1.5754, atoms=UFSG[98].atoms, bonds=UFSG[98].bonds, smarts=UFSG[98].smarts)
 DOUFSG[103] = UNIFAC_subgroup(103, 'AM(CH2)2', 48, 'CONR2', 2.0767, 1.1866, atoms=UFSG[99].atoms, bonds=UFSG[99].bonds, smarts=UFSG[99].smarts)
-DOUFSG[104] = UNIFAC_subgroup(104, 'AC2H2S', 52, 'ACS', 1.7943, 1.34)
-DOUFSG[105] = UNIFAC_subgroup(105, 'AC2HS', 52, 'ACS', 1.6282, 1.06)
-DOUFSG[106] = UNIFAC_subgroup(106, 'AC2S', 52, 'ACS', 1.4621, 0.78)
+DOUFSG[104] = UNIFAC_subgroup(104, 'AC2H2S', 52, 'ACS', 1.7943, 1.34,
+                             atoms={'C': 2, 'H': 2, 'S': 1},
+                             bonds={AROMATIC_BOND: 3},
+                             smarts='[cX3;H1][sX2][cX3;H1]')
+
+DOUFSG[105] = UNIFAC_subgroup(105, 'AC2HS', 52, 'ACS', 1.6282, 1.06,
+                             atoms={'C': 2, 'H': 1, 'S': 1},
+                             bonds={AROMATIC_BOND: 3},
+                             smarts='[cX3;H1][sX2][cX3;H0]')
+
+DOUFSG[106] = UNIFAC_subgroup(106, 'AC2S', 52, 'ACS', 1.4621, 0.78,
+                             atoms={'C': 2, 'S': 1},
+                             bonds={AROMATIC_BOND: 3},
+                             smarts='[cX3;H0][sX2][cX3;H0]')
+                             
 DOUFSG[107] = UNIFAC_subgroup(107, 'H2COCH', 53, 'EPOXIDES', 1.3601, 1.8031)
 DOUFSG[108] = UNIFAC_subgroup(108, 'COCH', 53, 'EPOXIDES', 0.683, 0.3418)
 DOUFSG[109] = UNIFAC_subgroup(109, 'HCOCH', 53, 'EPOXIDES', 0.9104, 0.6538)

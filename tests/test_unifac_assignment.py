@@ -1054,6 +1054,24 @@ def test_DOUFSG_group_detection():
     assert assignment == {103: 1, 1: 3}
     assert success
 
+    # Test thiophene
+    rdkitmol = Chemical('thiophene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert success
+    assert assignment == {9: 2, 104: 1}  # 2 ACH groups and 1 AC2H2S
+    
+    # Test 2-methylthiophene
+    rdkitmol = Chemical('2-methylthiophene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert success
+    assert assignment == {1: 1, 9: 2, 105: 1}  # 1 CH3, 2 ACH, and 1 AC2HS
+    
+    # Test 2,5-dimethylthiophene
+    rdkitmol = Chemical('2,5-dimethylthiophene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=DOUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert success
+    assert assignment == {1: 2, 9: 2, 106: 1}  # 2 CH3, 2 ACH, and 1 AC2S
+
 def test_DOUFSG_smarts_assigned_to_all_groups():
     none_priority_groups = [
         "Group {} ({})".format(i.group_id, i.group)
