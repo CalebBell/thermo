@@ -970,8 +970,16 @@ DOUFSG[109] = UNIFAC_subgroup(109, 'HCOCH', 53, 'EPOXIDES', 0.9104, 0.6538,
                              bonds={SINGLE_BOND: 3},
                              smarts='[CX4H1]1[CX4H1][OX2H0]1')  # Example: 2,3-Epoxybutane
 
-DOUFSG[110] = UNIFAC_subgroup(110, '(CH2)2SU', 56, 'SULFONE', 2.687, 2.12)
-DOUFSG[111] = UNIFAC_subgroup(111, 'CH2SUCH', 56, 'SULFONE', 2.46, 1.808)
+DOUFSG[110] = UNIFAC_subgroup(110, '(CH2)2SU', 56, 'SULFONE', 2.687, 2.12,
+                             atoms=UFSG[118].atoms,
+                             bonds=UFSG[118].bonds,
+                             smarts=UFSG[118].smarts)
+
+DOUFSG[111] = UNIFAC_subgroup(111, 'CH2SUCH', 56, 'SULFONE', 2.46, 1.808,
+                             atoms=UFSG[119].atoms,
+                             bonds=UFSG[119].bonds,
+                             smarts=UFSG[119].smarts)
+
 DOUFSG[112] = UNIFAC_subgroup(112, '(CH3)2CB', 55, 'CARBONAT', 2.42, 2.4976)
 DOUFSG[113] = UNIFAC_subgroup(113, '(CH2)2CB', 55, 'CARBONAT', 2.42, 2.0018)
 DOUFSG[114] = UNIFAC_subgroup(114, 'CH2CH3CB', 55, 'CARBONAT', 2.42, 2.2497)
