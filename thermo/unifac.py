@@ -1513,9 +1513,15 @@ NISTUFSG[38] = UNIFAC_subgroup(38, 'AC2HN', 18, 'Pyridine', 1.2393, 0.633,
                               atoms=DOUFSG[38].atoms, bonds=DOUFSG[38].bonds, smarts=DOUFSG[38].smarts)  # Two aromatic carbons with 1H and pyridine N
 NISTUFSG[39] = UNIFAC_subgroup(39, 'AC2N', 18, 'Pyridine', 1.0731, 0.353,
                               atoms=DOUFSG[39].atoms, bonds=DOUFSG[39].bonds, smarts=DOUFSG[39].smarts)  # Two aromatic carbons with no H and pyridine N
-NISTUFSG[196] = UNIFAC_subgroup(196, 'AC2H2NH', 94, 'Pyrrole', 1.325, 0.752)
-NISTUFSG[197] = UNIFAC_subgroup(197, 'AC2HNH', 94, 'Pyrrole', 1.0976, 0.44)
-NISTUFSG[198] = UNIFAC_subgroup(198, 'AC2NH', 94, 'Pyrrole', 0.8701, 0.212)
+NISTUFSG[196] = UNIFAC_subgroup(196, 'AC2H2NH', 94, 'Pyrrole', 1.325, 0.752, priority=11234,
+                               atoms={'C': 2, 'H': 3, 'N': 1}, bonds={AROMATIC_BOND: 2},
+                               smarts='[cX3H1][nX3H1][cX3H1]')  # Two aromatic CH next to pyrrole NH
+NISTUFSG[197] = UNIFAC_subgroup(197, 'AC2HNH', 94, 'Pyrrole', 1.0976, 0.44, priority=11235,
+                               atoms={'C': 2, 'H': 2, 'N': 1}, bonds={AROMATIC_BOND: 2},
+                               smarts='[cX3H0][nX3H1][cX3H1]')  # One aromatic CH and one substituted C next to pyrrole NH
+NISTUFSG[198] = UNIFAC_subgroup(198, 'AC2NH', 94, 'Pyrrole', 0.8701, 0.212, priority=11236,
+                               atoms={'C': 2, 'H': 1, 'N': 1}, bonds={AROMATIC_BOND: 2},
+                               smarts='[cX3H0][nX3H1][cX3H0]')  # Two substituted aromatic carbons next to pyrrole NH
 NISTUFSG[40] = UNIFAC_subgroup(40, 'CH3CN', 19, 'CCN', 1.5575, 1.5193)
 NISTUFSG[41] = UNIFAC_subgroup(41, 'CH2CN', 19, 'CCN', 1.5575, 1.1666)
 NISTUFSG[303] = UNIFAC_subgroup(303, 'CHCN', 19, 'CCN', 1.5575, 1.1666)

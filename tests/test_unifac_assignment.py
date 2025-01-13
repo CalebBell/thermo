@@ -1405,3 +1405,26 @@ def test_NISTUFSG_aromatic_amines():
     assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
     assert assignment == {9: 5, 307: 1, 1: 2}  # 5 ACH, 1 ACN, 2 CH3
     assert success
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_pyrroles():
+    # Test pyrrole
+    rdkitmol = Chemical('pyrrole').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {196: 1, 9: 2}  # 1 AC2H2NH, 2 ACH
+    assert success
+
+    # Test 2-methylpyrrole
+    rdkitmol = Chemical('2-methylpyrrole').rdkitmol  # 
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {197: 1, 9: 2, 1: 1}  # 1 AC2HNH, 2 ACH, 1 CH3
+    assert success
+
+    # Test claimed to be for 2,3-dimethylpyrrole but
+    # https://pubchem.ncbi.nlm.nih.gov/compound/2_5-Dimethyl-1H-pyrrole looks like the correct structure for the group so we use it
+    rdkitmol = Chemical('625-84-3').rdkitmol  # 
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {198: 1, 9: 2, 1: 2}  # 1 AC2NH, 2 ACH, 2 CH3
+    assert success
