@@ -1390,3 +1390,18 @@ def test_NISTUFSG_ketones():
     assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
     assert assignment == {301: 1, 1: 3, 2: 1}  # 1 CHCO, 3 CH3, 1 CH2
     assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_aromatic_amines():
+    # Test ACNH group
+    rdkitmol = Chemical('N-methylaniline').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {9: 5, 306: 1, 1: 1}  # 5 ACH, 1 ACNH, 1 CH3
+    assert success
+
+    # Test ACN group 
+    rdkitmol = Chemical('N,N-dimethylaniline').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {9: 5, 307: 1, 1: 2}  # 5 ACH, 1 ACN, 2 CH3
+    assert success

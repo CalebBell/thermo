@@ -1471,25 +1471,43 @@ NISTUFSG[308] = UNIFAC_subgroup(308, 'HCHO', 10, 'CHO', 0.7173, 0.771,
                                smarts='[CX3;H2]=O')  # Formaldehyde specifically
 NISTUFSG[21] = UNIFAC_subgroup(21, 'CH3COO', 11, 'CCOO', 1.27, 1.6286,
                               atoms=UFSG[21].atoms, bonds=UFSG[21].bonds, smarts=UFSG[21].smarts)
-
 NISTUFSG[22] = UNIFAC_subgroup(22, 'CH2COO', 11, 'CCOO', 1.27, 1.4228,
                               atoms=UFSG[22].atoms, bonds=UFSG[22].bonds, smarts=UFSG[22].smarts)
-NISTUFSG[23] = UNIFAC_subgroup(23, 'HCOO', 12, 'HCOO', 1.9, 1.8)
-NISTUFSG[24] = UNIFAC_subgroup(24, 'CH3O', 13, 'CH2O', 1.1434, 1.6022)
-NISTUFSG[25] = UNIFAC_subgroup(25, 'CH2O', 13, 'CH2O', 1.1434, 1.2495)
-NISTUFSG[26] = UNIFAC_subgroup(26, 'CHO', 13, 'CH2O', 1.1434, 0.8968)
-NISTUFSG[28] = UNIFAC_subgroup(28, 'CH3NH2', 14, 'CNH2', 1.6607, 1.6904)
-NISTUFSG[29] = UNIFAC_subgroup(29, 'CH2NH2', 14, 'CNH2', 1.6607, 1.3377)
-NISTUFSG[30] = UNIFAC_subgroup(30, 'CHNH2', 14, 'CNH2', 1.6607, 0.985)
-NISTUFSG[85] = UNIFAC_subgroup(85, 'CNH2', 14, 'CNH2', 1.6607, 0.985)
-NISTUFSG[31] = UNIFAC_subgroup(31, 'CH3NH', 15, 'CNH', 1.368, 1.4332)
-NISTUFSG[32] = UNIFAC_subgroup(32, 'CH2NH', 15, 'CNH', 1.368, 1.0805)
-NISTUFSG[33] = UNIFAC_subgroup(33, 'CHNH', 15, 'CNH', 1.368, 0.7278)
-NISTUFSG[34] = UNIFAC_subgroup(34, 'CH3N', 16, '(C)3N', 1.0746, 1.176)
-NISTUFSG[35] = UNIFAC_subgroup(35, 'CH2N', 16, '(C)3N', 1.0746, 0.824)
-NISTUFSG[36] = UNIFAC_subgroup(36, 'ACNH2', 17, 'ACNH2', 1.1849, 0.8067)
-NISTUFSG[306] = UNIFAC_subgroup(306, 'ACNH', 17, 'ACNH2', 1.1849, 0.732)
-NISTUFSG[307] = UNIFAC_subgroup(307, 'ACN', 17, 'ACNH2', 1.1849, 0.61)
+NISTUFSG[23] = UNIFAC_subgroup(23, 'HCOO', 12, 'HCOO', 1.9, 1.8,
+                              atoms=UFSG[23].atoms, bonds=UFSG[23].bonds, smarts=UFSG[23].smarts)
+NISTUFSG[24] = UNIFAC_subgroup(24, 'CH3O', 13, 'CH2O', 1.1434, 1.6022,
+                              atoms=UFSG[24].atoms, bonds=UFSG[24].bonds, smarts=UFSG[24].smarts)
+NISTUFSG[25] = UNIFAC_subgroup(25, 'CH2O', 13, 'CH2O', 1.1434, 1.2495,
+                              atoms=UFSG[25].atoms, bonds=UFSG[25].bonds, smarts=UFSG[25].smarts)
+NISTUFSG[26] = UNIFAC_subgroup(26, 'CHO', 13, 'CH2O', 1.1434, 0.8968,
+                              atoms=UFSG[26].atoms, bonds=UFSG[26].bonds, smarts=UFSG[26].smarts)
+NISTUFSG[28] = UNIFAC_subgroup(28, 'CH3NH2', 14, 'CNH2', 1.6607, 1.6904,
+                              atoms=UFSG[28].atoms, bonds=UFSG[28].bonds, smarts=UFSG[28].smarts)
+NISTUFSG[29] = UNIFAC_subgroup(29, 'CH2NH2', 14, 'CNH2', 1.6607, 1.3377,
+                              atoms=UFSG[29].atoms, bonds=UFSG[29].bonds, smarts=UFSG[29].smarts)
+NISTUFSG[30] = UNIFAC_subgroup(30, 'CHNH2', 14, 'CNH2', 1.6607, 0.985,
+                              atoms=UFSG[30].atoms, bonds=UFSG[30].bonds, smarts=UFSG[30].smarts)
+NISTUFSG[85] = UNIFAC_subgroup(85, 'CNH2', 14, 'CNH2', 1.6607, 0.985,
+                              atoms=DOUFSG[85].atoms, bonds=DOUFSG[85].bonds, smarts=DOUFSG[85].smarts)
+NISTUFSG[31] = UNIFAC_subgroup(31, 'CH3NH', 15, 'CNH', 1.368, 1.4332,
+                             atoms=UFSG[31].atoms, bonds=UFSG[31].bonds, smarts=UFSG[31].smarts)
+NISTUFSG[32] = UNIFAC_subgroup(32, 'CH2NH', 15, 'CNH', 1.368, 1.0805,
+                             atoms=UFSG[32].atoms, bonds=UFSG[32].bonds, smarts=UFSG[32].smarts)
+NISTUFSG[33] = UNIFAC_subgroup(33, 'CHNH', 15, 'CNH', 1.368, 0.7278,
+                             atoms=UFSG[33].atoms, bonds=UFSG[33].bonds, smarts=UFSG[33].smarts)
+NISTUFSG[34] = UNIFAC_subgroup(34, 'CH3N', 16, '(C)3N', 1.0746, 1.176,
+                             atoms=UFSG[34].atoms, bonds=UFSG[34].bonds, smarts=UFSG[34].smarts)
+NISTUFSG[35] = UNIFAC_subgroup(35, 'CH2N', 16, '(C)3N', 1.0746, 0.824,
+                             atoms=UFSG[35].atoms, bonds=UFSG[35].bonds, smarts=UFSG[35].smarts)
+NISTUFSG[36] = UNIFAC_subgroup(36, 'ACNH2', 17, 'ACNH2', 1.1849, 0.8067,
+                             atoms=UFSG[36].atoms, bonds=UFSG[36].bonds, smarts=UFSG[36].smarts)
+NISTUFSG[306] = UNIFAC_subgroup(306, 'ACNH', 17, 'ACNH2', 1.1849, 0.732,
+                               atoms={'C': 1, 'N': 1, 'H': 1}, bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1},
+                               smarts='[cX3][NX3;H1]')  # Aromatic carbon connected to NH group
+
+NISTUFSG[307] = UNIFAC_subgroup(307, 'ACN', 17, 'ACNH2', 1.1849, 0.61,
+                               atoms={'C': 1, 'N': 1}, bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1},
+                               smarts='[cX3][NX3;H0]')  # Aromatic carbon connected to N with no hydrogens
 NISTUFSG[37] = UNIFAC_subgroup(37, 'AC2H2N', 18, 'Pyridine', 1.4578, 0.9022)
 NISTUFSG[38] = UNIFAC_subgroup(38, 'AC2HN', 18, 'Pyridine', 1.2393, 0.633)
 NISTUFSG[39] = UNIFAC_subgroup(39, 'AC2N', 18, 'Pyridine', 1.0731, 0.353)
