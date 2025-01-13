@@ -29,7 +29,7 @@ from thermo import Chemical
 from chemicals.identifiers import search_chemical
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
 from thermo.unifac import *
-from thermo.unifac import DOUFSG, UNIFAC_SUBGROUPS, LUFSG_SUBGROUPS, DOUFSG_SUBGROUPS, PSRK_SUBGROUPS, UNIFAC_LLE_SUBGROUPS, VTPRSG_SUBGROUPS
+from thermo.unifac import DOUFSG, UNIFAC_SUBGROUPS, NISTUFSG_SUBGROUPS, LUFSG_SUBGROUPS, DOUFSG_SUBGROUPS, PSRK_SUBGROUPS, UNIFAC_LLE_SUBGROUPS, VTPRSG_SUBGROUPS
 
 try:
     import rdkit
@@ -1369,3 +1369,24 @@ def test_VTPR_smarts_assigned_to_all_groups():
             "\n".join(none_priority_groups)
         )
     )
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_ketones():
+    # Test HCHO group with formaldehyde
+    rdkitmol = Chemical('formaldehyde').rdkitmol  # formaldehyde
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {308: 1}  # 1 HCHO
+    assert success
+
+    # Test CCO group with methyl tert-butyl ketone
+    rdkitmol = Chemical('methyl tert-butyl ketone').rdkitmol  # methyl tert-butyl ketone
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {302: 1, 1: 4}  # 1 CCO, 4 CH3
+    assert success
+
+    # Test CHCO group with ethyl isopropyl ketone
+    rdkitmol = Chemical('ethyl isopropyl ketone').rdkitmol  # ethyl isopropyl ketone
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {301: 1, 1: 3, 2: 1}  # 1 CHCO, 3 CH3, 1 CH2
+    assert success

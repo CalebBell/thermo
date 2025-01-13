@@ -1458,12 +1458,22 @@ NISTUFSG[18] = UNIFAC_subgroup(18, 'CH3CO', 9, 'CH2CO', 1.7048, 1.67,
                               atoms=UFSG[18].atoms, bonds=UFSG[18].bonds, smarts=UFSG[18].smarts)
 NISTUFSG[19] = UNIFAC_subgroup(19, 'CH2CO', 9, 'CH2CO', 1.7048, 1.5542,
                               atoms=UFSG[19].atoms, bonds=UFSG[19].bonds, smarts=UFSG[19].smarts)
-NISTUFSG[301] = UNIFAC_subgroup(301, 'CHCO', 9, 'CH2CO', 1.7048, 1.5542)
-NISTUFSG[302] = UNIFAC_subgroup(302, 'CCO', 9, 'CH2CO', 1.7048, 1.5542)
-NISTUFSG[20] = UNIFAC_subgroup(20, 'CHO', 10, 'CHO', 0.7173, 0.771)
-NISTUFSG[308] = UNIFAC_subgroup(308, 'HCHO', 10, 'CHO', 0.7173, 0.771)
-NISTUFSG[21] = UNIFAC_subgroup(21, 'CH3COO', 11, 'CCOO', 1.27, 1.6286)
-NISTUFSG[22] = UNIFAC_subgroup(22, 'CH2COO', 11, 'CCOO', 1.27, 1.4228)
+NISTUFSG[301] = UNIFAC_subgroup(301, 'CHCO', 9, 'CH2CO', 1.7048, 1.5542, priority=10000,
+                               atoms={'C': 2, 'H': 1, 'O': 1}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
+                               smarts='[CX4;H1][CX3;H0]=O')  # CH group connected to ketone
+NISTUFSG[302] = UNIFAC_subgroup(302, 'CCO', 9, 'CH2CO', 1.7048, 1.5542, priority=10005,
+                               atoms={'C': 2, 'O': 1}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
+                               smarts='[CX4;H0][CX3;H0]=O')  # Quaternary carbon connected to ketone
+NISTUFSG[20] = UNIFAC_subgroup(20, 'CHO', 10, 'CHO', 0.7173, 0.771,
+                              atoms=UFSG[20].atoms, bonds=UFSG[20].bonds, smarts=UFSG[20].smarts)
+NISTUFSG[308] = UNIFAC_subgroup(308, 'HCHO', 10, 'CHO', 0.7173, 0.771,
+                               atoms={'C': 1, 'H': 2, 'O': 1}, bonds={DOUBLE_BOND: 1},
+                               smarts='[CX3;H2]=O')  # Formaldehyde specifically
+NISTUFSG[21] = UNIFAC_subgroup(21, 'CH3COO', 11, 'CCOO', 1.27, 1.6286,
+                              atoms=UFSG[21].atoms, bonds=UFSG[21].bonds, smarts=UFSG[21].smarts)
+
+NISTUFSG[22] = UNIFAC_subgroup(22, 'CH2COO', 11, 'CCOO', 1.27, 1.4228,
+                              atoms=UFSG[22].atoms, bonds=UFSG[22].bonds, smarts=UFSG[22].smarts)
 NISTUFSG[23] = UNIFAC_subgroup(23, 'HCOO', 12, 'HCOO', 1.9, 1.8)
 NISTUFSG[24] = UNIFAC_subgroup(24, 'CH3O', 13, 'CH2O', 1.1434, 1.6022)
 NISTUFSG[25] = UNIFAC_subgroup(25, 'CH2O', 13, 'CH2O', 1.1434, 1.2495)
