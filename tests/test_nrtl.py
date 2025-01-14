@@ -668,3 +668,43 @@ def test_NRTL_one_component():
 def test_NRTL_can_return_zero_may_need_lngamma_call():
     obj = NRTL(T=8, xs=[0.999999, 2.5e-07, 2.5e-07, 2.5e-07, 2.5e-07], tau_as=[[0, -5.1549, 0, 0, 0], [5.8547, 0, -0.40926, 0, 0], [0, -0.39036, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], tau_bs=[[0, 2270.62, 284.966, 0, 0], [229.497, 0, 1479.46, 0, 0], [-216.256, 447.003, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], alpha_cs=[[0, 0.2, 0.3, 0, 0], [0.2, 0, 0.46, 0, 0], [0.3, 0.46, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]])
     assert obj.gammas()[2] == 0
+
+
+
+def test_NRTL_missing_interaction_parameters():
+    # Test Case 1: Everything Present
+    alphas = [[0, 0.3, 0.3], [0.3, 0, 0.3], [0.3, 0.3, 0]]
+    taus = [[0, 1, 1], [1, 0, 1], [1, 1, 0]]
+    GE = NRTL(T=300, xs=[0.2, 0.5, 0.3], tau_bs=taus, alpha_cs=alphas)
+    assert GE.missing_interaction_parameters() == []
+
+    # Test Case 2: One Missing Parameter (Symmetric)
+    alphas = [[0, 0.3, 0.3], [0.3, 0, 0.3], [0.3, 0.3, 0]]
+    taus = [[0, 1, 1], [1, 0, 0], [1, 0, 0]]
+    GE = NRTL(T=300, xs=[0.2, 0.5, 0.3], tau_bs=taus, alpha_cs=alphas)
+    assert GE.missing_interaction_parameters() == [(1, 2), (2, 1)]
+
+    # Test Case 3: One Missing Parameter (Asymmetric)
+    alphas = [[0, 0.3, 0.3], [0.3, 0, 0.3], [0.3, 0.3, 0]]
+    taus = [[0, 1, 1], [1, 0, 0], [1, 1, 0]]
+    GE = NRTL(T=300, xs=[0.2, 0.5, 0.3], tau_bs=taus, alpha_cs=alphas)
+    assert GE.missing_interaction_parameters() == [(1, 2)]
+
+    # Test Case 4: 30% Missing Parameters (5 Compounds, Unique Alpha and Tau)
+    alphas = [
+        [0.0, 0.1, 0.2, 0.3, 0.4],
+        [0.1, 0.0, 0.5, 0.6, 0.7],
+        [0.2, 0.5, 0.0, 0.8, 0.9],
+        [0.3, 0.6, 0.8, 0.0, 1.0],
+        [0.4, 0.7, 0.9, 1.0, 0.0]
+    ]
+    taus = [
+        [0.0, 1.0, 2.0, 3.0, 4.0],
+        [5.0, 0.0, 6.0, 7.0, 0.0],  # Missing (1,4)
+        [8.0, 9.0, 0.0, 0.0, 10.0],  # Missing (2,3)
+        [11.0, 12.0, 13.0, 0.0, 14.0],
+        [0.0, 15.0, 16.0, 0.0, 0.0]  # Missing (0,4) and (3,4)
+    ]
+    GE = NRTL(T=300, xs=[0.2] * 5, tau_bs=taus, alpha_cs=alphas)
+    expected_missing = [(1, 4), (2, 3), (4, 0), (4, 3)]
+    assert sorted(GE.missing_interaction_parameters()) == sorted(expected_missing)

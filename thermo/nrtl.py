@@ -99,6 +99,7 @@ def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas, vec0=Non
         gammas[i] = exp(tot)
     return gammas
 
+
 def nrtl_taus(T, N, A, B, E, F, G, H, taus=None):
 
     if taus is None:
@@ -844,6 +845,35 @@ class NRTL(GibbsExcess):
         self._gammas = nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas)
         return gammas
 
+    def missing_interaction_parameters(self):
+        r'''
+        Return a list of tuples (index_i, index_j) for each (i, j) pair where
+        the `tau` interaction parameters are zero.
+        This identifies missing parameters for the NRTL model.
+
+        Returns
+        -------
+        missing_params : list[tuple[int, int]]
+            List of tuples of the main group indices with missing interaction parameters, [-].
+        '''
+        missing_params = []
+
+        # Extract tau matrices
+        tau_matrices = [
+            self.tau_as, self.tau_bs, self.tau_es,
+            self.tau_fs, self.tau_gs, self.tau_hs
+        ]
+
+        for i in range(self.N):
+            for j in range(self.N):
+                if i != j:
+                    # Check if all tau coefficients are zero for this interaction (i, j)
+                    is_missing = all(tau_matrix[i][j] == 0.0 for tau_matrix in tau_matrices)
+
+                    if is_missing:
+                        missing_params.append((i, j))
+
+        return missing_params
 
     def taus(self):
         r'''Calculate and return the `tau` terms for the NRTL model for a

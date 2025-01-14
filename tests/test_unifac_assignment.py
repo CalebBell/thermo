@@ -1428,3 +1428,484 @@ def test_NISTUFSG_pyrroles():
     assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
     assert assignment == {198: 1, 9: 2, 1: 2}  # 1 AC2NH, 2 ACH, 2 CH3
     assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_nitriles():
+    # Test CHCN group
+    rdkitmol = Chemical('isobutyronitrile').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 2, 303: 1}  # 2 CH3, 1 CHCN
+    assert success
+
+    # Test CCN group
+    rdkitmol = Chemical('2,2-dimethylpropionitrile').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 3, 304: 1}  # 3 CH3, 1 CCN
+    assert success    
+
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_nitro():
+    # Test CNO2 group
+    rdkitmol = Chemical('2-methyl-2-nitropropane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 3, 305: 1}  # 3 CH3, 1 CNO2
+    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_thiols():
+    # Test CHSH group
+    rdkitmol = Chemical('2-propanethiol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 2, 192: 1}  # 2 CH3, 1 CHSH
+    assert success
+
+    # Test CSH group
+    rdkitmol = Chemical('tert-butanethiol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 3, 193: 1}  # 3 CH3, 1 CSH
+    assert success
+
+    # Test ACSH group
+    rdkitmol = Chemical('benzenethiol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {9: 5, 194: 1}  # 5 ACH, 1 ACSH
+    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_diols():
+    # Test -CH(OH)-CH2(OH)
+    rdkitmol = Chemical('1,2-propylene glycol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 1, 205: 1}  # 1 CH3, 1 -CH(OH)-CH2(OH)
+    assert success
+
+    # Test -CH(OH)-CH(OH)-
+    rdkitmol = Chemical('2,3-butanediol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 2, 206: 1}  # 2 CH3, 1 -CH(OH)-CH(OH)-
+    assert success
+
+    # Test >C(OH)-CH2(OH)
+    rdkitmol = Chemical('2-methyl-1,2-propanediol').rdkitmol  # Note: changed from 2-methyl-2,3-propanediol as it seemed incorrect
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 2, 207: 1}  # 2 CH3, 1 >C(OH)-CH2(OH)
+    assert success
+
+    # Test >C(OH)-CH(OH)-
+    rdkitmol = Chemical('2-methyl-2,3-butanediol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 3, 208: 1}  # 3 CH3, 1 >C(OH)-CH(OH)-
+    assert success
+
+    # Test >C(OH)-C(OH)
+    rdkitmol = Chemical('2,3-dimethyl-2,3-butanediol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 4, 209: 1}  # 4 CH3, 1 >C(OH)-C(OH)
+    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_alkynes_and_acrylonitrile():
+    # Test CH#C group
+    rdkitmol = Chemical('1-hexyne').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 1, 2: 3, 65: 1}  # 1 CH3, 3 CH2, 1 CH#C
+    assert success
+
+    # Test C#C group
+    rdkitmol = Chemical('2-hexyne').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 2, 2: 2, 66: 1}  # 2 CH3, 2 CH2, 1 C#C
+    assert success
+
+    # Test Acrylonitrile group
+    rdkitmol = Chemical('acrylonitrile').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {68: 1}  # 1 acrylonitrile
+    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_cyclic_carbons():
+    # Test c-CH2 group
+    rdkitmol = Chemical('cyclohexane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {78: 6}  # 6 c-CH2
+    assert success
+
+    # Test c-CH group
+    rdkitmol = Chemical('methylcyclohexane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 1, 78: 5, 79: 1}  # 1 CH3, 5 c-CH2, 1 c-CH
+    assert success
+
+    # Test c-C group
+    rdkitmol = Chemical('1,1-dimethylcyclohexane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 2, 78: 5, 80: 1}  # 2 CH3, 5 c-CH2, 1 c-C
+    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_cyclic_ethers():
+    # Test CH2-O-CH2 group (tetrahydrofuran)
+    rdkitmol = Chemical('tetrahydrofuran').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {78: 2, 27: 1}  # 2 c-CH2, 1 c-CH2OCH2
+    assert success
+
+    # # Test CH2-O-[CH2-O]1/2 group (1,3-dioxane)
+    # rdkitmol = Chemical('1,3-dioxane').rdkitmol
+    # assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    # assert assignment == {78: 1, 83: 2}  # 1 c-CH2, 2 c-CH2O[CH2]1/2
+    # assert success
+
+    # # Test [O-CH2]1/2-O-[CH2-O]1/2 group (1,3,5-trioxane)
+    # rdkitmol = Chemical('1,3,5-trioxane').rdkitmol
+    # assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    # assert assignment == {84: 3}  # 3 c-[CH2]1/2-O-[CH2]1/2
+    # assert success
+
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_nitriles_and_isocyanates():
+    # Test ACCN group
+    rdkitmol = Chemical('benzonitrile').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {116: 1, 9: 5}  # 1 ACCN, 5 ACH
+    assert success
+
+    # Test CH3NCO group
+    rdkitmol = Chemical('methyl isocyanate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {117: 1}  # 1 CH3NCO
+    assert success
+
+    # Test CH2NCO group
+    rdkitmol = Chemical('ethyl isocyanate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {118: 1, 1: 1}  # 1 CH2NCO, 1 CH3
+    assert success
+
+    # Test CHNCO group
+    rdkitmol = Chemical('isopropyl isocyanate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {119: 1, 1: 2}  # 1 CHNCO, 2 CH3
+    assert success
+
+    # Test ACNCO group
+    rdkitmol = Chemical('phenyl isocyanate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {120: 1, 9: 5}  # 1 ACNCO, 5 ACH
+    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_anhydrides():
+    # Test COOCO group
+    rdkitmol = Chemical('acetic anhydride').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {121: 1, 1: 2}  # 1 COOCO, 2 CH3
+    assert success
+
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_carbonates():
+    # Test dimethyl carbonate
+    rdkitmol = Chemical('dimethyl carbonate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {112: 1}  # 1 (CH3O)2CO
+    assert success
+
+    # Test diethyl carbonate
+    rdkitmol = Chemical('diethyl carbonate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {113: 1, 1: 2}  # 1 (CH2O)2CO, 2 CH3
+    assert success
+
+    # Test ethyl methyl carbonate
+    rdkitmol = Chemical('ethyl methyl carbonate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {114: 1, 1: 1}  # 1 (CH3O)COOCH2, 1 CH3
+    assert success
+
+    # Test ethyl phenyl carbonate
+    rdkitmol = Chemical('ethyl phenyl carbonate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {199: 1, 9: 5, 1: 1}  # 1 (ACO)COOCH2, 5 ACH, 1 CH3
+    assert success
+
+    # Test diphenyl carbonate
+    rdkitmol = Chemical('diphenyl carbonate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {200: 1, 9: 10}  # 1 (ACO)CO(OAC), 10 ACH
+    assert success
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_sulfones():
+    # Test cyclic CH2-SO2-CH2
+    rdkitmol = Chemical('sulfolane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {110: 1, 78: 2}  # 1 CH2SuCH2, 2 cy-CH2
+    assert success
+
+    # Test cyclic CH2-SO2-CH
+    rdkitmol = Chemical('2,4-dimethylsulfolane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {111: 1, 1: 2, 78: 1, 79: 1}  # 1 CH2SuCH, 2 CH3, 1 cy-CH2, 1 cy-CH
+    assert success
+
+    # Test aromatic sulfone
+    rdkitmol = Chemical('methyl phenyl sulfone').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {122: 1, 9: 5, 1: 1}  # 1 (AC)SO2, 5 ACH, 1 CH3
+    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_aromatic_carbonyl():
+   # Test ACCHO group
+   rdkitmol = Chemical('benzaldehyde').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {123: 1, 9: 5}  # 1 ACCHO, 5 ACH
+   assert success
+
+   # Test ACCOOH group
+   rdkitmol = Chemical('benzoic acid').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {124: 1, 9: 5}  # 1 ACCOOH, 5 ACH
+   assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_phenyl_esters():
+    # Test phenyl acetate
+    rdkitmol = Chemical('phenyl acetate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {127: 1, 9: 5}  # 1 ACOOCH3, 5 ACH
+    assert success
+
+    # Test phenyl propionate
+    rdkitmol = Chemical('phenyl propionate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {128: 1, 9: 5, 1: 1}  # 1 ACCOOCH2, 5 ACH, 1 CH3
+    assert success
+
+    # Test phenyl isobutyrate
+    rdkitmol = Chemical('phenyl isobutyrate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {129: 1, 9: 5, 1: 2}  # 1 ACCOOCH, 5 ACH, 2 CH3
+    assert success
+
+    # Test phenyl tert-pentanoate 
+    rdkitmol = Chem.MolFromSmiles('CC(C)(C)C(=O)Oc1ccccc1')
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {130: 1, 9: 5, 1: 3}  # 1 ACCOOC, 5 ACH, 3 CH3
+    assert success
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_ethoxy_alcohols():
+    # Test -O-CH2-CH2-OH group
+    rdkitmol = Chemical('2-ethoxyethanol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {131: 1, 1: 1, 2: 1}  # 1 -O-CH2-CH2-OH, 1 CH3, 1 CH2
+    assert success
+
+    # Test -O-CH-CH2-OH group
+    rdkitmol = Chemical('2-ethoxy-1-propanol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {132: 1, 1: 2, 2: 1}  # 1 -O-CH-CH2-OH, 2 CH3, 1 CH2
+    assert success
+
+    # Test -O-CH2-CH-OH group
+    rdkitmol = Chemical('1-methoxy-2-propanol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {133: 1, 1: 2}  # 1 -O-CH2-CH-OH, 2 CH3
+    assert success
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_sulfides():
+   # Test CH3-S- group
+   rdkitmol = Chemical('dimethyl sulfide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {134: 1, 1: 1}  # 1 CH3-S-, 1 CH3
+   assert success
+
+   # Test -CH2-S- group
+   rdkitmol = Chemical('diethyl sulfide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {135: 1, 2: 1, 1: 2}  # 1 -CH2-S-, 1 CH2, 2 CH3
+   assert success
+
+   # Test >CH-S- group
+   rdkitmol = Chemical('diisopropyl sulfide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {136: 1, 3: 1, 1: 4}  # 1 >CH-S-, 1 CH, 4 CH3
+   assert success
+
+   # Test ->C-S- group
+   rdkitmol = Chemical('methyl tert-butyl sulfide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {137: 1, 1: 4}  # 1 ->C-S-, 4 CH3
+   assert success
+
+   # Test ACS group
+   rdkitmol = Chemical('methyl phenyl sulfide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {187: 1, 9: 5, 1: 1}  # 1 ACS, 5 ACH, 1 CH3
+   assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_lactams_lactones():
+   # Test c-CO-NH group
+   rdkitmol = Chemical('2-Azetidinone').rdkitmol  # propiolactam
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {125: 1, 78: 2}  # 1 c-CONH, 2 c-CH2
+   assert success
+
+   # Test c-CO-O group
+   rdkitmol = Chemical('beta-propiolactone').rdkitmol  # propiolactone
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {126: 1, 78: 2}  # 1 c-CO-O, 2 c-CH2
+   assert success
+
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_peroxides():
+   # Test CH3O-(O) group
+   rdkitmol = Chemical('dimethyl peroxide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {138: 1, 1: 1}  # 1 CH3-O-(O), 1 CH3
+   assert success
+
+   # Test CH2O-(O) group
+   rdkitmol = Chemical('diethyl peroxide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {139: 1, 1: 2, 2: 1}  # 1 CH2O-(O), 2 CH3, 1 CH2
+   assert success
+
+   # Test CHO-(O) group
+   rdkitmol = Chemical('isopropyl peroxide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {140: 1, 1: 4, 3: 1}  # 1 CHO-(O), 4 CH3, 1 CH
+   assert success
+
+   # Test CO-(O) group
+   rdkitmol = Chemical('di-tert-butyl peroxide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {141: 1, 1: 6, 4: 1}  # 1 CO-(O), 6 CH3, 1 C
+   assert success
+
+   # Test ACO-(O) group
+   rdkitmol = Chemical('acetyl benzoyl peroxide').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment  # 1 ACO-(O), C=O, Ph - unclear (Ph probably 6 ACH)
+   assert success
+
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_fluorochloromethanes():
+    # Test CFH group
+    rdkitmol = Chemical('2-fluoropropane').rdkitmol # fluoromethylene has radicals and doesn't match
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {143: 1, 1: 2}  # 1 CFH
+    assert success
+
+    # Test CFCl group
+    rdkitmol = Chemical('1-Chloro-1-fluoroethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {144: 1, 1: 1}  # 1 CFCl
+    assert success
+
+    # Test CFCl2 group with tetrachloro-1,2-difluoroethane
+    rdkitmol = Chemical('tetrachloro-1,2-difluoroethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {145: 2}  # 2 CFCl2 groups
+    assert success
+
+    # # Test CF2H group
+    rdkitmol = Chemical('1,1-difluoroethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {146: 1, 1: 1}  # 1 CF2H, 1 CH3
+    # difluoromethyl - {146: 1}  # 1 CF2H
+    assert success
+
+    # Test CF2ClH group
+    rdkitmol = Chemical('chlorodifluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {147: 1}  # 1 CF2ClH
+    assert success
+
+    # Test CF2Cl2 group
+    rdkitmol = Chemical('dichlorodifluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {148: 1}  # 1 CF2Cl2
+    assert success
+
+    # Test CF3H group
+    rdkitmol = Chemical('fluoroform').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {149: 1}  # 1 CF3H
+    assert success
+
+    # Test CF3Cl group
+    rdkitmol = Chemical('chlorotrifluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {150: 1}  # 1 CF3Cl
+    assert success
+
+    # Test CF4 group
+    rdkitmol = Chemical('tetrafluoromethane').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {151: 1}  # 1 CF4
+    assert success
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_glycerol():
+    # Test glycerol group
+    rdkitmol = Chemical('glycerol').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {204: 1}  # 1 glycerol molecule
+    assert success
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_cyclic_alkenes():
+   # Test c-CH=CH group
+   rdkitmol = Chemical('cyclohexene').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {201: 1, 78: 4}  # 1 c-CH=CH, 4 c-CH2
+   assert success
+
+   # Test c-CH=C group
+   rdkitmol = Chemical('1-methylcyclohexene').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {202: 1, 1: 1, 78: 4}  # 1 c-CH=C, 1 CH3, 4 c-CH2
+   assert success
+
+   # Test c-C=C group
+   rdkitmol = Chemical('1,2-dimethylcyclohexene').rdkitmol
+   assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+   assert assignment == {203: 1, 1: 2, 78: 4}  # 1 c-C=C, 2 CH3, 4 c-CH2
+   assert success

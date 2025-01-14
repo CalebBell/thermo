@@ -1170,3 +1170,42 @@ def test_recursive_use_of_cursors():
         t.join()
 
     assert not raised.is_set()
+
+
+def test_missing_interaction_parameters():
+    """Test for the missing_interaction_parameters method."""
+    kwargs = dict(
+        T=300.0,
+        xs=[0.1, 0.9],
+        rs=[0.92, 5.2730999999999995],
+        qs=[1.4, 4.748],
+        Qs=[0.848, 0.54, 1.2, 1.4],
+        vs=[[0, 1], [0, 5], [0, 1], [1, 0]],
+        psi_abc=(
+            [
+                [0.0, 0.0, 986.5, 1318.0],
+                [0.0, 0.0, 986.5, 1318.0],
+                [156.4, 156.4, 0.0, 353.5],
+                [300.0, 300.0, -229.1, 0.0],
+            ],
+            [
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+            ],
+            [
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+            ],
+        ),
+        version=0,
+    )
+
+    GE = UNIFAC(**kwargs)
+    missing_params = GE.missing_interaction_parameters()
+    expected_missing = [(0, 1), (1, 0)]
+    # Assert the results
+    assert missing_params == expected_missing, f"Expected {expected_missing}, got {missing_params}"
