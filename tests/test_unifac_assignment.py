@@ -1909,3 +1909,36 @@ def test_NISTUFSG_cyclic_alkenes():
    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
    assert assignment == {203: 1, 1: 2, 78: 4}  # 1 c-C=C, 2 CH3, 4 c-CH2
    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTUFSG_misc_groups():
+    # Test CH=NOH group 'propanal oxime'
+    rdkitmol = Chemical('627-39-4').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {309: 1, 1: 1, 2: 1}  # 1 CH=NOH, 1 CH3, 1 CH2
+    assert success
+
+    # Test C=NOH group
+    rdkitmol = Chemical('2-propanone oxime').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {177: 1, 1: 2}  # 1 C=NOH, 2 CH3
+    assert success
+
+    # Test ACCO group
+    rdkitmol = Chemical('acetophenone').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {178: 1, 9: 5, 1: 1}  # 1 ACCO, 5 ACH, 1 CH3
+    assert success
+
+    # Test C2Cl4 group
+    rdkitmol = Chemical('tetrachloroethene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {179: 1}  # 1 C2Cl4
+    assert success
+
+    # Test c-CHNH2 group
+    rdkitmol = Chemical('cyclohexylamine').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {180: 1, 78: 5}  # 1 c-CHNH2, 5 c-CH2
+    assert success

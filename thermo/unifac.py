@@ -1872,11 +1872,30 @@ NISTUFSG[173] = UNIFAC_subgroup(173, '>Si<', 80, 'SiH', 1.047, 0.41)
 NISTUFSG[174] = UNIFAC_subgroup(174, '-SiH2-O-', 81, 'SiO', 1.4838, 1.062)
 NISTUFSG[175] = UNIFAC_subgroup(175, '>SiH-O-', 81, 'SiO', 1.303, 0.764)
 NISTUFSG[176] = UNIFAC_subgroup(176, '->Si-O-', 81, 'SiO', 1.1044, 0.466)
-NISTUFSG[309] = UNIFAC_subgroup(312, 'CH=NOH', 82, 'Oxime', 1.499, 1.46)
-NISTUFSG[177] = UNIFAC_subgroup(177, 'C=NOH', 82, 'Oxime', 1.499, 1.46)
-NISTUFSG[178] = UNIFAC_subgroup(178, 'ACCO', 83, 'ACCO', 1.1365, 0.76)
-NISTUFSG[179] = UNIFAC_subgroup(179, 'C2Cl4', 86, 'C2Cl4', 3.381, 3.5845)
-NISTUFSG[180] = UNIFAC_subgroup(180, 'c-CHH2', 92, 'c-CHNH2', 1.2261, 1.096)
+# Oxime groups
+NISTUFSG[309] = UNIFAC_subgroup(309, 'CH=NOH', 82, 'Oxime', 1.499, 1.46,
+                               atoms={'C': 1, 'N': 1, 'O': 1, 'H': 2}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
+                               smarts='[CX3;H1]=[NX2][OX2;H1]')  # CH=N-OH pattern
+
+NISTUFSG[177] = UNIFAC_subgroup(177, 'C=NOH', 82, 'Oxime', 1.499, 1.46,
+                               atoms={'C': 1, 'N': 1, 'O': 1, 'H': 1}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
+                               smarts='[CX3;H0]=[NX2][OX2;H1]')  # C=N-OH pattern (no H on C)
+
+# Acetophenone group
+NISTUFSG[178] = UNIFAC_subgroup(178, 'ACCO', 83, 'ACCO', 1.1365, 0.76, priority=43532,
+                               atoms={'C': 2, 'O': 1}, bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1, DOUBLE_BOND: 1},
+                               smarts='[cX3][CX3](=O)')  # Aromatic-C(=O)-C pattern
+
+# Tetrachloroethene group
+NISTUFSG[179] = UNIFAC_subgroup(179, 'C2Cl4', 86, 'C2Cl4', 3.381, 3.5845,
+                               atoms={'C': 2, 'Cl': 4}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 4},
+                               smarts='[ClX1][CX3](Cl)=[CX3](Cl)Cl')  # Cl2C=CCl2 pattern
+
+# Cyclohexylamine CH-NH2 group
+NISTUFSG[180] = UNIFAC_subgroup(180, 'c-CHH2', 92, 'c-CHNH2', 1.2261, 1.096, priority=43531,
+                               atoms={'C': 1, 'H': 3, 'N': 1}, bonds={SINGLE_BOND: 2},
+                               smarts='[CX4;H1;R]([NX3;H2])')  # Cyclic CH with NH2 group
+
 NISTUFSG[201] = UNIFAC_subgroup(201, 'c-CH=CH', 95, 'c-C=C', 1.0897, 0.832,
                               atoms={'C': 2, 'H': 2}, bonds={DOUBLE_BOND: 1},
                               smarts='[CX3H1;R]=[CX3H1;R]')  # Ring double bond, both carbons have 1 H
