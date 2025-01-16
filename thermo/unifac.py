@@ -167,7 +167,7 @@ from fluids.numerics import exp, log
 from fluids.numerics import numpy as np
 
 from thermo.activity import GibbsExcess
-from thermo.group_contribution.group_contribution_base import str_group_assignment_to_dict, priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
+from thermo.group_contribution.group_contribution_base import BaseGroupContribution, str_group_assignment_to_dict, priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
 
 try:
     import threading
@@ -180,11 +180,9 @@ except (ImportError, AttributeError):
     pass
 
 
-class UNIFAC_subgroup:
-    __slots__ = ('group_id', 'group', 'main_group_id', 'main_group', 'R', 'Q',
-                 'smarts', 'smart_rdkit', 'hydrogen_from_smarts',
-                 'priority', 'atoms', 'bonds')
-
+class UNIFAC_subgroup(BaseGroupContribution):
+    __slots__ = BaseGroupContribution.__slots__ + ('main_group_id', 'main_group', 'R', 'Q')
+    
     def __repr__(self):   # pragma: no cover
         return f'<{self.group}>'
 

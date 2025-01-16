@@ -34,10 +34,10 @@ __all__ = ['PPR78_kij', 'PPR78_kijs', 'PPR78_GROUP_IDS', 'PPR78_INTERACTIONS', '
 
 from math import sqrt
 from fluids.constants import R
-from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
+from thermo.group_contribution.group_contribution_base import smarts_fragment_priority, BaseGroupContribution
 from thermo.group_contribution.group_contribution_base import priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
 
-class PPR78GroupContribution:
+class PPR78GroupContribution(BaseGroupContribution):
     __slots__ = ('group', 'group_id', 'atoms', 'bonds', 'smarts', 'priority', 'hydrogen_from_smarts', 'smart_rdkit')
     def __init__(self, group, atoms=None, bonds=None, smarts=None, priority=None, hydrogen_from_smarts=False, group_id=None):
         self.group = group

@@ -24,7 +24,8 @@ from chemicals.elements import simple_formula_parser
 
 __all__ = ['str_group_assignment_to_dict', 'group_assignment_to_str',
            'smarts_fragment_priority', 'smarts_fragment', 'priority_from_atoms',
-           'SINGLE_BOND', 'DOUBLE_BOND', 'TRIPLE_BOND', 'AROMATIC_BOND']
+           'SINGLE_BOND', 'DOUBLE_BOND', 'TRIPLE_BOND', 'AROMATIC_BOND',
+           'BaseGroupContribution']
 
 SINGLE_BOND = 'single'
 DOUBLE_BOND = 'double'
@@ -77,6 +78,23 @@ def load_rdkit_modules():
     except:
         if not loaded_rdkit: # pragma: no cover
             raise Exception(rdkit_missing)
+
+class BaseGroupContribution:
+    __slots__ = ('group', 'group_id', 'smarts', 'smart_rdkit', 
+                 'hydrogen_from_smarts', 'priority', 'atoms', 'bonds')
+    
+    def __init__(self, group, smarts=None, priority=None, atoms=None, 
+                 bonds=None, hydrogen_from_smarts=False, group_id=None):
+        self.group = group
+        self.smarts = smarts
+        self.priority = priority
+        self.atoms = atoms
+        self.bonds = bonds
+        self.hydrogen_from_smarts = hydrogen_from_smarts
+        self.smart_rdkit = None
+        self.group_id = group_id
+
+
 
 def group_assignment_to_str(counts, pair_separator=',', key_val_separator=':'):
     r'''Take a group contribution dictionary, and turn it into a string.

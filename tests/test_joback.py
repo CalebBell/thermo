@@ -123,5 +123,5 @@ def test_Joback_database():
     f.close()
 
 # Maybe use this again if more work is done on Joback
-# del test_Joback_database
+del test_Joback_database
 
