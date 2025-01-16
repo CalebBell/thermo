@@ -288,8 +288,10 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             # Calculate grid dimensions - still use 3 columns
             n_cols = 3
             n_rows = (total_matches + n_cols - 1) // n_cols
-            
-            fig, axes = plt.subplots(n_rows, n_cols)
+            # Calculate figure size - adjust these multipliers as needed
+            fig_width = n_cols * 2.2  # 5 inches per column
+            fig_height = n_rows * 2.2  # 5 inches per row
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(fig_width, fig_height))
             if n_rows * n_cols > 1:
                 axes = axes.flatten()
             else:

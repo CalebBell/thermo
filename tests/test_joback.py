@@ -27,7 +27,7 @@ from chemicals.identifiers import pubchem_db
 from fluids.numerics import assert_close, assert_close1d
 
 from thermo.group_contribution.joback import *
-from thermo.group_contribution.joback import J_BIGGS_JOBACK_SMARTS_id_dict
+from thermo.group_contribution.joback import JOBACK_GROUPS
 
 folder = os.path.join(os.path.dirname(__file__), 'Data')
 
@@ -102,17 +102,18 @@ def test_Joback_2_methylphenol_PGL6():
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_Joback_database():
+    from thermo.group_contribution.group_contribution_base import smarts_fragment
+    from thermo.group_contribution.joback import JOBACK_GROUPS_FOR_FRAGMENTATION
     pubchem_db.autoload_main_db()
 
     f = open(os.path.join(folder, 'joback_log.txt'), 'w')
     from rdkit import Chem
-    catalog = unifac_smarts = {i: Chem.MolFromSmarts(j) for i, j in J_BIGGS_JOBACK_SMARTS_id_dict.items()}
     lines = []
     for key in sorted(pubchem_db.CAS_index):
         chem_info = pubchem_db.CAS_index[key]
         try:
             mol = Chem.MolFromSmiles(chem_info.smiles)
-            parsed = smarts_fragment(rdkitmol=mol, catalog=catalog, deduplicate=False)
+            parsed = smarts_fragment(rdkitmol=mol, catalog=JOBACK_GROUPS_FOR_FRAGMENTATION, deduplicate=False)
             line = f'{parsed[2]}\t{chem_info.CASs}\t{chem_info.smiles}\t{parsed[0]}\n'
         except Exception as e:
             line = f'{chem_info.CASs}\t{chem_info.smiles}\t{e}\n'
@@ -122,5 +123,5 @@ def test_Joback_database():
     f.close()
 
 # Maybe use this again if more work is done on Joback
-del test_Joback_database
+# del test_Joback_database
 

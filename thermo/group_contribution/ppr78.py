@@ -37,240 +37,215 @@ from fluids.constants import R
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
 from thermo.group_contribution.group_contribution_base import priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
 
-GROUP_ID_COUNTER = 1
-
-
-
 class PPR78GroupContribution:
     __slots__ = ('group', 'group_id', 'atoms', 'bonds', 'smarts', 'priority', 'hydrogen_from_smarts', 'smart_rdkit')
-
-    def __init__(self, group, atoms=None, bonds=None, smarts=None, priority=None, hydrogen_from_smarts=False):
-        global GROUP_ID_COUNTER
+    def __init__(self, group, atoms=None, bonds=None, smarts=None, priority=None, hydrogen_from_smarts=False, group_id=None):
         self.group = group
         self.atoms = atoms
         self.bonds = bonds
         self.smarts = smarts
-        self.priority = priority
-        self.group_id = GROUP_ID_COUNTER
+        self.group_id = group_id
         self.hydrogen_from_smarts = hydrogen_from_smarts
-        self.smart_rdkit = None
-        GROUP_ID_COUNTER += 1
-
+        self.smart_rdkit = None # set as needed
+        if priority is None and atoms is not None:
+            self.priority = priority_from_atoms(atoms, bonds)
+        else:
+            self.priority = priority
     def __repr__(self):
         return f"GroupContribution(group={self.group!r}, atoms={self.atoms!r}, bonds={self.bonds!r})"
 
-PPR78_GROUPS_BY_ID = {}
 PPR78_GROUPS = {}
-# The order of these statements is sensitive
-PPR78_GROUPS['CH3'] = PPR78GroupContribution('CH3',  smarts='[CX4;H3]', atoms={'C': 1, 'H': 3}, bonds={})
-PPR78_GROUPS['CH2'] = PPR78GroupContribution('CH2', smarts='[CX4;H2]', atoms={'C': 1, 'H': 2}, bonds={})
-PPR78_GROUPS['CH'] = PPR78GroupContribution('CH', smarts='[CX4;H1]', atoms={'C': 1, 'H': 1}, bonds={})
-PPR78_GROUPS['C'] = PPR78GroupContribution('C', smarts='[CX4;H0]', atoms={'C': 1, 'H': 0}, bonds={})
+PPR78_GROUPS['CH3'] = PPR78GroupContribution('CH3',  smarts='[CX4;H3]', atoms={'C': 1, 'H': 3}, bonds={}, group_id=1)
+PPR78_GROUPS['CH2'] = PPR78GroupContribution('CH2', smarts='[CX4;H2]', atoms={'C': 1, 'H': 2}, bonds={}, group_id=2)
+PPR78_GROUPS['CH'] = PPR78GroupContribution('CH', smarts='[CX4;H1]', atoms={'C': 1, 'H': 1}, bonds={}, group_id=3)
+PPR78_GROUPS['C'] = PPR78GroupContribution('C', smarts='[CX4;H0]', atoms={'C': 1, 'H': 0}, bonds={}, group_id=4)
 # Specifically methane
-PPR78_GROUPS['CH4'] = PPR78GroupContribution('CH4', atoms={'C': 1, 'H': 4}, bonds={}, smarts='[CX4H4]')
+PPR78_GROUPS['CH4'] = PPR78GroupContribution('CH4', atoms={'C': 1, 'H': 4}, bonds={}, smarts='[CX4H4]', group_id=5)
 # Specifically ethane
-PPR78_GROUPS['C2H6'] = PPR78GroupContribution('C2H6', atoms={'C': 2, 'H': 6}, bonds={}, smarts='[CH3X4]-[CH3X4]')
+PPR78_GROUPS['C2H6'] = PPR78GroupContribution('C2H6', atoms={'C': 2, 'H': 6}, bonds={}, smarts='[CH3X4]-[CH3X4]', group_id=6)
 # messy ones, did some examples with all of these and they did make sense to me
-PPR78_GROUPS['CHaro'] = PPR78GroupContribution('CHaro', atoms={'C': 1, 'H': 1}, bonds={AROMATIC_BOND: 2}, smarts='[cH]')
-PPR78_GROUPS['Caro'] = PPR78GroupContribution('Caro', atoms={'C': 1}, bonds={AROMATIC_BOND: 2}, smarts='[c]')
-PPR78_GROUPS['Cfused_aromatic'] = PPR78GroupContribution('Cfused_aromatic', atoms={'C': 1}, bonds={AROMATIC_BOND: 3}, smarts='[cR2]', priority=10000)
-PPR78_GROUPS['CH2cyclic'] = PPR78GroupContribution('CH2cyclic', atoms={'C': 1, 'H': 2}, bonds={}, smarts='[CH2R]')
-PPR78_GROUPS['CHcyclic'] = PPR78GroupContribution('CHcyclic', atoms={'C': 1, 'H': 1}, bonds={}, smarts='[CHR]')
+PPR78_GROUPS['CHaro'] = PPR78GroupContribution('CHaro', atoms={'C': 1, 'H': 1}, bonds={AROMATIC_BOND: 2}, smarts='[cH]', group_id=7)
+PPR78_GROUPS['Caro'] = PPR78GroupContribution('Caro', atoms={'C': 1}, bonds={AROMATIC_BOND: 2}, smarts='[c]', group_id=8)
+PPR78_GROUPS['Cfused_aromatic'] = PPR78GroupContribution('Cfused_aromatic', atoms={'C': 1}, bonds={AROMATIC_BOND: 3}, smarts='[cR2]', priority=10000, group_id=9)
+PPR78_GROUPS['CH2cyclic'] = PPR78GroupContribution('CH2cyclic', atoms={'C': 1, 'H': 2}, bonds={}, smarts='[CH2R]', group_id=10)
+PPR78_GROUPS['CHcyclic'] = PPR78GroupContribution('CHcyclic', atoms={'C': 1, 'H': 1}, bonds={}, smarts='[CHR]', group_id=11)
 # CO2, N2, H2S from PSRK
-PPR78_GROUPS['CO2'] = PPR78GroupContribution('CO2', atoms={'C': 1, 'O': 2}, bonds={DOUBLE_BOND: 2}, smarts='[CX2H0](=[OX1H0])=[OX1H0]')
-PPR78_GROUPS['N2'] = PPR78GroupContribution('N2', atoms={'N': 2}, bonds={TRIPLE_BOND: 1}, smarts='N#N')
-PPR78_GROUPS['H2S'] = PPR78GroupContribution('H2S', atoms={'S': 1, 'H': 2}, bonds={}, smarts='[SH2]')
+PPR78_GROUPS['CO2'] = PPR78GroupContribution('CO2', atoms={'C': 1, 'O': 2}, bonds={DOUBLE_BOND: 2}, smarts='[CX2H0](=[OX1H0])=[OX1H0]', group_id=12)
+PPR78_GROUPS['N2'] = PPR78GroupContribution('N2', atoms={'N': 2}, bonds={TRIPLE_BOND: 1}, smarts='N#N', group_id=13)
+PPR78_GROUPS['H2S'] = PPR78GroupContribution('H2S', atoms={'S': 1, 'H': 2}, bonds={}, smarts='[SH2]', group_id=14)
+PPR78_GROUPS['SH'] = PPR78GroupContribution('SH', atoms={'S': 1, 'H': 1}, bonds={}, smarts='[S;H1]', group_id=15)
 
-PPR78_GROUPS['SH'] = PPR78GroupContribution('SH', atoms={'S': 1, 'H': 1}, bonds={}, smarts='[S;H1]')
-
-# Populate PPR78_GROUPS_BY_ID for easy lookup
-for group in PPR78_GROUPS.values():
-    if group.priority is None:
-        if group.atoms is not None:
-            group.priority = priority_from_atoms(group.atoms, group.bonds)
-    PPR78_GROUPS_BY_ID[group.group_id] = group
-
-
-GROUP_ID_COUNTER = 1
-EPPR78_GROUPS_BY_ID = {}
 EPPR78_GROUPS = {}
 # The order of these statements is sensitive
-EPPR78_GROUPS['CH3'] = PPR78GroupContribution('CH3',  smarts='[CX4;H3]', atoms={'C': 1, 'H': 3}, bonds={})
-EPPR78_GROUPS['CH2'] = PPR78GroupContribution('CH2', smarts='[CX4;H2]', atoms={'C': 1, 'H': 2}, bonds={})
-EPPR78_GROUPS['CH'] = PPR78GroupContribution('CH', smarts='[CX4;H1]', atoms={'C': 1, 'H': 1}, bonds={})
-EPPR78_GROUPS['C'] = PPR78GroupContribution('C', smarts='[CX4;H0]', atoms={'C': 1, 'H': 0}, bonds={})
-EPPR78_GROUPS['CH4'] = PPR78GroupContribution('CH4', atoms={'C': 1, 'H': 4}, bonds={}, smarts='[CX4H4]')
-EPPR78_GROUPS['C2H6'] = PPR78GroupContribution('C2H6', atoms={'C': 2, 'H': 6}, bonds={}, smarts='[CH3X4]-[CH3X4]')
-EPPR78_GROUPS['CHaro'] = PPR78GroupContribution('CHaro', atoms={'C': 1, 'H': 1}, bonds={AROMATIC_BOND: 2}, smarts='[cH]')
-EPPR78_GROUPS['Caro'] = PPR78GroupContribution('Caro', atoms={'C': 1}, bonds={AROMATIC_BOND: 2}, smarts='[c]')
+EPPR78_GROUPS['CH3'] = PPR78GroupContribution('CH3',  smarts='[CX4;H3]', atoms={'C': 1, 'H': 3}, bonds={}, group_id=1)
+EPPR78_GROUPS['CH2'] = PPR78GroupContribution('CH2', smarts='[CX4;H2]', atoms={'C': 1, 'H': 2}, bonds={}, group_id=2)
+EPPR78_GROUPS['CH'] = PPR78GroupContribution('CH', smarts='[CX4;H1]', atoms={'C': 1, 'H': 1}, bonds={}, group_id=3)
+EPPR78_GROUPS['C'] = PPR78GroupContribution('C', smarts='[CX4;H0]', atoms={'C': 1, 'H': 0}, bonds={}, group_id=4)
+EPPR78_GROUPS['CH4'] = PPR78GroupContribution('CH4', atoms={'C': 1, 'H': 4}, bonds={}, smarts='[CX4H4]', group_id=5)
+EPPR78_GROUPS['C2H6'] = PPR78GroupContribution('C2H6', atoms={'C': 2, 'H': 6}, bonds={}, smarts='[CH3X4]-[CH3X4]', group_id=6)
+EPPR78_GROUPS['CHaro'] = PPR78GroupContribution('CHaro', atoms={'C': 1, 'H': 1}, bonds={AROMATIC_BOND: 2}, smarts='[cH]', group_id=7)
+EPPR78_GROUPS['Caro'] = PPR78GroupContribution('Caro', atoms={'C': 1}, bonds={AROMATIC_BOND: 2}, smarts='[c]', group_id=8)
 EPPR78_GROUPS['Cfused_aromatic'] = PPR78GroupContribution('Cfused_aromatic', atoms={'C': 1}, bonds={AROMATIC_BOND: 3}, 
     smarts=[ #ACENAPHTHENE has 2 fused groups, FLUORANTHENE has 6, NAPHTHACENE, 6, and INDENE 0. FLUORENE is supposed to have 0, this finds 2
         '[c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a;$([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a]([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a]))]',
-    ], priority=10000)
-EPPR78_GROUPS['CH2cyclic'] = PPR78GroupContribution('CH2cyclic', atoms={'C': 1, 'H': 2}, bonds={}, smarts='[CH2R]')
-# CHcyclic is not also Ccyclic - major difference
-EPPR78_GROUPS['CHcyclic'] = PPR78GroupContribution('CHcyclic', atoms={'C': 1, 'H': 1}, bonds={}, smarts='[C;H1,H0;R]', hydrogen_from_smarts=True)
-EPPR78_GROUPS['CO2'] = PPR78GroupContribution('CO2', atoms={'C': 1, 'O': 2}, bonds={DOUBLE_BOND: 2}, smarts='[CX2H0](=[OX1H0])=[OX1H0]')
-EPPR78_GROUPS['N2'] = PPR78GroupContribution('N2', atoms={'N': 2}, bonds={TRIPLE_BOND: 1}, smarts='N#N')
-EPPR78_GROUPS['H2S'] = PPR78GroupContribution('H2S', atoms={'S': 1, 'H': 2}, bonds={}, smarts='[SH2]')
-EPPR78_GROUPS['SH'] = PPR78GroupContribution('SH', atoms={'S': 1, 'H': 1}, bonds={}, smarts='[S;H1]')
+    ], priority=10000, group_id=9)
+EPPR78_GROUPS['CH2cyclic'] = PPR78GroupContribution('CH2cyclic', atoms={'C': 1, 'H': 2}, bonds={}, smarts='[CH2R]', group_id=10)
+EPPR78_GROUPS['CHcyclic'] = PPR78GroupContribution('CHcyclic', atoms={'C': 1, 'H': 1}, bonds={}, smarts='[C;H1,H0;R]', hydrogen_from_smarts=True, group_id=11)
+EPPR78_GROUPS['CO2'] = PPR78GroupContribution('CO2', atoms={'C': 1, 'O': 2}, bonds={DOUBLE_BOND: 2}, smarts='[CX2H0](=[OX1H0])=[OX1H0]', group_id=12)
+EPPR78_GROUPS['N2'] = PPR78GroupContribution('N2', atoms={'N': 2}, bonds={TRIPLE_BOND: 1}, smarts='N#N', group_id=13)
+EPPR78_GROUPS['H2S'] = PPR78GroupContribution('H2S', atoms={'S': 1, 'H': 2}, bonds={}, smarts='[SH2]', group_id=14)
+EPPR78_GROUPS['SH'] = PPR78GroupContribution('SH', atoms={'S': 1, 'H': 1}, bonds={}, smarts='[S;H1]', group_id=15)
 
 # Water
 EPPR78_GROUPS['H2O'] = PPR78GroupContribution('H2O', 
     atoms={'O': 1, 'H': 2}, 
     bonds={}, 
-    smarts='[OH2]')
+    smarts='[OH2]', group_id=16)
 
 # Ethylene
 EPPR78_GROUPS['C2H4'] = PPR78GroupContribution('C2H4',
     atoms={'C': 2, 'H': 4}, 
     bonds={DOUBLE_BOND: 1}, priority=10000,
-    smarts='[CH2]=[CH2]')
+    smarts='[CH2]=[CH2]', group_id=17)
 
 # Combined alkenic CH2/CH group
 EPPR78_GROUPS['CH2CHalkenic'] = PPR78GroupContribution('CH2CHalkenic',
     atoms={'C': 1, 'H': 1},  # Average values
     bonds={DOUBLE_BOND: 1},  hydrogen_from_smarts=True,
     smarts=['[C;!R;H1,H2;$(C=[C])]'],
-    priority=1000)
+    priority=1000, group_id=18)
 
 # Alkenic carbon without hydrogen
 EPPR78_GROUPS['Calkenic'] = PPR78GroupContribution('Calkenic',
     atoms={'C': 1},
     bonds={DOUBLE_BOND: 1},
-    smarts='[C;!R;H0;$(C=[C])]')
+    smarts='[C;!R;H0;$(C=[C])]', group_id=19)
 
 # Combined cycloalkenic CH/C group
 EPPR78_GROUPS['CHCcycloalkenic'] = PPR78GroupContribution('CHCcycloalkenic',
     atoms={'C': 1, 'H': 0.5},  # Average values
     bonds={DOUBLE_BOND: 1}, hydrogen_from_smarts=True,
     smarts=['[C;R;H1,H0;$(C=[C])]'],
-    priority=5000)
+    priority=5000, group_id=20)
 
 # Hydrogen molecule
 EPPR78_GROUPS['H2'] = PPR78GroupContribution('H2',
     atoms={'H': 2},
     bonds={SINGLE_BOND: 1},
-    smarts='[H][H]', hydrogen_from_smarts=True)
+    smarts='[H][H]', hydrogen_from_smarts=True, group_id=21)
 
 # Fluorinated compounds
 EPPR78_GROUPS['C2F6'] = PPR78GroupContribution('C2F6',
     atoms={'C': 2, 'F': 6},
     bonds={SINGLE_BOND: 7},  # 1 C-C + 6 C-F
-    smarts='[C;X4;H0;F3]-[C;X4;H0;F3]')
+    smarts='[C;X4;H0;F3]-[C;X4;H0;F3]', group_id=22)
 
 EPPR78_GROUPS['CF3'] = PPR78GroupContribution('CF3',
     atoms={'C': 1, 'F': 3},
     bonds={},
-    smarts='[C;X4;H0;F3]')
+    smarts='[C;X4;H0;F3]', group_id=23)
 
 EPPR78_GROUPS['CF2'] = PPR78GroupContribution('CF2',
     atoms={'C': 1, 'F': 2},
     bonds={},
-    smarts='[C;X4;H0;F2]')
+    smarts='[C;X4;H0;F2]', group_id=24)
 
 # Combined fluorinated alkenic CF2/CF group
 EPPR78_GROUPS['CF2CFdouble'] = PPR78GroupContribution('CF2CFdouble',
     atoms={'C': 1, 'F': 1.5},  # Average values
     bonds={DOUBLE_BOND: 1},
     smarts=['[C;H0;F2]=[C]', '[C;H0;F1]=[C]'],
-    priority=1000)
+    priority=1000, group_id=25)
 
 # Partially fluorinated ethanes
 EPPR78_GROUPS['C2H4F2'] = PPR78GroupContribution('C2H4F2',
     atoms={'C': 2, 'H': 4, 'F': 2},
     bonds={SINGLE_BOND: 7},  # 1 C-C + 4 C-H + 2 C-F
-    smarts='[C;X4;H2;F1]-[C;X4;H2;F1]')
+    smarts='[C;X4;H2;F1]-[C;X4;H2;F1]', group_id=26)
 
 EPPR78_GROUPS['C2H2F4'] = PPR78GroupContribution('C2H2F4',
     atoms={'C': 2, 'H': 2, 'F': 4},
     bonds={SINGLE_BOND: 7},  # 1 C-C + 2 C-H + 4 C-F
-    smarts='[C;X4;H1;F2]-[C;X4;H1;F2]')
+    smarts='[C;X4;H1;F2]-[C;X4;H1;F2]', group_id=27)
 
 # Carbon monoxide
 EPPR78_GROUPS['CO'] = PPR78GroupContribution('CO',
     atoms={'C': 1, 'O': 1},
     bonds={TRIPLE_BOND: 1},
-    smarts='[C]#[O]')
+    smarts='[C]#[O]', group_id=28)
 
 # Noble gases
 EPPR78_GROUPS['He'] = PPR78GroupContribution('He',
     atoms={'He': 1},
     bonds={},
-    smarts='[He]')
+    smarts='[He]', group_id=29)
 
 EPPR78_GROUPS['Ar'] = PPR78GroupContribution('Ar',
     atoms={'Ar': 1},
     bonds={},
-    smarts='[Ar]')
+    smarts='[Ar]', group_id=30)
 
 # Sulfur dioxide
 EPPR78_GROUPS['SO2'] = PPR78GroupContribution('SO2',
     atoms={'S': 1, 'O': 2},
     bonds={DOUBLE_BOND: 2},
-    smarts='[SX4](=[OX1])(=[OX1])')
+    smarts='[SX4](=[OX1])(=[OX1])', group_id=31)
 
 # Oxygen molecule
 EPPR78_GROUPS['O2'] = PPR78GroupContribution('O2',
     atoms={'O': 2},
     bonds={DOUBLE_BOND: 1},
-    smarts='[O]=[O]')
+    smarts='[O]=[O]', group_id=32)
 
 # Nitric oxide
 EPPR78_GROUPS['NO'] = PPR78GroupContribution('NO',
     atoms={'N': 1, 'O': 1},
     bonds={DOUBLE_BOND: 1},
-    smarts='[N]=[O]')
+    smarts='[N]=[O]', group_id=33)
 
 # Carbonyl sulfide
 EPPR78_GROUPS['COS'] = PPR78GroupContribution('COS',
     atoms={'C': 1, 'O': 1, 'S': 1},
     bonds={DOUBLE_BOND: 2},
-    smarts='[O]=[C]=[S]')
+    smarts='[O]=[C]=[S]', group_id=34)
 
 # Ammonia
 EPPR78_GROUPS['NH3'] = PPR78GroupContribution('NH3',
     atoms={'N': 1, 'H': 3},
     bonds={},
-    smarts='[NH3]')
+    smarts='[NH3]', group_id=35)
 
 # Combined NO2/N2O4 group
 EPPR78_GROUPS['NO2N2O4'] = PPR78GroupContribution('NO2N2O4',
     atoms={'N': 1.5, 'O': 2},  # Average values
     bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
     smarts=['[N](=[O])[O]', '[N]([O])[O]-[N]([O])[O]'],
-    priority=1000)
+    priority=1000, group_id=36)
 
 # Nitrous oxide
 EPPR78_GROUPS['N2O'] = PPR78GroupContribution('N2O',
     atoms={'N': 2, 'O': 1},
     bonds={DOUBLE_BOND: 2},
-    smarts='[N]=[N]=[O]')
+    smarts='[N]=[N]=[O]', group_id=37)
 
 # Acetylene
 EPPR78_GROUPS['C2H2'] = PPR78GroupContribution('C2H2',
     atoms={'C': 2, 'H': 2},
     bonds={TRIPLE_BOND: 1},
-    smarts='[CH]#[CH]')
+    smarts='[CH]#[CH]', group_id=38)
 
 # Terminal acetylenic group
 EPPR78_GROUPS['HC≡C'] = PPR78GroupContribution('HC≡C',
     atoms={'C': 1, 'H': 1},
     bonds={TRIPLE_BOND: 1},
-    smarts='[CH]#[C]')
+    smarts='[CH]#[C]', group_id=39)
 
 # Internal acetylenic group
 EPPR78_GROUPS['C≡C'] = PPR78GroupContribution('C≡C',
     atoms={'C': 1},
     bonds={TRIPLE_BOND: 1},
-    smarts='[C]#[C]')
+    smarts='[C]#[C]', group_id=40)
 
-# Populate EPPR78_GROUPS_BY_ID for easy lookup
-for group in EPPR78_GROUPS.values():
-    if group.priority is None:
-        if group.atoms is not None:
-            group.priority = priority_from_atoms(group.atoms, group.bonds)
-    EPPR78_GROUPS_BY_ID[group.group_id] = group
 
 # format A, B value indexed by tuple of groups
 PPR78_INTERACTIONS = {}
@@ -399,15 +374,6 @@ PPR78_INTERACTIONS[(PPR78_GROUPS['N2'], PPR78_GROUPS['H2S'])] = (319.5, 550.1)
 # PPR78_INTERACTIONS[(PPR78_GROUPS['N2'], PPR78_GROUPS['SH'])] = (None, None)  # N.A.
 
 PPR78_INTERACTIONS[(PPR78_GROUPS['H2S'], PPR78_GROUPS['SH'])] = (-77.21, 156.1)
-
-
-
-PPR78_GROUP_IDS = [k.group_id for k in PPR78_GROUPS.values()]
-PPR78_GROUPS_LIST = list(PPR78_GROUPS.values())
-
-EPPR78_GROUP_IDS = [k.group_id for k in EPPR78_GROUPS.values()]
-EPPR78_GROUPS_LIST = list(EPPR78_GROUPS.values())
-
 
 EPPR78_INTERACTIONS = {}
 EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CH2'])] = (65.5, 105.7)
@@ -782,22 +748,24 @@ for interactions_dict, groups_dict in [(PPR78_INTERACTIONS, PPR78_GROUPS),
                 interactions_dict[key] = ZERO_PARAMETER
                 interactions_dict[reverse_key] = ZERO_PARAMETER
 
-PPR78_INTERACTIONS_BY_STR = {}
-for (group1, group2), value in PPR78_INTERACTIONS.items():
-    PPR78_INTERACTIONS_BY_STR[(group1.group, group2.group)] = value
+# Create group lookups
+PPR78_GROUPS_BY_ID = {group.group_id: group for group in PPR78_GROUPS.values()}
+EPPR78_GROUPS_BY_ID = {group.group_id: group for group in EPPR78_GROUPS.values()}
 
-EPPR78_INTERACTIONS_BY_STR = {}
-for (group1, group2), value in EPPR78_INTERACTIONS.items():
-    EPPR78_INTERACTIONS_BY_STR[(group1.group, group2.group)] = value
+# Create lists of groups and IDs
+PPR78_GROUP_IDS = [k.group_id for k in PPR78_GROUPS.values()]
+PPR78_GROUPS_LIST = list(PPR78_GROUPS.values())
+EPPR78_GROUP_IDS = [k.group_id for k in EPPR78_GROUPS.values()]
+EPPR78_GROUPS_LIST = list(EPPR78_GROUPS.values())
 
-PPR78_INTERACTIONS_BY_ID = {}
-for (group1, group2), value in PPR78_INTERACTIONS.items():
-    PPR78_INTERACTIONS_BY_ID[(group1.group_id, group2.group_id)] = value
+# Create interaction lookups by string and ID
+PPR78_INTERACTIONS_BY_STR = {(group1.group, group2.group): value for (group1, group2), value in PPR78_INTERACTIONS.items()}
+EPPR78_INTERACTIONS_BY_STR = {(group1.group, group2.group): value for (group1, group2), value in EPPR78_INTERACTIONS.items()}
 
-EPPR78_INTERACTIONS_BY_ID = {}
-for (group1, group2), value in EPPR78_INTERACTIONS.items():
-    EPPR78_INTERACTIONS_BY_ID[(group1.group_id, group2.group_id)] = value
-
+PPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value 
+                           for (group1, group2), value in PPR78_INTERACTIONS.items()}
+EPPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value 
+                            for (group1, group2), value in EPPR78_INTERACTIONS.items()}                    
 
 def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2, omega2, version='original', string=True):
     r'''Calculate binary interaction parameter kij(T) between two molecules using the PPR78 method.

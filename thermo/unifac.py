@@ -181,9 +181,9 @@ except (ImportError, AttributeError):
 
 
 class UNIFAC_subgroup:
-    __slots__ = ['group_id', 'group', 'main_group_id', 'main_group', 'R', 'Q',
+    __slots__ = ('group_id', 'group', 'main_group_id', 'main_group', 'R', 'Q',
                  'smarts', 'smart_rdkit', 'hydrogen_from_smarts',
-                 'priority', 'atoms', 'bonds']
+                 'priority', 'atoms', 'bonds')
 
     def __repr__(self):   # pragma: no cover
         return f'<{self.group}>'
@@ -197,12 +197,15 @@ class UNIFAC_subgroup:
         self.R = R
         self.Q = Q
         self.smarts = smarts
-        self.priority = priority
         self.atoms = atoms
         self.bonds = bonds
         self.smart_rdkit = None
         self.hydrogen_from_smarts = hydrogen_from_smarts
 
+        if priority is None and atoms is not None:
+            self.priority = priority_from_atoms(atoms, bonds)
+        else:
+            self.priority = priority
 
 
 # http://www.ddbst.com/published-parameters-unifac.html#ListOfMainGroups
@@ -559,10 +562,10 @@ UFSG[80] = UNIFAC_subgroup(80, 'SIH', 42, 'SIH2', 1.2853, 0.7494,
 
 UFSG[81] = UNIFAC_subgroup(81, 'SI', 42, 'SIH2', 1.047, 0.4099,
                            atoms={'Si': 1, 'H': 0}, bonds={},
-                           smarts='[Si]')
+                           smarts='[SiX4,SiX3,SiX5,SiX2,SiX1;H0]')
 
 UFSG[82] = UNIFAC_subgroup(82, 'SIH2O', 43, 'SIO', 1.4838, 1.0621,
-                           smarts='[SiH2][O]',
+                           smarts='[Si;H2][OX2;H0]',
                            atoms={'Si': 1, 'H': 2, 'O': 1}, bonds={SINGLE_BOND: 1})
 UFSG[83] = UNIFAC_subgroup(83, 'SIHO', 43, 'SIO', 1.303, 0.7639,
                             smarts='[SiH1][O]',
@@ -1809,7 +1812,6 @@ NISTUFSG[142] = UNIFAC_subgroup(142, 'ACO-(O)', 64, 'Peroxide', 0.853, 0.6,
                               bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1},
                               smarts='[cX3][OX2][OX2]')  # Aromatic C connected to peroxide - check doesn't match TODO
 
-
 NISTUFSG[143] = UNIFAC_subgroup(143, 'CFH', 65, 'CFH', 0.5966, 0.44,
                                atoms={'C': 1, 'F': 1, 'H': 1},
                                bonds={SINGLE_BOND: 2}, priority=12325,
@@ -1844,39 +1846,100 @@ NISTUFSG[150] = UNIFAC_subgroup(150, 'CF3Cl', 72, 'CF3Cl', 2.1575, 2.048,
                                smarts='[CX4;H0]([F])([F])([F])[Cl]')
 NISTUFSG[151] = UNIFAC_subgroup(151, 'CF4', 73, 'CF4', 1.7278, 1.76,
                                atoms={'C': 1, 'F': 4}, bonds={SINGLE_BOND: 4}, smarts='[CX4H0]([FX1])([FX1])([FX1])[FX1]')
-NISTUFSG[152] = UNIFAC_subgroup(152, 'C(O)2', 74, 'Acetal', 0.7073, 0.48)
-NISTUFSG[186] = UNIFAC_subgroup(186, 'CH(O)2', 74, 'Acetal', 0.9347, 0.708)
-NISTUFSG[309] = UNIFAC_subgroup(309, 'CH2(O)2', 74, 'Acetal', 0.9347, 0.708) # this one has a comment on the fix document
-NISTUFSG[153] = UNIFAC_subgroup(153, 'ACN(CH3)2', 75, 'ACNR2', 2.4529, 1.908)
-NISTUFSG[154] = UNIFAC_subgroup(154, 'ACN(CH3)CH2', 75, 'ACNR2', 2.2261, 1.6)
-NISTUFSG[155] = UNIFAC_subgroup(155, 'ACN(CH2)2', 75, 'ACNR2', 1.9993, 1.292)
-NISTUFSG[156] = UNIFAC_subgroup(156, 'ACNHCH3', 76, 'ACNR', 1.7989, 1.364)
-NISTUFSG[157] = UNIFAC_subgroup(157, 'ACNHCH2', 76, 'ACNR', 1.5722, 1.056)
-NISTUFSG[158] = UNIFAC_subgroup(158, 'ACNHCH', 76, 'ACNR', 1.3448, 0.744)
-NISTUFSG[159] = UNIFAC_subgroup(159, 'AC2H2O', 77, 'Furan', 1.3065, 1.04)
-NISTUFSG[160] = UNIFAC_subgroup(160, 'AC2HO', 77, 'Furan', 1.1404, 0.76)
-NISTUFSG[161] = UNIFAC_subgroup(161, 'AC2O', 77, 'Furan', 0.9743, 0.48)
-NISTUFSG[188] = UNIFAC_subgroup(188, 'c-CH2-NH', 78, 'c-CNH', 1.207, 0.936)
-NISTUFSG[162] = UNIFAC_subgroup(162, 'c-CH-NH', 78, 'c-CNH', 0.9796, 0.624)
-NISTUFSG[163] = UNIFAC_subgroup(163, 'c-C-NH', 78, 'c-CNH', 0.7521, 0.396)
-NISTUFSG[189] = UNIFAC_subgroup(189, 'c-CH2-NCH3', 79, 'c-CNR', 1.8609, 1.48)
-NISTUFSG[190] = UNIFAC_subgroup(190, 'c-CH2-NCH2', 79, 'c-CNR', 1.6341, 1.172)
-NISTUFSG[191] = UNIFAC_subgroup(191, 'c-CH2-NCH', 79, 'c-CNR', 1.4067, 0.86)
-NISTUFSG[164] = UNIFAC_subgroup(164, 'c-CH-NCH3', 79, 'c-CNR', 1.6335, 1.168)
-NISTUFSG[165] = UNIFAC_subgroup(165, 'c-CH-NCH2', 79, 'c-CNR', 1.4067, 0.86)
-NISTUFSG[166] = UNIFAC_subgroup(166, 'c-CH-NCH', 79, 'c-CNR', 1.1793, 0.548)
-NISTUFSG[170] = UNIFAC_subgroup(170, 'SiH3-', 80, 'SiH', 1.6035, 1.263)
-NISTUFSG[171] = UNIFAC_subgroup(171, '-SiH2-', 80, 'SiH', 1.4443, 1.006)
-NISTUFSG[172] = UNIFAC_subgroup(172, '>SiH-', 80, 'SiH', 1.2853, 0.749)
-NISTUFSG[173] = UNIFAC_subgroup(173, '>Si<', 80, 'SiH', 1.047, 0.41)
-NISTUFSG[174] = UNIFAC_subgroup(174, '-SiH2-O-', 81, 'SiO', 1.4838, 1.062)
-NISTUFSG[175] = UNIFAC_subgroup(175, '>SiH-O-', 81, 'SiO', 1.303, 0.764)
-NISTUFSG[176] = UNIFAC_subgroup(176, '->Si-O-', 81, 'SiO', 1.1044, 0.466)
+NISTUFSG[152] = UNIFAC_subgroup(152, 'C(O)2', 74, 'Acetal', 0.7073, 0.48, priority=50006,
+                               atoms={'C': 1, 'O': 2}, bonds={SINGLE_BOND: 2}, hydrogen_from_smarts=True,
+                               smarts='[CX4;!H2]([O;H0])([O;H0])')  # Carbon with no H and two oxygens
+# example doesn't actually have an H on the C, but on the O...
+# inconsistent about the number of hydrogens as well, maybe 1 or 0 depending on location
+# NISTUFSG[186] = UNIFAC_subgroup(186, 'CH(O)2', 74, 'Acetal', 0.9347, 0.708, priority=5005,
+#                                atoms={'C': 1, 'O': 2}, bonds={SINGLE_BOND: 2, DOUBLE_BOND: 1}, hydrogen_from_smarts=True,
+#                                smarts='[CX3;H0](=[O;H0;X1])[O;H1,H0;X2]')
+NISTUFSG[309] = UNIFAC_subgroup(309, 'CH2(O)2', 74, 'Acetal', 0.9347, 0.708, priority=11001,
+                               atoms={'C': 1, 'H': 2, 'O': 2}, bonds={SINGLE_BOND: 2},
+                               smarts='[CX4;H2]([OX2])([OX2])')  # CH2 with two oxygens
+
+# superset of 307
+NISTUFSG[153] = UNIFAC_subgroup(153, 'ACN(CH3)2', 75, 'ACNR2', 2.4529, 1.908, priority=42123,
+                               atoms={'C': 3, 'N': 1, 'H': 6}, bonds={SINGLE_BOND: 3},
+                               smarts='[cX3][NX3]([CX4;H3])[CX4;H3]')  # N,N-dimethyl on aromatic amine
+NISTUFSG[154] = UNIFAC_subgroup(154, 'ACN(CH3)CH2', 75, 'ACNR2', 2.2261, 1.6, priority=42125,
+                               atoms={'C': 3, 'N': 1, 'H': 5}, bonds={SINGLE_BOND: 3},
+                               smarts='[cX3][NX3]([CX4;H3])[CX4;H2]')  # N-methyl-N-ethyl on aromatic amine
+NISTUFSG[155] = UNIFAC_subgroup(155, 'ACN(CH2)2', 75, 'ACNR2', 1.9993, 1.292, priority=42126,
+                               atoms={'C': 3, 'N': 1, 'H': 4}, bonds={SINGLE_BOND: 3},
+                               smarts='[cX3][NX3]([CX4;H2])[CX4;H2]')  # N,N-diethyl on aromatic amine
+NISTUFSG[156] = UNIFAC_subgroup(156, 'ACNHCH3', 76, 'ACNR', 1.7989, 1.364, priority=42127,
+                               atoms={'C': 2, 'N': 1, 'H': 4}, bonds={SINGLE_BOND: 2},
+                               smarts='[cX3][NX3;H1][CX4;H3]')  # N-methyl on aromatic amine
+NISTUFSG[157] = UNIFAC_subgroup(157, 'ACNHCH2', 76, 'ACNR', 1.5722, 1.056,priority=42128,
+                               atoms={'C': 2, 'N': 1, 'H': 3}, bonds={SINGLE_BOND: 2},
+                               smarts='[cX3][NX3;H1][CX4;H2]')  # N-ethyl on aromatic amine
+NISTUFSG[158] = UNIFAC_subgroup(158, 'ACNHCH', 76, 'ACNR', 1.3448, 0.744, priority=42129,
+                               atoms={'C': 2, 'N': 1, 'H': 2}, bonds={SINGLE_BOND: 2},
+                               smarts='[cX3][NX3;H1][CX4;H1]')  # N-isopropyl on aromatic amine
+NISTUFSG[159] = UNIFAC_subgroup(159, 'AC2H2O', 77, 'Furan', 1.3065, 1.04,
+                               atoms={'C': 2, 'H': 2, 'O': 1}, bonds={AROMATIC_BOND: 2},
+                               smarts='[cX3H1][oX2][cX3H1]')  # Two aromatic CH next to furan O
+NISTUFSG[160] = UNIFAC_subgroup(160, 'AC2HO', 77, 'Furan', 1.1404, 0.76, priority=23456,
+                               atoms={'C': 2, 'H': 5, 'O': 1}, bonds={SINGLE_BOND: 3},
+                               smarts='[cX3H0][OX2][CX4H2][CX4H3]')  # One aromatic CH and one substituted C next to furan O
+NISTUFSG[161] = UNIFAC_subgroup(161, 'AC2O', 77, 'Furan', 0.9743, 0.48,
+                               atoms={'C': 2, 'O': 1}, bonds={AROMATIC_BOND: 2},
+                               smarts='[cX3H0][oX2][cX3H0]')  # Two substituted aromatic carbons next to furan O
+                               
+NISTUFSG[188] = UNIFAC_subgroup(188, 'c-CH2-NH', 78, 'c-CNH', 1.207, 0.936,
+                               atoms={'C': 1, 'H': 3, 'N': 1}, bonds={SINGLE_BOND: 1},
+                               smarts='[CX4H2;R][NX3H1;R]')  # Ring CH2 connected to NH
+NISTUFSG[162] = UNIFAC_subgroup(162, 'c-CH-NH', 78, 'c-CNH', 0.9796, 0.624,
+                               atoms={'C': 1, 'H': 2, 'N': 1}, bonds={SINGLE_BOND: 1},
+                               smarts='[CX4H1;R][NX3H1;R]')  # Ring CH connected to NH
+NISTUFSG[163] = UNIFAC_subgroup(163, 'c-C-NH', 78, 'c-CNH', 0.7521, 0.396,
+                               atoms={'C': 1, 'H': 1, 'N': 1}, bonds={SINGLE_BOND: 1},
+                               smarts='[CX4H0;R][NX3H1;R]')  # Ring quaternary C connected to NH - no test case
+
+# 189 must be higher priority than 190 or all 189 matches become 190
+NISTUFSG[189] = UNIFAC_subgroup(189, 'c-CH2-NCH3', 79, 'c-CNR', 1.8609, 1.48, priority=33523,
+                               atoms={'C': 1, 'H': 5, 'N': 1}, bonds={SINGLE_BOND: 2},
+                               smarts='[CX4H2;R][NX3;R][CX4H3]')  # Ring CH2 connected to N-CH3
+NISTUFSG[190] = UNIFAC_subgroup(190, 'c-CH2-NCH2', 79, 'c-CNR', 1.6341, 1.172, priority=33119,
+                               atoms={'C': 1, 'H': 4, 'N': 1}, bonds={SINGLE_BOND: 2},
+                               smarts='[CX4H2;R][NX3;R][CX4H2]')  # Ring CH2 connected to N-CH2
+NISTUFSG[191] = UNIFAC_subgroup(191, 'c-CH2-NCH', 79, 'c-CNR', 1.4067, 0.86, priority=33120,
+                               atoms={'C': 1, 'H': 3, 'N': 1}, bonds={SINGLE_BOND: 2},
+                               smarts='[CX4H2;R][NX3;R][CX4H1]')  # Ring CH2 connected to N-CH
+NISTUFSG[164] = UNIFAC_subgroup(164, 'c-CH-NCH3', 79, 'c-CNR', 1.6335, 1.168,
+                              atoms={'C': 2, 'H': 4, 'N': 1}, bonds={SINGLE_BOND: 2},
+                              smarts='[CX4H1;R][NX3;R]([CX4H3])')  # Ring CH connected to N-CH3
+NISTUFSG[165] = UNIFAC_subgroup(165, 'c-CH-NCH2', 79, 'c-CNR', 1.4067, 0.86,
+                              atoms={'C': 2, 'H': 3, 'N': 1}, bonds={SINGLE_BOND: 2},
+                              smarts='[CX4H1;R][NX3;R]([CX4H2])')  # Ring CH connected to N-CH2
+NISTUFSG[166] = UNIFAC_subgroup(166, 'c-CH-NCH', 79, 'c-CNR', 1.1793, 0.548,
+                              atoms={'C': 2, 'H': 2, 'N': 1}, bonds={SINGLE_BOND: 2},
+                              smarts='[CX4H1;R][NX3;R]([CX4H1])')  # Ring CH connected to N-CH
+NISTUFSG[170] = UNIFAC_subgroup(170, 'SiH3-', 80, 'SiH', 1.6035, 1.263,
+                              atoms=UFSG[78].atoms, bonds=UFSG[78].bonds, smarts=UFSG[78].smarts)
+NISTUFSG[171] = UNIFAC_subgroup(171, '-SiH2-', 80, 'SiH', 1.4443, 1.006,
+                              atoms=UFSG[79].atoms, bonds=UFSG[79].bonds, smarts=UFSG[79].smarts)
+NISTUFSG[172] = UNIFAC_subgroup(172, '>SiH-', 80, 'SiH', 1.2853, 0.749,
+                              atoms=UFSG[80].atoms, bonds=UFSG[80].bonds, smarts=UFSG[80].smarts)
+NISTUFSG[173] = UNIFAC_subgroup(173, '>Si<', 80, 'SiH', 1.047, 0.41,
+                              atoms=UFSG[81].atoms, bonds=UFSG[81].bonds, smarts=UFSG[81].smarts)
+# 173, 175, 176 don't seem same as UFSG 81, 82, 83g
+NISTUFSG[174] = UNIFAC_subgroup(174, '-SiH2-O-', 81, 'SiO', 1.4838, 1.062, priority=23455,
+                               atoms={'Si': 1, 'O': 1, 'H': 2}, bonds={SINGLE_BOND: 2},
+                               smarts='[SiX4;H2][OX2]')  # Silicon with 2 H and oxygen
+NISTUFSG[175] = UNIFAC_subgroup(175, '>SiH-O-', 81, 'SiO', 1.303, 0.764, priority=23456,
+                               atoms={'Si': 1, 'O': 1, 'H': 1}, bonds={SINGLE_BOND: 2},
+                               smarts='[SiX4;H1][OX2]')  # Silicon with 1 H and oxygen
+NISTUFSG[176] = UNIFAC_subgroup(176, '->Si-O-', 81, 'SiO', 1.1044, 0.466,
+                               atoms={'Si': 1, 'O': 1}, bonds={SINGLE_BOND: 2}, priority=23457,
+                               smarts='[SiX4;H0][OX2]')  # Silicon with no H and oxygen
 # Oxime groups
-NISTUFSG[309] = UNIFAC_subgroup(309, 'CH=NOH', 82, 'Oxime', 1.499, 1.46,
+# note CH=NOH duplicated another 309 group CH2(O)2, so it was reassigned 1309 in thermo
+# https://github.com/CalebBell/thermo/issues/158 
+NISTUFSG[1309] = UNIFAC_subgroup(1309, 'CH=NOH', 82, 'Oxime', 1.499, 1.46,
                                atoms={'C': 1, 'N': 1, 'O': 1, 'H': 2}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
                                smarts='[CX3;H1]=[NX2][OX2;H1]')  # CH=N-OH pattern
-
 NISTUFSG[177] = UNIFAC_subgroup(177, 'C=NOH', 82, 'Oxime', 1.499, 1.46,
                                atoms={'C': 1, 'N': 1, 'O': 1, 'H': 1}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
                                smarts='[CX3;H0]=[NX2][OX2;H1]')  # C=N-OH pattern (no H on C)
@@ -1885,29 +1948,23 @@ NISTUFSG[177] = UNIFAC_subgroup(177, 'C=NOH', 82, 'Oxime', 1.499, 1.46,
 NISTUFSG[178] = UNIFAC_subgroup(178, 'ACCO', 83, 'ACCO', 1.1365, 0.76, priority=43532,
                                atoms={'C': 2, 'O': 1}, bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1, DOUBLE_BOND: 1},
                                smarts='[cX3][CX3](=O)')  # Aromatic-C(=O)-C pattern
-
 # Tetrachloroethene group
 NISTUFSG[179] = UNIFAC_subgroup(179, 'C2Cl4', 86, 'C2Cl4', 3.381, 3.5845,
                                atoms={'C': 2, 'Cl': 4}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 4},
                                smarts='[ClX1][CX3](Cl)=[CX3](Cl)Cl')  # Cl2C=CCl2 pattern
-
 # Cyclohexylamine CH-NH2 group
 NISTUFSG[180] = UNIFAC_subgroup(180, 'c-CHH2', 92, 'c-CHNH2', 1.2261, 1.096, priority=43531,
                                atoms={'C': 1, 'H': 3, 'N': 1}, bonds={SINGLE_BOND: 2},
                                smarts='[CX4;H1;R]([NX3;H2])')  # Cyclic CH with NH2 group
-
 NISTUFSG[201] = UNIFAC_subgroup(201, 'c-CH=CH', 95, 'c-C=C', 1.0897, 0.832,
                               atoms={'C': 2, 'H': 2}, bonds={DOUBLE_BOND: 1},
                               smarts='[CX3H1;R]=[CX3H1;R]')  # Ring double bond, both carbons have 1 H
-
 NISTUFSG[202] = UNIFAC_subgroup(202, 'c-CH=C', 95, 'c-C=C', 0.8616, 0.644,
                               atoms={'C': 2, 'H': 1}, bonds={DOUBLE_BOND: 1},
                               smarts='[CX3H1;R]=[CX3H0;R]')  # Ring double bond, one carbon has 1 H
-
 NISTUFSG[203] = UNIFAC_subgroup(203, 'c-C=C', 95, 'c-C=C', 0.5498, 0.244,
                               atoms={'C': 2}, bonds={DOUBLE_BOND: 1},
                               smarts='[CX3H0;R]=[CX3H0;R]')  # Ring double bond, no H on either carbon
-
 NISTUFSG[204] = UNIFAC_subgroup(204, 'Glycerol', 96, 'Glycerol', 5.4209, 4.4227,
                                atoms={'C': 3, 'H': 8, 'O': 3}, bonds={SINGLE_BOND: 5}, priority=34054,
                                smarts='C(C(CO)O)O')  # Full glycerol molecule
@@ -2951,12 +3008,6 @@ NISTKTUFMG = {1: ("C", [1, 2, 3, 4]),
 the dict-in-dict structure is found emperically to take 111608 bytes vs.
 79096 bytes, or 30% less memory.
 """
-
-for d in (UFSG, DOUFSG, NISTUFSG, NISTKTUFSG, LLEUFSG, LUFSG, PSRKSG, VTPRSG):
-    for group in d.values():
-        if group.priority is None:
-            if group.atoms is not None:
-                group.priority = priority_from_atoms(group.atoms, group.bonds)
 
 
 _unifac_ip_loaded = False
