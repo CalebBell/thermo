@@ -986,3 +986,251 @@ class Joback:
         except:
             return None
 
+
+
+class DikyJobackGroupContribution(BaseGroupContribution):
+
+    __slots__ = BaseGroupContribution.__slots__ + (
+        'A0', 'A1', 'A2', 'A3'
+    )
+    def __init__(self, group, A0=None, A1=None, A2=None, A3=None,
+                 smarts=None, priority=None, atoms=None, bonds=None,
+                 hydrogen_from_smarts=False, group_id=None):
+        self.group = group
+        self.smarts = smarts
+        if priority is None and atoms is not None:
+            self.priority = priority_from_atoms(atoms, bonds)
+        else:
+            self.priority = priority
+        self.atoms = atoms
+        self.bonds = bonds
+        self.hydrogen_from_smarts = hydrogen_from_smarts
+        self.smart_rdkit = None
+        self.group_id = group_id
+        
+        # Initialize DikyJoback-specific attributes
+        # self.A0 = A0
+        # self.A1 = A1
+        # self.A2 = A2
+        # self.A3 = A3
+        self.A0 = A0
+        self.A1 = A1/100  # Convert from 10^2 A1
+        self.A2 = A2/100000  # Convert from 10^5 A2
+        self.A3 = A3/100000000  # Convert from 10^8 A3
+    def __repr__(self):
+        attrs = []
+        for slot in self.__slots__:
+            value = getattr(self, slot)
+            if value is not None:
+                attrs.append(f"{slot}={value!r}")
+        return f"DikyJobackGroupContribution({', '.join(attrs)})"
+
+
+
+# Dictionary of DikyJoback groups
+DIKY_JOBACK_GROUPS = {
+    # Non-ring Carbon Increments
+    '-CH3': DikyJobackGroupContribution(
+        group="-CH3", A0=2.883, A1=11.622, A2=-6.401, A3=1.503,
+        smarts='[CX4;H3]', atoms={'C': 1, 'H': 3}),
+    '-CH2-': DikyJobackGroupContribution(
+        group="-CH2-", A0=1.300, A1=8.192, A2=-2.691, A3=-0.447,
+        smarts='[CX4;H2]', atoms={'C': 1, 'H': 2}),
+    '>CH-': DikyJobackGroupContribution(
+        group=">CH-", A0=-20.574, A1=15.684, A2=-16.190, A3=6.298,
+        smarts='[CX4;H1]', atoms={'C': 1, 'H': 1}),
+    '>C<': DikyJobackGroupContribution(
+        group=">C<", A0=-26.584, A1=14.800, A2=-16.106, A3=6.373,
+        smarts='[CX4;H0]', atoms={'C': 1, 'H': 0}),
+    # 'CH2=': DikyJobackGroupContribution(
+    #     group="=CH2", A0=-0.328, A1=7.427, A2=-4.355, A3=1.006,
+    #     atoms={'C': 1, 'H': 2}, smarts="[CX3H2]"),
+    # 'CH=': DikyJobackGroupContribution(
+    #     group="=CH-", A0=-10.284, A1=9.240, A2=-10.108, A3=4.069,
+    #     atoms={'C': 1, 'H': 1}, smarts="[!R;CX3H1;!$([CX3H1](=O))]"),
+    # 'C=': DikyJobackGroupContribution(
+    #     group="=C=", A0=14.155, A1=0.737, A2=0.187, A3=-0.271,
+    #     atoms={'C': 1}, smarts="[$([CX2H0](=*)=*)]"),
+    # 'CH#': DikyJobackGroupContribution(
+    #     group="≡CH", A0=0.328, A1=13.787, A2=-17.018, A3=7.455,
+    #     atoms={'C': 1, 'H': 1}, smarts="[$([CX2H1]#[!#7])]"),
+    # 'C#': DikyJobackGroupContribution(
+    #     group="≡C-", A0=4.936, A1=4.755, A2=-5.159, A3=2.097,
+    #     atoms={'C': 1}, smarts="[$([CX2H0]#[!#7])]"),
+
+    # # Ring Carbon Increments
+    # 'rCH2': DikyJobackGroupContribution(
+    #     group="rCH2", A0=-3.203, A1=8.802, A2=-2.277, A3=-0.794,
+    #     atoms={'C': 1, 'H': 2}, smarts="[R;CX4H2]"),
+    # 'rCH': DikyJobackGroupContribution(
+    #     group="rCH", A0=-8.253, A1=7.841, A2=-3.441, A3=0.015,
+    #     atoms={'C': 1, 'H': 1}, smarts="[R;CX4H1]"),
+    # 'rC': DikyJobackGroupContribution(
+    #     group="rC", A0=-14.227, A1=7.466, A2=-5.183, A3=1.108,
+    #     atoms={'C': 1}, smarts="[R;CX4H0]"),
+    # 'rCH=': DikyJobackGroupContribution(
+    #     group="=rCH-", A0=-4.846, A1=8.941, A2=-6.342, A3=1.675,
+    #     atoms={'C': 1, 'H': 1}, smarts="[R;CX3H1,cX3H1]"),
+    # 'rC=': DikyJobackGroupContribution(
+    #     group="=rC<", A0=-5.445, A1=6.101, A2=-4.998, A3=1.558,
+    #     atoms={'C': 1}, smarts="[$([R;#6X3H0]);!$([R;#6X3H0]=[#8])]"),
+
+    # # Halogen Increments
+    # 'F': DikyJobackGroupContribution(
+    #     group="F", A0=9.179, A1=4.446, A2=-4.952, A3=1.929,
+    #     atoms={'F': 1}, smarts="[F]"),
+    # 'Cl': DikyJobackGroupContribution(
+    #     group="Cl", A0=12.562, A1=5.221, A2=-7.090, A3=3.117,
+    #     atoms={'Cl': 1}, smarts="[Cl]"),
+    # 'Br': DikyJobackGroupContribution(
+    #     group="Br", A0=16.135, A1=4.491, A2=-6.591, A3=3.005,
+    #     atoms={'Br': 1}, smarts="[Br]"),
+    # 'I': DikyJobackGroupContribution(
+    #     group="I", A0=14.598, A1=6.211, A2=-9.696, A3=4.624,
+    #     atoms={'I': 1}, smarts="[I]"),
+
+    # Oxygen Increments
+    '-OH (alcohol)': DikyJobackGroupContribution(
+        group="-OH (alcohol)", A0=12.212, A1=6.095, A2=-5.274, A3=1.813,
+        smarts='[OX2;H1]', atoms={'O': 1, 'H': 1}),
+    # 'aOH': DikyJobackGroupContribution(
+    #     group="-OH (phenol)", A0=7.585, A1=9.557, A2=-10.256, A3=3.931,
+    #     atoms={'O': 1, 'H': 1}, smarts="[$([OX2H]-a)]"),
+    # 'O': DikyJobackGroupContribution(
+    #     group="-O-", A0=30.820, A1=-8.548, A2=-14.639, A3=-7.613,
+    #     atoms={'O': 1}, smarts="[OX2H0;!R;!$([OX2H0]-[#6]=[#8])]"),
+    # 'rO': DikyJobackGroupContribution(
+    #     group=">O (ring)", A0=2.682, A1=4.430, A2=-3.634, A3=1.029,
+    #     atoms={'O': 1}, smarts="[#8X2H0;R;!$([#8X2H0]~[#6]=[#8])]"),
+    # 'CO': DikyJobackGroupContribution(
+    #     group=">C=O (ketone)", A0=17.426, A1=4.941, A2=-2.812, A3=0.469,
+    #     atoms={'C': 1, 'O': 1}, smarts="[$([CX3H0](=[OX1]));!$([CX3](=[OX1])-[OX2]);!R]=O"),
+    # 'CHO': DikyJobackGroupContribution(
+    #     group="HC=O (aldehyde)", A0=10.873, A1=10.913, A2=-7.941, A3=2.287,
+    #     atoms={'C': 1, 'H': 1, 'O': 1}, smarts="[CH;D2;$(C-!@C)](=O)"),
+    # 'COOH': DikyJobackGroupContribution(
+    #     group="-COOH (acid)", A0=17.190, A1=11.076, A2=-3.829, A3=0.990,
+    #     atoms={'C': 1, 'O': 2, 'H': 1}, smarts="[OX2H]-[C]=O"),
+    # 'COO': DikyJobackGroupContribution(
+    #     group="-COO- (ester)", A0=-10.024, A1=20.582, A2=-21.855, A3=-8.588,
+    #     atoms={'C': 1, 'O': 2}, smarts="[#6X3H0;!$([#6X3H0](~O)(~O)(~O))](=[#8X1])[#8X2H0]"),
+
+    # # Nitrogen Increments
+    # 'NH2': DikyJobackGroupContribution(
+    #     group="-NH2", A0=8.810, A1=8.952, A2=-6.369, A3=1.800,
+    #     atoms={'N': 1, 'H': 2}, smarts="[NX3H2]"),
+    # 'NH': DikyJobackGroupContribution(
+    #     group="-NH-", A0=-16.492, A1=14.229, A2=-14.854, A3=5.850,
+    #     atoms={'N': 1, 'H': 1}, smarts="[NX3H1;!R]"),
+    # 'rNH': DikyJobackGroupContribution(
+    #     group="NrH", A0=2.908, A1=5.369, A2=-1.186, A3=-0.845,
+    #     atoms={'N': 1, 'H': 1}, smarts="[#7X3H1;R]"),
+    # 'N': DikyJobackGroupContribution(
+    #     group=">N-", A0=-22.180, A1=15.386, A2=-18.387, A3=7.228,
+    #     atoms={'N': 1}, smarts="[#7X3H0;!$([#7](~O)~O)]"),
+    # 'CN': DikyJobackGroupContribution(
+    #     group="C≡N", A0=3.705, A1=16.500, A2=-15.863, A3=5.556,
+    #     atoms={'C': 1, 'N': 1}, smarts="[#6X2]#[#7X1H0]"),
+
+    # # Sulfur Increments
+    # 'SH': DikyJobackGroupContribution(
+    #     group="-SH", A0=17.513, A1=6.800, A2=-7.410, A3=3.117,
+    #     atoms={'S': 1, 'H': 1}, smarts="[SX2H]"),
+    # 'S': DikyJobackGroupContribution(
+    #     group="-S-", A0=8.896, A1=7.209, A2=-10.611, A3=4.921,
+    #     atoms={'S': 1}, smarts="[#16X2H0;!R]"),
+    # 'rS': DikyJobackGroupContribution(
+    #     group="-Sr-", A0=7.568, A1=6.729, A2=-8.261, A3=3.338,
+    #     atoms={'S': 1}, smarts="[#16X2H0;R]"),
+
+    # Second-order Corrections
+    'entity': DikyJobackGroupContribution(
+        group="entity", A0=5.675, A1=-10.825, A2=15.933, A3=-7.407),
+    '3-ring': DikyJobackGroupContribution(
+        group="3-membered ring", A0=5.523, A1=3.924, A2=-8.793, A3=4.542),
+    '4-ring': DikyJobackGroupContribution(
+        group="4-membered ring", A0=9.084, A1=-1.774, A2=1.903, A3=-1.011)
+}
+
+# Create dictionary for fragmentation
+DIKY_JOBACK_GROUPS_FOR_FRAGMENTATION = {}
+for group in DIKY_JOBACK_GROUPS.values():
+    if group.smarts is not None:  # Skip special groups like entity term and ring corrections
+        DIKY_JOBACK_GROUPS_FOR_FRAGMENTATION[group.group] = group.smarts
+
+
+class DikyJoback:
+    r'''
+    Class to estimate ideal-gas heat capacity using the "Modified Joback Method"
+    (Diky's refinement). Only the ideal gas heat capacity is provided here.
+    
+    The correlation:
+
+    .. math::
+
+        C_p^o(T) = \sum_{j} N_j \Bigl(A_{0j} + A_{1j} T + A_{2j} T^2 + A_{3j} T^3\Bigr)
+                   + \text{(second-order corrections)}
+
+    where:
+      - The summation is over all first-order groups \(j\).
+      - Each molecule also includes exactly one "entity term".
+      - Additional ring-size corrections are added for each ring in the molecule.
+
+    Parameters
+    ----------
+    mol : rdkit Mol or SMILES str
+        The molecule to analyze
+    '''
+
+    def __init__(self, mol):
+        # Load RDKit if needed
+        load_rdkit_modules()
+
+        if isinstance(mol, Chem.Mol):
+            self.rdkitmol = mol
+        else:
+            self.rdkitmol = Chem.MolFromSmiles(mol)
+
+        # Fragment the molecule to find how many of each DikyJoback group
+        self.counts, success, status = smarts_fragment(
+            DIKY_JOBACK_GROUPS_FOR_FRAGMENTATION,
+            rdkitmol=self.rdkitmol
+        )
+        self.status = status
+        self.success = success
+
+    def Cpig(self, T):
+        """
+        Calculate the ideal-gas heat capacity [J/(mol*K)] at temperature T [K]
+        using the Diky-modified Joback approach. This includes:
+         1) Summation over first-order group contributions
+         2) One "entity term"
+         3) Corrections for ring sizes (3-membered or 4-membered), if present
+
+        Returns
+        -------
+        float
+            Heat capacity in J/(mol*K)
+        """
+        # 1) Sum of group contributions
+        Cp = 0.0
+        for group_id, n in self.counts.items():
+            g = DIKY_JOBACK_GROUPS[group_id]
+            # Accumulate the polynomial for this group * number of occurrences
+            Cp += n * (g.A0 + g.A1*T + g.A2*T*T + g.A3*T*T*T)
+
+        # 2) Entity term: always added once
+        ent = DIKY_JOBACK_GROUPS['entity']
+        Cp += ent.A0 + ent.A1*T + ent.A2*T*T + ent.A3*T*T*T
+
+        # 3) Count ring sizes and add ring corrections for each ring
+        ring_info = self.rdkitmol.GetRingInfo()
+        for ring_tuple in ring_info.AtomRings():
+            ring_size = len(ring_tuple)
+            if ring_size == 3:
+                corr = DIKY_JOBACK_GROUPS['3-ring']
+                Cp += corr.A0 + corr.A1*T + corr.A2*T*T + corr.A3*T*T*T
+            elif ring_size == 4:
+                corr = DIKY_JOBACK_GROUPS['4-ring']
+                Cp += corr.A0 + corr.A1*T + corr.A2*T*T + corr.A3*T*T*T
+        return Cp
