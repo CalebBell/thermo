@@ -59,6 +59,53 @@ def test_mapping_dictionaries():
         assert func.__name__ == expected_name
 
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_identify_functional_groups_alcohols():
+    """Test identification of functional groups with alcohols"""
+    # Test ethanol - should be alcohol and organic
+    mol = mol_from_name('ethanol')
+    groups = identify_functional_groups(mol)
+    assert FG_ALCOHOL in groups, "Ethanol should contain alcohol group"
+    assert FG_ORGANIC in groups, "Ethanol should be marked as organic"
+    assert FG_KETONE not in groups, "Ethanol should not contain ketone group"
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_identify_functional_groups_multiple():
+    """Test identification of molecules with multiple functional groups"""
+    # Test lactic acid - should have alcohol and acid groups
+    mol = mol_from_name('lactic acid')
+    groups = identify_functional_groups(mol)
+    assert FG_ALCOHOL in groups, "Lactic acid should contain alcohol group"
+    assert FG_CARBOXYLIC_ACID in groups, "Lactic acid should contain acid group"
+    assert FG_ORGANIC in groups, "Lactic acid should be marked as organic"
+    
+    # Test serine - should have alcohol, amine, and acid groups
+    mol = mol_from_name('serine')
+    groups = identify_functional_groups(mol)
+    assert groups & {FG_ALCOHOL, FG_AMINE, FG_CARBOXYLIC_ACID} == {FG_ALCOHOL, FG_AMINE, FG_CARBOXYLIC_ACID}
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_identify_functional_groups_edge_cases():
+    """Test identification with edge cases"""
+    # Test water - should be inorganic, not organic
+    mol = mol_from_name('water')
+    groups = identify_functional_groups(mol)
+    assert FG_INORGANIC in groups
+    assert FG_ORGANIC not in groups
+    
+    # Test benzene - should be aromatic and hydrocarbon
+    mol = mol_from_name('benzene')
+    groups = identify_functional_groups(mol)
+    assert FG_AROMATIC in groups
+    assert FG_HYDROCARBON in groups
+    assert len(groups & {FG_ALCOHOL, FG_AMINE, FG_CARBOXYLIC_ACID}) == 0
+
+
 def mol_from_name(name):
     obj = search_chemical(name)
     return Chem.MolFromSmiles(obj.smiles)

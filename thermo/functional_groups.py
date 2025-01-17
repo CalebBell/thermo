@@ -270,7 +270,7 @@ __all__ = [# sulfur
 
            'BVirial_Tsonopoulos_extended_ab',
 
-           'ALL_FUNCTIONAL_GROUPS', 'FUNCTIONAL_GROUP_CHECKS',
+           'ALL_FUNCTIONAL_GROUPS', 'FUNCTIONAL_GROUP_CHECKS', 'identify_functional_groups',
            
         'FG_ACID', 'FG_ACYL_HALIDE', 'FG_ALCOHOL', 'FG_ALDEHYDE', 'FG_ALKANE', 'FG_ALKENE', 
         'FG_ALKYLALUMINIUM', 'FG_ALKYLLITHIUM', 'FG_ALKYLMAGNESIUM_HALIDE', 'FG_ALKYNE', 'FG_AMIDE', 
@@ -3376,3 +3376,32 @@ FUNCTION_TO_FG = {
     func: fg_const 
     for fg_const, func in FG_TO_FUNCTION.items()
 }
+
+
+def identify_functional_groups(mol):
+    """Given an RDKit molecule, match a set of different SMARTS patterns against it
+    to identify which chemical classes it is part of and which functional groups it 
+    contains. This is not a fragmentation algorithm and any number of functional groups
+    may be detected; each found will be present only once.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        The molecule to analyze
+        
+    Returns
+    -------
+    functional_groups : set[str]
+        Set of constants representing the functional groups present in the molecule
+        
+    Examples
+    --------
+    >>> from rdkit import Chem # doctest:+SKIP
+    >>> mol = Chem.MolFromSmiles("CCO") # doctest:+SKIP
+    >>> functional_groups = identify_functional_groups(mol) # doctest:+SKIP
+    """
+    matches = set()
+    for fg_const, check_func in FG_TO_FUNCTION.items():
+        if check_func(mol):
+            matches.add(fg_const)
+    return matches
