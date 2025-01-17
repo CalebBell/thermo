@@ -125,3 +125,53 @@ def test_Joback_database():
 # Maybe use this again if more work is done on Joback
 del test_Joback_database
 
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_DikyJoback_acetone():
+    """Test the DikyJoback estimator with acetone, checking coefficients and Cp values"""
+    from rdkit import Chem
+    for i in [Chem.MolFromSmiles('CC(=O)C'), 'CC(=O)C']:
+        ex = DikyJoback(i)  # Acetone example
+        assert ex.status == 'OK'
+        # Test coefficients are computed correctly
+        assert_close1d(ex.coeffs, [28.867, 0.1736, 3.19e-06, -3.932e-08])
+        # Test Cp at different temperatures
+        assert_close(ex.Cpig(300.0), 80.17246)
+        assert_close(ex.Cpig(400.0), 96.30092)
+        assert_close(ex.Cpig(500.0), 111.5495)
+
+
+    
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_DikyJoback_ring_corrections():
+    """Test the DikyJoback estimator with cyclopropane to verify ring corrections"""
+    ex = DikyJoback('C1CC1')  # Cyclopropane
+    assert ex.status == 'OK'
+    # Should include both group contributions and 3-membered ring correction
+    assert ex.coeffs is not None
+    # Test Cp at room temperature
+    assert_close(ex.Cpig(298.15), 58.62719565202786)
+    assert ex.counts == {11: 3, 42: 1, 43: 1}
+
+    """Test the DikyJoback estimator with cyclobutane to verify 4-membered ring corrections"""
+    ex = DikyJoback('C1CCC1')  # Cyclobutane
+    assert ex.status == 'OK'
+    # Should include both group contributions and 4-membered ring correction
+    assert ex.coeffs is not None
+    assert ex.counts == {11: 4, 42: 1, 44: 1}
+    # Test Cp at various temperatures
+    assert_close(ex.Cpig(298.15), 74.04152705570361)
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_DikyJoback_invalid():
+    """Test handling of invalid molecules"""
+    # Test with iron atom which can't be fragmented
+    ex = DikyJoback('[Fe]')
+    assert not ex.success
+    assert ex.coeffs is None
+    assert ex.Cpig(300.0) is None
