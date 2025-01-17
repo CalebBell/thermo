@@ -29,6 +29,7 @@ from chemicals.utils import hash_any_primitive
 from fluids.numerics import *
 import pickle
 from thermo import *
+from thermo.functional_groups import FG_ALCOHOL, FG_ORGANIC
 
 assorted_IDs = ['1,2-ethanediol', '1,3-butadiene', '1,3-propanediol', '1,4-Dioxane', '2-Nitrotoluene', 
 '2-methylbutane', '3-Nitrotoluene', '4-Nitrotoluene', 'Acetic Acid', 'Acetic anhydride', 'Ammonium Chloride',
@@ -260,3 +261,47 @@ def test_chemical_package_recreation_another_issue():
         assert hash_any_primitive(getattr(correlations, name)) == hash_any_primitive(getattr(correlations2, name))
             
     assert correlations == correlations2
+
+
+def test_functional_groups_json_serialization():
+    """Test that functional groups serialize and deserialize correctly via JSON"""
+    # Create a simple package with two components - one with functional groups, one without
+    obj = ChemicalConstantsPackage(
+        MWs=[18.01528, 32.04186],  # Water and methanol
+        names=['water', 'methanol'],
+        functional_groups=[
+            None,  # Water has no groups identified
+            {FG_ALCOHOL, FG_ORGANIC}  # Methanol has two groups
+        ]
+    )
+    
+    # Test JSON serialization and deserialization
+    json_str = json.dumps(obj.as_json())
+    obj2 = ChemicalConstantsPackage.from_json(json.loads(json_str))
+    
+    # Verify the objects are equal
+    assert obj == obj2
+    assert hash(obj) == hash(obj2)
+    assert id(obj) != id(obj2)
+    
+    # Verify the functional groups specifically
+    assert obj2.functional_groups[0] is None
+    assert obj2.functional_groups[1] == {FG_ALCOHOL, FG_ORGANIC}
+
+def test_functional_groups_addition():
+    """Test that functional groups combine correctly when adding packages"""
+    a = ChemicalConstantsPackage(
+        MWs=[18.01528],
+        names=['water'],
+        functional_groups=[{FG_ORGANIC}]
+    )
+    b = ChemicalConstantsPackage(
+        MWs=[32.04186],
+        names=['methanol'], 
+        functional_groups=[{FG_ALCOHOL, FG_ORGANIC}]
+    )
+    
+    c = a + b
+    
+    assert c.functional_groups[0] == {FG_ORGANIC}
+    assert c.functional_groups[1] == {FG_ALCOHOL, FG_ORGANIC}

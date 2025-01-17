@@ -157,6 +157,7 @@ class ChemicalConstantsPackage:
                  'conductivity_Ts', 'RI_Ts',
                  'Vmg_STPs', 'rhog_STPs', 'rhog_STPs_mass', 'sigma_STPs',
                  'sigma_Tms', 'sigma_Tbs', 'Hf_STPs', 'Hf_STPs_mass',
+                 'functional_groups',
                  )
     __full_path__ = f"{__module__}.{__qualname__}"
     properties = ('atom_fractions',) + non_vector_properties
@@ -194,7 +195,8 @@ class ChemicalConstantsPackage:
             # keys are stored as strings and not ints
             d[k] = [{str(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
 
-
+        if 'functional_groups' in d:
+            d['functional_groups'] = [list(s) if s is not None else None for s in d['functional_groups']]
         # This is not so much a performance optimization as an improvement on file size
         # and readability. Do not remove it! Comparing against an empty list is the
         # fastest way to check as of 2023.
@@ -221,6 +223,8 @@ class ChemicalConstantsPackage:
             obj = getattr(self, k)
             obj = [{int(k): v for k, v in r.items()} if r is not None else r for r in obj]
             setattr(self, k, obj)
+        if hasattr(self, 'functional_groups'):
+            self.functional_groups = [set(lst) if lst is not None else None for lst in self.functional_groups]
 
     def as_json(self, cache=None, option=0):
         r'''Method to create a JSON friendly serialization of the chemical constants
@@ -1050,7 +1054,7 @@ class ChemicalConstantsPackage:
                  UNIFAC_groups=None, UNIFAC_Dortmund_groups=None,
                  PSRK_groups=None, UNIFAC_Rs=None, UNIFAC_Qs=None,
                  # other
-                 CASis=None,
+                 CASis=None, functional_groups=None,
                  ):
         self.N = N = len(MWs)
         self.cmps = range(N)
@@ -1152,7 +1156,7 @@ class ChemicalConstantsPackage:
         if sigma_Tms is None: sigma_Tms = empty_list
         if Hf_STPs is None: Hf_STPs = empty_list
         if Hf_STPs_mass is None: Hf_STPs_mass = empty_list
-
+        if functional_groups is None: functional_groups = empty_list
         self.atom_fractions = atom_fractions
         self.atomss = atomss
         self.Carcinogens = Carcinogens
@@ -1249,6 +1253,7 @@ class ChemicalConstantsPackage:
         self.sigma_Tms = sigma_Tms
         self.Hf_STPs = Hf_STPs
         self.Hf_STPs_mass = Hf_STPs_mass
+        self.functional_groups = functional_groups
 
 
         try:
@@ -1363,6 +1368,7 @@ constants_docstrings = {'N': (int, "Number of components in the package", "[-]",
 'sigma_Tbs': ("list[float]", "Liquid-air surface tensions at the normal boiling point and 101325 Pa", "[N/m]", None),
 'Hf_STPs': ("list[float]", "Standard state molar enthalpies of formation for each component", "[J/mol]", None),
 'Hf_STPs_mass': ("list[float]", "Standard state mass enthalpies of formation for each component", "[J/kg]", None),
+'functional_groups': ("list[set[str]]", "Set of functional group constants present in each component", "[-]", None),
 }
 
 constants_doc = r"""Class for storing efficiently chemical constants for a
