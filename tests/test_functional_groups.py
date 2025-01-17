@@ -34,6 +34,31 @@ except:
 
 
 
+def test_all_functional_groups_list():
+    """Test the integrity of ALL_FUNCTIONAL_GROUPS list"""
+    # Test for duplicates
+    assert len(ALL_FUNCTIONAL_GROUPS) == len(set(ALL_FUNCTIONAL_GROUPS)), "Duplicate entries found"
+    
+    # Test total count
+    assert len(ALL_FUNCTIONAL_GROUPS) >= 92
+    
+def test_mapping_dictionaries():
+    """Test the FG_TO_FUNCTION and FUNCTION_TO_FG dictionaries"""
+    from thermo.functional_groups import FG_TO_FUNCTION, FUNCTION_TO_FG
+    # Test sizes
+    assert len(FG_TO_FUNCTION) == len(FUNCTIONAL_GROUP_CHECKS)
+    assert len(FUNCTION_TO_FG) == len(FUNCTIONAL_GROUP_CHECKS)
+    
+    # Test bidirectional mapping
+    for fg_const, func in FG_TO_FUNCTION.items():
+        assert FUNCTION_TO_FG[func] == fg_const
+    
+    # Test function names match constants
+    for fg_const, func in FG_TO_FUNCTION.items():
+        expected_name = 'is_' + fg_const.lower().replace('fg_', '')
+        assert func.__name__ == expected_name
+
+
 def mol_from_name(name):
     obj = search_chemical(name)
     return Chem.MolFromSmiles(obj.smiles)

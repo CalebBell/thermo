@@ -268,7 +268,27 @@ __all__ = [# sulfur
            'benene_rings',
            'group_names',
 
-           'BVirial_Tsonopoulos_extended_ab']
+           'BVirial_Tsonopoulos_extended_ab',
+
+           'ALL_FUNCTIONAL_GROUPS', 'FUNCTIONAL_GROUP_CHECKS',
+           
+        'FG_ACID', 'FG_ACYL_HALIDE', 'FG_ALCOHOL', 'FG_ALDEHYDE', 'FG_ALKANE', 'FG_ALKENE', 
+        'FG_ALKYLALUMINIUM', 'FG_ALKYLLITHIUM', 'FG_ALKYLMAGNESIUM_HALIDE', 'FG_ALKYNE', 'FG_AMIDE', 
+        'FG_AMIDINE', 'FG_AMINE', 'FG_ANHYDRIDE', 'FG_AROMATIC', 'FG_AZIDE', 'FG_AZO', 'FG_BORINIC_ACID',
+        'FG_BORINIC_ESTER', 'FG_BORONIC_ACID', 'FG_BORONIC_ESTER', 'FG_BRANCHED_ALKANE', 'FG_BROMOALKANE',
+        'FG_CARBAMATE', 'FG_CARBODITHIO', 'FG_CARBODITHIOIC_ACID', 'FG_CARBONATE', 'FG_CARBOTHIOIC_O_ACID', 
+        'FG_CARBOTHIOIC_S_ACID', 'FG_CARBOXYLATE', 'FG_CARBOXYLIC_ACID', 'FG_CARBOXYLIC_ANHYDRIDE', 
+        'FG_CHLOROALKANE', 'FG_CYANATE', 'FG_CYANIDE', 'FG_CYCLOALKANE', 'FG_DISULFIDE', 'FG_ESTER', 'FG_ETHER', 
+        'FG_FLUOROALKANE', 'FG_HALOALKANE', 'FG_HYDROCARBON', 'FG_HYDROPEROXIDE', 'FG_IMIDE', 'FG_IMINE',
+        'FG_INORGANIC', 'FG_IODOALKANE', 'FG_ISOCYANATE', 'FG_ISONITRILE', 'FG_ISOTHIOCYANATE', 'FG_KETONE',
+        'FG_MERCAPTAN', 'FG_METHYLENEDIOXY', 'FG_NITRATE', 'FG_NITRILE', 'FG_NITRITE', 'FG_NITRO', 'FG_NITROSO',
+        'FG_ORGANIC', 'FG_ORTHOCARBONATE_ESTER', 'FG_ORTHOESTER', 'FG_OXIME', 'FG_PEROXIDE', 'FG_PHENOL', 
+        'FG_PHOSPHATE', 'FG_PHOSPHINE', 'FG_PHOSPHODIESTER', 'FG_PHOSPHONIC_ACID', 'FG_POLYOL', 'FG_PRIMARY_ALDIMINE', 
+        'FG_PRIMARY_AMINE', 'FG_PRIMARY_KETIMINE', 'FG_PYRIDYL', 'FG_QUAT', 'FG_RADIONUCLIDE', 'FG_SECONDARY_ALDIMINE', 
+        'FG_SECONDARY_AMINE', 'FG_SECONDARY_KETIMINE', 'FG_SILOXANE', 'FG_SILYL_ETHER', 'FG_SULFIDE', 'FG_SULFINIC_ACID', 
+        'FG_SULFONATE_ESTER', 'FG_SULFONE', 'FG_SULFONIC_ACID', 'FG_SULFOXIDE', 'FG_TERTIARY_AMINE', 'FG_THIAL', 'FG_THIOCYANATE',
+        'FG_THIOKETONE', 'FG_THIOLESTER', 'FG_THIONOESTER'
+           ]
 
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
@@ -3059,7 +3079,7 @@ def BVirial_Tsonopoulos_extended_ab(Tc, Pc, dipole, smiles):
 
 
 
-bit_functions = [
+FUNCTIONAL_GROUP_CHECKS = [
     is_acid,
     is_acyl_halide,
     is_alcohol,
@@ -3153,3 +3173,206 @@ bit_functions = [
     is_thiolester,
     is_thionoester
 ]
+
+
+FG_ACID = 'acid'
+FG_ACYL_HALIDE = 'acyl_halide'
+FG_ALCOHOL = 'alcohol'
+FG_ALDEHYDE = 'aldehyde'
+FG_ALKANE = 'alkane'
+FG_ALKENE = 'alkene'
+FG_ALKYLALUMINIUM = 'alkylaluminium'
+FG_ALKYLLITHIUM = 'alkyllithium'
+FG_ALKYLMAGNESIUM_HALIDE = 'alkylmagnesium_halide'
+FG_ALKYNE = 'alkyne'
+FG_AMIDE = 'amide'
+FG_AMIDINE = 'amidine'
+FG_AMINE = 'amine'
+FG_ANHYDRIDE = 'anhydride'
+FG_AROMATIC = 'aromatic'
+FG_AZIDE = 'azide'
+FG_AZO = 'azo'
+FG_BORINIC_ACID = 'borinic_acid'
+FG_BORINIC_ESTER = 'borinic_ester'
+FG_BORONIC_ACID = 'boronic_acid'
+FG_BORONIC_ESTER = 'boronic_ester'
+FG_BRANCHED_ALKANE = 'branched_alkane'
+FG_BROMOALKANE = 'bromoalkane'
+FG_CARBAMATE = 'carbamate'
+FG_CARBODITHIO = 'carbodithio'
+FG_CARBODITHIOIC_ACID = 'carbodithioic_acid'
+FG_CARBONATE = 'carbonate'
+FG_CARBOTHIOIC_O_ACID = 'carbothioic_o_acid'
+FG_CARBOTHIOIC_S_ACID = 'carbothioic_s_acid'
+FG_CARBOXYLATE = 'carboxylate'
+FG_CARBOXYLIC_ACID = 'carboxylic_acid'
+FG_CARBOXYLIC_ANHYDRIDE = 'carboxylic_anhydride'
+FG_CHLOROALKANE = 'chloroalkane'
+FG_CYANATE = 'cyanate'
+FG_CYANIDE = 'cyanide'
+FG_CYCLOALKANE = 'cycloalkane'
+FG_DISULFIDE = 'disulfide'
+FG_ESTER = 'ester'
+FG_ETHER = 'ether'
+FG_FLUOROALKANE = 'fluoroalkane'
+FG_HALOALKANE = 'haloalkane'
+FG_HYDROCARBON = 'hydrocarbon'
+FG_HYDROPEROXIDE = 'hydroperoxide'
+FG_IMIDE = 'imide'
+FG_IMINE = 'imine'
+FG_INORGANIC = 'inorganic'
+FG_IODOALKANE = 'iodoalkane'
+FG_ISOCYANATE = 'isocyanate'
+FG_ISONITRILE = 'isonitrile'
+FG_ISOTHIOCYANATE = 'isothiocyanate'
+FG_KETONE = 'ketone'
+FG_MERCAPTAN = 'mercaptan'
+FG_METHYLENEDIOXY = 'methylenedioxy'
+FG_NITRATE = 'nitrate'
+FG_NITRILE = 'nitrile'
+FG_NITRITE = 'nitrite'
+FG_NITRO = 'nitro'
+FG_NITROSO = 'nitroso'
+FG_ORGANIC = 'organic'
+FG_ORTHOCARBONATE_ESTER = 'orthocarbonate_ester'
+FG_ORTHOESTER = 'orthoester'
+FG_OXIME = 'oxime'
+FG_PEROXIDE = 'peroxide'
+FG_PHENOL = 'phenol'
+FG_PHOSPHATE = 'phosphate'
+FG_PHOSPHINE = 'phosphine'
+FG_PHOSPHODIESTER = 'phosphodiester'
+FG_PHOSPHONIC_ACID = 'phosphonic_acid'
+FG_POLYOL = 'polyol'
+FG_PRIMARY_ALDIMINE = 'primary_aldimine'
+FG_PRIMARY_AMINE = 'primary_amine'
+FG_PRIMARY_KETIMINE = 'primary_ketimine'
+FG_PYRIDYL = 'pyridyl'
+FG_QUAT = 'quat'
+FG_RADIONUCLIDE = 'radionuclide'
+FG_SECONDARY_ALDIMINE = 'secondary_aldimine'
+FG_SECONDARY_AMINE = 'secondary_amine'
+FG_SECONDARY_KETIMINE = 'secondary_ketimine'
+FG_SILOXANE = 'siloxane'
+FG_SILYL_ETHER = 'silyl_ether'
+FG_SULFIDE = 'sulfide'
+FG_SULFINIC_ACID = 'sulfinic_acid'
+FG_SULFONATE_ESTER = 'sulfonate_ester'
+FG_SULFONE = 'sulfone'
+FG_SULFONIC_ACID = 'sulfonic_acid'
+FG_SULFOXIDE = 'sulfoxide'
+FG_TERTIARY_AMINE = 'tertiary_amine'
+FG_THIAL = 'thial'
+FG_THIOCYANATE = 'thiocyanate'
+FG_THIOKETONE = 'thioketone'
+FG_THIOLESTER = 'thiolester'
+FG_THIONOESTER = 'thionoester'
+
+
+# List maintaining order for bit vector encoding
+ALL_FUNCTIONAL_GROUPS = [
+    FG_ACID,
+    FG_ACYL_HALIDE,
+    FG_ALCOHOL,
+    FG_ALDEHYDE,
+    FG_ALKANE,
+    FG_ALKENE,
+    FG_ALKYLALUMINIUM,
+    FG_ALKYLLITHIUM,
+    FG_ALKYLMAGNESIUM_HALIDE,
+    FG_ALKYNE,
+    FG_AMIDE,
+    FG_AMIDINE,
+    FG_AMINE,
+    FG_ANHYDRIDE,
+    FG_AROMATIC,
+    FG_AZIDE,
+    FG_AZO,
+    FG_BORINIC_ACID,
+    FG_BORINIC_ESTER,
+    FG_BORONIC_ACID,
+    FG_BORONIC_ESTER,
+    FG_BRANCHED_ALKANE,
+    FG_BROMOALKANE,
+    FG_CARBAMATE,
+    FG_CARBODITHIO,
+    FG_CARBODITHIOIC_ACID,
+    FG_CARBONATE,
+    FG_CARBOTHIOIC_O_ACID,
+    FG_CARBOTHIOIC_S_ACID,
+    FG_CARBOXYLATE,
+    FG_CARBOXYLIC_ACID,
+    FG_CARBOXYLIC_ANHYDRIDE,
+    FG_CHLOROALKANE,
+    FG_CYANATE,
+    FG_CYANIDE,
+    FG_CYCLOALKANE,
+    FG_DISULFIDE,
+    FG_ESTER,
+    FG_ETHER,
+    FG_FLUOROALKANE,
+    FG_HALOALKANE,
+    FG_HYDROCARBON,
+    FG_HYDROPEROXIDE,
+    FG_IMIDE,
+    FG_IMINE,
+    FG_INORGANIC,
+    FG_IODOALKANE,
+    FG_ISOCYANATE,
+    FG_ISONITRILE,
+    FG_ISOTHIOCYANATE,
+    FG_KETONE,
+    FG_MERCAPTAN,
+    FG_METHYLENEDIOXY,
+    FG_NITRATE,
+    FG_NITRILE,
+    FG_NITRITE,
+    FG_NITRO,
+    FG_NITROSO,
+    FG_ORGANIC,
+    FG_ORTHOCARBONATE_ESTER,
+    FG_ORTHOESTER,
+    FG_OXIME,
+    FG_PEROXIDE,
+    FG_PHENOL,
+    FG_PHOSPHATE,
+    FG_PHOSPHINE,
+    FG_PHOSPHODIESTER,
+    FG_PHOSPHONIC_ACID,
+    FG_POLYOL,
+    FG_PRIMARY_ALDIMINE,
+    FG_PRIMARY_AMINE,
+    FG_PRIMARY_KETIMINE,
+    FG_PYRIDYL,
+    FG_QUAT,
+    FG_RADIONUCLIDE,
+    FG_SECONDARY_ALDIMINE,
+    FG_SECONDARY_AMINE,
+    FG_SECONDARY_KETIMINE,
+    FG_SILOXANE,
+    FG_SILYL_ETHER,
+    FG_SULFIDE,
+    FG_SULFINIC_ACID,
+    FG_SULFONATE_ESTER,
+    FG_SULFONE,
+    FG_SULFONIC_ACID,
+    FG_SULFOXIDE,
+    FG_TERTIARY_AMINE,
+    FG_THIAL,
+    FG_THIOCYANATE,
+    FG_THIOKETONE,
+    FG_THIOLESTER,
+    FG_THIONOESTER,
+]
+
+# Dictionary mapping functional group constants to their corresponding functions
+FG_TO_FUNCTION = {
+    fg_const: FUNCTIONAL_GROUP_CHECKS[i] 
+    for i, fg_const in enumerate(ALL_FUNCTIONAL_GROUPS)
+}
+
+# Dictionary mapping functions to their corresponding functional group constants
+FUNCTION_TO_FG = {
+    func: fg_const 
+    for fg_const, func in FG_TO_FUNCTION.items()
+}
