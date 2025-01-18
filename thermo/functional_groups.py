@@ -3462,3 +3462,126 @@ def identify_functional_groups(mol):
         if check_func(mol):
             matches.add(fg_const)
     return matches
+
+
+SMARTS_PATTERNS = {
+    # Nitrogen Groups
+    FG_AMIDE: amide_smarts_collection,
+    FG_AMIDINE: amidine_smarts_collection,
+    FG_PRIMARY_KETIMINE: primary_ketimine_smarts,
+    FG_SECONDARY_KETIMINE: secondary_ketimine_smarts,
+    FG_PRIMARY_ALDIMINE: primary_aldimine_smarts,
+    FG_SECONDARY_ALDIMINE: secondary_aldimine_smarts,
+    FG_IMINE: [primary_ketimine_smarts, secondary_ketimine_smarts, primary_aldimine_smarts, secondary_aldimine_smarts],
+    FG_IMIDE: imide_smarts,
+    FG_AZIDE: azide_smarts,
+    FG_AZO: azo_smarts,
+    FG_CYANATE: cyanate_smarts,
+    FG_ISOCYANATE: isocyanate_smarts,
+    FG_CYANIDE: cyanide_smarts,
+    FG_NITRATE: nitrate_smarts,
+    FG_NITRO: nitro_smarts,
+    FG_NITRITE: nitrite_smarts,
+    FG_NITROSO: nitroso_smarts,
+    FG_OXIME: oxime_smarts,
+    FG_PYRIDYL: pyridyl_smarts,
+    FG_CARBAMATE: carbamate_smarts,
+    
+    # Sulfur Groups
+    FG_MERCAPTAN: mercaptan_smarts,
+    FG_SULFIDE: sulfide_smarts,
+    FG_DISULFIDE: disulfide_smarts,
+    FG_SULFOXIDE: sulfoxide_smarts,
+    FG_SULFONE: sulfone_smarts,
+    FG_SULFINIC_ACID: sulfinic_acid_smarts,
+    FG_SULFONIC_ACID: sulfonic_acid_smarts,
+    FG_SULFONATE_ESTER: sulfonate_ester_smarts,
+    FG_THIOCYANATE: thiocyanate_smarts,
+    FG_ISOTHIOCYANATE: isothiocyanate_smarts,
+    FG_THIOKETONE: thioketone_smarts,
+    FG_THIAL: thial_smarts,
+    FG_CARBOTHIOIC_S_ACID: carbothioic_s_acid_smarts,
+    FG_CARBOTHIOIC_O_ACID: carbothioic_o_acid_smarts,
+    FG_THIOLESTER: thiolester_smarts,
+    FG_THIONOESTER: thionoester_smarts,
+    FG_CARBODITHIOIC_ACID: carbodithioic_acid_smarts,
+    FG_CARBODITHIO: carbodithio_smarts,
+    
+    # Silicon Groups
+    FG_SILOXANE: siloxane_smarts,
+    FG_SILYL_ETHER: silyl_ether_smarts,
+    
+    # Hydrocarbon Groups
+    FG_ALKANE: alkane_smarts,
+    FG_BRANCHED_ALKANE: branched_alkane_smarts,
+    FG_ALKENE: alkene_smarts,
+    FG_ALKYNE: alkyne_smarts,
+    FG_AROMATIC: aromatic_smarts,
+    
+    # Oxygen Groups
+    FG_ALCOHOL: alcohol_smarts,
+    FG_ACID: acid_smarts,
+    FG_KETONE: ketone_smarts,
+    FG_ALDEHYDE: aldehyde_smarts,
+    FG_ACYL_HALIDE: acyl_halide_smarts,
+    FG_CARBONATE: carbonate_smarts,
+    FG_CARBOXYLATE: carboxylate_smarts,
+    FG_HYDROPEROXIDE: hydroperoxide_smarts,
+    FG_PEROXIDE: peroxide_smarts,
+    FG_ORTHOESTER: orthoester_smarts,
+    FG_METHYLENEDIOXY: methylenedioxy_smarts,
+    FG_ORTHOCARBONATE_ESTER: orthocarbonate_ester_smarts,
+    FG_CARBOXYLIC_ANHYDRIDE: carboxylic_anhydride_smarts,
+    FG_ANHYDRIDE: anhydride_smarts,
+    FG_ETHER: ether_smarts,
+    FG_PHENOL: phenol_smarts,
+    FG_ESTER: ester_smarts,
+    
+    # Boron Groups
+    FG_BORONIC_ACID: boronic_acid_smarts,
+    FG_BORONIC_ESTER: boronic_ester_smarts,
+    FG_BORINIC_ACID: borinic_acid_smarts,
+    FG_BORINIC_ESTER: borinic_ester_smarts,
+    
+    # Phosphorus Groups
+    FG_PHOSPHINE: phosphine_smarts,
+    FG_PHOSPHONIC_ACID: phosphonic_acid_smarts,
+    FG_PHOSPHODIESTER: phosphodiester_smarts,
+    FG_PHOSPHATE: phosphate_smarts,
+    
+    # Halogen Groups
+    FG_HALOALKANE: haloalkane_smarts,
+    FG_FLUOROALKANE: fluoroalkane_smarts,
+    FG_CHLOROALKANE: chloroalkane_smarts,
+    FG_BROMOALKANE: bromoalkane_smarts,
+    FG_IODOALKANE: iodoalkane_smarts,
+    
+    # Amine Groups
+    FG_AMINE: amine_smarts,
+    FG_PRIMARY_AMINE: primary_amine_smarts,
+    FG_SECONDARY_AMINE: secondary_amine_smarts,
+    FG_TERTIARY_AMINE: [tertiary_amine_smarts, tertiary_amine_smarts_aliphatic, 
+                       tertiary_amine_smarts_aromatic, tertiary_amine_smarts_mixed, 
+                       tertiary_amine_1],
+    FG_QUAT: quat_smarts,
+
+    # Organometallic Groups
+    FG_ALKYLLITHIUM: alkyllithium_smarts,
+    FG_ALKYLALUMINIUM: alkylaluminium_smarts,
+    FG_ALKYLMAGNESIUM_HALIDE: [smarts_alkylmagnesium_halide_Mg0, 
+                              smarts_alkylmagnesium_halide_Mg1,
+                              smarts_alkylmagnesium_halide_Mg2],
+
+    FG_ISONITRILE: isonitrile_smarts, 
+    FG_NITRILE: nitrile_smarts,
+    FG_CARBOXYLIC_ACID: carboxylic_acid_smarts,
+
+    # Missing patterns - shouldn't be expected to work, categories
+    FG_CYCLOALKANE: None,
+    FG_HYDROCARBON: None,
+    FG_ORGANIC: None,
+    FG_POLYOL: None,
+    FG_RADIONUCLIDE: None,
+    FG_INORGANIC: None,
+    
+}

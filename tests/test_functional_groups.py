@@ -44,10 +44,12 @@ def test_all_functional_groups_list():
     
 def test_mapping_dictionaries():
     """Test the FG_TO_FUNCTION and FUNCTION_TO_FG dictionaries"""
-    from thermo.functional_groups import FG_TO_FUNCTION, FUNCTION_TO_FG
+    from thermo.functional_groups import FG_TO_FUNCTION, FUNCTION_TO_FG, SMARTS_PATTERNS
     # Test sizes
     assert len(FG_TO_FUNCTION) == len(FUNCTIONAL_GROUP_CHECKS)
     assert len(FUNCTION_TO_FG) == len(FUNCTIONAL_GROUP_CHECKS)
+
+    
     
     # Test bidirectional mapping
     for fg_const, func in FG_TO_FUNCTION.items():
@@ -57,6 +59,22 @@ def test_mapping_dictionaries():
     for fg_const, func in FG_TO_FUNCTION.items():
         expected_name = 'is_' + fg_const.lower().replace('fg_', '')
         assert func.__name__ == expected_name
+
+
+    # Find missing SMARTS patterns
+    fg_with_smarts = set(SMARTS_PATTERNS.keys())
+    all_fgs = set(ALL_FUNCTIONAL_GROUPS)
+    missing_smarts = all_fgs - fg_with_smarts
+    extra_smarts = fg_with_smarts - all_fgs
+    
+    error_msg = []
+    if missing_smarts:
+        error_msg.append(f"Missing SMARTS patterns for: {sorted(missing_smarts)}")
+    if extra_smarts:
+        error_msg.append(f"Extra SMARTS patterns for: {sorted(extra_smarts)}")
+        
+    assert len(SMARTS_PATTERNS) == len(FUNCTIONAL_GROUP_CHECKS), \
+        "SMARTS_PATTERNS length mismatch:\n" + "\n".join(error_msg)
 
 
 @pytest.mark.rdkit
