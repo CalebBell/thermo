@@ -2594,3 +2594,35 @@ def test_count_rings_by_atom_counts_with_names():
     
     mol = mol_from_name('quinoxaline')
     assert count_rings_by_atom_counts(mol, {'N': 2, 'C': 4}) == 1
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_identify_functional_group_atoms():
+    # Test carboxylic acid
+    mol = Chem.MolFromSmiles('CC(=O)O')  # Acetic acid
+    assert identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID) == [(1, 2, 3)]
+    
+    # Test multiple instances of same group
+    mol = Chem.MolFromSmiles('OC(=O)CCC(=O)O')  # Glutaric acid
+    assert identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID) == [(0, 1, 2), (5, 6, 7)]
+    
+    # Test amide
+    mol = Chem.MolFromSmiles('CC(=O)N')  # Acetamide
+    assert identify_functional_group_atoms(mol, FG_AMIDE) == [(0, 1, 2, 3), (1, 2, 3)]
+    
+    # Test overlapping patterns
+    mol = Chem.MolFromSmiles('CC(=O)NC(=O)C')  # N-acetylacetamide
+    assert identify_functional_group_atoms(mol, FG_AMIDE) == [(0, 1, 2, 3), (3, 4, 5, 6)]
+    
+    # Test no matches
+    mol = Chem.MolFromSmiles('CCO')  # Ethanol
+    assert identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID) == []
+    
+    # Test edge cases
+    mol = Chem.MolFromSmiles('[H]')  # Hydrogen atom
+    assert identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID) == []
+    
+    mol = None
+    with pytest.raises(ValueError):
+        identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID)

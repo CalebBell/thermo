@@ -273,7 +273,8 @@ __all__ = [# sulfur
 
            'BVirial_Tsonopoulos_extended_ab',
 
-           'ALL_FUNCTIONAL_GROUPS', 'FUNCTIONAL_GROUP_CHECKS', 'identify_functional_groups',
+           'ALL_FUNCTIONAL_GROUPS', 'FUNCTIONAL_GROUP_CHECKS',
+           'identify_functional_groups', 'identify_functional_group_atoms',
            
         'FG_ACID', 'FG_ACYL_HALIDE', 'FG_ALCOHOL', 'FG_ALDEHYDE', 'FG_ALKANE', 'FG_ALKENE', 
         'FG_ALKYLALUMINIUM', 'FG_ALKYLLITHIUM', 'FG_ALKYLMAGNESIUM_HALIDE', 'FG_ALKYNE', 'FG_AMIDE', 
@@ -3557,7 +3558,7 @@ SMARTS_PATTERNS = {
     FG_IODOALKANE: iodoalkane_smarts,
     
     # Amine Groups
-    FG_AMINE: amine_smarts,
+    FG_AMINE: all_amine_smarts,
     FG_PRIMARY_AMINE: primary_amine_smarts,
     FG_SECONDARY_AMINE: secondary_amine_smarts,
     FG_TERTIARY_AMINE: [tertiary_amine_smarts, tertiary_amine_smarts_aliphatic, 
@@ -3585,3 +3586,49 @@ SMARTS_PATTERNS = {
     FG_INORGANIC: None,
     
 }
+
+def identify_functional_group_atoms(mol, functional_group):
+    """Returns the unique atoms involved in all instances of a functional group.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule to analyze
+    functional_group : str
+        One of the FG_ constants representing the functional group to find
+        
+    Returns
+    -------
+    list[tuple]
+        List of sorted tuples containing atom indices for each unique match of the functional group
+    
+    Examples
+    --------
+    >>> from rdkit import Chem
+    >>> mol = Chem.MolFromSmiles("CC(=O)O")  # Acetic acid
+    >>> matches = identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID)
+    """
+    if mol is None:
+        raise ValueError("Missing molecule")
+    if functional_group not in SMARTS_PATTERNS:
+        raise ValueError(f"Unknown functional group: {functional_group}")
+    
+    patterns = SMARTS_PATTERNS[functional_group]
+    if patterns is None:
+        raise ValueError("Specified group is not supported")
+        
+    # Handle both single patterns and lists of patterns
+    if isinstance(patterns, str):
+        patterns = [patterns]
+    
+    # Collect all matches from all patterns
+    all_matches = []
+    for pattern in patterns:
+        matches = mol.GetSubstructMatches(smarts_mol_cache(pattern))
+        all_matches.extend(matches)
+    
+    # Convert matches to sorted tuples and deduplicate
+    unique_matches = {tuple(sorted(match)) for match in all_matches}
+    
+    # Return as sorted list for consistent ordering
+    return sorted(list(unique_matches))
