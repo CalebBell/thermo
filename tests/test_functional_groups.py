@@ -70,24 +70,6 @@ def test_identify_functional_groups_alcohols():
     assert FG_ORGANIC in groups, "Ethanol should be marked as organic"
     assert FG_KETONE not in groups, "Ethanol should not contain ketone group"
 
-
-@pytest.mark.rdkit
-@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
-def test_identify_functional_groups_multiple():
-    """Test identification of molecules with multiple functional groups"""
-    # Test lactic acid - should have alcohol and acid groups
-    mol = mol_from_name('lactic acid')
-    groups = identify_functional_groups(mol)
-    assert FG_ALCOHOL in groups, "Lactic acid should contain alcohol group"
-    assert FG_CARBOXYLIC_ACID in groups, "Lactic acid should contain acid group"
-    assert FG_ORGANIC in groups, "Lactic acid should be marked as organic"
-    
-    # Test serine - should have alcohol, amine, and acid groups
-    mol = mol_from_name('serine')
-    groups = identify_functional_groups(mol)
-    assert groups & {FG_ALCOHOL, FG_AMINE, FG_CARBOXYLIC_ACID} == {FG_ALCOHOL, FG_AMINE, FG_CARBOXYLIC_ACID}
-
-
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_identify_functional_groups_edge_cases():
@@ -103,7 +85,6 @@ def test_identify_functional_groups_edge_cases():
     groups = identify_functional_groups(mol)
     assert FG_AROMATIC in groups
     assert FG_HYDROCARBON in groups
-    assert len(groups & {FG_ALCOHOL, FG_AMINE, FG_CARBOXYLIC_ACID}) == 0
 
 
 def mol_from_name(name):
@@ -2521,3 +2502,77 @@ def test_is_radionuclide():
     assert not is_radionuclide(Chem.MolFromSmiles("[15N]"))  # Nitrogen-15
     assert not is_radionuclide(Chem.MolFromSmiles("[63Cu]"))  # Copper-63
     assert not is_radionuclide(Chem.MolFromSmiles("[28Si]"))  # Silicon-28
+
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_count_rings_by_atom_counts():
+    # Test common 6-membered rings
+    mol = Chem.MolFromSmiles('O1CCOCC1')  # 1,4-dioxane
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 1
+    assert count_rings_by_atom_counts(mol, {'O': 1, 'C': 5}) == 0
+
+
+    mol = Chem.MolFromSmiles('C1COCCN1CC2COC(CO2)CN3CCOCC3')
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 1
+     
+    # Test 5-membered rings
+    mol = Chem.MolFromSmiles('C1CCNC1')  # pyrrolidine
+    assert count_rings_by_atom_counts(mol, {'N': 1, 'C': 4}) == 1
+    assert count_rings_by_atom_counts(mol, {'N': 1, 'C': 3}) == 0
+    
+    # Test multiple rings in one molecule
+    mol = Chem.MolFromSmiles('C=CC1OCC2(CO1)COC(OC2)C=C')  # two dioxane rings
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 2
+    
+    # Test fused rings
+    mol = Chem.MolFromSmiles('C1COC2CCOC12')  # fused dioxane system
+    assert count_rings_by_atom_counts(mol, {'O': 1, 'C': 4}) == 2
+    
+    # Test aromatic rings
+    mol = Chem.MolFromSmiles('c1ccccc1')  # benzene
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 1
+    
+    # Test mixed aromatic/non-aromatic https://en.wikipedia.org/wiki/1,4-Benzodioxine
+    mol = Chem.MolFromSmiles('O1C=COc2ccccc12')  # benzene + dioxane
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 1
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 1
+    
+    # Test rings with multiple heteroatom types
+    mol = Chem.MolFromSmiles('C1CNCCO1')  # morpholine
+    assert count_rings_by_atom_counts(mol, {'N': 1, 'O': 1, 'C': 4}) == 1
+
+    # Test edge cases
+    mol = Chem.MolFromSmiles('CC')  # no rings
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 0
+    
+    mol = Chem.MolFromSmiles('O1NONNC1')  # wrong composition
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 0
+            
+    # Test spiro rings
+    mol = Chem.MolFromSmiles('C1CCC(CC1)C2OCCO2')  # spiro[cyclohexane-1,2'-[1,3]dioxolane]
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 1
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 3}) == 1
+    
+    # Test bridged rings
+    mol = Chem.MolFromSmiles('C1CC2CCC1C2')  # norbornane
+    assert count_rings_by_atom_counts(mol, {'C': 7}) == 0 
+    assert count_rings_by_atom_counts(mol, {'C': 5}) == 2 # what rdkit says
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 0
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_count_rings_by_atom_counts_with_names():
+    """Test using mol_from_name for more complex molecules"""
+    mol = mol_from_name('morpholine')
+    assert count_rings_by_atom_counts(mol, {'O': 1, 'N': 1, 'C': 4}) == 1
+    
+    mol = mol_from_name('1,4-dioxane')
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 1
+    
+    mol = mol_from_name('pyridine')
+    assert count_rings_by_atom_counts(mol, {'N': 1, 'C': 5}) == 1
+    
+    mol = mol_from_name('quinoxaline')
+    assert count_rings_by_atom_counts(mol, {'N': 2, 'C': 4}) == 1

@@ -180,7 +180,9 @@ Utility functions
 
 .. autofunction:: thermo.functional_groups.count_ring_ring_attatchments
 .. autofunction:: thermo.functional_groups.count_rings_attatched_to_rings
+.. autofunction:: thermo.functional_groups.count_rings_by_atom_counts
 .. autofunction:: thermo.functional_groups.benene_rings
+
 
 ------------------------------------
 Functions using group identification
@@ -265,6 +267,7 @@ __all__ = [# sulfur
 
            'count_ring_ring_attatchments',
            'count_rings_attatched_to_rings',
+           'count_rings_by_atom_counts',
            'benene_rings',
            'group_names',
 
@@ -2872,7 +2875,61 @@ def benene_rings(mol):
     return len(matches)
 
 
-
+def count_rings_by_atom_counts(mol, atom_counts):
+    """Counts rings containing exactly specified numbers of each atom type.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule to analyze
+    atom_counts : dict
+        Dictionary of atomic symbols and their required counts, e.g. {'O': 2, 'C': 4}
+        
+    Returns
+    -------
+    int
+        Number of rings matching the criteria
+        
+    Examples
+    --------
+    >>> from rdkit.Chem import MolFromSmiles
+    >>> # Count rings with exactly 2 oxygens and 4 carbons (dioxane pattern)
+    >>> mol = MolFromSmiles('C1COCCOC1')  # 1,4-dioxane
+    >>> count_rings_by_composition(mol, {'O': 2, 'C': 4})
+    """
+    ring_size = sum(atom_counts.values())
+    
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
+    
+    matching_rings = 0
+    for ring in rings:
+        # Check ring size
+        if len(ring) != ring_size:
+            continue
+            
+        # Count all atoms in this ring
+        ring_atom_counts = {}
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            symbol = atom.GetSymbol()
+            ring_atom_counts[symbol] = ring_atom_counts.get(symbol, 0) + 1
+        
+        # Check if counts match exactly
+        matches = True
+        for atom_type, required_count in atom_counts.items():
+            if ring_atom_counts.get(atom_type, 0) != required_count:
+                matches = False
+                break
+                
+        # Check no other atoms are present
+        if matches and len(ring_atom_counts) != len(atom_counts):
+            continue
+            
+        if matches:
+            matching_rings += 1
+            
+    return matching_rings
 
 
 radionuclides = {

@@ -19,7 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-This module contains an implementation of the Fedors
+This module contains an implementation of the Bondi
 group-contribution method.
 This functionality requires the RDKit library to work.
 
@@ -73,6 +73,7 @@ class BondiGroupContribution:
 
 BONDI_GROUPS_BY_ID = {}
 BONDI_GROUPS = {}
+# TABLE XV in van der Waals Volumes and Radii, 1964
 BONDI_GROUPS['C'] = BondiGroupContribution('C', 3.33, 0.0, smarts='[CX4;H0]', atoms={'C': 1, 'H': 0})
 BONDI_GROUPS['CH'] = BondiGroupContribution('CH', 6.78, 0.57, smarts='[CX4;H1]', atoms={'C': 1, 'H': 1})
 BONDI_GROUPS['CH2'] = BondiGroupContribution('CH2', 10.23, 1.35, smarts='[CX4;H2]', atoms={'C': 1, 'H': 2})
@@ -84,6 +85,7 @@ BONDI_GROUPS['CH4'] = BondiGroupContribution(
     bonds={SINGLE_BOND: 4},
     smarts='[CX4;H4]'
 )
+# n-paraffins specific correlations: 6.88 + 10.23 Nc for Vw, and 1.54 + 1.35 Nc for Aw
 
 BONDI_GROUPS['=C='] = BondiGroupContribution(
     '=C=', 6.96, None,
@@ -149,6 +151,8 @@ BONDI_GROUPS['≡C-H'] = BondiGroupContribution(
     bonds={TRIPLE_BOND: 1},
     smarts='[C;H1;X2;R0;$(*#[C;H1;X2;R0;$(*#[C;H1])])][H]'
 )
+# There is also a version of ≡C- for diacetylene but we it includes Vw and Aw only
+# and the value for diacetylene is likely to come from UNIFAC
 
 
 
@@ -214,7 +218,62 @@ BONDI_GROUPS['Naphthyl'] = BondiGroupContribution(
 
 
 
+# TABLE XVI in van der Waals Volumes and Radii, 1964
 
+# -O- (c.e.): heterocycloaliphatic esters
+BONDI_GROUPS['-O- (c.e.)'] = BondiGroupContribution(
+    '-O- (c.e.)', 5.20, 0.74,
+    atoms={'O': 1},
+    bonds={SINGLE_BOND: 2},
+    smarts='[O;X2;R1]'
+)
+
+# -O- (a.e.): polyalkane ethers
+BONDI_GROUPS['-O- (a.e.)'] = BondiGroupContribution(
+    '-O- (a.e.)', 3.70, 0.60,
+    atoms={'O': 1},
+    bonds={SINGLE_BOND: 2},
+    smarts='[O;X2;R0]'
+)
+
+# -O- (ph.e.): polyphenyl ethers
+BONDI_GROUPS['-O- (ph.e.)'] = BondiGroupContribution(
+    '-O- (ph.e.)', 3.20, 0.54,
+    atoms={'O': 1},
+    bonds={SINGLE_BOND: 2},
+    smarts='[O;X2;$(c1ccccc1)]'
+)
+
+# -OH: hydroxyl group
+BONDI_GROUPS['-OH'] = BondiGroupContribution(
+    '-OH', 8.04, 1.46,
+    atoms={'O': 1, 'H': 1},
+    bonds={SINGLE_BOND: 1},
+    smarts='[O;H1]'
+)
+# >C=O: carbonyl group (non-aromatic)
+BONDI_GROUPS['>C=O'] = BondiGroupContribution(
+    '>C=O', 11.70, 1.60,
+    atoms={'C': 1, 'O': 1},
+    bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
+    smarts='[C;X3](=O)'
+)
+# -S- and -SH do not include an Aw contribution
+# -S-: sulfur ether
+BONDI_GROUPS['-S-'] = BondiGroupContribution(
+    '-S-', 10.8, None,
+    atoms={'S': 1},
+    bonds={SINGLE_BOND: 2},
+    smarts='[S;X2]'
+)
+
+# -SH: thiol group
+BONDI_GROUPS['-SH'] = BondiGroupContribution(
+    '-SH', 14.8, None,
+    atoms={'S': 1, 'H': 1},
+    bonds={SINGLE_BOND: 1},
+    smarts='[S;H1]'
+)
 
 # -NH2 (amino group)
 BONDI_GROUPS['-NH2'] = BondiGroupContribution(
@@ -256,7 +315,7 @@ BONDI_GROUPS['-NO2'] = BondiGroupContribution(
     bonds={SINGLE_BOND: 2, DOUBLE_BOND: 1},
     smarts='[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]'
 )
-# phosphorous unknown what they tried to draw, looks wrong
+# phosphorous not sure what they tried to draw, looks wrong, has only Vw
 
 
 # Fluorine group definitions
@@ -291,6 +350,43 @@ BONDI_GROUPS['-F (ph)'] = BondiGroupContribution(
     atoms={'F': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[F;$(c1ccccc1)]'
+)
+
+# Chlorine group definitions
+
+# -Cl (pr): primary aliphatic chlorine, attached to an alkane in the primary position
+BONDI_GROUPS['-Cl (pr)'] = BondiGroupContribution(
+    '-Cl (pr)', 11.62, 1.80,
+    atoms={'Cl': 1},
+    bonds={SINGLE_BOND: 1},
+    smarts='[Cl;X1;R0]'
+)
+
+# -Cl (s,t,p): secondary, tertiary, or per/polyhalide of an alkane
+BONDI_GROUPS['-Cl (s,t,p)'] = BondiGroupContribution(
+    '-Cl (s,t,p)', 12.24, 1.82,
+    atoms={'Cl': 1},
+    bonds={SINGLE_BOND: 1},
+    smarts=[
+        '[Cl;X1;R0;$(C([#6,#1])([#6,#1]))]',
+        '[Cl$([*;!R]C([F,Cl,Br,I])[#6,F,Cl,Br,I])]'
+    ]
+)
+
+# -Cl (v): chlorine attached to a vinyl group
+BONDI_GROUPS['-Cl (v)'] = BondiGroupContribution(
+    '-Cl (v)', 11.65, 1.80,
+    atoms={'Cl': 1},
+    bonds={SINGLE_BOND: 1},
+    smarts='[Cl;$([Cl]C=C)]'
+)
+
+# -Cl (ph): phenyl chlorine, attached to phenyl ring
+BONDI_GROUPS['-Cl (ph)'] = BondiGroupContribution(
+    '-Cl (ph)', 12.0, 1.81,
+    atoms={'Cl': 1},
+    bonds={SINGLE_BOND: 1},
+    smarts='[Cl;$(c1ccccc1)]'
 )
 
 
@@ -349,99 +445,10 @@ BONDI_GROUPS['-I (ph)'] = BondiGroupContribution(
     smarts='[I;$(c1ccccc1)]'
 )
 
-# Chlorine group definitions
-
-# -Cl (pr): primary aliphatic chlorine, attached to an alkane in the primary position
-BONDI_GROUPS['-Cl (pr)'] = BondiGroupContribution(
-    '-Cl (pr)', 11.62, 1.80,
-    atoms={'Cl': 1},
-    bonds={SINGLE_BOND: 1},
-    smarts='[Cl;X1;R0]'
-)
-
-# -Cl (s,t,p): secondary, tertiary, or per/polyhalide of an alkane
-BONDI_GROUPS['-Cl (s,t,p)'] = BondiGroupContribution(
-    '-Cl (s,t,p)', 12.24, 1.82,
-    atoms={'Cl': 1},
-    bonds={SINGLE_BOND: 1},
-    smarts=[
-        '[Cl;X1;R0;$(C([#6,#1])([#6,#1]))]',
-        '[Cl$([*;!R]C([F,Cl,Br,I])[#6,F,Cl,Br,I])]'
-    ]
-)
-
-# -Cl (v): chlorine attached to a vinyl group
-BONDI_GROUPS['-Cl (v)'] = BondiGroupContribution(
-    '-Cl (v)', 11.65, 1.80,
-    atoms={'Cl': 1},
-    bonds={SINGLE_BOND: 1},
-    smarts='[Cl;$([Cl]C=C)]'
-)
-
-# -Cl (ph): phenyl chlorine, attached to phenyl ring
-BONDI_GROUPS['-Cl (ph)'] = BondiGroupContribution(
-    '-Cl (ph)', 12.0, 1.81,
-    atoms={'Cl': 1},
-    bonds={SINGLE_BOND: 1},
-    smarts='[Cl;$(c1ccccc1)]'
-)
+# TABLE XVII in van der Waals Volumes and Radii, 1964
 
 
-# -S-: sulfur ether
-BONDI_GROUPS['-S-'] = BondiGroupContribution(
-    '-S-', 10.8, None,
-    atoms={'S': 1},
-    bonds={SINGLE_BOND: 2},
-    smarts='[S;X2]'
-)
 
-# -SH: thiol group
-BONDI_GROUPS['-SH'] = BondiGroupContribution(
-    '-SH', 14.8, None,
-    atoms={'S': 1, 'H': 1},
-    bonds={SINGLE_BOND: 1},
-    smarts='[S;H1]'
-)
-
-
-# -O- (c.e.): heterocycloaliphatic esters
-BONDI_GROUPS['-O- (c.e.)'] = BondiGroupContribution(
-    '-O- (c.e.)', 5.20, 0.74,
-    atoms={'O': 1},
-    bonds={SINGLE_BOND: 2},
-    smarts='[O;X2;R1]'
-)
-
-# -O- (a.e.): polyalkane ethers
-BONDI_GROUPS['-O- (a.e.)'] = BondiGroupContribution(
-    '-O- (a.e.)', 3.70, 0.60,
-    atoms={'O': 1},
-    bonds={SINGLE_BOND: 2},
-    smarts='[O;X2;R0]'
-)
-
-# -O- (ph.e.): polyphenyl ethers
-BONDI_GROUPS['-O- (ph.e.)'] = BondiGroupContribution(
-    '-O- (ph.e.)', 3.20, 0.54,
-    atoms={'O': 1},
-    bonds={SINGLE_BOND: 2},
-    smarts='[O;X2;$(c1ccccc1)]'
-)
-
-# -OH: hydroxyl group
-BONDI_GROUPS['-OH'] = BondiGroupContribution(
-    '-OH', 8.04, 1.46,
-    atoms={'O': 1, 'H': 1},
-    bonds={SINGLE_BOND: 1},
-    smarts='[O;H1]'
-)
-# >C=O: carbonyl group (non-aromatic)
-BONDI_GROUPS['>C=O'] = BondiGroupContribution(
-    '>C=O', 11.70, 1.60,
-    atoms={'C': 1, 'O': 1},
-    bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
-    smarts='[C;X3](=O)'
-)
 
 for group in BONDI_GROUPS.values():
     if group.priority is None:
@@ -508,7 +515,7 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
             V_vdw += group.Vw * count
             if group.Aw is not None:
                 A_vdw += group.Aw * count
-    # TODO: Corrections
+    # TODO: Corrections; all main groups have been implemented
 
     V_vdw *= 1e-6   # Convert R from cm^3/mol to m^3/mol
     A_vdw *= 0.0001*1e9  # Convert Q from 1e9 cm^2/mol to m^2/mol
