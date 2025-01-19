@@ -33,7 +33,7 @@ This functionality requires the RDKit library to work.
 
 '''
 __all__ = []
-from thermo.functional_groups import FG_CARBOXYLIC_ACID, FG_AMIDE, identify_functional_group_atoms, count_rings_by_atom_counts
+from thermo.functional_groups import FG_CARBOXYLIC_ACID, FG_AMIDE, identify_conjugated_bonds, identify_functional_group_atoms, count_rings_by_atom_counts
 from thermo.group_contribution.group_contribution_base import priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
 
 # WIP
@@ -492,6 +492,127 @@ def count_dioxane_rings(mol):
     """
     # Dioxane ring has exactly 2 oxygens and 4 carbons
     return count_rings_by_atom_counts(mol, {'O': 2, 'C': 4})
+
+def count_conjugation_interrupting_bonds(mol):
+    """Count single bonds between conjugated double bonds.
+    Each such bond contributes a decrement of 0.25 to Vw.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule to analyze
+        
+    Returns
+    -------
+    int
+        Number of single bonds between conjugated double bonds
+    """
+    conjugated_systems = identify_conjugated_bonds(mol)
+    return len(conjugated_systems)
+
+# checked with various groups
+def find_methylene_rings_condensed_to_aromatic_rings(mol):
+    r'''Given a `rdkit.Chem.rdchem.Mol` object, find all methylene rings that are
+    condensed to benzene rings. A methylene ring is defined as a saturated ring where
+    all non-shared atoms are CH2 groups.
+
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule to analyze
+
+    Returns
+    -------
+    list
+        List of tuples containing the atom indices for each unique methylene ring
+        condensed to benzene. The indices are sorted for uniqueness.
+
+    Examples
+    --------
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> # Indane has one methylene ring
+    >>> find_methylene_rings_condensed_to_aromatic_rings(MolFromSmiles('C1CC2=CC=CC=C2C1')) # doctest:+SKIP
+    [(0, 1, 2, 7, 8)]
+    >>> # Tetralin also has one methylene ring
+    >>> find_methylene_rings_condensed_to_aromatic_rings(MolFromSmiles('C1CCC2=CC=CC=C2C1')) # doctest:+SKIP
+    [(0, 1, 2, 3, 8, 9)]
+    '''
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
+    ring_count = len(atom_rings)
+    
+    # Convert to sets for easier intersection operations
+    ring_sets = [set(r) for r in atom_rings]
+    
+    # Find aromatic rings (benzene rings)
+    aromatic_rings = []
+    for i, ring in enumerate(ring_sets):
+        if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+            aromatic_rings.append(i)
+    
+    # Find potential methylene rings (non-aromatic) condensed to benzene
+    methylene_ring_candidates = []
+    for arom_idx in aromatic_rings:
+        arom_ring = ring_sets[arom_idx]
+        for i, ring in enumerate(ring_sets):
+            if i == arom_idx:
+                continue
+            
+            # Check if rings share exactly 2 atoms
+            shared = arom_ring.intersection(ring)
+            if len(shared) != 2:
+                continue
+                
+            # Check if shared atoms are adjacent in both rings
+            # Convert shared atoms to list for indexing
+            shared_list = list(shared)
+            for atom1 in shared_list:
+                for atom2 in shared_list:
+                    if atom1 >= atom2:
+                        continue
+                    # Check if atoms are bonded
+                    bond = mol.GetBondBetweenAtoms(atom1, atom2)
+                    if bond is not None:
+                        # Quick check - does this ring have at least one CH2?
+                        has_ch2 = False
+                        for atom_idx in ring:
+                            atom = mol.GetAtomWithIdx(atom_idx)
+                            if (atom.GetSymbol() == 'C' and
+                                atom.GetTotalNumHs() == 2 and 
+                                atom.GetDegree() == 2):
+                                has_ch2 = True
+                                break
+                        if has_ch2:
+                            methylene_ring_candidates.append(ring)
+                        break                        
+    # Now check each candidate ring to see if it's a true methylene ring
+#     print(methylene_ring_candidates, 'methylene_ring_candidates')
+    methylene_rings = []
+    for ring in methylene_ring_candidates:
+        is_methylene = True
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            # Skip the shared atoms (which will be aromatic)
+            if atom.GetIsAromatic():
+                continue
+            # Check if it's a CH2 group:
+            # - Must be carbon
+            # - Must have exactly 2 hydrogens
+            # - Must have exactly 2 bonds (to other ring carbons)
+            if (atom.GetSymbol() != 'C' or 
+                atom.GetTotalNumHs() != 2 or
+                atom.GetDegree() != 2):
+                is_methylene = False
+                break
+        
+        if is_methylene:
+            # Add sorted tuple of atom indices for uniqueness
+            methylene_rings.append(tuple(sorted(ring)))
+    
+    # Remove any duplicates and return
+    return sorted(list(set(methylene_rings)))
+
+
 
 def bondi_van_der_waals_surface_area_volume(rdkitmol):
     """
