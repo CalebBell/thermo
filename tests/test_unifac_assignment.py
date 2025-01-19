@@ -29,7 +29,7 @@ from thermo import Chemical
 from chemicals.identifiers import search_chemical
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
 from thermo.unifac import *
-from thermo.unifac import DOUFSG, UNIFAC_SUBGROUPS, NISTUFSG_SUBGROUPS, LUFSG_SUBGROUPS, DOUFSG_SUBGROUPS, PSRK_SUBGROUPS, UNIFAC_LLE_SUBGROUPS, VTPRSG_SUBGROUPS
+from thermo.unifac import DOUFSG, NISTKTUFSG_SUBGROUPS, UNIFAC_SUBGROUPS, NISTUFSG_SUBGROUPS, LUFSG_SUBGROUPS, DOUFSG_SUBGROUPS, PSRK_SUBGROUPS, UNIFAC_LLE_SUBGROUPS, VTPRSG_SUBGROUPS
 
 try:
     import rdkit
@@ -2157,4 +2157,30 @@ def test_NISTUFSG_cyclic_N_alkyl_amines():
     rdkitmol = Chemical('2-methyl-1-propan-2-ylpiperazine').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
     # assert assignment == {166: 1, 78: 4, 1: 3}  # 1 c-CH-NCH, 4 c-CH2, 3 CH3
+    assert success
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTKTUFSG_branched_esters():
+    # # Test ethyl acetoacetate
+    # getting {1: 1, 2: 1, 42: 1, 52: 1}  right now
+    # rdkitmol = Chemical('ethyl acetoacetate').rdkitmol
+    # assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTKTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    # assert assignment == {53: 1, 1: 2, 2: 1}  # 1 >CH-COO-, 2 CH3, 1 CH2
+    # assert success
+
+    # Test ethyl 2,2-dimethylpropionate (ethyl pivalate)
+    rdkitmol = Chemical('ethyl pivalate').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTKTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {54: 1, 1: 4, 2: 1}  # 1 ->C-COO-, 4 CH3, 1 CH2
+    assert success
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_NISTKTUFSG_tbutyl_ether():
+    # Test di-tert-butyl ether: (CH3)3C-O-C(CH3)3
+    rdkitmol = Chemical('di-tert-butyl ether').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=NISTKTUFSG_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {1: 6, 4: 1, 62: 1}
     assert success
