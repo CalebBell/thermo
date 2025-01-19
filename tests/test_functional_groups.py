@@ -2663,3 +2663,7 @@ def test_identify_conjugated_bonds():
     
     mol = Chem.MolFromSmiles('C')  # methane
     assert identify_conjugated_bonds(mol) == []
+
+    # beta-carotin
+    mol = Chem.MolFromSmiles('CC1=C(C(CCC1)(C)C)/C=C/C(=C/C=C/C(=C/C=C/C=C(/C=C/C=C(/C=C/C2=C(CCCC2(C)C)C)\\C)\\C)/C)/C') 
+    assert len(identify_conjugated_bonds(mol)) == 10
