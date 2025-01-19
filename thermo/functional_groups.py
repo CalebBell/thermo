@@ -275,6 +275,7 @@ __all__ = [# sulfur
 
            'ALL_FUNCTIONAL_GROUPS', 'FUNCTIONAL_GROUP_CHECKS',
            'identify_functional_groups', 'identify_functional_group_atoms',
+           'identify_conjugated_bonds',
            
         'FG_ACID', 'FG_ACYL_HALIDE', 'FG_ALCOHOL', 'FG_ALDEHYDE', 'FG_ALKANE', 'FG_ALKENE', 
         'FG_ALKYLALUMINIUM', 'FG_ALKYLLITHIUM', 'FG_ALKYLMAGNESIUM_HALIDE', 'FG_ALKYNE', 'FG_AMIDE', 
@@ -2932,6 +2933,69 @@ def count_rings_by_atom_counts(mol, atom_counts):
             
     return matching_rings
 
+def identify_conjugated_bonds(mol):
+   """Find conjugated double bond systems and their connecting single bonds.
+   Each conjugated system will contribute a decrement of 0.25 to Vw.
+   
+   Returns list of tuples ((c1,c2), (c3,c4), (c2,c3)) where:
+   - (c1,c2) represents one C=C double bond
+   - (c3,c4) represents another C=C double bond 
+   - (c2,c3) represents the single bond connecting them
+   """
+   from rdkit import Chem
+   # Stage 1: Find all carbon double bonds
+   double_bonds = []
+   for atom in mol.GetAtoms():
+       if atom.GetSymbol() != 'C':
+           continue
+       # Look at all bonds this carbon participates in
+       for bond in atom.GetBonds():
+           if bond.GetBondType() != Chem.rdchem.BondType.DOUBLE:
+               continue
+           # Get the other atom in the double bond
+           other_atom = bond.GetOtherAtom(atom)
+           if other_atom.GetSymbol() != 'C':
+               continue
+           # Store the double bond as a sorted tuple of atom indices
+           atoms = tuple(sorted([atom.GetIdx(), other_atom.GetIdx()]))
+           double_bonds.append(atoms)
+   
+   # Stage 2: Remove duplicate double bonds
+   double_bonds = list(set(double_bonds))
+   
+   # Stage 3: Find connecting single bonds between double bond systems
+   conjugated_systems = []
+   for bond1 in double_bonds:
+       # For each carbon in this double bond
+       for c1 in bond1:
+           atom = mol.GetAtomWithIdx(c1)
+           # Look at all single bonds from this carbon
+           for bond in atom.GetBonds():
+               if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
+                   continue
+               # Get the carbon at the other end of the single bond
+               c2 = bond.GetOtherAtomIdx(c1)
+               # Look for other double bonds containing this carbon
+               for bond2 in double_bonds:
+                   if c2 in bond2 and bond2 != bond1:
+                       # We found a conjugated system!
+                       # Store ((C=C), (C=C), (C-C))
+                       conjugated = (bond1, bond2, tuple(sorted([c1, c2])))
+                       conjugated_systems.append(conjugated)
+   
+    # Stage 4: Remove duplicates while preserving order
+    # Convert to set of ((C=C, C=C), C-C) for deduplication
+    # The two double bonds can be in either order, but the single bond must stay separate
+   unique_systems = set(
+       (tuple(sorted([system[0], system[1]])), system[2])
+       for system in conjugated_systems
+   )
+   # Convert back to list of tuples
+   return [
+       (double_bonds[0], double_bonds[1], single_bond) 
+       for double_bonds, single_bond in unique_systems
+   ]
+    
 
 radionuclides = {
     'H': {3},  # Tritium

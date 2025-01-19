@@ -2626,3 +2626,40 @@ def test_identify_functional_group_atoms():
     mol = None
     with pytest.raises(ValueError):
         identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID)
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_identify_conjugated_bonds():
+    # Test basic conjugated system
+    mol = Chem.MolFromSmiles('C=CC=C')  # 1,3-butadiene
+    assert identify_conjugated_bonds(mol) == [((0,1), (2,3), (1,2))]
+    
+    # Test non-conjugated system
+    mol = Chem.MolFromSmiles('C=CCC=C')  # 1,4-pentadiene
+    assert identify_conjugated_bonds(mol) == []
+    
+    # Test cyclic conjugation
+    mol = Chem.MolFromSmiles('C1=CC=CC=CC=1')  # Benzaldehyde
+    conjugated = identify_conjugated_bonds(mol)
+    assert len(conjugated) == 3  # Should find multiple conjugated pairs
+    
+    # Test branched conjugation
+    mol = Chem.MolFromSmiles('C=CC(=C)C=C')  # 2-methylene-1,4-pentadiene
+    conjugated = identify_conjugated_bonds(mol)
+    assert len(conjugated) == 2
+        
+    # Test with substituents
+    mol = Chem.MolFromSmiles('CC=CC=CC')  # 2,4-hexadiene
+    assert len(identify_conjugated_bonds(mol)) == 1
+    
+    # Test with heteroatoms (shouldn't count)
+    mol = Chem.MolFromSmiles('C=CC=N')  # but-1-en-3-imine
+    assert identify_conjugated_bonds(mol) == []
+    
+    # Test edge cases
+    mol = Chem.MolFromSmiles('C=C')  # ethene
+    assert identify_conjugated_bonds(mol) == []
+    
+    mol = Chem.MolFromSmiles('C')  # methane
+    assert identify_conjugated_bonds(mol) == []

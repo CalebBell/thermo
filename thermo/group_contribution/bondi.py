@@ -33,7 +33,7 @@ This functionality requires the RDKit library to work.
 
 '''
 __all__ = []
-
+from thermo.functional_groups import FG_CARBOXYLIC_ACID, FG_AMIDE, identify_functional_group_atoms, count_rings_by_atom_counts
 from thermo.group_contribution.group_contribution_base import priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
 
 # WIP
@@ -458,6 +458,40 @@ for group in BONDI_GROUPS.values():
 catalog = BONDI_GROUPS.values()
 
 
+def count_bonds_near_acid_amide(mol):
+    """Count single bonds adjacent to carboxyl or amide groups.
+    Each such bond contributes a decrement of 0.22 to Vw.
+    """
+    from rdkit import Chem
+    # Get all atoms in carboxyl and amide groups
+    carboxyl_matches = identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID)
+    amide_matches = identify_functional_group_atoms(mol, FG_AMIDE)
+    
+    # Combine all group atoms into a set
+    group_atoms = set()
+    for match in carboxyl_matches + amide_matches:
+        group_atoms.update(match)
+    
+    # Count qualifying single bonds
+    count = 0
+    for atom_idx in group_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for neighbor in atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            # Only count bonds to atoms outside the functional group
+            if neighbor_idx not in group_atoms:
+                bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
+                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                    count += 1
+    
+    return count
+
+def count_dioxane_rings(mol):
+    """Count dioxane rings for Bondi decrements.
+    Each dioxane ring contributes a decrement of 1.70 to Vw and 0.7 to Aw.
+    """
+    # Dioxane ring has exactly 2 oxygens and 4 carbons
+    return count_rings_by_atom_counts(mol, {'O': 2, 'C': 4})
 
 def bondi_van_der_waals_surface_area_volume(rdkitmol):
     """
