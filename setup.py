@@ -112,13 +112,22 @@ class bdist_wheel_light(bdist_wheel):
                     minified_files.append((py_file, original_content))
                 
                 # Minify JSON files
+                json_files = []
                 for json_file in pkg_dir.rglob('*.json'):
+                    with open(json_file, 'r') as f:
+                        original_content = f.read()
                     self.minify_json(json_file)
+                    json_files.append((json_file, original_content))
                 
                 # Build the wheel
                 super().run()
                 
             finally:
+                # Restore original JSON files
+                for file_path, original_content in json_files:
+                    with open(file_path, 'w') as f:
+                        f.write(original_content)
+                
                 # Restore original Python files
                 for file_path, original_content in minified_files:
                     with open(file_path, 'w', encoding='utf-8') as f:
