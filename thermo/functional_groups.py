@@ -2897,7 +2897,8 @@ def count_rings_by_atom_counts(mol, atom_counts):
     >>> from rdkit.Chem import MolFromSmiles
     >>> # Count rings with exactly 2 oxygens and 4 carbons (dioxane pattern)
     >>> mol = MolFromSmiles('C1COCCOC1')  # 1,4-dioxane
-    >>> count_rings_by_composition(mol, {'O': 2, 'C': 4})
+    >>> count_rings_by_atom_counts(mol, {'O': 2, 'C': 4})
+    0
     """
     ring_size = sum(atom_counts.values())
     

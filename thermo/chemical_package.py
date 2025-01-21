@@ -893,7 +893,7 @@ class ChemicalConstantsPackage:
         for i in range(N):
             groups = UNIFAC_groups[i]
             if groups is not None:
-                UNIFAC_Rs[i], UNIFAC_Qs[i] = UNIFAC_RQ(groups, subgroups=UFSG)
+                UNIFAC_Rs[i], UNIFAC_Qs[i] = UNIFAC_RQ(groups, subgroup_data=UFSG)
 
         solubility_parameters = [solubility_parameter(T=298.15, Hvapm=Hvap_298s[i], Vml=Vml_STPs[i]) if (Hvap_298s[i] is not None and  Vml_STPs[i] is not None) else None
                                  for i in range(N)]
