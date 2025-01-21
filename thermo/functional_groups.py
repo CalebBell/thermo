@@ -3531,7 +3531,7 @@ def identify_functional_groups(mol):
 
 SMARTS_PATTERNS = {
     # Nitrogen Groups
-    FG_AMIDE: amide_smarts_collection,
+    FG_AMIDE: "[NX3][CX3;$([#6])](=[OX1])",
     FG_AMIDINE: amidine_smarts_collection,
     FG_PRIMARY_KETIMINE: primary_ketimine_smarts,
     FG_SECONDARY_KETIMINE: secondary_ketimine_smarts,

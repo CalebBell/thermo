@@ -459,7 +459,7 @@ catalog = BONDI_GROUPS.values()
 
 
 def count_bonds_near_acid_amide(mol):
-    """Count single bonds adjacent to carboxyl or amide groups.
+    """Count single bonds immediately adjacent to carboxyl or amide groups.
     Each such bond contributes a decrement of 0.22 to Vw.
     """
     from rdkit import Chem
@@ -509,6 +509,90 @@ def count_conjugation_interrupting_bonds(mol):
     """
     conjugated_systems = identify_conjugated_bonds(mol)
     return len(conjugated_systems)
+
+def count_cis_condensed_naphthenes(mol):
+    """Count rings that are cis-condensed cyclic naphthenes.
+    Each cis-condensed ring contributes a decrement of 2.50 to Vw and 1.2 to Aw.
+    """
+    # descriptions are very vague, unlikely to get clarification 60 years later
+    # does not seem to work with rdkit
+    ring_info = mol.GetRingInfo()
+    ring_atoms = ring_info.AtomRings()
+    
+    cis_fusions = 0
+    for i, ring1 in enumerate(ring_atoms):
+        for j, ring2 in enumerate(ring_atoms[i+1:], i+1):
+            # Find shared atoms at fusion point
+            shared = set(ring1) & set(ring2)
+            if len(shared) == 2:  # Standard fusion point
+                # Get the two fusion atoms
+                fusion_atoms = sorted(list(shared))
+                # Check their stereochemistry
+                atom1 = mol.GetAtomWithIdx(fusion_atoms[0])
+                atom2 = mol.GetAtomWithIdx(fusion_atoms[1])
+                if atom1.GetChiralTag() == atom2.GetChiralTag():
+                    cis_fusions += 1
+                    
+    return cis_fusions
+
+def count_transcondensed_and_free_cycloalkyl(mol):
+    """Count cyclopentyl and cyclohexyl rings that are either:
+    1. Free (not connected to other rings)
+    2. Part of trans-condensed ring systems
+    
+    Each ring contributes a decrement of 1.14 to Vw and 0.57 to Aw.
+    """
+    # descriptions are very vague, unlikely to get clarification 60 years later
+    # best effort implementation
+    from thermo.functional_groups import is_cycloalkane
+    if not is_cycloalkane(mol):
+        return 0
+    ring_info = mol.GetRingInfo()
+    ring_atoms = ring_info.AtomRings()
+    if len(ring_atoms) == 1:
+        return 0
+    
+    count = 0
+    
+    # Check each ring
+    for i, ring in enumerate(ring_atoms):
+        # Skip if not 5 or 6-membered
+        if len(ring) not in [5, 6]:
+            continue
+            
+        # Check if it's all carbons (cyclopentyl/cyclohexyl)
+        if not all(mol.GetAtomWithIdx(idx).GetSymbol() == 'C' for idx in ring):
+            continue
+            
+        # Find other rings this ring is fused to
+        fused_to = []
+        for j, other_ring in enumerate(ring_atoms):
+            if i != j:
+                shared = set(ring) & set(other_ring)
+                if len(shared) == 2:  # Standard fusion point
+                    fused_to.append((other_ring, shared))
+        
+        if not fused_to:
+            # This is a free cycloalkyl ring, count it and move to next ring
+            count += 1
+            continue
+            
+        # Check if all fusions to this ring are trans (different)
+        all_trans = True
+        for other_ring, shared in fused_to:
+            # Get the fusion atoms
+            fusion_atoms = sorted(list(shared))
+            # Check stereochemistry
+            atom1 = mol.GetAtomWithIdx(fusion_atoms[0])
+            atom2 = mol.GetAtomWithIdx(fusion_atoms[1])
+            if atom1.GetChiralTag() != atom2.GetChiralTag():
+                all_trans = False
+                break
+        
+        if all_trans and fused_to:
+            count += 1
+            
+    return count
 
 # checked with various groups
 def find_methylene_rings_condensed_to_aromatic_rings(mol):
@@ -623,6 +707,7 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
     using SMARTS-based fragmentation and computes the total van der Waals 
     volume and surface area from the bondi group contributions method.
 
+
     Parameters
     ----------
     rdkitmol : rdkit.Chem.Mol
@@ -637,9 +722,18 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
 
     Notes
     -----
-    .. warning::
-        The corrections have not been implemented and this function has not yet undergone
-        validation.
+    The secondary contributions from Table XVII in [1]_ are:
+
+    * Decrement per cyclohexyl and per cyclopentyl ring in free and transcondensed cyclic naphthenes
+    * Decrement per ring in cis-condensed cyclic naphthenes
+    * Decrement per methylene ring condensed to benzene or other aromatic ring system
+    * Decrement per dioxane ring
+    * Decrement per single bond between conjugated double bonds
+    * Decrement per single bond adjacent to carboxyl or amide group
+
+    The implementation follows Bondi's 1964 paper.
+    An effort to implement each correction was made. The cis and trans 
+    condensed ring checks with rdkit do not seem to be working.
 
     Examples
     --------
@@ -658,24 +752,66 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
        Elsevier, 1992. https://doi.org/10.1016/B978-0-444-89217-1.50007-7.
     """
     from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
+    
+    # First get the base contributions from primary groups
     assignment, _, _, success, status = smarts_fragment_priority(catalog=catalog, rdkitmol=rdkitmol)
+    if not success:
+        raise ValueError("Could not fragment molecule")
     V_vdw = 0.0
     A_vdw = 0.0
 
-    # Iterate over the fragmentation assignment
+    # Calculate primary group contributions
     for group_id, count in assignment.items():
         group = BONDI_GROUPS_BY_ID.get(group_id)
         if group:
-            # Update R and Q using the group's volume and polarizability contributions
             V_vdw += group.Vw * count
             if group.Aw is not None:
                 A_vdw += group.Aw * count
-    # TODO: Corrections; all main groups have been implemented
 
-    V_vdw *= 1e-6   # Convert R from cm^3/mol to m^3/mol
-    A_vdw *= 0.0001*1e9  # Convert Q from 1e9 cm^2/mol to m^2/mol
+    # Now apply all secondary corrections from Table XVII
+
+    # 1. Decrement for free and transcondensed cyclopentyl/cyclohexyl rings
+    # δVw = -1.14 cm³/mole, δAw = -0.57 × 10⁹ cm²/mole per ring
+    n_trans_rings = count_transcondensed_and_free_cycloalkyl(rdkitmol)
+    V_vdw -= 1.14 * n_trans_rings
+    A_vdw -= 0.57 * n_trans_rings
+
+    # 2. Decrement for cis-condensed cyclic naphthenes
+    # δVw = -2.50 cm³/mole, δAw = -1.2 × 10⁹ cm²/mole per ring
+    n_cis_rings = count_cis_condensed_naphthenes(rdkitmol)
+    V_vdw -= 2.50 * n_cis_rings
+    A_vdw -= 1.2 * n_cis_rings
+
+    # 3. Decrement for methylene rings condensed to benzene/aromatic rings
+    # δVw = -1.66 cm³/mole, δAw = -0.7 × 10⁹ cm²/mole per ring
+    methylene_rings = find_methylene_rings_condensed_to_aromatic_rings(rdkitmol)
+    n_methylene_rings = len(methylene_rings)
+    V_vdw -= 1.66 * n_methylene_rings
+    A_vdw -= 0.7 * n_methylene_rings
+
+    # 4. Decrement for dioxane rings
+    # δVw = -1.70 cm³/mole, δAw = -0.7 × 10⁹ cm²/mole per ring
+    n_dioxane_rings = count_dioxane_rings(rdkitmol)
+    V_vdw -= 1.70 * n_dioxane_rings
+    A_vdw -= 0.7 * n_dioxane_rings
+
+    # 5. Decrement for single bonds between conjugated double bonds
+    # δVw = -0.25 cm³/mole per bond, no Aw contribution
+    n_conjugation_bonds = count_conjugation_interrupting_bonds(rdkitmol)
+    V_vdw -= 0.25 * n_conjugation_bonds
+
+    # 6. Decrement for single bonds adjacent to carboxyl or amide groups
+    # δVw = -0.22 cm³/mole per bond, no Aw contribution
+    n_acid_amide_bonds = count_bonds_near_acid_amide(rdkitmol)
+    V_vdw -= 0.22 * n_acid_amide_bonds
+
+    # Convert units:
+    # V_vdw: cm³/mol -> m³/mol
+    # A_vdw: cm²/mol × 10⁹ -> m²/mol
+    V_vdw *= 1e-6
+    A_vdw *= 0.0001 * 1e9
+
     return V_vdw, A_vdw
-
 
 def R_Q_from_bondi(rdkitmol):
     V_vdw, A_vdw = bondi_van_der_waals_surface_area_volume(rdkitmol)

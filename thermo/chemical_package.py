@@ -115,6 +115,7 @@ from thermo.utils.mixture_property import MixtureProperty
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.viscosity import ViscosityGas, ViscosityGasMixture, ViscosityLiquid, ViscosityLiquidMixture
 from thermo.volume import VolumeGas, VolumeGasMixture, VolumeLiquid, VolumeLiquidMixture, VolumeSolid, VolumeSolidMixture
+from thermo.unifac import UFSG
 
 CAS_H2O = '7732-18-5'
 
@@ -892,7 +893,7 @@ class ChemicalConstantsPackage:
         for i in range(N):
             groups = UNIFAC_groups[i]
             if groups is not None:
-                UNIFAC_Rs[i], UNIFAC_Qs[i] = UNIFAC_RQ(groups)
+                UNIFAC_Rs[i], UNIFAC_Qs[i] = UNIFAC_RQ(groups, subgroups=UFSG)
 
         solubility_parameters = [solubility_parameter(T=298.15, Hvapm=Hvap_298s[i], Vml=Vml_STPs[i]) if (Hvap_298s[i] is not None and  Vml_STPs[i] is not None) else None
                                  for i in range(N)]

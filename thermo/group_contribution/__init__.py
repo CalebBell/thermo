@@ -31,6 +31,8 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_
 
 '''
 from thermo.group_contribution.fedors import Fedors
+from thermo.group_contribution.bondi import bondi_van_der_waals_surface_area_volume, R_Q_from_bondi
+
 from thermo.group_contribution.ppr78 import PPR78_kij, PPR78_kijs, PPR78_GROUPS, fragment_PPR78
 from thermo.group_contribution.joback import J_BIGGS_JOBACK_SMARTS, JOBACK_GROUPS, Joback
 from thermo.group_contribution.wilson_jasperson import (
@@ -48,4 +50,5 @@ __all__ = ('Wilson_Jasperson', 'Wilson_Jasperson_Tc_increments',
            'JOBACK_GROUPS',
            'Fedors',
            'PPR78_kij', 'PPR78_kijs', 'PPR78_GROUPS', 'fragment_PPR78',
+           'bondi_van_der_waals_surface_area_volume', 'R_Q_from_bondi',
            )
