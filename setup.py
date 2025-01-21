@@ -37,6 +37,15 @@ class bdist_wheel_light(bdist_wheel):
         import python_minifier
         return python_minifier.minify(content, remove_annotations=True, remove_pass=True, remove_literal_statements=True)
     
+    def minify_json(self, input_path, output_path=None):
+        """Minify a JSON file"""
+        import json
+        with open(input_path, 'r') as f:
+            data = json.load(f)
+        output_path = output_path or input_path
+        with open(output_path, 'w') as f:
+            json.dump(data, f, separators=(',', ':'), sort_keys=True)
+    
     def run(self):
         # Get absolute path to the project directory
         pkg_dir = Path(os.path.abspath('thermo'))
@@ -45,7 +54,6 @@ class bdist_wheel_light(bdist_wheel):
         # Files/directories to exclude (paths relative to project root)
         exclude_files = [
             'tests',
-            'thermo/Interaction Parameters/PRTranslated_best_henry_T_dep.json',
             'thermo/Law',
             'thermo/Interaction Parameters',
             'thermo/Scalar Parameters',
@@ -80,6 +88,7 @@ class bdist_wheel_light(bdist_wheel):
                         else:
                             shutil.move(str(orig_path), str(temp_path))
                         moved_files.append((orig_path, temp_path))
+                
                 # Handle .pyi files
                 for pyi_file in pkg_dir.rglob('*.pyi'):
                     rel_path = pyi_file.relative_to(pkg_dir)
@@ -87,7 +96,6 @@ class bdist_wheel_light(bdist_wheel):
                     temp_path.parent.mkdir(parents=True, exist_ok=True)
                     shutil.move(str(pyi_file), str(temp_path))
                     moved_files.append((pyi_file, temp_path))
-
                 
                 # Minify .py files
                 for py_file in pkg_dir.rglob('*.py'):
@@ -103,11 +111,14 @@ class bdist_wheel_light(bdist_wheel):
                     # Store original content for restoration
                     minified_files.append((py_file, original_content))
                 
+                # Minify JSON files
+                for json_file in pkg_dir.rglob('*.json'):
+                    self.minify_json(json_file)
+                
                 # Build the wheel
                 super().run()
                 
             finally:
-                
                 # Restore original Python files
                 for file_path, original_content in minified_files:
                     with open(file_path, 'w', encoding='utf-8') as f:
