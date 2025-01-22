@@ -456,32 +456,6 @@ class SurfaceTension(TDependentProperty):
         else:
             return self._base_calculate(T, method)
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For CSP methods, the models
-        are considered valid from 0 K to the critical point. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        return super().test_method_validity(T, method)
-
-
 
 WINTERFELDSCRIVENDAVIS = 'Winterfeld, Scriven, and Davis (1978)'
 DIGUILIOTEJA = 'Diguilio and Teja (1988)'

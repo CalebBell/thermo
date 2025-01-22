@@ -467,44 +467,6 @@ class HeatCapacityGas(TDependentProperty):
             return self._base_calculate(T, method)
         return Cp
 
-    def test_method_validity(self, T, method):
-        r'''Method to test the validity of a specified method for a given
-        temperature.
-
-        'TRC' and 'Poling' both have minimum and maimum temperatures. The
-        constant temperatures in POLING_CONST and CRCSTD are considered valid
-        for 50 degrees around their specified temperatures.
-        :obj:`Lastovka_Shaw <chemicals.heat_capacity.Lastovka_Shaw>` is considered valid for the whole range of
-        temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to determine the validity of the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
-        validity = True
-        if method == POLING_CONST:
-            if T > self.POLING_T + 50.0 or T < self.POLING_T - 50.0:
-                return False
-        elif method == LASTOVKA_SHAW:
-            pass # Valid everywhere
-        elif method == COOLPROP:
-            if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
-                return False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
-
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
         temperature, using a specified method. Implements the analytical
@@ -976,61 +938,6 @@ class HeatCapacityLiquid(TDependentProperty):
         else:
             return self._base_calculate(T, method)
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For the CSP method
-        :obj:`Rowlinson_Poling <chemicals.heat_capacity.Rowlinson_Poling>`, the model is considered valid for all
-        temperatures. The simple method :obj:`Dadgostar_Shaw <chemicals.heat_capacity.Dadgostar_Shaw>` is considered
-        valid for all temperatures. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if method == ZABRANSKY_SPLINE:
-            if T < self.Zabransky_spline.Tmin or T > self.Zabransky_spline.Tmax:
-                return False
-        elif method == ZABRANSKY_SPLINE_C:
-            if T < self.Zabransky_spline_iso.Tmin or T > self.Zabransky_spline_iso.Tmax:
-                return False
-        elif method == ZABRANSKY_SPLINE_SAT:
-            if T < self.Zabransky_spline_sat.Tmin or T > self.Zabransky_spline_sat.Tmax:
-                return False
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            if T > self.Zabransky_quasipolynomial.Tc:
-                return False
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            if T > self.Zabransky_quasipolynomial_iso.Tc:
-                return False
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            if T > self.Zabransky_quasipolynomial_sat.Tc:
-                return False
-        elif method == COOLPROP:
-            if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
-                return False
-        elif method == DADGOSTAR_SHAW:
-            pass # Valid everywhere
-        elif method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
-            if self.Tc and T > self.Tc:
-                return False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
@@ -1339,38 +1246,6 @@ class HeatCapacitySolid(TDependentProperty):
             return self._base_calculate(T, method)
         return Cp
 
-
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-        For the :obj:`Lastovka_solid <chemicals.heat_capacity.Lastovka_solid>` method, it is considered valid under
-        10000K.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if method == LASTOVKA_S:
-            if T > 10000 or T < 0:
-                validity = False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to

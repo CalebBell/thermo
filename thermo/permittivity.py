@@ -207,32 +207,6 @@ class PermittivityLiquid(TDependentProperty):
             else:
                 # reduce discontinuities
                 rho = iapws95_rho(T, iapws95_Pc)
-            epsilon = permittivity_IAPWS(T, rho)
-        else:
-            epsilon = self._base_calculate(T, method)
-        return epsilon
-
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        return super().test_method_validity(T, method)
+            return permittivity_IAPWS(T, rho)
+        return self._base_calculate(T, method)
 
