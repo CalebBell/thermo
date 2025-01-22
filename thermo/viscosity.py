@@ -572,30 +572,6 @@ class ViscosityLiquid(TPDependentProperty):
             return self._base_calculate(T, method)
         return mu
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For CSP methods, the models
-        are considered valid from 0 K to the critical point. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        return super().test_method_validity(T, method)
 
     def calculate_P(self, T, P, method):
         r'''Method to calculate pressure-dependent liquid viscosity at
@@ -934,34 +910,6 @@ class ViscosityGas(TPDependentProperty):
             return self._base_calculate(T, method)
 
         return mu
-
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a temperature-dependent
-        low-pressure method. For CSP most methods, the all methods are
-        considered valid from 0 K up to 5000 K. For method **GHARAGHEIZI**,
-        the method is considered valud from 20 K to 2000 K.
-
-        For tabular data, extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        return super().test_method_validity(T, method)
 
     def calculate_P(self, T, P, method):
         r'''Method to calculate pressure-dependent gas viscosity

@@ -531,57 +531,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
             return self._base_calculate_P(T, P, method)
         return kl
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a temperature-dependent
-        low-pressure method. For CSP methods, the models **BAHADORI_L**,
-        **LAKSHMI_PRASAD**, and **SHEFFY_JOHNSON** are considered valid for all
-        temperatures. For methods **GHARAGHEIZI_L**, **NICOLA**,
-        and **NICOLA_ORIGINAL**, the methods are considered valid up to 1.5Tc
-        and down to 0 K. Method **SATO_RIEDEL** does not work above the
-        critical point, so it is valid from 0 K to the critical point.
-
-        For tabular data, extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        if method == SATO_RIEDEL:
-            if T > self.Tc:
-                return False
-                # Doesn't run, no lower limit though
-        elif method in (GHARAGHEIZI_L, NICOLA, NICOLA_ORIGINAL):
-            if T > self.Tc*1.5:
-                return False
-            # No lower limit, give a wide margin of acceptability here
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_315_Tmin or T > self.Perrys2_315_Tmax:
-                return False
-        elif method in (BAHADORI_L, LAKSHMI_PRASAD, SHEFFY_JOHNSON):
-            pass
-            # no limits at all
-        elif method == VDI_PPDS:
-            if self.Tc and T > self.Tc:
-                return False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tt or T > self.CP_f.Tc:
-                return False
-        else:
-            return super().test_method_validity(T, method)
-        return True
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For
@@ -1195,44 +1144,6 @@ class ThermalConductivityGas(TPDependentProperty):
             return self._base_calculate_P(T, P, method)
         return kg
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a temperature-dependent
-        low-pressure method. For CSP methods, the all methods are considered
-        valid from 0 K and up.
-
-        For tabular data, extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-        **GHARAGHEIZI_G** and **BAHADORI_G** are known to sometimes produce
-        negative results.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        if method in (GHARAGHEIZI_G, DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
-                      EUCKEN, BAHADORI_G, VDI_PPDS):
-            pass
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_314_Tmin or T > self.Perrys2_314_Tmax:
-                return False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tmin or T > self.CP_f.Tmax:
-                return False
-        else:
-            return super().test_method_validity(T, method)
-        return True
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For

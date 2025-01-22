@@ -517,36 +517,6 @@ class VaporPressure(TDependentProperty):
             return self._base_calculate(T, method)
         return Psat
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For CSP methods, the models
-        are considered valid from 0 K to the critical point. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        T_limits = self.T_limits
-        if method in T_limits:
-            Tmin, Tmax = T_limits[method]
-            return Tmin <= T <= Tmax
-        else:
-            return super().test_method_validity(T, method)
-
     def calculate_derivative(self, T, method, order=1):
         r'''Method to calculate a derivative of a vapor pressure with respect to
         temperature, of a given order  using a specified method. If the method
@@ -750,31 +720,3 @@ class SublimationPressure(TDependentProperty):
             return self._base_calculate(T, method)
         return Psub
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For CSP methods, the models
-        are considered valid from 0 K to the critical point. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        if method == PSUB_CLAPEYRON:
-            return True
-            # No lower limit
-        else:
-            return super().test_method_validity(T, method)
