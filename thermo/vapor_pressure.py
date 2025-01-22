@@ -90,6 +90,7 @@ from chemicals.vapor_pressure import (
 from fluids.numerics import NoSolutionError, exp, isnan, log
 
 from thermo.coolprop import PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
+from thermo.eos import PR
 from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, HEOS_FIT, IAPWS, VDI_PPDS, VDI_TABULAR, TDependentProperty
 
 """
@@ -348,7 +349,7 @@ class VaporPressure(TDependentProperty):
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     """Default rankings of the available methods."""
 
-    custom_args = ('Tb', 'Tc', 'Pc', 'omega', 'eos')
+    custom_args = ('Tb', 'Tc', 'Pc', 'omega')
 
     extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
     extra_correlations_internal.add(DIPPR_PERRY_8E)
@@ -362,13 +363,12 @@ class VaporPressure(TDependentProperty):
     extra_correlations_internal.add(LANDOLT)
 
     def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='',
-                 eos=None, extrapolation='AntoineAB|DIPPR101_ABC', **kwargs):
+                 extrapolation='AntoineAB|DIPPR101_ABC', **kwargs):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
         self.Pc = Pc
         self.omega = omega
-        self.eos = eos
         super().__init__(extrapolation, **kwargs)
 
     @staticmethod
@@ -468,9 +468,8 @@ class VaporPressure(TDependentProperty):
             methods.append(AMBROSE_WALTON)
             methods.append(SANJARI)
             methods.append(EDALAT)
-            if self.eos:
-                methods.append(EOS)
-                T_limits[EOS] = (0.1*self.Tc, self.Tc)
+            methods.append(EOS)
+            T_limits[EOS] = (0.1*self.Tc, self.Tc)
             T_limits[LEE_KESLER_PSAT] = T_limits[AMBROSE_WALTON] = T_limits[SANJARI] = T_limits[EDALAT] = (0.01, self.Tc)
         self.all_methods.update(methods)
 
@@ -509,7 +508,7 @@ class VaporPressure(TDependentProperty):
             Psat = iapws95_Psat(T)
         elif method == EOS:
             try:
-                Psat = self.eos[0].Psat(T)
+                return PR(T=T, P=101325.0, Tc=self.Tc, Pc=self.Pc, omega=self.omega).Psat(T)
             except NoSolutionError as err:
                 if 'is too low for equations' in err.args[0]:
                     return 0.0

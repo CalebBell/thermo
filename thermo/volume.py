@@ -157,6 +157,7 @@ from thermo.utils import (
     TPDependentProperty,
 )
 from thermo.vapor_pressure import VaporPressure
+from thermo.eos import PR
 
 
 def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
@@ -405,15 +406,15 @@ class VolumeLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
-    obj_references = ('eos', 'Psat')
+    obj_references = ('Psat',)
     pure_references = ('Psat')
     obj_references_types = pure_reference_types = (VaporPressure,)
 
 
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
-                   'Psat', 'eos')
+                   'Psat')
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
-                 omega=None, dipole=None, Psat=None, CASRN='', eos=None,
+                 omega=None, dipole=None, Psat=None, CASRN='',
                  has_hydroxyl=False, extrapolation='constant', **kwargs):
         self.CASRN = CASRN
         self.MW = MW
@@ -425,7 +426,6 @@ class VolumeLiquid(TPDependentProperty):
         self.omega = omega
         self.dipole = dipole
         self.Psat = Psat
-        self.eos = eos
         self.has_hydroxyl = has_hydroxyl
         super().__init__(extrapolation, **kwargs)
 
@@ -529,6 +529,8 @@ class VolumeLiquid(TPDependentProperty):
             methods.append(TOWNSEND_HALES)
             methods.append(HTCOSTALD)
             methods.append(MMSNM0)
+            methods.append(EOS)
+            T_limits[EOS] = (0.2*self.Tc, self.Tc)
             if load_data and CASRN and CASRN in volume.rho_data_SNM0.index:
                 methods.append(MMSNM0FIT)
                 self.SNM0_delta_SRK = float(volume.rho_data_SNM0.at[CASRN, 'delta_SRK'])
@@ -537,16 +539,9 @@ class VolumeLiquid(TPDependentProperty):
         if all((self.Tc, self.Vc, self.omega, self.Tb, self.MW)):
             methods.append(CAMPBELL_THODOS)
             T_limits[CAMPBELL_THODOS] = (0.0, self.Tc)
-        if self.eos:
-            try:
-                T_limits[EOS] = (0.2*self.eos[0].Tc, self.eos[0].Tc)
-                methods.append(EOS)
-            except:
-                pass
         if all((self.Tc, self.Pc, self.omega)):
             methods_P.append(COSTALD_COMPRESSED)
-            if self.eos:
-                methods_P.append(EOS)
+            methods_P.append(EOS)
 
         self.all_methods.update(methods)
         self.all_methods_P = set(methods_P)
@@ -613,7 +608,7 @@ class VolumeLiquid(TPDependentProperty):
         elif method == COOLPROP:
             Vm = 1./CoolProp_T_dependent_property(T, self.CASRN, 'DMOLAR', 'l')
         elif method == EOS:
-            Vm = self.eos[0].V_l_sat(T)
+            Vm = PR(T=T, P=101325.0, Tc=self.Tc, Pc=self.Pc, omega=self.omega).V_l_sat(T)
         else:
             return self._base_calculate(T, method)
         return Vm
@@ -648,8 +643,7 @@ class VolumeLiquid(TPDependentProperty):
 #            assert PhaseSI('T', T, 'P', P, self.CASRN) == 'liquid'
             Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
         elif method == EOS:
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
-            Vm = self.eos[0].V_l
+            Vm = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega).V_l
         else:
             return self._base_calculate_P(T, P, method)
         return Vm
@@ -689,7 +683,7 @@ class VolumeLiquid(TPDependentProperty):
             if T >= self.Tc:
                 validity = False
         elif method == EOS:
-            if T >= self.eos[0].Tc:
+            if T >= self.Tc:
                 validity = False
         else:
             return super().test_method_validity(T, method)
@@ -729,8 +723,7 @@ class VolumeLiquid(TPDependentProperty):
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ('liquid', 'supercritical_liquid')
         elif method == EOS:
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
-            validity = hasattr(self.eos[0], 'V_l')
+            validity = hasattr(PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega), 'V_l')
         else:
             return super().test_method_validity_P(T, P, method)
         return validity
@@ -835,7 +828,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
     '''
 
     def __init__(self, MW=None, Tc=None, Pc=None,
-                 omega=None,  Psat=None, CASRN='', eos=None,
+                 omega=None,  Psat=None, CASRN='',
                  extrapolation=None):
         self.CASRN = CASRN
         self.MW = MW
@@ -843,7 +836,6 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         self.Pc = Pc
         self.omega = omega
         self.Psat = Psat
-        self.eos = eos
 
         self.tabular_data = {}
         """tabular_data, dict: Stored (Ts, properties) for any
@@ -891,9 +883,8 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
             self.CP_f = coolprop_fluids[self.CASRN]
             T_limits[COOLPROP] = (self.CP_f.Tc, self.CP_f.Tmax)
         if all((self.Tc, self.Pc, self.omega)):
-            if self.eos:
-                methods_P.append(EOS)
-                T_limits[EOS] = (self.Tc, self.Tc*100)
+            methods_P.append(EOS)
+            T_limits[EOS] = (self.Tc, self.Tc*100)
         self.all_methods = set(methods)
         self.all_methods_P = set(methods_P)
 
@@ -942,11 +933,11 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         if method == COOLPROP:
             Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
         elif method == EOS:
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
+            eos = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
             try:
-                Vm = self.eos[0].V_l
+                Vm = eos.V_l
             except AttributeError:
-                Vm =  self.eos[0].V_g
+                Vm =  eos.V_g
         elif method in self.tabular_data:
             Vm = self.interpolate_P(T, P, method)
         return Vm
@@ -1003,8 +994,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         if method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ('liquid', 'supercritical', 'supercritical_gas', 'supercritical_liquid')
         elif method == EOS:
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
-            validity = hasattr(self.eos[0], 'V_l')
+            validity = hasattr(PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega), 'V_l')
         else:
             return super().test_method_validity_P(T, P, method)
         return validity
@@ -1384,7 +1374,7 @@ class VolumeGas(TPDependentProperty):
     """Default rankings of the pressure-dependent methods."""
 
 
-    custom_args = ('MW', 'Tc', 'Pc', 'omega', 'dipole', 'eos')
+    custom_args = ('MW', 'Tc', 'Pc', 'omega', 'dipole')
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, omega=None,
                  dipole=None, eos=None, extrapolation=None,
                  **kwargs):
@@ -1395,7 +1385,6 @@ class VolumeGas(TPDependentProperty):
         self.Pc = Pc
         self.omega = omega
         self.dipole = dipole
-        self.eos = eos
         super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data):
@@ -1416,8 +1405,7 @@ class VolumeGas(TPDependentProperty):
         if all((self.Tc, self.Pc, self.omega)):
             methods_P.extend([TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
                             PITZER_CURL])
-            if self.eos:
-                methods_P.append(EOS)
+            methods_P.append(EOS)
             T_limits[TSONOPOULOS_EXTENDED] = (1e-4, 1e5)
             T_limits[TSONOPOULOS] = (1e-4, 1e5)
             T_limits[ABBOTT] = (1e-4, 1e5)
@@ -1462,8 +1450,7 @@ class VolumeGas(TPDependentProperty):
         if method == EOS:
             if T < 0.0 or P < 0.0:
                 return None
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
-            Vm = self.eos[0].V_g
+            Vm = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega).V_g
         elif method == TSONOPOULOS_EXTENDED:
             B = BVirial_Tsonopoulos_extended(T, self.Tc, self.Pc, self.omega, dipole=self.dipole)
             Vm = ideal_gas(T, P) + B
@@ -1532,9 +1519,7 @@ class VolumeGas(TPDependentProperty):
             pass
             # Would be nice to have a limit on CRC_VIRIAL
         elif method == EOS:
-            eos = self.eos[0]
-            # Some EOSs do not implement Psat, and so we must assume Vmg is
-            # unavailable
+            eos = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
             try:
                 if T < eos.Tc and P > eos.Psat(T):
                     validity = False

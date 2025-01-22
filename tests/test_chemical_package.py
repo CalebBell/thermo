@@ -118,9 +118,6 @@ def test_ChemicalConstantsPackage_json_export_same_output():
 
 def test_ChemicalConstantsPackage_wrong_behaviors():
     obj = ChemicalConstantsPackage.correlations_from_IDs(['7647-19-0'])
-    obj.VolumeLiquids[0].eos is None
-    assert obj != int
-    assert obj != float
 
 
 def test_lemmon2000_package():

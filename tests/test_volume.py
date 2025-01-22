@@ -674,7 +674,7 @@ def test_VolumeGasMixture():
 @pytest.mark.meta_T_dept
 def test_VolumeSupercriticalLiquidMixture():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=700., P=1e8)
-    obj2 = VolumeSupercriticalLiquid(eos=[eos], Tc=eos.Tc, Pc=eos.Pc, omega=eos.omega)
+    obj2 = VolumeSupercriticalLiquid(Tc=eos.Tc, Pc=eos.Pc, omega=eos.omega)
     V_implemented = obj2.calculate_P(T=700.0, P=1e8, method='EOS')
     assert_close(V_implemented, eos.V_l, rtol=1e-13)
     V_implemented = obj2.calculate_P(T=700.0, P=1e3, method='EOS')
