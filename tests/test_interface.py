@@ -28,7 +28,7 @@ from chemicals.utils import property_mass_to_molar, zs_to_ws, ws_to_zs
 from fluids.numerics import assert_close, assert_close1d, derivative, linspace
 
 from thermo.interface import *
-from thermo.interface import DIGUILIOTEJA, LINEAR, VDI_TABULAR, WINTERFELDSCRIVENDAVIS, SurfaceTensionMixture
+from thermo.interface import DIGUILIOTEJA, JASPER, LINEAR, VDI_TABULAR, WINTERFELDSCRIVENDAVIS, SurfaceTensionMixture
 from thermo.utils import POLY_FIT
 from thermo.volume import VDI_PPDS, VolumeLiquid
 
@@ -106,10 +106,10 @@ def test_SurfaceTension_fits_to_data_H2O2():
 @pytest.mark.meta_T_dept
 def test_SurfaceTensionJasperMissingLimits():
     obj = SurfaceTension(CASRN='110-01-0')
-    assert_close(obj.calculate(obj.JASPER_Tmax, 'JASPER'), 0, atol=1e-10)
+    assert_close(obj.calculate(obj.T_limits[JASPER][1], 'JASPER'), 0, atol=1e-10)
 
     obj = SurfaceTension(CASRN='14901-07-6')
-    assert_close(obj.calculate(obj.JASPER_Tmax, 'JASPER'), 0, atol=1e-10)
+    assert_close(obj.calculate(obj.T_limits[JASPER][1], 'JASPER'), 0, atol=1e-10)
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTensionVDITabularMissingZeroLimits():

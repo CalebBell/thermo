@@ -70,6 +70,12 @@ from chemicals.heat_capacity import (
     Zabransky_quasi_polynomial,
     Zabransky_quasi_polynomial_integral,
     Zabransky_quasi_polynomial_integral_over_T,
+    Shomate, 
+    Shomate_integral, 
+    Shomate_integral_over_T,
+    PPDS2, 
+    PPDS15, 
+    TDE_CSExpansion,
 )
 from chemicals.identifiers import sorted_CAS_key
 from chemicals.interface import PPDS14, ISTExpansion, Jasper, REFPROP_sigma, Somayajulu, Watson_sigma
@@ -785,6 +791,64 @@ class TDependentProperty:
     'Zabransky_cubic': (['a1', 'a2', 'a3', 'a4'], [],
                         {'f': Zabransky_cubic, 'f_int': Zabransky_cubic_integral, 'f_int_over_T': Zabransky_cubic_integral_over_T},
                         {'fit_params': ['a1', 'a2', 'a3', 'a4']}),
+
+    'Shomate': (
+        ['A', 'B', 'C', 'D', 'E'], 
+        [], 
+        {
+            'f': Shomate,
+            'f_int': Shomate_integral,
+            'f_int_over_T': Shomate_integral_over_T
+        },
+        {
+            'fit_params': ['A', 'B', 'C', 'D', 'E'],
+            'initial_guesses': [
+                # Initial guess based on water vapor example
+                {'A': 30.09200, 'B': 6.832514e-3, 'C': 6.793435e-6, 'D': -2.534480e-9, 'E': 82139.0},
+            ]
+        }
+    ),
+    'PPDS2': (
+        ['Ts', 'C_low', 'C_inf', 'a1', 'a2', 'a3', 'a4', 'a5'],
+        [],
+        {'f': PPDS2},
+        {'fit_params': ['Ts', 'C_low', 'C_inf', 'a1', 'a2', 'a3', 'a4', 'a5'],
+         'initial_guesses': [
+             {'Ts': 462.493, 'C_low': 4.54115, 'C_inf': 9.96847, 
+              'a1': -103.419, 'a2': 695.484, 'a3': -2006.1, 
+              'a4': 2476.84, 'a5': -1186.47},
+             {'Ts': 500.0, 'C_low': 5.0, 'C_inf': 10.0, 
+              'a1': -120.0, 'a2': 800.0, 'a3': -2200.0, 
+              'a4': 2600.0, 'a5': -1300.0}
+         ]}
+    ),
+
+    'PPDS15': (
+        ['Tc', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5'],
+        [],
+        {'f': PPDS15},
+        {'fit_params': ['a0', 'a1', 'a2', 'a3', 'a4', 'a5'],
+         'initial_guesses': [
+             {'a0': 0.198892, 'a1': 24.1389, 'a2': -20.2301, 
+              'a3': 5.72481, 'a4': 4.43613e-7, 'a5': -3.10751e-7},
+             {'a0': 0.25, 'a1': 20.0, 'a2': -15.0, 
+              'a3': 4.5, 'a4': 3.5e-7, 'a5': -2.5e-7}
+         ]}
+    ),
+
+    'TDE_CSExpansion': (
+        ['Tc', 'b', 'a1'],
+        ['a2', 'a3', 'a4'],
+        {'f': TDE_CSExpansion},
+        {'fit_params': ['b', 'a1', 'a2', 'a3', 'a4'],
+         'initial_guesses': [
+             {'b': 0.626549, 'a1': 120.705, 'a2': 0.255987, 
+              'a3': 0.000381027, 'a4': -3.03077e-7},
+             {'b': 0.5, 'a1': 110.0, 'a2': 0.2, 
+              'a3': 0.0003, 'a4': -2.5e-7}
+         ]}
+    ),
+
 
     'REFPROP_sigma': (['Tc', 'sigma0', 'n0'], ['sigma1', 'n1', 'sigma2', 'n2'], {'f': REFPROP_sigma},  {'fit_params': ['sigma0', 'n0', 'sigma1', 'n1', 'sigma2', 'n2']}),
     'Somayajulu': (['Tc', 'A', 'B', 'C'], [], {'f': Somayajulu}, {'fit_params': ['A', 'B', 'C']}),

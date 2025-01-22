@@ -345,7 +345,6 @@ class HeatCapacityGas(TDependentProperty):
                     self.add_correlation(name=JOBACK, model='DIPPR100', Tmin=Tmin_jb, Tmax=Tmax_jb, A=float(jb_df.at[CASRN_int, 'Cpg0']),
                                          B=float(jb_df.at[CASRN_int, 'Cpg1']), C=float(jb_df.at[CASRN_int, 'Cpg2']), 
                                          D=Cpg3, select=False)
-
             if CASRN in heat_capacity.WebBook_Shomate_gases:
                 methods.append(WEBBOOK_SHOMATE)
                 self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_gases[CASRN]
