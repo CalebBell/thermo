@@ -787,6 +787,9 @@ class HeatCapacityLiquid(TDependentProperty):
     obj_references = pure_references = ('Cpgm',)
     obj_references_types = pure_reference_types = (HeatCapacityGas,)
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(POLING_CONST)
+    extra_correlations_internal.add(CRCSTD)
 
     custom_args = ('MW', 'similarity_variable', 'Tc', 'omega', 'Cpgm')
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
@@ -873,18 +876,24 @@ class HeatCapacityLiquid(TDependentProperty):
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
                 self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[CASRN]
                 T_limits[ZABRANSKY_QUASIPOLYNOMIAL_C] = (self.Zabransky_quasipolynomial_iso.Tmin, self.Zabransky_quasipolynomial_iso.Tmax)
-
-
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl']):
-                methods.append(POLING_CONST)
-                self.POLING_T = 298.15
-                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl'])
-                T_limits[POLING_CONST] = (298.15-50.0, 298.15+50.0)
+                self.add_correlation(
+                    name=POLING_CONST,
+                    model='constant',
+                    Tmin=298.15-50.0,
+                    Tmax=298.15+50.0,
+                    A=float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl']),
+                    select=False
+                )
             if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']):
-                methods.append(CRCSTD)
-                self.CRCSTD_T = 298.15
-                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl'])
-                T_limits[CRCSTD] = (298.15-50.0, 298.15+50.0)
+                self.add_correlation(
+                    name=CRCSTD,
+                    model='constant',
+                    Tmin=298.15-50.0,
+                    Tmax=298.15+50.0,
+                    A=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']),
+                    select=False
+                )            
             # Saturation functions
             if CASRN in heat_capacity.zabransky_dict_sat_s:
                 methods.append(ZABRANSKY_SPLINE_SAT)
@@ -955,10 +964,6 @@ class HeatCapacityLiquid(TDependentProperty):
             return self.webbook_shomate.force_calculate(T)
         elif method == COOLPROP:
             return CoolProp_T_dependent_property(T, self.CASRN , 'CPMOLAR', 'l')
-        elif method == POLING_CONST:
-            return self.POLING_constant
-        elif method == CRCSTD:
-            return self.CRCSTD_constant
         elif method == ROWLINSON_POLING:
             Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
             return Rowlinson_Poling(T, self.Tc, self.omega, Cpgm)
@@ -1018,12 +1023,6 @@ class HeatCapacityLiquid(TDependentProperty):
         elif method == COOLPROP:
             if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
                 return False
-        elif method == POLING_CONST:
-            if T > self.POLING_T + 50 or T < self.POLING_T - 50:
-                return False
-        elif method == CRCSTD:
-            if T > self.CRCSTD_T + 50 or T < self.CRCSTD_T - 50:
-                return False
         elif method == DADGOSTAR_SHAW:
             pass # Valid everywhere
         elif method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
@@ -1070,16 +1069,12 @@ class HeatCapacityLiquid(TDependentProperty):
             return self.Zabransky_quasipolynomial_sat.calculate_integral(T1, T2)
         elif method == WEBBOOK_SHOMATE:
             return self.webbook_shomate.force_calculate_integral(T1, T2)
-        elif method == POLING_CONST:
-            return (T2 - T1)*self.POLING_constant
-        elif method == CRCSTD:
-            return (T2 - T1)*self.CRCSTD_constant
         elif method == DADGOSTAR_SHAW:
             dH = (Dadgostar_Shaw_integral(T2, self.similarity_variable)
                     - Dadgostar_Shaw_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
-        elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
-            return float(quad(self.calculate, T1, T2, args=(method,))[0])
+        # elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
+        #     return float(quad(self.calculate, T1, T2, args=(method,))[0])
         return super().calculate_integral(T1, T2, method)
 
     def calculate_integral_over_T(self, T1, T2, method):
@@ -1119,16 +1114,12 @@ class HeatCapacityLiquid(TDependentProperty):
             return self.Zabransky_quasipolynomial_sat.calculate_integral_over_T(T1, T2)
         elif method == WEBBOOK_SHOMATE:
             return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
-        elif method == POLING_CONST:
-            return self.POLING_constant*log(T2/T1)
-        elif method == CRCSTD:
-            return self.CRCSTD_constant*log(T2/T1)
         elif method == DADGOSTAR_SHAW:
             dS = (Dadgostar_Shaw_integral_over_T(T2, self.similarity_variable)
                     - Dadgostar_Shaw_integral_over_T(T1, self.similarity_variable))
             return property_mass_to_molar(dS, self.MW)
-        elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
-            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        # elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
+        #     return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
         return super().calculate_integral_over_T(T1, T2, method)
 
 LASTOVKA_S = 'LASTOVKA_S'
