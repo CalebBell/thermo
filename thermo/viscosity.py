@@ -395,12 +395,18 @@ class ViscosityLiquid(TPDependentProperty):
             if self.MW is not None and CASRN_int in jb_df.index:
                 mul0 = float(jb_df.at[CASRN_int, 'mul0'])
                 if not isnan(mul0):
-                    methods.append(JOBACK)
-                    self.joback_coeffs = [mul0, float(jb_df.at[CASRN_int, 'mul1'])]
-
-                    Tmin_jb, Tmax_jb = float(jb_df.at[CASRN_int, 'Tm']), float(jb_df.at[CASRN_int, 'Tc'])*2.5
-                    T_limits[JOBACK] = (Tmin_jb, Tmax_jb)
-
+                    self.add_correlation(
+                        name=JOBACK,
+                        model='DIPPR101',
+                        Tmin=float(jb_df.at[CASRN_int, 'Tm']),
+                        Tmax=float(jb_df.at[CASRN_int, 'Tc'])*2.5,
+                        A=float(jb_df.at[CASRN_int, 'mul1']) + log(self.MW),
+                        B=mul0,
+                        C=0,
+                        D=0,
+                        E=0,
+                        select=False
+                    )
             if has_CoolProp() and CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_mu:
@@ -546,9 +552,6 @@ class ViscosityLiquid(TPDependentProperty):
             mu = EQ101(T, *self.Perrys2_313_coeffs)
         elif method == COOLPROP:
             mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'l')
-        elif method == JOBACK:
-            A, B = self.joback_coeffs
-            mu = self.MW*exp(A/T + B)
         elif method == LETSOU_STIEL:
             mu = Letsou_Stiel(T, self.MW, self.Tc, self.Pc, self.omega)
         elif method == PRZEDZIECKI_SRIDHAR:
