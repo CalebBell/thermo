@@ -323,21 +323,16 @@ class EnthalpyVaporization(TDependentProperty):
             if CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
                 self.add_correlation(name=ALIBAKHSHI, model='Alibakhshi', Tmin=self.Tc * 0.3, Tmax=max(self.Tc - 100.0, 0),
                                     Tc=self.Tc, C=float(phase_change.phase_change_data_Alibakhshi_Cs.at[CASRN, 'C']), select=False)
-                methods.append(ALIBAKHSHI)
-
             if CASRN in phase_change.phase_change_data_Perrys2_150.index:
                 Tc, C1, C2, C3, C4, Tmin, Tmax = phase_change.phase_change_values_Perrys2_150[
                     phase_change.phase_change_data_Perrys2_150.index.get_loc(CASRN)].tolist()
                 self.add_correlation(name=DIPPR_PERRY_8E, model='DIPPR106', Tmin=Tmin, Tmax=Tmax,
                                     Tc=Tc, A=C1, B=C2, C=C3, D=C4, select=False)
-                methods.append(DIPPR_PERRY_8E)
-
             if CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
                 Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[
                     phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(CASRN)].tolist()
                 self.add_correlation(name=VDI_PPDS, model='PPDS12', Tmin=0.1 * Tc, Tmax=Tc,
                                     Tc=Tc, A=A, B=B, C=C, D=D, E=E, select=False)
-                methods.append(VDI_PPDS)
             if CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[CASRN, 'HvapTb']):
                 methods.append(CRC_HVAP_TB)
                 self.CRC_HVAP_TB_Tb = float(phase_change.Hvap_data_CRC.at[CASRN, 'Tb'])
@@ -489,9 +484,6 @@ class EnthalpyVaporization(TDependentProperty):
         if method == COOLPROP:
             if T <= self.CP_f.Tmin or T > self.CP_f.Tc:
                 validity = False
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_150_Tmin or T > self.Perrys2_150_Tmax:
-                return False
         elif method == CRC_HVAP_TB:
             if not self.Tc:
                 if T < self.CRC_HVAP_TB_Tb - 5 or T > self.CRC_HVAP_TB_Tb + 5:
@@ -502,20 +494,12 @@ class EnthalpyVaporization(TDependentProperty):
             if not self.Tc:
                 if T < 298.15 - 5 or T > 298.15 + 5:
                     validity = False
-        elif method == VDI_PPDS:
-            validity = T <= self.VDI_PPDS_Tc
         elif method in self.boiling_methods:
             if T > self.Tc:
                 validity = False
         elif method in self.CSP_methods:
             if T > self.Tc:
                 validity = False
-        elif method == ALIBAKHSHI:
-            if T > self.Tc - 100:
-                validity = False
-#            elif (self.Tb and T < self.Tb - 50):
-#                validity = False
-
         elif method == CLAPEYRON:
             if not (self.Psat and T < self.Tc):
                 validity = False
