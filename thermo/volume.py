@@ -648,46 +648,6 @@ class VolumeLiquid(TPDependentProperty):
             return self._base_calculate_P(T, P, method)
         return Vm
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For CSP methods, the models
-        are considered valid from 0 K to the critical point. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        **BHIRUD_NORMAL** behaves poorly at low temperatures and is not used
-        under 0.35Tc. The constant value available for inorganic chemicals,
-        from method **CRC_INORG_L_CONST**, is considered valid for all
-        temperatures.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if method in (RACKETT, YAMADA_GUNN, TOWNSEND_HALES,
-                        HTCOSTALD, YEN_WOODS_SAT, MMSNM0, MMSNM0FIT,
-                        CAMPBELL_THODOS, HTCOSTALDFIT, RACKETTFIT):
-            if T >= self.Tc:
-                validity = False
-        elif method == EOS:
-            if T >= self.Tc:
-                validity = False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For
@@ -942,28 +902,6 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
             Vm = self.interpolate_P(T, P, method)
         return Vm
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method.For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        return super().test_method_validity(T, method)
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For
@@ -1818,40 +1756,6 @@ class VolumeSolid(TDependentProperty):
             return self._base_calculate(T, method)
         return Vms
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if T < 0:
-            validity = False
-        elif method == CRC_INORG_S:
-            pass
-            # Assume the solid density value is good at any possible T
-        elif method == GOODMAN:
-            if T < self.Tt*0.3:
-                validity = False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
 
 try:
     VolumeSolid._custom_set_poly_fit = VolumeLiquid._custom_set_poly_fit
