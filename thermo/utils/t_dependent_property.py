@@ -3495,7 +3495,7 @@ class TDependentProperty:
         self.T_limits[name] = (0. if Tmin is None else Tmin,
                                inf if Tmax is None else Tmax)
 
-    def add_tabular_data(self, Ts, properties, name=None, check_properties=True):
+    def add_tabular_data(self, Ts, properties, name=None, check_properties=True, select=True):
         r'''Method to set tabular data to be used for interpolation.
         Ts must be in increasing order. If no name is given, data will be
         assigned the name 'Tabular data series #x', where x is the number of
@@ -3515,6 +3515,8 @@ class TDependentProperty:
             If True, the properties will be checked for validity with
             :obj:`test_property_validity` and raise an exception if any are not
             valid
+        select: bool
+            Whether to set the method as the default, [-]
         '''
         # Ts must be in increasing order.
         if check_properties:
@@ -3530,7 +3532,8 @@ class TDependentProperty:
         self.T_limits[name] = (min(Ts), max(Ts))
 
         self.all_methods.add(name)
-        self.method = name
+        if select:
+            self.method = name
 
     def solve_property(self, goal):
         r'''Method to solve for the temperature at which a property is at a
@@ -4783,7 +4786,7 @@ class TDependentProperty:
 
 
 
-        if method is None or (found_allotropes and method in do_not_set_methods) or method in self.extra_correlations_internal:
+        if method is None or (found_allotropes and method in do_not_set_methods) or (method in self.extra_correlations_internal and not 'method' in kwargs):
             all_methods = self.all_methods
             for i in self.ranked_methods:
                 if i in all_methods:

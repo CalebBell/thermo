@@ -119,8 +119,8 @@ def test_HeatCapacityGas():
     obj = HeatCapacityGas(CASRN='7440-37-1', MW=39.948, similarity_variable=0.025032542304996495)
     assert not isnan(obj.Tmax)
     assert not isnan(obj.Tmin)
-    assert not isnan(obj.POLING_Tmin)
-    assert not isnan(obj.POLING_Tmax)
+    assert not isnan(obj.T_limits[POLING_POLY][0])
+    assert not isnan(obj.T_limits[POLING_POLY][1])
 
     new = HeatCapacityGas.from_json(obj.as_json())
     assert new == obj

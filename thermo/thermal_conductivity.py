@@ -388,8 +388,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
         if load_data and CASRN:
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'K (l)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_k:
@@ -1044,8 +1043,7 @@ class ThermalConductivityGas(TPDependentProperty):
         if load_data and CASRN:
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'K (g)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_k:

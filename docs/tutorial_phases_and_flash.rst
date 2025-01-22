@@ -82,8 +82,6 @@ Obtain a heat capacity object, and select a source:
 >>> from thermo.heat_capacity import POLING_POLY
 >>> CpObj = HeatCapacityGas(CASRN='67-56-1')
 >>> CpObj.method = POLING_POLY
->>> CpObj.POLING_coefs # Show the coefficients
-[4.714, -0.006986, 4.211e-05, -4.443e-08, 1.535e-11]
 >>> HeatCapacityGases = [CpObj]
 
 Create a :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` object which holds constant properties of the object, using a minimum of values:

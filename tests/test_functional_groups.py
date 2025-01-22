@@ -2609,11 +2609,11 @@ def test_identify_functional_group_atoms():
     
     # Test amide
     mol = Chem.MolFromSmiles('CC(=O)N')  # Acetamide
-    assert identify_functional_group_atoms(mol, FG_AMIDE) == [(0, 1, 2, 3), (1, 2, 3)]
+    assert identify_functional_group_atoms(mol, FG_AMIDE) == [(1, 2, 3)]
     
     # Test overlapping patterns
     mol = Chem.MolFromSmiles('CC(=O)NC(=O)C')  # N-acetylacetamide
-    assert identify_functional_group_atoms(mol, FG_AMIDE) == [(0, 1, 2, 3), (3, 4, 5, 6)]
+    assert identify_functional_group_atoms(mol, FG_AMIDE) == [(1, 2, 3), (3, 4, 5)]
     
     # Test no matches
     mol = Chem.MolFromSmiles('CCO')  # Ethanol

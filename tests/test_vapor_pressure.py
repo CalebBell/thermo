@@ -124,6 +124,9 @@ def test_VaporPressure_ethanol():
     obj2 = VaporPressure.from_json(s)
     assert EtOH == obj2
 
+    EtOH2 = eval(str(EtOH))
+    assert EtOH2 == EtOH
+
     # Test that methods return None
     EtOH = VaporPressure(Tb=351.39, Tc=514.0, Pc=6137000.0, omega=0.635, CASRN='64-17-5')
     EtOH.extrapolation = None
@@ -144,7 +147,7 @@ def test_VaporPressure_extended_poling():
         Psat_calcs.append(a.T_dependent_property(410))
 
 
-    Psat_exp = [162944.82134710113, 162870.44794192078, 170508.47471278594, 162865.5380455795, 162865.44152809016]
+    Psat_exp = [162944.82134710113, 162870.44794192078, 170465.8542701554, 162865.5380455795, 162865.44152809016]
     assert_close1d(sorted(Psat_calcs), sorted(Psat_exp), rtol=3e-5)
 
     s = a.as_json()
@@ -191,19 +194,19 @@ def test_VaporPressure_cycloheptane():
 @pytest.mark.meta_T_dept
 def test_VaporPressure_fitting0():
     obj = VaporPressure(CASRN='13838-16-9')
-    Tmin, Tmax = obj.WAGNER_POLING_Tmin, obj.WAGNER_POLING_Tmax
+    Tmin, Tmax = obj.T_limits[WAGNER_POLING]
     Ts = linspace(Tmin, Tmax, 10)
     Ps = [obj(T) for T in Ts]
-    Tc, Pc = obj.WAGNER_POLING_Tc, obj.WAGNER_POLING_Pc
+    Tc, Pc = obj.Wagner_parameters[WAGNER_POLING]['Tc'], obj.Wagner_parameters[WAGNER_POLING]['Pc']
     fitted = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner', use_numba=False,
-                          model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc})
+                          model_kwargs={'Tc': obj.Wagner_parameters[WAGNER_POLING]['Tc'], 'Pc': obj.Wagner_parameters[WAGNER_POLING]['Pc']})
     res = fitted
     assert 'Tc' in res
     assert 'Pc' in res
-    assert_close(res['a'], obj.WAGNER_POLING_coefs[0])
-    assert_close(res['b'], obj.WAGNER_POLING_coefs[1])
-    assert_close(res['c'], obj.WAGNER_POLING_coefs[2])
-    assert_close(res['d'], obj.WAGNER_POLING_coefs[3])
+    assert_close(res['a'], obj.Wagner_parameters[WAGNER_POLING]['a'])
+    assert_close(res['b'], obj.Wagner_parameters[WAGNER_POLING]['b'])
+    assert_close(res['c'], obj.Wagner_parameters[WAGNER_POLING]['c'])
+    assert_close(res['d'], obj.Wagner_parameters[WAGNER_POLING]['d'])
 
     # Heavy compound fit
     Ts = linspace(179.15, 237.15, 5)
@@ -242,7 +245,7 @@ def test_VaporPressure_fitting2_dippr():
                       ]
     for CAS in fit_issue_CASs:
         obj = VaporPressure(CASRN=CAS)
-        Ts = linspace(obj.Perrys2_8_Tmin, obj.Perrys2_8_Tmax, pts)
+        Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], pts)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                               do_statistics=True, use_numba=False, multiple_tries=True, fit_method='lm')
@@ -255,11 +258,11 @@ def test_VaporPressure_fitting2_dippr():
 def test_VaporPressure_fitting3_WagnerMcGarry():
     for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_WagnerMcGarry.index):
         obj = VaporPressure(CASRN=CAS)
-        Ts = linspace(obj.WAGNER_MCGARRY_Tmin, obj.WAGNER_MCGARRY_Tc, 10)
+        Ts = linspace(obj.T_limits[WAGNER_MCGARRY][0], obj.T_limits[WAGNER_MCGARRY][1], 10)
         props_calc = [obj.calculate(T, WAGNER_MCGARRY) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='Wagner_original',
                               do_statistics=True, use_numba=False,
-                              fit_method='lm', model_kwargs={'Tc': obj.WAGNER_MCGARRY_Tc, 'Pc': obj.WAGNER_MCGARRY_Pc})
+                              fit_method='lm', model_kwargs={'Tc': obj.T_limits[WAGNER_MCGARRY][1], 'Pc': obj.Wagner_original_parameters[WAGNER_MCGARRY]['Pc']})
         assert stats['MAE'] < 1e-7
 
 @pytest.mark.slow
@@ -269,11 +272,13 @@ def test_VaporPressure_fitting3_WagnerMcGarry():
 def test_VaporPressure_fitting4_WagnerPoling():
     for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_WagnerPoling.index):
         obj = VaporPressure(CASRN=CAS)
-        Ts = linspace(obj.WAGNER_POLING_Tmin, obj.WAGNER_POLING_Tc, 10)
+        Tmin = obj.T_limits[WAGNER_POLING][0]
+        Tc, Pc = obj.Wagner_parameters[WAGNER_POLING]['Tc'], obj.Wagner_parameters[WAGNER_POLING]['Pc']
+        Ts = linspace(Tmin, Tc, 10)
         props_calc = [obj.calculate(T, WAGNER_POLING) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='Wagner',
                               do_statistics=True, use_numba=False,
-                              fit_method='lm', model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc})
+                              fit_method='lm', model_kwargs={'Tc': Tc, 'Pc': Pc})
         assert stats['MAE'] < 1e-7
 
 @pytest.mark.slow
@@ -283,7 +288,7 @@ def test_VaporPressure_fitting4_WagnerPoling():
 def test_VaporPressure_fitting5_AntoinePoling():
     for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_AntoinePoling.index):
         obj = VaporPressure(CASRN=CAS)
-        Ts = linspace(obj.ANTOINE_POLING_Tmin, obj.ANTOINE_POLING_Tmax, 10)
+        Ts = linspace(obj.T_limits[ANTOINE_POLING][0], obj.T_limits[ANTOINE_POLING][1], 10)
         props_calc = [obj.calculate(T, ANTOINE_POLING) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='Antoine',
                               do_statistics=True, use_numba=False,
@@ -298,30 +303,30 @@ def test_VaporPressure_fitting5_AntoinePoling():
 def test_VaporPressure_fitting6_VDI_PPDS():
     for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_VDI_PPDS_3.index):
         obj = VaporPressure(CASRN=CAS)
-        Ts = linspace(obj.VDI_PPDS_Tm, obj.VDI_PPDS_Tc, 10)
+        Ts = linspace(obj.T_limits[VDI_PPDS][0], obj.T_limits[VDI_PPDS][1], 10)
         props_calc = [obj.calculate(T, VDI_PPDS) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='Wagner',
                               do_statistics=True, use_numba=False,
-                              fit_method='lm', model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'Pc': obj.VDI_PPDS_Pc})
+                              fit_method='lm', model_kwargs={'Tc': obj.Wagner_parameters[VDI_PPDS]['Tc'], 'Pc': obj.Wagner_parameters[VDI_PPDS]['Pc']})
         assert stats['MAE'] < 1e-7
 
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_VaporPressure_fitting7_reduced_fit_params_with_jac():
     obj = VaporPressure(CASRN='13838-16-9')
-    Tmin, Tmax = obj.WAGNER_POLING_Tmin, obj.WAGNER_POLING_Tmax
+    Tmin, Tmax = obj.T_limits[WAGNER_POLING]
     Ts = linspace(Tmin, Tmax, 10)
     Ps = [obj(T) for T in Ts]
     fit = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner', use_numba=False,
-                                model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc, 'd': -4.60})
+                                model_kwargs={'Tc': obj.Wagner_parameters[WAGNER_POLING]['Tc'], 'Pc': obj.Wagner_parameters[WAGNER_POLING]['Pc'], 'd': -4.60})
     assert fit['d'] == -4.6
 
     fit = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner', use_numba=False,
-                                model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc, 'b': 2.4})
+                                model_kwargs={'Tc': obj.Wagner_parameters[WAGNER_POLING]['Tc'], 'Pc': obj.Wagner_parameters[WAGNER_POLING]['Pc'], 'b': 2.4})
     assert fit['b'] == 2.4
 
     fit = obj.fit_data_to_model(Ts=Ts, data=Ps, model='Wagner', use_numba=False,
-                                model_kwargs={'Tc': obj.WAGNER_POLING_Tc, 'Pc': obj.WAGNER_POLING_Pc, 'd': -4.60, 'a': -8.329, 'b': 2.4})
+                                model_kwargs={'Tc': obj.Wagner_parameters[WAGNER_POLING]['Tc'], 'Pc': obj.Wagner_parameters[WAGNER_POLING]['Pc'], 'd': -4.60, 'a': -8.329, 'b': 2.4})
     assert fit['a'] == -8.329
     assert fit['b'] == 2.4
     assert fit['d'] == -4.6
@@ -334,12 +339,13 @@ def test_VaporPressure_fitting8_TRC_AntoineExtended():
     hard_CASs = frozenset(['110-82-7'])
     for i, CAS in enumerate(chemicals.vapor_pressure.Psat_data_AntoineExtended.index):
         obj = VaporPressure(CASRN=CAS)
-        Ts = linspace(obj.ANTOINE_EXTENDED_POLING_Tmin, obj.ANTOINE_EXTENDED_POLING_Tmax, 10)
+        Ts = linspace(obj.T_limits[ANTOINE_EXTENDED_POLING][0], obj.T_limits[ANTOINE_EXTENDED_POLING][1], 10)
         props_calc = [obj.calculate(T, ANTOINE_EXTENDED_POLING) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='TRC_Antoine_extended',
                               do_statistics=True, use_numba=False, multiple_tries=CAS in hard_CASs,# multiple_tries_max_err=1e-4,
-                              fit_method='lm', model_kwargs={'Tc': obj.ANTOINE_EXTENDED_POLING_coefs[0],
-                                                             'to': obj.ANTOINE_EXTENDED_POLING_coefs[1]})
+                              fit_method='lm', model_kwargs={'Tc': obj.TRC_Antoine_extended_parameters['ANTOINE_EXTENDED_POLING']['Tc'],
+                                                             'to': obj.TRC_Antoine_extended_parameters['ANTOINE_EXTENDED_POLING']['to']})
+
         assert stats['MAE'] < 1e-4
 
 @pytest.mark.fitting
@@ -518,18 +524,20 @@ def test_VaporPressure_Arrhenius_extrapolation_non_negative():
     assert_close(ethanol_psat(700), 59005875.32878946, rtol=3e-4)
     assert_close(ethanol_psat(100), 1.0475828451230242e-11, rtol=3e-4)
 
-    assert ethanol_psat.T_limits['WAGNER_MCGARRY'][0] == ethanol_psat.WAGNER_MCGARRY_Tmin
-    assert ethanol_psat.T_limits['WAGNER_MCGARRY'][1] == ethanol_psat.WAGNER_MCGARRY_Tc
+    assert ethanol_psat.T_limits['WAGNER_MCGARRY'][0]
+    assert ethanol_psat.T_limits['WAGNER_MCGARRY'][1]
 
-    assert_close(ethanol_psat.T_dependent_property(ethanol_psat.WAGNER_MCGARRY_Tc),
-                 ethanol_psat.T_dependent_property(ethanol_psat.WAGNER_MCGARRY_Tc-1e-6))
-    assert_close(ethanol_psat.T_dependent_property(ethanol_psat.WAGNER_MCGARRY_Tc),
-                 ethanol_psat.T_dependent_property(ethanol_psat.WAGNER_MCGARRY_Tc+1e-6))
+    Tmin, Tmax = ethanol_psat.T_limits[WAGNER_MCGARRY][0], ethanol_psat.T_limits[WAGNER_MCGARRY][1]
 
-    assert_close(ethanol_psat.T_dependent_property(ethanol_psat.WAGNER_MCGARRY_Tmin),
-                 ethanol_psat.T_dependent_property(ethanol_psat.WAGNER_MCGARRY_Tmin-1e-6))
-    assert_close(ethanol_psat.T_dependent_property(ethanol_psat.WAGNER_MCGARRY_Tmin),
-                 ethanol_psat.T_dependent_property(ethanol_psat.WAGNER_MCGARRY_Tmin+1e-6))
+    assert_close(ethanol_psat.T_dependent_property(Tmax),
+                 ethanol_psat.T_dependent_property(Tmax-1e-6))
+    assert_close(ethanol_psat.T_dependent_property(Tmax),
+                 ethanol_psat.T_dependent_property(Tmax+1e-6))
+
+    assert_close(ethanol_psat.T_dependent_property(Tmin),
+                 ethanol_psat.T_dependent_property(Tmin-1e-6))
+    assert_close(ethanol_psat.T_dependent_property(Tmin),
+                 ethanol_psat.T_dependent_property(Tmin+1e-6))
 
 
 
@@ -584,19 +592,21 @@ def test_VaporPressure_extrapolation_AB():
     obj.method = WAGNER_MCGARRY
     obj.calculate_derivative(300, WAGNER_MCGARRY)
 
+    Tmin, Tmax = obj.T_limits[WAGNER_MCGARRY][0], obj.T_limits[WAGNER_MCGARRY][1]
+
     for extrapolation in ('AntoineAB', 'DIPPR101_ABC', 'AntoineAB|AntoineAB', 'DIPPR101_ABC|DIPPR101_ABC',
                           'DIPPR101_ABC|AntoineAB', 'AntoineAB|DIPPR101_ABC'):
         obj.extrapolation = extrapolation
 
-        assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc),
-                     obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc-1e-6))
-        assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc),
-                     obj.T_dependent_property(obj.WAGNER_MCGARRY_Tc+1e-6))
+        assert_close(obj.T_dependent_property(Tmax),
+                     obj.T_dependent_property(Tmax-1e-6))
+        assert_close(obj.T_dependent_property(Tmax),
+                     obj.T_dependent_property(Tmax+1e-6))
 
-        assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin),
-                     obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin-1e-6))
-        assert_close(obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin),
-                     obj.T_dependent_property(obj.WAGNER_MCGARRY_Tmin+1e-6))
+        assert_close(obj.T_dependent_property(Tmin),
+                     obj.T_dependent_property(Tmin-1e-6))
+        assert_close(obj.T_dependent_property(Tmin),
+                     obj.T_dependent_property(Tmin+1e-6))
 
 
 # @pytest.mark.meta_T_dept

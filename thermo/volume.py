@@ -499,8 +499,7 @@ class VolumeLiquid(TPDependentProperty):
                 T_limits[VDI_PPDS] = (0.3*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Volume (l)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if self.Tc and CASRN in volume.rho_data_COSTALD.index:
                 methods.append(HTCOSTALDFIT)
                 self.COSTALD_Vchar = float(volume.rho_data_COSTALD.at[CASRN, 'Vchar'])

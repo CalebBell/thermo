@@ -289,6 +289,12 @@ class HeatCapacityGas(TDependentProperty):
                       LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     """Default rankings of the available methods."""
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(JOBACK)
+    extra_correlations_internal.add(POLING_CONST)
+    extra_correlations_internal.add(POLING_POLY)
+    extra_correlations_internal.add(CRCSTD)
+    
 
     _fit_force_n = {}
     """Dictionary containing method: fit_n, for use in methods which should
@@ -329,20 +335,16 @@ class HeatCapacityGas(TDependentProperty):
         CASRN = self.CASRN
         if load_data and CASRN:
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
-
             jb_df = miscdata.joback_predictions
             if CASRN_int in jb_df.index:
                 Cpg3 = float(jb_df.at[CASRN_int, 'Cpg3'])
                 if not isnan(Cpg3):
-                    methods.append(JOBACK)
-                    self.joback_coeffs = [Cpg3,
-                                          float(jb_df.at[CASRN_int, 'Cpg2']),
-                                          float(jb_df.at[CASRN_int, 'Cpg1']),
-                                          float(jb_df.at[CASRN_int, 'Cpg0'])]
                     Tmin_jb, Tmax_jb = float(jb_df.at[CASRN_int, 'Tm']),float(jb_df.at[CASRN_int, 'Tc'])*2.5
                     # if isnan(Tmin_jb): Tmin_jb = 100.0 # The same groups are defined for Tm as for Cp, should never be a nan
                     if isnan(Tmax_jb): Tmax_jb = 10000.0
-                    T_limits[JOBACK] = (Tmin_jb, Tmax_jb)
+                    self.add_correlation(name=JOBACK, model='DIPPR100', Tmin=Tmin_jb, Tmax=Tmax_jb, A=float(jb_df.at[CASRN_int, 'Cpg0']),
+                                         B=float(jb_df.at[CASRN_int, 'Cpg1']), C=float(jb_df.at[CASRN_int, 'Cpg2']), 
+                                         D=Cpg3, select=False)
 
             if CASRN in heat_capacity.WebBook_Shomate_gases:
                 methods.append(WEBBOOK_SHOMATE)
@@ -355,37 +357,27 @@ class HeatCapacityGas(TDependentProperty):
                 T_limits[TRCIG] = (self.TRCIG_Tmin, self.TRCIG_Tmax)
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'a0']):
                 POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = heat_capacity.Cp_values_Poling[heat_capacity.Cp_data_Poling.index.get_loc(CASRN)].tolist()
-                methods.append(POLING_POLY)
                 if isnan(POLING_Tmin):
                     POLING_Tmin = 50.0
                 if isnan(POLING_Tmax):
                     POLING_Tmax = 1000.0
-                self.POLING_Tmin = POLING_Tmin
-                self.POLING_Tmax = POLING_Tmax
-                self.POLING_coefs = [a0, a1, a2, a3, a4]
-                T_limits[POLING_POLY] = (POLING_Tmin, POLING_Tmax)
+                self.add_correlation(name=POLING_POLY, model='DIPPR100', Tmin=POLING_Tmin, Tmax=POLING_Tmax, A=R*a0, B=R*a1, C=R*a2, D=R*a3, E=R*a4, select=False)
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpg']):
-                methods.append(POLING_CONST)
-                self.POLING_T = 298.15
-                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpg'])
-                T_limits[POLING_CONST] = (self.POLING_T-50.0, self.POLING_T+50.0)
+                self.add_correlation(name=POLING_CONST, model='DIPPR100', Tmin=298.15-50.0, Tmax=298.15+50.0, 
+                                     A=float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpg']), select=False)
             if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cpg']):
-                methods.append(CRCSTD)
-                self.CRCSTD_T = 298.15
-                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpg'])
-                T_limits[CRCSTD] = (self.CRCSTD_T-50.0, self.CRCSTD_T+50.0)
+                self.add_correlation(name=CRCSTD, model='DIPPR100', Tmin=298.15-50.0, Tmax=298.15+50.0, 
+                                     A=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpg']), select=False)
             if CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
                 # value
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Cp (g)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if self.CASRN in heat_capacity.Cp_dict_JANAF_gas:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_gas[self.CASRN]
-                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[CASRN]
@@ -465,21 +457,11 @@ class HeatCapacityGas(TDependentProperty):
             Cp = TRCCp(T, *self.TRCIG_coefs)
         elif method == WEBBOOK_SHOMATE:
             Cp = self.webbook_shomate.force_calculate(T)
-        elif method == JOBACK:
-            Cp = horner(self.joback_coeffs, T)
         elif method == COOLPROP:
             if self.CoolProp_A0_args is not None:
                 Cp = Cp_ideal_gas_Helmholtz(T, *self.CoolProp_A0_args)
             else:
                 return CoolProp_T_dependent_property(T, self.CASRN, 'CP0MOLAR', 'g')
-        elif method == POLING_POLY:
-            Cp = R*(self.POLING_coefs[0] + self.POLING_coefs[1]*T
-            + self.POLING_coefs[2]*T**2 + self.POLING_coefs[3]*T**3
-            + self.POLING_coefs[4]*T**4)
-        elif method == POLING_CONST:
-            Cp = self.POLING_constant
-        elif method == CRCSTD:
-            Cp = self.CRCSTD_constant
         elif method == LASTOVKA_SHAW:
             Cp = Lastovka_Shaw(T, self.similarity_variable, self.iscyclic_aliphatic, self.MW)
         else:
@@ -514,9 +496,6 @@ class HeatCapacityGas(TDependentProperty):
         validity = True
         if method == POLING_CONST:
             if T > self.POLING_T + 50.0 or T < self.POLING_T - 50.0:
-                return False
-        elif method == CRCSTD:
-            if T > self.CRCSTD_T + 50.0 or T < self.CRCSTD_T - 50.0:
                 return False
         elif method == LASTOVKA_SHAW:
             pass # Valid everywhere
@@ -553,15 +532,6 @@ class HeatCapacityGas(TDependentProperty):
             return H2 - H1
         elif method == WEBBOOK_SHOMATE:
             return self.webbook_shomate.force_calculate_integral(T1, T2)
-        elif method == POLING_POLY:
-            A, B, C, D, E = self.POLING_coefs
-            H2 = (((((0.2*E)*T2 + 0.25*D)*T2 + C/3.)*T2 + 0.5*B)*T2 + A)*T2
-            H1 = (((((0.2*E)*T1 + 0.25*D)*T1 + C/3.)*T1 + 0.5*B)*T1 + A)*T1
-            return R*(H2 - H1)
-        elif method == POLING_CONST:
-            return (T2 - T1)*self.POLING_constant
-        elif method == CRCSTD:
-            return (T2 - T1)*self.CRCSTD_constant
         elif method == LASTOVKA_SHAW:
             similarity_variable = self.similarity_variable
             iscyclic_aliphatic = self.iscyclic_aliphatic
@@ -604,15 +574,6 @@ class HeatCapacityGas(TDependentProperty):
             return S2 - S1
         elif method == WEBBOOK_SHOMATE:
             return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
-        elif method == CRCSTD:
-            return self.CRCSTD_constant*log(T2/T1)
-        elif method == POLING_CONST:
-            return self.POLING_constant*log(T2/T1)
-        elif method == POLING_POLY:
-            A, B, C, D, E = self.POLING_coefs
-            S2 = ((((0.25*E)*T2 + D/3.)*T2 + 0.5*C)*T2 + B)*T2
-            S1 = ((((0.25*E)*T1 + D/3.)*T1 + 0.5*C)*T1 + B)*T1
-            return R*(S2-S1 + A*log(T2/T1))
         elif method == LASTOVKA_SHAW:
             similarity_variable = self.similarity_variable
             iscyclic_aliphatic = self.iscyclic_aliphatic
@@ -937,15 +898,13 @@ class HeatCapacityLiquid(TDependentProperty):
             if CASRN in heat_capacity.Cp_dict_JANAF_liquid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_liquid[CASRN]
-                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False, select=False)
             if CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
                 # value
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Cp (l)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[CASRN]
@@ -1326,8 +1285,7 @@ class HeatCapacitySolid(TDependentProperty):
             if CASRN in heat_capacity.Cp_dict_JANAF_solid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_solid[CASRN]
-                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False, select=False)
             if CASRN and CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[CASRN]:
                 self.PERRY151_Tmin = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmin'] if heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmin'] else 0
                 self.PERRY151_Tmax = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmax'] if heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmax'] else 2000

@@ -343,8 +343,7 @@ class SurfaceTension(TDependentProperty):
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'sigma')
                 # mercury missing values
                 if Ts:
-                    self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                    del self._method
+                    self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if CASRN in interface.sigma_data_Jasper_Lange.index:
                 methods.append(JASPER)
                 a, b, self.JASPER_Tmin, self.JASPER_Tmax = interface.sigma_values_Jasper_Lange[interface.sigma_data_Jasper_Lange.index.get_loc(CASRN)].tolist()

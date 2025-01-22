@@ -314,8 +314,7 @@ class EnthalpyVaporization(TDependentProperty):
                 T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc*.9999)
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Hvap')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
                 methods.append(ALIBAKHSHI)
                 self.Alibakhshi_C = float(phase_change.phase_change_data_Alibakhshi_Cs.at[CASRN, 'C'])
