@@ -1229,6 +1229,10 @@ class HeatCapacitySolid(TDependentProperty):
     ranked_methods = [WEBBOOK_SHOMATE, JANAF_FIT, miscdata.JANAF, UNARY, PERRY151, CRCSTD, LASTOVKA_S]
     """Default rankings of the available methods."""
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(PERRY151)
+    extra_correlations_internal.add(CRCSTD)
+
     _fit_force_n = {}
     """Dictionary containing method: fit_n, for use in methods which should
     only ever be fit to a specific `n` value"""
@@ -1286,18 +1290,30 @@ class HeatCapacitySolid(TDependentProperty):
                 Ts, props = heat_capacity.Cp_dict_JANAF_solid[CASRN]
                 self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False, select=False)
             if CASRN and CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[CASRN]:
-                self.PERRY151_Tmin = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmin'] if heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmin'] else 0
-                self.PERRY151_Tmax = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmax'] if heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmax'] else 2000
-                self.PERRY151_const = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Const']
-                self.PERRY151_lin = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Lin']
-                self.PERRY151_quad = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Quad']
-                self.PERRY151_quadinv = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Quadinv']
-                methods.append(PERRY151)
-                T_limits[PERRY151] = (self.PERRY151_Tmin, self.PERRY151_Tmax)
+                data = heat_capacity.Cp_dict_PerryI[CASRN]['c']
+                Tmin = data['Tmin'] if data['Tmin'] else 0.0
+                Tmax = data['Tmax'] if data['Tmax'] else 2000.0
+                self.add_correlation(
+                    name=PERRY151,
+                    model='Shomate',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=data['Const']*calorie,
+                    B=data['Lin']*calorie,
+                    C=data['Quad']*calorie, 
+                    D=0.0,
+                    E=data['Quadinv']*calorie,
+                    select=False
+                )
             if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cps']):
-                self.CRCSTD_Cp = float(heat_capacity.CRC_standard_data.at[CASRN, 'Cps'])
-                methods.append(CRCSTD)
-                T_limits[CRCSTD] = (298.15, 298.15)
+                self.add_correlation(
+                    name=CRCSTD,
+                    model='constant',
+                    Tmin=298.15-50.0,
+                    Tmax=298.15+50.0,
+                    A=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cps']),
+                    select=False
+                )
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_S)
             T_limits[LASTOVKA_S] = (1.0, 1e4)
@@ -1323,12 +1339,7 @@ class HeatCapacitySolid(TDependentProperty):
         Cp : float
             Heat capacity of the solid at T, [J/mol/K]
         '''
-        if method == PERRY151:
-            Cp = (self.PERRY151_const + self.PERRY151_lin*T
-            + self.PERRY151_quadinv/T**2 + self.PERRY151_quad*T**2)*calorie
-        elif method == CRCSTD:
-            Cp = self.CRCSTD_Cp
-        elif method == LASTOVKA_S:
+        if method == LASTOVKA_S:
             Cp = Lastovka_solid(T, self.similarity_variable)
             Cp = property_mass_to_molar(Cp, self.MW)
         elif method == WEBBOOK_SHOMATE:
@@ -1363,13 +1374,7 @@ class HeatCapacitySolid(TDependentProperty):
             Whether or not a method is valid
         '''
         validity = True
-        if method == PERRY151:
-            if T < self.PERRY151_Tmin or T > self.PERRY151_Tmax:
-                validity = False
-        elif method == CRCSTD:
-            if T < 298.15-50 or T > 298.15+50:
-                validity = False
-        elif method == LASTOVKA_S:
+        if method == LASTOVKA_S:
             if T > 10000 or T < 0:
                 validity = False
         else:
@@ -1396,15 +1401,7 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == PERRY151:
-            H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2
-                  - self.PERRY151_quadinv/T2 + self.PERRY151_quad*T2**3/3.)
-            H1 = (self.PERRY151_const*T1 + 0.5*self.PERRY151_lin*T1**2
-                  - self.PERRY151_quadinv/T1 + self.PERRY151_quad*T1**3/3.)
-            return (H2-H1)*calorie
-        elif method == CRCSTD:
-            return (T2-T1)*self.CRCSTD_Cp
-        elif method == WEBBOOK_SHOMATE:
+        if method == WEBBOOK_SHOMATE:
             return self.webbook_shomate.force_calculate_integral(T1, T2)
         elif method == LASTOVKA_S:
             dH = (Lastovka_solid_integral(T2, self.similarity_variable)
@@ -1433,17 +1430,7 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == PERRY151:
-            S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2
-                  - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
-            S1 = (self.PERRY151_const*log(T1) + self.PERRY151_lin*T1
-                  - self.PERRY151_quadinv/(2.*T1**2) + 0.5*self.PERRY151_quad*T1**2)
-            return (S2 - S1)*calorie
-        elif method == CRCSTD:
-            S2 = self.CRCSTD_Cp*log(T2)
-            S1 = self.CRCSTD_Cp*log(T1)
-            return (S2 - S1)
-        elif method == LASTOVKA_S:
+        if method == LASTOVKA_S:
             dS = (Lastovka_solid_integral_over_T(T2, self.similarity_variable)
                     - Lastovka_solid_integral_over_T(T1, self.similarity_variable))
             return property_mass_to_molar(dS, self.MW)
