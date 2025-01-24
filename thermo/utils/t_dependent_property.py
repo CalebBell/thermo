@@ -3427,7 +3427,7 @@ class TDependentProperty:
 
         self.correlations[name] = (call, kwargs, model, extra)
 
-    def add_piecewise_method(self, name, method_names, T_ranges):
+    def add_piecewise_method(self, name, method_names, T_ranges, select=True):
         r'''Method to add a piecewise method made of already added other methods.
         This can be useful in the event of multiple solid phases.
         However, if the methods are not continuous at the transitions,
@@ -3442,6 +3442,9 @@ class TDependentProperty:
         T_ranges : list[float]
             A list of temperatures consisting of [Tmin, T_transition1, ..., Tmax];
             this is size len(method_names) + 1, [K]
+        select : bool, optional
+            Whether to select the method, [-]
+
 
         Notes
         -----
@@ -3464,7 +3467,8 @@ class TDependentProperty:
         d[name] = (method_names, T_ranges, T_ranges[1:])
         self.T_limits[name] = (Tmin, Tmax)
         self.all_methods.add(name)
-        self.method = name
+        if select:
+            self.method = name
 
 
     def add_correlation(self, name, model, Tmin, Tmax, select=True, **kwargs):
@@ -3486,7 +3490,7 @@ class TDependentProperty:
             Maximum temperature to use the method at, [K]
         kwargs : dict
             Various keyword arguments accepted by the model, [-]
-        select: bool
+        select : bool
             Whether to set the method as the default, [-]
 
         Notes
