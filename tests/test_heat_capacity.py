@@ -247,15 +247,15 @@ def test_HeatCapacityGas_cheb_fit():
 def test_HeatCapacityGas_linear_extrapolation():
     CpObj = HeatCapacityGas(CASRN='67-56-1', extrapolation='linear')
     CpObj.method = TRCIG
-    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmax),
-                 CpObj.T_dependent_property(CpObj.TRCIG_Tmax-1e-6))
-    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmax),
-                 CpObj.T_dependent_property(CpObj.TRCIG_Tmax+1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.T_limits[TRCIG][1]),
+                 CpObj.T_dependent_property(CpObj.T_limits[TRCIG][1]-1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.T_limits[TRCIG][1]),
+                 CpObj.T_dependent_property(CpObj.T_limits[TRCIG][1]+1e-6))
 
-    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmin),
-                 CpObj.T_dependent_property(CpObj.TRCIG_Tmin-1e-6))
-    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmin),
-                 CpObj.T_dependent_property(CpObj.TRCIG_Tmin+1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.T_limits[TRCIG][0]),
+                 CpObj.T_dependent_property(CpObj.T_limits[TRCIG][0]-1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.T_limits[TRCIG][0]),
+                 CpObj.T_dependent_property(CpObj.T_limits[TRCIG][0]+1e-6))
 
 
 
@@ -910,3 +910,18 @@ def test_heat_capacity_interp1d_removed_extrapolation_method_compatibility():
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844, extrapolation='interp1d|interp1d', method='POLING_POLY')
     assert_close(EtOH(EtOH.Tmin - 10), 37.421995400002054)
     assert_close(EtOH(EtOH.Tmax + 10), 142.81153700770574)    
+
+
+@pytest.mark.meta_T_dept
+def test_as_method_kwargs_tabular():
+    obj = HeatCapacitySolid()
+    Ts = [200, 300, 400, 500, 600]
+    Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
+    obj.add_tabular_data(Ts=Ts, properties=Cps, name='stuff')
+    obj.add_tabular_data(Ts=Ts, properties=[v*2 for v in Cps], name='stuff2')
+    obj2 = HeatCapacitySolid(**obj.as_method_kwargs())
+
+    assert_close(obj(321), obj2(321))
+    obj.method = 'stuff'
+
+    assert_close(2*obj(321), obj2(321))

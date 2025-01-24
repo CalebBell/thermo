@@ -1628,6 +1628,53 @@ class TDependentProperty:
             base = base[:-2]
         return base + ')'
 
+    def as_method_kwargs(self):
+        # No method - return empty dict
+        if self.method is None:
+            return {}
+            
+        # Handle piecewise methods
+        if hasattr(self, 'piecewise_methods') and self.method in self.piecewise_methods:
+            result = {}
+            methods_dict = self.piecewise_methods[self.method]
+            
+            # Add the piecewise structure
+            result['piecewise_methods'] = {
+                self.method: {
+                    'methods': methods_dict[0],
+                    'T_ranges': methods_dict[1]
+                }
+            }
+            
+            # Add parameters for each sub-method
+            sub_methods = methods_dict[0]
+            for param_name, correlation_name in self.correlation_parameters.items():
+                correlation_dict = getattr(self, correlation_name, None)
+                if correlation_dict:
+                    # Check each sub-method
+                    sub_method_params = {}
+                    for sub_method in sub_methods:
+                        if sub_method in correlation_dict:
+                            sub_method_params[sub_method] = correlation_dict[sub_method]
+                    if sub_method_params:
+                        result[correlation_name] = sub_method_params
+                        
+            return result
+
+
+        # Handle tabular data
+        if hasattr(self, 'tabular_data') and self.tabular_data and self.method in self.tabular_data:
+            return {'tabular_data': {self.method: self.tabular_data[self.method]}}
+
+        # Handle correlation parameters
+        for param_name, correlation_name in self.correlation_parameters.items():
+            correlation_dict = getattr(self, correlation_name, None)
+            if correlation_dict and self.method in correlation_dict:
+                # Return only the specific method's parameters
+                return {correlation_name: {self.method: correlation_dict[self.method]}}
+                
+        return {}
+
     def __call__(self, T):
         r'''Convenience method to calculate the property; calls
         :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`. Caches previously calculated value,

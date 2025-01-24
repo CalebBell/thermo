@@ -202,7 +202,7 @@ def test_ThermalConductivityLiquid_fitting0():
 def test_ThermalConductivityLiquid_fitting1_dippr100():
     for i, CAS in enumerate(chemicals.thermal_conductivity.k_data_Perrys_8E_2_315.index):
         obj = ThermalConductivityLiquid(CASRN=CAS)
-        Ts = linspace(obj.Perrys2_315_Tmin, obj.Perrys2_315_Tmax, 10)
+        Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR100',
                                            do_statistics=True, use_numba=False, fit_method='lm')
@@ -318,7 +318,7 @@ def test_ThermalConductivityGas_fitting0():
                       '7664-39-3', '107-21-1', '592-76-7', '115-07-1', '64-19-7']
     for CAS in try_CASs_dippr:
         obj = ThermalConductivityGas(CASRN=CAS)
-        Ts = linspace(obj.Perrys2_314_Tmin, obj.Perrys2_314_Tmax, 10)
+        Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR102', multiple_tries=True,
                               do_statistics=True, use_numba=False, fit_method='lm')

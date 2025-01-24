@@ -349,6 +349,9 @@ class ThermalConductivityLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, DIPPR_9G, MISSENARD, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(DIPPR_PERRY_8E)
+    extra_correlations_internal.add(VDI_PPDS)
 
     custom_args = ('MW', 'Tm', 'Tb', 'Tc', 'Pc', 'omega', 'Hfus')
 
@@ -397,16 +400,41 @@ class ThermalConductivityLiquid(TPDependentProperty):
                     methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin*1.001, self.CP_f.Tc*0.9999)
             if CASRN in thermal_conductivity.k_data_Perrys_8E_2_315.index:
-                methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = thermal_conductivity.k_values_Perrys_8E_2_315[thermal_conductivity.k_data_Perrys_8E_2_315.index.get_loc(CASRN)].tolist()
-                self.Perrys2_315_coeffs = [C1, C2, C3, C4, C5]
-                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_315_Tmin, self.Perrys2_315_Tmax)
+                C1, C2, C3, C4, C5, Tmin, Tmax = thermal_conductivity.k_values_Perrys_8E_2_315[
+                    thermal_conductivity.k_data_Perrys_8E_2_315.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=DIPPR_PERRY_8E,
+                    model='DIPPR100', 
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=C1,
+                    B=C2,
+                    C=C3,
+                    D=C4,
+                    E=C5,
+                    F=0,
+                    G=0,
+                    select=False
+                )
+
             if CASRN in thermal_conductivity.k_data_VDI_PPDS_9.index:
-                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_9[thermal_conductivity.k_data_VDI_PPDS_9.index.get_loc(CASRN)].tolist()
-                self.VDI_PPDS_coeffs = [A, B, C, D, E]
-                self.VDI_PPDS_coeffs.reverse()
-                methods.append(VDI_PPDS)
-                T_limits[VDI_PPDS] = (1e-3, 1e4)
+                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_9[
+                    thermal_conductivity.k_data_VDI_PPDS_9.index.get_loc(CASRN)].tolist()
+                # Reverse coefficients as per original code and map to DIPPR100 parameters
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model='DIPPR100',
+                    Tmin=1e-3,
+                    Tmax=1e4,
+                    A=A,  # constant term
+                    B=B,  # T term 
+                    C=C,  # T^2 term
+                    D=D,  # T^3 term
+                    E=E,  # T^4 term
+                    F=0,
+                    G=0,
+                    select=False
+                )
         if self.MW:
             methods.extend([BAHADORI_L, LAKSHMI_PRASAD])
             T_limits[BAHADORI_L] = (1e-3, 1e4)
@@ -488,10 +516,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
             kl = Lakshmi_Prasad(T, self.MW)
         elif method == BAHADORI_L:
             kl = Bahadori_liquid(T, self.MW)
-        elif method == DIPPR_PERRY_8E:
-            kl = EQ100(T, *self.Perrys2_315_coeffs)
-        elif method == VDI_PPDS:
-            kl = horner(self.VDI_PPDS_coeffs, T)
         elif method == COOLPROP:
             kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
         else:
@@ -951,6 +975,10 @@ class ThermalConductivityGas(TPDependentProperty):
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
                    'Vmg', 'Cpgm', 'mug')
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(DIPPR_PERRY_8E)
+    extra_correlations_internal.add(VDI_PPDS)
+
     DEFAULT_EXTRAPOLATION_MIN = 1e-4
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
                  Zc=None, omega=None, dipole=None, Vmg=None, Cpgm=None, mug=None,
@@ -1001,16 +1029,37 @@ class ThermalConductivityGas(TPDependentProperty):
                     methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc*0.9999)
             if CASRN in thermal_conductivity.k_data_Perrys_8E_2_314.index:
-                methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = thermal_conductivity.k_values_Perrys_8E_2_314[thermal_conductivity.k_data_Perrys_8E_2_314.index.get_loc(CASRN)].tolist()
-                self.Perrys2_314_coeffs = [C1, C2, C3, C4]
-                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_314_Tmin, self.Perrys2_314_Tmax)
+                C1, C2, C3, C4, Tmin, Tmax = thermal_conductivity.k_values_Perrys_8E_2_314[
+                    thermal_conductivity.k_data_Perrys_8E_2_314.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=DIPPR_PERRY_8E,
+                    model='DIPPR102',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=C1,
+                    B=C2,
+                    C=C3,
+                    D=C4,
+                    select=False
+                )
             if CASRN in thermal_conductivity.k_data_VDI_PPDS_10.index:
-                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_10[thermal_conductivity.k_data_VDI_PPDS_10.index.get_loc(CASRN)].tolist()
-                self.VDI_PPDS_coeffs = [A, B, C, D, E]
-                self.VDI_PPDS_coeffs.reverse()
-                methods.append(VDI_PPDS)
-                T_limits[VDI_PPDS] = (1e-3, 10000.0)
+                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_10[
+                    thermal_conductivity.k_data_VDI_PPDS_10.index.get_loc(CASRN)].tolist()
+                # Reverse coefficients as per original code and map to DIPPR100 parameters
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model='DIPPR100',
+                    Tmin=1e-3,
+                    Tmax=10000.0,
+                    A=A,  # constant term
+                    B=B,  # T term
+                    C=C,  # T^2 term
+                    D=D,  # T^3 term
+                    E=E,  # T^4 term
+                    F=0,
+                    G=0,
+                    select=False
+                )
         if all((self.MW, self.Tb, self.Pc, self.omega)):
             methods.append(GHARAGHEIZI_G)
             # Turns negative at low T; do not set Tmin
@@ -1092,10 +1141,6 @@ class ThermalConductivityGas(TPDependentProperty):
             kg = Eucken_modified(self.MW, Cvgm, mug)
         elif method == EUCKEN:
             kg = Eucken(self.MW, Cvgm, mug)
-        elif method == DIPPR_PERRY_8E:
-            kg = EQ102(T, *self.Perrys2_314_coeffs)
-        elif method == VDI_PPDS:
-            kg = horner(self.VDI_PPDS_coeffs, T)
         elif method == BAHADORI_G:
             kg = Bahadori_gas(T, self.MW)
         elif method == COOLPROP:

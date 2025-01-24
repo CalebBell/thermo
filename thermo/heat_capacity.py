@@ -294,6 +294,7 @@ class HeatCapacityGas(TDependentProperty):
     extra_correlations_internal.add(POLING_CONST)
     extra_correlations_internal.add(POLING_POLY)
     extra_correlations_internal.add(CRCSTD)
+    extra_correlations_internal.add(TRCIG)
     
 
     _fit_force_n = {}
@@ -350,10 +351,23 @@ class HeatCapacityGas(TDependentProperty):
                 self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_gases[CASRN]
                 T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
             if CASRN in heat_capacity.TRC_gas_data.index:
-                methods.append(TRCIG)
-                self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[heat_capacity.TRC_gas_data.index.get_loc(CASRN)].tolist()
-                self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
-                T_limits[TRCIG] = (self.TRCIG_Tmin, self.TRCIG_Tmax)
+                Tmin, Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[
+                    heat_capacity.TRC_gas_data.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=TRCIG,
+                    model='TRCCp',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    a0=a0,
+                    a1=a1,
+                    a2=a2,
+                    a3=a3,
+                    a4=a4,
+                    a5=a5,
+                    a6=a6,
+                    a7=a7,
+                    select=False
+                )
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'a0']):
                 POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = heat_capacity.Cp_values_Poling[heat_capacity.Cp_data_Poling.index.get_loc(CASRN)].tolist()
                 if isnan(POLING_Tmin):
@@ -452,9 +466,7 @@ class HeatCapacityGas(TDependentProperty):
         Cp : float
             Calculated heat capacity, [J/mol/K]
         '''
-        if method == TRCIG:
-            Cp = TRCCp(T, *self.TRCIG_coefs)
-        elif method == WEBBOOK_SHOMATE:
+        if method == WEBBOOK_SHOMATE:
             Cp = self.webbook_shomate.force_calculate(T)
         elif method == COOLPROP:
             if self.CoolProp_A0_args is not None:
@@ -487,11 +499,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == TRCIG:
-            H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
-            H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
-            return H2 - H1
-        elif method == WEBBOOK_SHOMATE:
+        if method == WEBBOOK_SHOMATE:
             return self.webbook_shomate.force_calculate_integral(T1, T2)
         elif method == LASTOVKA_SHAW:
             similarity_variable = self.similarity_variable
@@ -529,11 +537,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == TRCIG:
-            S2 = TRCCp_integral_over_T(T2, *self.TRCIG_coefs)
-            S1 = TRCCp_integral_over_T(T1, *self.TRCIG_coefs)
-            return S2 - S1
-        elif method == WEBBOOK_SHOMATE:
+        if method == WEBBOOK_SHOMATE:
             return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
         elif method == LASTOVKA_SHAW:
             similarity_variable = self.similarity_variable
@@ -933,8 +937,7 @@ class HeatCapacityLiquid(TDependentProperty):
             Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
             return Rowlinson_Bondi(T, self.Tc, self.omega, Cpgm)
         elif method == DADGOSTAR_SHAW:
-            Cp = Dadgostar_Shaw(T, self.similarity_variable)
-            return property_mass_to_molar(Cp, self.MW)
+            return Dadgostar_Shaw(T, self.similarity_variable, self.MW)
         else:
             return self._base_calculate(T, method)
 

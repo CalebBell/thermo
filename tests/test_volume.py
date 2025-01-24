@@ -714,3 +714,15 @@ def test_simple_json_export_fail_easy_to_debug():
     s = json.loads(json.dumps(json_dump))
     obj2 = VolumeLiquid.from_json(s)
     assert obj2 == obj
+
+
+@pytest.mark.meta_T_dept
+def test_VolumeSolid_oxygen_serialization():
+    VS = VolumeSolid(CASRN='7782-44-7')
+    VS_copy = VolumeSolid(**VolumeSolid(CASRN='7782-44-7').as_method_kwargs())
+
+    from fluids.numerics import linspace
+    for T in linspace(3, 60, 100):
+        assert_close(VS_copy(T), VS(T), rtol=1e-13)
+
+    assert not VS_copy.CASRN

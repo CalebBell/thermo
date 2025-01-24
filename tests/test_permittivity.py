@@ -76,6 +76,14 @@ def test_Permittivity_class():
     assert not isnan(obj.T_limits['CRC_CONSTANT'][0])
     assert not isnan(obj.T_limits['CRC_CONSTANT'][1])
 
+@pytest.mark.meta_T_dept
+def test_Permittivity_class_from_method_kwargs():
+    obj = PermittivityLiquid(CASRN='67-56-1')
+    assert_close(PermittivityLiquid(**obj.as_method_kwargs())(300), obj(300), rtol=1e-10)
+
+    obj = PermittivityLiquid(CASRN='7732-18-5')
+    assert_close(PermittivityLiquid(CASRN='7732-18-5', **obj.as_method_kwargs())(300), obj(300), rtol=1e-10)
+
 @pytest.mark.slow
 @pytest.mark.fuzz
 @pytest.mark.meta_T_dept

@@ -585,10 +585,10 @@ class VolumeLiquid(TPDependentProperty):
             Vm = Yen_Woods_saturation(T, self.Tc, self.Vc, self.Zc)
         elif method == MMSNM0:
             Vm = SNM0(T, self.Tc, self.Vc, self.omega)
-        elif method == MMSNM0FIT:
-            Vm = SNM0(T, self.Tc, self.Vc, self.omega, self.SNM0_delta_SRK)
         elif method == CAMPBELL_THODOS:
             Vm = Campbell_Thodos(T, self.Tb, self.Tc, self.Pc, self.MW, self.dipole, self.has_hydroxyl)
+        elif method == MMSNM0FIT:
+            Vm = SNM0(T, self.Tc, self.Vc, self.omega, self.SNM0_delta_SRK)
         elif method == HTCOSTALDFIT:
             Vm = COSTALD(T, self.Tc, self.COSTALD_Vchar, self.COSTALD_omega_SRK)
         elif method == RACKETTFIT:
@@ -1314,7 +1314,7 @@ class VolumeGas(TPDependentProperty):
 
     custom_args = ('MW', 'Tc', 'Pc', 'omega', 'dipole')
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, omega=None,
-                 dipole=None, eos=None, extrapolation=None,
+                 dipole=None, extrapolation=None,
                  **kwargs):
         # Only use TPDependentPropoerty functions here
         self.CASRN = CASRN
@@ -1694,6 +1694,9 @@ class VolumeSolid(TDependentProperty):
 
     custom_args = ('MW', 'Tt', 'Vml_Tt')
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(CRC_INORG_S)
+
     def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None,
                  extrapolation='linear', **kwargs):
         self.CASRN = CASRN
@@ -1719,15 +1722,21 @@ class VolumeSolid(TDependentProperty):
         methods = []
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
+        self.all_methods = set()
         if load_data and CASRN:
             if CASRN in volume.rho_data_CRC_inorg_s_const.index:
-                methods.append(CRC_INORG_S)
-                self.CRC_INORG_S_Vm = float(volume.rho_data_CRC_inorg_s_const.at[CASRN, 'Vm'])
-                T_limits[CRC_INORG_S] = (1e-4, 1e4)
+                self.add_correlation(
+                    name=CRC_INORG_S,
+                    model='constant',
+                    Tmin=1e-4,
+                    Tmax=1e4,
+                    A=float(volume.rho_data_CRC_inorg_s_const.at[CASRN, 'Vm']),
+                    select=False
+                )
         if all((self.Tt, self.Vml_Tt, self.MW)):
             methods.append(GOODMAN)
             T_limits[GOODMAN] = (1e-4, self.Tt)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
 
     def calculate(self, T, method):
         r'''Method to calculate the molar volume of a solid at tempearture `T`
@@ -1748,9 +1757,7 @@ class VolumeSolid(TDependentProperty):
         Vms : float
             Molar volume of the solid at T, [m^3/mol]
         '''
-        if method == CRC_INORG_S:
-            Vms = self.CRC_INORG_S_Vm
-        elif method == GOODMAN:
+        if method == GOODMAN:
             Vms = Goodman(T, self.Tt, self.Vml_Tt)
         else:
             return self._base_calculate(T, method)
