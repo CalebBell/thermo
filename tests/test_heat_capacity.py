@@ -494,6 +494,142 @@ def test_HeatCapacityLiquid_webbook():
     new = HeatCapacityLiquid.from_json(json.loads(json.dumps(obj.as_json())))
     assert new == obj
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacityLiquid_webbook_multi_range():
+    obj = HeatCapacityLiquid(CASRN='17702-41-9')
+    obj.method = WEBBOOK_SHOMATE
+    
+    # Test points in first range (371.93 - 500.0)
+    assert_close(obj.calculate(380, WEBBOOK_SHOMATE), 304.733284779612, rtol=1e-12)
+    assert_close(obj.calculate(450, WEBBOOK_SHOMATE), 353.08496493827084, rtol=1e-12)
+    assert_close(obj(400), 323.00484249999954)
+    
+    # Test points in second range (500.0 - 1500.0)
+    assert_close(obj.calculate(600, WEBBOOK_SHOMATE), 390.46000317333335, rtol=1e-12)
+    assert_close(obj.calculate(1000, WEBBOOK_SHOMATE), 502.16795399999995, rtol=1e-12)
+    assert_close(obj.calculate(1400, WEBBOOK_SHOMATE), 543.929336315102, rtol=1e-12)
+    
+    # Test integral within first range
+    assert_close(obj.calculate_integral(380, 450, WEBBOOK_SHOMATE), 23297.823098363715, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(380, 450, WEBBOOK_SHOMATE), 56.155399861337735, rtol=1e-12)
+    
+    # Test integral within second range
+    assert_close(obj.calculate_integral(600, 1000, WEBBOOK_SHOMATE), 181160.8711573333, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(600, 1000, WEBBOOK_SHOMATE), 228.92179217773193, rtol=1e-12)
+    
+    # Test integral across both ranges (increasing temperature)
+    assert_close(obj.calculate_integral(400, 600, WEBBOOK_SHOMATE), 71668.1105926666, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(400, 600, WEBBOOK_SHOMATE), 144.60158290807362, rtol=1e-12)
+    
+    # Test integral across both ranges (decreasing temperature)
+    assert_close(obj.calculate_integral(600, 400, WEBBOOK_SHOMATE), -71668.1105926666, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(600, 400, WEBBOOK_SHOMATE), -144.60158290807362, rtol=1e-12)
+    
+    # Test the T-dependent property methods
+    assert_close(obj.T_dependent_property_integral(400, 600), 71668.1105926666, rtol=1e-12)
+    assert_close(obj.T_dependent_property_integral_over_T(400, 600), 144.60158290807362, rtol=1e-12)
+    assert_close(obj.T_dependent_property_integral(600, 400), -71668.1105926666, rtol=1e-12)
+    assert_close(obj.T_dependent_property_integral_over_T(600, 400), -144.60158290807362, rtol=1e-12)
+    
+    # Test edge cases at range boundaries
+    assert_close(obj.calculate(500, WEBBOOK_SHOMATE), 347.2722559999989, rtol=1e-12)  # Exactly at range boundary
+    assert_close(obj.calculate_integral(495, 505, WEBBOOK_SHOMATE), 3485.0857254289776, rtol=1e-12)  # Small interval across boundary
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_webbook_multi_range():
+    obj = HeatCapacityGas(CASRN='1333-74-0')
+    obj.method = WEBBOOK_SHOMATE
+
+    # Test points in range 1 (298.0 - 1000.0)
+    assert_close(obj.calculate(400, WEBBOOK_SHOMATE), 29.181610324, rtol=1e-12)
+    assert_close(obj.calculate(800, WEBBOOK_SHOMATE), 29.624988277, rtol=1e-12)
+    assert_close(obj(400), 29.181610324)
+
+    # Test points in range 2 (1000.0 - 2500.0)
+    assert_close(obj.calculate(1200, WEBBOOK_SHOMATE), 30.990938990666667, rtol=1e-12)
+    assert_close(obj.calculate(2000, WEBBOOK_SHOMATE), 34.2790545, rtol=1e-12)
+
+    # Test points in range 3 (2500.0 - 6000.0)
+    assert_close(obj.calculate(3000, WEBBOOK_SHOMATE), 37.08898277777777, rtol=1e-12)
+    assert_close(obj.calculate(5000, WEBBOOK_SHOMATE), 40.82801051999999, rtol=1e-12)
+
+    # Test integral within range 1
+    assert_close(obj.calculate_integral(398.0, 900.0, WEBBOOK_SHOMATE), 14775.319358526369, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(398.0, 900.0, WEBBOOK_SHOMATE), 23.98231431098887, rtol=1e-12)
+
+    # Test integral within range 2
+    assert_close(obj.calculate_integral(1100.0, 2400.0, WEBBOOK_SHOMATE), 43209.09458952272, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1100.0, 2400.0, WEBBOOK_SHOMATE), 25.673382170455824, rtol=1e-12)
+
+    # Test integral within range 3
+    assert_close(obj.calculate_integral(2600.0, 5900.0, WEBBOOK_SHOMATE), 130051.97018395108, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(2600.0, 5900.0, WEBBOOK_SHOMATE), 31.96511968233716, rtol=1e-12)
+
+    # Test integrals across ranges
+    assert_close(obj.calculate_integral(400, 1200, WEBBOOK_SHOMATE), 23837.7216288, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(400, 1200, WEBBOOK_SHOMATE), 32.574667531356454, rtol=1e-12)
+    assert_close(obj.calculate_integral(1200, 400, WEBBOOK_SHOMATE), -23837.7216288, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1200, 400, WEBBOOK_SHOMATE), -32.574667531356454, rtol=1e-12)
+    assert_close(obj.calculate_integral(1200, 3000, WEBBOOK_SHOMATE), 61944.86637305, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1200, 3000, WEBBOOK_SHOMATE), 31.10165669473423, rtol=1e-12)
+    assert_close(obj.calculate_integral(3000, 1200, WEBBOOK_SHOMATE), -61944.86637305, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(3000, 1200, WEBBOOK_SHOMATE), -31.10165669473423, rtol=1e-12)
+
+    # Test at range boundaries
+    assert_close(obj.calculate(1000.0, WEBBOOK_SHOMATE), 30.204145, rtol=1e-12)
+    assert_close(obj.calculate(2500.0, WEBBOOK_SHOMATE), 35.84051015, rtol=1e-12)
+    assert_close(obj.calculate_integral(995.0, 1005.0, WEBBOOK_SHOMATE), 302.05397832957533, rtol=1e-12)
+    assert_close(obj.calculate_integral(2495.0, 2505.0, WEBBOOK_SHOMATE), 358.37646756316826, rtol=1e-12)
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacitySolid_webbook_multi_range():
+    obj = HeatCapacitySolid(CASRN='12034-59-2')
+    obj.method = WEBBOOK_SHOMATE
+
+    # Test points in range 1 (298.0 - 1090.0)
+    assert_close(obj.calculate(400, WEBBOOK_SHOMATE), 63.51568005, rtol=1e-12)
+    assert_close(obj.calculate(800, WEBBOOK_SHOMATE), 79.47318521249998, rtol=1e-12)
+    assert_close(obj(400), 63.51568005)
+
+    # Test points in range 2 (1090.0 - 1200.0)
+    assert_close(obj.calculate(1120, WEBBOOK_SHOMATE), 92.88414379954652, rtol=1e-12)
+    assert_close(obj.calculate(1180, WEBBOOK_SHOMATE), 92.88549941984948, rtol=1e-12)
+
+    # Test points in range 3 (1200.0 - 2175.0)
+    assert_close(obj.calculate(1500, WEBBOOK_SHOMATE), 83.05239470833335, rtol=1e-12)
+    assert_close(obj.calculate(2000, WEBBOOK_SHOMATE), 83.05239650000001, rtol=1e-12)
+
+    # Test integral within range 1
+    assert_close(obj.calculate_integral(398.0, 990.0, WEBBOOK_SHOMATE), 44605.360970269205, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(398.0, 990.0, WEBBOOK_SHOMATE), 67.06507385030875, rtol=1e-12)
+
+    # Test integral within range 2
+    assert_close(obj.calculate_integral(1190.0, 1100.0, WEBBOOK_SHOMATE), -8359.631002585797, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1190.0, 1100.0, WEBBOOK_SHOMATE), -7.30474943842529, rtol=1e-12)
+
+    # Test integral within range 3
+    assert_close(obj.calculate_integral(1300.0, 2075.0, WEBBOOK_SHOMATE), 64365.60636545849, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1300.0, 2075.0, WEBBOOK_SHOMATE), 38.83504164532849, rtol=1e-12)
+
+    # Test integrals across ranges
+    assert_close(obj.calculate_integral(400, 1120, WEBBOOK_SHOMATE), 56178.2961682884, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(400, 1120, WEBBOOK_SHOMATE), 77.84288396170393, rtol=1e-12)
+    assert_close(obj.calculate_integral(1120, 400, WEBBOOK_SHOMATE), -56178.2961682884, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1120, 400, WEBBOOK_SHOMATE), -77.84288396170393, rtol=1e-12)
+    assert_close(obj.calculate_integral(1120, 1500, WEBBOOK_SHOMATE), 32346.516118692438, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1120, 1500, WEBBOOK_SHOMATE), 24.94100662029956, rtol=1e-12)
+    assert_close(obj.calculate_integral(1500, 1120, WEBBOOK_SHOMATE), -32346.516118692438, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1500, 1120, WEBBOOK_SHOMATE), -24.94100662029956, rtol=1e-12)
+    assert_close(obj.calculate_integral(400, 1500, WEBBOOK_SHOMATE), 88524.81228698083, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(400, 1500, WEBBOOK_SHOMATE), 102.7838905820035, rtol=1e-12)
+    assert_close(obj.calculate_integral(1500, 400, WEBBOOK_SHOMATE), -88524.81228698083, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1500, 400, WEBBOOK_SHOMATE), -102.7838905820035, rtol=1e-12)
+
+    # Test at range boundaries
+    assert_close(obj.calculate(1090.0, WEBBOOK_SHOMATE), 91.12680253387941, rtol=1e-12)
+    assert_close(obj.calculate(1200.0, WEBBOOK_SHOMATE), 92.88504085888887, rtol=1e-12)
+    assert_close(obj.calculate_integral(1085.0, 1095.0, WEBBOOK_SHOMATE), 919.5654260597075, rtol=1e-12)
+    assert_close(obj.calculate_integral(1195.0, 1205.0, WEBBOOK_SHOMATE), 879.6877349119604, rtol=1e-12)
 
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 @pytest.mark.CoolProp
