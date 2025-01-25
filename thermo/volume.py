@@ -481,22 +481,62 @@ class VolumeLiquid(TPDependentProperty):
                 self.CP_f = coolprop_fluids[CASRN]
                 T_limits[COOLPROP] = (max(self.CP_f.Tt,self.CP_f.Tmin), self.CP_f.Tc)
             if CASRN in volume.rho_data_CRC_inorg_l.index:
-                methods.append(CRC_INORG_L)
-                self.CRC_INORG_L_MW, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax = volume.rho_values_CRC_inorg_l[volume.rho_data_CRC_inorg_l.index.get_loc(CASRN)].tolist()
-                T_limits[CRC_INORG_L] = (self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax)
+                MW, rho0, k, Tm, Tmax = volume.rho_values_CRC_inorg_l[
+                    volume.rho_data_CRC_inorg_l.index.get_loc(CASRN)].tolist()
+                # Convert CRC form ρ = ρ₀ - k(T-Tₘ) to ρ = A + B*T form
+                A = rho0 + k*Tm
+                B = -k
+                self.add_correlation(
+                    name=CRC_INORG_L,
+                    model='DIPPR100_rho_to_Vm',
+                    Tmin=Tm,
+                    Tmax=Tmax,
+                    MW=MW,
+                    A=A,
+                    B=B,
+                    select=False
+                )
             if CASRN in volume.rho_data_Perry_8E_105_l.index:
-                methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = volume.rho_values_Perry_8E_105_l[volume.rho_data_Perry_8E_105_l.index.get_loc(CASRN)].tolist()
-                self.DIPPR_coeffs = [C1, C2, C3, C4]
-                T_limits[DIPPR_PERRY_8E] = (self.DIPPR_Tmin, self.DIPPR_Tmax)
+                C1, C2, C3, C4, Tmin, Tmax = volume.rho_values_Perry_8E_105_l[
+                    volume.rho_data_Perry_8E_105_l.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=DIPPR_PERRY_8E,
+                    model='DIPPR105_reciprocal',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=C1,
+                    B=C2,
+                    C=C3,
+                    D=C4,
+                    select=False
+                )
             if CASRN in volume.rho_data_VDI_PPDS_2.index:
-                methods.append(VDI_PPDS)
-                MW, Tc, rhoc, A, B, C, D = volume.rho_values_VDI_PPDS_2[volume.rho_data_VDI_PPDS_2.index.get_loc(CASRN)].tolist()
-                self.VDI_PPDS_coeffs = [A, B, C, D]
-                self.VDI_PPDS_MW = MW
-                self.VDI_PPDS_Tc = Tc
-                self.VDI_PPDS_rhoc = rhoc
-                T_limits[VDI_PPDS] = (0.3*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
+                MW, Tc, rhoc, A, B, C, D = volume.rho_values_VDI_PPDS_2[
+                    volume.rho_data_VDI_PPDS_2.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model='DIPPR116_rho_to_Vm',
+                    Tmin=0.3*Tc,
+                    Tmax=Tc,
+                    MW=MW,
+                    Tc=Tc,
+                    rhoc=rhoc,
+                    A=A,
+                    B=B,
+                    C=C,
+                    D=D,
+                    select=False
+                )
+            if CASRN in volume.rho_data_CRC_inorg_l_const.index:
+                Vm = float(volume.rho_data_CRC_inorg_l_const.at[CASRN, 'Vm'])
+                self.add_correlation(
+                    name=CRC_INORG_L_CONST,
+                    model='constant',
+                    Tmin=298.15,
+                    Tmax=298.15,
+                    A=Vm,
+                    select=False
+                )
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Volume (l)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
@@ -509,10 +549,6 @@ class VolumeLiquid(TPDependentProperty):
                 methods.append(RACKETTFIT)
                 self.RACKETT_Z_RA = float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA'])
                 T_limits[RACKETTFIT] = (0.0, self.Tc)
-            if CASRN in volume.rho_data_CRC_inorg_l_const.index:
-                methods.append(CRC_INORG_L_CONST)
-                self.CRC_INORG_L_CONST_Vm = float(volume.rho_data_CRC_inorg_l_const.at[CASRN, 'Vm'])
-                T_limits[CRC_INORG_L_CONST] = (298.15, 298.15)
                 # Roughly data at STP; not guaranteed however; not used for Trange
         if all((self.Tc, self.Vc, self.Zc)):
             methods.append(YEN_WOODS_SAT)
@@ -593,18 +629,6 @@ class VolumeLiquid(TPDependentProperty):
             Vm = COSTALD(T, self.Tc, self.COSTALD_Vchar, self.COSTALD_omega_SRK)
         elif method == RACKETTFIT:
             Vm = Rackett(T, self.Tc, self.Pc, self.RACKETT_Z_RA)
-        elif method == DIPPR_PERRY_8E:
-            A, B, C, D = self.DIPPR_coeffs
-            Vm = 1./EQ105(T, A, B, C, D)
-        elif method == CRC_INORG_L:
-            rho = CRC_inorganic(T, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm)
-            Vm = rho_to_Vm(rho, self.CRC_INORG_L_MW)
-        elif method == VDI_PPDS:
-            A, B, C, D = self.VDI_PPDS_coeffs
-            rho = EQ116(T, self.VDI_PPDS_Tc, self.VDI_PPDS_rhoc, A, B, C, D)
-            Vm = rho_to_Vm(rho, self.VDI_PPDS_MW)
-        elif method == CRC_INORG_L_CONST:
-            Vm = self.CRC_INORG_L_CONST_Vm
         elif method == COOLPROP:
             Vm = 1./CoolProp_T_dependent_property(T, self.CASRN, 'DMOLAR', 'l')
         elif method == EOS:

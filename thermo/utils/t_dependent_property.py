@@ -81,7 +81,7 @@ from chemicals.identifiers import sorted_CAS_key
 from chemicals.interface import PPDS14, ISTExpansion, Jasper, REFPROP_sigma, Somayajulu, Watson_sigma
 from chemicals.phase_change import PPDS12, Alibakhshi, Watson, Watson_n
 from chemicals.thermal_conductivity import PPDS3, PPDS8, Chemsep_16
-from chemicals.utils import hash_any_primitive
+from chemicals.utils import hash_any_primitive, rho_to_Vm
 from chemicals.vapor_pressure import (
     Antoine,
     Antoine_AB_coeffs_from_point,
@@ -1300,10 +1300,25 @@ class TDependentProperty:
           {'A': 15.0, 'B': 0.3, 'C': 7000.0, 'D': 0.3},
           {'A': 0.1, 'B': 0.05, 'C': 3300.0, 'D': 0.1},
           ]}),
-     'DIPPR105_inv': (['A', 'B', 'C', 'D'],
-      [],
-      {'f': lambda T, **kwargs: 1.0/EQ105(T, order=0, **kwargs)},),
+    'DIPPR100_rho_to_Vm': (
+        ['MW', 'A'], 
+        ['B', 'C', 'D', 'E', 'F', 'G'],
+        {'f': lambda T, MW, **params: 0.001 * MW / EQ100(T, **params)},
+        {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G']}
+    ),
 
+    'DIPPR116_rho_to_Vm': (
+        ['Tc', 'rhoc', 'MW'], 
+        ['A', 'B', 'C', 'D'],
+        {'f': lambda T, MW, Tc, rhoc, A, B, C, D: rho_to_Vm(EQ116(T, Tc, rhoc, A, B, C, D), MW)},
+        {'fit_params': ['A', 'B', 'C', 'D']}
+    ),
+    'DIPPR105_reciprocal': (
+        ['A', 'B', 'C', 'D'], 
+        [],
+        {'f': lambda T, A, B, C, D: 1.0/EQ105(T, A, B, C, D)},
+        {'fit_params': ['A', 'B', 'C', 'D']}
+    ),
      'DIPPR106': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ106,
