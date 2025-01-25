@@ -571,6 +571,10 @@ ROWLINSON_POLING = 'ROWLINSON_POLING'
 ROWLINSON_BONDI = 'ROWLINSON_BONDI'
 DADGOSTAR_SHAW = 'DADGOSTAR_SHAW'
 
+ZABRANSKY_SPLINE_INTERVALS = [ZABRANSKY_SPLINE+f'_{i}' for i in range(6)]
+ZABRANSKY_SPLINE_C_INTERVALS = [ZABRANSKY_SPLINE_C+f'_{i}' for i in range(6)]
+ZABRANSKY_SPLINE_SAT_INTERVALS = [ZABRANSKY_SPLINE_SAT+f'_{i}' for i in range(6)]
+
 heat_capacity_liquid_methods = [HEOS_FIT, ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
                       ZABRANSKY_SPLINE_SAT, ZABRANSKY_QUASIPOLYNOMIAL_SAT,
@@ -767,6 +771,19 @@ class HeatCapacityLiquid(TDependentProperty):
     extra_correlations_internal.add(WEBBOOK_SHOMATE)
     extra_correlations_internal.update(WEBBOOK_SHOMATE_INTERVALS)
 
+    extra_correlations_internal.add(ZABRANSKY_SPLINE)
+    extra_correlations_internal.add(ZABRANSKY_QUASIPOLYNOMIAL)
+
+    extra_correlations_internal.add(ZABRANSKY_SPLINE_C)
+    extra_correlations_internal.add(ZABRANSKY_QUASIPOLYNOMIAL_C)
+
+    extra_correlations_internal.add(ZABRANSKY_SPLINE_SAT)
+    extra_correlations_internal.add(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
+
+    extra_correlations_internal.update(ZABRANSKY_SPLINE_INTERVALS)
+    extra_correlations_internal.update(ZABRANSKY_SPLINE_C_INTERVALS)
+    extra_correlations_internal.update(ZABRANSKY_SPLINE_SAT_INTERVALS)
+
     custom_args = ('MW', 'similarity_variable', 'Tc', 'omega', 'Cpgm')
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
                  omega=None, Cpgm=None, extrapolation='linear',  **kwargs):
@@ -799,18 +816,18 @@ class HeatCapacityLiquid(TDependentProperty):
     @classmethod
     def _load_json_CAS_references(cls, d):
         CASRN = d['CASRN']
-        if CASRN in heat_capacity.zabransky_dict_const_s:
-            d['Zabransky_spline'] = heat_capacity.zabransky_dict_const_s[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_const_p:
-            d['Zabransky_quasipolynomial'] = heat_capacity.zabransky_dict_const_p[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_iso_s:
-            d['Zabransky_spline_iso'] = heat_capacity.zabransky_dict_iso_s[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_iso_p:
-            d['Zabransky_quasipolynomial_iso'] = heat_capacity.zabransky_dict_iso_p[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_sat_s:
-            d['Zabransky_spline_sat'] = heat_capacity.zabransky_dict_sat_s[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_sat_p:
-            d['Zabransky_quasipolynomial_sat'] = heat_capacity.zabransky_dict_sat_p[CASRN]
+        # if CASRN in heat_capacity.zabransky_dict_const_s:
+        #     d['Zabransky_spline'] = heat_capacity.zabransky_dict_const_s[CASRN]
+        # if CASRN in heat_capacity.zabransky_dict_const_p:
+        #     d['Zabransky_quasipolynomial'] = heat_capacity.zabransky_dict_const_p[CASRN]
+        # if CASRN in heat_capacity.zabransky_dict_iso_s:
+        #     d['Zabransky_spline_iso'] = heat_capacity.zabransky_dict_iso_s[CASRN]
+        # if CASRN in heat_capacity.zabransky_dict_iso_p:
+        #     d['Zabransky_quasipolynomial_iso'] = heat_capacity.zabransky_dict_iso_p[CASRN]
+        # if CASRN in heat_capacity.zabransky_dict_sat_s:
+        #     d['Zabransky_spline_sat'] = heat_capacity.zabransky_dict_sat_s[CASRN]
+        # if CASRN in heat_capacity.zabransky_dict_sat_p:
+        #     d['Zabransky_quasipolynomial_sat'] = heat_capacity.zabransky_dict_sat_p[CASRN]
         if 'CP_f' in d:
             d['CP_f'] = coolprop_fluids[CASRN]
 
@@ -830,10 +847,6 @@ class HeatCapacityLiquid(TDependentProperty):
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         if load_data and CASRN:
-            if CASRN in heat_capacity.zabransky_dict_const_s:
-                methods.append(ZABRANSKY_SPLINE)
-                self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[CASRN]
-                T_limits[ZABRANSKY_SPLINE] = (self.Zabransky_spline.Tmin, self.Zabransky_spline.Tmax)
             if CASRN in heat_capacity.WebBook_Shomate_coefficients:
                 phase_values = heat_capacity.WebBook_Shomate_coefficients[CASRN]
                 Cp_dat = phase_values[1]  # Index 1 for liquids
@@ -850,18 +863,6 @@ class HeatCapacityLiquid(TDependentProperty):
                         T_ranges.append(range_data[1])
                     if len(Cp_dat) > 1:
                         self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)            
-            if CASRN in heat_capacity.zabransky_dict_const_p:
-                methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
-                self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[CASRN]
-                T_limits[ZABRANSKY_QUASIPOLYNOMIAL] = (self.Zabransky_quasipolynomial.Tmin, self.Zabransky_quasipolynomial.Tmax)
-            if CASRN in heat_capacity.zabransky_dict_iso_s:
-                methods.append(ZABRANSKY_SPLINE_C)
-                self.Zabransky_spline_iso = heat_capacity.zabransky_dict_iso_s[CASRN]
-                T_limits[ZABRANSKY_SPLINE_C] = (self.Zabransky_spline_iso.Tmin, self.Zabransky_spline_iso.Tmax)
-            if CASRN in heat_capacity.zabransky_dict_iso_p:
-                methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
-                self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[CASRN]
-                T_limits[ZABRANSKY_QUASIPOLYNOMIAL_C] = (self.Zabransky_quasipolynomial_iso.Tmin, self.Zabransky_quasipolynomial_iso.Tmax)
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl']):
                 self.add_correlation(
                     name=POLING_CONST,
@@ -880,15 +881,98 @@ class HeatCapacityLiquid(TDependentProperty):
                     A=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']),
                     select=False
                 )            
-            # Saturation functions
-            if CASRN in heat_capacity.zabransky_dict_sat_s:
-                methods.append(ZABRANSKY_SPLINE_SAT)
-                self.Zabransky_spline_sat = heat_capacity.zabransky_dict_sat_s[CASRN]
-                T_limits[ZABRANSKY_SPLINE_SAT] = (self.Zabransky_spline_sat.Tmin, self.Zabransky_spline_sat.Tmax)
-            if CASRN in heat_capacity.zabransky_dict_sat_p:
-                methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
-                self.Zabransky_quasipolynomial_sat = heat_capacity.zabransky_dict_sat_p[CASRN]
-                T_limits[ZABRANSKY_QUASIPOLYNOMIAL_SAT] = (self.Zabransky_quasipolynomial_sat.Tmin, self.Zabransky_quasipolynomial_sat.Tmax)
+            # if CASRN in heat_capacity.zabransky_dict_const_s:
+            #     methods.append(ZABRANSKY_SPLINE)
+            #     self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[CASRN]
+            #     T_limits[ZABRANSKY_SPLINE] = (self.Zabransky_spline.Tmin, self.Zabransky_spline.Tmax)
+            # if CASRN in heat_capacity.zabransky_dict_const_p:
+            #     methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
+            #     self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[CASRN]
+            #     T_limits[ZABRANSKY_QUASIPOLYNOMIAL] = (self.Zabransky_quasipolynomial.Tmin, self.Zabransky_quasipolynomial.Tmax)
+            # if CASRN in heat_capacity.zabransky_dict_iso_s:
+            #     methods.append(ZABRANSKY_SPLINE_C)
+            #     self.Zabransky_spline_iso = heat_capacity.zabransky_dict_iso_s[CASRN]
+            #     T_limits[ZABRANSKY_SPLINE_C] = (self.Zabransky_spline_iso.Tmin, self.Zabransky_spline_iso.Tmax)
+            # if CASRN in heat_capacity.zabransky_dict_iso_p:
+            #     methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
+            #     self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[CASRN]
+            #     T_limits[ZABRANSKY_QUASIPOLYNOMIAL_C] = (self.Zabransky_quasipolynomial_iso.Tmin, self.Zabransky_quasipolynomial_iso.Tmax)
+            # if CASRN in heat_capacity.zabransky_dict_sat_s:
+            #     methods.append(ZABRANSKY_SPLINE_SAT)
+            #     self.Zabransky_spline_sat = heat_capacity.zabransky_dict_sat_s[CASRN]
+            #     T_limits[ZABRANSKY_SPLINE_SAT] = (self.Zabransky_spline_sat.Tmin, self.Zabransky_spline_sat.Tmax)
+            # if CASRN in heat_capacity.zabransky_dict_sat_p:
+            #     methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
+            #     self.Zabransky_quasipolynomial_sat = heat_capacity.zabransky_dict_sat_p[CASRN]
+            #     T_limits[ZABRANSKY_QUASIPOLYNOMIAL_SAT] = (self.Zabransky_quasipolynomial_sat.Tmin, self.Zabransky_quasipolynomial_sat.Tmax)
+            # Handle quasipolynomial cases - direct correlation
+            quasi_dict_mapping = {
+                ZABRANSKY_QUASIPOLYNOMIAL: heat_capacity.zabransky_dict_const_p,
+                ZABRANSKY_QUASIPOLYNOMIAL_C: heat_capacity.zabransky_dict_iso_p,
+                ZABRANSKY_QUASIPOLYNOMIAL_SAT: heat_capacity.zabransky_dict_sat_p
+            }
+            
+            for method_name, data_dict in quasi_dict_mapping.items():
+                if CASRN in data_dict:
+                    model = data_dict[CASRN]
+                    self.add_correlation(
+                        name=method_name,
+                        model='Zabransky_quasi_polynomial',
+                        Tmin=model.Tmin,
+                        Tmax=model.Tmax,
+                        Tc=model.Tc,
+                        a1=model.coeffs[0],
+                        a2=model.coeffs[1],
+                        a3=model.coeffs[2],
+                        a4=model.coeffs[3],
+                        a5=model.coeffs[4],
+                        a6=model.coeffs[5],
+                        select=False
+                    )
+
+            # Handle spline cases - piecewise correlations
+            spline_dict_mapping = {
+                ZABRANSKY_SPLINE: heat_capacity.zabransky_dict_const_s,
+                ZABRANSKY_SPLINE_C: heat_capacity.zabransky_dict_iso_s,
+                ZABRANSKY_SPLINE_SAT: heat_capacity.zabransky_dict_sat_s
+            }
+            
+            for method_name, data_dict in spline_dict_mapping.items():
+                if CASRN in data_dict:
+                    spline_list = data_dict[CASRN].models  # Get list of models from PiecewiseHeatCapacity
+                    method_names = []
+                    T_ranges = [spline_list[0].Tmin]
+                    
+                    for i, model in enumerate(spline_list):
+                        sub_name = f"{method_name}_{i+1}"
+                        method_names.append(sub_name)
+                        T_ranges.append(model.Tmax)
+                        
+                        self.add_correlation(
+                            name=sub_name,
+                            model='Zabransky_cubic',
+                            Tmin=model.Tmin,
+                            Tmax=model.Tmax,
+                            a1=model.coeffs[0],
+                            a2=model.coeffs[1],
+                            a3=model.coeffs[2],
+                            a4=model.coeffs[3],
+                            select=False
+                        )
+                    
+                    self.add_piecewise_method(
+                        name=method_name,
+                        method_names=method_names,
+                        T_ranges=T_ranges,
+                        select=False
+                    )
+
+
+
+
+
+
+
             if CASRN in heat_capacity.Cp_dict_JANAF_liquid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_liquid[CASRN]
@@ -934,19 +1018,19 @@ class HeatCapacityLiquid(TDependentProperty):
         Cp : float
             Heat capacity of the liquid at T, [J/mol/K]
         '''
-        if method == ZABRANSKY_SPLINE:
-            return self.Zabransky_spline.force_calculate(T)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            return self.Zabransky_quasipolynomial.calculate(T)
-        elif method == ZABRANSKY_SPLINE_C:
-            return self.Zabransky_spline_iso.force_calculate(T)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            return self.Zabransky_quasipolynomial_iso.calculate(T)
-        elif method == ZABRANSKY_SPLINE_SAT:
-            return self.Zabransky_spline_sat.force_calculate(T)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            return self.Zabransky_quasipolynomial_sat.calculate(T)
-        elif method == COOLPROP:
+        # if method == ZABRANSKY_SPLINE:
+        #     return self.Zabransky_spline.force_calculate(T)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL:
+        #     return self.Zabransky_quasipolynomial.calculate(T)
+        # elif method == ZABRANSKY_SPLINE_C:
+        #     return self.Zabransky_spline_iso.force_calculate(T)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
+        #     return self.Zabransky_quasipolynomial_iso.calculate(T)
+        # elif method == ZABRANSKY_SPLINE_SAT:
+        #     return self.Zabransky_spline_sat.force_calculate(T)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
+        #     return self.Zabransky_quasipolynomial_sat.calculate(T)
+        if method == COOLPROP:
             return CoolProp_T_dependent_property(T, self.CASRN , 'CPMOLAR', 'l')
         elif method == ROWLINSON_POLING:
             Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
@@ -983,19 +1067,19 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == ZABRANSKY_SPLINE:
-            return self.Zabransky_spline.calculate_integral(T1, T2)
-        elif method == ZABRANSKY_SPLINE_C:
-            return self.Zabransky_spline_iso.force_calculate_integral(T1, T2)
-        elif method == ZABRANSKY_SPLINE_SAT:
-            return self.Zabransky_spline_sat.calculate_integral(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            return self.Zabransky_quasipolynomial.calculate_integral(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            return self.Zabransky_quasipolynomial_iso.calculate_integral(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            return self.Zabransky_quasipolynomial_sat.calculate_integral(T1, T2)
-        elif method == DADGOSTAR_SHAW:
+        # if method == ZABRANSKY_SPLINE:
+        #     return self.Zabransky_spline.calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_SPLINE_C:
+        #     return self.Zabransky_spline_iso.force_calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_SPLINE_SAT:
+        #     return self.Zabransky_spline_sat.calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL:
+        #     return self.Zabransky_quasipolynomial.calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
+        #     return self.Zabransky_quasipolynomial_iso.calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
+        #     return self.Zabransky_quasipolynomial_sat.calculate_integral(T1, T2)
+        if method == DADGOSTAR_SHAW:
             dH = (Dadgostar_Shaw_integral(T2, self.similarity_variable)
                     - Dadgostar_Shaw_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
@@ -1026,19 +1110,19 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == ZABRANSKY_SPLINE:
-            return self.Zabransky_spline.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_SPLINE_C:
-            return self.Zabransky_spline_iso.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_SPLINE_SAT:
-            return self.Zabransky_spline_sat.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            return self.Zabransky_quasipolynomial.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            return self.Zabransky_quasipolynomial_iso.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            return self.Zabransky_quasipolynomial_sat.calculate_integral_over_T(T1, T2)
-        elif method == DADGOSTAR_SHAW:
+        # if method == ZABRANSKY_SPLINE:
+        #     return self.Zabransky_spline.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_SPLINE_C:
+        #     return self.Zabransky_spline_iso.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_SPLINE_SAT:
+        #     return self.Zabransky_spline_sat.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL:
+        #     return self.Zabransky_quasipolynomial.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
+        #     return self.Zabransky_quasipolynomial_iso.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
+        #     return self.Zabransky_quasipolynomial_sat.calculate_integral_over_T(T1, T2)
+        if method == DADGOSTAR_SHAW:
             dS = (Dadgostar_Shaw_integral_over_T(T2, self.similarity_variable)
                     - Dadgostar_Shaw_integral_over_T(T1, self.similarity_variable))
             return property_mass_to_molar(dS, self.MW)
@@ -1263,11 +1347,8 @@ class HeatCapacitySolid(TDependentProperty):
             Heat capacity of the solid at T, [J/mol/K]
         '''
         if method == LASTOVKA_S:
-            Cp = Lastovka_solid(T, self.similarity_variable)
-            Cp = property_mass_to_molar(Cp, self.MW)
-        else:
-            return self._base_calculate(T, method)
-        return Cp
+            return Lastovka_solid(T, self.similarity_variable, self.MW)
+        return self._base_calculate(T, method)
 
 
     def calculate_integral(self, T1, T2, method):
@@ -1291,9 +1372,8 @@ class HeatCapacitySolid(TDependentProperty):
             [`units*K`]
         '''
         if method == LASTOVKA_S:
-            dH = (Lastovka_solid_integral(T2, self.similarity_variable)
-                    - Lastovka_solid_integral(T1, self.similarity_variable))
-            return property_mass_to_molar(dH, self.MW)
+            return (Lastovka_solid_integral(T2, self.similarity_variable, self.MW)
+                    - Lastovka_solid_integral(T1, self.similarity_variable, self.MW))
         else:
             return super().calculate_integral(T1, T2, method)
 
@@ -1318,11 +1398,9 @@ class HeatCapacitySolid(TDependentProperty):
             [`units`]
         '''
         if method == LASTOVKA_S:
-            dS = (Lastovka_solid_integral_over_T(T2, self.similarity_variable)
-                    - Lastovka_solid_integral_over_T(T1, self.similarity_variable))
-            return property_mass_to_molar(dS, self.MW)
-        else:
-            return super().calculate_integral_over_T(T1, T2, method)
+            return (Lastovka_solid_integral_over_T(T2, self.similarity_variable, self.MW)
+                    - Lastovka_solid_integral_over_T(T1, self.similarity_variable, self.MW))
+        return super().calculate_integral_over_T(T1, T2, method)
 
 
 
@@ -1633,7 +1711,7 @@ class HeatCapacityGasMixture(MixtureProperty):
         to reset the parameters.
         '''
         methods = [LINEAR]
-        self.all_methods = all_methods = set(methods)
+        self.all_methods = set(methods)
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a gas mixture at
