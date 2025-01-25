@@ -816,18 +816,6 @@ class HeatCapacityLiquid(TDependentProperty):
     @classmethod
     def _load_json_CAS_references(cls, d):
         CASRN = d['CASRN']
-        # if CASRN in heat_capacity.zabransky_dict_const_s:
-        #     d['Zabransky_spline'] = heat_capacity.zabransky_dict_const_s[CASRN]
-        # if CASRN in heat_capacity.zabransky_dict_const_p:
-        #     d['Zabransky_quasipolynomial'] = heat_capacity.zabransky_dict_const_p[CASRN]
-        # if CASRN in heat_capacity.zabransky_dict_iso_s:
-        #     d['Zabransky_spline_iso'] = heat_capacity.zabransky_dict_iso_s[CASRN]
-        # if CASRN in heat_capacity.zabransky_dict_iso_p:
-        #     d['Zabransky_quasipolynomial_iso'] = heat_capacity.zabransky_dict_iso_p[CASRN]
-        # if CASRN in heat_capacity.zabransky_dict_sat_s:
-        #     d['Zabransky_spline_sat'] = heat_capacity.zabransky_dict_sat_s[CASRN]
-        # if CASRN in heat_capacity.zabransky_dict_sat_p:
-        #     d['Zabransky_quasipolynomial_sat'] = heat_capacity.zabransky_dict_sat_p[CASRN]
         if 'CP_f' in d:
             d['CP_f'] = coolprop_fluids[CASRN]
 
@@ -881,31 +869,6 @@ class HeatCapacityLiquid(TDependentProperty):
                     A=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']),
                     select=False
                 )            
-            # if CASRN in heat_capacity.zabransky_dict_const_s:
-            #     methods.append(ZABRANSKY_SPLINE)
-            #     self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[CASRN]
-            #     T_limits[ZABRANSKY_SPLINE] = (self.Zabransky_spline.Tmin, self.Zabransky_spline.Tmax)
-            # if CASRN in heat_capacity.zabransky_dict_const_p:
-            #     methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
-            #     self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[CASRN]
-            #     T_limits[ZABRANSKY_QUASIPOLYNOMIAL] = (self.Zabransky_quasipolynomial.Tmin, self.Zabransky_quasipolynomial.Tmax)
-            # if CASRN in heat_capacity.zabransky_dict_iso_s:
-            #     methods.append(ZABRANSKY_SPLINE_C)
-            #     self.Zabransky_spline_iso = heat_capacity.zabransky_dict_iso_s[CASRN]
-            #     T_limits[ZABRANSKY_SPLINE_C] = (self.Zabransky_spline_iso.Tmin, self.Zabransky_spline_iso.Tmax)
-            # if CASRN in heat_capacity.zabransky_dict_iso_p:
-            #     methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
-            #     self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[CASRN]
-            #     T_limits[ZABRANSKY_QUASIPOLYNOMIAL_C] = (self.Zabransky_quasipolynomial_iso.Tmin, self.Zabransky_quasipolynomial_iso.Tmax)
-            # if CASRN in heat_capacity.zabransky_dict_sat_s:
-            #     methods.append(ZABRANSKY_SPLINE_SAT)
-            #     self.Zabransky_spline_sat = heat_capacity.zabransky_dict_sat_s[CASRN]
-            #     T_limits[ZABRANSKY_SPLINE_SAT] = (self.Zabransky_spline_sat.Tmin, self.Zabransky_spline_sat.Tmax)
-            # if CASRN in heat_capacity.zabransky_dict_sat_p:
-            #     methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
-            #     self.Zabransky_quasipolynomial_sat = heat_capacity.zabransky_dict_sat_p[CASRN]
-            #     T_limits[ZABRANSKY_QUASIPOLYNOMIAL_SAT] = (self.Zabransky_quasipolynomial_sat.Tmin, self.Zabransky_quasipolynomial_sat.Tmax)
-            # Handle quasipolynomial cases - direct correlation
             quasi_dict_mapping = {
                 ZABRANSKY_QUASIPOLYNOMIAL: heat_capacity.zabransky_dict_const_p,
                 ZABRANSKY_QUASIPOLYNOMIAL_C: heat_capacity.zabransky_dict_iso_p,
@@ -936,7 +899,6 @@ class HeatCapacityLiquid(TDependentProperty):
                 ZABRANSKY_SPLINE_C: heat_capacity.zabransky_dict_iso_s,
                 ZABRANSKY_SPLINE_SAT: heat_capacity.zabransky_dict_sat_s
             }
-            
             for method_name, data_dict in spline_dict_mapping.items():
                 if CASRN in data_dict:
                     spline_list = data_dict[CASRN].models  # Get list of models from PiecewiseHeatCapacity
@@ -944,12 +906,13 @@ class HeatCapacityLiquid(TDependentProperty):
                     T_ranges = [spline_list[0].Tmin]
                     
                     for i, model in enumerate(spline_list):
-                        sub_name = f"{method_name}_{i+1}"
-                        method_names.append(sub_name)
+                        # If only one range, use the base method name, otherwise append range number
+                        name = method_name if len(spline_list) == 1 else f"{method_name}_{i+1}"
+                        method_names.append(name)
                         T_ranges.append(model.Tmax)
                         
                         self.add_correlation(
-                            name=sub_name,
+                            name=name,
                             model='Zabransky_cubic',
                             Tmin=model.Tmin,
                             Tmax=model.Tmax,
@@ -959,20 +922,14 @@ class HeatCapacityLiquid(TDependentProperty):
                             a4=model.coeffs[3],
                             select=False
                         )
-                    
-                    self.add_piecewise_method(
-                        name=method_name,
-                        method_names=method_names,
-                        T_ranges=T_ranges,
-                        select=False
-                    )
-
-
-
-
-
-
-
+                    # Only add piecewise method if there are multiple ranges
+                    if len(spline_list) > 1:
+                        self.add_piecewise_method(
+                            name=method_name,
+                            method_names=method_names,
+                            T_ranges=T_ranges,
+                            select=False
+                        )
             if CASRN in heat_capacity.Cp_dict_JANAF_liquid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_liquid[CASRN]
