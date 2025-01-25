@@ -162,6 +162,8 @@ heat_capacity_gas_methods = [HEOS_FIT, COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_
 """Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them."""
 
+# These are also internal methods
+WEBBOOK_SHOMATE_INTERVALS = [WEBBOOK_SHOMATE+f'_{i}' for i in range(6)]
 
 class HeatCapacityGas(TDependentProperty):
     r'''Class for dealing with gas heat capacity as a function of temperature.
@@ -295,6 +297,8 @@ class HeatCapacityGas(TDependentProperty):
     extra_correlations_internal.add(POLING_POLY)
     extra_correlations_internal.add(CRCSTD)
     extra_correlations_internal.add(TRCIG)
+    extra_correlations_internal.add(WEBBOOK_SHOMATE)
+    extra_correlations_internal.update(WEBBOOK_SHOMATE_INTERVALS)
     
 
     _fit_force_n = {}
@@ -305,12 +309,10 @@ class HeatCapacityGas(TDependentProperty):
 
     custom_args = ('MW', 'similarity_variable')
 
-    _json_obj_by_CAS = ('webbook_shomate', 'CP_f')
+    _json_obj_by_CAS = ('CP_f',)
     @classmethod
     def _load_json_CAS_references(cls, d):
         CASRN = d['CASRN']
-        if CASRN in heat_capacity.WebBook_Shomate_gases:
-            d['webbook_shomate'] = heat_capacity.WebBook_Shomate_gases[CASRN]
         if 'CP_f' in d:
             d['CP_f'] = coolprop_fluids[CASRN]
 
@@ -346,10 +348,22 @@ class HeatCapacityGas(TDependentProperty):
                     self.add_correlation(name=JOBACK, model='DIPPR100', Tmin=Tmin_jb, Tmax=Tmax_jb, A=float(jb_df.at[CASRN_int, 'Cpg0']),
                                          B=float(jb_df.at[CASRN_int, 'Cpg1']), C=float(jb_df.at[CASRN_int, 'Cpg2']), 
                                          D=Cpg3, select=False)
-            if CASRN in heat_capacity.WebBook_Shomate_gases:
-                methods.append(WEBBOOK_SHOMATE)
-                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_gases[CASRN]
-                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
+            if CASRN in heat_capacity.WebBook_Shomate_coefficients:
+                phase_values = heat_capacity.WebBook_Shomate_coefficients[CASRN]
+                Cp_dat = phase_values[2]
+                if Cp_dat is not None:
+                    method_names = []
+                    T_ranges = [Cp_dat[0][0]]
+                    for i, range_data in enumerate(Cp_dat):
+                        name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f'{WEBBOOK_SHOMATE}_{i+1}'
+                        method_names.append(name)
+                        self.add_correlation(name=name, model='Shomate', Tmin=range_data[0],  Tmax=range_data[1],  
+                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5], 
+                                             E=range_data[6], select=False
+                        )
+                        T_ranges.append(range_data[1])
+                    if len(Cp_dat) > 1:
+                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)            
             if CASRN in heat_capacity.TRC_gas_data.index:
                 Tmin, Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[
                     heat_capacity.TRC_gas_data.index.get_loc(CASRN)].tolist()
@@ -466,9 +480,7 @@ class HeatCapacityGas(TDependentProperty):
         Cp : float
             Calculated heat capacity, [J/mol/K]
         '''
-        if method == WEBBOOK_SHOMATE:
-            Cp = self.webbook_shomate.force_calculate(T)
-        elif method == COOLPROP:
+        if method == COOLPROP:
             if self.CoolProp_A0_args is not None:
                 Cp = Cp_ideal_gas_Helmholtz(T, *self.CoolProp_A0_args)
             else:
@@ -499,9 +511,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral(T1, T2)
-        elif method == LASTOVKA_SHAW:
+        if method == LASTOVKA_SHAW:
             similarity_variable = self.similarity_variable
             iscyclic_aliphatic = self.iscyclic_aliphatic
             MW = self.MW
@@ -537,9 +547,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
-        elif method == LASTOVKA_SHAW:
+        if method == LASTOVKA_SHAW:
             similarity_variable = self.similarity_variable
             iscyclic_aliphatic = self.iscyclic_aliphatic
             MW = self.MW
@@ -748,7 +756,6 @@ class HeatCapacityLiquid(TDependentProperty):
     _json_obj_by_CAS = ('Zabransky_spline', 'Zabransky_spline_iso', 'Zabransky_spline_sat',
                         'Zabransky_quasipolynomial', 'Zabransky_quasipolynomial_iso',
                         'Zabransky_quasipolynomial_sat', 'CP_f',
-                        #'webbook_shomate'
                         )
 
     obj_references = pure_references = ('Cpgm',)
@@ -758,6 +765,7 @@ class HeatCapacityLiquid(TDependentProperty):
     extra_correlations_internal.add(POLING_CONST)
     extra_correlations_internal.add(CRCSTD)
     extra_correlations_internal.add(WEBBOOK_SHOMATE)
+    extra_correlations_internal.update(WEBBOOK_SHOMATE_INTERVALS)
 
     custom_args = ('MW', 'similarity_variable', 'Tc', 'omega', 'Cpgm')
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
@@ -805,8 +813,6 @@ class HeatCapacityLiquid(TDependentProperty):
             d['Zabransky_quasipolynomial_sat'] = heat_capacity.zabransky_dict_sat_p[CASRN]
         if 'CP_f' in d:
             d['CP_f'] = coolprop_fluids[CASRN]
-        # if CASRN in heat_capacity.WebBook_Shomate_liquids:
-        #     d['webbook_shomate'] = heat_capacity.WebBook_Shomate_liquids[CASRN]
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -828,58 +834,22 @@ class HeatCapacityLiquid(TDependentProperty):
                 methods.append(ZABRANSKY_SPLINE)
                 self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[CASRN]
                 T_limits[ZABRANSKY_SPLINE] = (self.Zabransky_spline.Tmin, self.Zabransky_spline.Tmax)
-            # if CASRN in heat_capacity.WebBook_Shomate_liquids:
-            #     methods.append(WEBBOOK_SHOMATE)
-            #     self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_liquids[CASRN]
-            #     T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
             if CASRN in heat_capacity.WebBook_Shomate_coefficients:
                 phase_values = heat_capacity.WebBook_Shomate_coefficients[CASRN]
                 Cp_dat = phase_values[1]  # Index 1 for liquids
-                
                 if Cp_dat is not None:
-                    if len(Cp_dat) == 1:
-                        # Single range case
-                        self.add_correlation(
-                            name=WEBBOOK_SHOMATE,
-                            model='Shomate',
-                            Tmin=Cp_dat[0][0],  # First element is Tmin
-                            Tmax=Cp_dat[0][1],  # Second element is Tmax
-                            A=Cp_dat[0][2],     # Remaining elements are coeffs
-                            B=Cp_dat[0][3],
-                            C=Cp_dat[0][4],
-                            D=Cp_dat[0][5],
-                            E=Cp_dat[0][6],
-                            select=False
+                    method_names = []
+                    T_ranges = [Cp_dat[0][0]]  # Start with first Tmin
+                    for i, range_data in enumerate(Cp_dat):
+                        name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f'{WEBBOOK_SHOMATE}_{i+1}'
+                        method_names.append(name)
+                        self.add_correlation(name=name, model='Shomate', Tmin=range_data[0],  Tmax=range_data[1],  
+                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5], 
+                                             E=range_data[6], select=False
                         )
-                    else:
-                        # Multiple ranges case
-                        method_names = []
-                        T_ranges = [Cp_dat[0][0]]  # Start with first Tmin
-                        
-                        for i, range_data in enumerate(Cp_dat):
-                            name = f'{WEBBOOK_SHOMATE}_{i+1}'
-                            method_names.append(name)
-                            self.add_correlation(
-                                name=name,
-                                model='Shomate',
-                                Tmin=range_data[0],
-                                Tmax=range_data[1],
-                                A=range_data[2],
-                                B=range_data[3],
-                                C=range_data[4],
-                                D=range_data[5],
-                                E=range_data[6],
-                                select=False
-                            )
-                            T_ranges.append(range_data[1])
-                        
-                        self.add_piecewise_method(
-                            name=WEBBOOK_SHOMATE,
-                            method_names=method_names,
-                            T_ranges=T_ranges,
-                            select=False
-                        )
-            
+                        T_ranges.append(range_data[1])
+                    if len(Cp_dat) > 1:
+                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)            
             if CASRN in heat_capacity.zabransky_dict_const_p:
                 methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
                 self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[CASRN]
@@ -976,8 +946,6 @@ class HeatCapacityLiquid(TDependentProperty):
             return self.Zabransky_spline_sat.force_calculate(T)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
             return self.Zabransky_quasipolynomial_sat.calculate(T)
-        # elif method == WEBBOOK_SHOMATE:
-        #     return self.webbook_shomate.force_calculate(T)
         elif method == COOLPROP:
             return CoolProp_T_dependent_property(T, self.CASRN , 'CPMOLAR', 'l')
         elif method == ROWLINSON_POLING:
@@ -1027,8 +995,6 @@ class HeatCapacityLiquid(TDependentProperty):
             return self.Zabransky_quasipolynomial_iso.calculate_integral(T1, T2)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
             return self.Zabransky_quasipolynomial_sat.calculate_integral(T1, T2)
-        # elif method == WEBBOOK_SHOMATE:
-        #     return self.webbook_shomate.force_calculate_integral(T1, T2)
         elif method == DADGOSTAR_SHAW:
             dH = (Dadgostar_Shaw_integral(T2, self.similarity_variable)
                     - Dadgostar_Shaw_integral(T1, self.similarity_variable))
@@ -1072,8 +1038,6 @@ class HeatCapacityLiquid(TDependentProperty):
             return self.Zabransky_quasipolynomial_iso.calculate_integral_over_T(T1, T2)
         elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
             return self.Zabransky_quasipolynomial_sat.calculate_integral_over_T(T1, T2)
-        # elif method == WEBBOOK_SHOMATE:
-        #     return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
         elif method == DADGOSTAR_SHAW:
             dS = (Dadgostar_Shaw_integral_over_T(T2, self.similarity_variable)
                     - Dadgostar_Shaw_integral_over_T(T1, self.similarity_variable))
@@ -1183,6 +1147,8 @@ class HeatCapacitySolid(TDependentProperty):
     extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
     extra_correlations_internal.add(PERRY151)
     extra_correlations_internal.add(CRCSTD)
+    extra_correlations_internal.add(WEBBOOK_SHOMATE)
+    extra_correlations_internal.update(WEBBOOK_SHOMATE_INTERVALS)
 
     _fit_force_n = {}
     """Dictionary containing method: fit_n, for use in methods which should
@@ -1192,13 +1158,7 @@ class HeatCapacitySolid(TDependentProperty):
 
     custom_args = ('MW', 'similarity_variable')
 
-    _json_obj_by_CAS = ('webbook_shomate',)
-
-    @classmethod
-    def _load_json_CAS_references(cls, d):
-        CASRN = d['CASRN']
-        if CASRN in heat_capacity.WebBook_Shomate_solids:
-            d['webbook_shomate'] = heat_capacity.WebBook_Shomate_solids[CASRN]
+    _json_obj_by_CAS = tuple()
 
     def __init__(self, CASRN='', similarity_variable=None, MW=None,
                  extrapolation='linear', **kwargs):
@@ -1232,10 +1192,22 @@ class HeatCapacitySolid(TDependentProperty):
         self.all_methods = set()
         CASRN = self.CASRN
         if load_data and CASRN:
-            if CASRN in heat_capacity.WebBook_Shomate_solids:
-                methods.append(WEBBOOK_SHOMATE)
-                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_solids[CASRN]
-                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
+            if CASRN in heat_capacity.WebBook_Shomate_coefficients:
+                phase_values = heat_capacity.WebBook_Shomate_coefficients[CASRN]
+                Cp_dat = phase_values[0]
+                if Cp_dat is not None:
+                    method_names = []
+                    T_ranges = [Cp_dat[0][0]]
+                    for i, range_data in enumerate(Cp_dat):
+                        name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f'{WEBBOOK_SHOMATE}_{i+1}'
+                        method_names.append(name)
+                        self.add_correlation(name=name, model='Shomate', Tmin=range_data[0],  Tmax=range_data[1],  
+                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5], 
+                                             E=range_data[6], select=False
+                        )
+                        T_ranges.append(range_data[1])
+                    if len(Cp_dat) > 1:
+                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)            
             if CASRN in heat_capacity.Cp_dict_JANAF_solid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_solid[CASRN]
@@ -1293,8 +1265,6 @@ class HeatCapacitySolid(TDependentProperty):
         if method == LASTOVKA_S:
             Cp = Lastovka_solid(T, self.similarity_variable)
             Cp = property_mass_to_molar(Cp, self.MW)
-        elif method == WEBBOOK_SHOMATE:
-            Cp = self.webbook_shomate.force_calculate(T)
         else:
             return self._base_calculate(T, method)
         return Cp
@@ -1320,9 +1290,7 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral(T1, T2)
-        elif method == LASTOVKA_S:
+        if method == LASTOVKA_S:
             dH = (Lastovka_solid_integral(T2, self.similarity_variable)
                     - Lastovka_solid_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
@@ -1353,8 +1321,6 @@ class HeatCapacitySolid(TDependentProperty):
             dS = (Lastovka_solid_integral_over_T(T2, self.similarity_variable)
                     - Lastovka_solid_integral_over_T(T1, self.similarity_variable))
             return property_mass_to_molar(dS, self.MW)
-        elif method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
         else:
             return super().calculate_integral_over_T(T1, T2, method)
 

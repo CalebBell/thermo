@@ -1621,6 +1621,9 @@ class TDependentProperty:
         if hasattr(self, 'piecewise_methods'):
             piecewise_methods = self.piecewise_methods.copy()
             piecewise_methods.pop(DEFAULT_PHASE_TRANSITIONS, None)
+            for extra_added_corr in self.extra_correlations_internal:
+                if extra_added_corr in piecewise_methods:
+                    del piecewise_methods[extra_added_corr]
             base += 'piecewise_methods=%s, ' %({k: {'methods': v[0], 'T_ranges': v[1]} for k, v in piecewise_methods.items()})
 
 
@@ -4071,6 +4074,21 @@ class TDependentProperty:
             local_method = self.local_methods[method]
             if local_method.f_int is not None:
                 return local_method.f_int(T1, T2)
+        if hasattr(self, 'piecewise_methods') and method in self.piecewise_methods:
+            if T2 < T1:
+                return -self.calculate_integral(T2, T1, method)
+            
+            method_names, T_ranges, transition_Ts = self.piecewise_methods[method]
+            integral = 0.
+            Ta = T1
+            
+            for Tmax, method_name in zip(transition_Ts, method_names):
+                if T2 <= Tmax:
+                    return integral + self.calculate_integral(Ta, T2, method_name)
+                elif Ta < Tmax:
+                    integral += self.calculate_integral(Ta, Tmax, method_name)
+                    Ta = Tmax
+            return integral + self.calculate_integral(Ta, T2, method_names[-1])
         return float(quad(self.calculate, T1, T2, args=(method,))[0])
 
     def T_dependent_property_integral(self, T1, T2):
@@ -4216,6 +4234,21 @@ class TDependentProperty:
             calls = self.correlation_models[model][2]
             if 'f_int_over_T' in calls:
                 return calls['f_int_over_T'](T2, **kwargs) - calls['f_int_over_T'](T1, **kwargs)
+        if method in getattr(self, 'piecewise_methods', {}):
+            if T2 < T1:
+                return -self.calculate_integral_over_T(T2, T1, method)
+            
+            method_names, T_ranges, transition_Ts = self.piecewise_methods[method]
+            integral = 0.
+            Ta = T1
+            
+            for Tmax, method_name in zip(transition_Ts, method_names):
+                if T2 <= Tmax:
+                    return integral + self.calculate_integral_over_T(Ta, T2, method_name)
+                elif Ta < Tmax:
+                    integral += self.calculate_integral_over_T(Ta, Tmax, method_name)
+                    Ta = Tmax
+            return integral + self.calculate_integral_over_T(Ta, T2, method_names[-1])
 
         if method in self.local_methods:
             local_method = self.local_methods[method]
