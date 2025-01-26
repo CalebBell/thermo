@@ -32,103 +32,101 @@ This functionality requires the RDKit library to work.
 
 
 '''
-__all__ = []
+__all__ = ['BondiGroupContribution', 'BONDI_GROUPS', 'bondi_van_der_waals_surface_area_volume', 'Q_from_Van_der_Waals_area', 'R_from_Van_der_Waals_volume']
 from thermo.functional_groups import FG_CARBOXYLIC_ACID, FG_AMIDE, identify_conjugated_bonds, identify_functional_group_atoms, count_rings_by_atom_counts
-from thermo.group_contribution.group_contribution_base import priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
+from thermo.group_contribution.group_contribution_base import BaseGroupContribution, priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
 
-# WIP
-
-
-GROUP_ID_COUNTER = 0 # temporary
-
-class BondiGroupContribution:
-    __slots__ = ('group', 'group_id', 'Vw', 'Aw', 'smarts', 'atoms', 'bonds', 'hydrogen_from_smarts', 'priority', 'smart_rdkit')
+# reasonably complete
+class BondiGroupContribution(BaseGroupContribution):
+    __slots__ = BaseGroupContribution.__slots__ + ('Vw', 'Aw',)
     
-    def __init__(self, group, Vw, Aw, smarts=None,
+    def __init__(self, group, group_id, Vw, Aw, smarts=None,
                  priority=None, atoms=None, bonds=None, hydrogen_from_smarts=False):
         """
         Initialize the GroupContribution object with group name, volume contribution, and polarizability.
         
         Parameters:
         - group (str): The name or identifier of the group.
+        - group_id (int): Unique identifier for the group.
         - Vw (float): Volume contribution in cm^3/mole.
         - Aw (float): Polarizability contribution in cm^3/mole * 10^9.
         """
-        global GROUP_ID_COUNTER
         self.group = group
+        self.group_id = group_id
         self.Vw = Vw
         self.Aw = Aw
         self.smarts = smarts
         self.atoms = atoms
         self.bonds = bonds
         self.hydrogen_from_smarts = hydrogen_from_smarts
-        self.priority = priority
+        if priority is None and atoms is not None:
+            self.priority = priority_from_atoms(atoms, bonds)
+        else:
+            self.priority = priority
         self.smart_rdkit = None
-        self.group_id = GROUP_ID_COUNTER
-        GROUP_ID_COUNTER += 1
-
 
     def __repr__(self):
-        return f"GroupContribution(group={self.group!r}, Vw={self.Vw!r}, Aw={self.Aw!r})"
+        return f"BondiGroupContribution(group={self.group!r}, group_id={self.group_id!r}, Vw={self.Vw!r}, Aw={self.Aw!r})"
 
 BONDI_GROUPS_BY_ID = {}
 BONDI_GROUPS = {}
-# TABLE XV in van der Waals Volumes and Radii, 1964
-BONDI_GROUPS['C'] = BondiGroupContribution('C', 3.33, 0.0, smarts='[CX4;H0]', atoms={'C': 1, 'H': 0})
-BONDI_GROUPS['CH'] = BondiGroupContribution('CH', 6.78, 0.57, smarts='[CX4;H1]', atoms={'C': 1, 'H': 1})
-BONDI_GROUPS['CH2'] = BondiGroupContribution('CH2', 10.23, 1.35, smarts='[CX4;H2]', atoms={'C': 1, 'H': 2})
-BONDI_GROUPS['CH3'] = BondiGroupContribution('CH3', 13.67, 2.12, smarts='[CX4;H3]', atoms={'C': 1, 'H': 3})
 
-BONDI_GROUPS['CH4'] = BondiGroupContribution(
-    'CH4', 17.12, 2.90,
+# TABLE XV in van der Waals Volumes and Radii, 1964
+BONDI_GROUPS[1] = BondiGroupContribution('C', 1, 3.33, 0.0, smarts='[CX4;H0]', atoms={'C': 1, 'H': 0})
+BONDI_GROUPS[2] = BondiGroupContribution('CH', 2, 6.78, 0.57, smarts='[CX4;H1]', atoms={'C': 1, 'H': 1})
+BONDI_GROUPS[3] = BondiGroupContribution('CH2', 3, 10.23, 1.35, smarts='[CX4;H2]', atoms={'C': 1, 'H': 2})
+BONDI_GROUPS[4] = BondiGroupContribution('CH3', 4, 13.67, 2.12, smarts='[CX4;H3]', atoms={'C': 1, 'H': 3})
+
+BONDI_GROUPS[5] = BondiGroupContribution(
+    'CH4', 5, 17.12, 2.90,
     atoms={'C': 1, 'H': 4},
     bonds={SINGLE_BOND: 4},
     smarts='[CX4;H4]'
 )
 # n-paraffins specific correlations: 6.88 + 10.23 Nc for Vw, and 1.54 + 1.35 Nc for Aw
 
-BONDI_GROUPS['=C='] = BondiGroupContribution(
-    '=C=', 6.96, None,
+BONDI_GROUPS[6] = BondiGroupContribution(
+    '=C=', 6, 6.96, None,
     atoms={'C': 2, 'H': 0},
     bonds={DOUBLE_BOND: 2},
     smarts='[C;X2;R0;$(*=,=*)]'
 )
 
 # >C=C< (internal double bond with two carbons)
-BONDI_GROUPS['>C=C<'] = BondiGroupContribution(
-    '>C=C<', 10.02, 0.61,
+BONDI_GROUPS[7] = BondiGroupContribution(
+    '>C=C<', 7, 10.02, 0.61,
     atoms={'C': 2, 'H': 0},
     bonds={DOUBLE_BOND: 1, SINGLE_BOND: 4},
     smarts='[C;X3;R0]=[C;X3;R0]'
 )
 
 # =CH (terminal double bond with one hydrogen)
-BONDI_GROUPS['=CH-'] = BondiGroupContribution(
-    '=CH-', 8.47, 1.08,
+BONDI_GROUPS[8] = BondiGroupContribution(
+    '=CH-', 8, 8.47, 1.08,
     atoms={'C': 1, 'H': 1},
     bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
     smarts='[C;H1;X3;$(*=*)]'
 )
 
 # =CH2 (terminal double bond with two hydrogens)
-BONDI_GROUPS['=CH2'] = BondiGroupContribution(
-    '=CH2', 11.94, 1.86,
+BONDI_GROUPS[9] = BondiGroupContribution(
+    '=CH2', 9, 11.94, 1.86,
     atoms={'C': 1, 'H': 2},
     bonds={DOUBLE_BOND: 1},
     smarts='[C;H2;X3;R0;$(*=*)]'
 )
 
 # >C=CH2 (internal double bond with one terminal CH2)
-BONDI_GROUPS['>C=CH2'] = BondiGroupContribution(
-    '>C=CH2', 16.95, 2.17,
+BONDI_GROUPS[10] = BondiGroupContribution(
+    '>C=CH2', 10, 16.95, 2.17,
     atoms={'C': 2, 'H': 2},
     bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
     smarts='[C;X3;R0]=[C;H2;R0]'
 )
 
 # >C=CH- (internal double bond with one terminal CH)
-BONDI_GROUPS['>C=CH-'] = BondiGroupContribution(
-    '>C=CH-', 13.49, 1.39,
+BONDI_GROUPS[11] = BondiGroupContribution(
+    '>C=CH-', 11, 13.49, 1.39,
     atoms={'C': 2, 'H': 1},
     bonds={DOUBLE_BOND: 1, SINGLE_BOND: 3},
     smarts='[C;X3;H0]=[C;X3;H1]'
@@ -136,17 +134,16 @@ BONDI_GROUPS['>C=CH-'] = BondiGroupContribution(
 
 # Acetylenic group definitions
 # —C≡ (internal triple bond)
-BONDI_GROUPS['-C≡'] = BondiGroupContribution(
-    '-C≡', 8.05, 0.98,
+BONDI_GROUPS[12] = BondiGroupContribution(
+    '-C≡', 12, 8.05, 0.98,
     atoms={'C': 1},
     bonds={TRIPLE_BOND: 1, SINGLE_BOND: 1},
     smarts='[C;H0;X2;R0;$(*#*)]'
 )
 
-
 # ≡C—H (terminal acetylenic carbon)
-BONDI_GROUPS['≡C-H'] = BondiGroupContribution(
-    '≡C-H', 11.55, 1.74,
+BONDI_GROUPS[13] = BondiGroupContribution(
+    '≡C-H', 13, 11.55, 1.74,
     atoms={'C': 1, 'H': 1},
     bonds={TRIPLE_BOND: 1},
     smarts='[C;H1;X2;R0;$(*#[C;H1;X2;R0;$(*#[C;H1])])][H]'
@@ -154,199 +151,193 @@ BONDI_GROUPS['≡C-H'] = BondiGroupContribution(
 # There is also a version of ≡C- for diacetylene but we it includes Vw and Aw only
 # and the value for diacetylene is likely to come from UNIFAC
 
-
-
 # >C— (condensation): carbon in a fused aromatic ring system
-BONDI_GROUPS['>C— (condensation)'] = BondiGroupContribution(
-    '>C— (condensation)', 4.74, 0.21,
+BONDI_GROUPS[14] = BondiGroupContribution(
+    '>C— (condensation)', 14, 4.74, 0.21,
     atoms={'C': 1},
     bonds={AROMATIC_BOND: 2},
     smarts='[c;R2]'
 )
 
 # >C— (alkyl): alkyl-substituted aromatic carbon
-BONDI_GROUPS['>C— (alkyl)'] = BondiGroupContribution(
-    '>C— (alkyl)', 5.54, 0.30,
+BONDI_GROUPS[15] = BondiGroupContribution(
+    '>C— (alkyl)', 15, 5.54, 0.30,
     atoms={'C': 1},
     bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1},
     smarts='[c;R1;$(C-[C,H])]'
 )
 
 # >C—H: terminal aromatic carbon with hydrogen
-BONDI_GROUPS['>C—H'] = BondiGroupContribution(
-    '>C—H', 8.06, 1.00,
+BONDI_GROUPS[16] = BondiGroupContribution(
+    '>C—H', 16, 8.06, 1.00,
     atoms={'C': 1, 'H': 1},
     bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1},
     smarts='[cH;R1]'
 )
 
 # Benzene
-BONDI_GROUPS['Benzene'] = BondiGroupContribution(
-    'Benzene', 48.36, 6.01,
+BONDI_GROUPS[17] = BondiGroupContribution(
+    'Benzene', 17, 48.36, 6.01,
     atoms={'C': 6},
     bonds={AROMATIC_BOND: 6},
     smarts='c1ccccc1'
 )
 
 # Phenyl
-BONDI_GROUPS['Phenyl'] = BondiGroupContribution(
-    'Phenyl', 45.84, 5.33,
+BONDI_GROUPS[18] = BondiGroupContribution(
+    'Phenyl', 18, 45.84, 5.33,
     atoms={'C': 6},
     bonds={AROMATIC_BOND: 5, SINGLE_BOND: 1},
     smarts='[c1ccccc1]'
 )
 
 # Naphthalene
-BONDI_GROUPS['Naphthalene'] = BondiGroupContribution(
-    'Naphthalene', 73.97, 8.44,
+BONDI_GROUPS[19] = BondiGroupContribution(
+    'Naphthalene', 19, 73.97, 8.44,
     atoms={'C': 10},
     bonds={AROMATIC_BOND: 12},
     smarts='c1c2ccccc2ccc1'
 )
 
 # Naphthyl
-BONDI_GROUPS['Naphthyl'] = BondiGroupContribution(
-    'Naphthyl', 71.45, 7.76,
+BONDI_GROUPS[20] = BondiGroupContribution(
+    'Naphthyl', 20, 71.45, 7.76,
     atoms={'C': 10},
     bonds={AROMATIC_BOND: 11, SINGLE_BOND: 1},
     smarts='[c]1ccc2ccccc2c1'
 )
 
-
-
-
-
-
-
 # TABLE XVI in van der Waals Volumes and Radii, 1964
 
 # -O- (c.e.): heterocycloaliphatic esters
-BONDI_GROUPS['-O- (c.e.)'] = BondiGroupContribution(
-    '-O- (c.e.)', 5.20, 0.74,
+BONDI_GROUPS[21] = BondiGroupContribution(
+    '-O- (c.e.)', 21, 5.20, 0.74,
     atoms={'O': 1},
     bonds={SINGLE_BOND: 2},
     smarts='[O;X2;R1]'
 )
 
 # -O- (a.e.): polyalkane ethers
-BONDI_GROUPS['-O- (a.e.)'] = BondiGroupContribution(
-    '-O- (a.e.)', 3.70, 0.60,
+BONDI_GROUPS[22] = BondiGroupContribution(
+    '-O- (a.e.)', 22, 3.70, 0.60,
     atoms={'O': 1},
     bonds={SINGLE_BOND: 2},
     smarts='[O;X2;R0]'
 )
 
 # -O- (ph.e.): polyphenyl ethers
-BONDI_GROUPS['-O- (ph.e.)'] = BondiGroupContribution(
-    '-O- (ph.e.)', 3.20, 0.54,
+BONDI_GROUPS[23] = BondiGroupContribution(
+    '-O- (ph.e.)', 23, 3.20, 0.54,
     atoms={'O': 1},
     bonds={SINGLE_BOND: 2},
     smarts='[O;X2;$(c1ccccc1)]'
 )
 
 # -OH: hydroxyl group
-BONDI_GROUPS['-OH'] = BondiGroupContribution(
-    '-OH', 8.04, 1.46,
+BONDI_GROUPS[24] = BondiGroupContribution(
+    '-OH', 24, 8.04, 1.46,
     atoms={'O': 1, 'H': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[O;H1]'
 )
+
 # >C=O: carbonyl group (non-aromatic)
-BONDI_GROUPS['>C=O'] = BondiGroupContribution(
-    '>C=O', 11.70, 1.60,
+BONDI_GROUPS[25] = BondiGroupContribution(
+    '>C=O', 25, 11.70, 1.60,
     atoms={'C': 1, 'O': 1},
     bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
     smarts='[C;X3](=O)'
 )
+
 # -S- and -SH do not include an Aw contribution
+
 # -S-: sulfur ether
-BONDI_GROUPS['-S-'] = BondiGroupContribution(
-    '-S-', 10.8, None,
+BONDI_GROUPS[26] = BondiGroupContribution(
+    '-S-', 26, 10.8, None,
     atoms={'S': 1},
     bonds={SINGLE_BOND: 2},
     smarts='[S;X2]'
 )
 
 # -SH: thiol group
-BONDI_GROUPS['-SH'] = BondiGroupContribution(
-    '-SH', 14.8, None,
+BONDI_GROUPS[27] = BondiGroupContribution(
+    '-SH', 27, 14.8, None,
     atoms={'S': 1, 'H': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[S;H1]'
 )
 
 # -NH2 (amino group)
-BONDI_GROUPS['-NH2'] = BondiGroupContribution(
-    '-NH2', 10.54, 1.74,
+BONDI_GROUPS[28] = BondiGroupContribution(
+    '-NH2', 28, 10.54, 1.74,
     atoms={'N': 1, 'H': 2},
     bonds={SINGLE_BOND: 1},
     smarts='[N;H2;X3]'
 )
 
-
 # >NH (secondary amine)
-BONDI_GROUPS['>NH'] = BondiGroupContribution(
-    '>NH', 8.08, 0.99,
+BONDI_GROUPS[29] = BondiGroupContribution(
+    '>NH', 29, 8.08, 0.99,
     atoms={'N': 1, 'H': 1},
     bonds={SINGLE_BOND: 2},
     smarts='[N;H1;X3]'
 )
 
 # NX3H0 (tertiary amine)
-BONDI_GROUPS['NX3H0'] = BondiGroupContribution(
-    'NX3H0', 4.33, 0.23,
+BONDI_GROUPS[30] = BondiGroupContribution(
+    'NX3H0', 30, 4.33, 0.23,
     atoms={'N': 1},
     bonds={SINGLE_BOND: 3},
     smarts='[N;H0;X3]'
 )
 
 # -C≡N (nitrile group)
-BONDI_GROUPS['-C≡N'] = BondiGroupContribution(
-    '-C≡N', 14.70, 2.19,
+BONDI_GROUPS[31] = BondiGroupContribution(
+    '-C≡N', 31, 14.70, 2.19,
     atoms={'C': 1, 'N': 1},
     bonds={TRIPLE_BOND: 1, DOUBLE_BOND: 1},
     smarts='[C;X2;H0]#[N;H0;X1]'
 )
 
 # -NO2 (nitro group)
-BONDI_GROUPS['-NO2'] = BondiGroupContribution(
-    '-NO2', 16.8, 2.55,
+BONDI_GROUPS[32] = BondiGroupContribution(
+    '-NO2', 32, 16.8, 2.55,
     atoms={'N': 1, 'O': 2},
     bonds={SINGLE_BOND: 2, DOUBLE_BOND: 1},
     smarts='[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]'
 )
-# phosphorous not sure what they tried to draw, looks wrong, has only Vw
 
+# Phosphorous not sure what they tried to draw, looks wrong, has only Vw
 
 # Fluorine group definitions
 
 # -F (pr): primary aliphatic fluorine, attached to an alkane in the primary position
-BONDI_GROUPS['-F (pr)'] = BondiGroupContribution(
-    '-F (pr)', 5.72, 1.10,
+BONDI_GROUPS[33] = BondiGroupContribution(
+    '-F (pr)', 33, 5.72, 1.10,
     atoms={'F': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[F;X1;R0]'
 )
 
 # -F (s,t): secondary or tertiary aliphatic fluorine, attached to alkane
-BONDI_GROUPS['-F (s,t)'] = BondiGroupContribution(
-    '-F (s,t)', 6.20, 1.18,
+BONDI_GROUPS[34] = BondiGroupContribution(
+    '-F (s,t)', 34, 6.20, 1.18,
     atoms={'F': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[F;X1;R0;$(C([#6,#1])([#6,#1]))]'
 )
 
 # -F (p): per- or polyhalide of an alkane
-BONDI_GROUPS['-F (p)'] = BondiGroupContribution(
-    '-F (p)', 6.00, 1.15,
+BONDI_GROUPS[35] = BondiGroupContribution(
+    '-F (p)', 35, 6.00, 1.15,
     atoms={'F': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[F$([*;!R]C([F,Cl,Br,I])[#6,F,Cl,Br,I])]'
 )
 
 # -F (ph): phenyl fluorine, attached to phenyl ring
-BONDI_GROUPS['-F (ph)'] = BondiGroupContribution(
-    '-F (ph)', 5.80, 1.10,
+BONDI_GROUPS[36] = BondiGroupContribution(
+    '-F (ph)', 36, 5.80, 1.10,
     atoms={'F': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[F;$(c1ccccc1)]'
@@ -355,16 +346,16 @@ BONDI_GROUPS['-F (ph)'] = BondiGroupContribution(
 # Chlorine group definitions
 
 # -Cl (pr): primary aliphatic chlorine, attached to an alkane in the primary position
-BONDI_GROUPS['-Cl (pr)'] = BondiGroupContribution(
-    '-Cl (pr)', 11.62, 1.80,
+BONDI_GROUPS[37] = BondiGroupContribution(
+    '-Cl (pr)', 37, 11.62, 1.80,
     atoms={'Cl': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[Cl;X1;R0]'
 )
 
 # -Cl (s,t,p): secondary, tertiary, or per/polyhalide of an alkane
-BONDI_GROUPS['-Cl (s,t,p)'] = BondiGroupContribution(
-    '-Cl (s,t,p)', 12.24, 1.82,
+BONDI_GROUPS[38] = BondiGroupContribution(
+    '-Cl (s,t,p)', 38, 12.24, 1.82,
     atoms={'Cl': 1},
     bonds={SINGLE_BOND: 1},
     smarts=[
@@ -374,33 +365,34 @@ BONDI_GROUPS['-Cl (s,t,p)'] = BondiGroupContribution(
 )
 
 # -Cl (v): chlorine attached to a vinyl group
-BONDI_GROUPS['-Cl (v)'] = BondiGroupContribution(
-    '-Cl (v)', 11.65, 1.80,
+BONDI_GROUPS[39] = BondiGroupContribution(
+    '-Cl (v)', 39, 11.65, 1.80,
     atoms={'Cl': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[Cl;$([Cl]C=C)]'
 )
 
 # -Cl (ph): phenyl chlorine, attached to phenyl ring
-BONDI_GROUPS['-Cl (ph)'] = BondiGroupContribution(
-    '-Cl (ph)', 12.0, 1.81,
+BONDI_GROUPS[40] = BondiGroupContribution(
+    '-Cl (ph)', 40, 12.0, 1.81,
     atoms={'Cl': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[Cl;$(c1ccccc1)]'
 )
 
+# Bromine group definitions
 
 # -Br (pr): primary aliphatic bromine, attached to an alkane in the primary position
-BONDI_GROUPS['-Br (pr)'] = BondiGroupContribution(
-    '-Br (pr)', 14.40, 2.08,
+BONDI_GROUPS[41] = BondiGroupContribution(
+    '-Br (pr)', 41, 14.40, 2.08,
     atoms={'Br': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[Br;X1;R0]'
 )
 
 # -Br (s,t,p): secondary, tertiary, or per/polyhalide of an alkane
-BONDI_GROUPS['-Br (s,t,p)'] = BondiGroupContribution(
-    '-Br (s,t,p)', 14.60, 2.09,
+BONDI_GROUPS[42] = BondiGroupContribution(
+    '-Br (s,t,p)', 42, 14.60, 2.09,
     atoms={'Br': 1},
     bonds={SINGLE_BOND: 1},
     smarts=[
@@ -410,25 +402,26 @@ BONDI_GROUPS['-Br (s,t,p)'] = BondiGroupContribution(
 )
 
 # -Br (ph): phenyl bromine, attached to phenyl ring
-BONDI_GROUPS['-Br (pr)'] = BondiGroupContribution(
-    '-Br (pr)', 15.12, 2.13,
+BONDI_GROUPS[43] = BondiGroupContribution(
+    '-Br (ph)', 43, 15.12, 2.13,
     atoms={'Br': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[Br;$(c1ccccc1)]'
 )
 
+# Iodine group definitions
 
 # -I (pr): primary aliphatic iodine, attached to an alkane in the primary position
-BONDI_GROUPS['-I (pr)'] = BondiGroupContribution(
-    '-I (pr)', 19.18, 2.48,
+BONDI_GROUPS[44] = BondiGroupContribution(
+    '-I (pr)', 44, 19.18, 2.48,
     atoms={'I': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[I;X1;R0]'
 )
 
 # -I (s,t,p): secondary, tertiary, or per/polyhalide of an alkane
-BONDI_GROUPS['-I (s,t,p)'] = BondiGroupContribution(
-    '-I (s,t,p)', 20.35, 2.54,
+BONDI_GROUPS[45] = BondiGroupContribution(
+    '-I (s,t,p)', 45, 20.35, 2.54,
     atoms={'I': 1},
     bonds={SINGLE_BOND: 1},
     smarts=[
@@ -438,8 +431,8 @@ BONDI_GROUPS['-I (s,t,p)'] = BondiGroupContribution(
 )
 
 # -I (ph): phenyl iodine, attached to phenyl ring
-BONDI_GROUPS['-I (ph)'] = BondiGroupContribution(
-    '-I (ph)', 19.64, 2.51,
+BONDI_GROUPS[46] = BondiGroupContribution(
+    '-I (ph)', 46, 19.64, 2.51,
     atoms={'I': 1},
     bonds={SINGLE_BOND: 1},
     smarts='[I;$(c1ccccc1)]'
@@ -449,11 +442,7 @@ BONDI_GROUPS['-I (ph)'] = BondiGroupContribution(
 
 
 
-
 for group in BONDI_GROUPS.values():
-    if group.priority is None:
-        if group.atoms is not None:
-            group.priority = priority_from_atoms(group.atoms, group.bonds)
     BONDI_GROUPS_BY_ID[group.group_id] = group
 catalog = BONDI_GROUPS.values()
 
@@ -623,7 +612,6 @@ def find_methylene_rings_condensed_to_aromatic_rings(mol):
     '''
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
-    ring_count = len(atom_rings)
     
     # Convert to sets for easier intersection operations
     ring_sets = [set(r) for r in atom_rings]

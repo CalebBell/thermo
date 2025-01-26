@@ -42,7 +42,7 @@ catalog = BONDI_GROUPS.values()
 def test_bondi_first_fragmentation():
     rdkitmol = Chemical('decane').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=catalog, rdkitmol=rdkitmol)
-    assert assignment == {3: 2, 2: 8}
+    assert assignment == {4: 2, 3: 8}
     assert success
 
 @pytest.mark.rdkit
