@@ -123,7 +123,7 @@ from chemicals.viscosity import (
     mu_TDE,
     mu_Yaws,
 )
-from chemicals.volume import PPDS17, Rackett_fit, TDE_VDNS_rho, volume_VDI_PPDS
+from chemicals.volume import PPDS17, Rackett_fit, TDE_VDNS_rho, volume_VDI_PPDS, SNM0, COSTALD, Rackett
 from fluids.numerics import (
     brenth,
     chebder,
@@ -1318,6 +1318,18 @@ class TDependentProperty:
         [],
         {'f': lambda T, A, B, C, D: 1.0/EQ105(T, A, B, C, D)},
         {'fit_params': ['A', 'B', 'C', 'D']}
+    ),
+    'SNM0_fit': (
+        ['Tc', 'Vc', 'omega'],
+        ['delta_SRK'],
+        {'f': SNM0},
+        {'fit_params': ['delta_SRK']}
+    ),
+    'COSTALD_fit': (
+        ['Tc', 'Vc', 'omega'],
+        [],
+        {'f': COSTALD},
+        {'fit_params': ['Vc', 'omega']}
     ),
      'DIPPR106': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],

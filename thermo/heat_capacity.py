@@ -839,18 +839,42 @@ class HeatCapacityLiquid(TDependentProperty):
                 phase_values = heat_capacity.WebBook_Shomate_coefficients[CASRN]
                 Cp_dat = phase_values[1]  # Index 1 for liquids
                 if Cp_dat is not None:
-                    method_names = []
-                    T_ranges = [Cp_dat[0][0]]  # Start with first Tmin
+                    # First collect and sort all range data
+                    range_data_list = []
                     for i, range_data in enumerate(Cp_dat):
                         name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f'{WEBBOOK_SHOMATE}_{i+1}'
+                        range_data_list.append((range_data, name))
+                    
+                    # Sort by Tmin (first element of range_data)
+                    range_data_list.sort(key=lambda x: x[0][0])
+                    
+                    # Process in sorted order
+                    method_names = []
+                    T_ranges = [range_data_list[0][0][0]]  # Start with first Tmin
+                    
+                    for range_data, name in range_data_list:
                         method_names.append(name)
-                        self.add_correlation(name=name, model='Shomate', Tmin=range_data[0],  Tmax=range_data[1],  
-                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5], 
-                                             E=range_data[6], select=False
+                        self.add_correlation(
+                            name=name,
+                            model='Shomate',
+                            Tmin=range_data[0],
+                            Tmax=range_data[1],
+                            A=range_data[2],
+                            B=range_data[3],
+                            C=range_data[4],
+                            D=range_data[5],
+                            E=range_data[6],
+                            select=False
                         )
                         T_ranges.append(range_data[1])
+                        
                     if len(Cp_dat) > 1:
-                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)            
+                        self.add_piecewise_method(
+                            name=WEBBOOK_SHOMATE,
+                            method_names=method_names,
+                            T_ranges=T_ranges,
+                            select=False
+                        )
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl']):
                 self.add_correlation(
                     name=POLING_CONST,
@@ -905,11 +929,22 @@ class HeatCapacityLiquid(TDependentProperty):
                     method_names = []
                     T_ranges = [spline_list[0].Tmin]
                     
+                    # First collect all models and their temperature ranges
+                    models_and_ranges = []
                     for i, model in enumerate(spline_list):
-                        # If only one range, use the base method name, otherwise append range number
                         name = method_name if len(spline_list) == 1 else f"{method_name}_{i+1}"
+                        models_and_ranges.append((model, name, model.Tmin, model.Tmax))
+                    
+                    # Sort by Tmin
+                    models_and_ranges.sort(key=lambda x: x[2])
+                    
+                    # Now process in sorted order
+                    method_names = []
+                    T_ranges = [models_and_ranges[0][2]]  # Start with first Tmin
+                    
+                    for model, name, Tmin, Tmax in models_and_ranges:
                         method_names.append(name)
-                        T_ranges.append(model.Tmax)
+                        T_ranges.append(Tmax)
                         
                         self.add_correlation(
                             name=name,
@@ -922,6 +957,7 @@ class HeatCapacityLiquid(TDependentProperty):
                             a4=model.coeffs[3],
                             select=False
                         )
+                        
                     # Only add piecewise method if there are multiple ranges
                     if len(spline_list) > 1:
                         self.add_piecewise_method(

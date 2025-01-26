@@ -304,16 +304,16 @@ def test_VolumeLiquidConstantExtrapolation():
                        Vc=0.000375, Zc=0.25884384676233363, omega=0.331, dipole=0.299792543559857,
                        Psat=None, extrapolation="constant", method="DIPPR_PERRY_8E")
 
-    assert_close(obj.T_dependent_property(obj.DIPPR_Tmax), 0.0003785956866273838, rtol=1e-9)
-    assert_close(obj.T_dependent_property(obj.DIPPR_Tmin), 0.00011563344813684695, rtol=1e-9)
+    assert_close(obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][1]), 0.0003785956866273838, rtol=1e-9)
+    assert_close(obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][0]), 0.00011563344813684695, rtol=1e-9)
 
 
-    assert obj.T_dependent_property(618) == obj.T_dependent_property(obj.DIPPR_Tmax)
-    assert obj.T_dependent_property(1223532.0) == obj.T_dependent_property(obj.DIPPR_Tmax)
+    assert obj.T_dependent_property(618) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][1])
+    assert obj.T_dependent_property(1223532.0) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][1])
 
-    assert obj.T_dependent_property(1.0) == obj.T_dependent_property(obj.DIPPR_Tmin)
-    assert obj.T_dependent_property(.0) == obj.T_dependent_property(obj.DIPPR_Tmin)
-    assert obj.T_dependent_property(100) == obj.T_dependent_property(obj.DIPPR_Tmin)
+    assert obj.T_dependent_property(1.0) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][0])
+    assert obj.T_dependent_property(.0) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][0])
+    assert obj.T_dependent_property(100) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][0])
 
 
 
@@ -467,7 +467,7 @@ def test_VolumeLiquid_fitting1_dippr():
                       '115-07-1', '64-18-6']
     for CAS in fit_check_CASs:
         obj = VolumeLiquid(CASRN=CAS)
-        Ts = linspace(obj.DIPPR_Tmin, obj.DIPPR_Tmax, 8)
+        Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 8)
         props_calc = [1.0/obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
 
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR105',
@@ -482,11 +482,11 @@ def test_VolumeLiquid_fitting2_dippr_116_ppds():
     for i, CAS in enumerate(chemicals.volume.rho_data_VDI_PPDS_2.index):
         obj = VolumeLiquid(CASRN=CAS)
         Ts = linspace(obj.T_limits[VDI_PPDS][0], obj.T_limits[VDI_PPDS][1], 8)
-        props_calc = [Vm_to_rho(obj.calculate(T, VDI_PPDS), obj.VDI_PPDS_MW) for T in Ts]
+        props_calc = [Vm_to_rho(obj.calculate(T, VDI_PPDS), obj.DIPPR116_rho_to_Vm_parameters[VDI_PPDS]['MW']) for T in Ts]
 
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR116',
                               do_statistics=True, use_numba=False, fit_method='lm',
-                              model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'A': obj.VDI_PPDS_rhoc})
+                              model_kwargs={'Tc': obj.DIPPR116_rho_to_Vm_parameters[VDI_PPDS]['Tc'], 'A': obj.DIPPR116_rho_to_Vm_parameters[VDI_PPDS]['rhoc']})
         assert stats['MAE'] < 1e-7
 
 @pytest.mark.meta_T_dept
