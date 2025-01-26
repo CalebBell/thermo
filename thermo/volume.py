@@ -1136,20 +1136,22 @@ class VolumeLiquidMixture(MixtureProperty):
 
         if none_and_length_check([self.Tcs, self.Vcs, self.omegas]):
             methods.append(COSTALD_MIXTURE)
-            if none_and_length_check([self.Tcs, self.CASs]) and all(i in volume.rho_data_COSTALD.index for i in self.CASs):
-                self.COSTALD_Vchars = [float(volume.rho_data_COSTALD.at[CAS, 'Vchar']) for CAS in self.CASs]
-                self.COSTALD_omegas = [float(volume.rho_data_COSTALD.at[CAS, 'omega_SRK']) for CAS in self.CASs]
-                methods.append(COSTALD_MIXTURE_FIT)
+            if load_data:
+                if none_and_length_check([self.Tcs, self.CASs]) and all(i in volume.rho_data_COSTALD.index for i in self.CASs):
+                    self.COSTALD_Vchars = [float(volume.rho_data_COSTALD.at[CAS, 'Vchar']) for CAS in self.CASs]
+                    self.COSTALD_omegas = [float(volume.rho_data_COSTALD.at[CAS, 'omega_SRK']) for CAS in self.CASs]
+                    methods.append(COSTALD_MIXTURE_FIT)
 
         if none_and_length_check([self.MWs, self.Tcs, self.Pcs, self.Zcs]):
             methods.append(RACKETT)
-            if none_and_length_check([self.Tcs, self.CASs]) and all(CAS in volume.rho_data_COSTALD.index for CAS in self.CASs):
-                Z_RAs = [float(volume.rho_data_COSTALD.at[CAS, 'Z_RA']) for CAS in self.CASs]
-                if not any(np.isnan(Z_RAs)):
-                    self.Z_RAs = Z_RAs
-                    methods.append(RACKETT_PARAMETERS)
+            if load_data:
+                if none_and_length_check([self.Tcs, self.CASs]) and all(CAS in volume.rho_data_COSTALD.index for CAS in self.CASs):
+                    Z_RAs = [float(volume.rho_data_COSTALD.at[CAS, 'Z_RA']) for CAS in self.CASs]
+                    if not any(np.isnan(Z_RAs)):
+                        self.Z_RAs = Z_RAs
+                        methods.append(RACKETT_PARAMETERS)
 
-        if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
+        if load_data and len(self.CASs) > 1 and '7732-18-5' in self.CASs:
             Laliberte_data = electrochem.Laliberte_data
             v1s, v2s, v3s, v4s, v5s, v6s = [], [], [], [], [], []
             laliberte_incomplete = False

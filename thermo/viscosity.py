@@ -1067,7 +1067,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         to reset the parameters.
         '''
         methods = [MIXING_LOG_MOLAR, MIXING_LOG_MASS, LINEAR]
-        if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
+        if load_data and len(self.CASs) > 1 and '7732-18-5' in self.CASs:
             wCASs = [i for i in self.CASs if i != '7732-18-5']
             Laliberte_data = electrochem.Laliberte_data
             laliberte_incomplete = False
