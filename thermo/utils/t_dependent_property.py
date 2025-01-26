@@ -1313,6 +1313,7 @@ class TDependentProperty:
         {'f': lambda T, MW, Tc, rhoc, A, B, C, D: rho_to_Vm(EQ116(T, Tc, rhoc, A, B, C, D), MW)},
         {'fit_params': ['A', 'B', 'C', 'D']}
     ),
+    # in dwsim
     'DIPPR105_reciprocal': (
         ['A', 'B', 'C', 'D'], 
         [],
