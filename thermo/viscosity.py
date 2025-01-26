@@ -999,6 +999,9 @@ class ViscosityLiquidMixture(MixtureProperty):
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -1045,13 +1048,13 @@ class ViscosityLiquidMixture(MixtureProperty):
     pure_constants = ('MWs', )
     custom_args = pure_constants
 
-    def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[], **kwargs):
+    def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[], load_data=True, **kwargs):
         self.CASs = CASs
         self.ViscosityLiquids = ViscosityLiquids
         self.MWs = MWs
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1271,7 +1274,7 @@ class ViscosityGasMixture(MixtureProperty):
         super()._custom_from_json(*args)
 
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,

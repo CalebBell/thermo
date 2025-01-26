@@ -465,7 +465,7 @@ class VolumeLiquid(TPDependentProperty):
             pass
 
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -895,7 +895,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         self.extrapolation = extrapolation
 
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -1053,6 +1053,9 @@ class VolumeLiquidMixture(MixtureProperty):
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -1105,7 +1108,7 @@ class VolumeLiquidMixture(MixtureProperty):
     custom_args = pure_constants
 
     def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[],
-                 CASs=[], VolumeLiquids=[], **kwargs):
+                 CASs=[], VolumeLiquids=[], load_data=True, **kwargs):
         self.MWs = MWs
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -1114,10 +1117,10 @@ class VolumeLiquidMixture(MixtureProperty):
         self.omegas = omegas
         self.CASs = CASs
         self.VolumeLiquids = VolumeLiquids
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1397,7 +1400,7 @@ class VolumeGas(TPDependentProperty):
         self.dipole = dipole
         super().__init__(extrapolation, **kwargs)
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets obj:`all_methods_P` as a
@@ -1569,6 +1572,9 @@ class VolumeGasMixture(MixtureProperty):
         Equation of state mixture object, [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -1614,14 +1620,14 @@ class VolumeGasMixture(MixtureProperty):
     pure_constants = ('MWs', )
     custom_args = ('MWs', 'eos')
 
-    def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[], **kwargs):
+    def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[], load_data=False, **kwargs):
         self.CASs = CASs
         self.VolumeGases = VolumeGases
         self.eos = eos
         self.MWs = MWs
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1859,6 +1865,9 @@ class VolumeSolidMixture(MixtureProperty):
         VolumeSolid objects created for all species in the mixture, [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -1887,16 +1896,16 @@ class VolumeSolidMixture(MixtureProperty):
     pure_constants = ('MWs', )
     custom_args = pure_constants
 
-    def __init__(self, CASs=[], VolumeSolids=[], MWs=[], **kwargs):
+    def __init__(self, CASs=[], VolumeSolids=[], MWs=[], load_data=True, **kwargs):
         self.CASs = CASs
         self.VolumeSolids = VolumeSolids
         self.MWs = MWs
 
         self.Tmin = 0
         self.Tmax = 1E4
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,

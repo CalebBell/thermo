@@ -153,7 +153,7 @@ class PermittivityLiquid(TDependentProperty):
         self.CASRN = CASRN
         super().__init__(extrapolation, **kwargs)
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,

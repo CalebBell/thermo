@@ -631,6 +631,9 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -676,13 +679,13 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     custom_args = pure_constants
 
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
-                 **kwargs):
+                 load_data=True, **kwargs):
         self.CASs = CASs
         self.ThermalConductivityLiquids = ThermalConductivityLiquids
         self.MWs = MWs
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1267,6 +1270,9 @@ class ThermalConductivityGasMixture(MixtureProperty):
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -1305,17 +1311,17 @@ class ThermalConductivityGasMixture(MixtureProperty):
     custom_args = pure_constants
 
     def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[],
-                 ViscosityGases=[],  **kwargs):
+                 ViscosityGases=[],  load_data=True, **kwargs):
         self.MWs = MWs
         self.Tbs = Tbs
         self.CASs = CASs
         self.ThermalConductivityGases = ThermalConductivityGases
         self.ViscosityGases = ViscosityGases
 
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1447,7 +1453,7 @@ class ThermalConductivitySolid(TDependentProperty):
         self.CASRN = CASRN
         super().__init__(extrapolation, **kwargs)
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         methods = []
         self.T_limits = T_limits = {}
         self.all_methods = set()

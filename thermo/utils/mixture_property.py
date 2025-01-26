@@ -96,7 +96,7 @@ class MixtureProperty:
     def pure_objs(self):
         return getattr(self, self.pure_references[0])
 
-    def __init__(self, **kwargs):
+    def __init__(self, load_data=True, **kwargs):
         if self.CASs:
             self.N = N = len(self.CASs)
         else:
@@ -124,7 +124,7 @@ class MixtureProperty:
         self.all_methods = set()
         """Set of all methods available for a given set of information;
         filled by :obj:`load_all_methods`."""
-        self.load_all_methods()
+        self.load_all_methods(load_data=load_data)
 
         # Attempt to load json data
         CASs = self.CASs

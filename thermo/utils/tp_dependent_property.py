@@ -136,7 +136,7 @@ class TPDependentProperty(TDependentProperty):
                     break
         self.method_P = method_P
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         self.all_methods_P = set()
         """Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`."""

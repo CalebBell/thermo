@@ -1253,7 +1253,7 @@ class HeatCapacitySolid(TDependentProperty):
         return {PERRY151: [i for i in heat_capacity.Cp_dict_PerryI.keys() if 'c' in heat_capacity.Cp_dict_PerryI[i]],
                 CRCSTD: [i for i in heat_capacity.CRC_standard_data.index if not isnan(heat_capacity.CRC_standard_data.at[i, 'Cps'])],
                 }
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -1462,7 +1462,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
         self.HeatCapacityLiquids = HeatCapacityLiquids
         super().__init__(**kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1597,7 +1597,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
         self.MWs = MWs
         super().__init__(**kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1691,7 +1691,7 @@ class HeatCapacityGasMixture(MixtureProperty):
         self.MWs = MWs
         super().__init__(**kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
