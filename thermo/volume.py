@@ -523,16 +523,16 @@ class VolumeLiquid(TPDependentProperty):
                     volume.rho_data_VDI_PPDS_2.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=VDI_PPDS,
-                    model='DIPPR116_rho_to_Vm',
+                    model='volume_VDI_PPDS',
                     Tmin=0.3*Tc,
                     Tmax=Tc,
                     MW=MW,
                     Tc=Tc,
                     rhoc=rhoc,
-                    A=A,
-                    B=B,
-                    C=C,
-                    D=D,
+                    a=A,
+                    b=B,
+                    c=C,
+                    d=D,
                     select=False
                 )
             if CASRN in volume.rho_data_CRC_inorg_l_const.index:

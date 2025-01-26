@@ -55,6 +55,9 @@ from chemicals.dippr import (
     EQ106_fitting_jacobian,
     EQ107_fitting_jacobian,
     INTEGRAL_OVER_T_CALCULATION,
+    EQ100_reciprocal, 
+    EQ105_reciprocal, 
+    EQ106_reciprocal,
 )
 from chemicals.elements import allotrope_CAS_to_name, solid_allotrope_map
 from chemicals.heat_capacity import (
@@ -879,6 +882,13 @@ class TDependentProperty:
     'PPDS17': (['Tc', 'a0', 'a1', 'a2', 'MW',], [], {'f': PPDS17}, {'fit_params': ['a0', 'a1', 'a2', ]}),
 
     'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
+    'DIPPR116_rho_to_Vm': (
+        ['Tc', 'rhoc', 'MW'], 
+        ['A', 'B', 'C', 'D'],
+        {'f': lambda T, MW, Tc, rhoc, A, B, C, D: rho_to_Vm(EQ116(T, Tc, rhoc, A, B, C, D), MW)},
+        {'fit_params': ['A', 'B', 'C', 'D']}
+    ),
+
     'Rackett_fit': (['Tc', 'rhoc', 'b', 'n', 'MW',], [], {'f': Rackett_fit}, {'fit_params': ['rhoc', 'b', 'n'], 'initial_guesses': [
         {'n': 0.286, 'b': 0.011, 'rhoc': 28.93}, # near a point from yaws
         {'n': 0.286, 'b': 0.3, 'rhoc': 755.0}, # near a point from yaws
@@ -907,7 +917,7 @@ class TDependentProperty:
       ),
     'DIPPR100_inv': ([],
       ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
-      {'f': lambda T, **kwargs: 1.0/EQ100(T, order=0, **kwargs)},
+      {'f': lambda T, **kwargs: EQ100_reciprocal},
       {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
       },
       ),
@@ -1307,17 +1317,11 @@ class TDependentProperty:
         {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G']}
     ),
 
-    'DIPPR116_rho_to_Vm': (
-        ['Tc', 'rhoc', 'MW'], 
-        ['A', 'B', 'C', 'D'],
-        {'f': lambda T, MW, Tc, rhoc, A, B, C, D: rho_to_Vm(EQ116(T, Tc, rhoc, A, B, C, D), MW)},
-        {'fit_params': ['A', 'B', 'C', 'D']}
-    ),
     # in dwsim
     'DIPPR105_reciprocal': (
         ['A', 'B', 'C', 'D'], 
         [],
-        {'f': lambda T, A, B, C, D: 1.0/EQ105(T, A, B, C, D)},
+        {'f': EQ105_reciprocal},
         {'fit_params': ['A', 'B', 'C', 'D']}
     ),
     'SNM0_fit': (
@@ -1357,7 +1361,7 @@ class TDependentProperty:
       }),
      'DIPPR106_inv': (['Tc', 'A', 'B'],
         ['C', 'D', 'E'],
-        {'f': lambda T, **kwargs: 1.0/EQ106(T, order=0, **kwargs),},
+        {'f': lambda T, **kwargs: EQ106_reciprocal,},
         {'fit_params': ['A', 'B', 'C', 'D', 'E'],
         }),
      'YawsSigma': (['Tc', 'A', 'B'],
