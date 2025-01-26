@@ -718,12 +718,12 @@ def find_methylene_rings_condensed_to_aromatic_rings(mol):
 def bondi_fragmentation(rdkitmol):
     """
     Fragment an RDKit molecule into Bondi group contributions.
-
+    
     Parameters
     ----------
     rdkitmol : rdkit.Chem.rdchem.Mol
         RDKit molecule object representing the chemical structure.
-
+    
     Returns
     -------
     dict
@@ -733,18 +733,25 @@ def bondi_fragmentation(rdkitmol):
     """
     # Perform SMARTS-based fragmentation using the hardcoded catalog
     assignment, _, _, success, _ = smarts_fragment_priority(catalog=BONDI_SUBGROUPS, rdkitmol=rdkitmol)
-    
     if not success:
         return {}, False
-
-    # Add hardcoded counts for dummy groups
-    assignment[47] = count_transcondensed_and_free_cycloalkyl(rdkitmol)  # Trans-condensed/free cycloalkyl
-    assignment[48] = count_cis_condensed_naphthenes(rdkitmol)             # Cis-condensed cyclic naphthenes
-    assignment[49] = len(find_methylene_rings_condensed_to_aromatic_rings(rdkitmol))  # Methylene rings condensed to aromatics
-    assignment[50] = count_dioxane_rings(rdkitmol)                         # Dioxane rings
-    assignment[51] = count_conjugation_interrupting_bonds(rdkitmol)         # Conjugation interrupting bonds
-    assignment[52] = count_bonds_near_acid_amide(rdkitmol)                  # Bonds near acid/amides
-
+        
+    # Dictionary of functions to count special groups
+    count_functions = {
+        47: lambda: count_transcondensed_and_free_cycloalkyl(rdkitmol),  # Trans-condensed/free cycloalkyl
+        48: lambda: count_cis_condensed_naphthenes(rdkitmol),  # Cis-condensed cyclic naphthenes
+        49: lambda: len(find_methylene_rings_condensed_to_aromatic_rings(rdkitmol)),  # Methylene rings condensed to aromatics
+        50: lambda: count_dioxane_rings(rdkitmol),  # Dioxane rings
+        51: lambda: count_conjugation_interrupting_bonds(rdkitmol),  # Conjugation interrupting bonds
+        52: lambda: count_bonds_near_acid_amide(rdkitmol)  # Bonds near acid/amides
+    }
+    
+    # Add counts only if they're non-zero
+    for group_id, count_func in count_functions.items():
+        count = count_func()
+        if count > 0:
+            assignment[group_id] = count
+            
     return assignment, True
 
 def bondi_van_der_waals_surface_area_volume(rdkitmol):
