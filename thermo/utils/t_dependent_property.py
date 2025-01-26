@@ -1822,11 +1822,27 @@ class TDependentProperty:
                 # del state[obj_name]
             except:
                 pass
+        # Handle correlations with lambdas
+        if 'correlations' in state:
+            correlations = {}
+            for name, (func, kwargs, model, extra) in state['correlations'].items():
+                # Store just the model name instead of the lambda
+                correlations[name] = (None, kwargs, model, extra)
+            state['correlations'] = correlations
         return state
 
     def __setstate__(self, state):
         self._load_json_CAS_references(state)
         self.__dict__.update(state)
+
+        # Restore correlation functions
+        if 'correlations' in state:
+            correlations = {}
+            for name, (_, kwargs, model, extra) in state['correlations'].items():
+                if model in self.correlation_models:
+                    func = self.correlation_models[model][2]['f']
+                    correlations[name] = (func, kwargs, model, extra)
+            self.correlations = correlations
 
 
     @classmethod
