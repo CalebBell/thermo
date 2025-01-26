@@ -32,9 +32,9 @@ This functionality requires the RDKit library to work.
 
 
 '''
-__all__ = ['BondiGroupContribution', 'BONDI_GROUPS', 'bondi_van_der_waals_surface_area_volume', 'Q_from_Van_der_Waals_area', 'R_from_Van_der_Waals_volume']
+__all__ = ['BondiGroupContribution', 'BONDI_SUBGROUPS', 'BONDI_GROUPS', 'bondi_van_der_waals_surface_area_volume', 'Q_from_Van_der_Waals_area', 'R_from_Van_der_Waals_volume']
 from thermo.functional_groups import FG_CARBOXYLIC_ACID, FG_AMIDE, identify_conjugated_bonds, identify_functional_group_atoms, count_rings_by_atom_counts
-from thermo.group_contribution.group_contribution_base import BaseGroupContribution, priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
+from thermo.group_contribution.group_contribution_base import smarts_fragment_priority, BaseGroupContribution, priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
 
 # reasonably complete
 class BondiGroupContribution(BaseGroupContribution):
@@ -440,12 +440,43 @@ BONDI_GROUPS[46] = BondiGroupContribution(
 
 # TABLE XVII in van der Waals Volumes and Radii, 1964
 
+# Generic groups for database storage, used in complex calculations
+
+# Trans-condensed and free cyclopentyl/cyclohexyl rings
+BONDI_GROUPS[47] = BondiGroupContribution(
+    'Trans-condensed/free cycloalkyl', 47, -1.14, -0.57
+)
+# Cis-condensed cyclic naphthenes
+BONDI_GROUPS[48] = BondiGroupContribution(
+    'Cis-condensed naphthenes', 48, -2.50, -1.2
+)
+
+# Methylene rings condensed to benzene or other aromatic ring systems
+BONDI_GROUPS[49] = BondiGroupContribution(
+    'Methylene rings condensed to aromatics', 49, -1.66, -0.7
+)
+# Dioxane rings
+BONDI_GROUPS[50] = BondiGroupContribution(
+    'Dioxane rings', 50, -1.70, -0.7
+)
+
+# Single bonds between conjugated double bonds
+BONDI_GROUPS[51] = BondiGroupContribution(
+    'Conjugation interrupting bonds', 51, -0.25, None
+)
+
+# Single bonds adjacent to carboxyl or amide groups
+BONDI_GROUPS[52] = BondiGroupContribution(
+    'Bonds near acid/amides', 52, -0.22, None
+)
+
 
 
 for group in BONDI_GROUPS.values():
     BONDI_GROUPS_BY_ID[group.group_id] = group
 catalog = BONDI_GROUPS.values()
 
+BONDI_SUBGROUPS = [BONDI_GROUPS[i] for i in [k for k in BONDI_GROUPS.keys()]]
 
 def count_bonds_near_acid_amide(mol):
     """Count single bonds immediately adjacent to carboxyl or amide groups.
@@ -684,7 +715,37 @@ def find_methylene_rings_condensed_to_aromatic_rings(mol):
     # Remove any duplicates and return
     return sorted(list(set(methylene_rings)))
 
+def bondi_fragmentation(rdkitmol):
+    """
+    Fragment an RDKit molecule into Bondi group contributions.
 
+    Parameters
+    ----------
+    rdkitmol : rdkit.Chem.rdchem.Mol
+        RDKit molecule object representing the chemical structure.
+
+    Returns
+    -------
+    dict
+        Dictionary with group_id as keys and their corresponding counts.
+    bool
+        Success status of the fragmentation process.
+    """
+    # Perform SMARTS-based fragmentation using the hardcoded catalog
+    assignment, _, _, success, _ = smarts_fragment_priority(catalog=BONDI_SUBGROUPS, rdkitmol=rdkitmol)
+    
+    if not success:
+        return {}, False
+
+    # Add hardcoded counts for dummy groups
+    assignment[47] = count_transcondensed_and_free_cycloalkyl(rdkitmol)  # Trans-condensed/free cycloalkyl
+    assignment[48] = count_cis_condensed_naphthenes(rdkitmol)             # Cis-condensed cyclic naphthenes
+    assignment[49] = len(find_methylene_rings_condensed_to_aromatic_rings(rdkitmol))  # Methylene rings condensed to aromatics
+    assignment[50] = count_dioxane_rings(rdkitmol)                         # Dioxane rings
+    assignment[51] = count_conjugation_interrupting_bonds(rdkitmol)         # Conjugation interrupting bonds
+    assignment[52] = count_bonds_near_acid_amide(rdkitmol)                  # Bonds near acid/amides
+
+    return assignment, True
 
 def bondi_van_der_waals_surface_area_volume(rdkitmol):
     """
@@ -693,13 +754,12 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
 
     This function identifies the Bondi groups present in the molecule 
     using SMARTS-based fragmentation and computes the total van der Waals 
-    volume and surface area from the bondi group contributions method.
-
+    volume and surface area from the Bondi group contributions method.
 
     Parameters
     ----------
     rdkitmol : rdkit.Chem.Mol
-        RDKit molecule object representing the chemical structure of the molecule, [-]
+        RDKit molecule object representing the chemical structure of the molecule.
 
     Returns
     -------
@@ -707,6 +767,11 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
         Van der Waals volume, [m^3/mol]
     A_vdw : float
         Van der Waals surface area, [m^2/mol]
+
+    Raises
+    ------
+    ValueError
+        If the molecule cannot be fragmented successfully.
 
     Notes
     -----
@@ -720,78 +785,36 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
     * Decrement per single bond adjacent to carboxyl or amide group
 
     The implementation follows Bondi's 1964 paper.
-    An effort to implement each correction was made. The cis and trans 
-    condensed ring checks with rdkit do not seem to be working.
 
     Examples
     --------
-    >>> from rdkit import Chem # doctest:+SKIP
-    >>> from thermo import Chemical # doctest:+SKIP
-    >>> mol = Chemical('decane').rdkitmol # doctest:+SKIP
-    >>> bondi_van_der_waals_surface_area_volume(mol) # doctest:+SKIP
+    >>> from rdkit import Chem
+    >>> from thermo import Chemical
+    >>> mol = Chemical('decane').rdkitmol
+    >>> bondi_van_der_waals_surface_area_volume(mol)
     (0.00010918, 1504000.0)
 
     References
     ----------
     .. [1] Bondi, A. "Van Der Waals Volumes and Radii." The Journal of Physical
        Chemistry 68, no. 3 (March 1, 1964): 441-451. https://doi.org/10.1021/j100785a001.
-    .. [2] Horvath, ARI L., ed. "Chapter 3 - Relationships between Structure and Properties."
-       In Studies in Physical and Theoretical Chemistry, 75:575-860. Molecular Design. 
-       Elsevier, 1992. https://doi.org/10.1016/B978-0-444-89217-1.50007-7.
     """
-    from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
+    # Fragment the molecule into Bondi group contributions
+    assignment, success = bondi_fragmentation(rdkitmol)
     
-    # First get the base contributions from primary groups
-    assignment, _, _, success, status = smarts_fragment_priority(catalog=catalog, rdkitmol=rdkitmol)
     if not success:
         raise ValueError("Could not fragment molecule")
+
     V_vdw = 0.0
     A_vdw = 0.0
 
     # Calculate primary group contributions
     for group_id, count in assignment.items():
-        group = BONDI_GROUPS_BY_ID.get(group_id)
+        group = BONDI_GROUPS.get(group_id)
         if group:
             V_vdw += group.Vw * count
             if group.Aw is not None:
                 A_vdw += group.Aw * count
-
-    # Now apply all secondary corrections from Table XVII
-
-    # 1. Decrement for free and transcondensed cyclopentyl/cyclohexyl rings
-    # δVw = -1.14 cm³/mole, δAw = -0.57 × 10⁹ cm²/mole per ring
-    n_trans_rings = count_transcondensed_and_free_cycloalkyl(rdkitmol)
-    V_vdw -= 1.14 * n_trans_rings
-    A_vdw -= 0.57 * n_trans_rings
-
-    # 2. Decrement for cis-condensed cyclic naphthenes
-    # δVw = -2.50 cm³/mole, δAw = -1.2 × 10⁹ cm²/mole per ring
-    n_cis_rings = count_cis_condensed_naphthenes(rdkitmol)
-    V_vdw -= 2.50 * n_cis_rings
-    A_vdw -= 1.2 * n_cis_rings
-
-    # 3. Decrement for methylene rings condensed to benzene/aromatic rings
-    # δVw = -1.66 cm³/mole, δAw = -0.7 × 10⁹ cm²/mole per ring
-    methylene_rings = find_methylene_rings_condensed_to_aromatic_rings(rdkitmol)
-    n_methylene_rings = len(methylene_rings)
-    V_vdw -= 1.66 * n_methylene_rings
-    A_vdw -= 0.7 * n_methylene_rings
-
-    # 4. Decrement for dioxane rings
-    # δVw = -1.70 cm³/mole, δAw = -0.7 × 10⁹ cm²/mole per ring
-    n_dioxane_rings = count_dioxane_rings(rdkitmol)
-    V_vdw -= 1.70 * n_dioxane_rings
-    A_vdw -= 0.7 * n_dioxane_rings
-
-    # 5. Decrement for single bonds between conjugated double bonds
-    # δVw = -0.25 cm³/mole per bond, no Aw contribution
-    n_conjugation_bonds = count_conjugation_interrupting_bonds(rdkitmol)
-    V_vdw -= 0.25 * n_conjugation_bonds
-
-    # 6. Decrement for single bonds adjacent to carboxyl or amide groups
-    # δVw = -0.22 cm³/mole per bond, no Aw contribution
-    n_acid_amide_bonds = count_bonds_near_acid_amide(rdkitmol)
-    V_vdw -= 0.22 * n_acid_amide_bonds
 
     # Convert units:
     # V_vdw: cm³/mol -> m³/mol
