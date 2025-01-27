@@ -396,7 +396,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         # else:
             # remove_up_to = 3
         remove_up_to = 4
-        max_tries = 20000
+        max_tries = 5000
         tries = 0
 
         done = False
