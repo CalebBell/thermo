@@ -68,13 +68,14 @@ rdkit_missing = 'RDKit is not installed; it is required to use this functionalit
 loaded_rdkit = False
 Chem, Descriptors, AllChem, rdMolDescriptors = None, None, None, None
 def load_rdkit_modules():
-    global loaded_rdkit, Chem, Descriptors, AllChem, rdMolDescriptors
+    global loaded_rdkit, Chem, Descriptors, AllChem, rdMolDescriptors, combinations
     if loaded_rdkit:
         return
     try:
         from rdkit import Chem
         from rdkit.Chem import AllChem, Descriptors, rdMolDescriptors
         loaded_rdkit = True
+        from itertools import combinations
     except:
         if not loaded_rdkit: # pragma: no cover
             raise Exception(rdkit_missing)
@@ -222,7 +223,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             status = 'Failed to construct mol'
             success = False
             return {}, success, status
-    from itertools import combinations
+    
 
     # Remove this
     catalog = [i for i in catalog if i.priority is not None]
@@ -233,11 +234,12 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     H_count = atoms.get('H', 0)
 
     H_counts_by_idx = {}
+    all_atom_idxs = set()
     for at in rdkitmol.GetAtoms():
-        H_counts_by_idx[at.GetIdx()] = at.GetTotalNumHs(includeNeighbors=True)
+        at_idx = at.GetIdx()
+        H_counts_by_idx[at_idx] = at.GetTotalNumHs(includeNeighbors=True)
+        all_atom_idxs.add(at_idx)
 
-
-    all_atom_idxs = {i.GetIdx() for i in rdkitmol.GetAtoms()}
     atom_count = len(all_atom_idxs)
     status = 'OK'
     success = True
