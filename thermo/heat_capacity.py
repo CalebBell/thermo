@@ -926,9 +926,6 @@ class HeatCapacityLiquid(TDependentProperty):
             for method_name, data_dict in spline_dict_mapping.items():
                 if CASRN in data_dict:
                     spline_list = data_dict[CASRN].models  # Get list of models from PiecewiseHeatCapacity
-                    method_names = []
-                    T_ranges = [spline_list[0].Tmin]
-                    
                     # First collect all models and their temperature ranges
                     models_and_ranges = []
                     for i, model in enumerate(spline_list):

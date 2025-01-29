@@ -917,7 +917,7 @@ class TDependentProperty:
       ),
     'DIPPR100_inv': ([],
       ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
-      {'f': lambda T, **kwargs: EQ100_reciprocal},
+      {'f': lambda T, **kwargs: EQ100_reciprocal(T, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
       },
       ),
@@ -1361,7 +1361,7 @@ class TDependentProperty:
       }),
      'DIPPR106_inv': (['Tc', 'A', 'B'],
         ['C', 'D', 'E'],
-        {'f': lambda T, **kwargs: EQ106_reciprocal,},
+        {'f': lambda T, **kwargs: EQ106_reciprocal(T, **kwargs),},
         {'fit_params': ['A', 'B', 'C', 'D', 'E'],
         }),
      'YawsSigma': (['Tc', 'A', 'B'],
@@ -1587,7 +1587,7 @@ class TDependentProperty:
         '''
         return self.as_string()
 
-    def as_string(self, tabular=True, references=True, json_parameters=False):
+    def as_string(self, tabular=True, references=True, json_parameters=False, with_limits=True):
         clsname = self.__class__.__name__
         base = f'{clsname}('
         if self.CASRN:
@@ -1598,6 +1598,8 @@ class TDependentProperty:
                 if not references and isinstance(v, TDependentProperty):
                     continue
                 base += f'{k}={v}, '
+        single_method = len(self.all_methods)
+        single_method_and_T_limits_in_str = False
 
         extrap_str = f'"{self.extrapolation}"' if self.extrapolation is not None else 'None'
         base += f'extrapolation={extrap_str}, '
@@ -1626,16 +1628,24 @@ class TDependentProperty:
 
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
             base += f'poly_fit=({self.poly_fit_Tmin}, {self.poly_fit_Tmax}, {self.poly_fit_coeffs}), '
+            if single_method:
+                single_method_and_T_limits_in_str = True
         if hasattr(self, 'exp_poly_fit_Tmin') and self.exp_poly_fit_Tmin is not None:
             base += f'exp_poly_fit=({self.exp_poly_fit_Tmin}, {self.exp_poly_fit_Tmax}, {self.exp_poly_fit_coeffs}), '
+            if single_method:
+                single_method_and_T_limits_in_str = True
         if hasattr(self, 'exp_poly_fit_ln_tau_Tmin') and self.exp_poly_fit_ln_tau_Tmin is not None:
             base += f'exp_poly_fit_ln_tau=({self.exp_poly_fit_ln_tau_Tmin}, {self.exp_poly_fit_ln_tau_Tmax}, {self.exp_poly_fit_ln_tau_Tc}, {self.exp_poly_fit_ln_tau_coeffs}), '
             # if 'Tc=' not in base:
             #     base += 'Tc=%s, ' %(self.exp_poly_fit_ln_tau_Tc)
+            if single_method:
+                single_method_and_T_limits_in_str = True
         if hasattr(self, 'poly_fit_ln_tau_Tmin') and self.poly_fit_ln_tau_Tmin is not None:
             base += f'poly_fit_ln_tau=({self.poly_fit_ln_tau_Tmin}, {self.poly_fit_ln_tau_Tmax}, {self.poly_fit_ln_tau_Tc}, {self.poly_fit_ln_tau_coeffs}), '
             # if 'Tc=' not in base:
             #     base += 'Tc=%s, ' %(self.poly_fit_ln_tau_Tc)
+            if single_method:
+                single_method_and_T_limits_in_str = True
 
 
         for k in self.correlation_parameters.values():
@@ -1650,6 +1660,9 @@ class TDependentProperty:
                 if len(extra_model):
                     # Only add the string if we still have anything
                     base += f'{k}={extra_model}, '
+                    if single_method:
+                        single_method_and_T_limits_in_str = True
+
         if hasattr(self, 'piecewise_methods'):
             piecewise_methods = self.piecewise_methods.copy()
             piecewise_methods.pop(DEFAULT_PHASE_TRANSITIONS, None)
@@ -1657,7 +1670,8 @@ class TDependentProperty:
                 if extra_added_corr in piecewise_methods:
                     del piecewise_methods[extra_added_corr]
             base += 'piecewise_methods=%s, ' %({k: {'methods': v[0], 'T_ranges': v[1]} for k, v in piecewise_methods.items()})
-
+        if with_limits and self.method and not single_method_and_T_limits_in_str:
+            base += f'Tmin={self.T_limits[self.method][0]}, Tmax={self.T_limits[self.method][1]}, '
 
         if base[-2:] == ', ':
             base = base[:-2]
@@ -1707,6 +1721,7 @@ class TDependentProperty:
             if correlation_dict and self.method in correlation_dict:
                 # Return only the specific method's parameters
                 return {correlation_name: {self.method: correlation_dict[self.method]}}
+        
                 
         return {}
 
