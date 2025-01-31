@@ -1665,10 +1665,11 @@ class TDependentProperty:
 
         if hasattr(self, 'piecewise_methods'):
             piecewise_methods = self.piecewise_methods.copy()
-            piecewise_methods.pop(DEFAULT_PHASE_TRANSITIONS, None)
-            for extra_added_corr in self.extra_correlations_internal:
-                if extra_added_corr in piecewise_methods:
-                    del piecewise_methods[extra_added_corr]
+            if not json_parameters:
+                piecewise_methods.pop(DEFAULT_PHASE_TRANSITIONS, None)
+                for extra_added_corr in self.extra_correlations_internal:
+                    if extra_added_corr in piecewise_methods:
+                        del piecewise_methods[extra_added_corr]
             base += 'piecewise_methods=%s, ' %({k: {'methods': v[0], 'T_ranges': v[1]} for k, v in piecewise_methods.items()})
         if with_limits and self.method and not single_method_and_T_limits_in_str:
             base += f'Tmin={self.T_limits[self.method][0]}, Tmax={self.T_limits[self.method][1]}, '
@@ -1681,10 +1682,14 @@ class TDependentProperty:
         # No method - return empty dict
         if self.method is None:
             return {}
+        result = {}
+        if hasattr(self, 'Tc'):
+            if self.Tc is not None:
+                result['Tc'] = self.Tc
+        result['extrapolation'] = self.extrapolation
             
         # Handle piecewise methods
         if hasattr(self, 'piecewise_methods') and self.method in self.piecewise_methods:
-            result = {}
             methods_dict = self.piecewise_methods[self.method]
             
             # Add the piecewise structure
@@ -1694,6 +1699,9 @@ class TDependentProperty:
                     'T_ranges': methods_dict[1]
                 }
             }
+            result['method'] = self.method
+            result['Tmin'] = self.Tmin
+            result['Tmax'] = self.Tmax
             
             # Add parameters for each sub-method
             sub_methods = methods_dict[0]
@@ -1713,16 +1721,23 @@ class TDependentProperty:
 
         # Handle tabular data
         if hasattr(self, 'tabular_data') and self.tabular_data and self.method in self.tabular_data:
-            return {'tabular_data': {self.method: self.tabular_data[self.method]}}
+            result['tabular_data'] = {self.method: self.tabular_data[self.method]}
+            return result
 
         # Handle correlation parameters
         for param_name, correlation_name in self.correlation_parameters.items():
             correlation_dict = getattr(self, correlation_name, None)
             if correlation_dict and self.method in correlation_dict:
                 # Return only the specific method's parameters
-                return {correlation_name: {self.method: correlation_dict[self.method]}}
-        
-                
+                result['method'] = self.method
+                result[correlation_name] = {self.method: correlation_dict[self.method]}
+                return result
+        if self.method:
+            result['CASRN'] = self.CASRN
+            result['Tmin'] = self.Tmin
+            result['Tmax'] = self.Tmax
+            result['method'] = self.method
+            return result                
         return {}
 
     def __call__(self, T):
@@ -3769,38 +3784,6 @@ class TDependentProperty:
             return secant(error, x0=x0, x1=x1, f0=f0, f1=f1, low=1e-4, xtol=1e-12, bisection=True, high=high)
             #except:
             #    return secant(error, x0=x0, x1=x1, f0=f0, f1=f1, low=1e-4, xtol=1e-12, bisection=True, high=high, damping=.01)
-
-    # def solve_property_exp_poly_fit(self, goal):
-    #     exp_poly_fit_Tmin, exp_poly_fit_Tmax = self.exp_poly_fit_Tmin, self.exp_poly_fit_Tmax
-    #     exp_poly_fit_Tmin_slope, exp_poly_fit_Tmax_slope = self.exp_poly_fit_Tmin_slope, self.exp_poly_fit_Tmax_slope
-    #     exp_poly_fit_Tmin_value, exp_poly_fit_Tmax_value = self.exp_poly_fit_Tmin_value, self.exp_poly_fit_Tmax_value
-
-    #     coeffs = self.exp_poly_fit_coeffs
-
-    #     T_low = log(goal*exp(exp_poly_fit_Tmin*exp_poly_fit_Tmin_slope - exp_poly_fit_Tmin_value))/exp_poly_fit_Tmin_slope
-    #     if T_low <= exp_poly_fit_Tmin:
-    #         return T_low
-    #     T_high = log(goal*exp(exp_poly_fit_Tmax*exp_poly_fit_Tmax_slope - exp_poly_fit_Tmax_value))/exp_poly_fit_Tmax_slope
-    #     if T_high >= exp_poly_fit_Tmax:
-    #         return T_high
-    #     else:
-    #         lnPGoal = log(goal)
-    #         def to_solve(T):
-    #             # dPsat and Psat are both in log basis
-    #             dPsat = Psat = 0.0
-    #             for c in coeffs:
-    #                 dPsat = T*dPsat + Psat
-    #                 Psat = T*Psat + c
-
-    #             return Psat - lnPGoal, dPsat
-    #         # Guess with the two extrapolations from the linear fits
-    #         # By definition both guesses are in the range of they would have been returned
-    #         if T_low > exp_poly_fit_Tmax:
-    #             T_low = exp_poly_fit_Tmax
-    #         if T_high < exp_poly_fit_Tmin:
-    #             T_high = exp_poly_fit_Tmin
-    #         T = newton(to_solve, 0.5*(T_low + T_high), fprime=True, low=exp_poly_fit_Tmin, high=exp_poly_fit_Tmax)
-    #         return T
 
 
     def _calculate_derivative_transformed(self, T, method, order=1,
