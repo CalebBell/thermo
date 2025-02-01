@@ -1734,11 +1734,34 @@ class TDependentProperty:
                 result['method'] = self.method
                 result[correlation_name] = {self.method: correlation_dict[self.method]}
                 return result
-        if self.method:
+        
+        method = self.method
+        if method in (POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU, STABLEPOLY_FIT, EXP_STABLEPOLY_FIT, STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU, CHEB_FIT, EXP_CHEB_FIT, CHEB_FIT_LN_TAU, EXP_CHEB_FIT_LN_TAU):
+            params = self._get_special_fit_params(method)
+            MODEL_TO_PARAMETERS = {
+                'POLY_FIT': 'polynomial_parameters',
+                'EXP_POLY_FIT': 'exp_polynomial_parameters',
+                'POLY_FIT_LN_TAU': 'polynomial_ln_tau_parameters',
+                'EXP_POLY_FIT_LN_TAU': 'exp_polynomial_ln_tau_parameters',
+                'STABLEPOLY_FIT': 'stable_polynomial_parameters',
+                'EXP_STABLEPOLY_FIT': 'exp_stable_polynomial_parameters',
+                'STABLEPOLY_FIT_LN_TAU': 'stable_polynomial_ln_tau_parameters',
+                'EXP_STABLEPOLY_FIT_LN_TAU': 'exp_stable_polynomial_ln_tau_parameters',
+                'CHEB_FIT': 'chebyshev_parameters',
+                'EXP_CHEB_FIT': 'exp_chebyshev_parameters', 
+                'CHEB_FIT_LN_TAU': 'chebyshev_ln_tau_parameters',
+                'EXP_CHEB_FIT_LN_TAU': 'exp_chebyshev_ln_tau_parameters',
+            }
+            name = MODEL_TO_PARAMETERS[method]
+            model_name = name.replace('_parameters', '_fit')
+            result[name] = {model_name: params}
+            method = model_name
+
+        if method:
             result['CASRN'] = self.CASRN
             result['Tmin'] = self.Tmin
             result['Tmax'] = self.Tmax
-            result['method'] = self.method
+            result['method'] = method
             return result                
         return {}
 
@@ -2910,6 +2933,17 @@ class TDependentProperty:
             return f'{self.__class__.__name__}(load_data=False, Tc={self.cheb_fit_ln_tau_Tc!r}, cheb_fit_ln_tau=({self.cheb_fit_ln_tau_Tmin!r}, {self.cheb_fit_ln_tau_Tmax!r}, {self.cheb_fit_ln_tau_Tc!r}, {self.cheb_fit_ln_tau_coeffs!r}))'
         elif method == EXP_CHEB_FIT_LN_TAU:
             return f'{self.__class__.__name__}(load_data=False, Tc={self.exp_cheb_fit_ln_tau_Tc!r}, exp_cheb_fit_ln_tau=({self.exp_cheb_fit_ln_tau_Tmin!r}, {self.exp_cheb_fit_ln_tau_Tmax!r}, {self.exp_cheb_fit_ln_tau_Tc!r}, {self.exp_cheb_fit_ln_tau_coeffs!r}))'
+
+    def _get_special_fit_params(self, method):
+        params = {
+            "Tmin": getattr(self, f"{method.lower()}_Tmin", None),
+            "Tmax": getattr(self, f"{method.lower()}_Tmax", None),
+            "coeffs": getattr(self, f"{method.lower()}_coeffs", None),
+        }
+        if "_ln_tau" in method.lower():
+            params["Tc"] = getattr(self, f"{method.lower()}_Tc", None)
+        
+        return {k: v for k, v in params.items() if v is not None}
 
     def _base_calculate(self, T, method):
         if method in self.correlations:
