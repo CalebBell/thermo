@@ -1721,6 +1721,7 @@ class TDependentProperty:
 
         # Handle tabular data
         if hasattr(self, 'tabular_data') and self.tabular_data and self.method in self.tabular_data:
+            result['method'] = self.method
             result['tabular_data'] = {self.method: self.tabular_data[self.method]}
             return result
 
