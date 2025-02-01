@@ -4684,6 +4684,8 @@ class TDependentProperty:
             raise ValueError("Not outside normal range")
         if extrapolation == 'constant':
             return 0.
+        elif extrapolation == 'nolimit':
+            return self.calculate_derivative(T, method, order)
         elif extrapolation in ('linear', 'Arrhenius', 'DIPPR101_ABC', 'AntoineAB', 'DIPPR106_AB', 'DIPPR106_ABC', 'EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
             key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs

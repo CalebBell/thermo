@@ -190,12 +190,20 @@ def test_VaporPressure_cycloheptane():
     obj = VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY")
     assert_close(obj.T_dependent_property_derivative(600.0), 89196.777813, rtol=1e-4)
 
+@pytest.mark.meta_T_dept
 def test_wagner_extrapolation_linear_second_order():
     to_make = {'Tc': 514.0, 'Tb': 351.39, 'Pc': 6137000.0, 'omega': 0.635, 'extrapolation': 'linear', 'method': 'WAGNER_MCGARRY', 'Wagner_original_parameters':
             {'WAGNER_MCGARRY': {'Tc': 513.92, 'Pc': 6130870.0, 'a': -8.51838, 'b': 0.341626, 'c': -5.73683, 'd': 8.32581, 'Tmax': 513.92, 'Tmin': 293.0}}}
     obj = VaporPressure(**to_make)
     assert obj.T_dependent_property_derivative(234.4, order=2) == 0
 
+@pytest.mark.meta_T_dept
+def test_nolimit_extrapolation_derivatives():
+    kwargs = {'Tc': 514.0, 'Tb': 351.39, 'Pc': 6137000.0, 'omega': 0.635, 'extrapolation': 'nolimit', 'method': 'thing', 
+            'Antoine_parameters': {'thing': {'A': 10.33675, 'B': 1648.22, 'C': -42.232, 'base': 10.0, 'Tmax': 369.54, 'Tmin': 276.5}}}
+    obj = VaporPressure(**kwargs)
+    assert_close(obj.T_dependent_property_derivative(221.2, order=1), 1.588000857659038, rtol=1e-13)
+    assert_close(obj.T_dependent_property_derivative(221.2, order=2), 0.17041532926608335, rtol=1e-13)
 
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
