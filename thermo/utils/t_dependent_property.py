@@ -1683,7 +1683,7 @@ class TDependentProperty:
         if self.method is None:
             return {}
         result = {}
-        for arg in ('Tc', 'MW', 'similarity_variable', 'omega', 'Cpgm', 'iscyclic_aliphatic'):
+        for arg in ('Tc', 'Tb', 'Pc', 'Tm', 'MW', 'similarity_variable', 'omega', 'Cpgm', 'iscyclic_aliphatic'):
             if hasattr(self, arg):
                 if getattr(self, arg) is not None:
                     result[arg] = getattr(self, arg)
@@ -4694,6 +4694,8 @@ class TDependentProperty:
             if extrapolation == 'linear':
                 if order == 1:
                     return coeffs[1]
+                elif order > 1:
+                    return 0.0
             elif extrapolation == 'Arrhenius':
                 T_ref, P_ref, slope = coeffs
                 if order == 1:

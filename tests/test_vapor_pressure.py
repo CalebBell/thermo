@@ -190,6 +190,13 @@ def test_VaporPressure_cycloheptane():
     obj = VaporPressure(CASRN="71-43-2", Tb=353.23, Tc=562.05, Pc=4895000.0, omega=0.212, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY")
     assert_close(obj.T_dependent_property_derivative(600.0), 89196.777813, rtol=1e-4)
 
+def test_wagner_extrapolation_linear_second_order():
+    to_make = {'Tc': 514.0, 'Tb': 351.39, 'Pc': 6137000.0, 'omega': 0.635, 'extrapolation': 'linear', 'method': 'WAGNER_MCGARRY', 'Wagner_original_parameters':
+            {'WAGNER_MCGARRY': {'Tc': 513.92, 'Pc': 6130870.0, 'a': -8.51838, 'b': 0.341626, 'c': -5.73683, 'd': 8.32581, 'Tmax': 513.92, 'Tmin': 293.0}}}
+    obj = VaporPressure(**to_make)
+    assert obj.T_dependent_property_derivative(234.4, order=2) == 0
+
+
 @pytest.mark.fitting
 @pytest.mark.meta_T_dept
 def test_VaporPressure_fitting0():
