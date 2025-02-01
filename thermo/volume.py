@@ -542,7 +542,7 @@ class VolumeLiquid(TPDependentProperty):
                     model='constant',
                     Tmin=298.15,
                     Tmax=298.15,
-                    A=Vm,
+                    value=Vm,
                     select=False
                 )
             if CASRN in miscdata.VDI_saturation_dict:
@@ -1810,7 +1810,7 @@ class VolumeSolid(TDependentProperty):
                     model='constant',
                     Tmin=1e-4,
                     Tmax=1e4,
-                    A=float(volume.rho_data_CRC_inorg_s_const.at[CASRN, 'Vm']),
+                    value=float(volume.rho_data_CRC_inorg_s_const.at[CASRN, 'Vm']),
                     select=False
                 )
         if all((self.Tt, self.Vml_Tt, self.MW)):

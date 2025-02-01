@@ -881,7 +881,7 @@ class HeatCapacityLiquid(TDependentProperty):
                     model='constant',
                     Tmin=298.15-50.0,
                     Tmax=298.15+50.0,
-                    A=float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl']),
+                    value=float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl']),
                     select=False
                 )
             if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']):
@@ -890,7 +890,7 @@ class HeatCapacityLiquid(TDependentProperty):
                     model='constant',
                     Tmin=298.15-50.0,
                     Tmax=298.15+50.0,
-                    A=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']),
+                    value=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']),
                     select=False
                 )            
             quasi_dict_mapping = {
@@ -1308,7 +1308,7 @@ class HeatCapacitySolid(TDependentProperty):
                     model='constant',
                     Tmin=298.15-50.0,
                     Tmax=298.15+50.0,
-                    A=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cps']),
+                    value=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cps']),
                     select=False
                 )
         if self.MW and self.similarity_variable:

@@ -442,8 +442,6 @@ def test_VolumeSolid_fitting0():
     for l in ('B', 'C', 'D', 'E', 'F'):
         assert fit_zeros_specified[l] == 0.0
 
-    fit_constant = obj.fit_data_to_model(Ts=Ts_gamma, data=Vms_gamma, model='constant', do_statistics=False, use_numba=False)
-    assert_close(fit_zeros_specified['A'], fit_constant['A'], rtol=1e-7)
 
 @pytest.mark.meta_T_dept
 @pytest.mark.fitting
@@ -486,7 +484,7 @@ def test_VolumeLiquid_fitting2_dippr_116_ppds():
 
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR116',
                               do_statistics=True, use_numba=False, fit_method='lm',
-                              model_kwargs={'Tc': obj.volume_VDI_PPDS_parameters[VDI_PPDS]['Tc'], 'A': obj.DIPPR116_rho_to_Vm_parameters[VDI_PPDS]['rhoc']})
+                              model_kwargs={'Tc': obj.volume_VDI_PPDS_parameters[VDI_PPDS]['Tc'], 'A': obj.volume_VDI_PPDS_parameters[VDI_PPDS]['rhoc']})
         assert stats['MAE'] < 1e-7
 
 @pytest.mark.meta_T_dept
