@@ -1683,9 +1683,10 @@ class TDependentProperty:
         if self.method is None:
             return {}
         result = {}
-        if hasattr(self, 'Tc'):
-            if self.Tc is not None:
-                result['Tc'] = self.Tc
+        for arg in ('Tc', 'MW', 'similarity_variable', 'omega', 'Cpgm', 'iscyclic_aliphatic'):
+            if hasattr(self, arg):
+                if getattr(self, arg) is not None:
+                    result[arg] = getattr(self, arg)
         result['extrapolation'] = self.extrapolation
             
         # Handle piecewise methods
@@ -2923,13 +2924,13 @@ class TDependentProperty:
             elif model == 'exp_stable_polynomial_ln_tau':
                 return exp_horner_stable_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
 
-            elif method == 'chebyshev':
+            elif model == 'chebyshev':
                 return chebval(T, kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif method == 'exp_chebyshev':
+            elif model == 'exp_chebyshev':
                 return exp_cheb(T, kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif method == 'chebyshev_ln_tau':
+            elif model == 'chebyshev_ln_tau':
                 return chebval_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif method == 'exp_chebyshev_ln_tau':
+            elif model == 'exp_chebyshev_ln_tau':
                 return exp_cheb_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
 
             return call(T, **kwargs)
@@ -3430,34 +3431,53 @@ class TDependentProperty:
 
         extra = {}
         if model == 'polynomial':
-            extra['int_coeffs'] = polyint(coeffs)
-            extra['T_int_T_coeffs'], extra['log_coeff'] = polyint_over_x(coeffs)
-            d_coeffs = polyder(coeffs[::-1])
-            d2_coeffs = polyder(d_coeffs)
-            d2_coeffs.reverse()
-            d_coeffs.reverse()
-            extra['d_coeffs'] = d_coeffs
-            extra['d2_coeffs'] = d2_coeffs
+            # Only compute integral coefficients if this is a heat capacity correlation
+            is_Cp = self.units == 'J/mol/K'
+            if is_Cp:
+                extra['int_coeffs'] = polyint(coeffs)
+                extra['T_int_T_coeffs'], extra['log_coeff'] = polyint_over_x(coeffs)
+
             Tmax_value, Tmax_slope, Tmax_dT2 = horner_and_der2(coeffs, Tmax)
             extra['Tmax_value'] = Tmax_value
             extra['Tmax_slope'] = Tmax_slope
-            extra['Tmax_dT2'] = Tmax_dT2
 
             Tmin_value, Tmin_slope, Tmin_dT2 = horner_and_der2(coeffs, Tmin)
             extra['Tmin_value'] = Tmin_value
             extra['Tmin_slope'] = Tmin_slope
-            extra['Tmin_dT2'] = Tmin_dT2
 
-        if model == 'exp_polynomial':
-            # Not really used yet
-            exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope, exp_poly_fit_Tmax_dT2 = exp_horner_backwards_and_der2(
+        elif model == 'exp_polynomial':
+            # Compute values and slopes at endpoints for extrapolation
+            exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope = exp_horner_backwards_and_der(
                 Tmax, coeffs)
-            exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope, exp_poly_fit_Tmin_dT2 = exp_horner_backwards_and_der2(
+            exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope = exp_horner_backwards_and_der(
                 Tmin, coeffs)
+            
+            extra['Tmax_value'] = exp_poly_fit_Tmax_value
             extra['Tmax_slope'] = exp_poly_fit_Tmax_slope
-            extra['Tmax_dT2'] = exp_poly_fit_Tmax_dT2
+            extra['Tmin_value'] = exp_poly_fit_Tmin_value
             extra['Tmin_slope'] = exp_poly_fit_Tmin_slope
-            extra['Tmin_dT2'] = exp_poly_fit_Tmin_dT2
+
+        elif model == 'polynomial_ln_tau':
+            Tc = kwargs['Tc']
+            # Compute values and slopes at endpoints for extrapolation
+            Tmax_value, Tmax_slope = horner_backwards_ln_tau_and_der(Tmax, Tc, coeffs)
+            extra['Tmax_value'] = Tmax_value
+            extra['Tmax_slope'] = Tmax_slope
+
+            Tmin_value, Tmin_slope = horner_backwards_ln_tau_and_der(Tmin, Tc, coeffs)
+            extra['Tmin_value'] = Tmin_value
+            extra['Tmin_slope'] = Tmin_slope
+
+        elif model == 'exp_polynomial_ln_tau':
+            Tc = kwargs['Tc']
+            # Compute values and slopes at endpoints for extrapolation
+            Tmax_value, Tmax_slope = exp_horner_backwards_ln_tau_and_der(Tmax, Tc, coeffs)
+            extra['Tmax_value'] = Tmax_value
+            extra['Tmax_slope'] = Tmax_slope
+
+            Tmin_value, Tmin_slope = exp_horner_backwards_ln_tau_and_der(Tmin, Tc, coeffs)
+            extra['Tmin_value'] = Tmin_value
+            extra['Tmin_slope'] = Tmin_slope
 
 
 
@@ -3504,7 +3524,6 @@ class TDependentProperty:
             extra['d1_coeffs'] = chebyshev_d1_coeffs = chebder(coeffs, m=1, scl=scale)
             extra['d2_coeffs'] = chebyshev_d2_coeffs = chebder(chebyshev_d1_coeffs, m=1, scl=scale)
             extra['d3_coeffs'] = chebyshev_d3_coeffs = chebder(chebyshev_d2_coeffs, m=1, scl=scale)
-            extra['d4_coeffs'] = chebyshev_d4_coeffs = chebder(chebyshev_d3_coeffs, m=1, scl=scale)
             extra['int_coeffs'] = chebyshev_int_coeffs = chebint(coeffs, scl=1.0/scale)
 
         self.correlations[name] = (call, kwargs, model, extra)
