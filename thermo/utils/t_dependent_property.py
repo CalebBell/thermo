@@ -2933,6 +2933,14 @@ class TDependentProperty:
             elif model == 'exp_chebyshev_ln_tau':
                 return exp_cheb_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
 
+            elif model == 'polynomial':
+                return horner(kwargs['coeffs'], T)
+            elif model == 'exp_polynomial':
+                return exp_horner_backwards(T, kwargs['coeffs'])
+            elif model == 'polynomial_ln_tau':
+                return horner_backwards_ln_tau(T, kwargs['Tc'], kwargs['coeffs'])
+            elif model == 'exp_polynomial_ln_tau':
+                return exp_horner_backwards_ln_tau(T, kwargs['Tc'], kwargs['coeffs'])
             return call(T, **kwargs)
         elif method == POLY_FIT:
             return horner(self.poly_fit_coeffs, T)
@@ -3897,8 +3905,6 @@ class TDependentProperty:
                     return chebval(T, extra['d2_coeffs'], extra['offset'], extra['scale'])
                 if order == 3:
                     return chebval(T, extra['d3_coeffs'], extra['offset'], extra['scale'])
-                if order == 4:
-                    return chebval(T, extra['d4_coeffs'], extra['offset'], extra['scale'])
             elif model == 'exp_chebyshev':
                 if order == 1:
                     return exp_cheb_and_der(T, kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
