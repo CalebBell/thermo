@@ -141,15 +141,16 @@ def test_VaporPressure_extended_poling():
     # Use another chemical to get in ANTOINE_EXTENDED_POLING
     a = VaporPressure(CASRN='589-81-1', extrapolation="AntoineAB|DIPPR101_ABC")
 
-    Psat_calcs = []
-    for i in list(a.all_methods):
-        a.method = i
-        Psat_calcs.append(a.T_dependent_property(410))
-
-
-    Psat_exp = [162944.82134710113, 162870.44794192078, 170465.8542701554, 162865.5380455795, 162865.44152809016]
-    assert_close1d(sorted(Psat_calcs), sorted(Psat_exp), rtol=3e-5)
-
+    a.method = 'ANTOINE_POLING'
+    assert_close(a.T_dependent_property(410), 162865.5380455795, rtol=3e-5)
+    a.method = 'WAGNER_MCGARRY'
+    assert_close(a.T_dependent_property(410), 162944.82134710092, rtol=3e-5)
+    a.method = 'LANDOLT'
+    assert_close(a.T_dependent_property(410), 162865.50871294897, rtol=3e-5)
+    a.method = 'ANTOINE_WEBBOOK'
+    assert_close(a.T_dependent_property(410), 170465.8542701554, rtol=3e-5)
+    a.method = 'ANTOINE_EXTENDED_POLING'
+    assert_close(a.T_dependent_property(410), 162870.44794192078, rtol=3e-5)
     s = a.as_json()
     obj2 = VaporPressure.from_json(s)
     assert a == obj2

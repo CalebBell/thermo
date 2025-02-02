@@ -310,14 +310,18 @@ def test_HeatCapacitySolid():
     new = HeatCapacitySolid.from_json(NaCl.as_json())
     assert new == NaCl
 
-    Cps_calc = []
-    for i in NaCl.all_methods:
-        NaCl.method = i
-        Cps_calc.append(NaCl.T_dependent_property(298.15))
 
-    Cps_exp = [20.065072434058802, 50.38469032, 50.5, 50.50124702353165, 50.509]
-    assert_close1d(sorted(Cps_calc), sorted(Cps_exp))
-
+    NaCl.method = 'PERRY151'
+    assert_close(NaCl.T_dependent_property(298.15), 50.38469032, rtol=1e-6)
+    NaCl.method = 'JANAF'
+    assert_close(NaCl.T_dependent_property(298.15), 50.509, rtol=1e-6)
+    NaCl.method = 'LASTOVKA_S'
+    assert_close(NaCl.T_dependent_property(298.15), 20.0650724340588, rtol=1e-6)
+    NaCl.method = 'CRCSTD'
+    assert_close(NaCl.T_dependent_property(298.15), 50.5, rtol=1e-6)
+    NaCl.method = 'WEBBOOK_SHOMATE'
+    assert_close(NaCl.T_dependent_property(298.15), 50.50124702353165, rtol=1e-6)
+    
     NaCl.extrapolation = None
     for i in NaCl.all_methods:
         NaCl.method = i
