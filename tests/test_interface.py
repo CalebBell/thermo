@@ -97,8 +97,8 @@ def test_SurfaceTension():
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTension_water_iapws():
-    water = SurfaceTension(CASRN="7732-18-5", MW=18.01528, Tb=373.124, Tc=647.14, Pc=22048320.0, Vc=5.6e-05, Zc=0.229, omega=0.344, StielPolar=0.0232, Hvap_Tb=2256470., extrapolation="DIPPR106_AB", method="IAPWS")
-    assert water.method == 'IAPWS'
+    water = SurfaceTension(CASRN="7732-18-5", MW=18.01528, Tb=373.124, Tc=647.14, Pc=22048320.0, Vc=5.6e-05, Zc=0.229, omega=0.344, StielPolar=0.0232, Hvap_Tb=2256470., extrapolation="DIPPR106_AB", method="IAPWS_SIGMA")
+    assert water.method == 'IAPWS_SIGMA'
     assert_close(water(400), 0.05357792640201927)
 
     assert water(3) is not None

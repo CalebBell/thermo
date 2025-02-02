@@ -84,7 +84,7 @@ from chemicals.utils import Vm_to_rho, none_and_length_check, property_molar_to_
 from fluids.numerics import isnan
 
 from thermo.heat_capacity import HeatCapacityLiquid
-from thermo.utils import IAPWS, LINEAR, REFPROP_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
+from thermo.utils import LINEAR, REFPROP_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
 from thermo.volume import VolumeLiquid
 
 STREFPROP = 'REFPROP'
@@ -99,9 +99,10 @@ ZUO_STENBY = 'ZUO_STENBY'
 HAKIM_STEINBERG_STIEL = 'HAKIM_STEINBERG_STIEL'
 ALEEM = 'Aleem'
 VDI_PPDS = 'VDI_PPDS'
+IAPWS_SIGMA = 'IAPWS_SIGMA'
 
 
-surface_tension_methods = [IAPWS, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
+surface_tension_methods = [IAPWS_SIGMA, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                            JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                            ZUO_STENBY, ALEEM]
 """Holds all methods available for the :obj:`SurfaceTension` class, for use in
@@ -159,7 +160,7 @@ class SurfaceTension(TDependentProperty):
     To iterate over all methods, use the list stored in
     :obj:`surface_tension_methods`.
 
-    **IAPWS**:
+    **IAPWS_SIGMA**:
         The IAPWS formulation for water,
         :obj:`REFPROP_sigma <chemicals.interface.sigma_IAPWS>`
     **STREFPROP**:
@@ -251,7 +252,7 @@ class SurfaceTension(TDependentProperty):
     """Whether or not the property is declining and reaching zero at the
     critical point."""
 
-    ranked_methods = [IAPWS, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
+    ranked_methods = [IAPWS_SIGMA, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
                       JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
                       ZUO_STENBY, ALEEM]
     """Default rankings of the available methods."""
@@ -328,8 +329,8 @@ class SurfaceTension(TDependentProperty):
 
         if load_data and CASRN:
             if CASRN == '7732-18-5':  # Water
-                methods.append(IAPWS)
-                T_limits[IAPWS] = (273.15-25.0, iapws95_Tc)
+                methods.append(IAPWS_SIGMA)
+                T_limits[IAPWS_SIGMA] = (273.15-25.0, iapws95_Tc)
 
             if CASRN in interface.sigma_data_Mulero_Cachadina.index:
                 sigma0, n0, sigma1, n1, sigma2, n2, Tc, Tmin, Tmax = interface.sigma_values_Mulero_Cachadina[
@@ -429,7 +430,7 @@ class SurfaceTension(TDependentProperty):
         sigma : float
             Surface tension of the liquid at T, [N/m]
         '''
-        if method == IAPWS:
+        if method == IAPWS_SIGMA:
             return sigma_IAPWS(T)
         elif method == BROCK_BIRD:
             return Brock_Bird(T, self.Tb, self.Tc, self.Pc)
