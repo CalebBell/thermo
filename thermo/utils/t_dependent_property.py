@@ -1683,7 +1683,7 @@ class TDependentProperty:
         if self.method is None:
             return {}
         result = {}
-        for arg in ('Tc', 'Tb', 'Pc', 'Tm', 'MW', 'similarity_variable', 'omega', 'Cpgm', 'iscyclic_aliphatic'):
+        for arg in ('Tc', 'Vc', 'Tb', 'Pc', 'Tm', 'Tt', 'Pt', 'Hvap_Tb', 'Cpl', 'Vml', 'Hsub_t', 'StielPolar', 'MW', 'similarity_variable', 'omega', 'Cpgm', 'iscyclic_aliphatic'):
             if hasattr(self, arg):
                 if getattr(self, arg) is not None:
                     result[arg] = getattr(self, arg)
