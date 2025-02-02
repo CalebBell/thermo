@@ -40,7 +40,7 @@ def test_Permittivity_class():
 
     epsilon = water.T_dependent_property(298.15)
     assert_close(epsilon, 78.40540700004574)
-    assert PermittivityLiquid(CASRN='7732-18-5').all_methods == {'CRC', 'CRC_CONSTANT', 'IAPWS'}
+    assert PermittivityLiquid(CASRN='7732-18-5').all_methods == {'CRC', 'CRC_CONSTANT', 'IAPWS_PERMITTIVITY'}
 
     assert PermittivityLiquid(CASRN='132451235-2151234-1234123').all_methods == set()
     assert PermittivityLiquid(CASRN='132451235-2151234-1234123').T_dependent_property(300) is None
