@@ -45,8 +45,29 @@ def test_SurfaceTension():
         EtOH.method = i
         sigma_calcs.append(EtOH.T_dependent_property(305.))
 
-    sigma_exp = [0.036707332059707456, 0.02140008, 0.02645171690486363, 0.03905907338532846, 0.021391980051928626, 0.0217115665365073, 0.0217115665365073, 0.021462066798796146, 0.03805573872932236, 0.021222422444285596, 0.03739257387107131]
-    assert_close1d(sorted(sigma_calcs), sorted(sigma_exp), rtol=1e-6)
+    EtOH.method = 'PITZER'
+    assert_close(EtOH.T_dependent_property(305.), 0.03905907338532846, rtol=1e-13)
+    EtOH.method = 'BROCK_BIRD'
+    assert_close(EtOH.T_dependent_property(305.), 0.03739257387107131, rtol=1e-13)
+    EtOH.method = 'MIQUEU'
+    assert_close(EtOH.T_dependent_property(305.), 0.03805573872932236, rtol=1e-13)
+    EtOH.method = 'ZUO_STENBY'
+    assert_close(EtOH.T_dependent_property(305.), 0.036707332059707456, rtol=1e-13)
+    EtOH.method = 'REFPROP_FIT'
+    assert_close(EtOH.T_dependent_property(305.), 0.021391980051928626, rtol=1e-13)
+    EtOH.method = 'SASTRI_RAO'
+    assert_close(EtOH.T_dependent_property(305.), 0.02645171690486363, rtol=1e-13)
+    EtOH.method = 'SOMAYAJULU'
+    assert_close(EtOH.T_dependent_property(305.), 0.0217115665365073, rtol=1e-13)
+    EtOH.method = 'JASPER'
+    assert_close(EtOH.T_dependent_property(305.), 0.02140008, rtol=1e-13)
+    EtOH.method = 'VDI_PPDS'
+    assert_close(EtOH.T_dependent_property(305.), 0.021462066798796146, rtol=1e-13)
+    EtOH.method = 'REFPROP'
+    assert_close(EtOH.T_dependent_property(305.), 0.021222422444285596, rtol=1e-13)
+    EtOH.method = 'SOMAYAJULU2'
+    assert_close(EtOH.T_dependent_property(305.), 0.0217115665365073, rtol=1e-13)
+
     assert_close(EtOH.calculate(305., VDI_TABULAR), 0.021537011904316786, rtol=5E-4)
 
     # Test that methods return None
