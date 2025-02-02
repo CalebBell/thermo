@@ -1683,7 +1683,9 @@ class TDependentProperty:
         if self.method is None:
             return {}
         result = {}
-        for arg in ('Tc', 'Vc', 'Tb', 'Pc', 'Tm', 'Tt', 'Pt', 'Hvap_Tb', 'Cpl', 'Vml', 'Hsub_t', 'StielPolar', 'MW', 'similarity_variable', 'omega', 'Cpgm', 'iscyclic_aliphatic'):
+        for arg in ('Tc', 'Vc', 'Tb', 'Pc', 'Tm', 'Tt', 'Pt', 'Hvap_Tb', 
+                    'Cpl', 'Hfus', 'Vml', 'Hsub_t', 'StielPolar', 'MW', 
+                    'similarity_variable', 'omega', 'Cvgm','mug', 'Zc', 'Cpgm', 'iscyclic_aliphatic'):
             if hasattr(self, arg):
                 if getattr(self, arg) is not None:
                     result[arg] = getattr(self, arg)
@@ -3824,8 +3826,6 @@ class TDependentProperty:
             except ValueError:
                 raise Exception('To within the implemented temperature range, it is not possible to calculate the desired value.')
         else:
-            # if self.method == POLY_FIT:
-            #     return self.solve_prop_poly_fit(goal)
             high = self.Tc if self.critical_zero and self.Tc is not None else None
             x0 = T_limits[0]
             x1 = T_limits[1]
@@ -3842,10 +3842,7 @@ class TDependentProperty:
                     if high is not None and x0 > high:
                         x0 = high*(1-1e-6)
                     f0 = error(x0)
-            #try:
             return secant(error, x0=x0, x1=x1, f0=f0, f1=f1, low=1e-4, xtol=1e-12, bisection=True, high=high)
-            #except:
-            #    return secant(error, x0=x0, x1=x1, f0=f0, f1=f1, low=1e-4, xtol=1e-12, bisection=True, high=high, damping=.01)
 
 
     def _calculate_derivative_transformed(self, T, method, order=1,

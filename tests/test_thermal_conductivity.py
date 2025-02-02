@@ -224,7 +224,6 @@ def test_ThermalConductivityGas_CoolProp():
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityGas():
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cpgm=56.98+R, mug=7.903e-6, CASRN='64-17-5')
-    all_methods = list(EtOH.all_methods)
 
     EtOH.method = EUCKEN_MOD
     assert_close(EtOH.T_dependent_property(305), 0.015427445804245578)
