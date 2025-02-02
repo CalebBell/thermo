@@ -860,7 +860,7 @@ def test_VaporPressure_WebBook():
 def test_VaporPressure_IAPWS95():
 
     water = VaporPressure(CASRN="7732-18-5", Tb=373.124, Tc=647.14, Pc=22048320.0, omega=0.344,
-                          extrapolation="AntoineAB|DIPPR101_ABC", method="IAPWS")
+                          extrapolation="AntoineAB|DIPPR101_ABC", method="IAPWS_PSAT")
     assert water(3000) is not None
     assert water(2000) > water(600)
 
@@ -896,10 +896,10 @@ def test_accurate_vapor_pressure_H2O2():
 
 @pytest.mark.meta_T_dept
 def test_sublimation_pressure_iapws():
-    obj = SublimationPressure(CASRN="7732-18-5", Tt=273.16, Pt=611.654771008, Hsub_t=51065.16012541218, extrapolation="Arrhenius", method="IAPWS")
+    obj = SublimationPressure(CASRN="7732-18-5", Tt=273.16, Pt=611.654771008, Hsub_t=51065.16012541218, extrapolation="Arrhenius", method="IAPWS_PSUB")
     assert_close(obj(240), 27.26684427485674, rtol=1e-13)
-    assert obj.T_limits['IAPWS'][0] == 50
-    assert obj.T_limits['IAPWS'][1] == 273.16
+    assert obj.T_limits['IAPWS_PSUB'][0] == 50
+    assert obj.T_limits['IAPWS_PSUB'][1] == 273.16
 
 @pytest.mark.meta_T_dept
 def test_sublimation_pressure_alcock():

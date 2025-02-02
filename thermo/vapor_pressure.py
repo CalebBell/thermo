@@ -91,7 +91,7 @@ from fluids.numerics import NoSolutionError, exp, isnan, log
 
 from thermo.coolprop import PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.eos import PR
-from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, HEOS_FIT, IAPWS, VDI_PPDS, VDI_TABULAR, TDependentProperty
+from thermo.utils import COOLPROP, DIPPR_PERRY_8E, EOS, HEOS_FIT, VDI_PPDS, VDI_TABULAR, TDependentProperty
 
 """
 Move this to its own file?
@@ -152,7 +152,7 @@ ANTOINE_WEBBOOK = 'ANTOINE_WEBBOOK'
 ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
 ALCOCK_ELEMENTS = 'ALCOCK_ELEMENTS'
 LANDOLT = 'LANDOLT'
-
+IAPWS_PSAT = 'IAPWS_PSAT'
 
 BOILING_CRITICAL = 'BOILING_CRITICAL'
 LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
@@ -160,7 +160,7 @@ AMBROSE_WALTON = 'AMBROSE_WALTON'
 SANJARI = 'SANJARI'
 EDALAT = 'EDALAT'
 
-vapor_pressure_methods = [IAPWS, HEOS_FIT,
+vapor_pressure_methods = [IAPWS_PSAT, HEOS_FIT,
                           WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                           DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                           ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, LANDOLT,
@@ -255,7 +255,7 @@ class VaporPressure(TDependentProperty):
     **EOS**:
         Equation of state provided by user; must implement
         :obj:`thermo.eos.GCEOS.Psat`
-    **IAPWS**:
+    **IAPWS_PSAT**:
         IAPWS-95 formulation documented in :obj:`chemicals.iapws.iapws95_Psat`.
     **ALCOCK_ELEMENTS**:
         A collection of vapor pressure data for metallic elements, in
@@ -343,7 +343,7 @@ class VaporPressure(TDependentProperty):
     point estimated for Iridium; Mercury's 160 MPa critical point is the
     highest known."""
     
-    ranked_methods = [IAPWS, HEOS_FIT, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
+    ranked_methods = [IAPWS_PSAT, HEOS_FIT, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                       ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, LANDOLT, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
@@ -404,8 +404,8 @@ class VaporPressure(TDependentProperty):
         methods = []
         CASRN = self.CASRN
         if CASRN is not None and CASRN == '7732-18-5':
-            methods.append(IAPWS)
-            T_limits[IAPWS] = (235.0, iapws95_Tc)
+            methods.append(IAPWS_PSAT)
+            T_limits[IAPWS_PSAT] = (235.0, iapws95_Tc)
         if load_data and CASRN:
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
             df_wb = miscdata.webbook_data
@@ -504,7 +504,7 @@ class VaporPressure(TDependentProperty):
             Psat = Sanjari(T, self.Tc, self.Pc, self.omega)
         elif method == EDALAT:
             Psat = Edalat(T, self.Tc, self.Pc, self.omega)
-        elif method == IAPWS:
+        elif method == IAPWS_PSAT:
             Psat = iapws95_Psat(T)
         elif method == EOS:
             try:
@@ -542,15 +542,16 @@ class VaporPressure(TDependentProperty):
             Calculated derivative property, [`units/K^order`]
         '''
         Tmin, Tmax = self.T_limits[method]
-        if method == IAPWS:
+        if method == IAPWS_PSAT:
             if Tmin <= T <= Tmax:
                 if order == 1:
                     return iapws95_dPsat_dT(T)[0]
         return super().calculate_derivative(T, method, order)
 
 PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'
+IAPWS_PSUB = 'IAPWS_PSUB'
 
-sublimation_pressure_methods = [PSUB_CLAPEYRON, ALCOCK_ELEMENTS, IAPWS, LANDOLT]
+sublimation_pressure_methods = [PSUB_CLAPEYRON, ALCOCK_ELEMENTS, IAPWS_PSUB, LANDOLT]
 """Holds all methods available for the SublimationPressure class, for use in
 iterating over them."""
 
@@ -590,7 +591,7 @@ class SublimationPressure(TDependentProperty):
 
     **PSUB_CLAPEYRON**:
         Clapeyron thermodynamic identity, :obj:`Psub_Clapeyron <chemicals.vapor_pressure.Psub_Clapeyron>`
-    **IAPWS**:
+    **IAPWS_PSUB**:
         IAPWS formulation for sublimation pressure of ice,
         :obj:`iapws11_Psub <chemicals.iapws.iapws11_Psub>`
     **ALCOCK_ELEMENTS**:
@@ -638,7 +639,7 @@ class SublimationPressure(TDependentProperty):
     property_max = 1e6
     """Maximum valid value of sublimation pressure. Set to 1 MPa tentatively."""
 
-    ranked_methods = [IAPWS, ALCOCK_ELEMENTS, LANDOLT, PSUB_CLAPEYRON]
+    ranked_methods = [IAPWS_PSUB, ALCOCK_ELEMENTS, LANDOLT, PSUB_CLAPEYRON]
     """Default rankings of the available methods."""
 
     custom_args = ('Tt', 'Pt', 'Hsub_t')
@@ -674,8 +675,8 @@ class SublimationPressure(TDependentProperty):
             methods.append(PSUB_CLAPEYRON)
             T_limits[PSUB_CLAPEYRON] = (1.0, self.Tt*1.5)
         if CASRN is not None and CASRN == '7732-18-5':
-            methods.append(IAPWS)
-            T_limits[IAPWS] = (50.0, iapws95_Tt)
+            methods.append(IAPWS_PSUB)
+            T_limits[IAPWS_PSUB] = (50.0, iapws95_Tt)
         if load_data and CASRN is not None and CASRN in vapor_pressure.Psub_data_Alcock_elements.index:
             A, B, C, D, E, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psub_values_Alcock_elements[vapor_pressure.Psub_data_Alcock_elements.index.get_loc(CASRN)].tolist()
             self.add_correlation(name=ALCOCK_ELEMENTS, model='DIPPR101', Tmin=Alcock_Tmin, Tmax=Alcock_Tmax, A=A, B=B, C=C, D=D, E=E, select=False)
@@ -714,7 +715,7 @@ class SublimationPressure(TDependentProperty):
         '''
         if method == PSUB_CLAPEYRON:
             Psub = Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t)
-        elif method == IAPWS:
+        elif method == IAPWS_PSUB:
             Psub = iapws11_Psub(T)
         else:
             return self._base_calculate(T, method)
