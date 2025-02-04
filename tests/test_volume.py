@@ -494,7 +494,7 @@ def test_VolumeLiquid_fitting3():
     Tc, rhoc, b, n, MW = 627.65, 433.128, 0.233, 0.2587, 66.0
     Ts = linspace(293.15, 298.15, 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
-    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_density_fit',
                           do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
@@ -503,7 +503,7 @@ def test_VolumeLiquid_fitting3():
     Tc, rhoc, b, n, MW = 1030.0, 1795.0521319999998, 0.96491407, 0.15872, 97.995
     Ts = linspace(315.51, 393.15, 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
-    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_density_fit',
                           do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
@@ -512,7 +512,7 @@ def test_VolumeLiquid_fitting3():
     Tc, rhoc, b, n, MW = 545.03, 739.99, 0.3, 0.28571, 105.921
     Ts = linspace(331.15, 332.9, 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
-    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_density_fit',
                           do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
@@ -521,7 +521,7 @@ def test_VolumeLiquid_fitting3():
     Tc, rhoc, b, n, MW = 1800.0, 2794.568007, 0.647077183, 0.8, 98.999
     Ts = linspace(703.0, 1620., 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
-    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_density_fit',
                           do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5

@@ -416,7 +416,7 @@ class VolumeLiquid(TPDependentProperty):
     extra_correlations_internal.add(CRC_INORG_L_CONST)
     extra_correlations_internal.add(CRC_INORG_L)
     extra_correlations_internal.add(MMSNM0FIT)
-    # extra_correlations_internal.add(RACKETTFIT)
+    extra_correlations_internal.add(RACKETTFIT)
     extra_correlations_internal.add(HTCOSTALDFIT)
 
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
@@ -548,16 +548,6 @@ class VolumeLiquid(TPDependentProperty):
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Volume (l)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
-            # if self.Tc and CASRN in volume.rho_data_COSTALD.index:
-            #     methods.append(HTCOSTALDFIT)
-            #     self.COSTALD_Vchar = float(volume.rho_data_COSTALD.at[CASRN, 'Vchar'])
-            #     self.COSTALD_omega_SRK = float(volume.rho_data_COSTALD.at[CASRN, 'omega_SRK'])
-            #     T_limits[HTCOSTALDFIT] = (0.0, self.Tc)
-            # if self.Tc and self.Pc and CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']):
-            #     methods.append(RACKETTFIT)
-            #     self.RACKETT_Z_RA = float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA'])
-            #     T_limits[RACKETTFIT] = (0.0, self.Tc)
-            #     # Roughly data at STP; not guaranteed however; not used for Trange
             if self.Tc and CASRN in volume.rho_data_COSTALD.index:
                 self.add_correlation(
                     name=HTCOSTALDFIT,
@@ -565,25 +555,25 @@ class VolumeLiquid(TPDependentProperty):
                     Tmin=0.0,
                     Tmax=self.Tc,
                     Tc=self.Tc,
-                    Vc=float(volume.rho_data_COSTALD.at[CASRN, 'Vchar']),
-                    omega=float(volume.rho_data_COSTALD.at[CASRN, 'omega_SRK']),
+                    COSTALD_Vchar=float(volume.rho_data_COSTALD.at[CASRN, 'Vchar']),
+                    COSTALD_omega=float(volume.rho_data_COSTALD.at[CASRN, 'omega_SRK']),
+                    select=False
+                )
+            if self.Tc and self.Pc and CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']):
+                self.add_correlation(
+                    name=RACKETTFIT,
+                    model='Rackett_fit',
+                    Tmin=0.0,
+                    Tmax=self.Tc,
+                    Tc=self.Tc,
+                    Pc=self.Pc,
+                    Z_RA=float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']),
                     select=False
                 )
             # if self.Tc and self.Pc and CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']):
-            #     self.add_correlation(
-            #         name=RACKETTFIT,
-            #         model='Rackett_fit',
-            #         Tmin=0.0,
-            #         Tmax=self.Tc,
-            #         Tc=self.Tc,
-            #         Pc=self.Pc,
-            #         Z_RA=float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']),
-            #         select=False
-            #     )
-            if self.Tc and self.Pc and CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']):
-                methods.append(RACKETTFIT)
-                self.RACKETT_Z_RA = float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA'])
-                T_limits[RACKETTFIT] = (0.0, self.Tc)
+            #     methods.append(RACKETTFIT)
+            #     self.RACKETT_Z_RA = float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA'])
+            #     T_limits[RACKETTFIT] = (0.0, self.Tc)
             if all((self.Tc, self.Vc, self.omega)):
                 if load_data and CASRN and CASRN in volume.rho_data_SNM0.index:
                     self.add_correlation(
@@ -614,12 +604,7 @@ class VolumeLiquid(TPDependentProperty):
             methods.append(MMSNM0)
             methods.append(EOS)
             T_limits[EOS] = (0.2*self.Tc, self.Tc)
-            # if load_data and CASRN and CASRN in volume.rho_data_SNM0.index:
-            #     methods.append(MMSNM0FIT)
-            #     self.SNM0_delta_SRK = float(volume.rho_data_SNM0.at[CASRN, 'delta_SRK'])
-            #     T_limits[MMSNM0FIT] = (0.0, self.Tc)
             T_limits[TOWNSEND_HALES] = T_limits[HTCOSTALD] = T_limits[MMSNM0] = (0.0, self.Tc)
-            #  = 
         if all((self.Tc, self.Vc, self.omega, self.Tb, self.MW)):
             methods.append(CAMPBELL_THODOS)
             T_limits[CAMPBELL_THODOS] = (0.0, self.Tc)
@@ -675,8 +660,8 @@ class VolumeLiquid(TPDependentProperty):
         #     Vm = SNM0(T, self.Tc, self.Vc, self.omega, self.SNM0_delta_SRK)
         # elif method == HTCOSTALDFIT:
         #     Vm = COSTALD(T, self.Tc, self.COSTALD_Vchar, self.COSTALD_omega_SRK)
-        elif method == RACKETTFIT:
-            Vm = Rackett(T, self.Tc, self.Pc, self.RACKETT_Z_RA)
+        # elif method == RACKETTFIT:
+        #     Vm = Rackett(T, self.Tc, self.Pc, self.RACKETT_Z_RA)
         elif method == COOLPROP:
             Vm = 1./CoolProp_T_dependent_property(T, self.CASRN, 'DMOLAR', 'l')
         elif method == EOS:

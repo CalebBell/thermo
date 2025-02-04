@@ -881,15 +881,18 @@ class TDependentProperty:
     'TDE_VDNS_rho': (['Tc', 'rhoc', 'a1', 'a2', 'a3', 'a4', 'MW',], [], {'f': TDE_VDNS_rho}, {'fit_params': ['a1', 'a2', 'a3', 'a4',]}),
     'PPDS17': (['Tc', 'a0', 'a1', 'a2', 'MW',], [], {'f': PPDS17}, {'fit_params': ['a0', 'a1', 'a2', ]}),
 
-    'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
+    'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [],
+            {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
     'DIPPR116_rho_to_Vm': (
         ['Tc', 'rhoc', 'MW'], 
         ['A', 'B', 'C', 'D'],
         {'f': lambda T, MW, Tc, rhoc, A, B, C, D: rho_to_Vm(EQ116(T, Tc, rhoc, A, B, C, D), MW)},
         {'fit_params': ['A', 'B', 'C', 'D']}
     ),
+    'Rackett_fit': (['Tc', 'Pc', 'Z_RA'], [], {'f': lambda T, **kwargs: Rackett(T, Tc=kwargs['Tc'], Pc=kwargs['Pc'], Zc=kwargs['Z_RA'])}, 
+                            {'fit_params': ['Z_RA',]}),
 
-    'Rackett_fit': (['Tc', 'rhoc', 'b', 'n', 'MW',], [], {'f': Rackett_fit}, {'fit_params': ['rhoc', 'b', 'n'], 'initial_guesses': [
+    'Rackett_density_fit': (['Tc', 'rhoc', 'b', 'n', 'MW',], [], {'f': Rackett_fit}, {'fit_params': ['rhoc', 'b', 'n'], 'initial_guesses': [
         {'n': 0.286, 'b': 0.011, 'rhoc': 28.93}, # near a point from yaws
         {'n': 0.286, 'b': 0.3, 'rhoc': 755.0}, # near a point from yaws
         {'n': 0.259, 'b': 0.233, 'rhoc': 433.1}, # near a point from yaws
@@ -1331,10 +1334,11 @@ class TDependentProperty:
         {'fit_params': ['delta_SRK']}
     ),
     'COSTALD_fit': (
-        ['Tc', 'Vc', 'omega'],
+        ['Tc', 'COSTALD_Vchar', 'COSTALD_omega'],
         [],
-        {'f': COSTALD},
-        {'fit_params': ['Vc', 'omega']}
+        {'f': lambda T, **kwargs: COSTALD(T, Tc=kwargs['Tc'], Vc=kwargs['COSTALD_Vchar'], 
+                                          omega=kwargs['COSTALD_omega'])},
+        {'fit_params': ['COSTALD_Vchar', 'COSTALD_omega']}
     ),
      'DIPPR106': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
@@ -1684,7 +1688,7 @@ class TDependentProperty:
             return {}
         result = {}
         for arg in ('Tc', 'Vc', 'Tb', 'Pc', 'Tm', 'Tt', 'Pt', 'Hvap_Tb', 
-                    'Cpl', 'Hfus', 'Vml', 'Hsub_t', 'StielPolar', 'MW', 
+                    'Cpl', 'Hfus', 'Vml', 'Hsub_t', 'StielPolar', 'dipole', 'MW', 
                     'similarity_variable', 'omega', 'Cvgm','mug', 'Zc', 'Cpgm', 'iscyclic_aliphatic'):
             if hasattr(self, arg):
                 if getattr(self, arg) is not None:

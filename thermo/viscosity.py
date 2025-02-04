@@ -141,6 +141,76 @@ from thermo.utils import (
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import VolumeGas, VolumeLiquid
 
+def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
+    """Determines valid temperature limits for the PPDS9 viscosity equation by analyzing
+    its behavior at various points and its derivatives.
+    
+    Parameters
+    ----------
+    coeffs : list[float]
+        PPDS9 coefficients [A, B, C, D, E]
+    Tm : float, optional
+        Melting temperature [K]
+    Tc : float, optional
+        Critical temperature [K]
+        
+    Returns
+    -------
+    tuple[float, float]
+        (T_min, T_max) valid temperature range
+    """
+    low = low_orig = min(coeffs[2], coeffs[3])
+    high = high_orig = max(coeffs[2], coeffs[3])
+    
+    # Check derivative behavior near boundaries
+    if low > 0.0:
+        dmu_low_under, _ = dPPDS9_dT(low*0.9995, *coeffs)
+        dmu_low_above, _ = dPPDS9_dT(low*1.0005, *coeffs)
+    
+    if high > 0.0:
+        dmu_high_under, _ = dPPDS9_dT(high*0.9995, *coeffs)
+        dmu_high_above, _ = dPPDS9_dT(high*1.0005, *coeffs)
+    
+    # Check at phase transition points if available
+    if Tm is not None:
+        dmu_Tm, _ = dPPDS9_dT(Tm, *coeffs)
+    if Tc is not None:
+        dmu_Tc_under, _ = dPPDS9_dT(Tc, *coeffs)
+    
+    # Adjust limits based on derivative behavior
+    if high > 0.0 and low < 0.0 or isinf(dmu_low_under) or isinf(dmu_low_above):
+        low = 0.1*high
+        high = high-1.0
+    else:
+        low, high = low + 5.0, high + 5.0
+    
+    # Override with phase transition points if available
+    if Tm is not None:
+        low = Tm
+    if Tc is not None and dmu_Tc_under < 0.0:
+        high = Tc
+        
+    # Special case handling
+    if Tm is not None and Tc is not None and low_orig < 0 and Tm < high_orig < Tc and dmu_Tc_under < 0.0:
+        low = high_orig + 1.0
+    
+    if high == high_orig:
+        high -= 1.0
+    
+    # Check for derivative sign change in range
+    dmu_low, _ = dPPDS9_dT(low, *coeffs)
+    dmu_high, _ = dPPDS9_dT(high, *coeffs)
+    if dmu_low*dmu_high < 0.0:
+        def to_solve(T):
+            return dPPDS9_dT(T, *coeffs)[0]
+        T_switch = brenth(to_solve, low, high)
+        if dmu_high > 0.0:
+            high = T_switch
+        else:
+            low = T_switch
+            
+    return low, high
+
 DUTT_PRASAD = 'DUTT_PRASAD'
 VISWANATH_NATARAJAN_3 = 'VISWANATH_NATARAJAN_3'
 VISWANATH_NATARAJAN_2 = 'VISWANATH_NATARAJAN_2'
@@ -359,6 +429,15 @@ class ViscosityLiquid(TPDependentProperty):
 
     custom_args = ('MW', 'Tm', 'Tc', 'Pc', 'Vc', 'omega', 'Psat', 'Vml')
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(DIPPR_PERRY_8E)
+    extra_correlations_internal.add(VDI_PPDS)
+    extra_correlations_internal.add(DUTT_PRASAD)
+    extra_correlations_internal.add(VISWANATH_NATARAJAN_3)
+    extra_correlations_internal.add(VISWANATH_NATARAJAN_2)
+    extra_correlations_internal.add(VISWANATH_NATARAJAN_2E)
+    extra_correlations_internal.add(JOBACK)
+
     DEFAULT_EXTRAPOLATION_MIN = 1e-5
     def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
                  omega=None, Psat=None, Vml=None, extrapolation='Arrhenius',
@@ -422,77 +501,86 @@ class ViscosityLiquid(TPDependentProperty):
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (l)')
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if CASRN in viscosity.mu_data_Dutt_Prasad.index:
-                methods.append(DUTT_PRASAD)
-                A, B, C, self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax = viscosity.mu_values_Dutt_Prasad[viscosity.mu_data_Dutt_Prasad.index.get_loc(CASRN)].tolist()
-                self.DUTT_PRASAD_coeffs = [A - 3.0, B, C]
-                T_limits[DUTT_PRASAD] = (self.DUTT_PRASAD_Tmin, self.DUTT_PRASAD_Tmax)
+                A, B, C, Tmin, Tmax = viscosity.mu_values_Dutt_Prasad[
+                    viscosity.mu_data_Dutt_Prasad.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=DUTT_PRASAD,
+                    model='Viswanath_Natarajan_3',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=A - 3.0,
+                    B=B,
+                    C=C,
+                    select=False
+                )
             if CASRN in viscosity.mu_data_VN3.index:
-                methods.append(VISWANATH_NATARAJAN_3)
-                A, B, C, self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax = viscosity.mu_values_VN3[viscosity.mu_data_VN3.index.get_loc(CASRN)].tolist()
-                self.VISWANATH_NATARAJAN_3_coeffs = [A - 3.0, B, C]
-                T_limits[VISWANATH_NATARAJAN_3] = (self.VISWANATH_NATARAJAN_3_Tmin, self.VISWANATH_NATARAJAN_3_Tmax)
+                A, B, C, Tmin, Tmax = viscosity.mu_values_VN3[
+                    viscosity.mu_data_VN3.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=VISWANATH_NATARAJAN_3,
+                    model='Viswanath_Natarajan_3',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=A - 3.0,
+                    B=B,
+                    C=C,
+                    select=False
+                )
             if CASRN in viscosity.mu_data_VN2.index:
-                methods.append(VISWANATH_NATARAJAN_2)
-                A, B, self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax = viscosity.mu_values_VN2[viscosity.mu_data_VN2.index.get_loc(CASRN)].tolist()
-                self.VISWANATH_NATARAJAN_2_coeffs = [A - 4.605170185988092, B] # log(100) = 4.605170185988092
-                T_limits[VISWANATH_NATARAJAN_2] = (self.VISWANATH_NATARAJAN_2_Tmin, self.VISWANATH_NATARAJAN_2_Tmax)
+                A, B, Tmin, Tmax = viscosity.mu_values_VN2[
+                    viscosity.mu_data_VN2.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=VISWANATH_NATARAJAN_2,
+                    model='Viswanath_Natarajan_2',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=A - 4.605170185988092,  # log(100)
+                    B=B,
+                    select=False
+                )
             if CASRN in viscosity.mu_data_VN2E.index:
-                methods.append(VISWANATH_NATARAJAN_2E)
-                C, D, self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax = viscosity.mu_values_VN2E[viscosity.mu_data_VN2E.index.get_loc(CASRN)].tolist()
-                self.VISWANATH_NATARAJAN_2E_coeffs = [C, D]
-                T_limits[VISWANATH_NATARAJAN_2E] = (self.VISWANATH_NATARAJAN_2E_Tmin, self.VISWANATH_NATARAJAN_2E_Tmax)
+                C, D, Tmin, Tmax = viscosity.mu_values_VN2E[
+                    viscosity.mu_data_VN2E.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=VISWANATH_NATARAJAN_2E,
+                    model='Viswanath_Natarajan_2_exponential',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    C=C,
+                    D=D,
+                    select=False
+                )
             if CASRN in viscosity.mu_data_Perrys_8E_2_313.index:
-                methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, C5, self.Perrys2_313_Tmin, self.Perrys2_313_Tmax = viscosity.mu_values_Perrys_8E_2_313[viscosity.mu_data_Perrys_8E_2_313.index.get_loc(CASRN)].tolist()
-                self.Perrys2_313_coeffs = [C1, C2, C3, C4, C5]
-                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_313_Tmin, self.Perrys2_313_Tmax)
-            if CASRN in viscosity.mu_data_VDI_PPDS_7.index:
-                methods.append(VDI_PPDS)
-                # No temperature limits - ideally could use critical point
-                self.VDI_PPDS_coeffs = VDI_PPDS_coeffs = viscosity.mu_values_PPDS_7[viscosity.mu_data_VDI_PPDS_7.index.get_loc(CASRN)].tolist()
-                low = low_orig = min(self.VDI_PPDS_coeffs[2], self.VDI_PPDS_coeffs[3])# + 5.0
-                high = high_orig = max(self.VDI_PPDS_coeffs[2], self.VDI_PPDS_coeffs[3])# - 5.0
-                if low > 0.0:
-                    dmu_low_under, mu_low_under = dPPDS9_dT(low*0.9995, *VDI_PPDS_coeffs)
-                    dmu_low_above, mu_low_above = dPPDS9_dT(low*1.0005, *VDI_PPDS_coeffs)
-                if high > 0.0:
-                    dmu_high_under, mu_high_under = dPPDS9_dT(high*0.9995, *VDI_PPDS_coeffs)
-                    dmu_high_above, mu_high_above = dPPDS9_dT(high*1.0005, *VDI_PPDS_coeffs)
-                if self.Tm is not None:
-                    dmu_Tm, mu_Tm = dPPDS9_dT(self.Tm, *VDI_PPDS_coeffs)
-                if self.Tc is not None:
-                    dmu_Tc_under, mu_Tc_under = dPPDS9_dT(self.Tc, *VDI_PPDS_coeffs)
-
-
-                if high > 0.0 and low < 0.0 or isinf(dmu_low_under) or isinf(dmu_low_above):
-                    # high + a few K as lower limit
-                    low = 0.1*high
-                    high = high-1.0
-                else:
-                    low, high = low + 5.0, high + 5.0
-                if self.Tm is not None:
-                    low = self.Tm
-                if self.Tc is not None:
-                    if dmu_Tc_under < 0.0:
-                        high = self.Tc
-                if self.Tm is not None and self.Tc is not None and low_orig < 0 and self.Tm < high_orig < self.Tc and dmu_Tc_under < 0.0:
-                    low = high_orig + 1.0
-                if high == high_orig:
-                    high -= 1.0
-
-                dmu_low, mu_low = dPPDS9_dT(low, *VDI_PPDS_coeffs)
-                dmu_high, mu_high = dPPDS9_dT(high, *VDI_PPDS_coeffs)
-                if dmu_low*dmu_high < 0.0:
-                    def to_solve(T):
-                        return dPPDS9_dT(T, *VDI_PPDS_coeffs)[0]
-                    T_switch = brenth(to_solve, low, high)
-                    if dmu_high > 0.0:
-                        high = T_switch
-                    else:
-                        low = T_switch
-
-                T_limits[VDI_PPDS] = (low, high)
-
+                C1, C2, C3, C4, C5, Tmin, Tmax = viscosity.mu_values_Perrys_8E_2_313[
+                    viscosity.mu_data_Perrys_8E_2_313.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=DIPPR_PERRY_8E,
+                    model='DIPPR101',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=C1,
+                    B=C2,
+                    C=C3,
+                    D=C4,
+                    E=C5,
+                    select=False
+                )
+        if CASRN in viscosity.mu_data_VDI_PPDS_7.index:
+            coeffs = viscosity.mu_values_PPDS_7[
+                viscosity.mu_data_VDI_PPDS_7.index.get_loc(CASRN)].tolist()
+            Tmin, Tmax = determine_PPDS9_limits(coeffs, self.Tm, self.Tc)
+            self.add_correlation(
+                name=VDI_PPDS,
+                model='PPDS9',
+                Tmin=Tmin,
+                Tmax=Tmax,
+                A=coeffs[0],
+                B=coeffs[1],
+                C=coeffs[2],
+                D=coeffs[3],
+                E=coeffs[4],
+                select=False
+            )
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
             T_limits[LETSOU_STIEL] = (0.25*self.Tc, self.Tc)
@@ -540,24 +628,10 @@ class ViscosityLiquid(TPDependentProperty):
         mu : float
             Viscosity of the liquid at T and a low pressure, [Pa*s]
         '''
-        if method == DUTT_PRASAD:
-            A, B, C = self.DUTT_PRASAD_coeffs
-            mu = Viswanath_Natarajan_3(T, A, B, C, )
-        elif method == VISWANATH_NATARAJAN_3:
-            A, B, C = self.VISWANATH_NATARAJAN_3_coeffs
-            mu = Viswanath_Natarajan_3(T, A, B, C)
-        elif method == VISWANATH_NATARAJAN_2:
-            A, B = self.VISWANATH_NATARAJAN_2_coeffs
-            mu = Viswanath_Natarajan_2(T, self.VISWANATH_NATARAJAN_2_coeffs[0], self.VISWANATH_NATARAJAN_2_coeffs[1])
-        elif method == VISWANATH_NATARAJAN_2E:
-            C, D = self.VISWANATH_NATARAJAN_2E_coeffs
-            mu = Viswanath_Natarajan_2_exponential(T, C, D)
-        elif method == DIPPR_PERRY_8E:
-            mu = EQ101(T, *self.Perrys2_313_coeffs)
+        if method == LETSOU_STIEL:
+            mu = Letsou_Stiel(T, self.MW, self.Tc, self.Pc, self.omega)
         elif method == COOLPROP:
             mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'l')
-        elif method == LETSOU_STIEL:
-            mu = Letsou_Stiel(T, self.MW, self.Tc, self.Pc, self.omega)
         elif method == PRZEDZIECKI_SRIDHAR:
             if type(self.Vml) is float:
                 Vml = self.Vml
@@ -566,8 +640,6 @@ class ViscosityLiquid(TPDependentProperty):
             else:
                 Vml = self.Vml(T)
             mu = Przedziecki_Sridhar(T, self.Tm, self.Tc, self.Pc, self.Vc, Vml, self.omega, self.MW)
-        elif method == VDI_PPDS:
-            return PPDS9(T, *self.VDI_PPDS_coeffs)
         else:
             return self._base_calculate(T, method)
         return mu
@@ -792,6 +864,11 @@ class ViscosityGas(TPDependentProperty):
     obj_references = pure_references = ('Vmg',)
     obj_references_types = pure_reference_types = (VolumeGas,)
 
+
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(DIPPR_PERRY_8E)
+    extra_correlations_internal.add(VDI_PPDS)
+
     custom_args = ('MW', 'Tc', 'Pc', 'Zc', 'dipole', 'Vmg')
     DEFAULT_EXTRAPOLATION_MIN = 1e-5
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
@@ -837,15 +914,34 @@ class ViscosityGas(TPDependentProperty):
 #                    T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tmax*.9999)
             if CASRN in viscosity.mu_data_Perrys_8E_2_312.index:
-                methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, self.Perrys2_312_Tmin, self.Perrys2_312_Tmax = viscosity.mu_values_Perrys_8E_2_312[viscosity.mu_data_Perrys_8E_2_312.index.get_loc(CASRN)].tolist()
-                self.Perrys2_312_coeffs = [C1, C2, C3, C4]
-                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_312_Tmin, self.Perrys2_312_Tmax)
+                C1, C2, C3, C4, Tmin, Tmax = viscosity.mu_values_Perrys_8E_2_312[
+                    viscosity.mu_data_Perrys_8E_2_312.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=DIPPR_PERRY_8E,
+                    model='DIPPR102',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=C1,
+                    B=C2,
+                    C=C3,
+                    D=C4,
+                    select=False
+                )
             if CASRN in viscosity.mu_data_VDI_PPDS_8.index:
-                methods.append(VDI_PPDS)
-                self.VDI_PPDS_coeffs = viscosity.mu_values_PPDS_8[viscosity.mu_data_VDI_PPDS_8.index.get_loc(CASRN)].tolist()
-                self.VDI_PPDS_coeffs.reverse() # in format for horner's scheme
-                T_limits[VDI_PPDS] = (1e-3, 10000)
+                coeffs = viscosity.mu_values_PPDS_8[
+                    viscosity.mu_data_VDI_PPDS_8.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model='DIPPR100',
+                    Tmin=1e-3,
+                    Tmax=10000,
+                    A=coeffs[0],
+                    B=coeffs[1],
+                    C=coeffs[2],
+                    D=coeffs[3],
+                    E=coeffs[4],
+                    select=False
+                )
         if all([self.Tc, self.Pc, self.MW]):
             methods.append(GHARAGHEIZI)
             methods.append(YOON_THODOS)
@@ -894,18 +990,14 @@ class ViscosityGas(TPDependentProperty):
         '''
         if method == GHARAGHEIZI:
             mu = viscosity_gas_Gharagheizi(T, self.Tc, self.Pc, self.MW)
-        elif method == COOLPROP:
-            mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'g')
-        elif method == DIPPR_PERRY_8E:
-            mu = EQ102(T, *self.Perrys2_312_coeffs)
-        elif method == VDI_PPDS:
-            mu = horner(self.VDI_PPDS_coeffs, T)
         elif method == YOON_THODOS:
             mu = Yoon_Thodos(T, self.Tc, self.Pc, self.MW)
         elif method == STIEL_THODOS:
             mu = Stiel_Thodos(T, self.Tc, self.Pc, self.MW)
         elif method == LUCAS_GAS:
             mu = Lucas_gas(T, self.Tc, self.Pc, self.Zc, self.MW, self.dipole, CASRN=self.CASRN)
+        elif method == COOLPROP:
+            mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'g')
         else:
             return self._base_calculate(T, method)
 
