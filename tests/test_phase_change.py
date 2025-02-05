@@ -248,6 +248,11 @@ def test_EnthalpySublimation_webbook():
     obj.method = 'WEBBOOK_HSUB'
     assert_close(obj(300), 68200.0, rtol=1e-10)
 
+def test_EnthalpySublimation_GHARAGHEIZI():
+    obj = EnthalpySublimation(CASRN='51-20-7')
+    obj.method = 'GHARAGHEIZI_HSUB_298'
+    assert_close(obj(300), 151400, rtol=1e-10)
+
 @pytest.mark.meta_T_dept
 @pytest.mark.fitting
 def test_EnthalpyVaporization_fitting0():

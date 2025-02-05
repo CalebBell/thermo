@@ -1688,8 +1688,9 @@ class TDependentProperty:
             return {}
         result = {}
         for arg in ('Tc', 'Vc', 'Tb', 'Pc', 'Tm', 'Tt', 'Pt', 'Hvap_Tb', 
-                    'Cpl', 'Hfus', 'Vml', 'Hsub_t', 'StielPolar', 'dipole', 'MW', 
-                    'similarity_variable', 'omega', 'Cvgm','mug', 'Zc', 'Cpgm', 'iscyclic_aliphatic'):
+                    'Cpl', 'Hfus', 'Vml', 'Vml_Tt', 'Hsub_t', 'StielPolar', 'dipole', 'MW', 
+                    'similarity_variable', 'omega', 'Cvgm','mug', 'Zc', 'Cpgm', 
+                    'iscyclic_aliphatic',):
             if hasattr(self, arg):
                 if getattr(self, arg) is not None:
                     result[arg] = getattr(self, arg)

@@ -570,10 +570,6 @@ class VolumeLiquid(TPDependentProperty):
                     Z_RA=float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']),
                     select=False
                 )
-            # if self.Tc and self.Pc and CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']):
-            #     methods.append(RACKETTFIT)
-            #     self.RACKETT_Z_RA = float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA'])
-            #     T_limits[RACKETTFIT] = (0.0, self.Tc)
             if all((self.Tc, self.Vc, self.omega)):
                 if load_data and CASRN and CASRN in volume.rho_data_SNM0.index:
                     self.add_correlation(

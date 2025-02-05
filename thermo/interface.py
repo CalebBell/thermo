@@ -94,7 +94,7 @@ JASPER = 'JASPER'
 MIQUEU = 'MIQUEU'
 BROCK_BIRD = 'BROCK_BIRD'
 SASTRI_RAO = 'SASTRI_RAO'
-PITZER = 'PITZER'
+PITZER_SIGMA = 'PITZER_SIGMA'
 ZUO_STENBY = 'ZUO_STENBY'
 HAKIM_STEINBERG_STIEL = 'HAKIM_STEINBERG_STIEL'
 ALEEM = 'Aleem'
@@ -103,7 +103,7 @@ IAPWS_SIGMA = 'IAPWS_SIGMA'
 
 
 surface_tension_methods = [IAPWS_SIGMA, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
-                           JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
+                           JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER_SIGMA,
                            ZUO_STENBY, ALEEM]
 """Holds all methods available for the :obj:`SurfaceTension` class, for use in
 iterating over them."""
@@ -181,7 +181,7 @@ class SurfaceTension(TDependentProperty):
     **SASTRI_RAO**:
         CSP method documented in :obj:`Sastri_Rao <chemicals.interface.Sastri_Rao>`.
         Second most popular estimation method; from 1995.
-    **PITZER**:
+    **PITZER_SIGMA**:
         CSP method documented in :obj:`Pitzer_sigma <chemicals.interface.Pitzer_sigma>`; from 1958.
     **ZUO_STENBY**:
         CSP method documented in :obj:`Zuo_Stenby <chemicals.interface.Zuo_Stenby>`; from 1997.
@@ -253,7 +253,7 @@ class SurfaceTension(TDependentProperty):
     critical point."""
 
     ranked_methods = [IAPWS_SIGMA, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
-                      JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
+                      JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER_SIGMA,
                       ZUO_STENBY, ALEEM]
     """Default rankings of the available methods."""
 
@@ -391,9 +391,9 @@ class SurfaceTension(TDependentProperty):
             T_limits[BROCK_BIRD] = T_limits[SASTRI_RAO] = (0.0, self.Tc)
 
         if all((self.Tc, self.Pc, self.omega)):
-            methods.append(PITZER)
+            methods.append(PITZER_SIGMA)
             methods.append(ZUO_STENBY)
-            T_limits[PITZER] = T_limits[ZUO_STENBY] = (1e-10, self.Tc)
+            T_limits[PITZER_SIGMA] = T_limits[ZUO_STENBY] = (1e-10, self.Tc)
 
         if all((self.Tb, self.Hvap_Tb, self.MW)):
             # Cache Cpl at Tb for ease of calculation of Tmax
@@ -436,7 +436,7 @@ class SurfaceTension(TDependentProperty):
             return Brock_Bird(T, self.Tb, self.Tc, self.Pc)
         elif method == SASTRI_RAO:
             return Sastri_Rao(T, self.Tb, self.Tc, self.Pc)
-        elif method == PITZER:
+        elif method == PITZER_SIGMA:
             return Pitzer_sigma(T, self.Tc, self.Pc, self.omega)
         elif method == ZUO_STENBY:
             return Zuo_Stenby(T, self.Tc, self.Pc, self.omega)

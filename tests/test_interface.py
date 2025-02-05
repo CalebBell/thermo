@@ -45,7 +45,7 @@ def test_SurfaceTension():
         EtOH.method = i
         sigma_calcs.append(EtOH.T_dependent_property(305.))
 
-    EtOH.method = 'PITZER'
+    EtOH.method = 'PITZER_SIGMA'
     assert_close(EtOH.T_dependent_property(305.), 0.03905907338532846, rtol=1e-13)
     EtOH.method = 'BROCK_BIRD'
     assert_close(EtOH.T_dependent_property(305.), 0.03739257387107131, rtol=1e-13)

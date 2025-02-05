@@ -612,6 +612,10 @@ class EnthalpySublimation(TDependentProperty):
     ranked_methods = [WEBBOOK_HSUB, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                       GHARAGHEIZI_HSUB_298]
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(WEBBOOK_HSUB)
+    extra_correlations_internal.add(GHARAGHEIZI_HSUB_298)
+
     obj_references = pure_references = ('Cpg', 'Cps', 'Hvap')
     obj_references_types = pure_reference_types = (HeatCapacityGas, HeatCapacitySolid, EnthalpyVaporization)
 
@@ -640,21 +644,31 @@ class EnthalpySublimation(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
+        self.all_methods = set()
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         CASRN_int = None if not CASRN else CAS_to_int(CASRN)
         if load_data and CASRN:
             if CASRN_int in miscdata.webbook_data.index and not isnan(float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])):
-                methods.append(WEBBOOK_HSUB)
-                self.webbook_Hsub = float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])
-                if self.Tm is not None:
-                    T_limits[WEBBOOK_HSUB] = (self.Tm, self.Tm)
-                else:
-                    T_limits[WEBBOOK_HSUB] = (298.15, 298.15)
-
+                T_lim = self.Tm if self.Tm is not None else 298.15
+                self.add_correlation(
+                    name=WEBBOOK_HSUB,
+                    model='constant',
+                    Tmin=T_lim,
+                    Tmax=T_lim,
+                    value=float(miscdata.webbook_data.at[CASRN_int, 'Hsub']),
+                    select=False
+                )
             if CASRN in phase_change.Hsub_data_Gharagheizi.index:
-                methods.append(GHARAGHEIZI_HSUB_298)
                 self.GHARAGHEIZI_Hsub = float(phase_change.Hsub_data_Gharagheizi.at[CASRN, 'Hsub'])
+                self.add_correlation(
+                    name=GHARAGHEIZI_HSUB_298,
+                    model='constant',
+                    Tmin=298.15,
+                    Tmax=298.15,
+                    value=self.GHARAGHEIZI_Hsub,
+                    select=False
+                )
                 if self.Cpg is not None and self.Cps is not None:
                     methods.append(GHARAGHEIZI_HSUB)
                 T_limits[GHARAGHEIZI_HSUB_298] = (298.15, 298.15)
@@ -665,7 +679,7 @@ class EnthalpySublimation(TDependentProperty):
                     T_limits[CRC_HFUS_HVAP_TM] = (self.Tm, self.Tm)
                 else:
                     T_limits[CRC_HFUS_HVAP_TM] = (298.15, 298.15)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
 
     @staticmethod
     def _method_indexes():
@@ -694,11 +708,7 @@ class EnthalpySublimation(TDependentProperty):
         Hsub : float
             Heat of sublimation of the solid at T, [J/mol]
         '''
-        if method == GHARAGHEIZI_HSUB_298:
-            Hsub = self.GHARAGHEIZI_Hsub
-        elif method == WEBBOOK_HSUB:
-            Hsub = self.webbook_Hsub
-        elif method == GHARAGHEIZI_HSUB:
+        if method == GHARAGHEIZI_HSUB:
             T_base = 298.15
             Hsub = self.GHARAGHEIZI_Hsub
         elif method == CRC_HFUS_HVAP_TM:

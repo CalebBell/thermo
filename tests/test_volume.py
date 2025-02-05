@@ -350,6 +350,13 @@ def test_VolumeSolid():
     BaN2O6.tabular_extrapolation_permitted = False
     BaN2O6.test_method_validity(150, 'fake')
 
+    # Toluene
+    obj = VolumeSolid(CASRN="108-88-3", MW=92.13842, Tt=178.0, Vml_Tt=9.462810947200945e-05,
+                         extrapolation="linear", method="GOODMAN", Tmin=0.0001, Tmax=178.0)
+    assert_close(obj(100), 7.951191222629193e-05)
+    assert_close(obj(150), 8.26324739306205e-05)
+
+
 @pytest.mark.meta_T_dept
 def test_VolumeSolid_works_with_no_data():
     # Test pentane has no property but that it succeeds
