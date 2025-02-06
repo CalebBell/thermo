@@ -1692,8 +1692,9 @@ class TDependentProperty:
                     'similarity_variable', 'omega', 'Cvgm','mug', 'Zc', 'Cpgm', 
                     'iscyclic_aliphatic',):
             if hasattr(self, arg):
-                if getattr(self, arg) is not None:
-                    result[arg] = getattr(self, arg)
+                arg_obj = getattr(self, arg)
+                if arg_obj is not None and type(arg_obj) in {float, int, str, bool}:
+                    result[arg] = arg_obj
         result['extrapolation'] = self.extrapolation
             
         # Handle piecewise methods
