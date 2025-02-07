@@ -1682,19 +1682,22 @@ class TDependentProperty:
             base = base[:-2]
         return base + ')'
 
-    def as_method_kwargs(self):
+    def as_method_kwargs(self, data_only=False):
         # No method - return empty dict
         if self.method is None:
             return {}
+
+
         result = {}
-        for arg in ('Tc', 'Vc', 'Tb', 'Pc', 'Tm', 'Tt', 'Pt', 'Hvap_Tb', 
-                    'Cpl', 'Hfus', 'Vml', 'Vml_Tt', 'Hsub_t', 'StielPolar', 'dipole', 'MW', 
-                    'similarity_variable', 'omega', 'Cvgm','mug', 'Zc', 'Cpgm', 
-                    'iscyclic_aliphatic',):
-            if hasattr(self, arg):
-                arg_obj = getattr(self, arg)
-                if arg_obj is not None and type(arg_obj) in {float, int, str, bool}:
-                    result[arg] = arg_obj
+        if not data_only:
+            for arg in ('Tc', 'Vc', 'Tb', 'Pc', 'Tm', 'Tt', 'Pt', 'Hvap_Tb', 
+                        'Cpl', 'Hfus', 'Vml', 'Vml_Tt', 'Hsub_t', 'StielPolar', 'dipole', 'MW', 
+                        'similarity_variable', 'omega', 'Cvgm','mug', 'Zc', 'Cpgm', 
+                        'iscyclic_aliphatic',):
+                if hasattr(self, arg):
+                    arg_obj = getattr(self, arg)
+                    if arg_obj is not None and type(arg_obj) in {float, int, str, bool}:
+                        result[arg] = arg_obj
         result['extrapolation'] = self.extrapolation
             
         # Handle piecewise methods
@@ -1764,8 +1767,13 @@ class TDependentProperty:
             model_name = name.replace('_parameters', '_fit')
             result[name] = {model_name: params}
             method = model_name
+            result['CASRN'] = self.CASRN
+            result['Tmin'] = self.Tmin
+            result['Tmax'] = self.Tmax
+            result['method'] = method
+            return result
 
-        if method:
+        if method and not data_only:
             result['CASRN'] = self.CASRN
             result['Tmin'] = self.Tmin
             result['Tmax'] = self.Tmax
