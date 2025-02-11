@@ -3907,6 +3907,21 @@ class Phase:
         '''
         return self.Cv() - self.Cv_ideal_gas()
 
+    def Cp_dep(self):
+        r'''Method to calculate and return the difference between the actual
+        `Cp` and the ideal-gas constant pressure heat
+        capacity :math:`C_p^{ig}` of the phase.
+
+        .. math::
+            C_p^{dep} = C_p - C_p^{ig}
+
+        Returns
+        -------
+        Cp_dep : float
+            Departure ideal gas constant pressure heat capacity, [J/(mol*K)]
+        '''
+        return self.Cp() - self.Cp_ideal_gas()
+
     def Cp_Cv_ratio_ideal_gas(self):
         r'''Method to calculate and return the ratio of the ideal-gas heat
         capacity to its constant-volume heat capacity.
@@ -6099,6 +6114,8 @@ prop_iter = (('T', 'P', 'V', 'rho'), ('T', 'P', 'V', r'\rho'), ('K', 'Pa', 'm^3/
 for a, a_str, a_units, a_name in zip(*prop_iter):
     for b, b_str, b_units, b_name in zip(*prop_iter):
         for c, c_name in zip(('H', 'S', 'G', 'U', 'A'), ('enthalpy', 'entropy', 'Gibbs energy', 'internal energy', 'Helmholtz energy')):
+            if a == b:
+                continue
             def _der(self, property=a, differentiate_by=b, at_constant=c):
                 return self._derivs_jacobian(a=property, b=differentiate_by, c=at_constant)
             t = f'd{a}_d{b}_{c}'
@@ -6111,7 +6128,7 @@ Returns
 -------
 {t} : float
     The {b_name} derivative of {a_name} of the phase at constant {c_name}, [{a_units}/{b_units}]
-"""
+"""     
             setattr(Phase, t, _der)
             try:
                 _der.__doc__ = doc
