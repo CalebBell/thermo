@@ -1942,6 +1942,25 @@ class Phase:
         V_dep = self.V() - self.R*self.T/self.P
         return V_dep
 
+    def dV_dep_dT(self):
+        """Calculate the temperature derivative of the departure volume.
+        
+        Returns
+        -------
+        dV_dep_dT : float
+            Temperature derivative of departure volume [m^3/(mol*K)]
+            
+        Notes
+        -----
+        """
+        try:
+            return self._dV_dep_dT
+        except AttributeError:
+            pass
+        self._dV_dep_dT = self.dV_dT() - self.R/self.P
+        return self._dV_dep_dT
+
+
     def U_dep(self):
         r'''Method to calculate and return the departure internal energy of
         the phase.
@@ -5895,6 +5914,25 @@ class Phase:
             self._partial_pressures = [zi*P for zi in self.zs]
         return self._partial_pressures
 
+    def dG_dep_dT(self):
+        """Calculate the temperature derivative of the departure Gibbs energy.
+        
+        Returns
+        -------
+        dG_dep_dT : float
+            Temperature derivative of departure Gibbs energy [J/(mol*K)]
+        """
+        try:
+            return self._dG_dep_dT
+        except AttributeError:
+            pass
+            
+        T = self.T
+        # Using G_dep = H_dep - T*S_dep
+        # dG_dep/dT = dH_dep/dT - S_dep - T*dS_dep/dT
+        self._dG_dep_dT = (self.dH_dep_dT() - self.S_dep() 
+                        - T*self.dS_dep_dT())
+        return self._dG_dep_dT
 
 class IdealGasDeparturePhase(Phase):
     # Internal phase base for calculating properties that use the ideal gas

@@ -161,8 +161,13 @@ def test_virial_phase_pure_B_only_pitzer_curl():
     H_dep_Poling = (-(PT.B() - PT.T*PT.dB_dT())/PT.V())*R*PT.T
     assert_close(PT.H_dep(), H_dep_Poling, rtol=1e-13)
 
+    assert_close(PT.dV_dep_dT(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=[1]).V_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
+
+
     assert_close(PT.dH_dep_dT(), -0.03958097657787867, rtol=1e-13)
     assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
+
+    assert_close(PT.dG_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).G_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
 
     S_dep_Poling = -((PT.B() + PT.T*PT.dB_dT())/PT.V()- log(PT.Z()))*R
     assert_close(PT.S_dep(), -0.03822578258348812, rtol=1e-13)
@@ -581,6 +586,8 @@ def test_virial_phase_pure_BC_pitzer_curl_orbey_vera():
 
     assert_close(PT.dH_dep_dT(), -0.03955760203920011, rtol=1e-13)
     assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
+
+    assert_close(PT.dG_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).G_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
 
     assert_close(PT.S_dep(), -0.03819378035089749, rtol=1e-13)
 
