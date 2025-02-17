@@ -80,6 +80,8 @@ def test_store_load_VirialGas():
     zs = [1]
     PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs)
 
+    check_virial_temperature_consistency_T_calls(PT, [320, 800])
+
     # Run the various checks for storing/loading
     phase_copy = eval(repr(PT))
     assert phase_copy.B() == PT.B()
@@ -535,6 +537,8 @@ def test_virial_phase_pure_BC_pitzer_curl_orbey_vera():
     zs = [1]
     gas = PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
 
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
+
     assert_close(PT.rho(), 40.15896568252847, rtol=1e-13)
     assert_close(PT.V(), 0.02490103973058896, rtol=1e-13)
     assert_close(PT.B(), -4.2375251149270624e-05, rtol=1e-14)
@@ -967,6 +971,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
 
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
     for val in (gas.B(), gas.dB_dT(), gas.d2B_dT2(), gas.d3B_dT3(),
                 gas_np.B(), gas_np.dB_dT(), gas_np.d2B_dT2(), gas_np.d3B_dT3()):
@@ -1075,6 +1080,7 @@ def test_ternary_virial_phase_hashing_repr():
                          HeatCapacityGas(poly_fit=(50.0, 1000.0, [0,0,0,0, R*2.5]))]
     phase = VirialGas(model=model, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
 
+    check_virial_temperature_consistency_T_calls(phase, [320, 800])
 
 
     model2 = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
@@ -1147,6 +1153,7 @@ def test_virial_ternary_vs_ideal_gas():
     model = VirialCSP(Tcs=constants.Tcs, Pcs=constants.Pcs, Vcs=constants.Vcs, omegas=constants.omegas, B_model=VIRIAL_B_ZERO, C_model=VIRIAL_C_ZERO)
     phase_EOS = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
+    check_virial_temperature_consistency_T_calls(phase_EOS, [320, 800])
 
     ### Copy specs
     TV = phase.to(T=T, V=phase.V(), zs=zs)
@@ -1292,6 +1299,23 @@ def test_virial_ternary_vs_ideal_gas():
     assert phase_EOS.A_dep() == 0
 # test_virial_ternary_vs_ideal_gas()
 
+def check_virial_temperature_consistency_T_calls(model, T_list, rtol=1e-14):
+    for T in T_list:
+        # Create a new model at the test temperature
+        model_at_T = model.to(T=T, P=model.P, zs=model.zs)
+        
+        # Check B and its derivatives
+        assert_close(model_at_T.B(), model.B_at_T(T), rtol=rtol)
+        assert_close(model_at_T.dB_dT(), model.dB_dT_at_T(T), rtol=rtol)
+        assert_close(model_at_T.d2B_dT2(), model.d2B_dT2_at_T(T), rtol=rtol)
+        assert_close(model_at_T.d3B_dT3(), model.d3B_dT3_at_T(T), rtol=rtol) 
+        
+        # Check C and its derivatives
+        assert_close(model_at_T.C(), model.C_at_T(T), rtol=rtol)
+        assert_close(model_at_T.dC_dT(), model.dC_dT_at_T(T), rtol=rtol)
+        assert_close(model_at_T.d2C_dT2(), model.d2C_dT2_at_T(T), rtol=rtol)
+        assert_close(model_at_T.d3C_dT3(), model.d3C_dT3_at_T(T), rtol=rtol) 
+
 def test_virial_easy_B_C_models():
     from chemicals.virial import Meng_virial_a
     CASs = ['7727-37-9', '74-82-8', '124-38-9']
@@ -1322,6 +1346,7 @@ def test_virial_easy_B_C_models():
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
                     cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs)
+
     B, dB, d2B, d3B = -4.434925694919992e-05, 3.937650137082095e-07, -3.2111514855184275e-09, 3.870025170366373e-11
     assert_close(gas.B(), B, rtol=1e-13)
     assert_close(gas.dB_dT(), dB, rtol=1e-13)
@@ -1338,6 +1363,7 @@ def test_virial_easy_B_C_models():
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
     C_mat = gas.model.C_interactions()
     assert_close1d(gas.model.C_pures(), [C_mat[i][i] for i in range(N)], rtol=1e-13)
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
     # VIRIAL_B_OCONNELL_PRAUSNITZ
 
@@ -1357,6 +1383,7 @@ def test_virial_easy_B_C_models():
     assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
 
     model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
@@ -1377,6 +1404,7 @@ def test_virial_easy_B_C_models():
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
 
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
     # VIRIAL_B_MENG
     # Made up numbers to get a value of `a`
@@ -1403,6 +1431,7 @@ def test_virial_easy_B_C_models():
     assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
     # VIRIAL_B_TSONOPOULOS_EXTENDED
     # Made up parameters
@@ -1434,3 +1463,4 @@ def test_virial_easy_B_C_models():
 
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])

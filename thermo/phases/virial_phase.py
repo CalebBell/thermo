@@ -1896,9 +1896,27 @@ class VirialGas(IdealGasDeparturePhase):
 
         return new
 
+    def B_at_T(self, T):
+        N = self.N
+        if N == 1:
+            if T == self.T:
+                return self.model.B_pures()[0]
+            return self.model.B_pures_at_T(T)[0][0]
+        zs = self.zs
+        if not self.cross_B_coefficients:
+            if T == self.T:
+                Bs = self.model.B_pures()
+            else:
+                Bs = self.model.B_pures_at_T(T)[0]
+            return float(mixing_simple(zs, Bs))
+        if T == self.T:
+            B_interactions = self.model.B_interactions()
+        else:
+            B_interactions = self.model.B_interactions_at_T(T)[0]
+        return float(BVirial_mixture(zs, B_interactions))
+
     def B(self):
         r'''Method to calculate and return the `B` second virial coefficient.
-
         Returns
         -------
         B : float
@@ -1906,26 +1924,32 @@ class VirialGas(IdealGasDeparturePhase):
         '''
         try:
             return self._B
-        except:
-            pass
-        N = self.N
-        if N == 1:
-            self._B = B = self.model.B_pures()[0]
-            return B
-        zs = self.zs
-        if not self.cross_B_coefficients:
-            Bs = self.model.B_pures()
-            self._B = B = float(mixing_simple(zs, Bs))
+        except AttributeError:
+            self._B = B = self.B_at_T(self.T)
             return B
 
-        B_interactions = self.model.B_interactions()
-        self._B = B = float(BVirial_mixture(zs, B_interactions))
-        return B
+    def dB_dT_at_T(self, T):
+        N = self.N
+        if N == 1:
+            if T == self.T:
+                return self.model.dB_dT_pures()[0]
+            return self.model.B_pures_at_T(T)[1][0]
+        zs = self.zs
+        if not self.cross_B_coefficients:
+            if T == self.T:
+                dB_dTs = self.model.dB_dT_pures()
+            else:
+                dB_dTs = self.model.B_pures_at_T(T)[1]
+            return float(mixing_simple(zs, dB_dTs))
+        if T == self.T:
+            dB_dT_interactions = self.model.dB_dT_interactions()
+        else:
+            dB_dT_interactions = self.model.B_interactions_at_T(T)[1]
+        return float(BVirial_mixture(zs, dB_dT_interactions))
 
     def dB_dT(self):
         r'''Method to calculate and return the first temperature derivative of
         the `B` second virial coefficient.
-
         Returns
         -------
         dB_dT : float
@@ -1934,26 +1958,32 @@ class VirialGas(IdealGasDeparturePhase):
         '''
         try:
             return self._dB_dT
-        except:
-            pass
+        except AttributeError:
+            self._dB_dT = dB_dT = self.dB_dT_at_T(self.T)
+            return dB_dT
+
+    def d2B_dT2_at_T(self, T):
         N = self.N
         if N == 1:
-            return self.model.dB_dT_pures()[0]
+            if T == self.T:
+                return self.model.d2B_dT2_pures()[0]
+            return self.model.B_pures_at_T(T)[2][0]
         zs = self.zs
         if not self.cross_B_coefficients:
-            Bs = self.model.dB_dT_pures()
-            self._dB_dT = dB_dT = float(mixing_simple(zs, Bs))
-            return dB_dT
-        dB_dT_interactions = self.model.dB_dT_interactions()
-        self._dB_dT = dB_dT = float(BVirial_mixture(zs, dB_dT_interactions))
-        return dB_dT
-
-
+            if T == self.T:
+                d2B_dT2s = self.model.d2B_dT2_pures()
+            else:
+                d2B_dT2s = self.model.B_pures_at_T(T)[2]
+            return float(mixing_simple(zs, d2B_dT2s))
+        if T == self.T:
+            d2B_dT2_interactions = self.model.d2B_dT2_interactions()
+        else:
+            d2B_dT2_interactions = self.model.B_interactions_at_T(T)[2]
+        return float(BVirial_mixture(zs, d2B_dT2_interactions))
 
     def d2B_dT2(self):
         r'''Method to calculate and return the second temperature derivative of
         the `B` second virial coefficient.
-
         Returns
         -------
         d2B_dT2 : float
@@ -1962,24 +1992,32 @@ class VirialGas(IdealGasDeparturePhase):
         '''
         try:
             return self._d2B_dT2
-        except:
-            pass
+        except AttributeError:
+            self._d2B_dT2 = d2B_dT2 = self.d2B_dT2_at_T(self.T)
+            return d2B_dT2
+
+    def d3B_dT3_at_T(self, T):
         N = self.N
         if N == 1:
-            return self.model.d2B_dT2_pures()[0]
+            if T == self.T:
+                return self.model.d3B_dT3_pures()[0]
+            return self.model.B_pures_at_T(T)[3][0]
         zs = self.zs
         if not self.cross_B_coefficients:
-            Bs = self.model.d2B_dT2_pures()
-            self._d2B_dT2 = d2B_dT2 = float(mixing_simple(zs, Bs))
-            return d2B_dT2
-        d2B_dT2_interactions = self.model.d2B_dT2_interactions()
-        self._d2B_dT2 = d2B_dT2 = float(BVirial_mixture(zs, d2B_dT2_interactions))
-        return d2B_dT2
+            if T == self.T:
+                d3B_dT3s = self.model.d3B_dT3_pures()
+            else:
+                d3B_dT3s = self.model.B_pures_at_T(T)[3]
+            return float(mixing_simple(zs, d3B_dT3s))
+        if T == self.T:
+            d3B_dT3_interactions = self.model.d3B_dT3_interactions()
+        else:
+            d3B_dT3_interactions = self.model.B_interactions_at_T(T)[3]
+        return float(BVirial_mixture(zs, d3B_dT3_interactions))
 
     def d3B_dT3(self):
         r'''Method to calculate and return the third temperature derivative of
         the `B` second virial coefficient.
-
         Returns
         -------
         d3B_dT3 : float
@@ -1988,25 +2026,33 @@ class VirialGas(IdealGasDeparturePhase):
         '''
         try:
             return self._d3B_dT3
-        except:
-            pass
-        N = self.N
-        if N == 1:
-            return self.model.d3B_dT3_pures()[0]
-        zs = self.zs
-
-        if not self.cross_B_coefficients:
-            Bs = self.model.d3B_dT3_pures()
-            self._d3B_dT3 = d3B_dT3 = float(mixing_simple(zs, Bs))
+        except AttributeError:
+            self._d3B_dT3 = d3B_dT3 = self.d3B_dT3_at_T(self.T)
             return d3B_dT3
-        d3B_dT3_interactions = self.model.d3B_dT3_interactions()
-        self._d3B_dT3 = d3B_dT3 = float(BVirial_mixture(zs, d3B_dT3_interactions))
-        return d3B_dT3
 
+    def C_at_T(self, T):
+        N = self.N
+        if self.model.C_zero:
+            return 0.0
+        elif N == 1:
+            if T == self.T:
+                return self.model.C_pures()[0]
+            return self.model.C_pures_at_T(T)[0][0]
+        zs = self.zs
+        if not self.cross_C_coefficients:
+            if T == self.T:
+                Cs = self.model.C_pures()
+            else:
+                Cs = self.model.C_pures_at_T(T)[0]
+            return float(mixing_simple(zs, Cs))
+        if T == self.T:
+            Cijs = self.model.C_interactions()
+        else:
+            Cijs = self.model.C_interactions_at_T(T)[0]
+        return float(CVirial_mixture_Orentlicher_Prausnitz(zs, Cijs))
 
     def C(self):
         r'''Method to calculate and return the `C` third virial coefficient.
-
         Returns
         -------
         C : float
@@ -2014,29 +2060,35 @@ class VirialGas(IdealGasDeparturePhase):
         '''
         try:
             return self._C
-        except:
-            pass
-        T = self.T
-        zs = self.zs
+        except AttributeError:
+            self._C = C = self.C_at_T(self.T)
+            return C
+
+    def dC_dT_at_T(self, T):
         N = self.N
         if self.model.C_zero:
-            self._C = C = 0.0
-            return C
-        elif self.N == 1:
-            self._C = C = self.model.C_pures()[0]
-        elif not self.cross_C_coefficients:
-            Cs = self.model.C_pures()
-            self._C = C = float(mixing_simple(zs, Cs))
-            return C
-        else:
+            return 0.0
+        elif N == 1:
+            if T == self.T:
+                return self.model.dC_dT_pures()[0]
+            return self.model.C_pures_at_T(T)[1][0]
+        zs = self.zs
+        if not self.cross_C_coefficients:
+            if T == self.T:
+                dC_dTs = self.model.dC_dT_pures()
+            else:
+                dC_dTs = self.model.C_pures_at_T(T)[1]
+            return float(mixing_simple(zs, dC_dTs))
+        if T == self.T:
             Cijs = self.model.C_interactions()
-            self._C = C = float(CVirial_mixture_Orentlicher_Prausnitz(zs, Cijs))
-        return C
+            dCijs = self.model.dC_dT_interactions()
+        else:
+            Cijs, dCijs = self.model.C_interactions_at_T(T)[:2]
+        return float(dCVirial_mixture_dT_Orentlicher_Prausnitz(zs, Cijs, dCijs))
 
     def dC_dT(self):
         r'''Method to calculate and return the first temperature derivative of
         the `C` third virial coefficient.
-
         Returns
         -------
         dC_dT : float
@@ -2045,39 +2097,36 @@ class VirialGas(IdealGasDeparturePhase):
         '''
         try:
             return self._dC_dT
-        except:
-            pass
-        T = self.T
-        zs = self.zs
+        except AttributeError:
+            self._dC_dT = dC_dT = self.dC_dT_at_T(self.T)
+            return dC_dT
+
+    def d2C_dT2_at_T(self, T):
+        N = self.N
         if self.model.C_zero:
-            self._dC_dT = dC_dT = 0.0
-            return dC_dT
-        elif self.N == 1:
-            self._dC_dT = dC_dT = self.model.dC_dT_pures()[0]
-            return dC_dT
-        elif not self.cross_C_coefficients:
-            dC_dTs = self.model.dC_dT_pures()
-            self._dC_dT = dC_dT = float(mixing_simple(zs, dC_dTs))
-            return dC_dT
-        else:
+            return 0.0
+        elif N == 1:
+            if T == self.T:
+                return self.model.d2C_dT2_pures()[0]
+            return self.model.C_pures_at_T(T)[2][0]
+        zs = self.zs
+        if not self.cross_C_coefficients:
+            if T == self.T:
+                d2C_dT2s = self.model.d2C_dT2_pures()
+            else:
+                d2C_dT2s = self.model.C_pures_at_T(T)[2]
+            return float(mixing_simple(zs, d2C_dT2s))
+        if T == self.T:
             Cijs = self.model.C_interactions()
             dCijs = self.model.dC_dT_interactions()
-            # TODO
-            """
-            from sympy import *
-            Cij, Cik, Cjk = symbols('Cij, Cik, Cjk', cls=Function)
-            T = symbols('T')
-            # The derivative of this is messy
-            expr = (Cij(T)*Cik(T)*Cjk(T))**Rational('1/3')
-            # diff(expr, T, 3)
-            """
-            self._dC_dT = dC_dT = float(dCVirial_mixture_dT_Orentlicher_Prausnitz(zs, Cijs, dCijs))
-            return dC_dT
+            d2C_dT2ijs = self.model.d2C_dT2_interactions()
+        else:
+            Cijs, dCijs, d2C_dT2ijs = self.model.C_interactions_at_T(T)[:3]
+        return float(d2CVirial_mixture_dT2_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs))
 
     def d2C_dT2(self):
         r'''Method to calculate and return the second temperature derivative of
         the `C` third virial coefficient.
-
         Returns
         -------
         d2C_dT2 : float
@@ -2086,62 +2135,47 @@ class VirialGas(IdealGasDeparturePhase):
         '''
         try:
             return self._d2C_dT2
-        except:
-            pass
-        T = self.T
-        zs = self.zs
+        except AttributeError:
+            self._d2C_dT2 = d2C_dT2 = self.d2C_dT2_at_T(self.T)
+            return d2C_dT2
+
+    def d3C_dT3_at_T(self, T):
+        N = self.N
         if self.model.C_zero:
-            self._d2C_dT2 = d2C_dT2 = 0.0
-            return d2C_dT2
-
-        elif self.N == 1:
-            self._d2C_dT2 = d2C_dT2 = self.model.d2C_dT2_pures()[0]
-            return d2C_dT2
-        elif not self.cross_C_coefficients:
-            d2C_dT2s = self.model.d2C_dT2_pures()
-            self._d2C_dT2 = d2C_dT2 = float(mixing_simple(zs, d2C_dT2s))
-            return d2C_dT2
-        else:
-            Cijs = self.model.C_interactions()
-            dCijs = self.model.dC_dT_interactions()
-            d2C_dT2ijs = self.model.d2C_dT2_interactions()
-            N = self.N
-            self._d2C_dT2 = d2C_dT2 = float(d2CVirial_mixture_dT2_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs))
-            return d2C_dT2
-
-    def d3C_dT3(self):
-        r'''Method to calculate and return the third temperature derivative of
-        the `C` third virial coefficient.
-
-        Returns
-        -------
-        d3C_dT3 : float
-            Second temperature derivative of third molar virial coefficient
-            [m^6/(mol^2*K^3)]
-        '''
-        try:
-            return self._d3C_dT3
-        except:
-            pass
-        T = self.T
+            return 0.0
+        elif N == 1:
+            if T == self.T:
+                return self.model.d3C_dT3_pures()[0]
+            return self.model.C_pures_at_T(T)[3][0]
         zs = self.zs
-        if self.model.C_zero:
-            self._d3C_dT3 = d3C_dT3 = 0.0
-            return d3C_dT3
-        elif self.N == 1:
-            self._d3C_dT3 = d3C_dT3 = self.model.d3C_dT3_pures()[0]
-            return d3C_dT3
-        elif not self.cross_C_coefficients:
-            d3C_dT3s = self.model.d3C_dT3_pures()
-            self._d3C_dT3 = d3C_dT3 = float(mixing_simple(zs, d3C_dT3s))
-            return d3C_dT3
-        else:
+        if not self.cross_C_coefficients:
+            if T == self.T:
+                d3C_dT3s = self.model.d3C_dT3_pures()
+            else:
+                d3C_dT3s = self.model.C_pures_at_T(T)[3]
+            return float(mixing_simple(zs, d3C_dT3s))
+        if T == self.T:
             Cijs = self.model.C_interactions()
             dCijs = self.model.dC_dT_interactions()
             d2C_dT2ijs = self.model.d2C_dT2_interactions()
             d3C_dT3ijs = self.model.d3C_dT3_interactions()
-            N = self.N
-            self._d3C_dT3 = d3C_dT3 = float(d3CVirial_mixture_dT3_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs, d3C_dT3ijs))
+        else:
+            Cijs, dCijs, d2C_dT2ijs, d3C_dT3ijs = self.model.C_interactions_at_T(T)
+        return float(d3CVirial_mixture_dT3_Orentlicher_Prausnitz(zs, Cijs, dCijs, d2C_dT2ijs, d3C_dT3ijs))
+
+    def d3C_dT3(self):
+        r'''Method to calculate and return the third temperature derivative of
+        the `C` third virial coefficient.
+        Returns
+        -------
+        d3C_dT3 : float
+            Third temperature derivative of third molar virial coefficient
+            [m^6/(mol^2*K^3)]
+        '''
+        try:
+            return self._d3C_dT3
+        except AttributeError:
+            self._d3C_dT3 = d3C_dT3 = self.d3C_dT3_at_T(self.T)
             return d3C_dT3
 
     def dB_dzs(self):
