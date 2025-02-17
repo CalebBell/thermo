@@ -76,7 +76,7 @@ def test_store_load_VirialGas():
     omegas = [0.008]
     Vcs = [9.86e-05]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593]))]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
+    model = VirialCSP(T=300.0, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
     zs = [1]
     PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs)
 
@@ -116,7 +116,7 @@ def test_virial_phase_pure_B_only_pitzer_curl():
     omegas = [0.008]
     Vcs = [9.86e-05]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593]))]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
+    model = VirialCSP(T=300.0, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
     zs = [1]
     PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs)
 
@@ -198,20 +198,20 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
+    T = 300
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
-    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+    model_np = VirialCSP(T=T, Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
                               B_model=VIRIAL_B_ABBOTT,
                               cross_B_model=VIRIAL_B_ABBOTT,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ZERO)
 
 
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     zs_np = np.array(zs)
@@ -372,20 +372,20 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
+    T = 300
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
-    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+    model_np = VirialCSP(T=T, Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
                               B_model=VIRIAL_B_ABBOTT,
                               cross_B_model=VIRIAL_B_ABBOTT,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ZERO)
 
 
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     zs_np = np.array(zs)
@@ -533,9 +533,10 @@ def test_virial_phase_pure_BC_pitzer_curl_orbey_vera():
     omegas = [0.008]
     Vcs = [9.86e-05]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593]))]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ORBEY_VERA)
+    T = 300.0
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ORBEY_VERA)
     zs = [1]
-    gas = PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    gas = PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=T, P=1e5, zs=zs, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
 
     check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
@@ -619,20 +620,20 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
+    T = 300
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ORBEY_VERA)
-    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+    model_np = VirialCSP(T=T, Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
                               B_model=VIRIAL_B_ABBOTT,
                               cross_B_model=VIRIAL_B_ABBOTT,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ORBEY_VERA)
 
 
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     zs_np = np.array(zs)
@@ -932,20 +933,20 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
+    T = 300
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model=VIRIAL_B_ABBOTT,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ORBEY_VERA)
-    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+    model_np = VirialCSP(T=T, Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
                               B_model=VIRIAL_B_ABBOTT,
                               cross_B_model=VIRIAL_B_ABBOTT,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ORBEY_VERA)
 
 
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     zs_np = np.array(zs)
@@ -1074,38 +1075,39 @@ def test_ternary_virial_phase_hashing_repr():
     Pcs=[3394387.5, 5042945.25, 4873732.5]
     Vcs=[8.95e-05, 7.34e-05, 7.49e-05]
     omegas=[0.04, 0.021, -0.004]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
+    T = 300.0
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63])),
                          HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
                          HeatCapacityGas(poly_fit=(50.0, 1000.0, [0,0,0,0, R*2.5]))]
-    phase = VirialGas(model=model, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phase = VirialGas(model=model, T=T, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
 
     check_virial_temperature_consistency_T_calls(phase, [320, 800])
 
 
-    model2 = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
-    phase2 = VirialGas(model=model2, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    model2 = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
+    phase2 = VirialGas(model=model2, T=T, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
 
     # print(model.__dict__)
     # print(model2.__dict__)
     assert model.model_hash() == model2.model_hash()
 
-    modeld0 = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_ABBOTT', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
+    modeld0 = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_ABBOTT', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
 
     # Change T
-    phased0 = VirialGas(model=model, T=315, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased0 = VirialGas(model=model, T=315.0, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
     # Change P
-    phased1 = VirialGas(model=model, T=300, P=1e6, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased1 = VirialGas(model=model, T=T, P=1e6, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
     # Change composition
-    phased2 = VirialGas(model=model2, T=300, P=1e5, zs=[.77, .22, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased2 = VirialGas(model=model2, T=T, P=1e5, zs=[.77, .22, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
     # Change model to the same model
-    phased3 = VirialGas(model=model2, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased3 = VirialGas(model=model2, T=T, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
 
     # Make a variety of diffinitely different models
-    phased4 = VirialGas(model=modeld0, T=315, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
-    phased5 = VirialGas(model=modeld0, T=300, P=1e6, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
-    phased6 = VirialGas(model=modeld0, T=300, P=1e5, zs=[.77, .22, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
-    phased7 = VirialGas(model=modeld0, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='linear', cross_C_model='Orentlicher-Prausnitz')
+    phased4 = VirialGas(model=modeld0, T=315.0, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased5 = VirialGas(model=modeld0, T=T, P=1e6, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased6 = VirialGas(model=modeld0, T=T, P=1e5, zs=[.77, .22, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased7 = VirialGas(model=modeld0, T=T, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='linear', cross_C_model='Orentlicher-Prausnitz')
 
 
     assert model.state_hash() == model2.state_hash()
@@ -1150,7 +1152,7 @@ def test_virial_ternary_vs_ideal_gas():
     N = len(zs)
     phase = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
 
-    model = VirialCSP(Tcs=constants.Tcs, Pcs=constants.Pcs, Vcs=constants.Vcs, omegas=constants.omegas, B_model=VIRIAL_B_ZERO, C_model=VIRIAL_C_ZERO)
+    model = VirialCSP(T=300.0, Tcs=constants.Tcs, Pcs=constants.Pcs, Vcs=constants.Vcs, omegas=constants.omegas, B_model=VIRIAL_B_ZERO, C_model=VIRIAL_C_ZERO)
     phase_EOS = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
     check_virial_temperature_consistency_T_calls(phase_EOS, [320, 800])
@@ -1335,12 +1337,12 @@ def test_virial_easy_B_C_models():
      [0.0, 0.04313694538361394, 0.0]]
 
     # Get VIRIAL_B_TSONOPOULOS and VIRIAL_C_XIANG
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    T = 300
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_TSONOPOULOS,
                                   cross_B_model=VIRIAL_B_TSONOPOULOS,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_XIANG)
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
@@ -1367,7 +1369,7 @@ def test_virial_easy_B_C_models():
 
     # VIRIAL_B_OCONNELL_PRAUSNITZ
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_OCONNELL_PRAUSNITZ,
                                   cross_B_model=VIRIAL_B_OCONNELL_PRAUSNITZ,
                                   cross_B_model_kijs=kijs,
@@ -1386,7 +1388,7 @@ def test_virial_easy_B_C_models():
     check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T,Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_XIANG,
                                   cross_B_model=VIRIAL_B_XIANG,
                                   cross_B_model_kijs=kijs,
@@ -1414,7 +1416,7 @@ def test_virial_easy_B_C_models():
     N = 3
     Meng_virial_as = [[Meng_virial_a(Tcijs[i][j], Pcijs[i][j], dipole=dipoles[i][j]) for j in range(N)]
                                      for i in range(N)]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T,Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_MENG,
                                   cross_B_model=VIRIAL_B_MENG,
                                   cross_B_model_kijs=kijs,
@@ -1444,7 +1446,7 @@ def test_virial_easy_B_C_models():
     BVirial_Tsonopoulos_extended_bs = [[1e-5, 1e-6, 1e-7], [1e-6, .25, 1e-8], [1e-7, 1e-8, .343]]
 
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T,Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_TSONOPOULOS_EXTENDED,
                                   cross_B_model=VIRIAL_B_TSONOPOULOS_EXTENDED,
                                   cross_B_model_kijs=kijs,
