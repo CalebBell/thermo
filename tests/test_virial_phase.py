@@ -1307,16 +1307,16 @@ def check_virial_temperature_consistency_T_calls(model, T_list, rtol=1e-14):
         model_at_T = model.to(T=T, P=model.P, zs=model.zs)
         
         # Check B and its derivatives
-        assert_close(model_at_T.B(), model.B_at_T(T), rtol=rtol)
-        assert_close(model_at_T.dB_dT(), model.dB_dT_at_T(T), rtol=rtol)
-        assert_close(model_at_T.d2B_dT2(), model.d2B_dT2_at_T(T), rtol=rtol)
-        assert_close(model_at_T.d3B_dT3(), model.d3B_dT3_at_T(T), rtol=rtol) 
+        assert_close(model_at_T.B(), model.B_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.dB_dT(), model.dB_dT_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.d2B_dT2(), model.d2B_dT2_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.d3B_dT3(), model.d3B_dT3_at(T, model.zs), rtol=rtol) 
         
         # Check C and its derivatives
-        assert_close(model_at_T.C(), model.C_at_T(T), rtol=rtol)
-        assert_close(model_at_T.dC_dT(), model.dC_dT_at_T(T), rtol=rtol)
-        assert_close(model_at_T.d2C_dT2(), model.d2C_dT2_at_T(T), rtol=rtol)
-        assert_close(model_at_T.d3C_dT3(), model.d3C_dT3_at_T(T), rtol=rtol) 
+        assert_close(model_at_T.C(), model.C_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.dC_dT(), model.dC_dT_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.d2C_dT2(), model.d2C_dT2_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.d3C_dT3(), model.d3C_dT3_at(T, model.zs), rtol=rtol) 
 
 def test_virial_easy_B_C_models():
     from chemicals.virial import Meng_virial_a

@@ -1899,13 +1899,12 @@ class VirialGas(IdealGasDeparturePhase):
 
         return new
 
-    def B_at_T(self, T):
+    def B_at(self, T, zs):
         N = self.N
         if N == 1:
             if T == self.T:
                 return self.model.B_pures()[0]
             return self.model.B_pures_at_T(T)[0][0]
-        zs = self.zs
         if not self.has_cross_B_coefficients:
             if T == self.T:
                 Bs = self.model.B_pures()
@@ -1928,16 +1927,15 @@ class VirialGas(IdealGasDeparturePhase):
         try:
             return self._B
         except AttributeError:
-            self._B = B = self.B_at_T(self.T)
+            self._B = B = self.B_at(self.T, self.zs)
             return B
 
-    def dB_dT_at_T(self, T):
+    def dB_dT_at(self, T, zs):
         N = self.N
         if N == 1:
             if T == self.T:
                 return self.model.dB_dT_pures()[0]
             return self.model.B_pures_at_T(T)[1][0]
-        zs = self.zs
         if not self.has_cross_B_coefficients:
             if T == self.T:
                 dB_dTs = self.model.dB_dT_pures()
@@ -1962,16 +1960,15 @@ class VirialGas(IdealGasDeparturePhase):
         try:
             return self._dB_dT
         except AttributeError:
-            self._dB_dT = dB_dT = self.dB_dT_at_T(self.T)
+            self._dB_dT = dB_dT = self.dB_dT_at(self.T, self.zs)
             return dB_dT
 
-    def d2B_dT2_at_T(self, T):
+    def d2B_dT2_at(self, T, zs):
         N = self.N
         if N == 1:
             if T == self.T:
                 return self.model.d2B_dT2_pures()[0]
             return self.model.B_pures_at_T(T)[2][0]
-        zs = self.zs
         if not self.has_cross_B_coefficients:
             if T == self.T:
                 d2B_dT2s = self.model.d2B_dT2_pures()
@@ -1996,16 +1993,15 @@ class VirialGas(IdealGasDeparturePhase):
         try:
             return self._d2B_dT2
         except AttributeError:
-            self._d2B_dT2 = d2B_dT2 = self.d2B_dT2_at_T(self.T)
+            self._d2B_dT2 = d2B_dT2 = self.d2B_dT2_at(self.T, self.zs)
             return d2B_dT2
 
-    def d3B_dT3_at_T(self, T):
+    def d3B_dT3_at(self, T, zs):
         N = self.N
         if N == 1:
             if T == self.T:
                 return self.model.d3B_dT3_pures()[0]
             return self.model.B_pures_at_T(T)[3][0]
-        zs = self.zs
         if not self.has_cross_B_coefficients:
             if T == self.T:
                 d3B_dT3s = self.model.d3B_dT3_pures()
@@ -2030,10 +2026,10 @@ class VirialGas(IdealGasDeparturePhase):
         try:
             return self._d3B_dT3
         except AttributeError:
-            self._d3B_dT3 = d3B_dT3 = self.d3B_dT3_at_T(self.T)
+            self._d3B_dT3 = d3B_dT3 = self.d3B_dT3_at(self.T, self.zs)
             return d3B_dT3
 
-    def C_at_T(self, T):
+    def C_at(self, T, zs):
         N = self.N
         if self.model.C_model == VIRIAL_C_ZERO:
             return 0.0
@@ -2041,7 +2037,6 @@ class VirialGas(IdealGasDeparturePhase):
             if T == self.T:
                 return self.model.C_pures()[0]
             return self.model.C_pures_at_T(T)[0][0]
-        zs = self.zs
         if not self.has_cross_C_coefficients:
             if T == self.T:
                 Cs = self.model.C_pures()
@@ -2064,10 +2059,10 @@ class VirialGas(IdealGasDeparturePhase):
         try:
             return self._C
         except AttributeError:
-            self._C = C = self.C_at_T(self.T)
+            self._C = C = self.C_at(self.T, self.zs)
             return C
 
-    def dC_dT_at_T(self, T):
+    def dC_dT_at(self, T, zs):
         N = self.N
         if self.model.C_model == VIRIAL_C_ZERO:
             return 0.0
@@ -2075,7 +2070,6 @@ class VirialGas(IdealGasDeparturePhase):
             if T == self.T:
                 return self.model.dC_dT_pures()[0]
             return self.model.C_pures_at_T(T)[1][0]
-        zs = self.zs
         if not self.has_cross_C_coefficients:
             if T == self.T:
                 dC_dTs = self.model.dC_dT_pures()
@@ -2101,10 +2095,10 @@ class VirialGas(IdealGasDeparturePhase):
         try:
             return self._dC_dT
         except AttributeError:
-            self._dC_dT = dC_dT = self.dC_dT_at_T(self.T)
+            self._dC_dT = dC_dT = self.dC_dT_at(self.T, self.zs)
             return dC_dT
 
-    def d2C_dT2_at_T(self, T):
+    def d2C_dT2_at(self, T, zs):
         N = self.N
         if self.model.C_model == VIRIAL_C_ZERO:
             return 0.0
@@ -2112,7 +2106,6 @@ class VirialGas(IdealGasDeparturePhase):
             if T == self.T:
                 return self.model.d2C_dT2_pures()[0]
             return self.model.C_pures_at_T(T)[2][0]
-        zs = self.zs
         if not self.has_cross_C_coefficients:
             if T == self.T:
                 d2C_dT2s = self.model.d2C_dT2_pures()
@@ -2139,10 +2132,10 @@ class VirialGas(IdealGasDeparturePhase):
         try:
             return self._d2C_dT2
         except AttributeError:
-            self._d2C_dT2 = d2C_dT2 = self.d2C_dT2_at_T(self.T)
+            self._d2C_dT2 = d2C_dT2 = self.d2C_dT2_at(self.T, self.zs)
             return d2C_dT2
 
-    def d3C_dT3_at_T(self, T):
+    def d3C_dT3_at(self, T, zs):
         N = self.N
         if self.model.C_model == VIRIAL_C_ZERO:
             return 0.0
@@ -2150,7 +2143,6 @@ class VirialGas(IdealGasDeparturePhase):
             if T == self.T:
                 return self.model.d3C_dT3_pures()[0]
             return self.model.C_pures_at_T(T)[3][0]
-        zs = self.zs
         if not self.has_cross_C_coefficients:
             if T == self.T:
                 d3C_dT3s = self.model.d3C_dT3_pures()
@@ -2178,7 +2170,7 @@ class VirialGas(IdealGasDeparturePhase):
         try:
             return self._d3C_dT3
         except AttributeError:
-            self._d3C_dT3 = d3C_dT3 = self.d3C_dT3_at_T(self.T)
+            self._d3C_dT3 = d3C_dT3 = self.d3C_dT3_at(self.T, self.zs)
             return d3C_dT3
 
     def dB_dzs(self):
