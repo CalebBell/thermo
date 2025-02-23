@@ -5,6 +5,7 @@
 ### Added
 
 ### Changed
+ - Renamed arguments `cross_B_model` to `B_mixing_rule` of `VirialGas` to avoid confusion with similar parameter in `VirialCSP`. and the same for `cross_C_model` to `C_mixing_rule`
 
 ### Removed
 

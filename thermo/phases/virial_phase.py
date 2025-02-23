@@ -23,7 +23,7 @@ SOFTWARE.
 __all__ = ['VirialCSP', 'VirialGas',
 'VIRIAL_B_ZERO', 'VIRIAL_B_PITZER_CURL', 'VIRIAL_B_ABBOTT', 'VIRIAL_B_TSONOPOULOS',
 'VIRIAL_B_TSONOPOULOS_EXTENDED', 'VIRIAL_B_OCONNELL_PRAUSNITZ', 'VIRIAL_B_XIANG', 'VIRIAL_B_MENG', 'VIRIAL_C_XIANG',
-'VIRIAL_C_ORBEY_VERA', 'VIRIAL_C_ZERO', 'VIRIAL_B_MODELS', 'VIRIAL_C_MODELS']
+'VIRIAL_C_ORBEY_VERA', 'VIRIAL_C_ZERO', 'VIRIAL_B_MODELS', 'VIRIAL_C_MODELS', 'VIRIAL_CROSS_B_TARAKAD_DANNER']
 
 from chemicals.utils import dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, mixing_simple
 from chemicals.virial import (
@@ -95,6 +95,7 @@ VIRIAL_B_MODELS = (VIRIAL_B_ZERO,
                    VIRIAL_B_OCONNELL_PRAUSNITZ,
                    VIRIAL_B_XIANG,
                    VIRIAL_B_MENG)
+VIRIAL_B_MODELS_SET = frozenset(VIRIAL_B_MODELS)
 
 # reqiures an `a` parameter
 
@@ -106,12 +107,15 @@ VIRIAL_C_ORBEY_VERA = 'VIRIAL_C_ORBEY_VERA'
 VIRIAL_C_ZERO = 'VIRIAL_C_ZERO'
 
 VIRIAL_C_MODELS = (VIRIAL_C_ZERO, VIRIAL_C_XIANG, VIRIAL_C_ORBEY_VERA)
-
+VIRIAL_C_MODELS_SET = frozenset(VIRIAL_C_MODELS)
 
 VIRIAL_CROSS_B_ZEROS = VIRIAL_CROSS_C_ZEROS = 'Zeros'
 VIRIAL_CROSS_B_TARAKAD_DANNER = 'Tarakad-Danner'
 VIRIAL_CROSS_C_TARAKAD_DANNER = 'Tarakad-Danner'
 
+
+VIRIAL_CROSS_B_MODELS_SET = frozenset([VIRIAL_CROSS_B_TARAKAD_DANNER, VIRIAL_CROSS_B_ZEROS])
+VIRIAL_CROSS_C_MODELS_SET = frozenset([VIRIAL_CROSS_C_TARAKAD_DANNER, VIRIAL_CROSS_C_ZEROS])
 
 class VirialCSP:
     r'''Class for calculating the `B` virial coefficients of pure components
@@ -159,17 +163,10 @@ class VirialCSP:
           sample models for estimating these parameters; additional models are
           available in the literature and also the value can be regressed from
           experimental values.
+        * **Zeros** : No cross parameters are used
     cross_B_model_kijs : list[list[float]], optional
         Cross parameters `kijs` for **VIRIAL_CROSS_B_TARAKAD_DANNER** cross
         rule; specified or set to zero [-]
-    C_model : str, optional
-        The model used to calculate the `C` pure component and interaction
-        virial coefficients, [-]
-
-        * **VIRIAL_C_ZERO**: The C virial coefficient is always zero
-        * **VIRIAL_C_ORBEY_VERA** The model of [9]_, :obj:`chemicals.virial.CVirial_Orbey_Vera`
-        * **VIRIAL_C_XIANG** The model of [10]_, :obj:`chemicals.virial.CVirial_Liu_Xiang`
-
     B_model_Meng_as : list[list[float]], optional
         Meng `a` parameters; this is essentially a correction for polar
         behavior, and must be provided for all components as well as their
@@ -185,6 +182,17 @@ class VirialCSP:
         behavior, and must be provided for all components as well as their
         interactions; see :obj:`thermo.functional_groups.BVirial_Tsonopoulos_extended_ab`.
         This is used only for the model **VIRIAL_B_TSONOPOULOS_EXTENDED** [-]
+    C_model : str, optional
+        The model used to calculate the `C` pure component and interaction
+        virial coefficients, [-]
+
+        * **VIRIAL_C_ZERO**: The C virial coefficient is always zero
+        * **VIRIAL_C_ORBEY_VERA** The model of [9]_, :obj:`chemicals.virial.CVirial_Orbey_Vera`
+        * **VIRIAL_C_XIANG** The model of [10]_, :obj:`chemicals.virial.CVirial_Liu_Xiang`
+    cross_C_model : str, optional
+        The model used to calculate the `C` cross virial coefficient;
+        inputs are the same as `cross_C_model`
+
     T : float, optional
         The specified temperature for the model; the calculations are cached
         based only on temperature, use :obj:`VirialCSP.to` to obtain a new
@@ -249,8 +257,9 @@ class VirialCSP:
     pure_C_calculated = False
 
     nonstate_constants = ('Tcs', 'Pcs', 'Vcs', 'omegas', 'B_model', 'cross_B_model',
-                          'cross_B_model_kijs', 'C_model', 'B_model_Meng_as',
-                          'B_model_Tsonopoulos_extended_as', 'B_model_Tsonopoulos_extended_bs')
+                          'cross_B_model_kijs', 'B_model_Meng_as',
+                          'B_model_Tsonopoulos_extended_as', 'B_model_Tsonopoulos_extended_bs', 
+                          'C_model', 'cross_C_model')
 
     def __repr__(self):
         r'''Method to create a string representation of the VirialCSP object, with
@@ -267,23 +276,16 @@ class VirialCSP:
         Examples
         --------
         >>> from thermo import VirialCSP
-        >>> model = VirialCSP(Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
+        >>> model = VirialCSP(T=298.15, Tcs=[126.2, 154.58], Pcs=[3394387.5, 5042945.25], Vcs=[8.95e-05, 7.34e-05], omegas=[0.04, 0.021], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
         >>> model
-        VirialCSP(Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA', T=298.15)
+        VirialCSP(T=298.15, Tcs=[126.2, 154.58], Pcs=[3394387.5, 5042945.25], Vcs=[8.95e-05, 7.34e-05], omegas=[0.04, 0.021], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', cross_B_model_kijs=[[0.0, 0.0], [0.0, 0.0]], B_model_Meng_as=[[0.0, 0.0], [0.0, 0.0]], B_model_Tsonopoulos_extended_as=[[0.0, 0.0], [0.0, 0.0]], B_model_Tsonopoulos_extended_bs=[[0.0, 0.0], [0.0, 0.0]], C_model='VIRIAL_C_ORBEY_VERA', cross_C_model='Tarakad-Danner')
         '''
-        try:
-            Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
-        except:
-            Cpgs = ''
         base = f'{self.__class__.__name__}('
-        for s in self.nonstate_constants + ('T',):
+        for s in ('T',) + self.nonstate_constants:
             if hasattr(self, s) and getattr(self, s) is not None:
                 val = getattr(self, s)
                 if type(val) is str:
                     val = f"'{val}'"
-                elif isinstance(val, (np.ndarray, list,)):
-                    if not np.any(val):
-                        continue
                 base += f'{s}={val}, '
         if base[-2:] == ', ':
             base = base[:-2]
@@ -356,16 +358,14 @@ class VirialCSP:
 
     def __init__(self, Tcs, Pcs, Vcs, omegas,
                  B_model=VIRIAL_B_XIANG,
-
                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                  # always require kijs in this model
                  cross_B_model_kijs=None,
-
-                 C_model=VIRIAL_C_XIANG,
-
                  B_model_Meng_as=None,
                  B_model_Tsonopoulos_extended_as=None,
                  B_model_Tsonopoulos_extended_bs=None,
+                 C_model=VIRIAL_C_XIANG,
+                 cross_C_model=VIRIAL_CROSS_C_TARAKAD_DANNER,
                  T=298.15,
                  ):
         self.Tcs = Tcs
@@ -378,7 +378,12 @@ class VirialCSP:
         if T is None:
             raise ValueError("T must be defined")
 
+        if B_model not in VIRIAL_B_MODELS_SET:
+            raise ValueError(f"Unrecognized B model: `{B_model}`")
+
         self.B_model = B_model
+        if cross_B_model not in VIRIAL_CROSS_B_MODELS_SET:
+            raise ValueError(f"Unrecognized cross B model: `{cross_B_model}`")
         self.cross_B_model = cross_B_model
 
         if cross_B_model_kijs is None:
@@ -429,10 +434,14 @@ class VirialCSP:
         self.cross_C_model_Pcijs = self.cross_B_model_Pcijs
         self.cross_C_model_Vcijs = self.cross_B_model_Vcijs
         self.cross_C_model_omegaijs = self.cross_B_model_omegaijs
+        if cross_C_model not in VIRIAL_CROSS_C_MODELS_SET:
+            raise ValueError(f"Unrecognized cross C model: `{cross_C_model}`")
+        self.cross_C_model = cross_C_model
+
+        if C_model not in VIRIAL_C_MODELS_SET:
+            raise ValueError(f"Unrecognized C model `{C_model}`")
 
         self.C_model = C_model
-        self.C_zero = C_model == VIRIAL_C_ZERO
-        self.B_zero = B_model == VIRIAL_B_ZERO
 
     def to(self, T):
         r'''Method to construct a new object at a new temperature.
@@ -481,8 +490,7 @@ class VirialCSP:
         new.cross_C_model_Vcijs = self.cross_C_model_Vcijs
         new.cross_C_model_omegaijs = self.cross_C_model_omegaijs
         new.C_model = self.C_model
-        new.C_zero = self.C_zero
-        new.B_zero = self.B_zero
+        new.cross_C_model = self.cross_C_model
         new.T = T
         return new
 
@@ -920,13 +928,13 @@ class VirialGas(IdealGasDeparturePhase):
         Pressure, [Pa]
     zs : list[float], optional
         Mole fractions of each component, [-]
-    cross_B_model : str, optional
+    B_mixing_rule : str, optional
         The method used to combine the pure and/or interaction second `B` virial
         coefficients into a single `B` coefficient.
 
         * 'linear': :math:`B = \sum_i y_i B_i`
         * 'theory': :math:` B = \sum_i \sum_j y_i y_j B(T)`
-    cross_C_model : str, optional
+    C_mixing_rule : str, optional
         The method used to combine the pure and/or interaction third `C` virial
         coefficients into a single `C` coefficient.
 
@@ -943,16 +951,15 @@ class VirialGas(IdealGasDeparturePhase):
     >>> Pcs=[3394387.5, 5042945.25, 4873732.5]
     >>> Vcs=[8.95e-05, 7.34e-05, 7.49e-05]
     >>> omegas=[0.04, 0.021, -0.004]
-    >>> model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
+    >>> model = VirialCSP(T=298.15, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
     >>> HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63])),
     ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
     ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [0,0,0,0, R*2.5]))]
-    >>> phase = VirialGas(model=model, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    >>> phase = VirialGas(model=model, T=300.0, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
     >>> phase.V(), phase.isothermal_compressibility(), phase.speed_of_sound()
     (0.02493687, 1.00025907e-05, 59.081947)
     >>> phase
-    VirialGas(model=VirialCSP(Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA', T=300), HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [0, 0, 0, 0, 20.7861565453831]))], cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz', T=300, P=100000.0, zs=[0.78, 0.21, 0.01])
-
+    VirialGas(model=VirialCSP(T=300.0, Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', cross_B_model_kijs=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], B_model_Meng_as=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], B_model_Tsonopoulos_extended_as=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], B_model_Tsonopoulos_extended_bs=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], C_model='VIRIAL_C_ORBEY_VERA', cross_C_model='Tarakad-Danner'), HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [0, 0, 0, 0, 20.7861565453831]))], B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz', T=300.0, P=100000.0, zs=[0.78, 0.21, 0.01])
     '''
 
     phase = 'g'
@@ -966,27 +973,29 @@ class VirialGas(IdealGasDeparturePhase):
     obj_references = ('HeatCapacityGases', 'model', 'result', 'constants', 'correlations')
 
     model_attributes = ('Hfs', 'Gfs', 'Sfs', 'model',
-                        'cross_B_model', 'cross_C_model') + pure_references
+                        'B_mixing_rule', 'C_mixing_rule') + pure_references
 
     def __init__(self, model, HeatCapacityGases=None, Hfs=None, Gfs=None,
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
-                 cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz'):
+                 B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz'):
+        if T is None or P is None or zs is None:
+            raise ValueError("VirialGas requires values for T, P, zs")
         self.model = model.to(T=T)
         self.HeatCapacityGases = HeatCapacityGases
         self.Hfs = Hfs
         self.Gfs = Gfs
 
-        if cross_B_model not in ('theory', 'linear'):
+        if B_mixing_rule not in ('theory', 'linear'):
             raise ValueError("Unsupported value for `cross_B_model`")
-        if cross_C_model not in ('Orentlicher-Prausnitz', 'linear'):
-            raise ValueError("Unsupported value for `cross_C_model`")
-        self.cross_B_model = cross_B_model
-        self.cross_C_model = cross_C_model
+        if C_mixing_rule not in ('Orentlicher-Prausnitz', 'linear'):
+            raise ValueError("Unsupported value for `C_mixing_rule`")
+        self.B_mixing_rule = B_mixing_rule
+        self.C_mixing_rule = C_mixing_rule
 
         # Store the virial cross model as a boolean
         # It is likely additional `C` models will be published, the current one is emperical
-        self.cross_B_coefficients = cross_B_model == 'theory'
-        self.cross_C_coefficients = cross_C_model == 'Orentlicher-Prausnitz'
+        self.has_cross_B_coefficients = B_mixing_rule == 'theory'
+        self.has_cross_C_coefficients = C_mixing_rule == 'Orentlicher-Prausnitz'
 
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             self.Sfs = [(Hfi - Gfi)*(1.0/298.15) for Hfi, Gfi in zip(Hfs, Gfs)]
@@ -997,17 +1006,12 @@ class VirialGas(IdealGasDeparturePhase):
             if i is not None:
                 self.N = len(i)
                 break
-        if zs is not None:
-            self.zs = zs
-            self.vectorized = type(zs) is ndarray
-        if T is not None:
-            self.T = T
-            self.model.T = T
-        if P is not None:
-            self.P = P
-        if T is not None and P is not None and zs is not None:
-            Z = Z_from_virial_density_form(T, P, [self.B(), self.C()])
-            self._V = Z*self.R*T/P
+        self.zs = zs
+        self.vectorized = type(zs) is ndarray
+        self.T = T
+        self.P = P
+        Z = Z_from_virial_density_form(T, P, [self.B(), self.C()])
+        self._V = Z*self.R*T/P
 
     def __repr__(self):
         r'''Method to create a string representation of the phase object, with
@@ -1027,7 +1031,7 @@ class VirialGas(IdealGasDeparturePhase):
         except:
             Cpgs = ''
         base = f'{self.__class__.__name__}(model={self.model}, HeatCapacityGases=[{Cpgs}], '
-        for s in ('cross_B_model', 'cross_C_model', 'Hfs', 'Gfs', 'T', 'P', 'zs'):
+        for s in ('B_mixing_rule', 'C_mixing_rule', 'Hfs', 'Gfs', 'T', 'P', 'zs'):
             if hasattr(self, s) and getattr(self, s) is not None:
                 val = getattr(self, s)
                 if type(val) is str:
@@ -1749,7 +1753,7 @@ class VirialGas(IdealGasDeparturePhase):
         d2C_dTdV_P = self.d2C_dTdV_P()
         return (R*V**2*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2 - 2*(V**2 + V*B + C)/V**3)/(V**2 + V*B + C) + (-2*R*B - 2*R*T*dB_dT - R*T*d2C_dTdV_P - R*dC_dT*dT_dV - R*dC_dV_P + V*(-2*R*T*d2B_dTdV_P - 2*R*dB_dT*dT_dV - 2*R*dB_dV_P))/(2*V**2) - (-R*C - R*T*dC_dT + V*(-2*R*B - 2*R*T*dB_dT))/V**3)
 
-
+ 
     def S_dep(self):
         r'''Method to calculate and return the molar departure entropy.
 
@@ -1825,10 +1829,10 @@ class VirialGas(IdealGasDeparturePhase):
         new.zs = zs
         new.N = self.N
         new.vectorized = self.vectorized
-        new.cross_B_coefficients = self.cross_B_coefficients
-        new.cross_C_coefficients = self.cross_C_coefficients
-        new.cross_B_model = self.cross_B_model
-        new.cross_C_model = self.cross_C_model
+        new.has_cross_B_coefficients = self.has_cross_B_coefficients
+        new.has_cross_C_coefficients = self.has_cross_C_coefficients
+        new.B_mixing_rule = self.B_mixing_rule
+        new.C_mixing_rule = self.C_mixing_rule
 
         new.HeatCapacityGases = self.HeatCapacityGases
         new.model = self.model.to(T)
@@ -1844,19 +1848,18 @@ class VirialGas(IdealGasDeparturePhase):
         new.zs = zs
         new.vectorized = self.vectorized
         new.N = self.N
-        new.cross_B_coefficients = self.cross_B_coefficients
-        new.cross_C_coefficients = self.cross_C_coefficients
-        new.cross_B_model = self.cross_B_model
-        new.cross_C_model = self.cross_C_model
+        new.has_cross_B_coefficients = self.has_cross_B_coefficients
+        new.has_cross_C_coefficients = self.has_cross_C_coefficients
+        new.B_mixing_rule = self.B_mixing_rule
+        new.C_mixing_rule = self.C_mixing_rule
 
         new.HeatCapacityGases = self.HeatCapacityGases
-        new.model = model = self.model.to(T=T if T is not None else 298.15)
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
         new.Sfs = self.Sfs
         if T is not None:
             new.T = T
-            new.model.T = T
+            new.model = self.model.to(T=T)
             if P is not None:
                 new.P = P
                 B = new.B()
@@ -1890,7 +1893,7 @@ class VirialGas(IdealGasDeparturePhase):
             T_ig = P*V/self.R # guess
             T = newton(err, T_ig, fprime=True, xtol=1e-15)
             new.T = T
-            new.model.T = T
+            new.model = self.model.to(T=T)
         else:
             raise ValueError("Two of T, P, or V are needed")
 
@@ -1903,7 +1906,7 @@ class VirialGas(IdealGasDeparturePhase):
                 return self.model.B_pures()[0]
             return self.model.B_pures_at_T(T)[0][0]
         zs = self.zs
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             if T == self.T:
                 Bs = self.model.B_pures()
             else:
@@ -1935,7 +1938,7 @@ class VirialGas(IdealGasDeparturePhase):
                 return self.model.dB_dT_pures()[0]
             return self.model.B_pures_at_T(T)[1][0]
         zs = self.zs
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             if T == self.T:
                 dB_dTs = self.model.dB_dT_pures()
             else:
@@ -1969,7 +1972,7 @@ class VirialGas(IdealGasDeparturePhase):
                 return self.model.d2B_dT2_pures()[0]
             return self.model.B_pures_at_T(T)[2][0]
         zs = self.zs
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             if T == self.T:
                 d2B_dT2s = self.model.d2B_dT2_pures()
             else:
@@ -2003,7 +2006,7 @@ class VirialGas(IdealGasDeparturePhase):
                 return self.model.d3B_dT3_pures()[0]
             return self.model.B_pures_at_T(T)[3][0]
         zs = self.zs
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             if T == self.T:
                 d3B_dT3s = self.model.d3B_dT3_pures()
             else:
@@ -2032,14 +2035,14 @@ class VirialGas(IdealGasDeparturePhase):
 
     def C_at_T(self, T):
         N = self.N
-        if self.model.C_zero:
+        if self.model.C_model == VIRIAL_C_ZERO:
             return 0.0
         elif N == 1:
             if T == self.T:
                 return self.model.C_pures()[0]
             return self.model.C_pures_at_T(T)[0][0]
         zs = self.zs
-        if not self.cross_C_coefficients:
+        if not self.has_cross_C_coefficients:
             if T == self.T:
                 Cs = self.model.C_pures()
             else:
@@ -2066,14 +2069,14 @@ class VirialGas(IdealGasDeparturePhase):
 
     def dC_dT_at_T(self, T):
         N = self.N
-        if self.model.C_zero:
+        if self.model.C_model == VIRIAL_C_ZERO:
             return 0.0
         elif N == 1:
             if T == self.T:
                 return self.model.dC_dT_pures()[0]
             return self.model.C_pures_at_T(T)[1][0]
         zs = self.zs
-        if not self.cross_C_coefficients:
+        if not self.has_cross_C_coefficients:
             if T == self.T:
                 dC_dTs = self.model.dC_dT_pures()
             else:
@@ -2103,14 +2106,14 @@ class VirialGas(IdealGasDeparturePhase):
 
     def d2C_dT2_at_T(self, T):
         N = self.N
-        if self.model.C_zero:
+        if self.model.C_model == VIRIAL_C_ZERO:
             return 0.0
         elif N == 1:
             if T == self.T:
                 return self.model.d2C_dT2_pures()[0]
             return self.model.C_pures_at_T(T)[2][0]
         zs = self.zs
-        if not self.cross_C_coefficients:
+        if not self.has_cross_C_coefficients:
             if T == self.T:
                 d2C_dT2s = self.model.d2C_dT2_pures()
             else:
@@ -2141,14 +2144,14 @@ class VirialGas(IdealGasDeparturePhase):
 
     def d3C_dT3_at_T(self, T):
         N = self.N
-        if self.model.C_zero:
+        if self.model.C_model == VIRIAL_C_ZERO:
             return 0.0
         elif N == 1:
             if T == self.T:
                 return self.model.d3C_dT3_pures()[0]
             return self.model.C_pures_at_T(T)[3][0]
         zs = self.zs
-        if not self.cross_C_coefficients:
+        if not self.has_cross_C_coefficients:
             if T == self.T:
                 d3C_dT3s = self.model.d3C_dT3_pures()
             else:
@@ -2194,7 +2197,7 @@ class VirialGas(IdealGasDeparturePhase):
             pass
 
         zs = self.zs
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             Bs = self.model.B_pures()
             self._dB_dzs = dB_dzs = Bs
             return dB_dzs
@@ -2225,7 +2228,7 @@ class VirialGas(IdealGasDeparturePhase):
             pass
 
         zs = self.zs
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             Bs = self.model.dB_dT_pures()
             self._d2B_dTdzs = d2B_dTdzs = Bs
             return d2B_dTdzs
@@ -2256,7 +2259,7 @@ class VirialGas(IdealGasDeparturePhase):
             pass
 
         zs = self.zs
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             Bs = self.model.d2B_dT2_pures()
             self._d3B_dT2dzs = d3B_dT2dzs = Bs
             return d3B_dT2dzs
@@ -2287,7 +2290,7 @@ class VirialGas(IdealGasDeparturePhase):
             pass
 
         zs = self.zs
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             Bs = self.model.d3B_dT3_pures()
             self._d4B_dT3dzs = d4B_dT3dzs = Bs
             return d4B_dT3dzs
@@ -2322,7 +2325,7 @@ class VirialGas(IdealGasDeparturePhase):
             d2B_dzizjs = zeros((N, N))
         else:
             d2B_dzizjs = [[0.0]*N for _ in range(N)]
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             self._d2B_dzizjs = d2B_dzizjs
             return d2B_dzizjs
 
@@ -2353,7 +2356,7 @@ class VirialGas(IdealGasDeparturePhase):
             d3B_dTdzizjs = zeros((N, N))
         else:
             d3B_dTdzizjs = [[0.0]*N for _ in range(N)]
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             self._d3B_dTdzizjs = d3B_dTdzizjs
             return d3B_dTdzizjs
 
@@ -2384,7 +2387,7 @@ class VirialGas(IdealGasDeparturePhase):
             d4B_dT2dzizjs = zeros((N, N))
         else:
             d4B_dT2dzizjs = [[0.0]*N for _ in range(N)]
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             self._d4B_dT2dzizjs = d4B_dT2dzizjs
             return d4B_dT2dzizjs
 
@@ -2413,7 +2416,7 @@ class VirialGas(IdealGasDeparturePhase):
             d3B_dzizjzks = zeros((N, N, N))
         else:
             d3B_dzizjzks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
-        if not self.cross_B_coefficients:
+        if not self.has_cross_B_coefficients:
             self._d3B_dzizjzks = d3B_dzizjzks
             return d3B_dzizjzks
 
@@ -2486,7 +2489,7 @@ class VirialGas(IdealGasDeparturePhase):
             pass
 
         zs = self.zs
-        if not self.cross_C_coefficients:
+        if not self.has_cross_C_coefficients:
             Cs = self.model.C_pures()
             self._dC_dzs = dC_dzs = Cs
             return dC_dzs
@@ -2497,7 +2500,7 @@ class VirialGas(IdealGasDeparturePhase):
             dC_dzs = [0.0]*N
         self._dC_dzs = dC_dzs
 
-        if not self.model.C_zero:
+        if not self.model.C_model == VIRIAL_C_ZERO:
             C_interactions = self.model.C_interactions()
             dCVirial_mixture_Orentlicher_Prausnitz_dzs(zs, C_interactions, dC_dzs)
         return dC_dzs
@@ -2518,7 +2521,7 @@ class VirialGas(IdealGasDeparturePhase):
             pass
 
         zs = self.zs
-        if not self.cross_C_coefficients:
+        if not self.has_cross_C_coefficients:
             self._d2C_dTdzs = d2C_dTdzs = self.model.dC_dT_pures()
             return d2C_dTdzs
         N = self.N
@@ -2528,7 +2531,7 @@ class VirialGas(IdealGasDeparturePhase):
             d2C_dTdzs = [0.0]*N
 
         self._d2C_dTdzs = d2C_dTdzs
-        if not self.model.C_zero:
+        if not self.model.C_model == VIRIAL_C_ZERO:
             C_interactions = self.model.C_interactions()
             dC_dT_interactions = self.model.dC_dT_interactions()
             d2CVirial_mixture_Orentlicher_Prausnitz_dTdzs(zs, C_interactions, dC_dT_interactions, d2C_dTdzs)
@@ -2559,7 +2562,7 @@ class VirialGas(IdealGasDeparturePhase):
             d2C_dzizjs = [[0.0]*N for _ in range(N)]
 
         zs = self.zs
-        if not self.cross_C_coefficients:
+        if not self.has_cross_C_coefficients:
             # Cs = self.model.C_pures()
             # for i, C in enumerate(Cs):
                 # d2C_dzizjs[i][i] = C
@@ -2567,7 +2570,7 @@ class VirialGas(IdealGasDeparturePhase):
             return d2C_dzizjs
 
         self._d2C_dzizjs = d2C_dzizjs
-        if not self.model.C_zero:
+        if not self.model.C_model == VIRIAL_C_ZERO:
             C_interactions = self.model.C_interactions()
             d2CVirial_mixture_Orentlicher_Prausnitz_dzizjs(zs, C_interactions, d2C_dzizjs)
         return d2C_dzizjs
@@ -2595,13 +2598,13 @@ class VirialGas(IdealGasDeparturePhase):
             d3C_dzizjzks = [[[0.0]*N for _ in range(N)] for _ in range(N)]
 
         zs = self.zs
-        if not self.cross_C_coefficients:
+        if not self.has_cross_C_coefficients:
             self._d3C_dzizjzks = d3C_dzizjzks
             return d3C_dzizjzks
 
         self._d3C_dzizjzks = d3C_dzizjzks
 
-        if not self.model.C_zero:
+        if not self.model.C_model == VIRIAL_C_ZERO:
             C_interactions = self.model.C_interactions()
             d3CVirial_mixture_Orentlicher_Prausnitz_dzizjzks(zs, C_interactions, d3C_dzizjzks)
         return d3C_dzizjzks
@@ -2690,17 +2693,17 @@ class VirialGas(IdealGasDeparturePhase):
 
     # Overrides for precision in regression to ideal gas
     def d2T_dV2(self):
-        if self.model.C_zero and self.model.B_zero:
+        if self.model.C_model == VIRIAL_C_ZERO and self.model.B_model == VIRIAL_B_ZERO:
             return 0.0
         return super().d2T_dV2()
 
     def d2T_dV2_P(self):
-        if self.model.C_zero and self.model.B_zero:
+        if self.model.C_model == VIRIAL_C_ZERO and self.model.B_model == VIRIAL_B_ZERO:
             return 0.0
         return super().d2T_dV2_P()
 
     def d2V_dT2(self):
-        if self.model.C_zero and self.model.B_zero:
+        if self.model.C_model == VIRIAL_C_ZERO and self.model.B_model == VIRIAL_B_ZERO:
             return 0.0
         return super().d2V_dT2()
 

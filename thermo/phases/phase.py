@@ -6113,7 +6113,7 @@ class IdealGasDeparturePhase(Phase):
     def d2S_dP2(self):
         P = self.P
         d2S = self.R/(P*P)
-        return d2S + self.d2S_dep_dP()
+        return d2S + self.d2S_dep_dP2()
 
     def dS_dzs(self):
         try:
