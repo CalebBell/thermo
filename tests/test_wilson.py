@@ -901,3 +901,61 @@ def test_wilson_gammas_binaries_jac():
     result_preallocated = wilson_gammas_binaries_jac(xs, lambda12, lambda21, calc)
     assert result_preallocated is calc
     assert_close2d(result_preallocated, result, rtol=1e-10)
+
+
+def test_Wilson_missing_interaction_parameters():
+    """Test Wilson model's missing parameter detection"""
+    
+    # Test Case 1: All parameters present
+    N = 2
+    lambda_as = [[0.0, 0.5], [-0.3, 0.0]]
+    lambda_bs = [[0.0, 100], [-150, 0.0]]
+    lambda_cs = [[0.0, 0.1], [-0.1, 0.0]]
+    # Other parameters zero
+    lambda_ds = lambda_es = lambda_fs = [[0.0]*N for _ in range(N)]
+    
+    GE = Wilson(T=300, xs=[0.4, 0.6], 
+                lambda_as=lambda_as, lambda_bs=lambda_bs, lambda_cs=lambda_cs,
+                lambda_ds=lambda_ds, lambda_es=lambda_es, lambda_fs=lambda_fs)
+    assert GE.missing_interaction_parameters() == []
+    
+    # Test Case 2: One direction missing (asymmetric case)
+    lambda_as = [[0.0, 0.5], [0.0, 0.0]]
+    lambda_bs = [[0.0, 100], [0.0, 0.0]]
+    lambda_cs = [[0.0, 0.1], [0.0, 0.0]]
+    
+    GE = Wilson(T=300, xs=[0.4, 0.6],
+                lambda_as=lambda_as, lambda_bs=lambda_bs, lambda_cs=lambda_cs,
+                lambda_ds=lambda_ds, lambda_es=lambda_es, lambda_fs=lambda_fs)
+    assert GE.missing_interaction_parameters() == [(1, 0)]
+    
+    # Test Case 3: Multiple components with missing parameters
+    N = 3
+    lambda_as = [
+        [0.0, 0.5, 0.0],
+        [0.3, 0.0, 0.0],
+        [0.2, 0.0, 0.0]
+    ]
+    lambda_bs = [
+        [0.0, 100, 0.0],
+        [150, 0.0, 0.0],
+        [120, 0.0, 0.0]
+    ]
+    # All other parameters zero
+    lambda_cs = lambda_ds = lambda_es = lambda_fs = [[0.0]*N for _ in range(N)]
+    
+    GE = Wilson(T=300, xs=[0.3, 0.3, 0.4],
+                lambda_as=lambda_as, lambda_bs=lambda_bs, lambda_cs=lambda_cs,
+                lambda_ds=lambda_ds, lambda_es=lambda_es, lambda_fs=lambda_fs)
+    expected_missing = [(0, 2), (1, 2), (2, 1)]
+    assert sorted(GE.missing_interaction_parameters()) == sorted(expected_missing)
+    
+    # Test Case 4: All parameters missing
+    lambda_as = lambda_bs = lambda_cs = lambda_ds = lambda_es = lambda_fs = [[0.0]*N for _ in range(N)]
+    
+    GE = Wilson(T=300, xs=[0.3, 0.3, 0.4],
+                lambda_as=lambda_as, lambda_bs=lambda_bs, lambda_cs=lambda_cs,
+                lambda_ds=lambda_ds, lambda_es=lambda_es, lambda_fs=lambda_fs)
+    
+    expected_missing = [(i, j) for i in range(N) for j in range(N) if i != j]
+    assert sorted(GE.missing_interaction_parameters()) == sorted(expected_missing)

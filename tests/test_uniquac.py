@@ -460,3 +460,33 @@ def test_UNIQUAC_gammas_binaries():
     result_extreme_expect = [2.2041059944622607, 0.9999999999999996, 1.3739022573095299, 1.1986386949839702, 0.9999999999999996, 4.118354252967927]
     assert_close1d(result_extreme, result_extreme_expect, rtol=1e-10)
 
+
+
+
+def test_UNIQUAC_missing_interaction_parameters():
+    """Test UNIQUAC model's missing parameter detection"""
+    
+    # Test case with typical parameter values including zeros
+    N = 2
+    xs = [0.4, 0.6]
+    rs = [2.1055, 3.1878]
+    qs = [1.972, 2.4]
+    
+    # Create a set of parameters where some tau values would be zero
+    tau_as = [[0.0, 0.5], [-0.3, 0.0]]
+    tau_bs = [[0.0, 100], [-150, 0.0]]
+    # Other parameters zero
+    tau_cs = tau_ds = tau_es = tau_fs = [[0.0]*N for _ in range(N)]
+    
+    GE = UNIQUAC(T=300, xs=xs, rs=rs, qs=qs,
+                 tau_as=tau_as, tau_bs=tau_bs, tau_cs=tau_cs,
+                 tau_ds=tau_ds, tau_es=tau_es, tau_fs=tau_fs)
+    assert GE.missing_interaction_parameters() == []
+    
+    # Test case with all zeros - still affects calculations
+    tau_as = tau_bs = tau_cs = tau_ds = tau_es = tau_fs = [[0.0]*N for _ in range(N)]
+    
+    GE = UNIQUAC(T=300, xs=xs, rs=rs, qs=qs,
+                 tau_as=tau_as, tau_bs=tau_bs, tau_cs=tau_cs,
+                 tau_ds=tau_ds, tau_es=tau_es, tau_fs=tau_fs)
+    assert GE.missing_interaction_parameters() == []
