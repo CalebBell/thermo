@@ -163,8 +163,6 @@ def test_virial_phase_pure_B_only_pitzer_curl():
     H_dep_Poling = (-(PT.B() - PT.T*PT.dB_dT())/PT.V())*R*PT.T
     assert_close(PT.H_dep(), H_dep_Poling, rtol=1e-13)
 
-    assert_close(PT.dV_dep_dT(), derivative(lambda T: PT.to(T=T, P=PT.P, zs=[1]).V_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
-
 
     assert_close(PT.dH_dep_dT(), -0.03958097657787867, rtol=1e-13)
     assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)

@@ -1205,7 +1205,6 @@ class VirialGas(IdealGasDeparturePhase):
             Log fugacity coefficients, [-]
         '''
         # working!
-        zs = self.zs
         T = self.T
         RT_inv = 1.0/(R*T)
         lnphi = self.G_dep()*RT_inv

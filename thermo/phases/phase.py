@@ -1942,25 +1942,6 @@ class Phase:
         V_dep = self.V() - self.R*self.T/self.P
         return V_dep
 
-    def dV_dep_dT(self):
-        """Calculate the temperature derivative of the departure volume.
-        
-        Returns
-        -------
-        dV_dep_dT : float
-            Temperature derivative of departure volume [m^3/(mol*K)]
-            
-        Notes
-        -----
-        """
-        try:
-            return self._dV_dep_dT
-        except AttributeError:
-            pass
-        self._dV_dep_dT = self.dV_dT() - self.R/self.P
-        return self._dV_dep_dT
-
-
     def U_dep(self):
         r'''Method to calculate and return the departure internal energy of
         the phase.
@@ -5915,7 +5896,8 @@ class Phase:
         return self._partial_pressures
 
     def dG_dep_dT(self):
-        """Calculate the temperature derivative of the departure Gibbs energy.
+        """Calculate the temperature derivative of the departure Gibbs energy
+        at constant pressure.
         
         Returns
         -------
