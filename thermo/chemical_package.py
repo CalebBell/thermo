@@ -384,6 +384,9 @@ class ChemicalConstantsPackage:
         All properties should have been specified before constructing the first
         ChemicalConstantsPackage.
 
+        This function is a general one that also be used for reordering, 
+        moving, swapping, and removing components simultaneously.
+
         Examples
         --------
         >>> base = ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
@@ -393,6 +396,18 @@ class ChemicalConstantsPackage:
         ChemicalConstantsPackage(MWs=[106.165, 106.165, 106.165], names=['o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.3118, 0.324, 0.331], Pcs=[3732000.0, 3511000.0, 3541000.0], Tcs=[630.3, 616.2, 617.0])
         >>> base.subset(idxs=[0, 3], properties=('names', 'MWs'))
         ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
+
+        Swap the first and second components
+
+        >>> reordered = base.subset([1, 0, 2, 3])
+
+        Move the last component to the front
+
+        >>> reordered = base.subset([3, 0, 1, 2])
+
+        Reverse their order
+
+        >>> reordered = base.subset([3, 2, 1, 0])
         '''
         if idxs is None:
             idxs = self.cmps
@@ -1676,6 +1691,8 @@ class PropertyCorrelationsPackage:
 
         Notes
         -----
+        This function is a general one that also be used for reordering, 
+        moving, swapping, and removing components simultaneously.
         '''
         is_slice = isinstance(idxs, slice)
 

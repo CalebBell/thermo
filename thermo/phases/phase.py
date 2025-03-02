@@ -122,7 +122,7 @@ class Phase:
     LOG_P_REF_IG = log(P_REF_IG)
 
     T_MAX_FLASH = T_MAX_FIXED = 10000.0
-    T_MIN_FLASH = T_MIN_FIXED = 1e-3
+    T_MIN_FIXED = 1e-3
 
     P_MAX_FIXED = 1e9
     P_MIN_FIXED = 1e-2 # 1e-3 was so low issues happened in the root stuff, could not be fixed
