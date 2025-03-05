@@ -67,7 +67,7 @@ def test_default_settings_storage():
 
 def test_two_eos_pure_flash_all_properties():
     # Methanol
-    constants = ChemicalConstantsPackage(atom_fractions={'H': 0.6666666666666666, 'C': 0.16666666666666666, 'O': 0.16666666666666666}, atomss=[{'H': 4, 'C': 1, 'O': 1}],
+    constants = ChemicalConstantsPackage(atom_fractions=[{'H': 0.6666666666666666, 'C': 0.16666666666666666, 'O': 0.16666666666666666}], atomss=[{'H': 4, 'C': 1, 'O': 1}],
                                          CASs=['67-56-1'], charges=[0], conductivities=[4.4e-05], dipoles=[1.7],
                                          formulas=['CH4O'], Gfgs=[-162000.13000000003], Gfgs_mass=[-5055890.325967345], Hcs=[-764464.0], Hcs_lower=[-676489.1], Hcs_lower_mass=[-21112666.368306957], Hcs_mass=[-23858290.373904638],
                                          Hfgs=[-200700.0], Hfgs_mass=[-6263681.321870828], Hfus_Tms=[3215.0000000000005], Hfus_Tms_mass=[100337.49601302797], Hvap_298s=[37486.47944178592], Hvap_298s_mass=[1169922.078237216],
