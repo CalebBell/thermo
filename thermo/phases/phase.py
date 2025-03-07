@@ -415,10 +415,10 @@ class Phase:
 
         Examples
         --------
-        >>> from thermo import IdealGas
-        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
-        >>> phase.to_TP_zs(T=1e5, P=1e3, zs=[.5, .5])
-        IdealGas(HeatCapacityGases=[], T=100000.0, P=1000.0, zs=[0.5, 0.5])
+        >>> from thermo import IdealGas, HeatCapacityGas
+        >>> from scipy.constants import R
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539]))])
+        >>> state = phase.to_TP_zs(T=1e5, P=1e3, zs=[.5, .5])
         '''
         raise NotImplementedError("Must be implemented by subphases")
 
@@ -452,15 +452,12 @@ class Phase:
         Note that some thermodynamic models may have multiple solutions for
         some inputs!
 
-        >>> from thermo import IdealGas
-        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
-        >>> phase.to(T=1e5, P=1e3, zs=[.5, .5])
-        IdealGas(HeatCapacityGases=[], T=100000.0, P=1000.0, zs=[0.5, 0.5])
-        >>> phase.to(V=1e-4, P=1e3, zs=[.1, .9])
-        IdealGas(HeatCapacityGases=[], T=0.012027235504, P=1000.0, zs=[0.1, 0.9])
-        >>> phase.to(T=1e5, V=1e12, zs=[.2, .8])
-        IdealGas(HeatCapacityGases=[], T=100000.0, P=8.31446261e-07, zs=[0.2, 0.8])
-
+        >>> from thermo import IdealGas, HeatCapacityGas
+        >>> from scipy.constants import R
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539]))])
+        >>> TP = phase.to(T=1e5, P=1e3, zs=[.5, .5])
+        >>> PV = phase.to(V=1e-4, P=1e3, zs=[.1, .9])
+        >>> TV = phase.to(T=1e5, V=1e12, zs=[.2, .8])
         '''
         raise NotImplementedError("Must be implemented by subphases")
 

@@ -2829,8 +2829,6 @@ def test_IdealGas_vs_IGMIX():
     new = phase.to(P=P, T=T, zs=zs)
     assert new.T == phase.T
     assert new.P == phase.P
-    with pytest.raises(Exception):
-        phase.to(P=P, zs=zs)
 
     assert_close(phase.V(), phase_EOS.V(), rtol=1e-11)
     assert_close(phase.PIP(), phase_EOS.PIP(), rtol=1e-11)

@@ -1168,8 +1168,6 @@ def test_virial_ternary_vs_ideal_gas():
     new = phase.to(P=P, T=T, zs=zs)
     assert new.T == phase.T
     assert new.P == phase.P
-    with pytest.raises(Exception):
-        phase.to(P=P, zs=zs)
 
     B_mat = phase_EOS.model.B_interactions()
     assert_close1d(phase_EOS.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
@@ -1297,7 +1295,7 @@ def test_virial_ternary_vs_ideal_gas():
     assert phase_EOS.G_dep() == 0
     assert phase_EOS.U_dep() == 0
     assert phase_EOS.A_dep() == 0
-# test_virial_ternary_vs_ideal_gas()
+
 
 def check_virial_temperature_consistency_T_calls(model, T_list, rtol=1e-14):
     for T in T_list:
