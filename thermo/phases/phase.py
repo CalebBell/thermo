@@ -417,7 +417,7 @@ class Phase:
         --------
         >>> from thermo import IdealGas, HeatCapacityGas
         >>> from scipy.constants import R
-        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539]))])
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])), HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539]))])
         >>> state = phase.to_TP_zs(T=1e5, P=1e3, zs=[.5, .5])
         '''
         raise NotImplementedError("Must be implemented by subphases")
@@ -454,7 +454,7 @@ class Phase:
 
         >>> from thermo import IdealGas, HeatCapacityGas
         >>> from scipy.constants import R
-        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539]))])
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])), HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539]))])
         >>> TP = phase.to(T=1e5, P=1e3, zs=[.5, .5])
         >>> PV = phase.to(V=1e-4, P=1e3, zs=[.1, .9])
         >>> TV = phase.to(T=1e5, V=1e12, zs=[.2, .8])
