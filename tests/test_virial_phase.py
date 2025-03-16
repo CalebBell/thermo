@@ -1481,3 +1481,96 @@ def test_basic_compare_virial_vs_PR():
     assert_close(cubic.S(), virial.S(), rtol=0.05)
     assert_close(cubic.G(), virial.G(), rtol=0.05)
     
+
+
+def test_basic_compare_H_dep_vs_literature_equations():
+    def H_dep_Poling_leiden(self):
+        r'''Method to calculate and return the molar departure enthalpy using
+        the Poling et al. equation form.
+        
+        Returns
+        -------
+        H_dep : float
+            Departure enthalpy [J/mol]
+            
+        Notes
+        -----
+        '''
+        V = self._V  # molar volume
+        T = self.T   # temperature
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        dB_dT = self.dB_dT()  # temperature derivative of B
+        dC_dT = self.dC_dT()  # temperature derivative of C
+        
+        # First term: -(B - T*dB/dT)/V
+        first_term = -(B - T*dB_dT)/V
+        
+        # Second term: -(2C - T*dC/dT)/(2V²)
+        second_term = -(2.0*C - T*dC_dT)/(2.0*V*V)
+        
+        # Combine terms and multiply by RT
+        # The equation has the negative of H_Dep in it
+        return - self.R*T*(first_term + second_term)
+        
+
+    def H_dep_Walas(self):
+        r'''Method to calculate and return the molar departure enthalpy using
+        the Walas formulation with virial coefficients in the pressure form.
+        
+        .. math::
+            H^{id} - H = RT^2 \left[ P \frac{dB'}{dT} + \frac{P^2}{2} \frac{dC'}{dT} + \ldots \right]
+            
+            = PT \left( \frac{dB}{dT} - \frac{B}{T} \right)
+            + \frac{P^2}{2R} \left[ \frac{B^2-C}{T} + \frac{dC}{dT} - 2B\frac{dB}{dT} + \ldots \right]
+        
+        Where:
+            B' = B/RT
+            C' = (C - B²)/(RT)²
+            dB'/dT = (1/RT)·(dB/dT - B/T)
+            
+        Returns
+        -------
+        H_dep : float
+            Departure enthalpy [J/mol]
+            
+        Notes
+        -----
+        This method uses the virial equation in pressure form truncated after the C' term.
+        The equation gives the departure from the ideal gas state.
+        '''
+        T = self.T   # temperature
+        P = self.P   # pressure
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        dB_dT = self.dB_dT()  # temperature derivative of B
+        dC_dT = self.dC_dT()  # temperature derivative of C
+        R = self.R   # gas constant
+        
+        # First term: PT(dB/dT - B/T)
+        first_term = P*T*(dB_dT - B/T)
+        
+        # Second term: (P²/2R)·[(B²-C)/T + dC/dT - 2B·dB/dT]
+        second_term = (P*P)/(2.0*R)*((B*B-C)/T + dC_dT - 2.0*B*dB_dT)
+        
+        # H_dep = -(H^id - H)
+        H_dep = -(first_term + second_term)
+        
+        return H_dep
+
+    T, P, zs = 300, 1e5,  [1]
+    eos_kwargs = {'Pcs': [4599200.0], 'Tcs': [190.564], 'omegas': [0.01142], }
+    Vcs = [9.86e-05]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 5000.0, [4.8986184697537195e-26, -1.1318000255051273e-21, 1.090383509787202e-17, -5.664719389870236e-14, 1.7090042167602582e-10, -2.9728679808459997e-07, 0.00026565262671378613, -0.054476667747310976, 35.35366254807737]
+                                                ))]
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ORBEY_VERA, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+
+    assert_close(virial.H_dep(), H_dep_Poling_leiden(virial), rtol=1e-9)
+    # Walas doesn't quite match
+    assert_close(virial.H_dep(), H_dep_Walas(virial), rtol=1e-4)
