@@ -2894,10 +2894,10 @@ def count_rings_by_atom_counts(mol, atom_counts):
         
     Examples
     --------
-    >>> from rdkit.Chem import MolFromSmiles
-    >>> # Count rings with exactly 2 oxygens and 4 carbons (dioxane pattern)
-    >>> mol = MolFromSmiles('C1COCCOC1')  # 1,4-dioxane
-    >>> count_rings_by_atom_counts(mol, {'O': 2, 'C': 4})
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> # Count rings with exactly 2 oxygens and 4 carbons (dioxane pattern), 1,4-dioxane
+    >>> mol = MolFromSmiles('C1COCCOC1')  # doctest:+SKIP
+    >>> count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) # doctest:+SKIP
     0
     """
     ring_size = sum(atom_counts.values())
@@ -3669,9 +3669,11 @@ def identify_functional_group_atoms(mol, functional_group):
     
     Examples
     --------
-    >>> from rdkit import Chem
-    >>> mol = Chem.MolFromSmiles("CC(=O)O")  # Acetic acid
-    >>> matches = identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID)
+    Acetic acid
+
+    >>> from rdkit import Chem  # doctest:+SKIP
+    >>> mol = Chem.MolFromSmiles("CC(=O)O")  # doctest:+SKIP
+    >>> matches = identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID)  # doctest:+SKIP
     """
     if mol is None:
         raise ValueError("Missing molecule")

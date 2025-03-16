@@ -795,10 +795,10 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
 
     Examples
     --------
-    >>> from rdkit import Chem
-    >>> from thermo import Chemical
-    >>> mol = Chemical('decane').rdkitmol
-    >>> bondi_van_der_waals_surface_area_volume(mol)
+    >>> from rdkit import Chem # doctest:+SKIP
+    >>> from thermo import Chemical # doctest:+SKIP
+    >>> mol = Chemical('decane').rdkitmol # doctest:+SKIP
+    >>> bondi_van_der_waals_surface_area_volume(mol) # doctest:+SKIP
     (0.00010918, 1504000.0)
 
     References

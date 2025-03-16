@@ -3,8 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- Unifac 2.0
 
 ### Changed
+ - NISTUFSG CH=NOH previously had the group ID 309, but this duplicated another 309 group CH2(O)2, so it was reassigned 1309 in thermo https://github.com/CalebBell/thermo/issues/158
+
  - Renamed arguments `cross_B_model` to `B_mixing_rule` of `VirialGas` to avoid confusion with similar parameter in `VirialCSP`. and the same for `cross_C_model` to `C_mixing_rule`
  - Fix missing negative sign on `H_dep` of Virial model - this had impact on enthalpy derivatives, `G_dep`, and fugacity related terms as well. This was a serious bug and any `VirialCSP` calculations should be repeated because of it. 
 
