@@ -6,6 +6,7 @@
 
 ### Changed
  - Renamed arguments `cross_B_model` to `B_mixing_rule` of `VirialGas` to avoid confusion with similar parameter in `VirialCSP`. and the same for `cross_C_model` to `C_mixing_rule`
+ - Fix missing negative sign on `H_dep` of Virial model - this had impact on enthalpy derivatives, `G_dep`, and fugacity related terms as well. This was a serious bug and any `VirialCSP` calculations should be repeated because of it. 
 
 ### Removed
 
