@@ -957,7 +957,7 @@ class VirialGas(IdealGasDeparturePhase):
     ...                      HeatCapacityGas(poly_fit=(50.0, 1000.0, [0,0,0,0, R*2.5]))]
     >>> phase = VirialGas(model=model, T=300.0, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
     >>> phase.V(), phase.isothermal_compressibility(), phase.speed_of_sound()
-    (0.02493687, 1.00025907e-05, 59.081947)
+    (0.02493687, 1.00025907e-05, 59.062)
     >>> phase
     VirialGas(model=VirialCSP(T=300.0, Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', cross_B_model_kijs=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], B_model_Meng_as=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], B_model_Tsonopoulos_extended_as=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], B_model_Tsonopoulos_extended_bs=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], C_model='VIRIAL_C_ORBEY_VERA', cross_C_model='Tarakad-Danner'), HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [0, 0, 0, 0, 20.7861565453831]))], B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz', T=300.0, P=100000.0, zs=[0.78, 0.21, 0.01])
     '''
@@ -1124,18 +1124,42 @@ class VirialGas(IdealGasDeparturePhase):
             First mole fraction derivatives of departure Gibbs energy
             [J/mol]
         '''
+        """
+        Z, R, T, V, P, z1, z2, z3 = symbols('Z, R, T, V, P, z1, z2, z3')
+        B, C = symbols('B, C', cls=Function)
+        base = Eq(P*V/(R*T), 1 + B(T)/V + C(T)/V**2)
+        P_sln = solve(base, P)[0]
+        Z = P_sln*V/(R*T)
+
+        Hdep2 = -(R*T - P_sln*V + integrate(P_sln - T*diff(P_sln, T), (V, oo, V)))
+        dP_dT = diff(P_sln, T)
+        S_dep = integrate(dP_dT - R/V, (V, oo, V)) + R*log(Z)
+        G_dep = Hdep2 - T*S_dep
+        G_dep = simplify(G_dep)
+        print(G_dep) 
+        # gives R*T*(-2*V**2*log((V**2 + V*B(T) + C(T))/V**2) + 4*V*B(T) + 3*C(T))/(2*V**2)
+
+        In Sympy:
+        from sympy import *
+        Z, R, T, V, P, z1, z2, z3 = symbols('Z, R, T, V, P, z1, z2, z3')
+        B, C, V = symbols('B, C, V', cls=Function)
+
+        G_dep = R*T*(-2*V(z1)**2*log((V(z1)**2 + V(z1)*B(T,z1) + C(T,z1))/V(z1)**2) + 4*V(z1)*B(T,z1) + 3*C(T,z1))/(2*V(z1)**2)
+        dG_dzs = (diff(G_dep, z1))
+
+        thing, other = cse(dG_dzs, optimizations='basic')
+        for k, v in thing:
+            print(f"{k} = {v}")
+        print(other)
+        """
         try:
             return self._dG_dep_dzs
         except:
             pass
         T = self.T
         dB_dzs = self.dB_dzs()
-        dB_dT = self.dB_dT()
-        dC_dT = self.dC_dT()
         dC_dzs = self.dC_dzs()
         dV_dzs = self.dV_dzs()
-        d2C_dTdzs = self.d2C_dTdzs()
-        d2B_dTdzs = self.d2B_dTdzs()
         B = self.B()
         C = self.C()
         V = self._V
@@ -1147,20 +1171,19 @@ class VirialGas(IdealGasDeparturePhase):
         for i in range(N):
             x0 = V
             x1 = x0*x0
-            x2 = 1.0/x1
-            x4 = dC_dzs[i]#Derivative(x3, z1)
-            x6 = 2.0*T
-            x7 = dV_dzs[i]#Derivative(x0, z1)
-            x8 = 2.0*x7
-            x9 = T*dB_dT#Derivative(x5, T)
-            x10 = x0*B + x1 + C
+            x2 = 1/x1
+            x3 = C
+            x4 = dC_dzs[i]
+            x5 = B
+            x6 = dV_dzs[i]
+            x7 = x5*x6
+            x8 = x0*dB_dzs[i]
+            x9 = x0*x5
+            x10 = x1 + x3 + x9
             x11 = log(x10*x2)
-            x12 = x0*x8
-            x13 = 1.0/x0
-            dG_dep_dzs[i] = (R*T*x2*(T*d2C_dTdzs[i] + x0*x6*d2B_dTdzs[i]+ x1*(-x0*dB_dzs[i]
-                            + 2.0*x10*x13*x7 - x12 - x4 - B*x7)/x10 - x11*x12 - x13*x7*(4.0*x0*x9 - 2.0*x1*x11 - C + x6*dC_dT)
-                                    - x4*0.5 + x8*x9))
-        # self._dG_dep_dzs = dG_dep_dzs_virial(B=B, C=C, V=V, dB_dzs=dB_dzs, dC_dzs=dC_dzs, dG_dep_dzs=dG_dep_dzs)
+            x12 = 2*x0*x6
+            x13 = 1/x0
+            dG_dep_dzs[i] =R*T*x2*(x1*(2*x10*x13*x6 - x12 - x4 - x7 - x8)/x10 - x11*x12 - x13*x6*(-2*x1*x11 + 3*x3 + 4*x9) + 3*x4/2 + 2*x7 + 2*x8)
         return dG_dep_dzs
 
     def dG_dep_dns(self):

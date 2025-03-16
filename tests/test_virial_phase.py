@@ -52,6 +52,7 @@ from thermo.viscosity import *
 from thermo.volume import *
 from thermo.wilson import Wilson
 from thermo.phases.virial_phase import VIRIAL_CROSS_B_TARAKAD_DANNER
+from thermo.phases.ceos import CEOSGas
 
 def test_store_load_VirialCSP():
     Tcs = [190.564]
@@ -876,12 +877,12 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     dG_dep_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).G_dep(), zs, perturbation=3e-6)
     assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
 
-    dG_dep_dzs_expect = [35.74825427120366, 55.01810668621839, 87.18219565179506]
+    dG_dep_dzs_expect = [-4.117525515170916, -8.55041759275306, -14.630898319262041]
     assert_close1d(gas.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
     assert_close1d(gas_np.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
     assert isinstance(gas_np.dG_dep_dzs(), np.ndarray)
 
-    dnG_dep_dns_expect = [7.425792779612475, 26.6956451946272, 58.85973416020387]
+    dnG_dep_dns_expect = [0.2971307072097611, -4.135761370372383, -10.216242096881363]
     assert_close1d(gas.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
     assert_close1d(gas_np.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
     assert isinstance(gas_np.dnG_dep_dns(), np.ndarray)
@@ -891,11 +892,11 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
         zs = [i/sum(ns) for i in ns]
         return sum(ns)*gas.to(T=T, P=P, zs=zs).lnphi()
     lnphis = jacobian(to_jac, zs, perturbation=.7e-6)
-    lnphis_expect = [0.0029770586188775424, 0.010702493723142819, 0.023597329482121697]
+    lnphis_expect = [0.00011912203303876263, -0.0016580591996980612, -0.004095771655595198]
     assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-13)
     assert_close1d(gas_np.lnphis(), lnphis_expect, rtol=1e-13)
     assert isinstance(gas_np.lnphis(), np.ndarray)
-    assert_close1d(lnphis, gas.lnphis(), rtol=5e-7)
+    assert_close1d(lnphis, gas.lnphis(), rtol=1.5e-6)
 
 
 # test_virial_phase_ternary_BC_pitzer_curl_orbey_vera()
@@ -1042,7 +1043,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     dG_dep_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).G_dep(), zs, perturbation=3e-6)
     assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
 
-    dG_dep_dzs_expect = [11.039653592654977, 26.791676731271732, 71.69351860968281]
+    dG_dep_dzs_expect = [-0.5299938046882267, -4.145751201696929, -12.296446092079966]
     assert_close1d(gas.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
     assert_close1d(gas_np.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
     assert isinstance(gas_np.dG_dep_dzs(), np.ndarray)
@@ -1051,7 +1052,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
         zs = [i/sum(ns) for i in ns]
         return sum(ns)*gas.to(T=T, P=P, zs=zs).lnphi()
     lnphis = jacobian(to_jac, zs, perturbation=4e-6)
-    lnphis_expect = [0.0044028238165937945, 0.010717933548490296, 0.028719434443398972]
+    lnphis_expect = [-0.00021080760121739046, -0.0016603931258887027, -0.004928070691558975]
     assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-13)
     assert_close1d(gas_np.lnphis(), lnphis_expect, rtol=1e-13)
     assert isinstance(gas_np.lnphis(), np.ndarray)
@@ -1453,3 +1454,30 @@ def test_virial_easy_B_C_models():
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
     check_virial_temperature_consistency_T_calls(gas, [320, 800])
+
+
+def test_basic_compare_virial_vs_PR():
+    T, P, zs = 300, 1e5,  [1]
+    eos_kwargs = {'Pcs': [4599200.0], 'Tcs': [190.564], 'omegas': [0.01142], }
+    Vcs = [9.86e-05]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 5000.0, [4.8986184697537195e-26, -1.1318000255051273e-21, 1.090383509787202e-17, -5.664719389870236e-14, 1.7090042167602582e-10, -2.9728679808459997e-07, 0.00026565262671378613, -0.054476667747310976, 35.35366254807737]
+                                                ))]
+    cubic = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ORBEY_VERA, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+    assert_close(cubic.H_dep(), virial.H_dep(), rtol=0.2)
+    assert_close(cubic.G_dep(), virial.G_dep(), rtol=0.35)
+    assert_close(cubic.S_dep(), virial.S_dep(), rtol=0.15)
+    assert_close(cubic.lnphi(), virial.lnphi(), rtol=0.4)
+    assert_close1d(cubic.lnphis(), virial.lnphis(), rtol=0.35)
+
+    assert_close(cubic.H(), virial.H(), rtol=0.05)
+    assert_close(cubic.S(), virial.S(), rtol=0.05)
+    assert_close(cubic.G(), virial.G(), rtol=0.05)
+    
