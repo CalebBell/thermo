@@ -1574,3 +1574,330 @@ def test_basic_compare_H_dep_vs_literature_equations():
     assert_close(virial.H_dep(), H_dep_Poling_leiden(virial), rtol=1e-9)
     # Walas doesn't quite match
     assert_close(virial.H_dep(), H_dep_Walas(virial), rtol=1e-4)
+
+
+def test_basic_compare_S_dep_vs_literature_equations():
+    def S_dep_Poling_leiden(self):
+        r'''Method to calculate and return the molar departure entropy using
+        the Poling et al. equation form.
+        
+        .. math::
+            \frac{S^{ig} - S}{R} = \frac{\left(B + T\frac{dB}{dT}\right)}{V} 
+            + \frac{\left(C - T\frac{dC}{dT}\right)}{2V^2} + \ldots - \ln Z
+            
+            S - S^{ig} = -R\left[\frac{\left(B + T\frac{dB}{dT}\right)}{V} 
+            + \frac{\left(C - T\frac{dC}{dT}\right)}{2V^2} + \ldots - \ln Z\right]
+        
+        Returns
+        -------
+        S_dep : float
+            Departure entropy [J/(mol*K)]
+            
+        Notes
+        -----
+        This method uses the virial equation truncated after the C term.
+        The equation gives the departure from the ideal gas state.
+        '''
+        V = self._V  # molar volume
+        T = self.T   # temperature
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        dB_dT = self.dB_dT()  # temperature derivative of B
+        dC_dT = self.dC_dT()  # temperature derivative of C
+        
+        # Calculate Z factor
+        Z = self.P*V/(self.R*T)
+        ln_Z = log(Z)
+        
+        # First term: (B + T*dB/dT)/V
+        first_term = (B + T*dB_dT)/V
+        
+        # Second term: (C - T*dC/dT)/(2V²)
+
+        # While implementing this formula and debugging the disrepancy, it was found that the 
+        # C - T*dC_dT is incorrect and should be C + T*dC_dT
+        second_term = (C + T*dC_dT)/(2.0*V*V)
+        
+        # Combine terms and multiply by -R
+        S_dep = -self.R*(first_term + second_term - ln_Z)
+        
+        return S_dep
+
+    def S_dep_Walas(self):
+        r'''Method to calculate and return the molar departure entropy using
+        the Walas formulation with virial coefficients in the pressure form.
+        Table 11.2. 
+
+        It has not been found where the error is, but there is one.
+
+
+        .. math::
+            S^{id} - S = R \left[ B'P + \frac{C'P^2}{2} + \ldots
+            + T \left( P \frac{dB'}{dT} + \frac{P^2}{2} \frac{dC'}{dT} + \ldots \right) \right]
+        
+        Where:
+            B' = B/RT
+            C' = (C - B²)/(RT)²
+            dB'/dT = (1/RT)·(dB/dT - B/T)
+            dC'/dT = (1/RT)²·((B²-C)/T + dC/dT - 2B·dB/dT)
+            
+        Returns
+        -------
+        S_dep : float
+            Departure entropy [J/(mol*K)]
+            
+        Notes
+        -----
+        '''
+        T = self.T   # temperature
+        P = self.P   # pressure
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        dB_dT = self.dB_dT()  # temperature derivative of B
+        dC_dT = self.dC_dT()  # temperature derivative of C
+        R = self.R   # gas constant
+        
+        # Calculate B' and C'
+        B_prime = B/(R*T)
+        C_prime = (C - B*B)/((R*T)**2)
+        
+        # Calculate dB'/dT and dC'/dT
+        dB_prime_dT = (1.0/(R*T))*(dB_dT - B/T)
+        dC_prime_dT = (1.0/(R*T))**2*((B*B-C)/T + dC_dT - 2.0*B*dB_dT)
+        
+        # First part: R·[B'P + (C'P²)/2]
+        first_part = R*(B_prime*P + (C_prime*P*P)/2.0)
+        
+        # Second part: R·T·[P·(dB'/dT) + (P²/2)·(dC'/dT)]
+        second_part = R*T*(P*dB_prime_dT + (P*P/2.0)*dC_prime_dT)
+        
+        # S_dep = -(S^id - S)
+        S_dep = -(first_part + second_part)
+        
+        return S_dep
+    T, P, zs = 300, 1e5,  [1]
+    eos_kwargs = {'Pcs': [4599200.0], 'Tcs': [190.564], 'omegas': [0.01142], }
+    Vcs = [9.86e-05]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 5000.0, [4.8986184697537195e-26, -1.1318000255051273e-21, 1.090383509787202e-17, -5.664719389870236e-14, 1.7090042167602582e-10, -2.9728679808459997e-07, 0.00026565262671378613, -0.054476667747310976, 35.35366254807737]
+                                                ))]
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ORBEY_VERA, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+
+    assert_close(virial.S_dep(), S_dep_Poling_leiden(virial), rtol=1e-9)
+    # Walas doesn't quite match, some error, unclear
+    assert_close(virial.S_dep(), S_dep_Walas(virial), rtol=2e-4)
+
+
+def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
+
+    def lnphis_Prausnitz_leiden(self):
+        r'''Method to calculate and return the log fugacity coefficients of
+        the phase using the Prausnitz-Leiden equation.
+        
+        .. math::
+            \ln \phi_i = \frac{2}{v} \sum_{j=1}^m y_j B_{ij} + \frac{3}{2v^2} \sum_{j=1}^m \sum_{k=1}^m y_j y_k C_{ijk} - \ln z_{mixt}
+        
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+            
+        Notes
+        -----
+        The zs member variable is used as the mole fractions (y_j in the equation).
+        This method requires interaction virial coefficients B_ij and C_ijk.
+        '''
+        V = self._V  # molar volume
+        v_inv = 1.0/V
+        v2_inv = v_inv*v_inv
+        zs = self.zs  # mole fractions (y in the equation)
+        
+        # Calculate Z factor for the mixture (z_mixt)
+        Z = self.P*V/(self.R*self.T)
+        ln_Z = log(Z)
+        
+        # Get interaction coefficients
+        B_interactions = self.model.B_interactions()
+        C_interactions = self.model.C_interactions() if self.has_cross_C_coefficients else None
+        
+        N = self.N
+        lnphis = [0.0]*N
+        
+        # Calculate ln phi for each component
+        for i in range(N):
+            # First term: (2/v) * sum(y_j * B_ij)
+            sum_y_B = 0.0
+            for j in range(N):
+                sum_y_B += zs[j] * B_interactions[i][j]
+            
+            # Second term: (3/2v²) * sum(y_j * y_k * C_ijk)
+            sum_yy_C = 0.0
+            if self.has_cross_C_coefficients and self.model.C_model != VIRIAL_C_ZERO:
+                for j in range(N):
+                    for k in range(N):
+                        C_ijk = 0.0
+                        C_ij = C_interactions[i][j]
+                        C_jk = C_interactions[j][k]
+                        C_ik = C_interactions[i][k]
+                        
+                        # Using Orentlicher-Prausnitz mixing rule
+                        C_ijk = (C_ij * C_jk * C_ik)**(1.0/3.0) if (C_ij * C_jk * C_ik) > 0 else 0.0
+                        
+                        sum_yy_C += zs[j] * zs[k] * C_ijk
+            
+            # Combine terms for ln phi_i
+            lnphis[i] = 2.0 * v_inv * sum_y_B + 1.5 * v2_inv * sum_yy_C - ln_Z
+        
+        return lnphis
+    def lnphis_Gmehling_B_only_leiden(self):
+        r'''Method to calculate and return the log fugacity coefficients of
+        the phase using the Gmehling B-only equation (Leiden form).
+        
+        .. math::
+            \ln \phi_k = \int_v^{\infty} \frac{2n_r \sum_i y_i B_{ik}}{V^2} dV - \ln z 
+            = \left(2n_r \sum_i y_i B_{ik}\right) \int_v^{\infty} \frac{dV}{V^2} - \ln z
+            = \frac{2}{v} \sum_i y_i B_{ik} - \ln z
+        
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+            
+        Notes
+        -----
+        This simplified form uses only the second virial coefficient (B) terms.
+        The zs member variable is used as the mole fractions (y_i in the equation).
+        '''
+        V = self._V  # molar volume
+        v_inv = 1.0/V
+        zs = self.zs  # mole fractions (y in the equation)
+        
+        # Calculate Z factor for the mixture
+        Z = self.P*V/(self.R*self.T)
+        ln_Z = log(Z)
+        
+        # Get interaction coefficients
+        B_interactions = self.model.B_interactions()
+        
+        N = self.N
+        lnphis = [0.0]*N
+        
+        # Calculate ln phi for each component k
+        for k in range(N):
+            # Calculate sum(y_i * B_ik)
+            sum_y_B = 0.0
+            for i in range(N):
+                sum_y_B += zs[i] * B_interactions[i][k]
+            
+            # Apply formula: 2/v * sum(y_i * B_ik) - ln z
+            lnphis[k] = 2.0 * v_inv * sum_y_B - ln_Z
+        
+        return lnphis
+
+    def lnphi_Poling_leiden(self):
+        r'''Method to calculate and return the log fugacity coefficient of
+        the phase using the Poling et al. equation form.
+        
+        .. math::
+            \ln \phi = \ln \left(\frac{f}{P}\right) = 2\frac{B}{V} + \frac{3C}{2V^2} + \ldots - \ln Z
+        
+        Returns
+        -------
+        lnphi : float
+            Log fugacity coefficient for the mixture, [-]
+            
+        Notes
+        -----
+        This method returns the fugacity coefficient for the overall mixture,
+        not component-specific fugacity coefficients.
+        The equation is truncated after the C term as higher-order terms are
+        rarely available.
+        '''
+        V = self._V  # molar volume
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        
+        # Calculate Z factor
+        Z = self.P*V/(self.R*self.T)
+        ln_Z = log(Z)
+        
+        # Apply the formula from Poling
+        lnphi = 2.0*B/V + 1.5*C/(V*V) - ln_Z
+        
+        return lnphi
+
+    def G_dep_Poling_leiden(self):
+        r'''Method to calculate and return the molar departure Gibbs energy using
+        the Poling et al. equation form. The negative of these equations is the departure
+        term.
+        
+        .. math::
+            \frac{G^{ig} - G}{RT} = -2\frac{B}{V} - \frac{3C}{2V^2} - \ldots + \ln Z
+            
+            G - G^{ig} = RT\left[-2\frac{B}{V} - \frac{3C}{2V^2} - \ldots + \ln Z\right]
+        
+        Returns
+        -------
+        G_dep : float
+            Departure Gibbs energy [J/mol]
+            
+        Notes
+        -----
+        This method uses the virial equation truncated after the C term.
+        The equation gives the departure from the ideal gas state.
+        Mathematically, this is equivalent to RT*ln(φ), where φ is the
+        fugacity coefficient.
+        '''
+        V = self._V  # molar volume
+        T = self.T   # temperature
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        
+        # Calculate Z factor
+        Z = self.P*V/(self.R*T)
+        ln_Z = log(Z)
+        
+        # First term: -2B/V
+        first_term = -2.0*B/V
+        
+        # Second term: -3C/(2V²)
+        second_term = -3.0*C/(2.0*V*V)
+        
+        # Combine terms and multiply by RT
+        G_dep = -self.R*T*(first_term + second_term + ln_Z)
+        
+        return G_dep
+
+    T, P, zs = 300, 1e5,  [1]
+    eos_kwargs = {'Pcs': [4599200.0], 'Tcs': [190.564], 'omegas': [0.01142], }
+    Vcs = [9.86e-05]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 5000.0, [4.8986184697537195e-26, -1.1318000255051273e-21, 1.090383509787202e-17, -5.664719389870236e-14, 1.7090042167602582e-10, -2.9728679808459997e-07, 0.00026565262671378613, -0.054476667747310976, 35.35366254807737]
+                                                ))]
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ORBEY_VERA, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+    assert_close(virial.G_dep(), G_dep_Poling_leiden(virial), rtol=1e-9)
+    assert_close(virial.lnphi(), lnphi_Poling_leiden(virial), rtol=1e-9)
+
+
+    assert_close1d(virial.lnphis(), lnphis_Prausnitz_leiden(virial), rtol=1e-9)
+
+
+    # This formula only has B
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ZERO, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+    assert_close1d(virial.lnphis(), lnphis_Gmehling_B_only_leiden(virial), rtol=1e-9)
