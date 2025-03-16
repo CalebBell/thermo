@@ -49,11 +49,12 @@ from chemicals.iapws import iapws95_Pc, iapws95_rho, iapws95_rhol_sat, iapws95_T
 from chemicals.permittivity import permittivity_IAPWS
 from fluids.numerics import isnan
 
-from thermo.utils import IAPWS, TDependentProperty
+from thermo.utils import TDependentProperty
 
 CRC = 'CRC'
 CRC_CONSTANT = 'CRC_CONSTANT'
-permittivity_methods = [CRC, CRC_CONSTANT, IAPWS]
+IAPWS_PERMITTIVITY = 'IAPWS_PERMITTIVITY'
+permittivity_methods = [CRC, CRC_CONSTANT, IAPWS_PERMITTIVITY]
 """Holds all methods available for the :obj:`PermittivityLiquid` class, for use in
 iterating over them."""
 
@@ -96,7 +97,7 @@ class PermittivityLiquid(TDependentProperty):
     **CRC_CONSTANT**:
         Constant permittivity values at specified temperatures only.
         Data is from [1]_, and is available for 1303 liquids.
-    **IAPWS**:
+    **IAPWS_PERMITTIVITY**:
         The IAPWS model for water permittivity as a liquid.
 
     References
@@ -121,7 +122,7 @@ class PermittivityLiquid(TDependentProperty):
     property_max = 1000.0
     """Maximum valid of permittivity; highest in the data available is ~240."""
 
-    ranked_methods = [IAPWS, CRC, CRC_CONSTANT]
+    ranked_methods = [IAPWS_PERMITTIVITY, CRC, CRC_CONSTANT]
     """Default rankings of the available methods."""
 
     _fit_force_n = {}
@@ -153,7 +154,7 @@ class PermittivityLiquid(TDependentProperty):
         self.CASRN = CASRN
         super().__init__(extrapolation, **kwargs)
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -178,8 +179,8 @@ class PermittivityLiquid(TDependentProperty):
                     self.add_correlation(name=CRC, model='DIPPR100',Tmin=Tmin,Tmax=Tmax, A=CRC_coeffs[0], B=CRC_coeffs[1], C=CRC_coeffs[2],D=CRC_coeffs[3], select=False)
 
         if CASRN == '7732-18-5':
-            methods.add(IAPWS)
-            T_limits[IAPWS] = (273.15, 873.15)
+            methods.add(IAPWS_PERMITTIVITY)
+            T_limits[IAPWS_PERMITTIVITY] = (273.15, 873.15)
 
 
     def calculate(self, T, method):
@@ -201,38 +202,12 @@ class PermittivityLiquid(TDependentProperty):
         epsilon : float
             Relative permittivity of the liquid at T, [-]
         '''
-        if method == IAPWS:
+        if method == IAPWS_PERMITTIVITY:
             if T <= iapws95_Tc:
                 rho = iapws95_rhol_sat(T)
             else:
                 # reduce discontinuities
                 rho = iapws95_rho(T, iapws95_Pc)
-            epsilon = permittivity_IAPWS(T, rho)
-        else:
-            epsilon = self._base_calculate(T, method)
-        return epsilon
-
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        return super().test_method_validity(T, method)
+            return permittivity_IAPWS(T, rho)
+        return self._base_calculate(T, method)
 

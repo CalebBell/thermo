@@ -375,11 +375,9 @@ class GibbsExcessLiquid(Phase):
             zero_coeffs = [[0.0]*N for _ in range(N)]
 
         self.HeatCapacityGases = HeatCapacityGases
-        self.Cpgs_poly_fit, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
 
         self.HeatCapacityLiquids = HeatCapacityLiquids
         if HeatCapacityLiquids is not None:
-            self.Cpls_poly_fit, self._Cpls_data = self._setup_Cpigs(HeatCapacityLiquids)
             T_REF_IG = self.T_REF_IG
             T_REF_IG_INV = 1.0/T_REF_IG
             self.Hvaps_T_ref = [obj(T_REF_IG) for obj in EnthalpyVaporizations]
@@ -618,12 +616,6 @@ class GibbsExcessLiquid(Phase):
         new.Psats_poly_fit = self.Psats_poly_fit
         new._Psats_data = self._Psats_data
         new.Psat_extrpolation = self.Psat_extrpolation
-
-        new.Cpgs_poly_fit = self.Cpgs_poly_fit
-        new._Cpgs_data = self._Cpgs_data
-
-        new.Cpls_poly_fit = self.Cpls_poly_fit
-        new._Cpls_data = self._Cpls_data
 
         new.Vms_sat_poly_fit = self.Vms_sat_poly_fit
         new._Vms_sat_data = self._Vms_sat_data

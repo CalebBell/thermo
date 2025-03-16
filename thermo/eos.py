@@ -884,6 +884,16 @@ class GCEOS:
     c2 = None
     """Parameter used by some equations of state in the `b` calculation"""
 
+    # These are said to be constants per EOS, however, this is not the case with volume translation
+    @property
+    def Jaubert_r1(self):
+        """Parameter used in kij interconversion / calculation of Eij G_res^(E, inf)"""
+        return -(self.delta/2 - (self.delta**2 - 4*self.epsilon)**0.5/2)/self.b
+    @property
+    def Jaubert_r2(self):
+        """Parameter used in kij interconversion / calculation of Eij G_res^(E, inf)"""
+        return (-(self.delta/2 + (self.delta**2 - 4*self.epsilon)**0.5/2)/self.b)
+
     nonstate_constants = ('Tc', 'Pc', 'omega', 'kwargs', 'a', 'b', 'delta', 'epsilon')
     kwargs_keys = tuple()
 

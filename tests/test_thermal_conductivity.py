@@ -202,7 +202,7 @@ def test_ThermalConductivityLiquid_fitting0():
 def test_ThermalConductivityLiquid_fitting1_dippr100():
     for i, CAS in enumerate(chemicals.thermal_conductivity.k_data_Perrys_8E_2_315.index):
         obj = ThermalConductivityLiquid(CASRN=CAS)
-        Ts = linspace(obj.Perrys2_315_Tmin, obj.Perrys2_315_Tmax, 10)
+        Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR100',
                                            do_statistics=True, use_numba=False, fit_method='lm')
@@ -224,7 +224,6 @@ def test_ThermalConductivityGas_CoolProp():
 @pytest.mark.meta_T_dept
 def test_ThermalConductivityGas():
     EtOH = ThermalConductivityGas(MW=46.06844, Tb=351.39, Tc=514.0, Pc=6137000.0, Vc=0.000168, Zc=0.2412, omega=0.635, dipole=1.44, Vmg=0.02357, Cpgm=56.98+R, mug=7.903e-6, CASRN='64-17-5')
-    all_methods = list(EtOH.all_methods)
 
     EtOH.method = EUCKEN_MOD
     assert_close(EtOH.T_dependent_property(305), 0.015427445804245578)
@@ -318,7 +317,7 @@ def test_ThermalConductivityGas_fitting0():
                       '7664-39-3', '107-21-1', '592-76-7', '115-07-1', '64-19-7']
     for CAS in try_CASs_dippr:
         obj = ThermalConductivityGas(CASRN=CAS)
-        Ts = linspace(obj.Perrys2_314_Tmin, obj.Perrys2_314_Tmax, 10)
+        Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR102', multiple_tries=True,
                               do_statistics=True, use_numba=False, fit_method='lm')

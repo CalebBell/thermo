@@ -28,7 +28,7 @@ from chemicals.utils import property_mass_to_molar, zs_to_ws, ws_to_zs
 from fluids.numerics import assert_close, assert_close1d, derivative, linspace
 
 from thermo.interface import *
-from thermo.interface import DIGUILIOTEJA, LINEAR, VDI_TABULAR, WINTERFELDSCRIVENDAVIS, SurfaceTensionMixture
+from thermo.interface import DIGUILIOTEJA, JASPER, LINEAR, VDI_TABULAR, WINTERFELDSCRIVENDAVIS, SurfaceTensionMixture
 from thermo.utils import POLY_FIT
 from thermo.volume import VDI_PPDS, VolumeLiquid
 
@@ -45,8 +45,29 @@ def test_SurfaceTension():
         EtOH.method = i
         sigma_calcs.append(EtOH.T_dependent_property(305.))
 
-    sigma_exp = [0.036707332059707456, 0.02140008, 0.02645171690486363, 0.03905907338532846, 0.021391980051928626, 0.0217115665365073, 0.0217115665365073, 0.021462066798796146, 0.03805573872932236, 0.021222422444285596, 0.03739257387107131]
-    assert_close1d(sorted(sigma_calcs), sorted(sigma_exp), rtol=1e-6)
+    EtOH.method = 'PITZER_SIGMA'
+    assert_close(EtOH.T_dependent_property(305.), 0.03905907338532846, rtol=1e-13)
+    EtOH.method = 'BROCK_BIRD'
+    assert_close(EtOH.T_dependent_property(305.), 0.03739257387107131, rtol=1e-13)
+    EtOH.method = 'MIQUEU'
+    assert_close(EtOH.T_dependent_property(305.), 0.03805573872932236, rtol=1e-13)
+    EtOH.method = 'ZUO_STENBY'
+    assert_close(EtOH.T_dependent_property(305.), 0.036707332059707456, rtol=1e-13)
+    EtOH.method = 'REFPROP_FIT'
+    assert_close(EtOH.T_dependent_property(305.), 0.021391980051928626, rtol=1e-13)
+    EtOH.method = 'SASTRI_RAO'
+    assert_close(EtOH.T_dependent_property(305.), 0.02645171690486363, rtol=1e-13)
+    EtOH.method = 'SOMAYAJULU'
+    assert_close(EtOH.T_dependent_property(305.), 0.0217115665365073, rtol=1e-13)
+    EtOH.method = 'JASPER'
+    assert_close(EtOH.T_dependent_property(305.), 0.02140008, rtol=1e-13)
+    EtOH.method = 'VDI_PPDS'
+    assert_close(EtOH.T_dependent_property(305.), 0.021462066798796146, rtol=1e-13)
+    EtOH.method = 'REFPROP'
+    assert_close(EtOH.T_dependent_property(305.), 0.021222422444285596, rtol=1e-13)
+    EtOH.method = 'SOMAYAJULU2'
+    assert_close(EtOH.T_dependent_property(305.), 0.0217115665365073, rtol=1e-13)
+
     assert_close(EtOH.calculate(305., VDI_TABULAR), 0.021537011904316786, rtol=5E-4)
 
     # Test that methods return None
@@ -68,7 +89,7 @@ def test_SurfaceTension():
 
     # Test Aleem
 
-    CH4 = SurfaceTension(Tb=111.65, Cpl=property_mass_to_molar(2465.,16.04246), Hvap_Tb=510870., MW=16.04246, Vml=3.497e-05)
+    CH4 = SurfaceTension(Tb=111.65, Cpl=property_mass_to_molar(2465.,16.04246), Hvap_Tb=510870., MW=16.04246, Vml=3.497e-05, method='Aleem')
     assert_close(CH4.T_dependent_property(90), 0.016704545538936296)
 
     assert not CH4.test_method_validity(600, 'Aleem')
@@ -76,8 +97,8 @@ def test_SurfaceTension():
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTension_water_iapws():
-    water = SurfaceTension(CASRN="7732-18-5", MW=18.01528, Tb=373.124, Tc=647.14, Pc=22048320.0, Vc=5.6e-05, Zc=0.229, omega=0.344, StielPolar=0.0232, Hvap_Tb=2256470., extrapolation="DIPPR106_AB", method="IAPWS")
-    assert water.method == 'IAPWS'
+    water = SurfaceTension(CASRN="7732-18-5", MW=18.01528, Tb=373.124, Tc=647.14, Pc=22048320.0, Vc=5.6e-05, Zc=0.229, omega=0.344, StielPolar=0.0232, Hvap_Tb=2256470., extrapolation="DIPPR106_AB", method="IAPWS_SIGMA")
+    assert water.method == 'IAPWS_SIGMA'
     assert_close(water(400), 0.05357792640201927)
 
     assert water(3) is not None
@@ -106,10 +127,10 @@ def test_SurfaceTension_fits_to_data_H2O2():
 @pytest.mark.meta_T_dept
 def test_SurfaceTensionJasperMissingLimits():
     obj = SurfaceTension(CASRN='110-01-0')
-    assert_close(obj.calculate(obj.JASPER_Tmax, 'JASPER'), 0, atol=1e-10)
+    assert_close(obj.calculate(obj.T_limits[JASPER][1], 'JASPER'), 0, atol=1e-10)
 
     obj = SurfaceTension(CASRN='14901-07-6')
-    assert_close(obj.calculate(obj.JASPER_Tmax, 'JASPER'), 0, atol=1e-10)
+    assert_close(obj.calculate(obj.T_limits[JASPER][1], 'JASPER'), 0, atol=1e-10)
 
 @pytest.mark.meta_T_dept
 def test_SurfaceTensionVDITabularMissingZeroLimits():

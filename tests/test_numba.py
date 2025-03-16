@@ -460,7 +460,7 @@ def test_fit_T_dep_numba_Rackett():
     Tc, rhoc, b, n, MW = 545.03, 739.99, 0.3, 0.28571, 105.921
     Ts = np.linspace(331.15, 332.9, 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
-    res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+    res, stats = TDependentProperty.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_density_fit',
                           do_statistics=True, use_numba=True, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5

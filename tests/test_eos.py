@@ -2834,3 +2834,44 @@ def test_main_derivatives_and_departures():
     calc = main_derivatives_and_departures(**kwargs)
     expect = (335.0093744690117, -4009092.183615425, -0.0015044993307978941, 321457504.67707026, -13498.177640579832, -17.9726470946639, -0.041745599988721786, 0.011245698258219375)
     assert_close1d(calc, expect, rtol=1e-10)
+
+
+def test_Jaubert_r1_Jaubert_r2():
+    """Derived as follows:
+    from sympy import *
+
+    V, r1, r2, b = symbols('V, r1, r2, b')
+    delta, epsilon = symbols('delta, epsilon')
+
+    lhs = V*V + delta*V + epsilon
+    rhs = expand((V - r1*b)*(V - r2*b))
+    print(collect(rhs, V))
+
+    Eq1 = Eq(delta, (-b*r1 - b*r2))
+    Eq2 = Eq(epsilon, b*b*r1*r2)
+    solve([Eq1, Eq2], [r1, r2])
+
+    From source:
+    Jaubert, Jean-Noël, and Romain Privat. “Relationship between the Binary Interaction 
+    Parameters (kIj) of the Peng-Robinson and Those of the Soave-Redlich-Kwong Equations
+    of State: Application to the Definition of the PR2SRK Model.” Fluid Phase
+    Equilibria 295, no. 1 (August 15, 2010): 26-37. https://doi.org/10.1016/j.fluid.2010.03.037.
+
+    """
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    assert_close(eos.Jaubert_r1,0.41421356237309515)
+    assert_close(eos.Jaubert_r2, -2.4142135623730954)
+
+    eos = VDW(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    assert_close(eos.Jaubert_r1,0)
+    assert_close(eos.Jaubert_r2, 0)
+
+    eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    assert_close(eos.Jaubert_r1,0)
+    assert_close(eos.Jaubert_r2, -1)
+
+    eos = RK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
+    assert_close(eos.Jaubert_r1,0)
+    assert_close(eos.Jaubert_r2, -1)
+
+

@@ -209,7 +209,7 @@ def test_ViscosityLiquid_fitting0():
 def test_ViscosityLiquid_fitting1():
     # Argon - was not fitting properly
     obj = ViscosityLiquid(CASRN='7440-37-1')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -217,7 +217,7 @@ def test_ViscosityLiquid_fitting1():
 
     # benzamide
     obj = ViscosityLiquid(CASRN='55-21-0')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -225,7 +225,7 @@ def test_ViscosityLiquid_fitting1():
 
     # acetamide
     obj = ViscosityLiquid(CASRN='60-35-5')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101', multiple_tries=True,
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -233,7 +233,7 @@ def test_ViscosityLiquid_fitting1():
 
     # 2-butanol
     obj = ViscosityLiquid(CASRN='78-92-2')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -241,7 +241,7 @@ def test_ViscosityLiquid_fitting1():
 
     # benzene
     obj = ViscosityLiquid(CASRN='71-43-2')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -249,7 +249,7 @@ def test_ViscosityLiquid_fitting1():
 
     # butane
     obj = ViscosityLiquid(CASRN='106-97-8')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -257,7 +257,7 @@ def test_ViscosityLiquid_fitting1():
 
     #  1-chloropropane
     obj = ViscosityLiquid(CASRN='540-54-5')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -265,7 +265,7 @@ def test_ViscosityLiquid_fitting1():
 
     # m-cresol
     obj = ViscosityLiquid(CASRN='108-39-4')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -273,7 +273,7 @@ def test_ViscosityLiquid_fitting1():
 
     # o-cresol
     obj = ViscosityLiquid(CASRN='95-48-7')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -281,7 +281,7 @@ def test_ViscosityLiquid_fitting1():
 
     # cyclohexanol
     obj = ViscosityLiquid(CASRN='108-93-0')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -289,7 +289,7 @@ def test_ViscosityLiquid_fitting1():
 
     # decane
     obj = ViscosityLiquid(CASRN='124-18-5')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -297,7 +297,7 @@ def test_ViscosityLiquid_fitting1():
 
     # 1,3-dichlorobenzene
     obj = ViscosityLiquid(CASRN='541-73-1')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -305,7 +305,7 @@ def test_ViscosityLiquid_fitting1():
 
     # diethanolamine
     obj = ViscosityLiquid(CASRN='111-42-2')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -313,7 +313,7 @@ def test_ViscosityLiquid_fitting1():
 
     # difluoromethane
     obj = ViscosityLiquid(CASRN='75-10-5')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -321,7 +321,7 @@ def test_ViscosityLiquid_fitting1():
 
     # dodecane
     obj = ViscosityLiquid(CASRN='112-40-3')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -329,7 +329,7 @@ def test_ViscosityLiquid_fitting1():
 
     # ethylene glycol
     obj = ViscosityLiquid(CASRN='107-21-1')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -337,7 +337,7 @@ def test_ViscosityLiquid_fitting1():
 
     # 2-ethylhexanoic acid
     obj = ViscosityLiquid(CASRN='149-57-5')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -345,7 +345,7 @@ def test_ViscosityLiquid_fitting1():
 
     # ethyltrichlorosilane
     obj = ViscosityLiquid(CASRN='115-21-9')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -353,7 +353,7 @@ def test_ViscosityLiquid_fitting1():
 
     # formamide
     obj = ViscosityLiquid(CASRN='75-12-7')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -361,7 +361,7 @@ def test_ViscosityLiquid_fitting1():
 
     # helium
     obj = ViscosityLiquid(CASRN='7440-59-7')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -369,7 +369,7 @@ def test_ViscosityLiquid_fitting1():
 
     # hexane
     obj = ViscosityLiquid(CASRN='110-54-3')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -377,7 +377,7 @@ def test_ViscosityLiquid_fitting1():
 
     # hydrazine
     obj = ViscosityLiquid(CASRN='302-01-2')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -385,7 +385,7 @@ def test_ViscosityLiquid_fitting1():
 
     # hydrogen
     obj = ViscosityLiquid(CASRN='1333-74-0')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -393,7 +393,7 @@ def test_ViscosityLiquid_fitting1():
 
     # hydrochloric acid
     obj = ViscosityLiquid(CASRN='7647-01-0')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -401,7 +401,7 @@ def test_ViscosityLiquid_fitting1():
 
     # nitric oxide
     obj = ViscosityLiquid(CASRN='10102-43-9')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -409,7 +409,7 @@ def test_ViscosityLiquid_fitting1():
 
     # toluene
     obj = ViscosityLiquid(CASRN='108-88-3')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -417,7 +417,7 @@ def test_ViscosityLiquid_fitting1():
 
     # 1,2-propanediol
     obj = ViscosityLiquid(CASRN='57-55-6')
-    Ts = linspace(obj.Perrys2_313_Tmin, obj.Perrys2_313_Tmax, 10)
+    Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 10)
     props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
     res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR101',
                           do_statistics=True, use_numba=False, fit_method='lm')
@@ -450,8 +450,8 @@ def test_ViscosityLiquid_PPDS9_limits():
     low, high = obj.T_limits[VDI_PPDS]
     assert low == 265.925
     assert high > 400
-    assert high < obj.VDI_PPDS_coeffs[2]
-
+    assert high < obj.PPDS9_parameters['VDI_PPDS']['C']
+    
     # Case that gets to take the two limits
     obj = ViscosityLiquid(CASRN='7647-01-0', Tm=203.55, Tc=324.6)
     low, high = obj.T_limits[VDI_PPDS]

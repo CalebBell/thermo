@@ -27,7 +27,7 @@ from chemicals.identifiers import pubchem_db
 from fluids.numerics import assert_close, assert_close1d
 
 from thermo.group_contribution.joback import *
-from thermo.group_contribution.joback import J_BIGGS_JOBACK_SMARTS_id_dict
+from thermo.group_contribution.joback import JOBACK_GROUPS
 
 folder = os.path.join(os.path.dirname(__file__), 'Data')
 
@@ -102,17 +102,18 @@ def test_Joback_2_methylphenol_PGL6():
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_Joback_database():
+    from thermo.group_contribution.group_contribution_base import smarts_fragment
+    from thermo.group_contribution.joback import JOBACK_GROUPS_FOR_FRAGMENTATION
     pubchem_db.autoload_main_db()
 
     f = open(os.path.join(folder, 'joback_log.txt'), 'w')
     from rdkit import Chem
-    catalog = unifac_smarts = {i: Chem.MolFromSmarts(j) for i, j in J_BIGGS_JOBACK_SMARTS_id_dict.items()}
     lines = []
     for key in sorted(pubchem_db.CAS_index):
         chem_info = pubchem_db.CAS_index[key]
         try:
             mol = Chem.MolFromSmiles(chem_info.smiles)
-            parsed = smarts_fragment(rdkitmol=mol, catalog=catalog, deduplicate=False)
+            parsed = smarts_fragment(rdkitmol=mol, catalog=JOBACK_GROUPS_FOR_FRAGMENTATION, deduplicate=False)
             line = f'{parsed[2]}\t{chem_info.CASs}\t{chem_info.smiles}\t{parsed[0]}\n'
         except Exception as e:
             line = f'{chem_info.CASs}\t{chem_info.smiles}\t{e}\n'
@@ -124,3 +125,53 @@ def test_Joback_database():
 # Maybe use this again if more work is done on Joback
 del test_Joback_database
 
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_DikyJoback_acetone():
+    """Test the DikyJoback estimator with acetone, checking coefficients and Cp values"""
+    from rdkit import Chem
+    for i in [Chem.MolFromSmiles('CC(=O)C'), 'CC(=O)C']:
+        ex = DikyJoback(i)  # Acetone example
+        assert ex.status == 'OK'
+        # Test coefficients are computed correctly
+        assert_close1d(ex.coeffs, [28.867, 0.1736, 3.19e-06, -3.932e-08])
+        # Test Cp at different temperatures
+        assert_close(ex.Cpig(300.0), 80.17246)
+        assert_close(ex.Cpig(400.0), 96.30092)
+        assert_close(ex.Cpig(500.0), 111.5495)
+
+
+    
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_DikyJoback_ring_corrections():
+    """Test the DikyJoback estimator with cyclopropane to verify ring corrections"""
+    ex = DikyJoback('C1CC1')  # Cyclopropane
+    assert ex.status == 'OK'
+    # Should include both group contributions and 3-membered ring correction
+    assert ex.coeffs is not None
+    # Test Cp at room temperature
+    assert_close(ex.Cpig(298.15), 58.62719565202786)
+    assert ex.counts == {11: 3, 42: 1, 43: 1}
+
+    """Test the DikyJoback estimator with cyclobutane to verify 4-membered ring corrections"""
+    ex = DikyJoback('C1CCC1')  # Cyclobutane
+    assert ex.status == 'OK'
+    # Should include both group contributions and 4-membered ring correction
+    assert ex.coeffs is not None
+    assert ex.counts == {11: 4, 42: 1, 44: 1}
+    # Test Cp at various temperatures
+    assert_close(ex.Cpig(298.15), 74.04152705570361)
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_DikyJoback_invalid():
+    """Test handling of invalid molecules"""
+    # Test with iron atom which can't be fragmented
+    ex = DikyJoback('[Fe]')
+    assert not ex.success
+    assert ex.coeffs is None
+    assert ex.Cpig(300.0) is None

@@ -23,23 +23,79 @@ SOFTWARE.
 from chemicals.elements import simple_formula_parser
 
 __all__ = ['str_group_assignment_to_dict', 'group_assignment_to_str',
-           'smarts_fragment_priority', 'smarts_fragment']
+           'smarts_fragment_priority', 'smarts_fragment', 'priority_from_atoms',
+           'SINGLE_BOND', 'DOUBLE_BOND', 'TRIPLE_BOND', 'AROMATIC_BOND',
+           'BaseGroupContribution']
+
+SINGLE_BOND = 'single'
+DOUBLE_BOND = 'double'
+TRIPLE_BOND = 'triple '
+AROMATIC_BOND = 'aromatic'
+
+def priority_from_atoms(atoms, bonds=None):
+    priority = 0
+
+    if 'H' in atoms:
+        priority += atoms['H']
+
+    if 'C' in atoms:
+        priority += atoms['C']*100
+
+    if 'O' in atoms:
+        priority += atoms['O']*150
+    if 'N' in atoms:
+        priority += atoms['N']*175
+    if 'Cl' in atoms:
+        priority += atoms['Cl']*300
+    if 'F' in atoms:
+        priority += atoms['F']*400
+    if 'Si' in atoms:
+        priority += atoms['Si']*200
+    if 'S' in atoms:
+        priority += atoms['S']*250
+
+    if bonds is not None:
+        priority += bonds.get(SINGLE_BOND, 0)*2
+        priority += bonds.get(DOUBLE_BOND, 0)*10
+        priority += bonds.get(TRIPLE_BOND, 0)*100
+        priority += bonds.get(AROMATIC_BOND, 0)*1000
+    return priority
+
+
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
 
 loaded_rdkit = False
 Chem, Descriptors, AllChem, rdMolDescriptors = None, None, None, None
 def load_rdkit_modules():
-    global loaded_rdkit, Chem, Descriptors, AllChem, rdMolDescriptors
+    global loaded_rdkit, Chem, Descriptors, AllChem, rdMolDescriptors, combinations
     if loaded_rdkit:
         return
     try:
         from rdkit import Chem
         from rdkit.Chem import AllChem, Descriptors, rdMolDescriptors
         loaded_rdkit = True
+        from itertools import combinations
     except:
         if not loaded_rdkit: # pragma: no cover
             raise Exception(rdkit_missing)
+
+class BaseGroupContribution:
+    __slots__ = ('group', 'group_id', 'smarts', 'smart_rdkit', 
+                 'hydrogen_from_smarts', 'priority', 'atoms', 'bonds')
+    
+    def __init__(self, group, smarts=None, priority=None, atoms=None, 
+                 bonds=None, hydrogen_from_smarts=False, group_id=None):
+        self.group = group
+        self.smarts = smarts
+        self.priority = priority
+        self.atoms = atoms
+        self.bonds = bonds
+        self.hydrogen_from_smarts = hydrogen_from_smarts
+        self.smart_rdkit = None
+        self.group_id = group_id
+
+
 
 def group_assignment_to_str(counts, pair_separator=',', key_val_separator=':'):
     r'''Take a group contribution dictionary, and turn it into a string.
@@ -158,13 +214,16 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         load_rdkit_modules()
     if rdkitmol is None and smi is None:
         raise Exception('Either an rdkit mol or a smiles string is required')
+    if type(rdkitmol) is str and smi is None:
+        # swap for convinience
+        rdkitmol, smi = smi, rdkitmol
     if smi is not None:
         rdkitmol = Chem.MolFromSmiles(smi)
         if rdkitmol is None:
             status = 'Failed to construct mol'
             success = False
             return {}, success, status
-    from itertools import combinations
+    
 
     # Remove this
     catalog = [i for i in catalog if i.priority is not None]
@@ -175,11 +234,12 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     H_count = atoms.get('H', 0)
 
     H_counts_by_idx = {}
+    all_atom_idxs = set()
     for at in rdkitmol.GetAtoms():
-        H_counts_by_idx[at.GetIdx()] = at.GetTotalNumHs(includeNeighbors=True)
+        at_idx = at.GetIdx()
+        H_counts_by_idx[at_idx] = at.GetTotalNumHs(includeNeighbors=True)
+        all_atom_idxs.add(at_idx)
 
-
-    all_atom_idxs = {i.GetIdx() for i in rdkitmol.GetAtoms()}
     atom_count = len(all_atom_idxs)
     status = 'OK'
     success = True
@@ -235,6 +295,69 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             all_heavies_matched_by_a_pattern.update(t)
 
     # excludes H
+    DEBUG_VISUALIZATION = False
+    if DEBUG_VISUALIZATION:
+        from rdkit.Chem import Draw
+        import matplotlib.pyplot as plt
+        from matplotlib import colors
+        
+        # First, count total number of matches across all patterns
+        total_matches = sum(len(matches) for matches in all_matches.values())
+        
+        if total_matches > 0:
+            # Calculate grid dimensions - still use 3 columns
+            n_cols = 3
+            n_rows = (total_matches + n_cols - 1) // n_cols
+            # Calculate figure size - adjust these multipliers as needed
+            fig_width = n_cols * 2.2  # 5 inches per column
+            fig_height = n_rows * 2.2  # 5 inches per row
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(fig_width, fig_height))
+            if n_rows * n_cols > 1:
+                axes = axes.flatten()
+            else:
+                axes = [axes]
+                
+            # Single highlight color since each match gets its own subplot
+            highlight_color = (0.678, 0.847, 0.902)  # lightblue
+            
+            current_ax_idx = 0
+            for group_id, matches in all_matches.items():
+                pattern_obj = group_to_obj[group_id]
+                
+                # Make a subplot for each individual match
+                for match_idx, match in enumerate(matches):
+                    if current_ax_idx < len(axes):
+                        ax = axes[current_ax_idx]
+                        
+                        # Create a copy of the molecule for this visualization
+                        mol_copy = Chem.Mol(rdkitmol)
+                        
+                        # Add atom indices as labels
+                        for atom in mol_copy.GetAtoms():
+                            atom.SetProp('atomLabel', str(atom.GetIdx()))
+                        
+                        # Create the image with this single match highlighted
+                        img = Draw.MolToImage(mol_copy, 
+                                            highlightAtoms=list(match),
+                                            highlightColor=highlight_color)
+                        
+                        ax.imshow(img)
+                        ax.axis('off')
+                        
+                        # Add pattern info as title
+                        ax.set_title(f"Group {group_id}\nMatch {match_idx + 1}\nSMARTS: {pattern_obj.smarts}", 
+                                fontsize=10, pad=10)
+                        
+                        current_ax_idx += 1
+            
+            # Remove empty subplots
+            for idx in range(current_ax_idx, len(axes)):
+                fig.delaxes(axes[idx])
+                
+            plt.tight_layout()
+            plt.show()
+
+
 
     ignore_matches = set()
     matched_atoms, final_group_counts, final_assignments = run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs, H_count)
@@ -273,7 +396,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         # else:
             # remove_up_to = 3
         remove_up_to = 4
-        max_tries = 20000
+        max_tries = 5000
         tries = 0
 
         done = False

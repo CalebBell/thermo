@@ -349,6 +349,9 @@ class ThermalConductivityLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, DIPPR_9G, MISSENARD, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(DIPPR_PERRY_8E)
+    extra_correlations_internal.add(VDI_PPDS)
 
     custom_args = ('MW', 'Tm', 'Tb', 'Tc', 'Pc', 'omega', 'Hfus')
 
@@ -388,8 +391,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
         if load_data and CASRN:
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'K (l)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_k:
@@ -398,16 +400,41 @@ class ThermalConductivityLiquid(TPDependentProperty):
                     methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin*1.001, self.CP_f.Tc*0.9999)
             if CASRN in thermal_conductivity.k_data_Perrys_8E_2_315.index:
-                methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, C5, self.Perrys2_315_Tmin, self.Perrys2_315_Tmax = thermal_conductivity.k_values_Perrys_8E_2_315[thermal_conductivity.k_data_Perrys_8E_2_315.index.get_loc(CASRN)].tolist()
-                self.Perrys2_315_coeffs = [C1, C2, C3, C4, C5]
-                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_315_Tmin, self.Perrys2_315_Tmax)
+                C1, C2, C3, C4, C5, Tmin, Tmax = thermal_conductivity.k_values_Perrys_8E_2_315[
+                    thermal_conductivity.k_data_Perrys_8E_2_315.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=DIPPR_PERRY_8E,
+                    model='DIPPR100', 
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=C1,
+                    B=C2,
+                    C=C3,
+                    D=C4,
+                    E=C5,
+                    F=0,
+                    G=0,
+                    select=False
+                )
+
             if CASRN in thermal_conductivity.k_data_VDI_PPDS_9.index:
-                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_9[thermal_conductivity.k_data_VDI_PPDS_9.index.get_loc(CASRN)].tolist()
-                self.VDI_PPDS_coeffs = [A, B, C, D, E]
-                self.VDI_PPDS_coeffs.reverse()
-                methods.append(VDI_PPDS)
-                T_limits[VDI_PPDS] = (1e-3, 1e4)
+                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_9[
+                    thermal_conductivity.k_data_VDI_PPDS_9.index.get_loc(CASRN)].tolist()
+                # Reverse coefficients as per original code and map to DIPPR100 parameters
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model='DIPPR100',
+                    Tmin=1e-3,
+                    Tmax=1e4,
+                    A=A,  # constant term
+                    B=B,  # T term 
+                    C=C,  # T^2 term
+                    D=D,  # T^3 term
+                    E=E,  # T^4 term
+                    F=0,
+                    G=0,
+                    select=False
+                )
         if self.MW:
             methods.extend([BAHADORI_L, LAKSHMI_PRASAD])
             T_limits[BAHADORI_L] = (1e-3, 1e4)
@@ -489,10 +516,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
             kl = Lakshmi_Prasad(T, self.MW)
         elif method == BAHADORI_L:
             kl = Bahadori_liquid(T, self.MW)
-        elif method == DIPPR_PERRY_8E:
-            kl = EQ100(T, *self.Perrys2_315_coeffs)
-        elif method == VDI_PPDS:
-            kl = horner(self.VDI_PPDS_coeffs, T)
         elif method == COOLPROP:
             kl = CoolProp_T_dependent_property(T, self.CASRN, 'L', 'l')
         else:
@@ -532,57 +555,6 @@ class ThermalConductivityLiquid(TPDependentProperty):
             return self._base_calculate_P(T, P, method)
         return kl
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a temperature-dependent
-        low-pressure method. For CSP methods, the models **BAHADORI_L**,
-        **LAKSHMI_PRASAD**, and **SHEFFY_JOHNSON** are considered valid for all
-        temperatures. For methods **GHARAGHEIZI_L**, **NICOLA**,
-        and **NICOLA_ORIGINAL**, the methods are considered valid up to 1.5Tc
-        and down to 0 K. Method **SATO_RIEDEL** does not work above the
-        critical point, so it is valid from 0 K to the critical point.
-
-        For tabular data, extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        if method == SATO_RIEDEL:
-            if T > self.Tc:
-                return False
-                # Doesn't run, no lower limit though
-        elif method in (GHARAGHEIZI_L, NICOLA, NICOLA_ORIGINAL):
-            if T > self.Tc*1.5:
-                return False
-            # No lower limit, give a wide margin of acceptability here
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_315_Tmin or T > self.Perrys2_315_Tmax:
-                return False
-        elif method in (BAHADORI_L, LAKSHMI_PRASAD, SHEFFY_JOHNSON):
-            pass
-            # no limits at all
-        elif method == VDI_PPDS:
-            if self.Tc and T > self.Tc:
-                return False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tt or T > self.CP_f.Tc:
-                return False
-        else:
-            return super().test_method_validity(T, method)
-        return True
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For
@@ -659,6 +631,9 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -704,13 +679,13 @@ class ThermalConductivityLiquidMixture(MixtureProperty):
     custom_args = pure_constants
 
     def __init__(self, CASs=[], ThermalConductivityLiquids=[], MWs=[],
-                 **kwargs):
+                 load_data=True, **kwargs):
         self.CASs = CASs
         self.ThermalConductivityLiquids = ThermalConductivityLiquids
         self.MWs = MWs
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1003,6 +978,10 @@ class ThermalConductivityGas(TPDependentProperty):
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
                    'Vmg', 'Cpgm', 'mug')
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(DIPPR_PERRY_8E)
+    extra_correlations_internal.add(VDI_PPDS)
+
     DEFAULT_EXTRAPOLATION_MIN = 1e-4
     def __init__(self, CASRN='', MW=None, Tb=None, Tc=None, Pc=None, Vc=None,
                  Zc=None, omega=None, dipole=None, Vmg=None, Cpgm=None, mug=None,
@@ -1044,8 +1023,7 @@ class ThermalConductivityGas(TPDependentProperty):
         if load_data and CASRN:
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'K (g)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[CASRN]
                 if CP_f.has_k:
@@ -1054,16 +1032,37 @@ class ThermalConductivityGas(TPDependentProperty):
                     methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc*0.9999)
             if CASRN in thermal_conductivity.k_data_Perrys_8E_2_314.index:
-                methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, self.Perrys2_314_Tmin, self.Perrys2_314_Tmax = thermal_conductivity.k_values_Perrys_8E_2_314[thermal_conductivity.k_data_Perrys_8E_2_314.index.get_loc(CASRN)].tolist()
-                self.Perrys2_314_coeffs = [C1, C2, C3, C4]
-                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_314_Tmin, self.Perrys2_314_Tmax)
+                C1, C2, C3, C4, Tmin, Tmax = thermal_conductivity.k_values_Perrys_8E_2_314[
+                    thermal_conductivity.k_data_Perrys_8E_2_314.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=DIPPR_PERRY_8E,
+                    model='DIPPR102',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=C1,
+                    B=C2,
+                    C=C3,
+                    D=C4,
+                    select=False
+                )
             if CASRN in thermal_conductivity.k_data_VDI_PPDS_10.index:
-                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_10[thermal_conductivity.k_data_VDI_PPDS_10.index.get_loc(CASRN)].tolist()
-                self.VDI_PPDS_coeffs = [A, B, C, D, E]
-                self.VDI_PPDS_coeffs.reverse()
-                methods.append(VDI_PPDS)
-                T_limits[VDI_PPDS] = (1e-3, 10000.0)
+                A, B, C, D, E = thermal_conductivity.k_values_VDI_PPDS_10[
+                    thermal_conductivity.k_data_VDI_PPDS_10.index.get_loc(CASRN)].tolist()
+                # Reverse coefficients as per original code and map to DIPPR100 parameters
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model='DIPPR100',
+                    Tmin=1e-3,
+                    Tmax=10000.0,
+                    A=A,  # constant term
+                    B=B,  # T term
+                    C=C,  # T^2 term
+                    D=D,  # T^3 term
+                    E=E,  # T^4 term
+                    F=0,
+                    G=0,
+                    select=False
+                )
         if all((self.MW, self.Tb, self.Pc, self.omega)):
             methods.append(GHARAGHEIZI_G)
             # Turns negative at low T; do not set Tmin
@@ -1145,10 +1144,6 @@ class ThermalConductivityGas(TPDependentProperty):
             kg = Eucken_modified(self.MW, Cvgm, mug)
         elif method == EUCKEN:
             kg = Eucken(self.MW, Cvgm, mug)
-        elif method == DIPPR_PERRY_8E:
-            kg = EQ102(T, *self.Perrys2_314_coeffs)
-        elif method == VDI_PPDS:
-            kg = horner(self.VDI_PPDS_coeffs, T)
         elif method == BAHADORI_G:
             kg = Bahadori_gas(T, self.MW)
         elif method == COOLPROP:
@@ -1197,44 +1192,6 @@ class ThermalConductivityGas(TPDependentProperty):
             return self._base_calculate_P(T, P, method)
         return kg
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a temperature-dependent
-        low-pressure method. For CSP methods, the all methods are considered
-        valid from 0 K and up.
-
-        For tabular data, extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-        **GHARAGHEIZI_G** and **BAHADORI_G** are known to sometimes produce
-        negative results.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        if method in (GHARAGHEIZI_G, DIPPR_9B, CHUNG, ELI_HANLEY, EUCKEN_MOD,
-                      EUCKEN, BAHADORI_G, VDI_PPDS):
-            pass
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_314_Tmin or T > self.Perrys2_314_Tmax:
-                return False
-        elif method == COOLPROP:
-            if T < self.CP_f.Tmin or T > self.CP_f.Tmax:
-                return False
-        else:
-            return super().test_method_validity(T, method)
-        return True
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For
@@ -1313,6 +1270,9 @@ class ThermalConductivityGasMixture(MixtureProperty):
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -1351,17 +1311,17 @@ class ThermalConductivityGasMixture(MixtureProperty):
     custom_args = pure_constants
 
     def __init__(self, MWs=[], Tbs=[], CASs=[], ThermalConductivityGases=[],
-                 ViscosityGases=[],  **kwargs):
+                 ViscosityGases=[],  load_data=True, **kwargs):
         self.MWs = MWs
         self.Tbs = Tbs
         self.CASs = CASs
         self.ThermalConductivityGases = ThermalConductivityGases
         self.ViscosityGases = ViscosityGases
 
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1493,7 +1453,7 @@ class ThermalConductivitySolid(TDependentProperty):
         self.CASRN = CASRN
         super().__init__(extrapolation, **kwargs)
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         methods = []
         self.T_limits = T_limits = {}
         self.all_methods = set()

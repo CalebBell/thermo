@@ -909,6 +909,34 @@ class Wilson(GibbsExcess):
                 pass
         return new
 
+    def missing_interaction_parameters(self):
+        r'''
+        Return a list of tuples (index_i, index_j) for each (i, j) pair where
+        all lambda parameters (a, b, c, d, e, f) are zero. In the Wilson model,
+        parameters are asymmetric, so (i,j) does not imply (j,i).
+        
+        Returns
+        -------
+        missing_params : list[tuple[int, int]]
+            List of tuples of the component indices with missing interaction parameters, [-].
+        '''
+        missing_params = []
+        
+        # Extract lambda matrices
+        lambda_matrices = [
+            self.lambda_as, self.lambda_bs, self.lambda_cs,
+            self.lambda_ds, self.lambda_es, self.lambda_fs
+        ]
+        
+        for i in range(self.N):
+            for j in range(self.N):
+                if i != j:  # Skip diagonal elements
+                    # Check if all lambda coefficients are zero for this interaction (i, j)
+                    if all(lambda_matrix[i][j] == 0.0 for lambda_matrix in lambda_matrices):
+                        missing_params.append((i, j))
+        
+        return missing_params
+
     def lambdas(self):
         r'''Calculate and return the `lambda` terms for the Wilson model for
         at system temperature.

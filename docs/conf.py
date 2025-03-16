@@ -58,8 +58,10 @@ extensions = [
     'matplotlib.sphinxext.plot_directive',
     'sphinxcontrib.katex',
     'sphinx_sitemap',
+    'sphinxcontrib.googleanalytics',
 ]
-
+googleanalytics_id = 'G-H82NH09HYY'
+                      
 katex_css_path = \
     'https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css'
 katex_js_path = 'katex.min.js'

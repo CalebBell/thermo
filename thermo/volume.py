@@ -157,6 +157,7 @@ from thermo.utils import (
     TPDependentProperty,
 )
 from thermo.vapor_pressure import VaporPressure
+from thermo.eos import PR
 
 
 def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
@@ -405,15 +406,23 @@ class VolumeLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
-    obj_references = ('eos', 'Psat')
+    obj_references = ('Psat',)
     pure_references = ('Psat')
     obj_references_types = pure_reference_types = (VaporPressure,)
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(DIPPR_PERRY_8E)
+    extra_correlations_internal.add(VDI_PPDS)
+    extra_correlations_internal.add(CRC_INORG_L_CONST)
+    extra_correlations_internal.add(CRC_INORG_L)
+    extra_correlations_internal.add(MMSNM0FIT)
+    extra_correlations_internal.add(RACKETTFIT)
+    extra_correlations_internal.add(HTCOSTALDFIT)
 
     custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
-                   'Psat', 'eos')
+                   'Psat')
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
-                 omega=None, dipole=None, Psat=None, CASRN='', eos=None,
+                 omega=None, dipole=None, Psat=None, CASRN='',
                  has_hydroxyl=False, extrapolation='constant', **kwargs):
         self.CASRN = CASRN
         self.MW = MW
@@ -425,7 +434,6 @@ class VolumeLiquid(TPDependentProperty):
         self.omega = omega
         self.dipole = dipole
         self.Psat = Psat
-        self.eos = eos
         self.has_hydroxyl = has_hydroxyl
         super().__init__(extrapolation, **kwargs)
 
@@ -457,7 +465,7 @@ class VolumeLiquid(TPDependentProperty):
             pass
 
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -481,40 +489,100 @@ class VolumeLiquid(TPDependentProperty):
                 self.CP_f = coolprop_fluids[CASRN]
                 T_limits[COOLPROP] = (max(self.CP_f.Tt,self.CP_f.Tmin), self.CP_f.Tc)
             if CASRN in volume.rho_data_CRC_inorg_l.index:
-                methods.append(CRC_INORG_L)
-                self.CRC_INORG_L_MW, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax = volume.rho_values_CRC_inorg_l[volume.rho_data_CRC_inorg_l.index.get_loc(CASRN)].tolist()
-                T_limits[CRC_INORG_L] = (self.CRC_INORG_L_Tm, self.CRC_INORG_L_Tmax)
+                MW, rho0, k, Tm, Tmax = volume.rho_values_CRC_inorg_l[
+                    volume.rho_data_CRC_inorg_l.index.get_loc(CASRN)].tolist()
+                # Convert CRC form ρ = ρ₀ - k(T-Tₘ) to ρ = A + B*T form
+                A = rho0 + k*Tm
+                B = -k
+                self.add_correlation(
+                    name=CRC_INORG_L,
+                    model='DIPPR100_rho_to_Vm',
+                    Tmin=Tm,
+                    Tmax=Tmax,
+                    MW=MW,
+                    A=A,
+                    B=B,
+                    select=False
+                )
             if CASRN in volume.rho_data_Perry_8E_105_l.index:
-                methods.append(DIPPR_PERRY_8E)
-                C1, C2, C3, C4, self.DIPPR_Tmin, self.DIPPR_Tmax = volume.rho_values_Perry_8E_105_l[volume.rho_data_Perry_8E_105_l.index.get_loc(CASRN)].tolist()
-                self.DIPPR_coeffs = [C1, C2, C3, C4]
-                T_limits[DIPPR_PERRY_8E] = (self.DIPPR_Tmin, self.DIPPR_Tmax)
+                C1, C2, C3, C4, Tmin, Tmax = volume.rho_values_Perry_8E_105_l[
+                    volume.rho_data_Perry_8E_105_l.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=DIPPR_PERRY_8E,
+                    model='DIPPR105_reciprocal',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=C1,
+                    B=C2,
+                    C=C3,
+                    D=C4,
+                    select=False
+                )
             if CASRN in volume.rho_data_VDI_PPDS_2.index:
-                methods.append(VDI_PPDS)
-                MW, Tc, rhoc, A, B, C, D = volume.rho_values_VDI_PPDS_2[volume.rho_data_VDI_PPDS_2.index.get_loc(CASRN)].tolist()
-                self.VDI_PPDS_coeffs = [A, B, C, D]
-                self.VDI_PPDS_MW = MW
-                self.VDI_PPDS_Tc = Tc
-                self.VDI_PPDS_rhoc = rhoc
-                T_limits[VDI_PPDS] = (0.3*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
+                MW, Tc, rhoc, A, B, C, D = volume.rho_values_VDI_PPDS_2[
+                    volume.rho_data_VDI_PPDS_2.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model='volume_VDI_PPDS',
+                    Tmin=0.3*Tc,
+                    Tmax=Tc,
+                    MW=MW,
+                    Tc=Tc,
+                    rhoc=rhoc,
+                    a=A,
+                    b=B,
+                    c=C,
+                    d=D,
+                    select=False
+                )
+            if CASRN in volume.rho_data_CRC_inorg_l_const.index:
+                Vm = float(volume.rho_data_CRC_inorg_l_const.at[CASRN, 'Vm'])
+                self.add_correlation(
+                    name=CRC_INORG_L_CONST,
+                    model='constant',
+                    Tmin=298.15,
+                    Tmax=298.15,
+                    value=Vm,
+                    select=False
+                )
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Volume (l)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if self.Tc and CASRN in volume.rho_data_COSTALD.index:
-                methods.append(HTCOSTALDFIT)
-                self.COSTALD_Vchar = float(volume.rho_data_COSTALD.at[CASRN, 'Vchar'])
-                self.COSTALD_omega_SRK = float(volume.rho_data_COSTALD.at[CASRN, 'omega_SRK'])
-                T_limits[HTCOSTALDFIT] = (0.0, self.Tc)
+                self.add_correlation(
+                    name=HTCOSTALDFIT,
+                    model='COSTALD_fit',
+                    Tmin=0.0,
+                    Tmax=self.Tc,
+                    Tc=self.Tc,
+                    COSTALD_Vchar=float(volume.rho_data_COSTALD.at[CASRN, 'Vchar']),
+                    COSTALD_omega=float(volume.rho_data_COSTALD.at[CASRN, 'omega_SRK']),
+                    select=False
+                )
             if self.Tc and self.Pc and CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']):
-                methods.append(RACKETTFIT)
-                self.RACKETT_Z_RA = float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA'])
-                T_limits[RACKETTFIT] = (0.0, self.Tc)
-            if CASRN in volume.rho_data_CRC_inorg_l_const.index:
-                methods.append(CRC_INORG_L_CONST)
-                self.CRC_INORG_L_CONST_Vm = float(volume.rho_data_CRC_inorg_l_const.at[CASRN, 'Vm'])
-                T_limits[CRC_INORG_L_CONST] = (298.15, 298.15)
-                # Roughly data at STP; not guaranteed however; not used for Trange
+                self.add_correlation(
+                    name=RACKETTFIT,
+                    model='Rackett_fit',
+                    Tmin=0.0,
+                    Tmax=self.Tc,
+                    Tc=self.Tc,
+                    Pc=self.Pc,
+                    Z_RA=float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']),
+                    select=False
+                )
+            if all((self.Tc, self.Vc, self.omega)):
+                if load_data and CASRN and CASRN in volume.rho_data_SNM0.index:
+                    self.add_correlation(
+                        name=MMSNM0FIT,
+                        model='SNM0_fit',
+                        Tmin=0.0,
+                        Tmax=self.Tc,
+                        Tc=self.Tc,
+                        Vc=self.Vc,
+                        omega=self.omega,
+                        delta_SRK=float(volume.rho_data_SNM0.at[CASRN, 'delta_SRK']),
+                        select=False
+                    )
         if all((self.Tc, self.Vc, self.Zc)):
             methods.append(YEN_WOODS_SAT)
             T_limits[YEN_WOODS_SAT] = (0.0, self.Tc)
@@ -530,24 +598,15 @@ class VolumeLiquid(TPDependentProperty):
             methods.append(TOWNSEND_HALES)
             methods.append(HTCOSTALD)
             methods.append(MMSNM0)
-            if load_data and CASRN and CASRN in volume.rho_data_SNM0.index:
-                methods.append(MMSNM0FIT)
-                self.SNM0_delta_SRK = float(volume.rho_data_SNM0.at[CASRN, 'delta_SRK'])
-                T_limits[MMSNM0FIT] = (0.0, self.Tc)
+            methods.append(EOS)
+            T_limits[EOS] = (0.2*self.Tc, self.Tc)
             T_limits[TOWNSEND_HALES] = T_limits[HTCOSTALD] = T_limits[MMSNM0] = (0.0, self.Tc)
         if all((self.Tc, self.Vc, self.omega, self.Tb, self.MW)):
             methods.append(CAMPBELL_THODOS)
             T_limits[CAMPBELL_THODOS] = (0.0, self.Tc)
-        if self.eos:
-            try:
-                T_limits[EOS] = (0.2*self.eos[0].Tc, self.eos[0].Tc)
-                methods.append(EOS)
-            except:
-                pass
         if all((self.Tc, self.Pc, self.omega)):
             methods_P.append(COSTALD_COMPRESSED)
-            if self.eos:
-                methods_P.append(EOS)
+            methods_P.append(EOS)
 
         self.all_methods.update(methods)
         self.all_methods_P = set(methods_P)
@@ -591,30 +650,18 @@ class VolumeLiquid(TPDependentProperty):
             Vm = Yen_Woods_saturation(T, self.Tc, self.Vc, self.Zc)
         elif method == MMSNM0:
             Vm = SNM0(T, self.Tc, self.Vc, self.omega)
-        elif method == MMSNM0FIT:
-            Vm = SNM0(T, self.Tc, self.Vc, self.omega, self.SNM0_delta_SRK)
         elif method == CAMPBELL_THODOS:
             Vm = Campbell_Thodos(T, self.Tb, self.Tc, self.Pc, self.MW, self.dipole, self.has_hydroxyl)
-        elif method == HTCOSTALDFIT:
-            Vm = COSTALD(T, self.Tc, self.COSTALD_Vchar, self.COSTALD_omega_SRK)
-        elif method == RACKETTFIT:
-            Vm = Rackett(T, self.Tc, self.Pc, self.RACKETT_Z_RA)
-        elif method == DIPPR_PERRY_8E:
-            A, B, C, D = self.DIPPR_coeffs
-            Vm = 1./EQ105(T, A, B, C, D)
-        elif method == CRC_INORG_L:
-            rho = CRC_inorganic(T, self.CRC_INORG_L_rho, self.CRC_INORG_L_k, self.CRC_INORG_L_Tm)
-            Vm = rho_to_Vm(rho, self.CRC_INORG_L_MW)
-        elif method == VDI_PPDS:
-            A, B, C, D = self.VDI_PPDS_coeffs
-            rho = EQ116(T, self.VDI_PPDS_Tc, self.VDI_PPDS_rhoc, A, B, C, D)
-            Vm = rho_to_Vm(rho, self.VDI_PPDS_MW)
-        elif method == CRC_INORG_L_CONST:
-            Vm = self.CRC_INORG_L_CONST_Vm
+        # elif method == MMSNM0FIT:
+        #     Vm = SNM0(T, self.Tc, self.Vc, self.omega, self.SNM0_delta_SRK)
+        # elif method == HTCOSTALDFIT:
+        #     Vm = COSTALD(T, self.Tc, self.COSTALD_Vchar, self.COSTALD_omega_SRK)
+        # elif method == RACKETTFIT:
+        #     Vm = Rackett(T, self.Tc, self.Pc, self.RACKETT_Z_RA)
         elif method == COOLPROP:
             Vm = 1./CoolProp_T_dependent_property(T, self.CASRN, 'DMOLAR', 'l')
         elif method == EOS:
-            Vm = self.eos[0].V_l_sat(T)
+            Vm = PR(T=T, P=101325.0, Tc=self.Tc, Pc=self.Pc, omega=self.omega).V_l_sat(T)
         else:
             return self._base_calculate(T, method)
         return Vm
@@ -649,52 +696,11 @@ class VolumeLiquid(TPDependentProperty):
 #            assert PhaseSI('T', T, 'P', P, self.CASRN) == 'liquid'
             Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
         elif method == EOS:
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
-            Vm = self.eos[0].V_l
+            Vm = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega).V_l
         else:
             return self._base_calculate_P(T, P, method)
         return Vm
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For CSP methods, the models
-        are considered valid from 0 K to the critical point. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        **BHIRUD_NORMAL** behaves poorly at low temperatures and is not used
-        under 0.35Tc. The constant value available for inorganic chemicals,
-        from method **CRC_INORG_L_CONST**, is considered valid for all
-        temperatures.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if method in (RACKETT, YAMADA_GUNN, TOWNSEND_HALES,
-                        HTCOSTALD, YEN_WOODS_SAT, MMSNM0, MMSNM0FIT,
-                        CAMPBELL_THODOS, HTCOSTALDFIT, RACKETTFIT):
-            if T >= self.Tc:
-                validity = False
-        elif method == EOS:
-            if T >= self.eos[0].Tc:
-                validity = False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For
@@ -730,8 +736,7 @@ class VolumeLiquid(TPDependentProperty):
         elif method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ('liquid', 'supercritical_liquid')
         elif method == EOS:
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
-            validity = hasattr(self.eos[0], 'V_l')
+            validity = hasattr(PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega), 'V_l')
         else:
             return super().test_method_validity_P(T, P, method)
         return validity
@@ -836,7 +841,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
     '''
 
     def __init__(self, MW=None, Tc=None, Pc=None,
-                 omega=None,  Psat=None, CASRN='', eos=None,
+                 omega=None,  Psat=None, CASRN='',
                  extrapolation=None):
         self.CASRN = CASRN
         self.MW = MW
@@ -844,7 +849,6 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         self.Pc = Pc
         self.omega = omega
         self.Psat = Psat
-        self.eos = eos
 
         self.tabular_data = {}
         """tabular_data, dict: Stored (Ts, properties) for any
@@ -872,7 +876,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         self.extrapolation = extrapolation
 
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -892,9 +896,8 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
             self.CP_f = coolprop_fluids[self.CASRN]
             T_limits[COOLPROP] = (self.CP_f.Tc, self.CP_f.Tmax)
         if all((self.Tc, self.Pc, self.omega)):
-            if self.eos:
-                methods_P.append(EOS)
-                T_limits[EOS] = (self.Tc, self.Tc*100)
+            methods_P.append(EOS)
+            T_limits[EOS] = (self.Tc, self.Tc*100)
         self.all_methods = set(methods)
         self.all_methods_P = set(methods_P)
 
@@ -943,37 +946,15 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         if method == COOLPROP:
             Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
         elif method == EOS:
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
+            eos = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
             try:
-                Vm = self.eos[0].V_l
+                Vm = eos.V_l
             except AttributeError:
-                Vm =  self.eos[0].V_g
+                Vm =  eos.V_g
         elif method in self.tabular_data:
             Vm = self.interpolate_P(T, P, method)
         return Vm
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method.For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        return super().test_method_validity(T, method)
 
     def test_method_validity_P(self, T, P, method):
         r'''Method to check the validity of a high-pressure method. For
@@ -1004,8 +985,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         if method == COOLPROP:
             validity = PhaseSI('T', T, 'P', P, self.CASRN) in ('liquid', 'supercritical', 'supercritical_gas', 'supercritical_liquid')
         elif method == EOS:
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
-            validity = hasattr(self.eos[0], 'V_l')
+            validity = hasattr(PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega), 'V_l')
         else:
             return super().test_method_validity_P(T, P, method)
         return validity
@@ -1054,6 +1034,9 @@ class VolumeLiquidMixture(MixtureProperty):
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -1106,7 +1089,7 @@ class VolumeLiquidMixture(MixtureProperty):
     custom_args = pure_constants
 
     def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[],
-                 CASs=[], VolumeLiquids=[], **kwargs):
+                 CASs=[], VolumeLiquids=[], load_data=True, **kwargs):
         self.MWs = MWs
         self.Tcs = Tcs
         self.Pcs = Pcs
@@ -1115,10 +1098,10 @@ class VolumeLiquidMixture(MixtureProperty):
         self.omegas = omegas
         self.CASs = CASs
         self.VolumeLiquids = VolumeLiquids
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1134,20 +1117,22 @@ class VolumeLiquidMixture(MixtureProperty):
 
         if none_and_length_check([self.Tcs, self.Vcs, self.omegas]):
             methods.append(COSTALD_MIXTURE)
-            if none_and_length_check([self.Tcs, self.CASs]) and all(i in volume.rho_data_COSTALD.index for i in self.CASs):
-                self.COSTALD_Vchars = [float(volume.rho_data_COSTALD.at[CAS, 'Vchar']) for CAS in self.CASs]
-                self.COSTALD_omegas = [float(volume.rho_data_COSTALD.at[CAS, 'omega_SRK']) for CAS in self.CASs]
-                methods.append(COSTALD_MIXTURE_FIT)
+            if load_data:
+                if none_and_length_check([self.Tcs, self.CASs]) and all(i in volume.rho_data_COSTALD.index for i in self.CASs):
+                    self.COSTALD_Vchars = [float(volume.rho_data_COSTALD.at[CAS, 'Vchar']) for CAS in self.CASs]
+                    self.COSTALD_omegas = [float(volume.rho_data_COSTALD.at[CAS, 'omega_SRK']) for CAS in self.CASs]
+                    methods.append(COSTALD_MIXTURE_FIT)
 
         if none_and_length_check([self.MWs, self.Tcs, self.Pcs, self.Zcs]):
             methods.append(RACKETT)
-            if none_and_length_check([self.Tcs, self.CASs]) and all(CAS in volume.rho_data_COSTALD.index for CAS in self.CASs):
-                Z_RAs = [float(volume.rho_data_COSTALD.at[CAS, 'Z_RA']) for CAS in self.CASs]
-                if not any(np.isnan(Z_RAs)):
-                    self.Z_RAs = Z_RAs
-                    methods.append(RACKETT_PARAMETERS)
+            if load_data:
+                if none_and_length_check([self.Tcs, self.CASs]) and all(CAS in volume.rho_data_COSTALD.index for CAS in self.CASs):
+                    Z_RAs = [float(volume.rho_data_COSTALD.at[CAS, 'Z_RA']) for CAS in self.CASs]
+                    if not any(np.isnan(Z_RAs)):
+                        self.Z_RAs = Z_RAs
+                        methods.append(RACKETT_PARAMETERS)
 
-        if len(self.CASs) > 1 and '7732-18-5' in self.CASs:
+        if load_data and len(self.CASs) > 1 and '7732-18-5' in self.CASs:
             Laliberte_data = electrochem.Laliberte_data
             v1s, v2s, v3s, v4s, v5s, v6s = [], [], [], [], [], []
             laliberte_incomplete = False
@@ -1385,9 +1370,9 @@ class VolumeGas(TPDependentProperty):
     """Default rankings of the pressure-dependent methods."""
 
 
-    custom_args = ('MW', 'Tc', 'Pc', 'omega', 'dipole', 'eos')
+    custom_args = ('MW', 'Tc', 'Pc', 'omega', 'dipole')
     def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, omega=None,
-                 dipole=None, eos=None, extrapolation=None,
+                 dipole=None, extrapolation=None,
                  **kwargs):
         # Only use TPDependentPropoerty functions here
         self.CASRN = CASRN
@@ -1396,10 +1381,9 @@ class VolumeGas(TPDependentProperty):
         self.Pc = Pc
         self.omega = omega
         self.dipole = dipole
-        self.eos = eos
         super().__init__(extrapolation, **kwargs)
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets obj:`all_methods_P` as a
@@ -1417,8 +1401,7 @@ class VolumeGas(TPDependentProperty):
         if all((self.Tc, self.Pc, self.omega)):
             methods_P.extend([TSONOPOULOS_EXTENDED, TSONOPOULOS, ABBOTT,
                             PITZER_CURL])
-            if self.eos:
-                methods_P.append(EOS)
+            methods_P.append(EOS)
             T_limits[TSONOPOULOS_EXTENDED] = (1e-4, 1e5)
             T_limits[TSONOPOULOS] = (1e-4, 1e5)
             T_limits[ABBOTT] = (1e-4, 1e5)
@@ -1463,8 +1446,7 @@ class VolumeGas(TPDependentProperty):
         if method == EOS:
             if T < 0.0 or P < 0.0:
                 return None
-            self.eos[0] = self.eos[0].to_TP(T=T, P=P)
-            Vm = self.eos[0].V_g
+            Vm = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega).V_g
         elif method == TSONOPOULOS_EXTENDED:
             B = BVirial_Tsonopoulos_extended(T, self.Tc, self.Pc, self.omega, dipole=self.dipole)
             Vm = ideal_gas(T, P) + B
@@ -1533,9 +1515,7 @@ class VolumeGas(TPDependentProperty):
             pass
             # Would be nice to have a limit on CRC_VIRIAL
         elif method == EOS:
-            eos = self.eos[0]
-            # Some EOSs do not implement Psat, and so we must assume Vmg is
-            # unavailable
+            eos = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
             try:
                 if T < eos.Tc and P > eos.Psat(T):
                     validity = False
@@ -1575,6 +1555,9 @@ class VolumeGasMixture(MixtureProperty):
         Equation of state mixture object, [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -1620,14 +1603,14 @@ class VolumeGasMixture(MixtureProperty):
     pure_constants = ('MWs', )
     custom_args = ('MWs', 'eos')
 
-    def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[], **kwargs):
+    def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[], load_data=False, **kwargs):
         self.CASs = CASs
         self.VolumeGases = VolumeGases
         self.eos = eos
         self.MWs = MWs
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1772,6 +1755,9 @@ class VolumeSolid(TDependentProperty):
 
     custom_args = ('MW', 'Tt', 'Vml_Tt')
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(CRC_INORG_S)
+
     def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None,
                  extrapolation='linear', **kwargs):
         self.CASRN = CASRN
@@ -1797,15 +1783,21 @@ class VolumeSolid(TDependentProperty):
         methods = []
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
+        self.all_methods = set()
         if load_data and CASRN:
             if CASRN in volume.rho_data_CRC_inorg_s_const.index:
-                methods.append(CRC_INORG_S)
-                self.CRC_INORG_S_Vm = float(volume.rho_data_CRC_inorg_s_const.at[CASRN, 'Vm'])
-                T_limits[CRC_INORG_S] = (1e-4, 1e4)
+                self.add_correlation(
+                    name=CRC_INORG_S,
+                    model='constant',
+                    Tmin=1e-4,
+                    Tmax=1e4,
+                    value=float(volume.rho_data_CRC_inorg_s_const.at[CASRN, 'Vm']),
+                    select=False
+                )
         if all((self.Tt, self.Vml_Tt, self.MW)):
             methods.append(GOODMAN)
             T_limits[GOODMAN] = (1e-4, self.Tt)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
 
     def calculate(self, T, method):
         r'''Method to calculate the molar volume of a solid at tempearture `T`
@@ -1826,48 +1818,12 @@ class VolumeSolid(TDependentProperty):
         Vms : float
             Molar volume of the solid at T, [m^3/mol]
         '''
-        if method == CRC_INORG_S:
-            Vms = self.CRC_INORG_S_Vm
-        elif method == GOODMAN:
+        if method == GOODMAN:
             Vms = Goodman(T, self.Tt, self.Vml_Tt)
         else:
             return self._base_calculate(T, method)
         return Vms
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if T < 0:
-            validity = False
-        elif method == CRC_INORG_S:
-            pass
-            # Assume the solid density value is good at any possible T
-        elif method == GOODMAN:
-            if T < self.Tt*0.3:
-                validity = False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
 
 try:
     VolumeSolid._custom_set_poly_fit = VolumeLiquid._custom_set_poly_fit
@@ -1892,6 +1848,9 @@ class VolumeSolidMixture(MixtureProperty):
         VolumeSolid objects created for all species in the mixture, [-]
     MWs : list[float], optional
         Molecular weights of all species in the mixture, [g/mol]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -1920,16 +1879,16 @@ class VolumeSolidMixture(MixtureProperty):
     pure_constants = ('MWs', )
     custom_args = pure_constants
 
-    def __init__(self, CASs=[], VolumeSolids=[], MWs=[], **kwargs):
+    def __init__(self, CASs=[], VolumeSolids=[], MWs=[], load_data=True, **kwargs):
         self.CASs = CASs
         self.VolumeSolids = VolumeSolids
         self.MWs = MWs
 
         self.Tmin = 0
         self.Tmax = 1E4
-        super().__init__(**kwargs)
+        super().__init__(load_data=load_data, **kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,

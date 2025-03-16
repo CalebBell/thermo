@@ -120,7 +120,7 @@ The low-temperature linearly extrapolated value is actually the same as before, 
 To better understand what methods are available, the :obj:`valid_methods <thermo.utils.TDependentProperty.valid_methods>` method checks all available correlations against their temperature limits.
 
 >>> ethanol_psat.valid_methods(100)
-['AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'EDALAT', 'BOILING_CRITICAL', 'SANJARI']
+['AMBROSE_WALTON', 'LEE_KESLER_PSAT', 'EDALAT', 'BOILING_CRITICAL', 'EOS', 'SANJARI']
 
 If the temperature is not provided, all available methods are returned; the returned value favors the methods by the ranking defined in thermo, with the currently selected method as the first item.
 

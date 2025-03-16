@@ -84,7 +84,7 @@ from chemicals.utils import Vm_to_rho, none_and_length_check, property_molar_to_
 from fluids.numerics import isnan
 
 from thermo.heat_capacity import HeatCapacityLiquid
-from thermo.utils import IAPWS, LINEAR, REFPROP_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
+from thermo.utils import LINEAR, REFPROP_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
 from thermo.volume import VolumeLiquid
 
 STREFPROP = 'REFPROP'
@@ -94,15 +94,16 @@ JASPER = 'JASPER'
 MIQUEU = 'MIQUEU'
 BROCK_BIRD = 'BROCK_BIRD'
 SASTRI_RAO = 'SASTRI_RAO'
-PITZER = 'PITZER'
+PITZER_SIGMA = 'PITZER_SIGMA'
 ZUO_STENBY = 'ZUO_STENBY'
 HAKIM_STEINBERG_STIEL = 'HAKIM_STEINBERG_STIEL'
 ALEEM = 'Aleem'
 VDI_PPDS = 'VDI_PPDS'
+IAPWS_SIGMA = 'IAPWS_SIGMA'
 
 
-surface_tension_methods = [IAPWS, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
-                           JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
+surface_tension_methods = [IAPWS_SIGMA, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
+                           JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER_SIGMA,
                            ZUO_STENBY, ALEEM]
 """Holds all methods available for the :obj:`SurfaceTension` class, for use in
 iterating over them."""
@@ -159,7 +160,7 @@ class SurfaceTension(TDependentProperty):
     To iterate over all methods, use the list stored in
     :obj:`surface_tension_methods`.
 
-    **IAPWS**:
+    **IAPWS_SIGMA**:
         The IAPWS formulation for water,
         :obj:`REFPROP_sigma <chemicals.interface.sigma_IAPWS>`
     **STREFPROP**:
@@ -180,7 +181,7 @@ class SurfaceTension(TDependentProperty):
     **SASTRI_RAO**:
         CSP method documented in :obj:`Sastri_Rao <chemicals.interface.Sastri_Rao>`.
         Second most popular estimation method; from 1995.
-    **PITZER**:
+    **PITZER_SIGMA**:
         CSP method documented in :obj:`Pitzer_sigma <chemicals.interface.Pitzer_sigma>`; from 1958.
     **ZUO_STENBY**:
         CSP method documented in :obj:`Zuo_Stenby <chemicals.interface.Zuo_Stenby>`; from 1997.
@@ -251,8 +252,8 @@ class SurfaceTension(TDependentProperty):
     """Whether or not the property is declining and reaching zero at the
     critical point."""
 
-    ranked_methods = [IAPWS, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
-                      JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER,
+    ranked_methods = [IAPWS_SIGMA, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
+                      JASPER, MIQUEU, BROCK_BIRD, SASTRI_RAO, PITZER_SIGMA,
                       ZUO_STENBY, ALEEM]
     """Default rankings of the available methods."""
 
@@ -265,7 +266,12 @@ class SurfaceTension(TDependentProperty):
                    'Hvap_Tb', 'Vml', 'Cpl')
 
 
-
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(STREFPROP)
+    extra_correlations_internal.add(SOMAYAJULU2)
+    extra_correlations_internal.add(SOMAYAJULU)
+    extra_correlations_internal.add(JASPER)
+    extra_correlations_internal.add(VDI_PPDS)
 
 
     obj_references = pure_references = ('Vml', 'Cpl')
@@ -305,7 +311,7 @@ class SurfaceTension(TDependentProperty):
                 VDI_PPDS: interface.sigma_data_VDI_PPDS_11.index,
                 }
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -320,59 +326,75 @@ class SurfaceTension(TDependentProperty):
         self.all_methods = set()
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
+
         if load_data and CASRN:
-            if CASRN == '7732-18-5':
-                methods.append(IAPWS)
-                T_limits[IAPWS] = (273.15-25.0, iapws95_Tc)
+            if CASRN == '7732-18-5':  # Water
+                methods.append(IAPWS_SIGMA)
+                T_limits[IAPWS_SIGMA] = (273.15-25.0, iapws95_Tc)
+
             if CASRN in interface.sigma_data_Mulero_Cachadina.index:
-                methods.append(STREFPROP)
-                sigma0, n0, sigma1, n1, sigma2, n2, Tc, self.STREFPROP_Tmin, self.STREFPROP_Tmax = interface.sigma_values_Mulero_Cachadina[interface.sigma_data_Mulero_Cachadina.index.get_loc(CASRN)].tolist()
-                self.STREFPROP_coeffs = [sigma0, n0, sigma1, n1, sigma2, n2, Tc]
-                T_limits[STREFPROP] = (self.STREFPROP_Tmin, self.STREFPROP_Tmax)
+                sigma0, n0, sigma1, n1, sigma2, n2, Tc, Tmin, Tmax = interface.sigma_values_Mulero_Cachadina[
+                    interface.sigma_data_Mulero_Cachadina.index.get_loc(CASRN)].tolist()
+                self.add_correlation(name=STREFPROP, model='REFPROP_sigma', Tmin=Tmin, Tmax=Tmax, 
+                                    sigma0=sigma0, n0=n0, sigma1=sigma1, n1=n1, sigma2=sigma2, n2=n2, Tc=Tc, select=False)
+
             if CASRN in interface.sigma_data_Somayajulu2.index:
-                methods.append(SOMAYAJULU2)
-                self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc, A, B, C = interface.sigma_values_Somayajulu2[interface.sigma_data_Somayajulu2.index.get_loc(CASRN)].tolist()
-                self.SOMAYAJULU2_coeffs = [A, B, C]
-                T_limits[SOMAYAJULU2] = (self.SOMAYAJULU2_Tt, self.SOMAYAJULU2_Tc)
+                Tt, Tc, A, B, C = interface.sigma_values_Somayajulu2[
+                    interface.sigma_data_Somayajulu2.index.get_loc(CASRN)].tolist()
+                self.add_correlation(name=SOMAYAJULU2, model='Somayajulu', Tmin=Tt, Tmax=Tc, Tc=Tc, A=A, B=B, C=C, select=False)
+
             if CASRN in interface.sigma_data_Somayajulu.index:
-                methods.append(SOMAYAJULU)
-                self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc, A, B, C = interface.sigma_values_Somayajulu[interface.sigma_data_Somayajulu.index.get_loc(CASRN)].tolist()
-                self.SOMAYAJULU_coeffs = [A, B, C]
-                T_limits[SOMAYAJULU] = (self.SOMAYAJULU_Tt, self.SOMAYAJULU_Tc)
+                Tt, Tc, A, B, C = interface.sigma_values_Somayajulu[
+                    interface.sigma_data_Somayajulu.index.get_loc(CASRN)].tolist()
+                self.add_correlation(name=SOMAYAJULU, model='Somayajulu', Tmin=Tt, Tmax=Tc, Tc=Tc, A=A, B=B, C=C, select=False)
+
+            if CASRN in interface.sigma_data_Jasper_Lange.index:
+                a, b, Tmin, Tmax = interface.sigma_values_Jasper_Lange[
+                    interface.sigma_data_Jasper_Lange.index.get_loc(CASRN)].tolist()
+                if isnan(Tmax) or Tmax == Tmin:
+                    # Some data is missing; and some is on a above the limit basis
+                    Tmax = a / b + 273.15
+                if isnan(Tmin):
+                    Tmin = 0.0
+                self.add_correlation(name=JASPER, model='Jasper', Tmin=Tmin, Tmax=Tmax, a=a, b=b, select=False)
+            if CASRN in interface.sigma_data_VDI_PPDS_11.index:
+                Tm, Tc, A, B, C, D, E = interface.sigma_values_VDI_PPDS_11[
+                    interface.sigma_data_VDI_PPDS_11.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model='DIPPR106',
+                    Tmin=Tm,
+                    Tmax=Tc,
+                    Tc=Tc,
+                    A=A,
+                    B=B,
+                    C=C,
+                    D=D,
+                    E=E,
+                    select=False
+                )
+
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'sigma')
-                # mercury missing values
+                    # mercury missing values
                 if Ts:
-                    self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                    del self._method
-            if CASRN in interface.sigma_data_Jasper_Lange.index:
-                methods.append(JASPER)
-                a, b, self.JASPER_Tmin, self.JASPER_Tmax = interface.sigma_values_Jasper_Lange[interface.sigma_data_Jasper_Lange.index.get_loc(CASRN)].tolist()
-                if isnan(self.JASPER_Tmax) or self.JASPER_Tmax == self.JASPER_Tmin:
-                    # Some data is missing; and some is on a above the limit basis
-                    self.JASPER_Tmax = a/b + 273.15
-                if isnan(self.JASPER_Tmin):
-                    self.JASPER_Tmin = 0.0
-                self.JASPER_coeffs = [a, b]
-                T_limits[JASPER] = (self.JASPER_Tmin, self.JASPER_Tmax)
-            if CASRN in interface.sigma_data_VDI_PPDS_11.index:
-                Tm, Tc, A, B, C, D, E = interface.sigma_values_VDI_PPDS_11[interface.sigma_data_VDI_PPDS_11.index.get_loc(CASRN)].tolist()
-                self.VDI_PPDS_coeffs = [A, B, C, D, E]
-                self.VDI_PPDS_Tc = Tc
-                self.VDI_PPDS_Tm = Tm
-                methods.append(VDI_PPDS)
-                T_limits[VDI_PPDS] = (self.VDI_PPDS_Tm, self.VDI_PPDS_Tc)
+                    self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
+
+            # Methods that depend on other properties
         if all((self.Tc, self.Vc, self.omega)):
             methods.append(MIQUEU)
             T_limits[MIQUEU] = (0.0, self.Tc)
+
         if all((self.Tb, self.Tc, self.Pc)):
             methods.append(BROCK_BIRD)
             methods.append(SASTRI_RAO)
             T_limits[BROCK_BIRD] = T_limits[SASTRI_RAO] = (0.0, self.Tc)
+
         if all((self.Tc, self.Pc, self.omega)):
-            methods.append(PITZER)
+            methods.append(PITZER_SIGMA)
             methods.append(ZUO_STENBY)
-            T_limits[PITZER] = T_limits[ZUO_STENBY] = (1e-10, self.Tc)
+            T_limits[PITZER_SIGMA] = T_limits[ZUO_STENBY] = (1e-10, self.Tc)
+
         if all((self.Tb, self.Hvap_Tb, self.MW)):
             # Cache Cpl at Tb for ease of calculation of Tmax
             self.Cpl_Tb = self.Cpl(self.Tb) if hasattr(self.Cpl, '__call__') else self.Cpl
@@ -386,6 +408,7 @@ class SurfaceTension(TDependentProperty):
                 if self.Tc:
                     Tmax_possible = min(self.Tc, Tmax_possible)
                 T_limits[ALEEM] = (0.0, Tmax_possible)
+
         self.all_methods.update(methods)
 
     def calculate(self, T, method):
@@ -407,32 +430,18 @@ class SurfaceTension(TDependentProperty):
         sigma : float
             Surface tension of the liquid at T, [N/m]
         '''
-        if method == STREFPROP:
-            sigma0, n0, sigma1, n1, sigma2, n2, Tc = self.STREFPROP_coeffs
-            sigma = REFPROP_sigma(T, Tc=Tc, sigma0=sigma0, n0=n0, sigma1=sigma1, n1=n1,
-                                  sigma2=sigma2, n2=n2)
-        elif method == VDI_PPDS:
-            sigma = EQ106(T, self.VDI_PPDS_Tc, *self.VDI_PPDS_coeffs)
-        elif method == SOMAYAJULU2:
-            A, B, C = self.SOMAYAJULU2_coeffs
-            sigma = Somayajulu(T, Tc=self.SOMAYAJULU2_Tc, A=A, B=B, C=C)
-        elif method == SOMAYAJULU:
-            A, B, C = self.SOMAYAJULU_coeffs
-            sigma = Somayajulu(T, Tc=self.SOMAYAJULU_Tc, A=A, B=B, C=C)
-        elif method == JASPER:
-            sigma = Jasper(T, a=self.JASPER_coeffs[0], b=self.JASPER_coeffs[1])
-        elif method == IAPWS:
-            sigma = sigma_IAPWS(T)
+        if method == IAPWS_SIGMA:
+            return sigma_IAPWS(T)
         elif method == BROCK_BIRD:
-            sigma = Brock_Bird(T, self.Tb, self.Tc, self.Pc)
+            return Brock_Bird(T, self.Tb, self.Tc, self.Pc)
         elif method == SASTRI_RAO:
-            sigma = Sastri_Rao(T, self.Tb, self.Tc, self.Pc)
-        elif method == PITZER:
-            sigma = Pitzer_sigma(T, self.Tc, self.Pc, self.omega)
+            return Sastri_Rao(T, self.Tb, self.Tc, self.Pc)
+        elif method == PITZER_SIGMA:
+            return Pitzer_sigma(T, self.Tc, self.Pc, self.omega)
         elif method == ZUO_STENBY:
-            sigma = Zuo_Stenby(T, self.Tc, self.Pc, self.omega)
+            return Zuo_Stenby(T, self.Tc, self.Pc, self.omega)
         elif method == MIQUEU:
-            sigma = Miqueu(T, self.Tc, self.Vc, self.omega)
+            return Miqueu(T, self.Tc, self.Vc, self.omega)
         elif method == ALEEM:
             Cpl = self.Cpl(T) if hasattr(self.Cpl, '__call__') else self.Cpl
             Cpl = property_molar_to_mass(Cpl, self.MW)
@@ -444,36 +453,9 @@ class SurfaceTension(TDependentProperty):
                 except:
                     Vml = self.Vml
             rhol = Vm_to_rho(Vml, self.MW)
-            sigma = Aleem(T=T, MW=self.MW, Tb=self.Tb, rhol=rhol, Hvap_Tb=self.Hvap_Tb, Cpl=Cpl)
+            return Aleem(T=T, MW=self.MW, Tb=self.Tb, rhol=rhol, Hvap_Tb=self.Hvap_Tb, Cpl=Cpl)
         else:
             return self._base_calculate(T, method)
-        return sigma
-
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For CSP methods, the models
-        are considered valid from 0 K to the critical point. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the extrapolation
-        is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        return super().test_method_validity(T, method)
-
 
 
 WINTERFELDSCRIVENDAVIS = 'Winterfeld, Scriven, and Davis (1978)'
@@ -515,6 +497,9 @@ class SurfaceTensionMixture(MixtureProperty):
     correct_pressure_pure : bool, optional
         Whether to try to use the better pressure-corrected pure component
         models or to use only the T-only dependent pure species models, [-]
+    load_data : bool, optional
+        If False, do not load property coefficients from data sources in files
+        [-]
 
     Notes
     -----
@@ -558,16 +543,16 @@ class SurfaceTensionMixture(MixtureProperty):
     custom_args = pure_constants
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[],
-                 VolumeLiquids=[], correct_pressure_pure=False, **kwargs):
+                 VolumeLiquids=[], correct_pressure_pure=False, load_data=True, **kwargs):
         self.MWs = MWs
         self.Tbs = Tbs
         self.Tcs = Tcs
         self.CASs = CASs
         self.SurfaceTensions = SurfaceTensions
         self.VolumeLiquids = VolumeLiquids
-        super().__init__(correct_pressure_pure=correct_pressure_pure, **kwargs)
+        super().__init__(correct_pressure_pure=correct_pressure_pure, load_data=load_data, **kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,

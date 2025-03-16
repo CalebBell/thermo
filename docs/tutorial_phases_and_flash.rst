@@ -82,8 +82,6 @@ Obtain a heat capacity object, and select a source:
 >>> from thermo.heat_capacity import POLING_POLY
 >>> CpObj = HeatCapacityGas(CASRN='67-56-1')
 >>> CpObj.method = POLING_POLY
->>> CpObj.POLING_coefs # Show the coefficients
-[4.714, -0.006986, 4.211e-05, -4.443e-08, 1.535e-11]
 >>> HeatCapacityGases = [CpObj]
 
 Create a :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` object which holds constant properties of the object, using a minimum of values:
@@ -109,7 +107,7 @@ Do a T-P flash:
 
 >>> res = flasher.flash(T=300, P=1e5)
 >>> res.phase, res.liquid0
-('L', CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Tcs": [512.5], "Pcs": [8084000.0], "omegas": [0.559]}, HeatCapacityGases=[HeatCapacityGas(CASRN="67-56-1", extrapolation="linear", method="POLING_POLY")], T=300.0, P=100000.0, zs=[1.0]))
+('L', CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Tcs": [512.5], "Pcs": [8084000.0], "omegas": [0.559]}, HeatCapacityGases=[HeatCapacityGas(CASRN="67-56-1", extrapolation="linear", method="POLING_POLY", Tmin=50.0, Tmax=1000.0)], T=300.0, P=100000.0, zs=[1.0]))
 
 Do a temperature and vapor-fraction flash:
 

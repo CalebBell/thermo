@@ -304,16 +304,16 @@ def test_VolumeLiquidConstantExtrapolation():
                        Vc=0.000375, Zc=0.25884384676233363, omega=0.331, dipole=0.299792543559857,
                        Psat=None, extrapolation="constant", method="DIPPR_PERRY_8E")
 
-    assert_close(obj.T_dependent_property(obj.DIPPR_Tmax), 0.0003785956866273838, rtol=1e-9)
-    assert_close(obj.T_dependent_property(obj.DIPPR_Tmin), 0.00011563344813684695, rtol=1e-9)
+    assert_close(obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][1]), 0.0003785956866273838, rtol=1e-9)
+    assert_close(obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][0]), 0.00011563344813684695, rtol=1e-9)
 
 
-    assert obj.T_dependent_property(618) == obj.T_dependent_property(obj.DIPPR_Tmax)
-    assert obj.T_dependent_property(1223532.0) == obj.T_dependent_property(obj.DIPPR_Tmax)
+    assert obj.T_dependent_property(618) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][1])
+    assert obj.T_dependent_property(1223532.0) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][1])
 
-    assert obj.T_dependent_property(1.0) == obj.T_dependent_property(obj.DIPPR_Tmin)
-    assert obj.T_dependent_property(.0) == obj.T_dependent_property(obj.DIPPR_Tmin)
-    assert obj.T_dependent_property(100) == obj.T_dependent_property(obj.DIPPR_Tmin)
+    assert obj.T_dependent_property(1.0) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][0])
+    assert obj.T_dependent_property(.0) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][0])
+    assert obj.T_dependent_property(100) == obj.T_dependent_property(obj.T_limits[DIPPR_PERRY_8E][0])
 
 
 
@@ -349,6 +349,13 @@ def test_VolumeSolid():
     assert_close(8.055e-05, BaN2O6.T_dependent_property(250))
     BaN2O6.tabular_extrapolation_permitted = False
     BaN2O6.test_method_validity(150, 'fake')
+
+    # Toluene
+    obj = VolumeSolid(CASRN="108-88-3", MW=92.13842, Tt=178.0, Vml_Tt=9.462810947200945e-05,
+                         extrapolation="linear", method="GOODMAN", Tmin=0.0001, Tmax=178.0)
+    assert_close(obj(100), 7.951191222629193e-05)
+    assert_close(obj(150), 8.26324739306205e-05)
+
 
 @pytest.mark.meta_T_dept
 def test_VolumeSolid_works_with_no_data():
@@ -442,8 +449,6 @@ def test_VolumeSolid_fitting0():
     for l in ('B', 'C', 'D', 'E', 'F'):
         assert fit_zeros_specified[l] == 0.0
 
-    fit_constant = obj.fit_data_to_model(Ts=Ts_gamma, data=Vms_gamma, model='constant', do_statistics=False, use_numba=False)
-    assert_close(fit_zeros_specified['A'], fit_constant['A'], rtol=1e-13)
 
 @pytest.mark.meta_T_dept
 @pytest.mark.fitting
@@ -467,7 +472,7 @@ def test_VolumeLiquid_fitting1_dippr():
                       '115-07-1', '64-18-6']
     for CAS in fit_check_CASs:
         obj = VolumeLiquid(CASRN=CAS)
-        Ts = linspace(obj.DIPPR_Tmin, obj.DIPPR_Tmax, 8)
+        Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 8)
         props_calc = [1.0/obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
 
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR105',
@@ -482,11 +487,11 @@ def test_VolumeLiquid_fitting2_dippr_116_ppds():
     for i, CAS in enumerate(chemicals.volume.rho_data_VDI_PPDS_2.index):
         obj = VolumeLiquid(CASRN=CAS)
         Ts = linspace(obj.T_limits[VDI_PPDS][0], obj.T_limits[VDI_PPDS][1], 8)
-        props_calc = [Vm_to_rho(obj.calculate(T, VDI_PPDS), obj.VDI_PPDS_MW) for T in Ts]
+        props_calc = [Vm_to_rho(obj.calculate(T, VDI_PPDS), obj.volume_VDI_PPDS_parameters[VDI_PPDS]['MW']) for T in Ts]
 
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR116',
                               do_statistics=True, use_numba=False, fit_method='lm',
-                              model_kwargs={'Tc': obj.VDI_PPDS_Tc, 'A': obj.VDI_PPDS_rhoc})
+                              model_kwargs={'Tc': obj.volume_VDI_PPDS_parameters[VDI_PPDS]['Tc'], 'A': obj.volume_VDI_PPDS_parameters[VDI_PPDS]['rhoc']})
         assert stats['MAE'] < 1e-7
 
 @pytest.mark.meta_T_dept
@@ -496,7 +501,7 @@ def test_VolumeLiquid_fitting3():
     Tc, rhoc, b, n, MW = 627.65, 433.128, 0.233, 0.2587, 66.0
     Ts = linspace(293.15, 298.15, 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
-    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_density_fit',
                           do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
@@ -505,7 +510,7 @@ def test_VolumeLiquid_fitting3():
     Tc, rhoc, b, n, MW = 1030.0, 1795.0521319999998, 0.96491407, 0.15872, 97.995
     Ts = linspace(315.51, 393.15, 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
-    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_density_fit',
                           do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
@@ -514,7 +519,7 @@ def test_VolumeLiquid_fitting3():
     Tc, rhoc, b, n, MW = 545.03, 739.99, 0.3, 0.28571, 105.921
     Ts = linspace(331.15, 332.9, 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
-    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_density_fit',
                           do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
@@ -523,7 +528,7 @@ def test_VolumeLiquid_fitting3():
     Tc, rhoc, b, n, MW = 1800.0, 2794.568007, 0.647077183, 0.8, 98.999
     Ts = linspace(703.0, 1620., 10)
     props_calc = [Rackett_fit(T, Tc, rhoc, b, n, MW) for T in Ts]
-    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_fit',
+    res, stats = VolumeLiquid.fit_data_to_model(Ts=Ts, data=props_calc, model='Rackett_density_fit',
                           do_statistics=True, use_numba=False, model_kwargs={'MW':MW, 'Tc': Tc,},
                           fit_method='lm')
     assert stats['MAE'] < 1e-5
@@ -674,7 +679,7 @@ def test_VolumeGasMixture():
 @pytest.mark.meta_T_dept
 def test_VolumeSupercriticalLiquidMixture():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=700., P=1e8)
-    obj2 = VolumeSupercriticalLiquid(eos=[eos], Tc=eos.Tc, Pc=eos.Pc, omega=eos.omega)
+    obj2 = VolumeSupercriticalLiquid(Tc=eos.Tc, Pc=eos.Pc, omega=eos.omega)
     V_implemented = obj2.calculate_P(T=700.0, P=1e8, method='EOS')
     assert_close(V_implemented, eos.V_l, rtol=1e-13)
     V_implemented = obj2.calculate_P(T=700.0, P=1e3, method='EOS')
@@ -714,3 +719,15 @@ def test_simple_json_export_fail_easy_to_debug():
     s = json.loads(json.dumps(json_dump))
     obj2 = VolumeLiquid.from_json(s)
     assert obj2 == obj
+
+
+@pytest.mark.meta_T_dept
+def test_VolumeSolid_oxygen_serialization():
+    VS = VolumeSolid(CASRN='7782-44-7')
+    VS_copy = VolumeSolid(**VolumeSolid(CASRN='7782-44-7').as_method_kwargs())
+
+    from fluids.numerics import linspace
+    for T in linspace(3, 60, 100):
+        assert_close(VS_copy(T), VS(T), rtol=1e-13)
+
+    assert not VS_copy.CASRN

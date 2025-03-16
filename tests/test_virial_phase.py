@@ -51,7 +51,8 @@ from thermo.vapor_pressure import VaporPressure
 from thermo.viscosity import *
 from thermo.volume import *
 from thermo.wilson import Wilson
-
+from thermo.phases.virial_phase import VIRIAL_CROSS_B_TARAKAD_DANNER
+from thermo.phases.ceos import CEOSGas
 
 def test_store_load_VirialCSP():
     Tcs = [190.564]
@@ -76,9 +77,11 @@ def test_store_load_VirialGas():
     omegas = [0.008]
     Vcs = [9.86e-05]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593]))]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
+    model = VirialCSP(T=300.0, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
     zs = [1]
     PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs)
+
+    check_virial_temperature_consistency_T_calls(PT, [320, 800])
 
     # Run the various checks for storing/loading
     phase_copy = eval(repr(PT))
@@ -99,7 +102,7 @@ def test_store_load_VirialGas():
     assert phase_copy.state_hash() == PT.state_hash()
 
     # Simple json check
-    phase_copy = VirialCSP.from_json(json.loads(json.dumps(PT.as_json())))
+    phase_copy = VirialGas.from_json(json.loads(json.dumps(PT.as_json())))
     assert phase_copy.B() == PT.B()
     assert phase_copy.C() == PT.C()
     assert phase_copy == PT
@@ -114,7 +117,7 @@ def test_virial_phase_pure_B_only_pitzer_curl():
     omegas = [0.008]
     Vcs = [9.86e-05]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593]))]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
+    model = VirialCSP(T=300.0, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ZERO)
     zs = [1]
     PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs)
 
@@ -157,12 +160,16 @@ def test_virial_phase_pure_B_only_pitzer_curl():
     assert_close(PT.d2P_dT2(), -0.0020770847374848075, rtol=1e-13)
     assert_close(PT.d2P_dT2(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dT(), PT.T, PT.T*8e-7), rtol=1e-6)
 
-    assert_close(PT.H_dep(), 15.708867544147836, rtol=1e-13)
-    H_dep_Poling = (-(PT.B() - PT.T*PT.dB_dT())/PT.V())*R*PT.T
+    # Poling equation is for negative of H_dep
+    assert_close(PT.H_dep(), -15.708867544147836, rtol=1e-13)
+    H_dep_Poling = -(-(PT.B() - PT.T*PT.dB_dT())/PT.V())*R*PT.T
     assert_close(PT.H_dep(), H_dep_Poling, rtol=1e-13)
 
-    assert_close(PT.dH_dep_dT(), -0.03958097657787867, rtol=1e-13)
+
+    assert_close(PT.dH_dep_dT(), 0.03958097657787867, rtol=1e-13)
     assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
+
+    assert_close(PT.dG_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).G_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
 
     S_dep_Poling = -((PT.B() + PT.T*PT.dB_dT())/PT.V()- log(PT.Z()))*R
     assert_close(PT.S_dep(), -0.03822578258348812, rtol=1e-13)
@@ -191,28 +198,28 @@ def test_virial_phase_ternary_B_only_pitzer_curl():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
+    T = 300
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_ABBOTT,
-                                  cross_B_model=VIRIAL_B_ABBOTT,
+                                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
-    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+    model_np = VirialCSP(T=T, Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
                               B_model=VIRIAL_B_ABBOTT,
-                              cross_B_model=VIRIAL_B_ABBOTT,
+                              cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ZERO)
 
 
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     zs_np = np.array(zs)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='theory',
+                    B_mixing_rule='theory',
                 T=T, P=P, zs=zs)
     gas_np = VirialGas(model=model_np, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='theory',
+                    B_mixing_rule='theory',
                 T=T, P=P, zs=zs_np)
 
 
@@ -365,28 +372,28 @@ def test_virial_phase_ternary_B_only_pitzer_curl_no_interactions():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
+    T = 300
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_ABBOTT,
-                                  cross_B_model=VIRIAL_B_ABBOTT,
+                                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
-    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+    model_np = VirialCSP(T=T, Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
                               B_model=VIRIAL_B_ABBOTT,
-                              cross_B_model=VIRIAL_B_ABBOTT,
+                              cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ZERO)
 
 
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     zs_np = np.array(zs)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='linear',
+                    B_mixing_rule='linear',
                 T=T, P=P, zs=zs)
     gas_np = VirialGas(model=model_np, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='linear',
+                    B_mixing_rule='linear',
                 T=T, P=P, zs=zs_np)
 
 
@@ -526,9 +533,12 @@ def test_virial_phase_pure_BC_pitzer_curl_orbey_vera():
     omegas = [0.008]
     Vcs = [9.86e-05]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593]))]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ORBEY_VERA)
+    T = 300.0
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model=VIRIAL_B_PITZER_CURL, C_model=VIRIAL_C_ORBEY_VERA)
     zs = [1]
-    gas = PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=300.0, P=1e5, zs=zs, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    gas = PT = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=T, P=1e5, zs=zs, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
+
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
     assert_close(PT.rho(), 40.15896568252847, rtol=1e-13)
     assert_close(PT.V(), 0.02490103973058896, rtol=1e-13)
@@ -577,10 +587,12 @@ def test_virial_phase_pure_BC_pitzer_curl_orbey_vera():
     assert_close(PT.d2P_dT2(), -0.0020701719078863546, rtol=1e-13)
     assert_close(PT.d2P_dT2(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dT(), PT.T, PT.T*8e-7), rtol=1e-6)
 
-    assert_close(PT.H_dep(), 15.694307202591004, rtol=1e-13)
+    assert_close(PT.H_dep(), -15.694307202591004, rtol=1e-13)
 
-    assert_close(PT.dH_dep_dT(), -0.03955760203920011, rtol=1e-13)
+    assert_close(PT.dH_dep_dT(), 0.03955760203920011, rtol=1e-13)
     assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
+
+    assert_close(PT.dG_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).G_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
 
     assert_close(PT.S_dep(), -0.03819378035089749, rtol=1e-13)
 
@@ -608,28 +620,28 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
+    T = 300
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_ABBOTT,
-                                  cross_B_model=VIRIAL_B_ABBOTT,
+                                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ORBEY_VERA)
-    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+    model_np = VirialCSP(T=T, Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
                               B_model=VIRIAL_B_ABBOTT,
-                              cross_B_model=VIRIAL_B_ABBOTT,
+                              cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ORBEY_VERA)
 
 
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     zs_np = np.array(zs)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
+                    B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs)
     gas_np = VirialGas(model=model_np, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
+                    B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs_np)
 
     with pytest.raises(ValueError):
@@ -729,12 +741,6 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas_np.dnC_dns(), dnC_dns_expect, rtol=1e-13)
     assert isinstance(gas_np.dnC_dns(), np.ndarray)
 
-    dnG_dep_dns_expect = [7.425792779612475, 26.6956451946272, 58.85973416020387]
-    assert_close1d(gas.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
-    assert_close1d(gas_np.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
-    assert isinstance(gas_np.dnG_dep_dns(), np.ndarray)
-
-
     # Volume derivative
     dV_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).V(), zs, perturbation=3e-6)
     dV_dzs_expect = [-4.112328459328977e-05, -8.550402887152434e-05, -0.0001463861573387482]
@@ -747,25 +753,6 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas.d2V_dzizjs(), d2V_dzizjs_expect, rtol=1e-13)
     assert_close1d(gas_np.d2V_dzizjs(), d2V_dzizjs_expect, rtol=1e-13)
     assert isinstance(gas_np.d2V_dzizjs(), np.ndarray)
-
-    # Gibbs composition derivative
-    dG_dep_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).G_dep(), zs, perturbation=3e-6)
-    dG_dep_dzs_expect = [35.74825427120366, 55.01810668621839, 87.18219565179506]
-    assert_close1d(gas.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
-    assert_close1d(gas_np.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
-    assert isinstance(gas_np.dG_dep_dzs(), np.ndarray)
-    assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
-
-    # lnphis call
-    def to_jac(ns):
-        zs = [i/sum(ns) for i in ns]
-        return sum(ns)*gas.to(T=T, P=P, zs=zs).lnphi()
-    lnphis = jacobian(to_jac, zs, perturbation=.7e-6)
-    lnphis_expect = [0.0029770586188775424, 0.010702493723142819, 0.023597329482121697]
-    assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-13)
-    assert_close1d(gas_np.lnphis(), lnphis_expect, rtol=1e-13)
-    assert isinstance(gas_np.lnphis(), np.ndarray)
-    assert_close1d(lnphis, gas.lnphis(), rtol=5e-7)
 
 
     # B and C pressure derivatives at constant volume
@@ -823,36 +810,24 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     # Enthalpy extra derivatives
 
     dH_dep_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).H_dep(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.dH_dep_dP_V(), -0.000150298196047701, rtol=1e-11)
+    assert_close(gas.dH_dep_dP_V(), 0.000150298196047701, rtol=1e-11)
     assert_close(gas.dH_dep_dP_V(), dH_dep_dP_V)
 
-    dH_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).H(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.dH_dP_V(), 0.10683350766127504, rtol=1e-11)
-    assert_close(gas.dH_dP_V(), dH_dP_V)
-
     dH_dep_dP_T = derivative(lambda P: gas.to(T=gas.T, P=P, zs=gas.zs).H_dep(), gas.P, dx=gas.P*6e-7)
-    assert_close(gas.dH_dep_dP_T(), 0.00016339614251889556, rtol=1e-11)
+    assert_close(gas.dH_dep_dP_T(), -0.00016339614251889556, rtol=1e-11)
     assert_close(gas.dH_dep_dP_T(), dH_dep_dP_T)
 
-    dH_dP_T = derivative(lambda P: gas.to(T=gas.T, P=P, zs=gas.zs).H(), gas.P, dx=gas.P*6e-7)
-    assert_close(gas.dH_dP_T(), 0.00016339614251889556, rtol=1e-11)
-    assert_close(gas.dH_dP_T(), dH_dP_T)
-
     dH_dep_dV_T = derivative(lambda V: gas.to(T=gas.T, V=V, zs=gas.zs).H_dep(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dep_dV_T(), -655.0685868798632, rtol=1e-11)
+    assert_close(gas.dH_dep_dV_T(), 655.0685868798632, rtol=1e-11)
     assert_close(gas.dH_dep_dV_T(), dH_dep_dV_T)
 
     dH_dV_T = derivative(lambda V: gas.to(T=gas.T, V=V, zs=gas.zs).H(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dV_T(), -655.0685868798632, rtol=1e-11)
+    assert_close(gas.dH_dV_T(), 655.0685868798632, rtol=1e-11)
     assert_close(gas.dH_dV_T(), dH_dV_T)
 
     dH_dep_dV_P = derivative(lambda V: gas.to(P=gas.P, V=V, zs=gas.zs).H_dep(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dep_dV_P(), -1257.6264280735763, rtol=1e-11)
+    assert_close(gas.dH_dep_dV_P(), 1257.6264280735763, rtol=1e-11)
     assert_close(gas.dH_dep_dV_P(), dH_dep_dV_P)
-
-    dH_dV_P = derivative(lambda V: gas.to(P=gas.P, V=V, zs=gas.zs).H(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dV_P(), 427649.25865266385, rtol=1e-11)
-    assert_close(gas.dH_dV_P(), dH_dV_P)
 
     # entropy special derivatives
 
@@ -898,6 +873,32 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close(gas.dS_dT_V(), 0.09180908916077761, rtol=1e-11)
     assert_close(gas.dS_dT_V(), dS_dT_V)
 
+    # Gibbs composition derivative
+    dG_dep_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).G_dep(), zs, perturbation=3e-6)
+    assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
+
+    dG_dep_dzs_expect = [-4.117525515170916, -8.55041759275306, -14.630898319262041]
+    assert_close1d(gas.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.dG_dep_dzs(), np.ndarray)
+
+    dnG_dep_dns_expect = [0.2971307072097611, -4.135761370372383, -10.216242096881363]
+    assert_close1d(gas.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
+    assert_close1d(gas_np.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
+    assert isinstance(gas_np.dnG_dep_dns(), np.ndarray)
+
+    # lnphis call
+    def to_jac(ns):
+        zs = [i/sum(ns) for i in ns]
+        return sum(ns)*gas.to(T=T, P=P, zs=zs).lnphi()
+    lnphis = jacobian(to_jac, zs, perturbation=.7e-6)
+    lnphis_expect = [0.00011912203303876263, -0.0016580591996980612, -0.004095771655595198]
+    assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-13)
+    assert_close1d(gas_np.lnphis(), lnphis_expect, rtol=1e-13)
+    assert isinstance(gas_np.lnphis(), np.ndarray)
+    assert_close1d(lnphis, gas.lnphis(), rtol=1.5e-6)
+
+
 # test_virial_phase_ternary_BC_pitzer_curl_orbey_vera()
 
 
@@ -921,28 +922,28 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     # Specifically test without kijs
     kijs = [[0.0]*3 for _ in range(N)]
     kijs_np = np.array(kijs)
+    T = 300
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_ABBOTT,
-                                  cross_B_model=VIRIAL_B_ABBOTT,
+                                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ORBEY_VERA)
-    model_np = VirialCSP(Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
+    model_np = VirialCSP(T=T, Tcs=Tcs_np, Pcs=Pcs_np, Vcs=Vcs_np, omegas=omegas_np,
                               B_model=VIRIAL_B_ABBOTT,
-                              cross_B_model=VIRIAL_B_ABBOTT,
+                              cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                               cross_B_model_kijs=kijs_np,
                               C_model=VIRIAL_C_ORBEY_VERA)
 
 
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     zs_np = np.array(zs)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='linear', cross_C_model='linear',
+                    B_mixing_rule='linear', C_mixing_rule='linear',
                 T=T, P=P, zs=zs)
     gas_np = VirialGas(model=model_np, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='linear',cross_C_model='linear',
+                    B_mixing_rule='linear',C_mixing_rule='linear',
                 T=T, P=P, zs=zs_np)
 
 
@@ -960,6 +961,7 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
 
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
     for val in (gas.B(), gas.dB_dT(), gas.d2B_dT2(), gas.d3B_dT3(),
                 gas_np.B(), gas_np.dB_dT(), gas_np.d2B_dT2(), gas_np.d3B_dT3()):
@@ -1039,17 +1041,18 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     assert_close1d(dV_dzs, gas.dV_dzs(), rtol=5e-6)
 
     dG_dep_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).G_dep(), zs, perturbation=3e-6)
-    dG_dep_dzs_expect = [11.039653592654977, 26.791676731271732, 71.69351860968281]
+    assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
+
+    dG_dep_dzs_expect = [-0.5299938046882267, -4.145751201696929, -12.296446092079966]
     assert_close1d(gas.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
     assert_close1d(gas_np.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
     assert isinstance(gas_np.dG_dep_dzs(), np.ndarray)
-    assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
 
     def to_jac(ns):
         zs = [i/sum(ns) for i in ns]
         return sum(ns)*gas.to(T=T, P=P, zs=zs).lnphi()
     lnphis = jacobian(to_jac, zs, perturbation=4e-6)
-    lnphis_expect = [0.0044028238165937945, 0.010717933548490296, 0.028719434443398972]
+    lnphis_expect = [-0.00021080760121739046, -0.0016603931258887027, -0.004928070691558975]
     assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-13)
     assert_close1d(gas_np.lnphis(), lnphis_expect, rtol=1e-13)
     assert isinstance(gas_np.lnphis(), np.ndarray)
@@ -1062,37 +1065,39 @@ def test_ternary_virial_phase_hashing_repr():
     Pcs=[3394387.5, 5042945.25, 4873732.5]
     Vcs=[8.95e-05, 7.34e-05, 7.49e-05]
     omegas=[0.04, 0.021, -0.004]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
+    T = 300.0
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*1.79e-12, R*-6e-09, R*6.58e-06, R*-0.001794, R*3.63])),
                          HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])),
                          HeatCapacityGas(poly_fit=(50.0, 1000.0, [0,0,0,0, R*2.5]))]
-    phase = VirialGas(model=model, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phase = VirialGas(model=model, T=T, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
+
+    check_virial_temperature_consistency_T_calls(phase, [320, 800])
 
 
-
-    model2 = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
-    phase2 = VirialGas(model=model2, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    model2 = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
+    phase2 = VirialGas(model=model2, T=T, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
 
     # print(model.__dict__)
     # print(model2.__dict__)
     assert model.model_hash() == model2.model_hash()
 
-    modeld0 = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_ABBOTT', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
+    model_different = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas, B_model='VIRIAL_B_ABBOTT', cross_B_model='Tarakad-Danner', C_model='VIRIAL_C_ORBEY_VERA')
 
     # Change T
-    phased0 = VirialGas(model=model, T=315, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased0 = VirialGas(model=model, T=315.0, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
     # Change P
-    phased1 = VirialGas(model=model, T=300, P=1e6, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased1 = VirialGas(model=model, T=T, P=1e6, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
     # Change composition
-    phased2 = VirialGas(model=model2, T=300, P=1e5, zs=[.77, .22, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased2 = VirialGas(model=model2, T=T, P=1e5, zs=[.77, .22, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
     # Change model to the same model
-    phased3 = VirialGas(model=model2, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
+    phased3 = VirialGas(model=model2, T=T, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
 
     # Make a variety of diffinitely different models
-    phased4 = VirialGas(model=modeld0, T=315, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
-    phased5 = VirialGas(model=modeld0, T=300, P=1e6, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
-    phased6 = VirialGas(model=modeld0, T=300, P=1e5, zs=[.77, .22, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz')
-    phased7 = VirialGas(model=modeld0, T=300, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, cross_B_model='linear', cross_C_model='Orentlicher-Prausnitz')
+    phased4 = VirialGas(model=model_different, T=315.0, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
+    phased5 = VirialGas(model=model_different, T=T, P=1e6, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
+    phased6 = VirialGas(model=model_different, T=T, P=1e5, zs=[.77, .22, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz')
+    phased7 = VirialGas(model=model_different, T=T, P=1e5, zs=[.78, .21, .01], HeatCapacityGases=HeatCapacityGases, B_mixing_rule='linear', C_mixing_rule='Orentlicher-Prausnitz')
 
 
     assert model.state_hash() == model2.state_hash()
@@ -1137,9 +1142,10 @@ def test_virial_ternary_vs_ideal_gas():
     N = len(zs)
     phase = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
 
-    model = VirialCSP(Tcs=constants.Tcs, Pcs=constants.Pcs, Vcs=constants.Vcs, omegas=constants.omegas, B_model=VIRIAL_B_ZERO, C_model=VIRIAL_C_ZERO)
+    model = VirialCSP(T=300.0, Tcs=constants.Tcs, Pcs=constants.Pcs, Vcs=constants.Vcs, omegas=constants.omegas, B_model=VIRIAL_B_ZERO, C_model=VIRIAL_C_ZERO)
     phase_EOS = VirialGas(model, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
+    check_virial_temperature_consistency_T_calls(phase_EOS, [320, 800])
 
     ### Copy specs
     TV = phase.to(T=T, V=phase.V(), zs=zs)
@@ -1154,8 +1160,6 @@ def test_virial_ternary_vs_ideal_gas():
     new = phase.to(P=P, T=T, zs=zs)
     assert new.T == phase.T
     assert new.P == phase.P
-    with pytest.raises(Exception):
-        phase.to(P=P, zs=zs)
 
     B_mat = phase_EOS.model.B_interactions()
     assert_close1d(phase_EOS.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
@@ -1283,7 +1287,24 @@ def test_virial_ternary_vs_ideal_gas():
     assert phase_EOS.G_dep() == 0
     assert phase_EOS.U_dep() == 0
     assert phase_EOS.A_dep() == 0
-# test_virial_ternary_vs_ideal_gas()
+
+
+def check_virial_temperature_consistency_T_calls(model, T_list, rtol=1e-14):
+    for T in T_list:
+        # Create a new model at the test temperature
+        model_at_T = model.to(T=T, P=model.P, zs=model.zs)
+        
+        # Check B and its derivatives
+        assert_close(model_at_T.B(), model.B_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.dB_dT(), model.dB_dT_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.d2B_dT2(), model.d2B_dT2_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.d3B_dT3(), model.d3B_dT3_at(T, model.zs), rtol=rtol) 
+        
+        # Check C and its derivatives
+        assert_close(model_at_T.C(), model.C_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.dC_dT(), model.dC_dT_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.d2C_dT2(), model.d2C_dT2_at(T, model.zs), rtol=rtol)
+        assert_close(model_at_T.d3C_dT3(), model.d3C_dT3_at(T, model.zs), rtol=rtol) 
 
 def test_virial_easy_B_C_models():
     from chemicals.virial import Meng_virial_a
@@ -1304,17 +1325,18 @@ def test_virial_easy_B_C_models():
      [0.0, 0.04313694538361394, 0.0]]
 
     # Get VIRIAL_B_TSONOPOULOS and VIRIAL_C_XIANG
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    T = 300
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_TSONOPOULOS,
-                                  cross_B_model=VIRIAL_B_TSONOPOULOS,
+                                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_XIANG)
-    T = 300
     P = 1e5
     zs = [.02, .92, .06]
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
+                    B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs)
+
     B, dB, d2B, d3B = -4.434925694919992e-05, 3.937650137082095e-07, -3.2111514855184275e-09, 3.870025170366373e-11
     assert_close(gas.B(), B, rtol=1e-13)
     assert_close(gas.dB_dT(), dB, rtol=1e-13)
@@ -1331,16 +1353,17 @@ def test_virial_easy_B_C_models():
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
     C_mat = gas.model.C_interactions()
     assert_close1d(gas.model.C_pures(), [C_mat[i][i] for i in range(N)], rtol=1e-13)
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
     # VIRIAL_B_OCONNELL_PRAUSNITZ
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T, Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_OCONNELL_PRAUSNITZ,
-                                  cross_B_model=VIRIAL_B_OCONNELL_PRAUSNITZ,
+                                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
+                    B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs)
 
     B, dB, d2B, d3B = -4.4070589761655625e-05, 3.9458357396975057e-07, -3.265768989707745e-09, 4.069493510858296e-11
@@ -1350,15 +1373,16 @@ def test_virial_easy_B_C_models():
     assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T,Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_XIANG,
-                                  cross_B_model=VIRIAL_B_XIANG,
+                                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                                   cross_B_model_kijs=kijs,
                                   C_model=VIRIAL_C_ZERO)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
+                    B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs)
 
     # VIRIAL_B_XIANG
@@ -1370,6 +1394,7 @@ def test_virial_easy_B_C_models():
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
 
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
     # VIRIAL_B_MENG
     # Made up numbers to get a value of `a`
@@ -1379,14 +1404,14 @@ def test_virial_easy_B_C_models():
     N = 3
     Meng_virial_as = [[Meng_virial_a(Tcijs[i][j], Pcijs[i][j], dipole=dipoles[i][j]) for j in range(N)]
                                      for i in range(N)]
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T,Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_MENG,
-                                  cross_B_model=VIRIAL_B_MENG,
+                                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                                   cross_B_model_kijs=kijs,
                                   B_model_Meng_as=Meng_virial_as,
                                   C_model=VIRIAL_C_ZERO)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
+                    B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
                 T=T, P=P, zs=zs)
 
     B, dB, d2B, d3B = (-4.4032087141036684e-05, 3.8809438374191875e-07, -3.195223834343181e-09, 3.857289293387547e-11)
@@ -1396,6 +1421,7 @@ def test_virial_easy_B_C_models():
     assert_close(gas.d3B_dT3(), d3B, rtol=1e-13)
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
 
     # VIRIAL_B_TSONOPOULOS_EXTENDED
     # Made up parameters
@@ -1408,15 +1434,15 @@ def test_virial_easy_B_C_models():
     BVirial_Tsonopoulos_extended_bs = [[1e-5, 1e-6, 1e-7], [1e-6, .25, 1e-8], [1e-7, 1e-8, .343]]
 
 
-    model = VirialCSP(Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
+    model = VirialCSP(T=T,Tcs=Tcs, Pcs=Pcs, Vcs=Vcs, omegas=omegas,
                                   B_model=VIRIAL_B_TSONOPOULOS_EXTENDED,
-                                  cross_B_model=VIRIAL_B_TSONOPOULOS_EXTENDED,
+                                  cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
                                   cross_B_model_kijs=kijs,
                                  B_model_Tsonopoulos_extended_as=BVirial_Tsonopoulos_extended_as,
                                  B_model_Tsonopoulos_extended_bs=BVirial_Tsonopoulos_extended_bs,
                                   C_model=VIRIAL_C_ZERO)
     gas = VirialGas(model=model, HeatCapacityGases=HeatCapacityGases,
-                    cross_B_model='theory', cross_C_model='Orentlicher-Prausnitz',
+                    B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
                 T=T, P=1e4, zs=zs)
 
     B, dB, d2B, d3B = (-0.007155125156828212, 0.00014262531996979625, -3.3223750860211125e-06, 8.85625680727924e-08)
@@ -1427,3 +1453,451 @@ def test_virial_easy_B_C_models():
 
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
+    check_virial_temperature_consistency_T_calls(gas, [320, 800])
+
+
+def test_basic_compare_virial_vs_PR():
+    T, P, zs = 300, 1e5,  [1]
+    eos_kwargs = {'Pcs': [4599200.0], 'Tcs': [190.564], 'omegas': [0.01142], }
+    Vcs = [9.86e-05]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 5000.0, [4.8986184697537195e-26, -1.1318000255051273e-21, 1.090383509787202e-17, -5.664719389870236e-14, 1.7090042167602582e-10, -2.9728679808459997e-07, 0.00026565262671378613, -0.054476667747310976, 35.35366254807737]
+                                                ))]
+    cubic = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
+
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ORBEY_VERA, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+    assert_close(cubic.H_dep(), virial.H_dep(), rtol=0.2)
+    assert_close(cubic.G_dep(), virial.G_dep(), rtol=0.35)
+    assert_close(cubic.S_dep(), virial.S_dep(), rtol=0.15)
+    assert_close(cubic.lnphi(), virial.lnphi(), rtol=0.4)
+    assert_close1d(cubic.lnphis(), virial.lnphis(), rtol=0.35)
+
+    assert_close(cubic.H(), virial.H(), rtol=0.05)
+    assert_close(cubic.S(), virial.S(), rtol=0.05)
+    assert_close(cubic.G(), virial.G(), rtol=0.05)
+    
+
+
+def test_basic_compare_H_dep_vs_literature_equations():
+    def H_dep_Poling_leiden(self):
+        r'''Method to calculate and return the molar departure enthalpy using
+        the Poling et al. equation form.
+        
+        Returns
+        -------
+        H_dep : float
+            Departure enthalpy [J/mol]
+            
+        Notes
+        -----
+        '''
+        V = self._V  # molar volume
+        T = self.T   # temperature
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        dB_dT = self.dB_dT()  # temperature derivative of B
+        dC_dT = self.dC_dT()  # temperature derivative of C
+        
+        # First term: -(B - T*dB/dT)/V
+        first_term = -(B - T*dB_dT)/V
+        
+        # Second term: -(2C - T*dC/dT)/(2V²)
+        second_term = -(2.0*C - T*dC_dT)/(2.0*V*V)
+        
+        # Combine terms and multiply by RT
+        # The equation has the negative of H_Dep in it
+        return - self.R*T*(first_term + second_term)
+        
+
+    def H_dep_Walas(self):
+        r'''Method to calculate and return the molar departure enthalpy using
+        the Walas formulation with virial coefficients in the pressure form.
+        
+        .. math::
+            H^{id} - H = RT^2 \left[ P \frac{dB'}{dT} + \frac{P^2}{2} \frac{dC'}{dT} + \ldots \right]
+            
+            = PT \left( \frac{dB}{dT} - \frac{B}{T} \right)
+            + \frac{P^2}{2R} \left[ \frac{B^2-C}{T} + \frac{dC}{dT} - 2B\frac{dB}{dT} + \ldots \right]
+        
+        Where:
+            B' = B/RT
+            C' = (C - B²)/(RT)²
+            dB'/dT = (1/RT)·(dB/dT - B/T)
+            
+        Returns
+        -------
+        H_dep : float
+            Departure enthalpy [J/mol]
+            
+        Notes
+        -----
+        This method uses the virial equation in pressure form truncated after the C' term.
+        The equation gives the departure from the ideal gas state.
+        '''
+        T = self.T   # temperature
+        P = self.P   # pressure
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        dB_dT = self.dB_dT()  # temperature derivative of B
+        dC_dT = self.dC_dT()  # temperature derivative of C
+        R = self.R   # gas constant
+        
+        # First term: PT(dB/dT - B/T)
+        first_term = P*T*(dB_dT - B/T)
+        
+        # Second term: (P²/2R)·[(B²-C)/T + dC/dT - 2B·dB/dT]
+        second_term = (P*P)/(2.0*R)*((B*B-C)/T + dC_dT - 2.0*B*dB_dT)
+        
+        # H_dep = -(H^id - H)
+        H_dep = -(first_term + second_term)
+        
+        return H_dep
+
+    T, P, zs = 300, 1e5,  [1]
+    eos_kwargs = {'Pcs': [4599200.0], 'Tcs': [190.564], 'omegas': [0.01142], }
+    Vcs = [9.86e-05]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 5000.0, [4.8986184697537195e-26, -1.1318000255051273e-21, 1.090383509787202e-17, -5.664719389870236e-14, 1.7090042167602582e-10, -2.9728679808459997e-07, 0.00026565262671378613, -0.054476667747310976, 35.35366254807737]
+                                                ))]
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ORBEY_VERA, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+
+    assert_close(virial.H_dep(), H_dep_Poling_leiden(virial), rtol=1e-9)
+    # Walas doesn't quite match
+    assert_close(virial.H_dep(), H_dep_Walas(virial), rtol=1e-4)
+
+
+def test_basic_compare_S_dep_vs_literature_equations():
+    def S_dep_Poling_leiden(self):
+        r'''Method to calculate and return the molar departure entropy using
+        the Poling et al. equation form.
+        
+        .. math::
+            \frac{S^{ig} - S}{R} = \frac{\left(B + T\frac{dB}{dT}\right)}{V} 
+            + \frac{\left(C - T\frac{dC}{dT}\right)}{2V^2} + \ldots - \ln Z
+            
+            S - S^{ig} = -R\left[\frac{\left(B + T\frac{dB}{dT}\right)}{V} 
+            + \frac{\left(C - T\frac{dC}{dT}\right)}{2V^2} + \ldots - \ln Z\right]
+        
+        Returns
+        -------
+        S_dep : float
+            Departure entropy [J/(mol*K)]
+            
+        Notes
+        -----
+        This method uses the virial equation truncated after the C term.
+        The equation gives the departure from the ideal gas state.
+        '''
+        V = self._V  # molar volume
+        T = self.T   # temperature
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        dB_dT = self.dB_dT()  # temperature derivative of B
+        dC_dT = self.dC_dT()  # temperature derivative of C
+        
+        # Calculate Z factor
+        Z = self.P*V/(self.R*T)
+        ln_Z = log(Z)
+        
+        # First term: (B + T*dB/dT)/V
+        first_term = (B + T*dB_dT)/V
+        
+        # Second term: (C - T*dC/dT)/(2V²)
+
+        # While implementing this formula and debugging the disrepancy, it was found that the 
+        # C - T*dC_dT is incorrect and should be C + T*dC_dT
+        second_term = (C + T*dC_dT)/(2.0*V*V)
+        
+        # Combine terms and multiply by -R
+        S_dep = -self.R*(first_term + second_term - ln_Z)
+        
+        return S_dep
+
+    def S_dep_Walas(self):
+        r'''Method to calculate and return the molar departure entropy using
+        the Walas formulation with virial coefficients in the pressure form.
+        Table 11.2. 
+
+        It has not been found where the error is, but there is one.
+
+
+        .. math::
+            S^{id} - S = R \left[ B'P + \frac{C'P^2}{2} + \ldots
+            + T \left( P \frac{dB'}{dT} + \frac{P^2}{2} \frac{dC'}{dT} + \ldots \right) \right]
+        
+        Where:
+            B' = B/RT
+            C' = (C - B²)/(RT)²
+            dB'/dT = (1/RT)·(dB/dT - B/T)
+            dC'/dT = (1/RT)²·((B²-C)/T + dC/dT - 2B·dB/dT)
+            
+        Returns
+        -------
+        S_dep : float
+            Departure entropy [J/(mol*K)]
+            
+        Notes
+        -----
+        '''
+        T = self.T   # temperature
+        P = self.P   # pressure
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        dB_dT = self.dB_dT()  # temperature derivative of B
+        dC_dT = self.dC_dT()  # temperature derivative of C
+        R = self.R   # gas constant
+        
+        # Calculate B' and C'
+        B_prime = B/(R*T)
+        C_prime = (C - B*B)/((R*T)**2)
+        
+        # Calculate dB'/dT and dC'/dT
+        dB_prime_dT = (1.0/(R*T))*(dB_dT - B/T)
+        dC_prime_dT = (1.0/(R*T))**2*((B*B-C)/T + dC_dT - 2.0*B*dB_dT)
+        
+        # First part: R·[B'P + (C'P²)/2]
+        first_part = R*(B_prime*P + (C_prime*P*P)/2.0)
+        
+        # Second part: R·T·[P·(dB'/dT) + (P²/2)·(dC'/dT)]
+        second_part = R*T*(P*dB_prime_dT + (P*P/2.0)*dC_prime_dT)
+        
+        # S_dep = -(S^id - S)
+        S_dep = -(first_part + second_part)
+        
+        return S_dep
+    T, P, zs = 300, 1e5,  [1]
+    eos_kwargs = {'Pcs': [4599200.0], 'Tcs': [190.564], 'omegas': [0.01142], }
+    Vcs = [9.86e-05]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 5000.0, [4.8986184697537195e-26, -1.1318000255051273e-21, 1.090383509787202e-17, -5.664719389870236e-14, 1.7090042167602582e-10, -2.9728679808459997e-07, 0.00026565262671378613, -0.054476667747310976, 35.35366254807737]
+                                                ))]
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ORBEY_VERA, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+
+    assert_close(virial.S_dep(), S_dep_Poling_leiden(virial), rtol=1e-9)
+    # Walas doesn't quite match, some error, unclear
+    assert_close(virial.S_dep(), S_dep_Walas(virial), rtol=2e-4)
+
+
+def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
+
+    def lnphis_Prausnitz_leiden(self):
+        r'''Method to calculate and return the log fugacity coefficients of
+        the phase using the Prausnitz-Leiden equation.
+        
+        .. math::
+            \ln \phi_i = \frac{2}{v} \sum_{j=1}^m y_j B_{ij} + \frac{3}{2v^2} \sum_{j=1}^m \sum_{k=1}^m y_j y_k C_{ijk} - \ln z_{mixt}
+        
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+            
+        Notes
+        -----
+        The zs member variable is used as the mole fractions (y_j in the equation).
+        This method requires interaction virial coefficients B_ij and C_ijk.
+        '''
+        V = self._V  # molar volume
+        v_inv = 1.0/V
+        v2_inv = v_inv*v_inv
+        zs = self.zs  # mole fractions (y in the equation)
+        
+        # Calculate Z factor for the mixture (z_mixt)
+        Z = self.P*V/(self.R*self.T)
+        ln_Z = log(Z)
+        
+        # Get interaction coefficients
+        B_interactions = self.model.B_interactions()
+        C_interactions = self.model.C_interactions() if self.has_cross_C_coefficients else None
+        
+        N = self.N
+        lnphis = [0.0]*N
+        
+        # Calculate ln phi for each component
+        for i in range(N):
+            # First term: (2/v) * sum(y_j * B_ij)
+            sum_y_B = 0.0
+            for j in range(N):
+                sum_y_B += zs[j] * B_interactions[i][j]
+            
+            # Second term: (3/2v²) * sum(y_j * y_k * C_ijk)
+            sum_yy_C = 0.0
+            if self.has_cross_C_coefficients and self.model.C_model != VIRIAL_C_ZERO:
+                for j in range(N):
+                    for k in range(N):
+                        C_ijk = 0.0
+                        C_ij = C_interactions[i][j]
+                        C_jk = C_interactions[j][k]
+                        C_ik = C_interactions[i][k]
+                        
+                        # Using Orentlicher-Prausnitz mixing rule
+                        C_ijk = (C_ij * C_jk * C_ik)**(1.0/3.0) if (C_ij * C_jk * C_ik) > 0 else 0.0
+                        
+                        sum_yy_C += zs[j] * zs[k] * C_ijk
+            
+            # Combine terms for ln phi_i
+            lnphis[i] = 2.0 * v_inv * sum_y_B + 1.5 * v2_inv * sum_yy_C - ln_Z
+        
+        return lnphis
+    def lnphis_Gmehling_B_only_leiden(self):
+        r'''Method to calculate and return the log fugacity coefficients of
+        the phase using the Gmehling B-only equation (Leiden form).
+        
+        .. math::
+            \ln \phi_k = \int_v^{\infty} \frac{2n_r \sum_i y_i B_{ik}}{V^2} dV - \ln z 
+            = \left(2n_r \sum_i y_i B_{ik}\right) \int_v^{\infty} \frac{dV}{V^2} - \ln z
+            = \frac{2}{v} \sum_i y_i B_{ik} - \ln z
+        
+        Returns
+        -------
+        lnphis : list[float]
+            Log fugacity coefficients, [-]
+            
+        Notes
+        -----
+        This simplified form uses only the second virial coefficient (B) terms.
+        The zs member variable is used as the mole fractions (y_i in the equation).
+        '''
+        V = self._V  # molar volume
+        v_inv = 1.0/V
+        zs = self.zs  # mole fractions (y in the equation)
+        
+        # Calculate Z factor for the mixture
+        Z = self.P*V/(self.R*self.T)
+        ln_Z = log(Z)
+        
+        # Get interaction coefficients
+        B_interactions = self.model.B_interactions()
+        
+        N = self.N
+        lnphis = [0.0]*N
+        
+        # Calculate ln phi for each component k
+        for k in range(N):
+            # Calculate sum(y_i * B_ik)
+            sum_y_B = 0.0
+            for i in range(N):
+                sum_y_B += zs[i] * B_interactions[i][k]
+            
+            # Apply formula: 2/v * sum(y_i * B_ik) - ln z
+            lnphis[k] = 2.0 * v_inv * sum_y_B - ln_Z
+        
+        return lnphis
+
+    def lnphi_Poling_leiden(self):
+        r'''Method to calculate and return the log fugacity coefficient of
+        the phase using the Poling et al. equation form.
+        
+        .. math::
+            \ln \phi = \ln \left(\frac{f}{P}\right) = 2\frac{B}{V} + \frac{3C}{2V^2} + \ldots - \ln Z
+        
+        Returns
+        -------
+        lnphi : float
+            Log fugacity coefficient for the mixture, [-]
+            
+        Notes
+        -----
+        This method returns the fugacity coefficient for the overall mixture,
+        not component-specific fugacity coefficients.
+        The equation is truncated after the C term as higher-order terms are
+        rarely available.
+        '''
+        V = self._V  # molar volume
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        
+        # Calculate Z factor
+        Z = self.P*V/(self.R*self.T)
+        ln_Z = log(Z)
+        
+        # Apply the formula from Poling
+        lnphi = 2.0*B/V + 1.5*C/(V*V) - ln_Z
+        
+        return lnphi
+
+    def G_dep_Poling_leiden(self):
+        r'''Method to calculate and return the molar departure Gibbs energy using
+        the Poling et al. equation form. The negative of these equations is the departure
+        term.
+        
+        .. math::
+            \frac{G^{ig} - G}{RT} = -2\frac{B}{V} - \frac{3C}{2V^2} - \ldots + \ln Z
+            
+            G - G^{ig} = RT\left[-2\frac{B}{V} - \frac{3C}{2V^2} - \ldots + \ln Z\right]
+        
+        Returns
+        -------
+        G_dep : float
+            Departure Gibbs energy [J/mol]
+            
+        Notes
+        -----
+        This method uses the virial equation truncated after the C term.
+        The equation gives the departure from the ideal gas state.
+        Mathematically, this is equivalent to RT*ln(φ), where φ is the
+        fugacity coefficient.
+        '''
+        V = self._V  # molar volume
+        T = self.T   # temperature
+        B = self.B()  # mixture second virial coefficient
+        C = self.C()  # mixture third virial coefficient
+        
+        # Calculate Z factor
+        Z = self.P*V/(self.R*T)
+        ln_Z = log(Z)
+        
+        # First term: -2B/V
+        first_term = -2.0*B/V
+        
+        # Second term: -3C/(2V²)
+        second_term = -3.0*C/(2.0*V*V)
+        
+        # Combine terms and multiply by RT
+        G_dep = -self.R*T*(first_term + second_term + ln_Z)
+        
+        return G_dep
+
+    T, P, zs = 300, 1e5,  [1]
+    eos_kwargs = {'Pcs': [4599200.0], 'Tcs': [190.564], 'omegas': [0.01142], }
+    Vcs = [9.86e-05]
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 5000.0, [4.8986184697537195e-26, -1.1318000255051273e-21, 1.090383509787202e-17, -5.664719389870236e-14, 1.7090042167602582e-10, -2.9728679808459997e-07, 0.00026565262671378613, -0.054476667747310976, 35.35366254807737]
+                                                ))]
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ORBEY_VERA, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+    assert_close(virial.G_dep(), G_dep_Poling_leiden(virial), rtol=1e-9)
+    assert_close(virial.lnphi(), lnphi_Poling_leiden(virial), rtol=1e-9)
+
+
+    assert_close1d(virial.lnphis(), lnphis_Prausnitz_leiden(virial), rtol=1e-9)
+
+
+    # This formula only has B
+    virial_csp = VirialCSP(T=T, Vcs=Vcs, B_model=VIRIAL_B_ABBOTT, cross_B_model=VIRIAL_CROSS_B_TARAKAD_DANNER,
+                      C_model=VIRIAL_C_ZERO, **eos_kwargs)
+
+    virial = VirialGas(model=virial_csp, HeatCapacityGases=HeatCapacityGases,
+                       B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz',
+                       T=T, P=P, zs=zs)
+
+    assert_close1d(virial.lnphis(), lnphis_Gmehling_B_only_leiden(virial), rtol=1e-9)

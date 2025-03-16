@@ -43,3 +43,4 @@ API Reference
    thermo.group_contribution.joback
    thermo.group_contribution.fedors
    thermo.group_contribution.wilson_jasperson
+   thermo.group_contribution.bondi

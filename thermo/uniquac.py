@@ -1649,6 +1649,22 @@ class UNIQUAC(GibbsExcess):
         self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs
 
+    def missing_interaction_parameters(self):
+        r'''
+        Return an empty list as UNIQUAC does not have a concept of "missing parameters".
+        All parameter values, including zeros, will impact the phase equilibria 
+        calculations through their effect on the tau terms. Parameter values cannot be
+        made "missing" as they always affect the model results through the combinatorial
+        and residual terms.
+        
+        Returns
+        -------
+        missing_params : list[tuple[int, int]]
+            Empty list, as UNIQUAC parameters cannot be considered missing, [-].
+        '''
+        return []
+
+
     @classmethod
     def regress_binary_parameters(cls, gammas, xs, rs, qs, use_numba=False,
                                   do_statistics=True, **kwargs):

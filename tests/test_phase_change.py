@@ -248,6 +248,11 @@ def test_EnthalpySublimation_webbook():
     obj.method = 'WEBBOOK_HSUB'
     assert_close(obj(300), 68200.0, rtol=1e-10)
 
+def test_EnthalpySublimation_GHARAGHEIZI():
+    obj = EnthalpySublimation(CASRN='51-20-7')
+    obj.method = 'GHARAGHEIZI_HSUB_298'
+    assert_close(obj(300), 151400, rtol=1e-10)
+
 @pytest.mark.meta_T_dept
 @pytest.mark.fitting
 def test_EnthalpyVaporization_fitting0():
@@ -273,11 +278,11 @@ def test_EnthalpyVaporization_fitting1_dippr_106():
                       '1333-74-0', '7664-39-3']
     for CAS in check_CAS_fits:
         obj = EnthalpyVaporization(CASRN=CAS)
-        Ts = linspace(obj.Perrys2_150_Tmin, obj.Perrys2_150_Tmax, 8)
+        Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 8)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR106',
                               do_statistics=True, use_numba=False, fit_method='lm',
-                                           model_kwargs={'Tc': obj.Perrys2_150_coeffs[0]})
+                                           model_kwargs={'Tc': obj.DIPPR106_parameters['DIPPR_PERRY_8E']['Tc']})
         assert stats['MAE'] < 1e-7
 
 @pytest.mark.slow
@@ -292,7 +297,7 @@ def test_EnthalpyVaporization_fitting2_dippr_106():
         props_calc = [obj.calculate(T, VDI_PPDS) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='PPDS12',
                               do_statistics=True, use_numba=False, fit_method='lm',
-                                           model_kwargs={'Tc': obj.VDI_PPDS_Tc})
+                                           model_kwargs={'Tc': obj.PPDS12_parameters['VDI_PPDS']['Tc']})
         assert stats['MAE'] < 1e-7
 
 @pytest.mark.slow
@@ -302,9 +307,9 @@ def test_EnthalpyVaporization_fitting2_dippr_106():
 def test_EnthalpyVaporization_fitting3_dippr_106_full():
     for CAS in chemicals.phase_change.phase_change_data_Perrys2_150.index:
         obj = EnthalpyVaporization(CASRN=CAS)
-        Ts = linspace(obj.Perrys2_150_Tmin, obj.Perrys2_150_Tmax, 8)
+        Ts = linspace(obj.T_limits[DIPPR_PERRY_8E][0], obj.T_limits[DIPPR_PERRY_8E][1], 8)
         props_calc = [obj.calculate(T, DIPPR_PERRY_8E) for T in Ts]
         res, stats = obj.fit_data_to_model(Ts=Ts, data=props_calc, model='DIPPR106',
                               do_statistics=True, use_numba=False, fit_method='lm',
-                                           model_kwargs={'Tc': obj.Perrys2_150_coeffs[0]})
+                                           model_kwargs={'Tc': obj.DIPPR106_parameters['DIPPR_PERRY_8E']['Tc']})
         assert stats['MAE'] < 1e-7

@@ -40,7 +40,7 @@ def test_Permittivity_class():
 
     epsilon = water.T_dependent_property(298.15)
     assert_close(epsilon, 78.40540700004574)
-    assert PermittivityLiquid(CASRN='7732-18-5').all_methods == {'CRC', 'CRC_CONSTANT', 'IAPWS'}
+    assert PermittivityLiquid(CASRN='7732-18-5').all_methods == {'CRC', 'CRC_CONSTANT', 'IAPWS_PERMITTIVITY'}
 
     assert PermittivityLiquid(CASRN='132451235-2151234-1234123').all_methods == set()
     assert PermittivityLiquid(CASRN='132451235-2151234-1234123').T_dependent_property(300) is None
@@ -75,6 +75,14 @@ def test_Permittivity_class():
     obj = PermittivityLiquid(CASRN='57-10-3')
     assert not isnan(obj.T_limits['CRC_CONSTANT'][0])
     assert not isnan(obj.T_limits['CRC_CONSTANT'][1])
+
+@pytest.mark.meta_T_dept
+def test_Permittivity_class_from_method_kwargs():
+    obj = PermittivityLiquid(CASRN='67-56-1')
+    assert_close(PermittivityLiquid(**obj.as_method_kwargs())(300), obj(300), rtol=1e-10)
+
+    obj = PermittivityLiquid(CASRN='7732-18-5')
+    assert_close(PermittivityLiquid(**obj.as_method_kwargs())(300), obj(300), rtol=1e-10)
 
 @pytest.mark.slow
 @pytest.mark.fuzz

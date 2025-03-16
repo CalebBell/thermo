@@ -1890,7 +1890,7 @@ def dew_bubble_newton_zs(guess, fixed_val, zs, liquid_phase, gas_phase,
         # numerical_j = jacobian(lambda g: f_j(g)[0], guesses_in, perturbation=1e-6, scalar=False)
         # implemented_j = f_j(guesses_in)[1]
 
-        comp_val, iterations = newton_system(f_j, guesses, jac=True,
+        comp_val, iterations = newton_system(f_j, guesses_in, jac=True,
                                              xtol=xtol, damping=damping,
                                              solve_func=py_solve,
                                              line_search=True,

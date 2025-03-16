@@ -262,6 +262,11 @@ class EnthalpyVaporization(TDependentProperty):
     """Whether or not the property is declining and reaching zero at the
     critical point."""
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(DIPPR_PERRY_8E)
+    extra_correlations_internal.add(ALIBAKHSHI)
+    extra_correlations_internal.add(VDI_PPDS)
+
     ranked_methods = [HEOS_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, MORGAN_KOBAYASHI,
                       SIVARAMAN_MAGEE_KOBAYASHI, VELASCO, PITZER, VDI_TABULAR,
                       ALIBAKHSHI,
@@ -314,12 +319,20 @@ class EnthalpyVaporization(TDependentProperty):
                 T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc*.9999)
             if CASRN in miscdata.VDI_saturation_dict:
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Hvap')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
-                methods.append(ALIBAKHSHI)
-                self.Alibakhshi_C = float(phase_change.phase_change_data_Alibakhshi_Cs.at[CASRN, 'C'])
-                T_limits[ALIBAKHSHI] = (self.Tc*.3, max(self.Tc-100., 0))
+                self.add_correlation(name=ALIBAKHSHI, model='Alibakhshi', Tmin=self.Tc * 0.3, Tmax=max(self.Tc - 100.0, 0),
+                                    Tc=self.Tc, C=float(phase_change.phase_change_data_Alibakhshi_Cs.at[CASRN, 'C']), select=False)
+            if CASRN in phase_change.phase_change_data_Perrys2_150.index:
+                Tc, C1, C2, C3, C4, Tmin, Tmax = phase_change.phase_change_values_Perrys2_150[
+                    phase_change.phase_change_data_Perrys2_150.index.get_loc(CASRN)].tolist()
+                self.add_correlation(name=DIPPR_PERRY_8E, model='DIPPR106', Tmin=Tmin, Tmax=Tmax,
+                                    Tc=Tc, A=C1, B=C2, C=C3, D=C4, select=False)
+            if CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
+                Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[
+                    phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(CASRN)].tolist()
+                self.add_correlation(name=VDI_PPDS, model='PPDS12', Tmin=0.1 * Tc, Tmax=Tc,
+                                    Tc=Tc, A=A, B=B, C=C, D=D, E=E, select=False)
             if CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[CASRN, 'HvapTb']):
                 methods.append(CRC_HVAP_TB)
                 self.CRC_HVAP_TB_Tb = float(phase_change.Hvap_data_CRC.at[CASRN, 'Tb'])
@@ -342,17 +355,6 @@ class EnthalpyVaporization(TDependentProperty):
                     T_limits[GHARAGHEIZI_HVAP_298] = (self.Tc*.001, self.Tc)
                 else:
                     T_limits[GHARAGHEIZI_HVAP_298] =  (298.15, 298.15)
-            if CASRN in phase_change.phase_change_data_Perrys2_150.index:
-                methods.append(DIPPR_PERRY_8E)
-                Tc, C1, C2, C3, C4, self.Perrys2_150_Tmin, self.Perrys2_150_Tmax = phase_change.phase_change_values_Perrys2_150[phase_change.phase_change_data_Perrys2_150.index.get_loc(CASRN)].tolist()
-                self.Perrys2_150_coeffs = [Tc, C1, C2, C3, C4]
-                T_limits[DIPPR_PERRY_8E] = (self.Perrys2_150_Tmin, self.Perrys2_150_Tmax)
-            if CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
-                Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(CASRN)].tolist()
-                self.VDI_PPDS_coeffs = [A, B, C, D, E]
-                self.VDI_PPDS_Tc = Tc
-                methods.append(VDI_PPDS)
-                T_limits[VDI_PPDS] = (0.1*self.VDI_PPDS_Tc, self.VDI_PPDS_Tc)
         if all((self.Tc, self.omega)):
             methods.extend(self.CSP_methods)
             for m in self.CSP_methods:
@@ -400,13 +402,7 @@ class EnthalpyVaporization(TDependentProperty):
         '''
         if method == COOLPROP:
             Hvap = PropsSI('HMOLAR', 'T', T, 'Q', 1, self.CASRN) - PropsSI('HMOLAR', 'T', T, 'Q', 0, self.CASRN)
-        elif method == DIPPR_PERRY_8E:
-            Hvap = EQ106(T, *self.Perrys2_150_coeffs)
         # CSP methods
-        elif method == VDI_PPDS:
-            Hvap = PPDS12(T, self.VDI_PPDS_Tc, *self.VDI_PPDS_coeffs)
-        elif method == ALIBAKHSHI:
-            Hvap = Alibakhshi(T=T, Tc=self.Tc, C=self.Alibakhshi_C)
         elif method == MORGAN_KOBAYASHI:
             Hvap = MK(T, self.Tc, self.omega)
         elif method == SIVARAMAN_MAGEE_KOBAYASHI:
@@ -488,9 +484,6 @@ class EnthalpyVaporization(TDependentProperty):
         if method == COOLPROP:
             if T <= self.CP_f.Tmin or T > self.CP_f.Tc:
                 validity = False
-        elif method == DIPPR_PERRY_8E:
-            if T < self.Perrys2_150_Tmin or T > self.Perrys2_150_Tmax:
-                return False
         elif method == CRC_HVAP_TB:
             if not self.Tc:
                 if T < self.CRC_HVAP_TB_Tb - 5 or T > self.CRC_HVAP_TB_Tb + 5:
@@ -501,20 +494,12 @@ class EnthalpyVaporization(TDependentProperty):
             if not self.Tc:
                 if T < 298.15 - 5 or T > 298.15 + 5:
                     validity = False
-        elif method == VDI_PPDS:
-            validity = T <= self.VDI_PPDS_Tc
         elif method in self.boiling_methods:
             if T > self.Tc:
                 validity = False
         elif method in self.CSP_methods:
             if T > self.Tc:
                 validity = False
-        elif method == ALIBAKHSHI:
-            if T > self.Tc - 100:
-                validity = False
-#            elif (self.Tb and T < self.Tb - 50):
-#                validity = False
-
         elif method == CLAPEYRON:
             if not (self.Psat and T < self.Tc):
                 validity = False
@@ -627,6 +612,10 @@ class EnthalpySublimation(TDependentProperty):
     ranked_methods = [WEBBOOK_HSUB, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                       GHARAGHEIZI_HSUB_298]
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(WEBBOOK_HSUB)
+    extra_correlations_internal.add(GHARAGHEIZI_HSUB_298)
+
     obj_references = pure_references = ('Cpg', 'Cps', 'Hvap')
     obj_references_types = pure_reference_types = (HeatCapacityGas, HeatCapacitySolid, EnthalpyVaporization)
 
@@ -655,21 +644,31 @@ class EnthalpySublimation(TDependentProperty):
         to reset the parameters.
         '''
         methods = []
+        self.all_methods = set()
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         CASRN_int = None if not CASRN else CAS_to_int(CASRN)
         if load_data and CASRN:
             if CASRN_int in miscdata.webbook_data.index and not isnan(float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])):
-                methods.append(WEBBOOK_HSUB)
-                self.webbook_Hsub = float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])
-                if self.Tm is not None:
-                    T_limits[WEBBOOK_HSUB] = (self.Tm, self.Tm)
-                else:
-                    T_limits[WEBBOOK_HSUB] = (298.15, 298.15)
-
+                T_lim = self.Tm if self.Tm is not None else 298.15
+                self.add_correlation(
+                    name=WEBBOOK_HSUB,
+                    model='constant',
+                    Tmin=T_lim,
+                    Tmax=T_lim,
+                    value=float(miscdata.webbook_data.at[CASRN_int, 'Hsub']),
+                    select=False
+                )
             if CASRN in phase_change.Hsub_data_Gharagheizi.index:
-                methods.append(GHARAGHEIZI_HSUB_298)
                 self.GHARAGHEIZI_Hsub = float(phase_change.Hsub_data_Gharagheizi.at[CASRN, 'Hsub'])
+                self.add_correlation(
+                    name=GHARAGHEIZI_HSUB_298,
+                    model='constant',
+                    Tmin=298.15,
+                    Tmax=298.15,
+                    value=self.GHARAGHEIZI_Hsub,
+                    select=False
+                )
                 if self.Cpg is not None and self.Cps is not None:
                     methods.append(GHARAGHEIZI_HSUB)
                 T_limits[GHARAGHEIZI_HSUB_298] = (298.15, 298.15)
@@ -680,7 +679,7 @@ class EnthalpySublimation(TDependentProperty):
                     T_limits[CRC_HFUS_HVAP_TM] = (self.Tm, self.Tm)
                 else:
                     T_limits[CRC_HFUS_HVAP_TM] = (298.15, 298.15)
-        self.all_methods = set(methods)
+        self.all_methods.update(methods)
 
     @staticmethod
     def _method_indexes():
@@ -709,11 +708,7 @@ class EnthalpySublimation(TDependentProperty):
         Hsub : float
             Heat of sublimation of the solid at T, [J/mol]
         '''
-        if method == GHARAGHEIZI_HSUB_298:
-            Hsub = self.GHARAGHEIZI_Hsub
-        elif method == WEBBOOK_HSUB:
-            Hsub = self.webbook_Hsub
-        elif method == GHARAGHEIZI_HSUB:
+        if method == GHARAGHEIZI_HSUB:
             T_base = 298.15
             Hsub = self.GHARAGHEIZI_Hsub
         elif method == CRC_HFUS_HVAP_TM:

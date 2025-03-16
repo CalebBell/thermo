@@ -34,6 +34,77 @@ except:
 
 
 
+def test_all_functional_groups_list():
+    """Test the integrity of ALL_FUNCTIONAL_GROUPS list"""
+    # Test for duplicates
+    assert len(ALL_FUNCTIONAL_GROUPS) == len(set(ALL_FUNCTIONAL_GROUPS)), "Duplicate entries found"
+    
+    # Test total count
+    assert len(ALL_FUNCTIONAL_GROUPS) >= 92
+    
+def test_mapping_dictionaries():
+    """Test the FG_TO_FUNCTION and FUNCTION_TO_FG dictionaries"""
+    from thermo.functional_groups import FG_TO_FUNCTION, FUNCTION_TO_FG, SMARTS_PATTERNS
+    # Test sizes
+    assert len(FG_TO_FUNCTION) == len(FUNCTIONAL_GROUP_CHECKS)
+    assert len(FUNCTION_TO_FG) == len(FUNCTIONAL_GROUP_CHECKS)
+
+    
+    
+    # Test bidirectional mapping
+    for fg_const, func in FG_TO_FUNCTION.items():
+        assert FUNCTION_TO_FG[func] == fg_const
+    
+    # Test function names match constants
+    for fg_const, func in FG_TO_FUNCTION.items():
+        expected_name = 'is_' + fg_const.lower().replace('fg_', '')
+        assert func.__name__ == expected_name
+
+
+    # Find missing SMARTS patterns
+    fg_with_smarts = set(SMARTS_PATTERNS.keys())
+    all_fgs = set(ALL_FUNCTIONAL_GROUPS)
+    missing_smarts = all_fgs - fg_with_smarts
+    extra_smarts = fg_with_smarts - all_fgs
+    
+    error_msg = []
+    if missing_smarts:
+        error_msg.append(f"Missing SMARTS patterns for: {sorted(missing_smarts)}")
+    if extra_smarts:
+        error_msg.append(f"Extra SMARTS patterns for: {sorted(extra_smarts)}")
+        
+    assert len(SMARTS_PATTERNS) == len(FUNCTIONAL_GROUP_CHECKS), \
+        "SMARTS_PATTERNS length mismatch:\n" + "\n".join(error_msg)
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_identify_functional_groups_alcohols():
+    """Test identification of functional groups with alcohols"""
+    # Test ethanol - should be alcohol and organic
+    mol = mol_from_name('ethanol')
+    groups = identify_functional_groups(mol)
+    assert FG_ALCOHOL in groups, "Ethanol should contain alcohol group"
+    assert FG_ORGANIC in groups, "Ethanol should be marked as organic"
+    assert FG_KETONE not in groups, "Ethanol should not contain ketone group"
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_identify_functional_groups_edge_cases():
+    """Test identification with edge cases"""
+    # Test water - should be inorganic, not organic
+    mol = mol_from_name('water')
+    groups = identify_functional_groups(mol)
+    assert FG_INORGANIC in groups
+    assert FG_ORGANIC not in groups
+    
+    # Test benzene - should be aromatic and hydrocarbon
+    mol = mol_from_name('benzene')
+    groups = identify_functional_groups(mol)
+    assert FG_AROMATIC in groups
+    assert FG_HYDROCARBON in groups
+
+
 def mol_from_name(name):
     obj = search_chemical(name)
     return Chem.MolFromSmiles(obj.smiles)
@@ -2449,3 +2520,150 @@ def test_is_radionuclide():
     assert not is_radionuclide(Chem.MolFromSmiles("[15N]"))  # Nitrogen-15
     assert not is_radionuclide(Chem.MolFromSmiles("[63Cu]"))  # Copper-63
     assert not is_radionuclide(Chem.MolFromSmiles("[28Si]"))  # Silicon-28
+
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_count_rings_by_atom_counts():
+    # Test common 6-membered rings
+    mol = Chem.MolFromSmiles('O1CCOCC1')  # 1,4-dioxane
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 1
+    assert count_rings_by_atom_counts(mol, {'O': 1, 'C': 5}) == 0
+
+
+    mol = Chem.MolFromSmiles('C1COCCN1CC2COC(CO2)CN3CCOCC3')
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 1
+     
+    # Test 5-membered rings
+    mol = Chem.MolFromSmiles('C1CCNC1')  # pyrrolidine
+    assert count_rings_by_atom_counts(mol, {'N': 1, 'C': 4}) == 1
+    assert count_rings_by_atom_counts(mol, {'N': 1, 'C': 3}) == 0
+    
+    # Test multiple rings in one molecule
+    mol = Chem.MolFromSmiles('C=CC1OCC2(CO1)COC(OC2)C=C')  # two dioxane rings
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 2
+    
+    # Test fused rings
+    mol = Chem.MolFromSmiles('C1COC2CCOC12')  # fused dioxane system
+    assert count_rings_by_atom_counts(mol, {'O': 1, 'C': 4}) == 2
+    
+    # Test aromatic rings
+    mol = Chem.MolFromSmiles('c1ccccc1')  # benzene
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 1
+    
+    # Test mixed aromatic/non-aromatic https://en.wikipedia.org/wiki/1,4-Benzodioxine
+    mol = Chem.MolFromSmiles('O1C=COc2ccccc12')  # benzene + dioxane
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 1
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 1
+    
+    # Test rings with multiple heteroatom types
+    mol = Chem.MolFromSmiles('C1CNCCO1')  # morpholine
+    assert count_rings_by_atom_counts(mol, {'N': 1, 'O': 1, 'C': 4}) == 1
+
+    # Test edge cases
+    mol = Chem.MolFromSmiles('CC')  # no rings
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 0
+    
+    mol = Chem.MolFromSmiles('O1NONNC1')  # wrong composition
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 0
+            
+    # Test spiro rings
+    mol = Chem.MolFromSmiles('C1CCC(CC1)C2OCCO2')  # spiro[cyclohexane-1,2'-[1,3]dioxolane]
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 1
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 3}) == 1
+    
+    # Test bridged rings
+    mol = Chem.MolFromSmiles('C1CC2CCC1C2')  # norbornane
+    assert count_rings_by_atom_counts(mol, {'C': 7}) == 0 
+    assert count_rings_by_atom_counts(mol, {'C': 5}) == 2 # what rdkit says
+    assert count_rings_by_atom_counts(mol, {'C': 6}) == 0
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_count_rings_by_atom_counts_with_names():
+    """Test using mol_from_name for more complex molecules"""
+    mol = mol_from_name('morpholine')
+    assert count_rings_by_atom_counts(mol, {'O': 1, 'N': 1, 'C': 4}) == 1
+    
+    mol = mol_from_name('1,4-dioxane')
+    assert count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) == 1
+    
+    mol = mol_from_name('pyridine')
+    assert count_rings_by_atom_counts(mol, {'N': 1, 'C': 5}) == 1
+    
+    mol = mol_from_name('quinoxaline')
+    assert count_rings_by_atom_counts(mol, {'N': 2, 'C': 4}) == 1
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_identify_functional_group_atoms():
+    # Test carboxylic acid
+    mol = Chem.MolFromSmiles('CC(=O)O')  # Acetic acid
+    assert identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID) == [(1, 2, 3)]
+    
+    # Test multiple instances of same group
+    mol = Chem.MolFromSmiles('OC(=O)CCC(=O)O')  # Glutaric acid
+    assert identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID) == [(0, 1, 2), (5, 6, 7)]
+    
+    # Test amide
+    mol = Chem.MolFromSmiles('CC(=O)N')  # Acetamide
+    assert identify_functional_group_atoms(mol, FG_AMIDE) == [(1, 2, 3)]
+    
+    # Test overlapping patterns
+    mol = Chem.MolFromSmiles('CC(=O)NC(=O)C')  # N-acetylacetamide
+    assert identify_functional_group_atoms(mol, FG_AMIDE) == [(1, 2, 3), (3, 4, 5)]
+    
+    # Test no matches
+    mol = Chem.MolFromSmiles('CCO')  # Ethanol
+    assert identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID) == []
+    
+    # Test edge cases
+    mol = Chem.MolFromSmiles('[H]')  # Hydrogen atom
+    assert identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID) == []
+    
+    mol = None
+    with pytest.raises(ValueError):
+        identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID)
+
+
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_identify_conjugated_bonds():
+    # Test basic conjugated system
+    mol = Chem.MolFromSmiles('C=CC=C')  # 1,3-butadiene
+    assert identify_conjugated_bonds(mol) == [((0,1), (2,3), (1,2))]
+    
+    # Test non-conjugated system
+    mol = Chem.MolFromSmiles('C=CCC=C')  # 1,4-pentadiene
+    assert identify_conjugated_bonds(mol) == []
+    
+    # Test cyclic conjugation
+    mol = Chem.MolFromSmiles('C1=CC=CC=CC=1')  # Benzaldehyde
+    conjugated = identify_conjugated_bonds(mol)
+    assert len(conjugated) == 3  # Should find multiple conjugated pairs
+    
+    # Test branched conjugation
+    mol = Chem.MolFromSmiles('C=CC(=C)C=C')  # 2-methylene-1,4-pentadiene
+    conjugated = identify_conjugated_bonds(mol)
+    assert len(conjugated) == 2
+        
+    # Test with substituents
+    mol = Chem.MolFromSmiles('CC=CC=CC')  # 2,4-hexadiene
+    assert len(identify_conjugated_bonds(mol)) == 1
+    
+    # Test with heteroatoms (shouldn't count)
+    mol = Chem.MolFromSmiles('C=CC=N')  # but-1-en-3-imine
+    assert identify_conjugated_bonds(mol) == []
+    
+    # Test edge cases
+    mol = Chem.MolFromSmiles('C=C')  # ethene
+    assert identify_conjugated_bonds(mol) == []
+    
+    mol = Chem.MolFromSmiles('C')  # methane
+    assert identify_conjugated_bonds(mol) == []
+
+    # beta-carotin
+    mol = Chem.MolFromSmiles('CC1=C(C(CCC1)(C)C)/C=C/C(=C/C=C/C(=C/C=C/C=C(/C=C/C=C(/C=C/C2=C(CCCC2(C)C)C)\\C)\\C)/C)/C') 
+    assert len(identify_conjugated_bonds(mol)) == 10

@@ -67,7 +67,7 @@ def test_UNIFAC_data():
     # ['CH2', 'C=C', 'ACH', 'ACCH2', 'OH', 'CH3OH', 'H2O', 'ACOH', 'CH2CO', 'CHO', 'CCOO', 'HCOO', 'CH2O', 'CNH2', 'CNH', '(C)3N', 'ACNH2', 'PYRIDINE', 'CCN', 'COOH', 'CCL', 'CCL2', 'CCL3', 'CCL4', 'ACCL', 'CNO2', 'ACNO2', 'CS2', 'CH3SH', 'FURFURAL', 'DOH', 'I', 'BR', 'C=-C', 'DMSO', 'ACRY', 'CLCC', 'ACF', 'DMF', 'CF2', 'COO', 'SIH2', 'SIO', 'NMP', 'CCLF', 'CON(AM)', 'OCCOH', 'CH2S', 'MORPH', 'THIOPHEN', 'NCO', 'SULFONES', 'IMIDAZOL', 'BTI']
 
 def test_modified_UNIFAC_data():
-    assert len(DOUFIP2006) == 61
+    assert len(DOUFIP2006) == 63
     assert len(DOUFIP2016) == 65
     assert sum([len(i) for i in DOUFIP2016.values()]) == 1516
     assert sum([len(i) for i in DOUFIP2006.values()]) == 1318
@@ -1170,3 +1170,42 @@ def test_recursive_use_of_cursors():
         t.join()
 
     assert not raised.is_set()
+
+
+def test_missing_interaction_parameters():
+    """Test for the missing_interaction_parameters method."""
+    kwargs = dict(
+        T=300.0,
+        xs=[0.1, 0.9],
+        rs=[0.92, 5.2730999999999995],
+        qs=[1.4, 4.748],
+        Qs=[0.848, 0.54, 1.2, 1.4],
+        vs=[[0, 1], [0, 5], [0, 1], [1, 0]],
+        psi_abc=(
+            [
+                [0.0, 0.0, 986.5, 1318.0],
+                [0.0, 0.0, 986.5, 1318.0],
+                [156.4, 156.4, 0.0, 353.5],
+                [300.0, 300.0, -229.1, 0.0],
+            ],
+            [
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+            ],
+            [
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+            ],
+        ),
+        version=0,
+    )
+
+    GE = UNIFAC(**kwargs)
+    missing_params = GE.missing_interaction_parameters()
+    expected_missing = [(0, 1), (1, 0)]
+    # Assert the results
+    assert missing_params == expected_missing, f"Expected {expected_missing}, got {missing_params}"

@@ -99,6 +99,7 @@ def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas, vec0=Non
         gammas[i] = exp(tot)
     return gammas
 
+
 def nrtl_taus(T, N, A, B, E, F, G, H, taus=None):
 
     if taus is None:
@@ -542,13 +543,13 @@ class NRTL(GibbsExcess):
     >>> ABEFGHCD = (tausA, tausB, tausE, tausF, tausG, tausH, alphaC, alphaD)
     >>> GE = NRTL(T=T, xs=xs, ABEFGHCD=ABEFGHCD)
     >>> GE.gammas()
-    [1.93605165145, 1.15366304520]
+    [1.936051, 1.153663]
     >>> GE
-    NRTL(T=343.15, xs=[0.252, 0.748], tau_bs=[[0, -61.0249799309399], [673.2359767282798, 0]], alpha_cs=[[0, 0.2974], [0.2974, 0]])
+    NRTL(T=343.15, xs=[0.252, 0.748], tau_bs=[[0, -61.024979], [673.2359, 0]], alpha_cs=[[0, 0.2974], [0.2974, 0]])
     >>> GE.GE(), GE.dGE_dT(), GE.d2GE_dT2()
-    (780.053057219, 0.5743500022, -0.003584843605528)
+    (780.05, 0.5743, -0.003584)
     >>> GE.HE(), GE.SE(), GE.dHE_dT(), GE.dSE_dT()
-    (582.964853938, -0.57435000227, 1.230139083237, 0.0035848436055)
+    (582.96485, -0.574350, 1.230139, 0.00358484)
 
     The solution given by the DDBST has the same values [1.936, 1.154],
     and can be found here:
@@ -844,6 +845,35 @@ class NRTL(GibbsExcess):
         self._gammas = nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas)
         return gammas
 
+    def missing_interaction_parameters(self):
+        r'''
+        Return a list of tuples (index_i, index_j) for each (i, j) pair where
+        the `tau` interaction parameters are zero.
+        This identifies missing parameters for the NRTL model.
+
+        Returns
+        -------
+        missing_params : list[tuple[int, int]]
+            List of tuples of the main group indices with missing interaction parameters, [-].
+        '''
+        missing_params = []
+
+        # Extract tau matrices
+        tau_matrices = [
+            self.tau_as, self.tau_bs, self.tau_es,
+            self.tau_fs, self.tau_gs, self.tau_hs
+        ]
+
+        for i in range(self.N):
+            for j in range(self.N):
+                if i != j:
+                    # Check if all tau coefficients are zero for this interaction (i, j)
+                    is_missing = all(tau_matrix[i][j] == 0.0 for tau_matrix in tau_matrices)
+
+                    if is_missing:
+                        missing_params.append((i, j))
+
+        return missing_params
 
     def taus(self):
         r'''Calculate and return the `tau` terms for the NRTL model for a

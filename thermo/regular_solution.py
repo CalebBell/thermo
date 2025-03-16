@@ -655,6 +655,27 @@ class RegularSolution(GibbsExcess):
         new.xsVs_sum_inv = 1.0/xsVs_sum
         return new
 
+    def missing_interaction_parameters(self):
+        r'''
+        Return a list of tuples (index_i, index_j) for each (i, j) pair where
+        the lambda interaction coefficient is zero. As Regular Solution parameters
+        can be asymmetric, (i,j) does not imply (j,i).
+        
+        Returns
+        -------
+        missing_params : list[tuple[int, int]]
+            List of tuples of component indices with missing interaction parameters, [-].
+        '''
+        missing_params = []
+        
+        for i in range(self.N):
+            for j in range(self.N):
+                if i != j:  # Skip diagonal elements
+                    if self.lambda_coeffs[i][j] == 0.0:
+                        missing_params.append((i, j))
+        
+        return missing_params
+
 
     def GE(self):
         r'''Calculate and return the excess Gibbs energy of a liquid phase
@@ -1258,6 +1279,8 @@ class FloryHuggins(GibbsExcess):
     Hi_sums = RegularSolution.Hi_sums
     gammas_args = RegularSolution.gammas_args
 
+    missing_interaction_parameters = RegularSolution.missing_interaction_parameters
+
     def GE(self):
         r'''Calculate and return the excess Gibbs energy of a liquid phase
         using the Flory-Huggins model.
@@ -1671,7 +1694,7 @@ class Hansen(GibbsExcess):
 
         Returns
         -------
-        obj : RegularSolution
+        obj : Hansen
             New :obj:`Hansen` object at the specified conditions [-]
 
         Notes
@@ -1716,3 +1739,16 @@ class Hansen(GibbsExcess):
     dGE_dxs = FloryHuggins.dGE_dxs
     d2GE_dxixjs = GibbsExcess.d2GE_dxixjs_numerical
     # d3GE_dxixjxks = GibbsExcess.d3GE_dxixjxks_numerical # don't have this one
+
+    def missing_interaction_parameters(self):
+        r'''
+        Return an empty list as Hansen parameters cannot be considered "missing" - 
+        zero values for delta_d, delta_p, and delta_h are physically meaningful
+        and represent absence of that type of molecular interaction.
+        
+        Returns
+        -------
+        missing_params : list[tuple[int, int]]
+            Empty list, as Hansen parameters cannot be considered missing, [-].
+        '''
+        return []

@@ -27,7 +27,7 @@ from fluids.numerics import *
 from thermo import Chemical
 from chemicals.identifiers import int_to_CAS
 from thermo.group_contribution.group_contribution_base import smarts_fragment_priority
-from thermo.group_contribution.ppr78 import EPPR78_GROUPS_LIST, EPPR78_GROUPS_BY_ID, PPR78_kij, PPR78_kijs, PPR78_GROUP_IDS, PPR78_GROUPS_LIST, PPR78_INTERACTIONS, PPR78_GROUPS_BY_ID
+from thermo.group_contribution.ppr78 import fragment_PPR78, PPR78_GROUPS, EPPR78_GROUPS_LIST, EPPR78_GROUPS_BY_ID, PPR78_kij, PPR78_kijs, PPR78_GROUP_IDS, PPR78_GROUPS_LIST, PPR78_INTERACTIONS, PPR78_GROUPS_BY_ID, readable_assignment_PPR78, readable_assignment_EPPR78
 import os
 import pandas as pd
 folder = os.path.join(os.path.dirname(__file__), 'Data')
@@ -36,6 +36,83 @@ try:
     from rdkit import Chem
 except:
     rdkit = None
+
+def test_ppr78_kij_integer_ids():
+    """Test PPR78_kij function using integer group IDs.
+    This test mirrors the existing propane/n-butane test but uses integer IDs.
+    """
+    # Test conditions from paper
+    T = 303.15  # K
+    
+    # Get group IDs from PPR78_GROUPS
+    ch3_id = PPR78_GROUPS['CH3'].group_id
+    ch2_id = PPR78_GROUPS['CH2'].group_id
+    
+    # Molecule group compositions with integer IDs
+    molecule1_groups = {
+        ch3_id: 2,  # propane has 2 CH3 groups
+        ch2_id: 1   # propane has 1 CH2 group
+    }
+    
+    molecule2_groups = {
+        ch3_id: 2,  # n-butane has 2 CH3 groups
+        ch2_id: 2   # n-butane has 2 CH2 groups
+    }
+    
+    # Critical properties and acentric factors
+    Tc1 = 369.83  # K (propane)
+    Pc1 = 42.48e5  # Pa
+    omega1 = 0.152
+    
+    Tc2 = 425.12  # K (n-butane)
+    Pc2 = 37.96e5  # Pa
+    omega2 = 0.200
+    
+    # Calculate kij with string=False for integer IDs
+    kij = PPR78_kij(T, molecule1_groups, molecule2_groups, 
+                    Tc1, Pc1, omega1, Tc2, Pc2, omega2,
+                    string=False)
+    
+    # Expected value from paper
+    expected_kij = 0.0028
+    
+    # Test with reasonable tolerance
+    assert_close(kij, expected_kij, atol=0.00005)
+
+def test_ppr78_kijs_integer_ids():
+    """Test PPR78_kijs matrix calculation using integer group IDs.
+    This test mirrors the existing propane/n-butane/n-pentane system test.
+    """
+    T = 303.15  # K
+    
+    # Get group IDs
+    ch3_id = PPR78_GROUPS['CH3'].group_id
+    ch2_id = PPR78_GROUPS['CH2'].group_id
+    
+    # Molecule group compositions with integer IDs
+    groups = [
+        {ch3_id: 2, ch2_id: 1},    # propane
+        {ch3_id: 2, ch2_id: 2},    # n-butane
+        {ch3_id: 2, ch2_id: 3},    # n-pentane
+    ]
+    
+    # Critical properties and acentric factors
+    Tcs = [369.83, 425.12, 469.70]  # K
+    Pcs = [42.48e5, 37.96e5, 33.70e5]  # Pa
+    omegas = [0.152, 0.200, 0.252]
+    
+    # Calculate full kij matrix with string=False for integer IDs
+    kij_matrix = PPR78_kijs(T, groups, Tcs, Pcs, omegas, string=False)
+    
+    # Test matrix properties
+    assert len(kij_matrix) == 3, "Matrix should be 3x3"
+    assert all(len(row) == 3 for row in kij_matrix), "Matrix should be square"
+
+    # Compare against known values (same as string-based test)
+    assert_close2d(kij_matrix, [[0.0, 0.0027994360072542274, 0.006933513208806096], 
+                                [0.0027994360072542274, 0.0, 0.000827218293750849], 
+                                [0.006933513208806096, 0.000827218293750849, 0.0]],
+                    rtol=1e-7)
 
 def test_ppr78_kij_propane_butane():
     """
@@ -128,10 +205,6 @@ def test_ppr78_kijs_matrix():
                                 [0.006933513208806096, 0.000827218293750849, 0.0]],
                     rtol=1e-7)
 
-def readable_assignment_PPR78(assignment):
-    return {PPR78_GROUPS_BY_ID[i].group : v for i, v in assignment.items()}
-def readable_assignment_EPPR78(assignment):
-    return {EPPR78_GROUPS_BY_ID[i].group : v for i, v in assignment.items()}
 
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
@@ -634,6 +707,45 @@ def test_naphthacene_ethanedithiol():
     
     assert abs(kij - 0.1185) < 0.0001, f"Expected kij=0.1185, got {kij}"
 
+@pytest.mark.rdkit
+@pytest.mark.skipif(rdkit is None, reason="requires rdkit")
+def test_fragment_PPR78():
+    """Test fragment_PPR78 function"""
+    from rdkit import Chem
+    
+    mols = [
+        Chem.MolFromSmiles('CCO'),         # Ethanol
+        Chem.MolFromSmiles('CCC(=O)C'),    # Methyl ethyl ketone
+        Chem.MolFromSmiles('C(=O)=S'),      # Carbonyl sulfide
+        Chem.MolFromSmiles('S')            # H2S
+    ]
+    
+    # Test original PPR78
+    fragments = fragment_PPR78(mols, version='original')
+    assert fragments[2] is None # No COS in original PPR78
+    assert fragments[0] is None  # Ethanol should fail in original PPR78
+    assert fragments[1] is None  # MEK should fail in original PPR78
+    assert fragments[3] == {'H2S': 1}
+    
+    # Test extended PPR78
+    fragments = fragment_PPR78(mols, version='extended')
+    assert fragments[0] is None  # Ethanol
+    assert fragments[1] is None  # MEK still fails as no ketone group
+    assert fragments[2] == {'COS': 1}  # COS
+    assert fragments[3] == {'H2S': 1}  # H2S
+
+    # Test with empty list
+    assert fragment_PPR78([]) == []
+    
+    # Test with None molecule
+    assert fragment_PPR78([None]) == [None]
+    
+    # Test with invalid version
+    try:
+        fragment_PPR78(mols, version='invalid')
+        assert False, "Should have raised ValueError"
+    except ValueError:
+        pass
 # Test known assignments from the author's spreadsheet
 
 @pytest.mark.rdkit

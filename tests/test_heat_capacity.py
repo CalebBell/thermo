@@ -119,8 +119,8 @@ def test_HeatCapacityGas():
     obj = HeatCapacityGas(CASRN='7440-37-1', MW=39.948, similarity_variable=0.025032542304996495)
     assert not isnan(obj.Tmax)
     assert not isnan(obj.Tmin)
-    assert not isnan(obj.POLING_Tmin)
-    assert not isnan(obj.POLING_Tmax)
+    assert not isnan(obj.T_limits[POLING_POLY][0])
+    assert not isnan(obj.T_limits[POLING_POLY][1])
 
     new = HeatCapacityGas.from_json(obj.as_json())
     assert new == obj
@@ -247,15 +247,15 @@ def test_HeatCapacityGas_cheb_fit():
 def test_HeatCapacityGas_linear_extrapolation():
     CpObj = HeatCapacityGas(CASRN='67-56-1', extrapolation='linear')
     CpObj.method = TRCIG
-    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmax),
-                 CpObj.T_dependent_property(CpObj.TRCIG_Tmax-1e-6))
-    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmax),
-                 CpObj.T_dependent_property(CpObj.TRCIG_Tmax+1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.T_limits[TRCIG][1]),
+                 CpObj.T_dependent_property(CpObj.T_limits[TRCIG][1]-1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.T_limits[TRCIG][1]),
+                 CpObj.T_dependent_property(CpObj.T_limits[TRCIG][1]+1e-6))
 
-    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmin),
-                 CpObj.T_dependent_property(CpObj.TRCIG_Tmin-1e-6))
-    assert_close(CpObj.T_dependent_property(CpObj.TRCIG_Tmin),
-                 CpObj.T_dependent_property(CpObj.TRCIG_Tmin+1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.T_limits[TRCIG][0]),
+                 CpObj.T_dependent_property(CpObj.T_limits[TRCIG][0]-1e-6))
+    assert_close(CpObj.T_dependent_property(CpObj.T_limits[TRCIG][0]),
+                 CpObj.T_dependent_property(CpObj.T_limits[TRCIG][0]+1e-6))
 
 
 
@@ -310,14 +310,18 @@ def test_HeatCapacitySolid():
     new = HeatCapacitySolid.from_json(NaCl.as_json())
     assert new == NaCl
 
-    Cps_calc = []
-    for i in NaCl.all_methods:
-        NaCl.method = i
-        Cps_calc.append(NaCl.T_dependent_property(298.15))
 
-    Cps_exp = [20.065072434058802, 50.38469032, 50.5, 50.50124702353165, 50.509]
-    assert_close1d(sorted(Cps_calc), sorted(Cps_exp))
-
+    NaCl.method = 'PERRY151'
+    assert_close(NaCl.T_dependent_property(298.15), 50.38469032, rtol=1e-6)
+    NaCl.method = 'JANAF'
+    assert_close(NaCl.T_dependent_property(298.15), 50.509, rtol=1e-6)
+    NaCl.method = 'LASTOVKA_S'
+    assert_close(NaCl.T_dependent_property(298.15), 20.0650724340588, rtol=1e-6)
+    NaCl.method = 'CRCSTD'
+    assert_close(NaCl.T_dependent_property(298.15), 50.5, rtol=1e-6)
+    NaCl.method = 'WEBBOOK_SHOMATE'
+    assert_close(NaCl.T_dependent_property(298.15), 50.50124702353165, rtol=1e-6)
+    
     NaCl.extrapolation = None
     for i in NaCl.all_methods:
         NaCl.method = i
@@ -449,31 +453,39 @@ def test_HeatCapacityLiquid():
 
 
 
+def test_heat_capacity_liquid_methods():
+    # Test case 1: Propylbenzene
+    expected_values = {
+        'ZABRANSKY_QUASIPOLYNOMIAL': 214.6499551694668,
+        'ZABRANSKY_SPLINE': 214.69679325320664,
+        'POLING_CONST': 214.71,
+        'CRCSTD': 214.7
+    }
+    
     propylbenzene = HeatCapacityLiquid(MW=120.19158, CASRN='103-65-1', Tc=638.35)
-
-    Cpl_calc = []
-    for i in propylbenzene.all_methods:
-        propylbenzene.method = i
-        Cpl_calc.append(propylbenzene.T_dependent_property(298.15))
-
-    Cpls = [214.6499551694668, 214.69679325320664, 214.7, 214.71]
-    assert_close1d(sorted(Cpl_calc), sorted(Cpls))
-
+    for method, expected in expected_values.items():
+        propylbenzene.method = method
+        assert_close(propylbenzene.T_dependent_property(298.15), expected, rtol=1e-13)
+        
+    # Test JSON serialization
     new = HeatCapacityLiquid.from_json(propylbenzene.as_json())
     assert new == propylbenzene
 
+    # Test case 2: CTP (Chloro-thiophenol?)
+    expected_values = {
+        'ZABRANSKY_SPLINE_SAT': 134.1186737739494,
+        'ZABRANSKY_QUASIPOLYNOMIAL_SAT': 134.1496585096233
+    }
+    
     ctp = HeatCapacityLiquid(MW=118.58462, CASRN='96-43-5')
-
-    Cpl_calc = []
-    for i in ctp.all_methods:
-        ctp.method = i
-        Cpl_calc.append(ctp.T_dependent_property(250))
-
-    Cpls = [134.1186737739494, 134.1496585096233]
-    assert_close1d(sorted(Cpl_calc), sorted(Cpls))
+    for method, expected in expected_values.items():
+        ctp.method = method
+        assert_close(ctp.T_dependent_property(250), expected, rtol=1e-13)
+        
+    # Test JSON serialization
     new = HeatCapacityLiquid.from_json(ctp.as_json())
     assert new == ctp
-
+    
 @pytest.mark.meta_T_dept
 def test_HeatCapacityLiquid_webbook():
     obj = HeatCapacityLiquid(CASRN='7732-18-5')
@@ -494,6 +506,142 @@ def test_HeatCapacityLiquid_webbook():
     new = HeatCapacityLiquid.from_json(json.loads(json.dumps(obj.as_json())))
     assert new == obj
 
+@pytest.mark.meta_T_dept
+def test_HeatCapacityLiquid_webbook_multi_range():
+    obj = HeatCapacityLiquid(CASRN='17702-41-9')
+    obj.method = WEBBOOK_SHOMATE
+    
+    # Test points in first range (371.93 - 500.0)
+    assert_close(obj.calculate(380, WEBBOOK_SHOMATE), 304.733284779612, rtol=1e-12)
+    assert_close(obj.calculate(450, WEBBOOK_SHOMATE), 353.08496493827084, rtol=1e-12)
+    assert_close(obj(400), 323.00484249999954)
+    
+    # Test points in second range (500.0 - 1500.0)
+    assert_close(obj.calculate(600, WEBBOOK_SHOMATE), 390.46000317333335, rtol=1e-12)
+    assert_close(obj.calculate(1000, WEBBOOK_SHOMATE), 502.16795399999995, rtol=1e-12)
+    assert_close(obj.calculate(1400, WEBBOOK_SHOMATE), 543.929336315102, rtol=1e-12)
+    
+    # Test integral within first range
+    assert_close(obj.calculate_integral(380, 450, WEBBOOK_SHOMATE), 23297.823098363715, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(380, 450, WEBBOOK_SHOMATE), 56.155399861337735, rtol=1e-12)
+    
+    # Test integral within second range
+    assert_close(obj.calculate_integral(600, 1000, WEBBOOK_SHOMATE), 181160.8711573333, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(600, 1000, WEBBOOK_SHOMATE), 228.92179217773193, rtol=1e-12)
+    
+    # Test integral across both ranges (increasing temperature)
+    assert_close(obj.calculate_integral(400, 600, WEBBOOK_SHOMATE), 71668.1105926666, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(400, 600, WEBBOOK_SHOMATE), 144.60158290807362, rtol=1e-12)
+    
+    # Test integral across both ranges (decreasing temperature)
+    assert_close(obj.calculate_integral(600, 400, WEBBOOK_SHOMATE), -71668.1105926666, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(600, 400, WEBBOOK_SHOMATE), -144.60158290807362, rtol=1e-12)
+    
+    # Test the T-dependent property methods
+    assert_close(obj.T_dependent_property_integral(400, 600), 71668.1105926666, rtol=1e-12)
+    assert_close(obj.T_dependent_property_integral_over_T(400, 600), 144.60158290807362, rtol=1e-12)
+    assert_close(obj.T_dependent_property_integral(600, 400), -71668.1105926666, rtol=1e-12)
+    assert_close(obj.T_dependent_property_integral_over_T(600, 400), -144.60158290807362, rtol=1e-12)
+    
+    # Test edge cases at range boundaries
+    assert_close(obj.calculate(500, WEBBOOK_SHOMATE), 347.2722559999989, rtol=1e-12)  # Exactly at range boundary
+    assert_close(obj.calculate_integral(495, 505, WEBBOOK_SHOMATE), 3485.0857254289776, rtol=1e-12)  # Small interval across boundary
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacityGas_webbook_multi_range():
+    obj = HeatCapacityGas(CASRN='1333-74-0')
+    obj.method = WEBBOOK_SHOMATE
+
+    # Test points in range 1 (298.0 - 1000.0)
+    assert_close(obj.calculate(400, WEBBOOK_SHOMATE), 29.181610324, rtol=1e-12)
+    assert_close(obj.calculate(800, WEBBOOK_SHOMATE), 29.624988277, rtol=1e-12)
+    assert_close(obj(400), 29.181610324)
+
+    # Test points in range 2 (1000.0 - 2500.0)
+    assert_close(obj.calculate(1200, WEBBOOK_SHOMATE), 30.990938990666667, rtol=1e-12)
+    assert_close(obj.calculate(2000, WEBBOOK_SHOMATE), 34.2790545, rtol=1e-12)
+
+    # Test points in range 3 (2500.0 - 6000.0)
+    assert_close(obj.calculate(3000, WEBBOOK_SHOMATE), 37.08898277777777, rtol=1e-12)
+    assert_close(obj.calculate(5000, WEBBOOK_SHOMATE), 40.82801051999999, rtol=1e-12)
+
+    # Test integral within range 1
+    assert_close(obj.calculate_integral(398.0, 900.0, WEBBOOK_SHOMATE), 14775.319358526369, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(398.0, 900.0, WEBBOOK_SHOMATE), 23.98231431098887, rtol=1e-12)
+
+    # Test integral within range 2
+    assert_close(obj.calculate_integral(1100.0, 2400.0, WEBBOOK_SHOMATE), 43209.09458952272, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1100.0, 2400.0, WEBBOOK_SHOMATE), 25.673382170455824, rtol=1e-12)
+
+    # Test integral within range 3
+    assert_close(obj.calculate_integral(2600.0, 5900.0, WEBBOOK_SHOMATE), 130051.97018395108, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(2600.0, 5900.0, WEBBOOK_SHOMATE), 31.96511968233716, rtol=1e-12)
+
+    # Test integrals across ranges
+    assert_close(obj.calculate_integral(400, 1200, WEBBOOK_SHOMATE), 23837.7216288, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(400, 1200, WEBBOOK_SHOMATE), 32.574667531356454, rtol=1e-12)
+    assert_close(obj.calculate_integral(1200, 400, WEBBOOK_SHOMATE), -23837.7216288, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1200, 400, WEBBOOK_SHOMATE), -32.574667531356454, rtol=1e-12)
+    assert_close(obj.calculate_integral(1200, 3000, WEBBOOK_SHOMATE), 61944.86637305, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1200, 3000, WEBBOOK_SHOMATE), 31.10165669473423, rtol=1e-12)
+    assert_close(obj.calculate_integral(3000, 1200, WEBBOOK_SHOMATE), -61944.86637305, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(3000, 1200, WEBBOOK_SHOMATE), -31.10165669473423, rtol=1e-12)
+
+    # Test at range boundaries
+    assert_close(obj.calculate(1000.0, WEBBOOK_SHOMATE), 30.204145, rtol=1e-12)
+    assert_close(obj.calculate(2500.0, WEBBOOK_SHOMATE), 35.84051015, rtol=1e-12)
+    assert_close(obj.calculate_integral(995.0, 1005.0, WEBBOOK_SHOMATE), 302.05397832957533, rtol=1e-12)
+    assert_close(obj.calculate_integral(2495.0, 2505.0, WEBBOOK_SHOMATE), 358.37646756316826, rtol=1e-12)
+
+@pytest.mark.meta_T_dept
+def test_HeatCapacitySolid_webbook_multi_range():
+    obj = HeatCapacitySolid(CASRN='12034-59-2')
+    obj.method = WEBBOOK_SHOMATE
+
+    # Test points in range 1 (298.0 - 1090.0)
+    assert_close(obj.calculate(400, WEBBOOK_SHOMATE), 63.51568005, rtol=1e-12)
+    assert_close(obj.calculate(800, WEBBOOK_SHOMATE), 79.47318521249998, rtol=1e-12)
+    assert_close(obj(400), 63.51568005)
+
+    # Test points in range 2 (1090.0 - 1200.0)
+    assert_close(obj.calculate(1120, WEBBOOK_SHOMATE), 92.88414379954652, rtol=1e-12)
+    assert_close(obj.calculate(1180, WEBBOOK_SHOMATE), 92.88549941984948, rtol=1e-12)
+
+    # Test points in range 3 (1200.0 - 2175.0)
+    assert_close(obj.calculate(1500, WEBBOOK_SHOMATE), 83.05239470833335, rtol=1e-12)
+    assert_close(obj.calculate(2000, WEBBOOK_SHOMATE), 83.05239650000001, rtol=1e-12)
+
+    # Test integral within range 1
+    assert_close(obj.calculate_integral(398.0, 990.0, WEBBOOK_SHOMATE), 44605.360970269205, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(398.0, 990.0, WEBBOOK_SHOMATE), 67.06507385030875, rtol=1e-12)
+
+    # Test integral within range 2
+    assert_close(obj.calculate_integral(1190.0, 1100.0, WEBBOOK_SHOMATE), -8359.631002585797, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1190.0, 1100.0, WEBBOOK_SHOMATE), -7.30474943842529, rtol=1e-12)
+
+    # Test integral within range 3
+    assert_close(obj.calculate_integral(1300.0, 2075.0, WEBBOOK_SHOMATE), 64365.60636545849, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1300.0, 2075.0, WEBBOOK_SHOMATE), 38.83504164532849, rtol=1e-12)
+
+    # Test integrals across ranges
+    assert_close(obj.calculate_integral(400, 1120, WEBBOOK_SHOMATE), 56178.2961682884, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(400, 1120, WEBBOOK_SHOMATE), 77.84288396170393, rtol=1e-12)
+    assert_close(obj.calculate_integral(1120, 400, WEBBOOK_SHOMATE), -56178.2961682884, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1120, 400, WEBBOOK_SHOMATE), -77.84288396170393, rtol=1e-12)
+    assert_close(obj.calculate_integral(1120, 1500, WEBBOOK_SHOMATE), 32346.516118692438, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1120, 1500, WEBBOOK_SHOMATE), 24.94100662029956, rtol=1e-12)
+    assert_close(obj.calculate_integral(1500, 1120, WEBBOOK_SHOMATE), -32346.516118692438, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1500, 1120, WEBBOOK_SHOMATE), -24.94100662029956, rtol=1e-12)
+    assert_close(obj.calculate_integral(400, 1500, WEBBOOK_SHOMATE), 88524.81228698083, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(400, 1500, WEBBOOK_SHOMATE), 102.7838905820035, rtol=1e-12)
+    assert_close(obj.calculate_integral(1500, 400, WEBBOOK_SHOMATE), -88524.81228698083, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(1500, 400, WEBBOOK_SHOMATE), -102.7838905820035, rtol=1e-12)
+
+    # Test at range boundaries
+    assert_close(obj.calculate(1090.0, WEBBOOK_SHOMATE), 91.12680253387941, rtol=1e-12)
+    assert_close(obj.calculate(1200.0, WEBBOOK_SHOMATE), 92.88504085888887, rtol=1e-12)
+    assert_close(obj.calculate_integral(1085.0, 1095.0, WEBBOOK_SHOMATE), 919.5654260597075, rtol=1e-12)
+    assert_close(obj.calculate_integral(1195.0, 1205.0, WEBBOOK_SHOMATE), 879.6877349119604, rtol=1e-12)
 
 @pytest.mark.skipif(not has_CoolProp(), reason='CoolProp is missing')
 @pytest.mark.CoolProp
@@ -610,7 +758,195 @@ def test_HeatCapacityLiquid_integrals():
     dS = ctp.calculate_integral_over_T(200, 300, ZABRANSKY_QUASIPOLYNOMIAL_SAT)
     assert_close(dS, 54.34708465297109)
 
+@pytest.mark.meta_T_dept
+def test_ZABRANSKY_QUASIPOLYNOMIAL_68_12_2():
+    obj = HeatCapacityLiquid(CASRN='68-12-2')
+    obj.method = 'ZABRANSKY_QUASIPOLYNOMIAL'
 
+    # Test value at T=222.6
+    assert_close(obj.calculate(222.6, 'ZABRANSKY_QUASIPOLYNOMIAL'), 136.48274906893334, rtol=1e-12)
+
+    # Test value at T=317.9
+    assert_close(obj.calculate(317.9, 'ZABRANSKY_QUASIPOLYNOMIAL'), 151.50687495151507, rtol=1e-12)
+
+    # Test value at T=413.2
+    assert_close(obj.calculate(413.2, 'ZABRANSKY_QUASIPOLYNOMIAL'), 171.30335948385098, rtol=1e-12)
+
+    # Test integral across range
+    assert_close(obj.calculate_integral(222.6, 413.2, 'ZABRANSKY_QUASIPOLYNOMIAL'), 29025.184901451255, rtol=1e-12)
+
+    # Test integral over T across range
+    assert_close(obj.calculate_integral_over_T(222.6, 413.2, 'ZABRANSKY_QUASIPOLYNOMIAL'), 93.11886710198587, rtol=1e-12)
+
+    # Test small interval at T=227.6
+    assert_close(obj.calculate_integral(227.6, 247.6, 'ZABRANSKY_QUASIPOLYNOMIAL'), 2772.9552142454486, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(227.6, 247.6, 'ZABRANSKY_QUASIPOLYNOMIAL'), 11.67585743145662, rtol=1e-12)
+
+    # Test small interval at T=317.9
+    assert_close(obj.calculate_integral(317.9, 337.9, 'ZABRANSKY_QUASIPOLYNOMIAL'), 3066.1991774556227, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(317.9, 337.9, 'ZABRANSKY_QUASIPOLYNOMIAL'), 9.352790455066042, rtol=1e-12)
+
+
+@pytest.mark.meta_T_dept
+def test_ZABRANSKY_QUASIPOLYNOMIAL_C_75_71_8():
+    obj = HeatCapacityLiquid(CASRN='75-71-8')
+    obj.method = 'ZABRANSKY_QUASIPOLYNOMIAL_C'
+
+    # Test value at T=179.0
+    assert_close(obj.calculate(179.0, 'ZABRANSKY_QUASIPOLYNOMIAL_C'), 99.90463518818633, rtol=1e-12)
+
+    # Test value at T=231.25
+    assert_close(obj.calculate(231.25, 'ZABRANSKY_QUASIPOLYNOMIAL_C'), 106.94445437288353, rtol=1e-12)
+
+    # Test value at T=283.5
+    assert_close(obj.calculate(283.5, 'ZABRANSKY_QUASIPOLYNOMIAL_C'), 115.55696601613087, rtol=1e-12)
+
+    # Test integral across range
+    assert_close(obj.calculate_integral(179.0, 283.5, 'ZABRANSKY_QUASIPOLYNOMIAL_C'), 11200.574885375045, rtol=1e-12)
+
+    # Test integral over T across range
+    assert_close(obj.calculate_integral_over_T(179.0, 283.5, 'ZABRANSKY_QUASIPOLYNOMIAL_C'), 49.02014006874771, rtol=1e-12)
+
+    # Test small interval at T=184.0
+    assert_close(obj.calculate_integral(184.0, 204.0, 'ZABRANSKY_QUASIPOLYNOMIAL_C'), 2038.4162640895847, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(184.0, 204.0, 'ZABRANSKY_QUASIPOLYNOMIAL_C'), 10.514249886023379, rtol=1e-12)
+
+    # Test small interval at T=231.25
+    assert_close(obj.calculate_integral(231.25, 251.25, 'ZABRANSKY_QUASIPOLYNOMIAL_C'), 2167.5097413800795, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(231.25, 251.25, 'ZABRANSKY_QUASIPOLYNOMIAL_C'), 8.987982696196866, rtol=1e-12)
+
+
+@pytest.mark.meta_T_dept
+def test_ZABRANSKY_QUASIPOLYNOMIAL_SAT_16587_33_0():
+    obj = HeatCapacityLiquid(CASRN='16587-33-0')
+    obj.method = 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'
+
+    # Test value at T=292.3
+    assert_close(obj.calculate(292.3, 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'), 265.1994265364768, rtol=1e-12)
+
+    # Test value at T=441.15
+    assert_close(obj.calculate(441.15, 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'), 344.7400719038499, rtol=1e-12)
+
+    # Test value at T=590.0
+    assert_close(obj.calculate(590.0, 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'), 424.74456270573734, rtol=1e-12)
+
+    # Test integral across range
+    assert_close(obj.calculate_integral(292.3, 590.0, 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'), 102681.66003067768, rtol=1e-12)
+
+    # Test integral over T across range
+    assert_close(obj.calculate_integral_over_T(292.3, 590.0, 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'), 235.66671132682495, rtol=1e-12)
+
+    # Test small interval at T=297.3
+    assert_close(obj.calculate_integral(297.3, 317.3, 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'), 5457.492384415586, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(297.3, 317.3, 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'), 17.76213267424123, rtol=1e-12)
+
+    # Test small interval at T=441.15
+    assert_close(obj.calculate_integral(441.15, 461.15, 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'), 7005.321824996499, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(441.15, 461.15, 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'), 15.528432597873007, rtol=1e-12)
+
+@pytest.mark.meta_T_dept
+def test_ZABRANSKY_SPLINE_74_11_3():
+    obj = HeatCapacityLiquid(CASRN='74-11-3')
+    obj.method = 'ZABRANSKY_SPLINE'
+
+    # Test calculations in range 1 (514.9 - 545.0 K)
+    assert_close(obj.calculate(529.95, 'ZABRANSKY_SPLINE'), 331.4138170004083, rtol=1e-12)
+
+    # Test integral within range
+    assert_close(obj.calculate_integral(519.9, 540.0, 'ZABRANSKY_SPLINE'), 6659.2056956999, rtol=1e-12)
+
+    # Test integral over T within range
+    assert_close(obj.calculate_integral_over_T(519.9, 540.0, 'ZABRANSKY_SPLINE'), 12.564785797683726, rtol=1e-12)
+
+    # Test calculations in range 2 (545.0 - 579.3 K)
+    assert_close(obj.calculate(562.15, 'ZABRANSKY_SPLINE'), 349.50635869347667, rtol=1e-12)
+
+    # Test integral within range
+    assert_close(obj.calculate_integral(550.0, 574.3, 'ZABRANSKY_SPLINE'), 8515.009298082441, rtol=1e-12)
+
+    # Test integral over T within range
+    assert_close(obj.calculate_integral_over_T(550.0, 574.3, 'ZABRANSKY_SPLINE'), 15.14802485601831, rtol=1e-12)
+
+    # Test calculations across ranges (forward)
+    assert_close(obj.calculate_integral(524.9, 569.3, 'ZABRANSKY_SPLINE'), 15221.916206590831, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(524.9, 569.3, 'ZABRANSKY_SPLINE'), 27.82474840330542, rtol=1e-12)
+
+    # Test calculations across ranges (reverse)
+    assert_close(obj.calculate_integral(569.3, 524.9, 'ZABRANSKY_SPLINE'), -15221.916206590831, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(569.3, 524.9, 'ZABRANSKY_SPLINE'), -27.82474840330542, rtol=1e-12)
+
+    # Test calculations exactly at range boundary
+    assert_close(obj.calculate(545.0, 'ZABRANSKY_SPLINE'), 344.42108099394665, rtol=1e-12)
+
+
+@pytest.mark.meta_T_dept
+def test_ZABRANSKY_SPLINE_SAT_57_55_6():
+    obj = HeatCapacityLiquid(CASRN='57-55-6')
+    obj.method = 'ZABRANSKY_SPLINE_SAT'
+
+    # Test calculations in range 1 (194.3 - 400.0 K)
+    assert_close(obj.calculate(297.15, 'ZABRANSKY_SPLINE_SAT'), 189.62973212653358, rtol=1e-12)
+
+    # Test integral within range
+    assert_close(obj.calculate_integral(199.3, 395.0, 'ZABRANSKY_SPLINE_SAT'), 37276.51343084486, rtol=1e-12)
+
+    # Test integral over T within range
+    assert_close(obj.calculate_integral_over_T(199.3, 395.0, 'ZABRANSKY_SPLINE_SAT'), 127.0711810931164, rtol=1e-12)
+
+    # Test calculations in range 2 (400.0 - 600.0 K)
+    assert_close(obj.calculate(500.0, 'ZABRANSKY_SPLINE_SAT'), 258.0237577369764, rtol=1e-12)
+
+    # Test integral within range
+    assert_close(obj.calculate_integral(405.0, 595.0, 'ZABRANSKY_SPLINE_SAT'), 48990.265739913164, rtol=1e-12)
+
+    # Test integral over T within range
+    assert_close(obj.calculate_integral_over_T(405.0, 595.0, 'ZABRANSKY_SPLINE_SAT'), 98.68310292056651, rtol=1e-12)
+
+    # Test calculations across ranges (forward)
+    assert_close(obj.calculate_integral(204.3, 590.0, 'ZABRANSKY_SPLINE_SAT'), 86447.08477908312, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(204.3, 590.0, 'ZABRANSKY_SPLINE_SAT'), 225.459968679079, rtol=1e-12)
+
+    # Test calculations across ranges (reverse)
+    assert_close(obj.calculate_integral(590.0, 204.3, 'ZABRANSKY_SPLINE_SAT'), -86447.08477908312, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(590.0, 204.3, 'ZABRANSKY_SPLINE_SAT'), -225.459968679079, rtol=1e-12)
+
+    # Test calculations exactly at range boundary
+    assert_close(obj.calculate(400.0, 'ZABRANSKY_SPLINE_SAT'), 233.83903965303566, rtol=1e-12)
+
+
+@pytest.mark.meta_T_dept
+def test_ZABRANSKY_SPLINE_C_57_55_6():
+    obj = HeatCapacityLiquid(CASRN='57-55-6')
+    obj.method = 'ZABRANSKY_SPLINE_C'
+
+    # Test calculations in range 1 (194.3 - 400.0 K)
+    assert_close(obj.calculate(297.15, 'ZABRANSKY_SPLINE_C'), 189.61905985803662, rtol=1e-12)
+
+    # Test integral within range
+    assert_close(obj.calculate_integral(199.3, 395.0, 'ZABRANSKY_SPLINE_C'), 37276.75002099501, rtol=1e-12)
+
+    # Test integral over T within range
+    assert_close(obj.calculate_integral_over_T(199.3, 395.0, 'ZABRANSKY_SPLINE_C'), 127.06726880740395, rtol=1e-12)
+
+    # Test calculations in range 2 (400.0 - 600.0 K)
+    assert_close(obj.calculate(500.0, 'ZABRANSKY_SPLINE_C'), 258.38709975338986, rtol=1e-12)
+
+    # Test integral within range
+    assert_close(obj.calculate_integral(405.0, 595.0, 'ZABRANSKY_SPLINE_C'), 49205.038074676486, rtol=1e-12)
+
+    # Test integral over T within range
+    assert_close(obj.calculate_integral_over_T(405.0, 595.0, 'ZABRANSKY_SPLINE_C'), 99.06377620128535, rtol=1e-12)
+
+    # Test calculations across ranges (forward)
+    assert_close(obj.calculate_integral(204.3, 590.0, 'ZABRANSKY_SPLINE_C'), 86636.85504670914, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(204.3, 590.0, 'ZABRANSKY_SPLINE_C'), 225.79423175871472, rtol=1e-12)
+
+    # Test calculations across ranges (reverse)
+    assert_close(obj.calculate_integral(590.0, 204.3, 'ZABRANSKY_SPLINE_C'), -86636.85504670914, rtol=1e-12)
+    assert_close(obj.calculate_integral_over_T(590.0, 204.3, 'ZABRANSKY_SPLINE_C'), -225.79423175871472, rtol=1e-12)
+
+    # Test calculations exactly at range boundary
+    assert_close(obj.calculate(400.0, 'ZABRANSKY_SPLINE_C'), 233.8644819086472, rtol=1e-12)
 
 @pytest.mark.meta_T_dept
 def test_HeatCapacitySolidMixture():
@@ -910,3 +1246,18 @@ def test_heat_capacity_interp1d_removed_extrapolation_method_compatibility():
     EtOH = HeatCapacityGas(CASRN='64-17-5', similarity_variable=0.1953615, MW=46.06844, extrapolation='interp1d|interp1d', method='POLING_POLY')
     assert_close(EtOH(EtOH.Tmin - 10), 37.421995400002054)
     assert_close(EtOH(EtOH.Tmax + 10), 142.81153700770574)    
+
+
+@pytest.mark.meta_T_dept
+def test_as_method_kwargs_tabular():
+    obj = HeatCapacitySolid()
+    Ts = [200, 300, 400, 500, 600]
+    Cps = [12.965044960703908, 20.206353934945987, 28.261467986645872, 37.14292010552292, 46.85389719453655]
+    obj.add_tabular_data(Ts=Ts, properties=Cps, name='stuff')
+    obj.add_tabular_data(Ts=Ts, properties=[v*2 for v in Cps], name='stuff2')
+    obj2 = HeatCapacitySolid(**obj.as_method_kwargs())
+
+    assert_close(obj(321), obj2(321))
+    obj.method = 'stuff'
+
+    assert_close(2*obj(321), obj2(321))

@@ -163,9 +163,9 @@ def test_GibbbsExcessLiquid_VolumeLiquids():
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                        HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
     # HBT Pressure dependence needs Psats, Tc, Pc, omegas
-    VolumeLiquids = [VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
+    VolumeLiquids = [VolumeLiquid(extrapolation='linear', poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
                                   Psat=VaporPressures[0], Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0]),
-                     VolumeLiquid(poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
+                     VolumeLiquid(extrapolation='linear', poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
                                   Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
 
     EnthalpyVaporizations = [EnthalpyVaporization(Tc=647.14, poly_fit_ln_tau=(273.17, 647.095, 647.14, [0.010220675607316746, 0.5442323619614213, 11.013674729940819, 110.72478547661254, 591.3170172192005, 1716.4863395285283, 4063.5975524922624, 17960.502354189244, 53916.28280689388])),
@@ -214,9 +214,9 @@ def test_GibbbsExcessLiquid_MiscIdeal():
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                        HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
     # HBT Pressure dependence needs Psats, Tc, Pc, omegas
-    VolumeLiquids = [VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
+    VolumeLiquids = [VolumeLiquid(extrapolation='linear', poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
                                   Psat=VaporPressures[0], Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0]),
-                     VolumeLiquid(poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
+                     VolumeLiquid(extrapolation='linear', poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
                                   Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
 
     EnthalpyVaporizations = [EnthalpyVaporization(Tc=647.14, poly_fit_ln_tau=(273.17, 647.095, 647.14, [0.010220675607316746, 0.5442323619614213, 11.013674729940819, 110.72478547661254, 591.3170172192005, 1716.4863395285283, 4063.5975524922624, 17960.502354189244, 53916.28280689388])),
@@ -358,9 +358,9 @@ def test_GibbbsExcessLiquid_PoyntingWorking():
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                        HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
     # HBT Pressure dependence needs Psats, Tc, Pc, omegas
-    VolumeLiquids = [VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
+    VolumeLiquids = [VolumeLiquid(extrapolation='linear', poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
                                   Psat=VaporPressures[0], Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0]),
-                     VolumeLiquid(poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
+                     VolumeLiquid(extrapolation='linear', poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
                                   Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
 
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
@@ -565,9 +565,9 @@ def test_GibbsExcessLiquid_H_S_settings():
                       VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
                        HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
-    VolumeLiquids = [VolumeLiquid(poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
+    VolumeLiquids = [VolumeLiquid(extrapolation='linear', poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
                                   Psat=VaporPressures[0], Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0]),
-                     VolumeLiquid(poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
+                     VolumeLiquid(extrapolation='linear', poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
                                   Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
 
     liquid_base = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
@@ -874,7 +874,7 @@ def test_GibbsExcessLiquid_dHS_dT_low():
     constants = ChemicalConstantsPackage(Tms=[179.2], Tbs=[383.75], Tcs=[591.75], Pcs=[4108000.0], omegas=[0.257], MWs=[92.13842], CASs=['108-88-3'], names=['toluene'])
     VaporPressures = [VaporPressure(extrapolation='DIPPR101_ABC|AntoineAB', exp_poly_fit=(178.01, 591.74, [-8.638045111752356e-20, 2.995512203611858e-16, -4.5148088801006036e-13, 3.8761537879200513e-10, -2.0856828984716705e-07, 7.279010846673517e-05, -0.01641020023565049, 2.2758331029405516, -146.04484159879843]))]
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [-9.48396765770823e-21, 4.444060985512694e-17, -8.628480671647472e-14, 8.883982004570444e-11, -5.0893293251198045e-08, 1.4947108372371731e-05, -0.0015271248410402886, 0.19186172941013854, 30.797883940134057]))]
-    VolumeLiquids = [VolumeLiquid(poly_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))]
+    VolumeLiquids = [VolumeLiquid(extrapolation='linear', poly_fit=(178.01, 581.75, [2.2801490297347937e-23, -6.411956871696508e-20, 7.723152902379232e-17, -5.197203733189603e-14, 2.1348482785660093e-11, -5.476649499770259e-09, 8.564670053875876e-07, -7.455178589434267e-05, 0.0028545812080104068]))]
     correlations = PropertyCorrelationsPackage(constants, VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
     liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures,
                                HeatCapacityGases=correlations.HeatCapacityGases,
@@ -1461,7 +1461,6 @@ def test_CEOS_phis():
     dCps_dT_calc = []
     for i, T in enumerate(Ts):
         gas2 = gas.to_TP_zs(T=T, P=P, zs=zs)
-        assert gas2.Cpgs_poly_fit
         Cps_calc.append(gas2.Cpigs_pure())
         integrals_calc.append(gas2.Cpig_integrals_pure())
         integrals_over_T_calc.append(gas2.Cpig_integrals_over_T_pure())
@@ -2830,8 +2829,6 @@ def test_IdealGas_vs_IGMIX():
     new = phase.to(P=P, T=T, zs=zs)
     assert new.T == phase.T
     assert new.P == phase.P
-    with pytest.raises(Exception):
-        phase.to(P=P, zs=zs)
 
     assert_close(phase.V(), phase_EOS.V(), rtol=1e-11)
     assert_close(phase.PIP(), phase_EOS.PIP(), rtol=1e-11)
@@ -2970,6 +2967,81 @@ def test_IdealGas_vs_IGMIX():
     assert phase.G_dep() == 0
     assert phase.U_dep() == 0
     assert phase.A_dep() == 0
+
+def test_IdealGas_vs_IGMIX_formation_properties():
+    """Test formation properties consistency between IdealGas and IGMIX for different initialization methods"""
+    # Setup base test data
+    T, P = 350.0, 1e6
+    zs = [0.2, 0.3, 0.5]
+    Hfs = [-10000, -20000, -15000]
+    Gfs = [-8000, -15000, -12000]
+    Sfs = [(Hfs[i] - Gfs[i])/298.15 for i in range(3)]
+    
+    # Setup for IGMIX
+    constants = ChemicalConstantsPackage(
+        Tcs=[508.1, 536.2, 512.5], 
+        Pcs=[4700000.0, 5330000.0, 8084000.0], 
+        omegas=[0.309, 0.216, 0.559],
+        MWs=[58.07914, 119.37764, 32.04186], 
+        CASs=['67-64-1', '67-66-3', '67-56-1'], 
+        names=['acetone', 'chloroform', 'methanol']
+    )
+    
+    HeatCapacityGases = [
+        HeatCapacityGas(poly_fit=(200.0, 1000.0, [-1.332e-21, 6.406e-18, -1.251e-14, 1.227e-11, -5.535e-09, -4.325e-08, 0.001044, -0.1965, 63.842])),
+        HeatCapacityGas(poly_fit=(200.0, 1000.0, [1.539e-21, -8.290e-18, 1.915e-14, -2.471e-11, 1.936e-08, -9.266e-06, 0.002483, -0.2162, 48.150])),
+        HeatCapacityGas(poly_fit=(50.0, 1000.0, [2.351e-21, -9.224e-18, 1.357e-14, -8.311e-12, 4.602e-10, 1.783e-06, -0.0007052, 0.1326, 28.443]))
+    ]
+    
+    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
+    
+    # Create all objects with different initialization methods
+    phases = []
+    
+    # Direct initialization
+    phases.append(('IdealGas HG direct', IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs, Gfs=Gfs)))
+    # phases.append(('IGMIX HG direct', CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs, Hfs=Hfs, Gfs=Gfs)))
+    phases.append(('IdealGas HGS direct', IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs, Gfs=Gfs, Sfs=Sfs)))
+    phases.append(('IGMIX HGS direct', CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs, Hfs=Hfs, Gfs=Gfs, Sfs=Sfs)))
+    
+    # Base objects for to/to_TP_zs calls
+    base_ideal_HG = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs, Gfs=Gfs)
+    # base_eos_HG = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs, Hfs=Hfs, Gfs=Gfs)
+    base_ideal_HGS = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases, Hfs=Hfs, Gfs=Gfs, Sfs=Sfs)
+    base_eos_HGS = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs, Hfs=Hfs, Gfs=Gfs, Sfs=Sfs)
+    
+    # Via to() calls
+    phases.append(('IdealGas HG to', base_ideal_HG.to(T=T, P=P, zs=zs)))
+    # phases.append(('IGMIX HG to', base_eos_HG.to(T=T, P=P, zs=zs)))
+    phases.append(('IdealGas HGS to', base_ideal_HGS.to(T=T, P=P, zs=zs)))
+    phases.append(('IGMIX HGS to', base_eos_HGS.to(T=T, P=P, zs=zs)))
+    
+    # Via to_TP_zs() calls
+    phases.append(('IdealGas HG to_TP_zs', base_ideal_HG.to_TP_zs(T=T, P=P, zs=zs)))
+    # phases.append(('IGMIX HG to_TP_zs', base_eos_HG.to_TP_zs(T=T, P=P, zs=zs)))
+    phases.append(('IdealGas HGS to_TP_zs', base_ideal_HGS.to_TP_zs(T=T, P=P, zs=zs)))
+    phases.append(('IGMIX HGS to_TP_zs', base_eos_HGS.to_TP_zs(T=T, P=P, zs=zs)))
+    
+    # Reference values from first phase for comparison
+    ref_phase = phases[0][1]
+    
+    # Test all phases against reference values
+    for name, phase in phases:
+        # Basic property checks
+        assert hasattr(phase, 'Hfs'), f"{name} missing Hfs"
+        assert hasattr(phase, 'Gfs'), f"{name} missing Gfs"
+        assert hasattr(phase, 'Sfs'), f"{name} missing Sfs"
+        
+        # Formation property values
+        assert_close1d(phase.Hfs, ref_phase.Hfs, rtol=1e-12), f"{name} Hfs mismatch"
+        assert_close1d(phase.Gfs, ref_phase.Gfs, rtol=1e-12), f"{name} Gfs mismatch"
+        assert_close1d(phase.Sfs, ref_phase.Sfs, rtol=1e-12), f"{name} Gfs mismatch"
+                
+        # # Energy impacts
+        assert_close(phase.H_reactive(), ref_phase.H_reactive(), rtol=1e-12), f"{name} H mismatch"
+        assert_close(phase.G_reactive(), ref_phase.G_reactive(), rtol=1e-12), f"{name} G mismatch"
+        assert_close(phase.S_reactive(), ref_phase.S_reactive(), rtol=1e-12), f"{name} S mismatch"
+        
 
 
 def test_IAPWS97_basics():

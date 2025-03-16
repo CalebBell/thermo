@@ -81,7 +81,7 @@ class CEOSPhase(IdealGasDeparturePhase):
     '''
 
     __slots__ = ('eos_class', 'eos_kwargs', 'vectorized', 'HeatCapacityGases', 'N',
-    'Hfs', 'Gfs', 'Sfs', 'Cpgs_poly_fit', '_Cpgs_data', 'composition_independent',
+    'Hfs', 'Gfs', 'Sfs', 'composition_independent',
      'eos_mix', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
     ideal_gas_basis = True
 
@@ -143,15 +143,11 @@ class CEOSPhase(IdealGasDeparturePhase):
         self.HeatCapacityGases = HeatCapacityGases
         if HeatCapacityGases is not None:
             self.N = N = len(HeatCapacityGases)
-            for obj in HeatCapacityGases:
-                if not isinstance(obj, HeatCapacityGas):
-                    raise ValueError("A HeatCapacityGas object is required")
         elif 'Tcs' in eos_kwargs:
             self.N = N = len(eos_kwargs['Tcs'])
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
-        self.Cpgs_poly_fit, self._Cpgs_data = self._setup_Cpigs(HeatCapacityGases)
         self.composition_independent = eos_class is IGMIX
         if T is None: T = 298.15
         if P is None: P = 101325.0
@@ -228,7 +224,6 @@ class CEOSPhase(IdealGasDeparturePhase):
         new.eos_kwargs = self.eos_kwargs
         new.HeatCapacityGases = self.HeatCapacityGases
         new._Cpgs_data = self._Cpgs_data
-        new.Cpgs_poly_fit = self.Cpgs_poly_fit
         new.composition_independent = self.composition_independent
         new.Hfs = self.Hfs
         new.Gfs = self.Gfs
@@ -275,7 +270,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         else:
             raise ValueError("Two of T, P, or V are needed")
         new.eos_class, new.eos_kwargs = self.eos_class, self.eos_kwargs
-        new.HeatCapacityGases, new._Cpgs_data, new.Cpgs_poly_fit = self.HeatCapacityGases, self._Cpgs_data, self.Cpgs_poly_fit
+        new.HeatCapacityGases = self.HeatCapacityGases
         new.composition_independent, new.vectorized = self.composition_independent, self.vectorized
         new.Hfs, new.Gfs, new.Sfs = self.Hfs, self.Gfs, self.Sfs
         new.T = T

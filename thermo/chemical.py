@@ -1047,7 +1047,6 @@ class Chemical: # pragma: no cover
         # Get and choose initial methods
         self.VaporPressure = VaporPressure(Tb=self.Tb, Tc=self.Tc, Pc=self.Pc,
                                            omega=self.omega, CASRN=self.CAS,
-                                           eos=self.eos_in_a_box,
                                            **user_chemical_property_lookup(self.CAS, 'VaporPressure'))
         self.Psat_298 = self.VaporPressure.T_dependent_property(298.15)
         self.phase_STP = identify_phase(T=298.15, P=101325., Tm=self.Tm, Tb=self.Tb, Tc=self.Tc, Psat=self.Psat_298)
@@ -1167,7 +1166,7 @@ class Chemical: # pragma: no cover
                           Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega,
                           dipole=self.dipole,
                           Psat=self.VaporPressure,
-                          eos=self.eos_in_a_box, CASRN=self.CAS,
+                          CASRN=self.CAS,
                           **user_chemical_property_lookup(self.CAS, 'VolumeLiquid'))
 
         self.Vml_Tb = self.VolumeLiquid.T_dependent_property(self.Tb) if self.Tb else None
@@ -1184,7 +1183,7 @@ class Chemical: # pragma: no cover
 
         self.VolumeGas = VolumeGas(MW=self.MW, Tc=self.Tc, Pc=self.Pc,
                                    omega=self.omega, dipole=self.dipole,
-                                   eos=self.eos_in_a_box, CASRN=self.CAS)
+                                   CASRN=self.CAS)
 
         self.Vmg_STP = ideal_gas(T=298.15, P=101325)
 

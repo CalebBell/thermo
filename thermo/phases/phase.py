@@ -35,6 +35,7 @@ from chemicals.utils import (
     Joule_Thomson,
     dns_to_dn_partials,
     dxs_to_dns,
+    dxs_to_dn_partials,
     hash_any_primitive,
     isentropic_exponent_PT,
     isentropic_exponent_PV,
@@ -122,7 +123,7 @@ class Phase:
     LOG_P_REF_IG = log(P_REF_IG)
 
     T_MAX_FLASH = T_MAX_FIXED = 10000.0
-    T_MIN_FLASH = T_MIN_FIXED = 1e-3
+    T_MIN_FIXED = 1e-3
 
     P_MAX_FIXED = 1e9
     P_MIN_FIXED = 1e-2 # 1e-3 was so low issues happened in the root stuff, could not be fixed
@@ -142,7 +143,6 @@ class Phase:
     _Psats_data = None
     _Cpgs_data = None
     Psats_poly_fit = False
-    Cpgs_poly_fit = False
     composition_independent = False
     vectorized = False
 
@@ -416,10 +416,10 @@ class Phase:
 
         Examples
         --------
-        >>> from thermo import IdealGas
-        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
-        >>> phase.to_TP_zs(T=1e5, P=1e3, zs=[.5, .5])
-        IdealGas(HeatCapacityGases=[], T=100000.0, P=1000.0, zs=[0.5, 0.5])
+        >>> from thermo import IdealGas, HeatCapacityGas
+        >>> from scipy.constants import R
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])), HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539]))])
+        >>> state = phase.to_TP_zs(T=1e5, P=1e3, zs=[.5, .5])
         '''
         raise NotImplementedError("Must be implemented by subphases")
 
@@ -453,15 +453,12 @@ class Phase:
         Note that some thermodynamic models may have multiple solutions for
         some inputs!
 
-        >>> from thermo import IdealGas
-        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[])
-        >>> phase.to(T=1e5, P=1e3, zs=[.5, .5])
-        IdealGas(HeatCapacityGases=[], T=100000.0, P=1000.0, zs=[0.5, 0.5])
-        >>> phase.to(V=1e-4, P=1e3, zs=[.1, .9])
-        IdealGas(HeatCapacityGases=[], T=0.012027235504, P=1000.0, zs=[0.1, 0.9])
-        >>> phase.to(T=1e5, V=1e12, zs=[.2, .8])
-        IdealGas(HeatCapacityGases=[], T=100000.0, P=8.31446261e-07, zs=[0.2, 0.8])
-
+        >>> from thermo import IdealGas, HeatCapacityGas
+        >>> from scipy.constants import R
+        >>> phase = IdealGas(T=300, P=1e5, zs=[.79, .21], HeatCapacityGases=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539])), HeatCapacityGas(poly_fit=(50.0, 1000.0, [R*-9.9e-13, R*1.57e-09, R*7e-08, R*-0.000261, R*3.539]))])
+        >>> TP = phase.to(T=1e5, P=1e3, zs=[.5, .5])
+        >>> PV = phase.to(V=1e-4, P=1e3, zs=[.1, .9])
+        >>> TV = phase.to(T=1e5, V=1e12, zs=[.2, .8])
         '''
         raise NotImplementedError("Must be implemented by subphases")
 
@@ -1508,6 +1505,10 @@ class Phase:
         '''
         out = zeros(self.N) if self.vectorized else [0.0]*self.N
         return dxs_to_dns(self.dH_dzs(), self.zs, out)
+
+    def dnH_dns(self):
+        out = zeros(self.N) if self.vectorized else [0.0]*self.N
+        return dxs_to_dn_partials(self.dH_dzs(), self.zs, self.H(), out)
 
     def dS_dns(self):
         r'''Method to calculate and return the mole number derivative of the
@@ -3578,172 +3579,6 @@ class Phase:
         return 0.0
 
     # Idea gas heat capacity
-
-    def _setup_Cpigs(self, HeatCapacityGases):
-        Cpgs_data = None
-        Cpgs_poly_fit = all(i.method == POLY_FIT for i in HeatCapacityGases) if HeatCapacityGases is not None else False
-        if Cpgs_poly_fit:
-            T_REF_IG = self.T_REF_IG
-            Cpgs_data = [[i.poly_fit_Tmin for i in HeatCapacityGases],
-                              [i.poly_fit_Tmin_slope for i in HeatCapacityGases],
-                              [i.poly_fit_Tmin_value for i in HeatCapacityGases],
-                              [i.poly_fit_Tmax for i in HeatCapacityGases],
-                              [i.poly_fit_Tmax_slope for i in HeatCapacityGases],
-                              [i.poly_fit_Tmax_value for i in HeatCapacityGases],
-                              [i.poly_fit_log_coeff for i in HeatCapacityGases],
-#                              [horner(i.poly_fit_int_coeffs, i.poly_fit_Tmin) for i in HeatCapacityGases],
-                              [horner(i.poly_fit_int_coeffs, i.poly_fit_Tmin) - i.poly_fit_Tmin*(0.5*i.poly_fit_Tmin_slope*i.poly_fit_Tmin + i.poly_fit_Tmin_value - i.poly_fit_Tmin_slope*i.poly_fit_Tmin) for i in HeatCapacityGases],
-#                              [horner(i.poly_fit_int_coeffs, i.poly_fit_Tmax) for i in HeatCapacityGases],
-                              [horner(i.poly_fit_int_coeffs, i.poly_fit_Tmax) - horner(i.poly_fit_int_coeffs, i.poly_fit_Tmin) + i.poly_fit_Tmin*(0.5*i.poly_fit_Tmin_slope*i.poly_fit_Tmin + i.poly_fit_Tmin_value - i.poly_fit_Tmin_slope*i.poly_fit_Tmin) for i in HeatCapacityGases],
-#                              [horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmin) for i in HeatCapacityGases],
-                              [horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmin) -(i.poly_fit_Tmin_slope*i.poly_fit_Tmin + (i.poly_fit_Tmin_value - i.poly_fit_Tmin_slope*i.poly_fit_Tmin)*log(i.poly_fit_Tmin)) for i in HeatCapacityGases],
-#                              [horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmax) for i in HeatCapacityGases],
-                              [(horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmax)
-                                - horner_log(i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmin)
-                                + (i.poly_fit_Tmin_slope*i.poly_fit_Tmin + (i.poly_fit_Tmin_value - i.poly_fit_Tmin_slope*i.poly_fit_Tmin)*log(i.poly_fit_Tmin))
-                                - (i.poly_fit_Tmax_value -i.poly_fit_Tmax*i.poly_fit_Tmax_slope)*log(i.poly_fit_Tmax)) for i in HeatCapacityGases],
-                              [poly_fit_integral_value(T_REF_IG, i.poly_fit_int_coeffs, i.poly_fit_Tmin,
-                                                       i.poly_fit_Tmax, i.poly_fit_Tmin_value,
-                                                       i.poly_fit_Tmax_value, i.poly_fit_Tmin_slope,
-                                                       i.poly_fit_Tmax_slope) for i in HeatCapacityGases],
-                              [i.poly_fit_coeffs for i in HeatCapacityGases],
-                              [i.poly_fit_int_coeffs for i in HeatCapacityGases],
-                              [i.poly_fit_T_int_T_coeffs for i in HeatCapacityGases],
-                              [poly_fit_integral_over_T_value(T_REF_IG, i.poly_fit_T_int_T_coeffs, i.poly_fit_log_coeff, i.poly_fit_Tmin,
-                                                       i.poly_fit_Tmax, i.poly_fit_Tmin_value,
-                                                       i.poly_fit_Tmax_value, i.poly_fit_Tmin_slope,
-                                                       i.poly_fit_Tmax_slope) for i in HeatCapacityGases],
-
-                              ]
-        return (Cpgs_poly_fit, Cpgs_data)
-
-
-    def _Cp_pure_fast(self, Cps_data):
-        T, N = self.T, self.N
-        Cps = zeros(N) if self.vectorized else [0.0]*N
-        Tmins, Tmaxs, coeffs = Cps_data[0], Cps_data[3], Cps_data[12]
-        Tmin_slopes = Cps_data[1]
-        Tmin_values = Cps_data[2]
-        Tmax_slopes = Cps_data[4]
-        Tmax_values = Cps_data[5]
-
-        for i in range(N):
-            if T < Tmins[i]:
-                Cp = (T -  Tmins[i])*Tmin_slopes[i] + Tmin_values[i]
-            elif T > Tmaxs[i]:
-                Cp = (T - Tmaxs[i])*Tmax_slopes[i] + Tmax_values[i]
-            else:
-                Cp = 0.0
-                for c in coeffs[i]:
-                    Cp = Cp*T + c
-            Cps[i] = Cp
-        return Cps
-
-    def _dCp_dT_pure_fast(self, Cps_data):
-        T, N = self.T, self.N
-        dCps = zeros(N) if self.vectorized else [0.0]*N
-        Tmins, Tmaxs, coeffs = Cps_data[0], Cps_data[3], Cps_data[12]
-        Tmin_slopes = Cps_data[1]
-        Tmax_slopes = Cps_data[4]
-        for i in range(N):
-            if T < Tmins[i]:
-                dCp = Tmin_slopes[i]
-            elif T > Tmaxs[i]:
-                dCp = Tmax_slopes[i]
-            else:
-                Cp, dCp = 0.0, 0.0
-                for c in coeffs[i]:
-                    dCp = T*dCp + Cp
-                    Cp = T*Cp + c
-            dCps[i] = dCp
-        return dCps
-
-    def _Cp_integrals_pure_fast(self, Cps_data):
-        T, N = self.T, self.N
-        Cp_integrals_pure = zeros(N) if self.vectorized else [0.0]*N
-        Tmins, Tmaxes, int_coeffs = Cps_data[0], Cps_data[3], Cps_data[13]
-        for i in range(N):
-            # If indeed everything is working here, need to optimize to decide what to store
-            # Try to save lookups to avoid cache misses
-            # Instead of storing horner Tmin and Tmax, store -:
-            # tot(Tmin) - Cps_data[7][i]
-            # and tot1 + tot for the high T
-            # Should save quite a bit of lookups! est. .12 go to .09
-#                Tmin = Tmins[i]
-#                if T < Tmin:
-#                    x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
-#                    H = T*(0.5*Cps_data[1][i]*T + x1)
-#                elif (T <= Tmaxes[i]):
-#                    x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
-#                    tot = Tmin*(0.5*Cps_data[1][i]*Tmin + x1)
-#
-#                    tot1 = 0.0
-#                    for c in int_coeffs[i]:
-#                        tot1 = tot1*T + c
-#                    tot1 -= Cps_data[7][i]
-##                    tot1 = horner(int_coeffs[i], T) - horner(int_coeffs[i], Tmin)
-#                    H = tot + tot1
-#                else:
-#                    x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
-#                    tot = Tmin*(0.5*Cps_data[1][i]*Tmin + x1)
-#
-#                    tot1 = Cps_data[8][i] - Cps_data[7][i]
-#
-#                    x1 = Cps_data[5][i] - Cps_data[4][i]*Tmaxes[i]
-#                    tot2 = T*(0.5*Cps_data[4][i]*T + x1) - Tmaxes[i]*(0.5*Cps_data[4][i]*Tmaxes[i] + x1)
-#                    H = tot + tot1 + tot2
-
-
-
-            # ATTEMPT AT FAST HERE (NOW WORKING)
-            if T < Tmins[i]:
-                x1 = Cps_data[2][i] - Cps_data[1][i]*Tmins[i]
-                H = T*(0.5*Cps_data[1][i]*T + x1)
-            elif (T <= Tmaxes[i]):
-                H = 0.0
-                for c in int_coeffs[i]:
-                    H = H*T + c
-                H -= Cps_data[7][i]
-            else:
-                Tmax_slope = Cps_data[4][i]
-                x1 = Cps_data[5][i] - Tmax_slope*Tmaxes[i]
-                H = T*(0.5*Tmax_slope*T + x1) - Tmaxes[i]*(0.5*Tmax_slope*Tmaxes[i] + x1)
-                H += Cps_data[8][i]
-
-            Cp_integrals_pure[i] = (H - Cps_data[11][i])
-        return Cp_integrals_pure
-
-    def _Cp_integrals_over_T_pure_fast(self, Cps_data):
-        T, N = self.T, self.N
-        Tmins, Tmaxes, T_int_T_coeffs = Cps_data[0], Cps_data[3], Cps_data[14]
-        Cp_integrals_over_T_pure = zeros(N) if self.vectorized else [0.0]*N
-        logT = log(T)
-        for i in range(N):
-            Tmin = Tmins[i]
-            if T < Tmin:
-                x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
-                S = (Cps_data[1][i]*T + x1*logT)
-            elif (Tmin <= T <= Tmaxes[i]):
-                S = 0.0
-                for c in T_int_T_coeffs[i]:
-                    S = S*T + c
-                S += Cps_data[6][i]*logT
-                # The below should be in a constant - taking the place of Cps_data[9]
-                S -= Cps_data[9][i]
-#                    x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
-#                    S += (Cps_data[1][i]*Tmin + x1*log(Tmin))
-            else:
-#                    x1 = Cps_data[2][i] - Cps_data[1][i]*Tmin
-#                    S = (Cps_data[1][i]*Tmin + x1*log(Tmin))
-#                    S += (Cps_data[10][i] - Cps_data[9][i])
-                S = Cps_data[10][i]
-                # The above should be in the constant Cps_data[10], - x2*log(Tmaxes[i]) also
-                x2 = Cps_data[5][i] - Tmaxes[i]*Cps_data[4][i]
-                S += -Cps_data[4][i]*(Tmaxes[i] - T) + x2*logT #- x2*log(Tmaxes[i])
-
-            Cp_integrals_over_T_pure[i] = (S - Cps_data[15][i])
-        return Cp_integrals_over_T_pure
-
     def Cpigs_pure(self):
         r'''Method to calculate and return the ideal-gas heat capacities of
         every component in the phase. This method is powered by the
@@ -3760,10 +3595,6 @@ class Phase:
             return self._Cpigs
         except AttributeError:
             pass
-        if self.Cpgs_poly_fit:
-            self._Cpigs = self._Cp_pure_fast(self._Cpgs_data)
-            return self._Cpigs
-
         T = self.T
         Cpigs = [i.T_dependent_property(T) for i in self.HeatCapacityGases]
         if self.vectorized:
@@ -3792,10 +3623,6 @@ class Phase:
             return self._Cpig_integrals_pure
         except AttributeError:
             pass
-        if self.Cpgs_poly_fit:
-            self._Cpig_integrals_pure = self._Cp_integrals_pure_fast(self._Cpgs_data)
-            return self._Cpig_integrals_pure
-
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
         Cpig_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
                                    for obj in HeatCapacityGases]
@@ -3827,11 +3654,6 @@ class Phase:
         except AttributeError:
             pass
 
-        if self.Cpgs_poly_fit:
-            self._Cpig_integrals_over_T_pure = self._Cp_integrals_over_T_pure_fast(self._Cpgs_data)
-            return self._Cpig_integrals_over_T_pure
-
-
         T, T_REF_IG, HeatCapacityGases = self.T, self.T_REF_IG, self.HeatCapacityGases
         Cpig_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
                                    for obj in HeatCapacityGases]
@@ -3860,9 +3682,6 @@ class Phase:
             return self._dCpigs_dT
         except AttributeError:
             pass
-        if self.Cpgs_poly_fit:
-            self._dCpigs_dT = self._dCp_dT_pure_fast(self._Cpgs_data)
-            return self._dCpigs_dT
 
         T = self.T
         dCpigs_dT = [i.T_dependent_property_derivative(T) for i in self.HeatCapacityGases]
@@ -4089,6 +3908,21 @@ class Phase:
             Departure ideal gas constant volume heat capacity, [J/(mol*K)]
         '''
         return self.Cv() - self.Cv_ideal_gas()
+
+    def Cp_dep(self):
+        r'''Method to calculate and return the difference between the actual
+        `Cp` and the ideal-gas constant pressure heat
+        capacity :math:`C_p^{ig}` of the phase.
+
+        .. math::
+            C_p^{dep} = C_p - C_p^{ig}
+
+        Returns
+        -------
+        Cp_dep : float
+            Departure ideal gas constant pressure heat capacity, [J/(mol*K)]
+        '''
+        return self.Cp() - self.Cp_ideal_gas()
 
     def Cp_Cv_ratio_ideal_gas(self):
         r'''Method to calculate and return the ratio of the ideal-gas heat
@@ -6063,6 +5897,26 @@ class Phase:
             self._partial_pressures = [zi*P for zi in self.zs]
         return self._partial_pressures
 
+    def dG_dep_dT(self):
+        """Calculate the temperature derivative of the departure Gibbs energy
+        at constant pressure.
+        
+        Returns
+        -------
+        dG_dep_dT : float
+            Temperature derivative of departure Gibbs energy [J/(mol*K)]
+        """
+        try:
+            return self._dG_dep_dT
+        except AttributeError:
+            pass
+            
+        T = self.T
+        # Using G_dep = H_dep - T*S_dep
+        # dG_dep/dT = dH_dep/dT - S_dep - T*dS_dep/dT
+        self._dG_dep_dT = (self.dH_dep_dT() - self.S_dep() 
+                        - T*self.dS_dep_dT())
+        return self._dG_dep_dT
 
 class IdealGasDeparturePhase(Phase):
     # Internal phase base for calculating properties that use the ideal gas
@@ -6243,7 +6097,7 @@ class IdealGasDeparturePhase(Phase):
     def d2S_dP2(self):
         P = self.P
         d2S = self.R/(P*P)
-        return d2S + self.d2S_dep_dP()
+        return d2S + self.d2S_dep_dP2()
 
     def dS_dzs(self):
         try:
@@ -6282,6 +6136,8 @@ prop_iter = (('T', 'P', 'V', 'rho'), ('T', 'P', 'V', r'\rho'), ('K', 'Pa', 'm^3/
 for a, a_str, a_units, a_name in zip(*prop_iter):
     for b, b_str, b_units, b_name in zip(*prop_iter):
         for c, c_name in zip(('H', 'S', 'G', 'U', 'A'), ('enthalpy', 'entropy', 'Gibbs energy', 'internal energy', 'Helmholtz energy')):
+            if a == b:
+                continue
             def _der(self, property=a, differentiate_by=b, at_constant=c):
                 return self._derivs_jacobian(a=property, b=differentiate_by, c=at_constant)
             t = f'd{a}_d{b}_{c}'
@@ -6294,7 +6150,7 @@ Returns
 -------
 {t} : float
     The {b_name} derivative of {a_name} of the phase at constant {c_name}, [{a_units}/{b_units}]
-"""
+"""     
             setattr(Phase, t, _der)
             try:
                 _der.__doc__ = doc

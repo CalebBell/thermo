@@ -1049,7 +1049,8 @@ def test_air_was_calling_wrong_lnphis_liquid():
     ],
     )
 
-    gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases)
+    zs_air = [0, 0.2096, 0.7812, 0.0092]
+    gas = IdealGas(T=300, P=3e5, zs=zs_air, HeatCapacityGases=correlations.HeatCapacityGases)
 
     liquid = GibbsExcessLiquid(equilibrium_basis='Psat', caloric_basis='Psat',
             HeatCapacityGases=correlations.HeatCapacityGases,
@@ -1057,6 +1058,5 @@ def test_air_was_calling_wrong_lnphis_liquid():
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
 
     # Bug involves a hard 0 for a compound
-    zs_air = [0, 0.2096, 0.7812, 0.0092]
     res = flasher.flash(T=300, P=3e5, zs=zs_air)
     assert res.phase == 'V'

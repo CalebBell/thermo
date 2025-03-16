@@ -180,7 +180,9 @@ Utility functions
 
 .. autofunction:: thermo.functional_groups.count_ring_ring_attatchments
 .. autofunction:: thermo.functional_groups.count_rings_attatched_to_rings
+.. autofunction:: thermo.functional_groups.count_rings_by_atom_counts
 .. autofunction:: thermo.functional_groups.benene_rings
+
 
 ------------------------------------
 Functions using group identification
@@ -265,10 +267,33 @@ __all__ = [# sulfur
 
            'count_ring_ring_attatchments',
            'count_rings_attatched_to_rings',
+           'count_rings_by_atom_counts',
            'benene_rings',
            'group_names',
 
-           'BVirial_Tsonopoulos_extended_ab']
+           'BVirial_Tsonopoulos_extended_ab',
+
+           'ALL_FUNCTIONAL_GROUPS', 'FUNCTIONAL_GROUP_CHECKS',
+           'identify_functional_groups', 'identify_functional_group_atoms',
+           'identify_conjugated_bonds',
+           
+        'FG_ACID', 'FG_ACYL_HALIDE', 'FG_ALCOHOL', 'FG_ALDEHYDE', 'FG_ALKANE', 'FG_ALKENE', 
+        'FG_ALKYLALUMINIUM', 'FG_ALKYLLITHIUM', 'FG_ALKYLMAGNESIUM_HALIDE', 'FG_ALKYNE', 'FG_AMIDE', 
+        'FG_AMIDINE', 'FG_AMINE', 'FG_ANHYDRIDE', 'FG_AROMATIC', 'FG_AZIDE', 'FG_AZO', 'FG_BORINIC_ACID',
+        'FG_BORINIC_ESTER', 'FG_BORONIC_ACID', 'FG_BORONIC_ESTER', 'FG_BRANCHED_ALKANE', 'FG_BROMOALKANE',
+        'FG_CARBAMATE', 'FG_CARBODITHIO', 'FG_CARBODITHIOIC_ACID', 'FG_CARBONATE', 'FG_CARBOTHIOIC_O_ACID', 
+        'FG_CARBOTHIOIC_S_ACID', 'FG_CARBOXYLATE', 'FG_CARBOXYLIC_ACID', 'FG_CARBOXYLIC_ANHYDRIDE', 
+        'FG_CHLOROALKANE', 'FG_CYANATE', 'FG_CYANIDE', 'FG_CYCLOALKANE', 'FG_DISULFIDE', 'FG_ESTER', 'FG_ETHER', 
+        'FG_FLUOROALKANE', 'FG_HALOALKANE', 'FG_HYDROCARBON', 'FG_HYDROPEROXIDE', 'FG_IMIDE', 'FG_IMINE',
+        'FG_INORGANIC', 'FG_IODOALKANE', 'FG_ISOCYANATE', 'FG_ISONITRILE', 'FG_ISOTHIOCYANATE', 'FG_KETONE',
+        'FG_MERCAPTAN', 'FG_METHYLENEDIOXY', 'FG_NITRATE', 'FG_NITRILE', 'FG_NITRITE', 'FG_NITRO', 'FG_NITROSO',
+        'FG_ORGANIC', 'FG_ORTHOCARBONATE_ESTER', 'FG_ORTHOESTER', 'FG_OXIME', 'FG_PEROXIDE', 'FG_PHENOL', 
+        'FG_PHOSPHATE', 'FG_PHOSPHINE', 'FG_PHOSPHODIESTER', 'FG_PHOSPHONIC_ACID', 'FG_POLYOL', 'FG_PRIMARY_ALDIMINE', 
+        'FG_PRIMARY_AMINE', 'FG_PRIMARY_KETIMINE', 'FG_PYRIDYL', 'FG_QUAT', 'FG_RADIONUCLIDE', 'FG_SECONDARY_ALDIMINE', 
+        'FG_SECONDARY_AMINE', 'FG_SECONDARY_KETIMINE', 'FG_SILOXANE', 'FG_SILYL_ETHER', 'FG_SULFIDE', 'FG_SULFINIC_ACID', 
+        'FG_SULFONATE_ESTER', 'FG_SULFONE', 'FG_SULFONIC_ACID', 'FG_SULFOXIDE', 'FG_TERTIARY_AMINE', 'FG_THIAL', 'FG_THIOCYANATE',
+        'FG_THIOKETONE', 'FG_THIOLESTER', 'FG_THIONOESTER'
+           ]
 
 
 rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
@@ -2852,8 +2877,126 @@ def benene_rings(mol):
     return len(matches)
 
 
+def count_rings_by_atom_counts(mol, atom_counts):
+    """Counts rings containing exactly specified numbers of each atom type.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule to analyze
+    atom_counts : dict
+        Dictionary of atomic symbols and their required counts, e.g. {'O': 2, 'C': 4}
+        
+    Returns
+    -------
+    int
+        Number of rings matching the criteria
+        
+    Examples
+    --------
+    >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
+    >>> # Count rings with exactly 2 oxygens and 4 carbons (dioxane pattern), 1,4-dioxane
+    >>> mol = MolFromSmiles('C1COCCOC1')  # doctest:+SKIP
+    >>> count_rings_by_atom_counts(mol, {'O': 2, 'C': 4}) # doctest:+SKIP
+    0
+    """
+    ring_size = sum(atom_counts.values())
+    
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
+    
+    matching_rings = 0
+    for ring in rings:
+        # Check ring size
+        if len(ring) != ring_size:
+            continue
+            
+        # Count all atoms in this ring
+        ring_atom_counts = {}
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            symbol = atom.GetSymbol()
+            ring_atom_counts[symbol] = ring_atom_counts.get(symbol, 0) + 1
+        
+        # Check if counts match exactly
+        matches = True
+        for atom_type, required_count in atom_counts.items():
+            if ring_atom_counts.get(atom_type, 0) != required_count:
+                matches = False
+                break
+                
+        # Check no other atoms are present
+        if matches and len(ring_atom_counts) != len(atom_counts):
+            continue
+            
+        if matches:
+            matching_rings += 1
+            
+    return matching_rings
 
-
+def identify_conjugated_bonds(mol):
+   """Find conjugated double bond systems and their connecting single bonds.
+   Each conjugated system will contribute a decrement of 0.25 to Vw.
+   
+   Returns list of tuples ((c1,c2), (c3,c4), (c2,c3)) where:
+   - (c1,c2) represents one C=C double bond
+   - (c3,c4) represents another C=C double bond 
+   - (c2,c3) represents the single bond connecting them
+   """
+   from rdkit import Chem
+   # Stage 1: Find all carbon double bonds
+   double_bonds = []
+   for atom in mol.GetAtoms():
+       if atom.GetSymbol() != 'C':
+           continue
+       # Look at all bonds this carbon participates in
+       for bond in atom.GetBonds():
+           if bond.GetBondType() != Chem.rdchem.BondType.DOUBLE:
+               continue
+           # Get the other atom in the double bond
+           other_atom = bond.GetOtherAtom(atom)
+           if other_atom.GetSymbol() != 'C':
+               continue
+           # Store the double bond as a sorted tuple of atom indices
+           atoms = tuple(sorted([atom.GetIdx(), other_atom.GetIdx()]))
+           double_bonds.append(atoms)
+   
+   # Stage 2: Remove duplicate double bonds
+   double_bonds = list(set(double_bonds))
+   
+   # Stage 3: Find connecting single bonds between double bond systems
+   conjugated_systems = []
+   for bond1 in double_bonds:
+       # For each carbon in this double bond
+       for c1 in bond1:
+           atom = mol.GetAtomWithIdx(c1)
+           # Look at all single bonds from this carbon
+           for bond in atom.GetBonds():
+               if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
+                   continue
+               # Get the carbon at the other end of the single bond
+               c2 = bond.GetOtherAtomIdx(c1)
+               # Look for other double bonds containing this carbon
+               for bond2 in double_bonds:
+                   if c2 in bond2 and bond2 != bond1:
+                       # We found a conjugated system!
+                       # Store ((C=C), (C=C), (C-C))
+                       conjugated = (bond1, bond2, tuple(sorted([c1, c2])))
+                       conjugated_systems.append(conjugated)
+   
+    # Stage 4: Remove duplicates while preserving order
+    # Convert to set of ((C=C, C=C), C-C) for deduplication
+    # The two double bonds can be in either order, but the single bond must stay separate
+   unique_systems = set(
+       (tuple(sorted([system[0], system[1]])), system[2])
+       for system in conjugated_systems
+   )
+   # Convert back to list of tuples
+   return [
+       (double_bonds[0], double_bonds[1], single_bond) 
+       for double_bonds, single_bond in unique_systems
+   ]
+    
 
 radionuclides = {
     'H': {3},  # Tritium
@@ -3056,3 +3199,503 @@ def BVirial_Tsonopoulos_extended_ab(Tc, Pc, dipole, smiles):
         else:
             a, b = 0.0, 0.0
     return (a, b)
+
+
+
+FUNCTIONAL_GROUP_CHECKS = [
+    is_acid,
+    is_acyl_halide,
+    is_alcohol,
+    is_aldehyde,
+    is_alkane,
+    is_alkene,
+    is_alkylaluminium,
+    is_alkyllithium,
+    is_alkylmagnesium_halide,
+    is_alkyne,
+    is_amide,
+    is_amidine,
+    is_amine,
+    is_anhydride,
+    is_aromatic,
+    is_azide,
+    is_azo,
+    is_borinic_acid,
+    is_borinic_ester,
+    is_boronic_acid,
+    is_boronic_ester,
+    is_branched_alkane,
+    is_bromoalkane,
+    is_carbamate,
+    is_carbodithio,
+    is_carbodithioic_acid,
+    is_carbonate,
+    is_carbothioic_o_acid,
+    is_carbothioic_s_acid,
+    is_carboxylate,
+    is_carboxylic_acid,
+    is_carboxylic_anhydride,
+    is_chloroalkane,
+    is_cyanate,
+    is_cyanide,
+    is_cycloalkane,
+    is_disulfide,
+    is_ester,
+    is_ether,
+    is_fluoroalkane,
+    is_haloalkane,
+    is_hydrocarbon,
+    is_hydroperoxide,
+    is_imide,
+    is_imine,
+    is_inorganic,
+    is_iodoalkane,
+    is_isocyanate,
+    is_isonitrile,
+    is_isothiocyanate,
+    is_ketone,
+    is_mercaptan,
+    is_methylenedioxy,
+    is_nitrate,
+    is_nitrile,
+    is_nitrite,
+    is_nitro,
+    is_nitroso,
+    is_organic,
+    is_orthocarbonate_ester,
+    is_orthoester,
+    is_oxime,
+    is_peroxide,
+    is_phenol,
+    is_phosphate,
+    is_phosphine,
+    is_phosphodiester,
+    is_phosphonic_acid,
+    is_polyol,
+    is_primary_aldimine,
+    is_primary_amine,
+    is_primary_ketimine,
+    is_pyridyl,
+    is_quat,
+    is_radionuclide,
+    is_secondary_aldimine,
+    is_secondary_amine,
+    is_secondary_ketimine,
+    is_siloxane,
+    is_silyl_ether,
+    is_sulfide,
+    is_sulfinic_acid,
+    is_sulfonate_ester,
+    is_sulfone,
+    is_sulfonic_acid,
+    is_sulfoxide,
+    is_tertiary_amine,
+    is_thial,
+    is_thiocyanate,
+    is_thioketone,
+    is_thiolester,
+    is_thionoester
+]
+
+
+FG_ACID = 'acid'
+FG_ACYL_HALIDE = 'acyl_halide'
+FG_ALCOHOL = 'alcohol'
+FG_ALDEHYDE = 'aldehyde'
+FG_ALKANE = 'alkane'
+FG_ALKENE = 'alkene'
+FG_ALKYLALUMINIUM = 'alkylaluminium'
+FG_ALKYLLITHIUM = 'alkyllithium'
+FG_ALKYLMAGNESIUM_HALIDE = 'alkylmagnesium_halide'
+FG_ALKYNE = 'alkyne'
+FG_AMIDE = 'amide'
+FG_AMIDINE = 'amidine'
+FG_AMINE = 'amine'
+FG_ANHYDRIDE = 'anhydride'
+FG_AROMATIC = 'aromatic'
+FG_AZIDE = 'azide'
+FG_AZO = 'azo'
+FG_BORINIC_ACID = 'borinic_acid'
+FG_BORINIC_ESTER = 'borinic_ester'
+FG_BORONIC_ACID = 'boronic_acid'
+FG_BORONIC_ESTER = 'boronic_ester'
+FG_BRANCHED_ALKANE = 'branched_alkane'
+FG_BROMOALKANE = 'bromoalkane'
+FG_CARBAMATE = 'carbamate'
+FG_CARBODITHIO = 'carbodithio'
+FG_CARBODITHIOIC_ACID = 'carbodithioic_acid'
+FG_CARBONATE = 'carbonate'
+FG_CARBOTHIOIC_O_ACID = 'carbothioic_o_acid'
+FG_CARBOTHIOIC_S_ACID = 'carbothioic_s_acid'
+FG_CARBOXYLATE = 'carboxylate'
+FG_CARBOXYLIC_ACID = 'carboxylic_acid'
+FG_CARBOXYLIC_ANHYDRIDE = 'carboxylic_anhydride'
+FG_CHLOROALKANE = 'chloroalkane'
+FG_CYANATE = 'cyanate'
+FG_CYANIDE = 'cyanide'
+FG_CYCLOALKANE = 'cycloalkane'
+FG_DISULFIDE = 'disulfide'
+FG_ESTER = 'ester'
+FG_ETHER = 'ether'
+FG_FLUOROALKANE = 'fluoroalkane'
+FG_HALOALKANE = 'haloalkane'
+FG_HYDROCARBON = 'hydrocarbon'
+FG_HYDROPEROXIDE = 'hydroperoxide'
+FG_IMIDE = 'imide'
+FG_IMINE = 'imine'
+FG_INORGANIC = 'inorganic'
+FG_IODOALKANE = 'iodoalkane'
+FG_ISOCYANATE = 'isocyanate'
+FG_ISONITRILE = 'isonitrile'
+FG_ISOTHIOCYANATE = 'isothiocyanate'
+FG_KETONE = 'ketone'
+FG_MERCAPTAN = 'mercaptan'
+FG_METHYLENEDIOXY = 'methylenedioxy'
+FG_NITRATE = 'nitrate'
+FG_NITRILE = 'nitrile'
+FG_NITRITE = 'nitrite'
+FG_NITRO = 'nitro'
+FG_NITROSO = 'nitroso'
+FG_ORGANIC = 'organic'
+FG_ORTHOCARBONATE_ESTER = 'orthocarbonate_ester'
+FG_ORTHOESTER = 'orthoester'
+FG_OXIME = 'oxime'
+FG_PEROXIDE = 'peroxide'
+FG_PHENOL = 'phenol'
+FG_PHOSPHATE = 'phosphate'
+FG_PHOSPHINE = 'phosphine'
+FG_PHOSPHODIESTER = 'phosphodiester'
+FG_PHOSPHONIC_ACID = 'phosphonic_acid'
+FG_POLYOL = 'polyol'
+FG_PRIMARY_ALDIMINE = 'primary_aldimine'
+FG_PRIMARY_AMINE = 'primary_amine'
+FG_PRIMARY_KETIMINE = 'primary_ketimine'
+FG_PYRIDYL = 'pyridyl'
+FG_QUAT = 'quat'
+FG_RADIONUCLIDE = 'radionuclide'
+FG_SECONDARY_ALDIMINE = 'secondary_aldimine'
+FG_SECONDARY_AMINE = 'secondary_amine'
+FG_SECONDARY_KETIMINE = 'secondary_ketimine'
+FG_SILOXANE = 'siloxane'
+FG_SILYL_ETHER = 'silyl_ether'
+FG_SULFIDE = 'sulfide'
+FG_SULFINIC_ACID = 'sulfinic_acid'
+FG_SULFONATE_ESTER = 'sulfonate_ester'
+FG_SULFONE = 'sulfone'
+FG_SULFONIC_ACID = 'sulfonic_acid'
+FG_SULFOXIDE = 'sulfoxide'
+FG_TERTIARY_AMINE = 'tertiary_amine'
+FG_THIAL = 'thial'
+FG_THIOCYANATE = 'thiocyanate'
+FG_THIOKETONE = 'thioketone'
+FG_THIOLESTER = 'thiolester'
+FG_THIONOESTER = 'thionoester'
+
+
+# List maintaining order for bit vector encoding
+ALL_FUNCTIONAL_GROUPS = [
+    FG_ACID,
+    FG_ACYL_HALIDE,
+    FG_ALCOHOL,
+    FG_ALDEHYDE,
+    FG_ALKANE,
+    FG_ALKENE,
+    FG_ALKYLALUMINIUM,
+    FG_ALKYLLITHIUM,
+    FG_ALKYLMAGNESIUM_HALIDE,
+    FG_ALKYNE,
+    FG_AMIDE,
+    FG_AMIDINE,
+    FG_AMINE,
+    FG_ANHYDRIDE,
+    FG_AROMATIC,
+    FG_AZIDE,
+    FG_AZO,
+    FG_BORINIC_ACID,
+    FG_BORINIC_ESTER,
+    FG_BORONIC_ACID,
+    FG_BORONIC_ESTER,
+    FG_BRANCHED_ALKANE,
+    FG_BROMOALKANE,
+    FG_CARBAMATE,
+    FG_CARBODITHIO,
+    FG_CARBODITHIOIC_ACID,
+    FG_CARBONATE,
+    FG_CARBOTHIOIC_O_ACID,
+    FG_CARBOTHIOIC_S_ACID,
+    FG_CARBOXYLATE,
+    FG_CARBOXYLIC_ACID,
+    FG_CARBOXYLIC_ANHYDRIDE,
+    FG_CHLOROALKANE,
+    FG_CYANATE,
+    FG_CYANIDE,
+    FG_CYCLOALKANE,
+    FG_DISULFIDE,
+    FG_ESTER,
+    FG_ETHER,
+    FG_FLUOROALKANE,
+    FG_HALOALKANE,
+    FG_HYDROCARBON,
+    FG_HYDROPEROXIDE,
+    FG_IMIDE,
+    FG_IMINE,
+    FG_INORGANIC,
+    FG_IODOALKANE,
+    FG_ISOCYANATE,
+    FG_ISONITRILE,
+    FG_ISOTHIOCYANATE,
+    FG_KETONE,
+    FG_MERCAPTAN,
+    FG_METHYLENEDIOXY,
+    FG_NITRATE,
+    FG_NITRILE,
+    FG_NITRITE,
+    FG_NITRO,
+    FG_NITROSO,
+    FG_ORGANIC,
+    FG_ORTHOCARBONATE_ESTER,
+    FG_ORTHOESTER,
+    FG_OXIME,
+    FG_PEROXIDE,
+    FG_PHENOL,
+    FG_PHOSPHATE,
+    FG_PHOSPHINE,
+    FG_PHOSPHODIESTER,
+    FG_PHOSPHONIC_ACID,
+    FG_POLYOL,
+    FG_PRIMARY_ALDIMINE,
+    FG_PRIMARY_AMINE,
+    FG_PRIMARY_KETIMINE,
+    FG_PYRIDYL,
+    FG_QUAT,
+    FG_RADIONUCLIDE,
+    FG_SECONDARY_ALDIMINE,
+    FG_SECONDARY_AMINE,
+    FG_SECONDARY_KETIMINE,
+    FG_SILOXANE,
+    FG_SILYL_ETHER,
+    FG_SULFIDE,
+    FG_SULFINIC_ACID,
+    FG_SULFONATE_ESTER,
+    FG_SULFONE,
+    FG_SULFONIC_ACID,
+    FG_SULFOXIDE,
+    FG_TERTIARY_AMINE,
+    FG_THIAL,
+    FG_THIOCYANATE,
+    FG_THIOKETONE,
+    FG_THIOLESTER,
+    FG_THIONOESTER,
+]
+
+# Dictionary mapping functional group constants to their corresponding functions
+FG_TO_FUNCTION = {
+    fg_const: FUNCTIONAL_GROUP_CHECKS[i] 
+    for i, fg_const in enumerate(ALL_FUNCTIONAL_GROUPS)
+}
+
+# Dictionary mapping functions to their corresponding functional group constants
+FUNCTION_TO_FG = {
+    func: fg_const 
+    for fg_const, func in FG_TO_FUNCTION.items()
+}
+
+
+def identify_functional_groups(mol):
+    """Given an RDKit molecule, match a set of different SMARTS patterns against it
+    to identify which chemical classes it is part of and which functional groups it 
+    contains. This is not a fragmentation algorithm and any number of functional groups
+    may be detected; each found will be present only once.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        The molecule to analyze
+        
+    Returns
+    -------
+    functional_groups : set[str]
+        Set of constants representing the functional groups present in the molecule
+        
+    Examples
+    --------
+    >>> from rdkit import Chem # doctest:+SKIP
+    >>> mol = Chem.MolFromSmiles("CCO") # doctest:+SKIP
+    >>> functional_groups = identify_functional_groups(mol) # doctest:+SKIP
+    """
+    matches = set()
+    for fg_const, check_func in FG_TO_FUNCTION.items():
+        if check_func(mol):
+            matches.add(fg_const)
+    return matches
+
+
+SMARTS_PATTERNS = {
+    # Nitrogen Groups
+    FG_AMIDE: "[NX3][CX3;$([#6])](=[OX1])",
+    FG_AMIDINE: amidine_smarts_collection,
+    FG_PRIMARY_KETIMINE: primary_ketimine_smarts,
+    FG_SECONDARY_KETIMINE: secondary_ketimine_smarts,
+    FG_PRIMARY_ALDIMINE: primary_aldimine_smarts,
+    FG_SECONDARY_ALDIMINE: secondary_aldimine_smarts,
+    FG_IMINE: [primary_ketimine_smarts, secondary_ketimine_smarts, primary_aldimine_smarts, secondary_aldimine_smarts],
+    FG_IMIDE: imide_smarts,
+    FG_AZIDE: azide_smarts,
+    FG_AZO: azo_smarts,
+    FG_CYANATE: cyanate_smarts,
+    FG_ISOCYANATE: isocyanate_smarts,
+    FG_CYANIDE: cyanide_smarts,
+    FG_NITRATE: nitrate_smarts,
+    FG_NITRO: nitro_smarts,
+    FG_NITRITE: nitrite_smarts,
+    FG_NITROSO: nitroso_smarts,
+    FG_OXIME: oxime_smarts,
+    FG_PYRIDYL: pyridyl_smarts,
+    FG_CARBAMATE: carbamate_smarts,
+    
+    # Sulfur Groups
+    FG_MERCAPTAN: mercaptan_smarts,
+    FG_SULFIDE: sulfide_smarts,
+    FG_DISULFIDE: disulfide_smarts,
+    FG_SULFOXIDE: sulfoxide_smarts,
+    FG_SULFONE: sulfone_smarts,
+    FG_SULFINIC_ACID: sulfinic_acid_smarts,
+    FG_SULFONIC_ACID: sulfonic_acid_smarts,
+    FG_SULFONATE_ESTER: sulfonate_ester_smarts,
+    FG_THIOCYANATE: thiocyanate_smarts,
+    FG_ISOTHIOCYANATE: isothiocyanate_smarts,
+    FG_THIOKETONE: thioketone_smarts,
+    FG_THIAL: thial_smarts,
+    FG_CARBOTHIOIC_S_ACID: carbothioic_s_acid_smarts,
+    FG_CARBOTHIOIC_O_ACID: carbothioic_o_acid_smarts,
+    FG_THIOLESTER: thiolester_smarts,
+    FG_THIONOESTER: thionoester_smarts,
+    FG_CARBODITHIOIC_ACID: carbodithioic_acid_smarts,
+    FG_CARBODITHIO: carbodithio_smarts,
+    
+    # Silicon Groups
+    FG_SILOXANE: siloxane_smarts,
+    FG_SILYL_ETHER: silyl_ether_smarts,
+    
+    # Hydrocarbon Groups
+    FG_ALKANE: alkane_smarts,
+    FG_BRANCHED_ALKANE: branched_alkane_smarts,
+    FG_ALKENE: alkene_smarts,
+    FG_ALKYNE: alkyne_smarts,
+    FG_AROMATIC: aromatic_smarts,
+    
+    # Oxygen Groups
+    FG_ALCOHOL: alcohol_smarts,
+    FG_ACID: acid_smarts,
+    FG_KETONE: ketone_smarts,
+    FG_ALDEHYDE: aldehyde_smarts,
+    FG_ACYL_HALIDE: acyl_halide_smarts,
+    FG_CARBONATE: carbonate_smarts,
+    FG_CARBOXYLATE: carboxylate_smarts,
+    FG_HYDROPEROXIDE: hydroperoxide_smarts,
+    FG_PEROXIDE: peroxide_smarts,
+    FG_ORTHOESTER: orthoester_smarts,
+    FG_METHYLENEDIOXY: methylenedioxy_smarts,
+    FG_ORTHOCARBONATE_ESTER: orthocarbonate_ester_smarts,
+    FG_CARBOXYLIC_ANHYDRIDE: carboxylic_anhydride_smarts,
+    FG_ANHYDRIDE: anhydride_smarts,
+    FG_ETHER: ether_smarts,
+    FG_PHENOL: phenol_smarts,
+    FG_ESTER: ester_smarts,
+    
+    # Boron Groups
+    FG_BORONIC_ACID: boronic_acid_smarts,
+    FG_BORONIC_ESTER: boronic_ester_smarts,
+    FG_BORINIC_ACID: borinic_acid_smarts,
+    FG_BORINIC_ESTER: borinic_ester_smarts,
+    
+    # Phosphorus Groups
+    FG_PHOSPHINE: phosphine_smarts,
+    FG_PHOSPHONIC_ACID: phosphonic_acid_smarts,
+    FG_PHOSPHODIESTER: phosphodiester_smarts,
+    FG_PHOSPHATE: phosphate_smarts,
+    
+    # Halogen Groups
+    FG_HALOALKANE: haloalkane_smarts,
+    FG_FLUOROALKANE: fluoroalkane_smarts,
+    FG_CHLOROALKANE: chloroalkane_smarts,
+    FG_BROMOALKANE: bromoalkane_smarts,
+    FG_IODOALKANE: iodoalkane_smarts,
+    
+    # Amine Groups
+    FG_AMINE: all_amine_smarts,
+    FG_PRIMARY_AMINE: primary_amine_smarts,
+    FG_SECONDARY_AMINE: secondary_amine_smarts,
+    FG_TERTIARY_AMINE: [tertiary_amine_smarts, tertiary_amine_smarts_aliphatic, 
+                       tertiary_amine_smarts_aromatic, tertiary_amine_smarts_mixed, 
+                       tertiary_amine_1],
+    FG_QUAT: quat_smarts,
+
+    # Organometallic Groups
+    FG_ALKYLLITHIUM: alkyllithium_smarts,
+    FG_ALKYLALUMINIUM: alkylaluminium_smarts,
+    FG_ALKYLMAGNESIUM_HALIDE: [smarts_alkylmagnesium_halide_Mg0, 
+                              smarts_alkylmagnesium_halide_Mg1,
+                              smarts_alkylmagnesium_halide_Mg2],
+
+    FG_ISONITRILE: isonitrile_smarts, 
+    FG_NITRILE: nitrile_smarts,
+    FG_CARBOXYLIC_ACID: carboxylic_acid_smarts,
+
+    # Missing patterns - shouldn't be expected to work, categories
+    FG_CYCLOALKANE: None,
+    FG_HYDROCARBON: None,
+    FG_ORGANIC: None,
+    FG_POLYOL: None,
+    FG_RADIONUCLIDE: None,
+    FG_INORGANIC: None,
+    
+}
+
+def identify_functional_group_atoms(mol, functional_group):
+    """Returns the unique atoms involved in all instances of a functional group.
+    
+    Parameters
+    ----------
+    mol : rdkit.Chem.rdchem.Mol
+        Molecule to analyze
+    functional_group : str
+        One of the FG_ constants representing the functional group to find
+        
+    Returns
+    -------
+    list[tuple]
+        List of sorted tuples containing atom indices for each unique match of the functional group
+    
+    Examples
+    --------
+    Acetic acid
+
+    >>> from rdkit import Chem  # doctest:+SKIP
+    >>> mol = Chem.MolFromSmiles("CC(=O)O")  # doctest:+SKIP
+    >>> matches = identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID)  # doctest:+SKIP
+    """
+    if mol is None:
+        raise ValueError("Missing molecule")
+    if functional_group not in SMARTS_PATTERNS:
+        raise ValueError(f"Unknown functional group: {functional_group}")
+    
+    patterns = SMARTS_PATTERNS[functional_group]
+    if patterns is None:
+        raise ValueError("Specified group is not supported")
+        
+    # Handle both single patterns and lists of patterns
+    if isinstance(patterns, str):
+        patterns = [patterns]
+    
+    # Collect all matches from all patterns
+    all_matches = []
+    for pattern in patterns:
+        matches = mol.GetSubstructMatches(smarts_mol_cache(pattern))
+        all_matches.extend(matches)
+    
+    # Convert matches to sorted tuples and deduplicate
+    unique_matches = {tuple(sorted(match)) for match in all_matches}
+    
+    # Return as sorted list for consistent ordering
+    return sorted(list(unique_matches))

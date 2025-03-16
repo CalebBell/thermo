@@ -872,7 +872,7 @@ def mini_sort_phases(phases, sort_method, prop, cmps, cmps_neg,
             for p in phases:
                 zs = p.zs
                 MW = 0.0
-                for i in constants.cmps:
+                for i in range(constants.N):
                     MW += zs[i]*MWs[i]
                 keys.append(Vm_to_rho(p.V(), MW))
 

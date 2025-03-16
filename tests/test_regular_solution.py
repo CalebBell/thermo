@@ -613,3 +613,78 @@ def test_hansen_4_components():
     assert_close1d(GE.gammas_dGE_dxs(), [1.097457987713046, 1.4322692226443197, 2.025215786863174, 4.6676189435647295], rtol=1e-12)
     assert_close1d(GE.gammas_infinite_dilution(), [1.3876605163393116, 2.554734591753295, 2.5135666705238293, 4.994913561254703], rtol=1e-8)
     assert_close1d(GE.d2GE_dTdxs(), [-8.412664267695877, -8.560753751475001, -9.033924810384095, -12.83599795722768], rtol=1e-10)
+
+
+
+
+def test_RegularSolution_FloryHuggins_missing_interaction_parameters():
+    """Test Regular Solution model's missing parameter detection"""
+    for model in (FloryHuggins, RegularSolution):
+        # Test Case 1: All parameters present
+        N = 2
+        lambda_coeffs = [[0.0, 0.5], [-0.3, 0.0]]
+        
+        GE = model(T=300, xs=[0.4, 0.6], 
+                            Vs=[89E-6, 109E-6],
+                            SPs=[9000, 8000],
+                            lambda_coeffs=lambda_coeffs)
+        assert GE.missing_interaction_parameters() == []
+        
+        # Test Case 2: One direction missing (asymmetric case)
+        lambda_coeffs = [[0.0, 0.5], [0.0, 0.0]]
+        
+        GE = model(T=300, xs=[0.4, 0.6],
+                            Vs=[89E-6, 109E-6],
+                            SPs=[9000, 8000],
+                            lambda_coeffs=lambda_coeffs)
+        assert GE.missing_interaction_parameters() == [(1, 0)]
+        
+        # Test Case 3: Multiple components with missing parameters
+        N = 3
+        lambda_coeffs = [
+            [0.0, 0.5, 0.0],
+            [0.3, 0.0, 0.0],
+            [0.2, 0.0, 0.0]
+        ]
+        
+        GE = model(T=300, xs=[0.3, 0.3, 0.4],
+                            Vs=[89E-6, 109E-6, 120E-6],
+                            SPs=[9000, 8000, 8500],
+                            lambda_coeffs=lambda_coeffs)
+        expected_missing = [(0, 2), (1, 2), (2, 1)] 
+        assert sorted(GE.missing_interaction_parameters()) == sorted(expected_missing)
+        
+        # Test Case 4: All parameters missing (default case, no lambda_coeffs provided)
+        GE = model(T=300, xs=[0.3, 0.3, 0.4],
+                            Vs=[89E-6, 109E-6, 120E-6],
+                            SPs=[9000, 8000, 8500])
+        
+        expected_missing = [(i, j) for i in range(N) for j in range(N) if i != j]
+        assert sorted(GE.missing_interaction_parameters()) == sorted(expected_missing)
+
+
+
+
+def test_Hansen_missing_interaction_parameters():
+    """Test Hansen model's missing parameter detection"""
+    
+    # Test with typical values including zeros
+    N = 2
+    xs = [0.4, 0.6]
+    Vs = [89E-6, 109E-6]
+    delta_d = [16.6, 14.5]  # Dispersive parameters
+    delta_p = [12.3, 0.0]   # One polar parameter is zero
+    delta_h = [5.5, 0.0]    # One hydrogen bonding parameter is zero
+    
+    GE = Hansen(T=300, xs=xs, Vs=Vs, 
+                delta_d=delta_d, delta_p=delta_p, delta_h=delta_h)
+    assert GE.missing_interaction_parameters() == []
+    
+    # Test with all zero parameters (still valid)
+    delta_d = [0.0, 0.0]
+    delta_p = [0.0, 0.0]
+    delta_h = [0.0, 0.0]
+    
+    GE = Hansen(T=300, xs=xs, Vs=Vs,
+                delta_d=delta_d, delta_p=delta_p, delta_h=delta_h)
+    assert GE.missing_interaction_parameters() == []

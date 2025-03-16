@@ -162,6 +162,8 @@ heat_capacity_gas_methods = [HEOS_FIT, COOLPROP, TRCIG, WEBBOOK_SHOMATE, POLING_
 """Holds all methods available for the :obj:`HeatCapacityGas` class, for use in
 iterating over them."""
 
+# These are also internal methods
+WEBBOOK_SHOMATE_INTERVALS = [WEBBOOK_SHOMATE+f'_{i}' for i in range(6)]
 
 class HeatCapacityGas(TDependentProperty):
     r'''Class for dealing with gas heat capacity as a function of temperature.
@@ -289,6 +291,15 @@ class HeatCapacityGas(TDependentProperty):
                       LASTOVKA_SHAW, CRCSTD, POLING_CONST, VDI_TABULAR]
     """Default rankings of the available methods."""
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(JOBACK)
+    extra_correlations_internal.add(POLING_CONST)
+    extra_correlations_internal.add(POLING_POLY)
+    extra_correlations_internal.add(CRCSTD)
+    extra_correlations_internal.add(TRCIG)
+    extra_correlations_internal.add(WEBBOOK_SHOMATE)
+    extra_correlations_internal.update(WEBBOOK_SHOMATE_INTERVALS)
+    
 
     _fit_force_n = {}
     """Dictionary containing method: fit_n, for use in methods which should
@@ -298,12 +309,10 @@ class HeatCapacityGas(TDependentProperty):
 
     custom_args = ('MW', 'similarity_variable')
 
-    _json_obj_by_CAS = ('webbook_shomate', 'CP_f')
+    _json_obj_by_CAS = ('CP_f',)
     @classmethod
     def _load_json_CAS_references(cls, d):
         CASRN = d['CASRN']
-        if CASRN in heat_capacity.WebBook_Shomate_gases:
-            d['webbook_shomate'] = heat_capacity.WebBook_Shomate_gases[CASRN]
         if 'CP_f' in d:
             d['CP_f'] = coolprop_fluids[CASRN]
 
@@ -329,63 +338,73 @@ class HeatCapacityGas(TDependentProperty):
         CASRN = self.CASRN
         if load_data and CASRN:
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
-
             jb_df = miscdata.joback_predictions
             if CASRN_int in jb_df.index:
                 Cpg3 = float(jb_df.at[CASRN_int, 'Cpg3'])
                 if not isnan(Cpg3):
-                    methods.append(JOBACK)
-                    self.joback_coeffs = [Cpg3,
-                                          float(jb_df.at[CASRN_int, 'Cpg2']),
-                                          float(jb_df.at[CASRN_int, 'Cpg1']),
-                                          float(jb_df.at[CASRN_int, 'Cpg0'])]
                     Tmin_jb, Tmax_jb = float(jb_df.at[CASRN_int, 'Tm']),float(jb_df.at[CASRN_int, 'Tc'])*2.5
                     # if isnan(Tmin_jb): Tmin_jb = 100.0 # The same groups are defined for Tm as for Cp, should never be a nan
                     if isnan(Tmax_jb): Tmax_jb = 10000.0
-                    T_limits[JOBACK] = (Tmin_jb, Tmax_jb)
-
-            if CASRN in heat_capacity.WebBook_Shomate_gases:
-                methods.append(WEBBOOK_SHOMATE)
-                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_gases[CASRN]
-                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
+                    self.add_correlation(name=JOBACK, model='DIPPR100', Tmin=Tmin_jb, Tmax=Tmax_jb, A=float(jb_df.at[CASRN_int, 'Cpg0']),
+                                         B=float(jb_df.at[CASRN_int, 'Cpg1']), C=float(jb_df.at[CASRN_int, 'Cpg2']), 
+                                         D=Cpg3, select=False)
+            if CASRN in heat_capacity.WebBook_Shomate_coefficients:
+                phase_values = heat_capacity.WebBook_Shomate_coefficients[CASRN]
+                Cp_dat = phase_values[2]
+                if Cp_dat is not None:
+                    method_names = []
+                    T_ranges = [Cp_dat[0][0]]
+                    for i, range_data in enumerate(Cp_dat):
+                        name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f'{WEBBOOK_SHOMATE}_{i+1}'
+                        method_names.append(name)
+                        self.add_correlation(name=name, model='Shomate', Tmin=range_data[0],  Tmax=range_data[1],  
+                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5], 
+                                             E=range_data[6], select=False
+                        )
+                        T_ranges.append(range_data[1])
+                    if len(Cp_dat) > 1:
+                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)            
             if CASRN in heat_capacity.TRC_gas_data.index:
-                methods.append(TRCIG)
-                self.TRCIG_Tmin, self.TRCIG_Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[heat_capacity.TRC_gas_data.index.get_loc(CASRN)].tolist()
-                self.TRCIG_coefs = [a0, a1, a2, a3, a4, a5, a6, a7]
-                T_limits[TRCIG] = (self.TRCIG_Tmin, self.TRCIG_Tmax)
+                Tmin, Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[
+                    heat_capacity.TRC_gas_data.index.get_loc(CASRN)].tolist()
+                self.add_correlation(
+                    name=TRCIG,
+                    model='TRCCp',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    a0=a0,
+                    a1=a1,
+                    a2=a2,
+                    a3=a3,
+                    a4=a4,
+                    a5=a5,
+                    a6=a6,
+                    a7=a7,
+                    select=False
+                )
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'a0']):
                 POLING_Tmin, POLING_Tmax, a0, a1, a2, a3, a4, Cpg, Cpl = heat_capacity.Cp_values_Poling[heat_capacity.Cp_data_Poling.index.get_loc(CASRN)].tolist()
-                methods.append(POLING_POLY)
                 if isnan(POLING_Tmin):
                     POLING_Tmin = 50.0
                 if isnan(POLING_Tmax):
                     POLING_Tmax = 1000.0
-                self.POLING_Tmin = POLING_Tmin
-                self.POLING_Tmax = POLING_Tmax
-                self.POLING_coefs = [a0, a1, a2, a3, a4]
-                T_limits[POLING_POLY] = (POLING_Tmin, POLING_Tmax)
+                self.add_correlation(name=POLING_POLY, model='DIPPR100', Tmin=POLING_Tmin, Tmax=POLING_Tmax, A=R*a0, B=R*a1, C=R*a2, D=R*a3, E=R*a4, select=False)
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpg']):
-                methods.append(POLING_CONST)
-                self.POLING_T = 298.15
-                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpg'])
-                T_limits[POLING_CONST] = (self.POLING_T-50.0, self.POLING_T+50.0)
+                self.add_correlation(name=POLING_CONST, model='DIPPR100', Tmin=298.15-50.0, Tmax=298.15+50.0, 
+                                     A=float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpg']), select=False)
             if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cpg']):
-                methods.append(CRCSTD)
-                self.CRCSTD_T = 298.15
-                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpg'])
-                T_limits[CRCSTD] = (self.CRCSTD_T-50.0, self.CRCSTD_T+50.0)
+                self.add_correlation(name=CRCSTD, model='DIPPR100', Tmin=298.15-50.0, Tmax=298.15+50.0, 
+                                     A=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpg']), select=False)
             if CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
                 # value
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Cp (g)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if self.CASRN in heat_capacity.Cp_dict_JANAF_gas:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_gas[self.CASRN]
-                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[CASRN]
@@ -461,71 +480,16 @@ class HeatCapacityGas(TDependentProperty):
         Cp : float
             Calculated heat capacity, [J/mol/K]
         '''
-        if method == TRCIG:
-            Cp = TRCCp(T, *self.TRCIG_coefs)
-        elif method == WEBBOOK_SHOMATE:
-            Cp = self.webbook_shomate.force_calculate(T)
-        elif method == JOBACK:
-            Cp = horner(self.joback_coeffs, T)
-        elif method == COOLPROP:
+        if method == COOLPROP:
             if self.CoolProp_A0_args is not None:
                 Cp = Cp_ideal_gas_Helmholtz(T, *self.CoolProp_A0_args)
             else:
                 return CoolProp_T_dependent_property(T, self.CASRN, 'CP0MOLAR', 'g')
-        elif method == POLING_POLY:
-            Cp = R*(self.POLING_coefs[0] + self.POLING_coefs[1]*T
-            + self.POLING_coefs[2]*T**2 + self.POLING_coefs[3]*T**3
-            + self.POLING_coefs[4]*T**4)
-        elif method == POLING_CONST:
-            Cp = self.POLING_constant
-        elif method == CRCSTD:
-            Cp = self.CRCSTD_constant
         elif method == LASTOVKA_SHAW:
             Cp = Lastovka_Shaw(T, self.similarity_variable, self.iscyclic_aliphatic, self.MW)
         else:
             return self._base_calculate(T, method)
         return Cp
-
-    def test_method_validity(self, T, method):
-        r'''Method to test the validity of a specified method for a given
-        temperature.
-
-        'TRC' and 'Poling' both have minimum and maimum temperatures. The
-        constant temperatures in POLING_CONST and CRCSTD are considered valid
-        for 50 degrees around their specified temperatures.
-        :obj:`Lastovka_Shaw <chemicals.heat_capacity.Lastovka_Shaw>` is considered valid for the whole range of
-        temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to determine the validity of the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a specifid method is valid
-        '''
-        validity = True
-        if method == POLING_CONST:
-            if T > self.POLING_T + 50.0 or T < self.POLING_T - 50.0:
-                return False
-        elif method == CRCSTD:
-            if T > self.CRCSTD_T + 50.0 or T < self.CRCSTD_T - 50.0:
-                return False
-        elif method == LASTOVKA_SHAW:
-            pass # Valid everywhere
-        elif method == COOLPROP:
-            if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
-                return False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
@@ -547,22 +511,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == TRCIG:
-            H2 = TRCCp_integral(T2, *self.TRCIG_coefs)
-            H1 = TRCCp_integral(T1, *self.TRCIG_coefs)
-            return H2 - H1
-        elif method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral(T1, T2)
-        elif method == POLING_POLY:
-            A, B, C, D, E = self.POLING_coefs
-            H2 = (((((0.2*E)*T2 + 0.25*D)*T2 + C/3.)*T2 + 0.5*B)*T2 + A)*T2
-            H1 = (((((0.2*E)*T1 + 0.25*D)*T1 + C/3.)*T1 + 0.5*B)*T1 + A)*T1
-            return R*(H2 - H1)
-        elif method == POLING_CONST:
-            return (T2 - T1)*self.POLING_constant
-        elif method == CRCSTD:
-            return (T2 - T1)*self.CRCSTD_constant
-        elif method == LASTOVKA_SHAW:
+        if method == LASTOVKA_SHAW:
             similarity_variable = self.similarity_variable
             iscyclic_aliphatic = self.iscyclic_aliphatic
             MW = self.MW
@@ -598,22 +547,7 @@ class HeatCapacityGas(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == TRCIG:
-            S2 = TRCCp_integral_over_T(T2, *self.TRCIG_coefs)
-            S1 = TRCCp_integral_over_T(T1, *self.TRCIG_coefs)
-            return S2 - S1
-        elif method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
-        elif method == CRCSTD:
-            return self.CRCSTD_constant*log(T2/T1)
-        elif method == POLING_CONST:
-            return self.POLING_constant*log(T2/T1)
-        elif method == POLING_POLY:
-            A, B, C, D, E = self.POLING_coefs
-            S2 = ((((0.25*E)*T2 + D/3.)*T2 + 0.5*C)*T2 + B)*T2
-            S1 = ((((0.25*E)*T1 + D/3.)*T1 + 0.5*C)*T1 + B)*T1
-            return R*(S2-S1 + A*log(T2/T1))
-        elif method == LASTOVKA_SHAW:
+        if method == LASTOVKA_SHAW:
             similarity_variable = self.similarity_variable
             iscyclic_aliphatic = self.iscyclic_aliphatic
             MW = self.MW
@@ -636,6 +570,10 @@ ZABRANSKY_QUASIPOLYNOMIAL_SAT = 'ZABRANSKY_QUASIPOLYNOMIAL_SAT'
 ROWLINSON_POLING = 'ROWLINSON_POLING'
 ROWLINSON_BONDI = 'ROWLINSON_BONDI'
 DADGOSTAR_SHAW = 'DADGOSTAR_SHAW'
+
+ZABRANSKY_SPLINE_INTERVALS = [ZABRANSKY_SPLINE+f'_{i}' for i in range(6)]
+ZABRANSKY_SPLINE_C_INTERVALS = [ZABRANSKY_SPLINE_C+f'_{i}' for i in range(6)]
+ZABRANSKY_SPLINE_SAT_INTERVALS = [ZABRANSKY_SPLINE_SAT+f'_{i}' for i in range(6)]
 
 heat_capacity_liquid_methods = [HEOS_FIT, ZABRANSKY_SPLINE, ZABRANSKY_QUASIPOLYNOMIAL,
                       ZABRANSKY_SPLINE_C, ZABRANSKY_QUASIPOLYNOMIAL_C,
@@ -822,11 +760,29 @@ class HeatCapacityLiquid(TDependentProperty):
     _json_obj_by_CAS = ('Zabransky_spline', 'Zabransky_spline_iso', 'Zabransky_spline_sat',
                         'Zabransky_quasipolynomial', 'Zabransky_quasipolynomial_iso',
                         'Zabransky_quasipolynomial_sat', 'CP_f',
-                        'webbook_shomate')
+                        )
 
     obj_references = pure_references = ('Cpgm',)
     obj_references_types = pure_reference_types = (HeatCapacityGas,)
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(POLING_CONST)
+    extra_correlations_internal.add(CRCSTD)
+    extra_correlations_internal.add(WEBBOOK_SHOMATE)
+    extra_correlations_internal.update(WEBBOOK_SHOMATE_INTERVALS)
+
+    extra_correlations_internal.add(ZABRANSKY_SPLINE)
+    extra_correlations_internal.add(ZABRANSKY_QUASIPOLYNOMIAL)
+
+    extra_correlations_internal.add(ZABRANSKY_SPLINE_C)
+    extra_correlations_internal.add(ZABRANSKY_QUASIPOLYNOMIAL_C)
+
+    extra_correlations_internal.add(ZABRANSKY_SPLINE_SAT)
+    extra_correlations_internal.add(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
+
+    extra_correlations_internal.update(ZABRANSKY_SPLINE_INTERVALS)
+    extra_correlations_internal.update(ZABRANSKY_SPLINE_C_INTERVALS)
+    extra_correlations_internal.update(ZABRANSKY_SPLINE_SAT_INTERVALS)
 
     custom_args = ('MW', 'similarity_variable', 'Tc', 'omega', 'Cpgm')
     def __init__(self, CASRN='', MW=None, similarity_variable=None, Tc=None,
@@ -860,22 +816,8 @@ class HeatCapacityLiquid(TDependentProperty):
     @classmethod
     def _load_json_CAS_references(cls, d):
         CASRN = d['CASRN']
-        if CASRN in heat_capacity.zabransky_dict_const_s:
-            d['Zabransky_spline'] = heat_capacity.zabransky_dict_const_s[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_const_p:
-            d['Zabransky_quasipolynomial'] = heat_capacity.zabransky_dict_const_p[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_iso_s:
-            d['Zabransky_spline_iso'] = heat_capacity.zabransky_dict_iso_s[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_iso_p:
-            d['Zabransky_quasipolynomial_iso'] = heat_capacity.zabransky_dict_iso_p[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_sat_s:
-            d['Zabransky_spline_sat'] = heat_capacity.zabransky_dict_sat_s[CASRN]
-        if CASRN in heat_capacity.zabransky_dict_sat_p:
-            d['Zabransky_quasipolynomial_sat'] = heat_capacity.zabransky_dict_sat_p[CASRN]
         if 'CP_f' in d:
             d['CP_f'] = coolprop_fluids[CASRN]
-        if CASRN in heat_capacity.WebBook_Shomate_liquids:
-            d['webbook_shomate'] = heat_capacity.WebBook_Shomate_liquids[CASRN]
 
     def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
@@ -893,59 +835,144 @@ class HeatCapacityLiquid(TDependentProperty):
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         if load_data and CASRN:
-            if CASRN in heat_capacity.zabransky_dict_const_s:
-                methods.append(ZABRANSKY_SPLINE)
-                self.Zabransky_spline = heat_capacity.zabransky_dict_const_s[CASRN]
-                T_limits[ZABRANSKY_SPLINE] = (self.Zabransky_spline.Tmin, self.Zabransky_spline.Tmax)
-            if CASRN in heat_capacity.WebBook_Shomate_liquids:
-                methods.append(WEBBOOK_SHOMATE)
-                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_liquids[CASRN]
-                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
-            if CASRN in heat_capacity.zabransky_dict_const_p:
-                methods.append(ZABRANSKY_QUASIPOLYNOMIAL)
-                self.Zabransky_quasipolynomial = heat_capacity.zabransky_dict_const_p[CASRN]
-                T_limits[ZABRANSKY_QUASIPOLYNOMIAL] = (self.Zabransky_quasipolynomial.Tmin, self.Zabransky_quasipolynomial.Tmax)
-            if CASRN in heat_capacity.zabransky_dict_iso_s:
-                methods.append(ZABRANSKY_SPLINE_C)
-                self.Zabransky_spline_iso = heat_capacity.zabransky_dict_iso_s[CASRN]
-                T_limits[ZABRANSKY_SPLINE_C] = (self.Zabransky_spline_iso.Tmin, self.Zabransky_spline_iso.Tmax)
-            if CASRN in heat_capacity.zabransky_dict_iso_p:
-                methods.append(ZABRANSKY_QUASIPOLYNOMIAL_C)
-                self.Zabransky_quasipolynomial_iso = heat_capacity.zabransky_dict_iso_p[CASRN]
-                T_limits[ZABRANSKY_QUASIPOLYNOMIAL_C] = (self.Zabransky_quasipolynomial_iso.Tmin, self.Zabransky_quasipolynomial_iso.Tmax)
-
-
+            if CASRN in heat_capacity.WebBook_Shomate_coefficients:
+                phase_values = heat_capacity.WebBook_Shomate_coefficients[CASRN]
+                Cp_dat = phase_values[1]  # Index 1 for liquids
+                if Cp_dat is not None:
+                    # First collect and sort all range data
+                    range_data_list = []
+                    for i, range_data in enumerate(Cp_dat):
+                        name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f'{WEBBOOK_SHOMATE}_{i+1}'
+                        range_data_list.append((range_data, name))
+                    
+                    # Sort by Tmin (first element of range_data)
+                    range_data_list.sort(key=lambda x: x[0][0])
+                    
+                    # Process in sorted order
+                    method_names = []
+                    T_ranges = [range_data_list[0][0][0]]  # Start with first Tmin
+                    
+                    for range_data, name in range_data_list:
+                        method_names.append(name)
+                        self.add_correlation(
+                            name=name,
+                            model='Shomate',
+                            Tmin=range_data[0],
+                            Tmax=range_data[1],
+                            A=range_data[2],
+                            B=range_data[3],
+                            C=range_data[4],
+                            D=range_data[5],
+                            E=range_data[6],
+                            select=False
+                        )
+                        T_ranges.append(range_data[1])
+                        
+                    if len(Cp_dat) > 1:
+                        self.add_piecewise_method(
+                            name=WEBBOOK_SHOMATE,
+                            method_names=method_names,
+                            T_ranges=T_ranges,
+                            select=False
+                        )
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl']):
-                methods.append(POLING_CONST)
-                self.POLING_T = 298.15
-                self.POLING_constant = float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl'])
-                T_limits[POLING_CONST] = (298.15-50.0, 298.15+50.0)
+                self.add_correlation(
+                    name=POLING_CONST,
+                    model='constant',
+                    Tmin=298.15-50.0,
+                    Tmax=298.15+50.0,
+                    value=float(heat_capacity.Cp_data_Poling.at[CASRN, 'Cpl']),
+                    select=False
+                )
             if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']):
-                methods.append(CRCSTD)
-                self.CRCSTD_T = 298.15
-                self.CRCSTD_constant = float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl'])
-                T_limits[CRCSTD] = (298.15-50.0, 298.15+50.0)
-            # Saturation functions
-            if CASRN in heat_capacity.zabransky_dict_sat_s:
-                methods.append(ZABRANSKY_SPLINE_SAT)
-                self.Zabransky_spline_sat = heat_capacity.zabransky_dict_sat_s[CASRN]
-                T_limits[ZABRANSKY_SPLINE_SAT] = (self.Zabransky_spline_sat.Tmin, self.Zabransky_spline_sat.Tmax)
-            if CASRN in heat_capacity.zabransky_dict_sat_p:
-                methods.append(ZABRANSKY_QUASIPOLYNOMIAL_SAT)
-                self.Zabransky_quasipolynomial_sat = heat_capacity.zabransky_dict_sat_p[CASRN]
-                T_limits[ZABRANSKY_QUASIPOLYNOMIAL_SAT] = (self.Zabransky_quasipolynomial_sat.Tmin, self.Zabransky_quasipolynomial_sat.Tmax)
+                self.add_correlation(
+                    name=CRCSTD,
+                    model='constant',
+                    Tmin=298.15-50.0,
+                    Tmax=298.15+50.0,
+                    value=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cpl']),
+                    select=False
+                )            
+            quasi_dict_mapping = {
+                ZABRANSKY_QUASIPOLYNOMIAL: heat_capacity.zabransky_dict_const_p,
+                ZABRANSKY_QUASIPOLYNOMIAL_C: heat_capacity.zabransky_dict_iso_p,
+                ZABRANSKY_QUASIPOLYNOMIAL_SAT: heat_capacity.zabransky_dict_sat_p
+            }
+            
+            for method_name, data_dict in quasi_dict_mapping.items():
+                if CASRN in data_dict:
+                    model = data_dict[CASRN]
+                    self.add_correlation(
+                        name=method_name,
+                        model='Zabransky_quasi_polynomial',
+                        Tmin=model.Tmin,
+                        Tmax=model.Tmax,
+                        Tc=model.Tc,
+                        a1=model.coeffs[0],
+                        a2=model.coeffs[1],
+                        a3=model.coeffs[2],
+                        a4=model.coeffs[3],
+                        a5=model.coeffs[4],
+                        a6=model.coeffs[5],
+                        select=False
+                    )
+
+            # Handle spline cases - piecewise correlations
+            spline_dict_mapping = {
+                ZABRANSKY_SPLINE: heat_capacity.zabransky_dict_const_s,
+                ZABRANSKY_SPLINE_C: heat_capacity.zabransky_dict_iso_s,
+                ZABRANSKY_SPLINE_SAT: heat_capacity.zabransky_dict_sat_s
+            }
+            for method_name, data_dict in spline_dict_mapping.items():
+                if CASRN in data_dict:
+                    spline_list = data_dict[CASRN].models  # Get list of models from PiecewiseHeatCapacity
+                    # First collect all models and their temperature ranges
+                    models_and_ranges = []
+                    for i, model in enumerate(spline_list):
+                        name = method_name if len(spline_list) == 1 else f"{method_name}_{i+1}"
+                        models_and_ranges.append((model, name, model.Tmin, model.Tmax))
+                    
+                    # Sort by Tmin
+                    models_and_ranges.sort(key=lambda x: x[2])
+                    
+                    # Now process in sorted order
+                    method_names = []
+                    T_ranges = [models_and_ranges[0][2]]  # Start with first Tmin
+                    
+                    for model, name, Tmin, Tmax in models_and_ranges:
+                        method_names.append(name)
+                        T_ranges.append(Tmax)
+                        
+                        self.add_correlation(
+                            name=name,
+                            model='Zabransky_cubic',
+                            Tmin=model.Tmin,
+                            Tmax=model.Tmax,
+                            a1=model.coeffs[0],
+                            a2=model.coeffs[1],
+                            a3=model.coeffs[2],
+                            a4=model.coeffs[3],
+                            select=False
+                        )
+                        
+                    # Only add piecewise method if there are multiple ranges
+                    if len(spline_list) > 1:
+                        self.add_piecewise_method(
+                            name=method_name,
+                            method_names=method_names,
+                            T_ranges=T_ranges,
+                            select=False
+                        )
             if CASRN in heat_capacity.Cp_dict_JANAF_liquid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_liquid[CASRN]
-                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False, select=False)
             if CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
                 # pressure; it is normally substantially higher than the ideal gas
                 # value
                 Ts, props = lookup_VDI_tabular_data(CASRN, 'Cp (l)')
-                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[CASRN]
@@ -981,26 +1008,20 @@ class HeatCapacityLiquid(TDependentProperty):
         Cp : float
             Heat capacity of the liquid at T, [J/mol/K]
         '''
-        if method == ZABRANSKY_SPLINE:
-            return self.Zabransky_spline.force_calculate(T)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            return self.Zabransky_quasipolynomial.calculate(T)
-        elif method == ZABRANSKY_SPLINE_C:
-            return self.Zabransky_spline_iso.force_calculate(T)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            return self.Zabransky_quasipolynomial_iso.calculate(T)
-        elif method == ZABRANSKY_SPLINE_SAT:
-            return self.Zabransky_spline_sat.force_calculate(T)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            return self.Zabransky_quasipolynomial_sat.calculate(T)
-        elif method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate(T)
-        elif method == COOLPROP:
+        # if method == ZABRANSKY_SPLINE:
+        #     return self.Zabransky_spline.force_calculate(T)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL:
+        #     return self.Zabransky_quasipolynomial.calculate(T)
+        # elif method == ZABRANSKY_SPLINE_C:
+        #     return self.Zabransky_spline_iso.force_calculate(T)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
+        #     return self.Zabransky_quasipolynomial_iso.calculate(T)
+        # elif method == ZABRANSKY_SPLINE_SAT:
+        #     return self.Zabransky_spline_sat.force_calculate(T)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
+        #     return self.Zabransky_quasipolynomial_sat.calculate(T)
+        if method == COOLPROP:
             return CoolProp_T_dependent_property(T, self.CASRN , 'CPMOLAR', 'l')
-        elif method == POLING_CONST:
-            return self.POLING_constant
-        elif method == CRCSTD:
-            return self.CRCSTD_constant
         elif method == ROWLINSON_POLING:
             Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
             return Rowlinson_Poling(T, self.Tc, self.omega, Cpgm)
@@ -1008,72 +1029,10 @@ class HeatCapacityLiquid(TDependentProperty):
             Cpgm = self.Cpgm(T) if hasattr(self.Cpgm, '__call__') else self.Cpgm
             return Rowlinson_Bondi(T, self.Tc, self.omega, Cpgm)
         elif method == DADGOSTAR_SHAW:
-            Cp = Dadgostar_Shaw(T, self.similarity_variable)
-            return property_mass_to_molar(Cp, self.MW)
+            return Dadgostar_Shaw(T, self.similarity_variable, self.MW)
         else:
             return self._base_calculate(T, method)
 
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For the CSP method
-        :obj:`Rowlinson_Poling <chemicals.heat_capacity.Rowlinson_Poling>`, the model is considered valid for all
-        temperatures. The simple method :obj:`Dadgostar_Shaw <chemicals.heat_capacity.Dadgostar_Shaw>` is considered
-        valid for all temperatures. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if method == ZABRANSKY_SPLINE:
-            if T < self.Zabransky_spline.Tmin or T > self.Zabransky_spline.Tmax:
-                return False
-        elif method == ZABRANSKY_SPLINE_C:
-            if T < self.Zabransky_spline_iso.Tmin or T > self.Zabransky_spline_iso.Tmax:
-                return False
-        elif method == ZABRANSKY_SPLINE_SAT:
-            if T < self.Zabransky_spline_sat.Tmin or T > self.Zabransky_spline_sat.Tmax:
-                return False
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            if T > self.Zabransky_quasipolynomial.Tc:
-                return False
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            if T > self.Zabransky_quasipolynomial_iso.Tc:
-                return False
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            if T > self.Zabransky_quasipolynomial_sat.Tc:
-                return False
-        elif method == COOLPROP:
-            if T <= self.CP_f.Tmin or T >= self.CP_f.Tmax:
-                return False
-        elif method == POLING_CONST:
-            if T > self.POLING_T + 50 or T < self.POLING_T - 50:
-                return False
-        elif method == CRCSTD:
-            if T > self.CRCSTD_T + 50 or T < self.CRCSTD_T - 50:
-                return False
-        elif method == DADGOSTAR_SHAW:
-            pass # Valid everywhere
-        elif method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
-            if self.Tc and T > self.Tc:
-                return False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
@@ -1098,30 +1057,24 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == ZABRANSKY_SPLINE:
-            return self.Zabransky_spline.calculate_integral(T1, T2)
-        elif method == ZABRANSKY_SPLINE_C:
-            return self.Zabransky_spline_iso.force_calculate_integral(T1, T2)
-        elif method == ZABRANSKY_SPLINE_SAT:
-            return self.Zabransky_spline_sat.calculate_integral(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            return self.Zabransky_quasipolynomial.calculate_integral(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            return self.Zabransky_quasipolynomial_iso.calculate_integral(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            return self.Zabransky_quasipolynomial_sat.calculate_integral(T1, T2)
-        elif method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral(T1, T2)
-        elif method == POLING_CONST:
-            return (T2 - T1)*self.POLING_constant
-        elif method == CRCSTD:
-            return (T2 - T1)*self.CRCSTD_constant
-        elif method == DADGOSTAR_SHAW:
+        # if method == ZABRANSKY_SPLINE:
+        #     return self.Zabransky_spline.calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_SPLINE_C:
+        #     return self.Zabransky_spline_iso.force_calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_SPLINE_SAT:
+        #     return self.Zabransky_spline_sat.calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL:
+        #     return self.Zabransky_quasipolynomial.calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
+        #     return self.Zabransky_quasipolynomial_iso.calculate_integral(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
+        #     return self.Zabransky_quasipolynomial_sat.calculate_integral(T1, T2)
+        if method == DADGOSTAR_SHAW:
             dH = (Dadgostar_Shaw_integral(T2, self.similarity_variable)
                     - Dadgostar_Shaw_integral(T1, self.similarity_variable))
             return property_mass_to_molar(dH, self.MW)
-        elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
-            return float(quad(self.calculate, T1, T2, args=(method,))[0])
+        # elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
+        #     return float(quad(self.calculate, T1, T2, args=(method,))[0])
         return super().calculate_integral(T1, T2, method)
 
     def calculate_integral_over_T(self, T1, T2, method):
@@ -1147,30 +1100,24 @@ class HeatCapacityLiquid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == ZABRANSKY_SPLINE:
-            return self.Zabransky_spline.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_SPLINE_C:
-            return self.Zabransky_spline_iso.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_SPLINE_SAT:
-            return self.Zabransky_spline_sat.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL:
-            return self.Zabransky_quasipolynomial.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
-            return self.Zabransky_quasipolynomial_iso.calculate_integral_over_T(T1, T2)
-        elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
-            return self.Zabransky_quasipolynomial_sat.calculate_integral_over_T(T1, T2)
-        elif method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
-        elif method == POLING_CONST:
-            return self.POLING_constant*log(T2/T1)
-        elif method == CRCSTD:
-            return self.CRCSTD_constant*log(T2/T1)
-        elif method == DADGOSTAR_SHAW:
+        # if method == ZABRANSKY_SPLINE:
+        #     return self.Zabransky_spline.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_SPLINE_C:
+        #     return self.Zabransky_spline_iso.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_SPLINE_SAT:
+        #     return self.Zabransky_spline_sat.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL:
+        #     return self.Zabransky_quasipolynomial.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_C:
+        #     return self.Zabransky_quasipolynomial_iso.calculate_integral_over_T(T1, T2)
+        # elif method == ZABRANSKY_QUASIPOLYNOMIAL_SAT:
+        #     return self.Zabransky_quasipolynomial_sat.calculate_integral_over_T(T1, T2)
+        if method == DADGOSTAR_SHAW:
             dS = (Dadgostar_Shaw_integral_over_T(T2, self.similarity_variable)
                     - Dadgostar_Shaw_integral_over_T(T1, self.similarity_variable))
             return property_mass_to_molar(dS, self.MW)
-        elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
-            return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
+        # elif method in self.tabular_data or method == COOLPROP or method in [ROWLINSON_POLING, ROWLINSON_BONDI]:
+        #     return float(quad(lambda T: self.calculate(T, method)/T, T1, T2)[0])
         return super().calculate_integral_over_T(T1, T2, method)
 
 LASTOVKA_S = 'LASTOVKA_S'
@@ -1271,6 +1218,12 @@ class HeatCapacitySolid(TDependentProperty):
     ranked_methods = [WEBBOOK_SHOMATE, JANAF_FIT, miscdata.JANAF, UNARY, PERRY151, CRCSTD, LASTOVKA_S]
     """Default rankings of the available methods."""
 
+    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
+    extra_correlations_internal.add(PERRY151)
+    extra_correlations_internal.add(CRCSTD)
+    extra_correlations_internal.add(WEBBOOK_SHOMATE)
+    extra_correlations_internal.update(WEBBOOK_SHOMATE_INTERVALS)
+
     _fit_force_n = {}
     """Dictionary containing method: fit_n, for use in methods which should
     only ever be fit to a specific `n` value"""
@@ -1279,13 +1232,7 @@ class HeatCapacitySolid(TDependentProperty):
 
     custom_args = ('MW', 'similarity_variable')
 
-    _json_obj_by_CAS = ('webbook_shomate',)
-
-    @classmethod
-    def _load_json_CAS_references(cls, d):
-        CASRN = d['CASRN']
-        if CASRN in heat_capacity.WebBook_Shomate_solids:
-            d['webbook_shomate'] = heat_capacity.WebBook_Shomate_solids[CASRN]
+    _json_obj_by_CAS = tuple()
 
     def __init__(self, CASRN='', similarity_variable=None, MW=None,
                  extrapolation='linear', **kwargs):
@@ -1303,7 +1250,7 @@ class HeatCapacitySolid(TDependentProperty):
         return {PERRY151: [i for i in heat_capacity.Cp_dict_PerryI.keys() if 'c' in heat_capacity.Cp_dict_PerryI[i]],
                 CRCSTD: [i for i in heat_capacity.CRC_standard_data.index if not isnan(heat_capacity.CRC_standard_data.at[i, 'Cps'])],
                 }
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         r'''Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
@@ -1319,28 +1266,51 @@ class HeatCapacitySolid(TDependentProperty):
         self.all_methods = set()
         CASRN = self.CASRN
         if load_data and CASRN:
-            if CASRN in heat_capacity.WebBook_Shomate_solids:
-                methods.append(WEBBOOK_SHOMATE)
-                self.webbook_shomate = webbook_shomate = heat_capacity.WebBook_Shomate_solids[CASRN]
-                T_limits[WEBBOOK_SHOMATE] = (webbook_shomate.Tmin, webbook_shomate.Tmax)
+            if CASRN in heat_capacity.WebBook_Shomate_coefficients:
+                phase_values = heat_capacity.WebBook_Shomate_coefficients[CASRN]
+                Cp_dat = phase_values[0]
+                if Cp_dat is not None:
+                    method_names = []
+                    T_ranges = [Cp_dat[0][0]]
+                    for i, range_data in enumerate(Cp_dat):
+                        name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f'{WEBBOOK_SHOMATE}_{i+1}'
+                        method_names.append(name)
+                        self.add_correlation(name=name, model='Shomate', Tmin=range_data[0],  Tmax=range_data[1],  
+                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5], 
+                                             E=range_data[6], select=False
+                        )
+                        T_ranges.append(range_data[1])
+                    if len(Cp_dat) > 1:
+                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)            
             if CASRN in heat_capacity.Cp_dict_JANAF_solid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_solid[CASRN]
-                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False)
-                del self._method
+                self.add_tabular_data(Ts, props, miscdata.JANAF, check_properties=False, select=False)
             if CASRN and CASRN in heat_capacity.Cp_dict_PerryI and 'c' in heat_capacity.Cp_dict_PerryI[CASRN]:
-                self.PERRY151_Tmin = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmin'] if heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmin'] else 0
-                self.PERRY151_Tmax = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmax'] if heat_capacity.Cp_dict_PerryI[CASRN]['c']['Tmax'] else 2000
-                self.PERRY151_const = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Const']
-                self.PERRY151_lin = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Lin']
-                self.PERRY151_quad = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Quad']
-                self.PERRY151_quadinv = heat_capacity.Cp_dict_PerryI[CASRN]['c']['Quadinv']
-                methods.append(PERRY151)
-                T_limits[PERRY151] = (self.PERRY151_Tmin, self.PERRY151_Tmax)
+                data = heat_capacity.Cp_dict_PerryI[CASRN]['c']
+                Tmin = data['Tmin'] if data['Tmin'] else 0.0
+                Tmax = data['Tmax'] if data['Tmax'] else 2000.0
+                self.add_correlation(
+                    name=PERRY151,
+                    model='Shomate',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=data['Const']*calorie,
+                    B=data['Lin']*calorie,
+                    C=data['Quad']*calorie, 
+                    D=0.0,
+                    E=data['Quadinv']*calorie,
+                    select=False
+                )
             if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, 'Cps']):
-                self.CRCSTD_Cp = float(heat_capacity.CRC_standard_data.at[CASRN, 'Cps'])
-                methods.append(CRCSTD)
-                T_limits[CRCSTD] = (298.15, 298.15)
+                self.add_correlation(
+                    name=CRCSTD,
+                    model='constant',
+                    Tmin=298.15-50.0,
+                    Tmax=298.15+50.0,
+                    value=float(heat_capacity.CRC_standard_data.at[CASRN, 'Cps']),
+                    select=False
+                )
         if self.MW and self.similarity_variable:
             methods.append(LASTOVKA_S)
             T_limits[LASTOVKA_S] = (1.0, 1e4)
@@ -1366,58 +1336,10 @@ class HeatCapacitySolid(TDependentProperty):
         Cp : float
             Heat capacity of the solid at T, [J/mol/K]
         '''
-        if method == PERRY151:
-            Cp = (self.PERRY151_const + self.PERRY151_lin*T
-            + self.PERRY151_quadinv/T**2 + self.PERRY151_quad*T**2)*calorie
-        elif method == CRCSTD:
-            Cp = self.CRCSTD_Cp
-        elif method == LASTOVKA_S:
-            Cp = Lastovka_solid(T, self.similarity_variable)
-            Cp = property_mass_to_molar(Cp, self.MW)
-        elif method == WEBBOOK_SHOMATE:
-            Cp = self.webbook_shomate.force_calculate(T)
-        else:
-            return self._base_calculate(T, method)
-        return Cp
+        if method == LASTOVKA_S:
+            return Lastovka_solid(T, self.similarity_variable, self.MW)
+        return self._base_calculate(T, method)
 
-
-    def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. Follows the given
-        ranges for all coefficient-based methods. For tabular data,
-        extrapolation outside of the range is used if
-        :obj:`tabular_extrapolation_permitted` is set; if it is, the
-        extrapolation is considered valid for all temperatures.
-        For the :obj:`Lastovka_solid <chemicals.heat_capacity.Lastovka_solid>` method, it is considered valid under
-        10000K.
-
-        It is not guaranteed that a method will work or give an accurate
-        prediction simply because this method considers the method valid.
-
-        Parameters
-        ----------
-        T : float
-            Temperature at which to test the method, [K]
-        method : str
-            Name of the method to test
-
-        Returns
-        -------
-        validity : bool
-            Whether or not a method is valid
-        '''
-        validity = True
-        if method == PERRY151:
-            if T < self.PERRY151_Tmin or T > self.PERRY151_Tmax:
-                validity = False
-        elif method == CRCSTD:
-            if T < 298.15-50 or T > 298.15+50:
-                validity = False
-        elif method == LASTOVKA_S:
-            if T > 10000 or T < 0:
-                validity = False
-        else:
-            return super().test_method_validity(T, method)
-        return validity
 
     def calculate_integral(self, T1, T2, method):
         r'''Method to calculate the integral of a property with respect to
@@ -1439,20 +1361,9 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units*K`]
         '''
-        if method == PERRY151:
-            H2 = (self.PERRY151_const*T2 + 0.5*self.PERRY151_lin*T2**2
-                  - self.PERRY151_quadinv/T2 + self.PERRY151_quad*T2**3/3.)
-            H1 = (self.PERRY151_const*T1 + 0.5*self.PERRY151_lin*T1**2
-                  - self.PERRY151_quadinv/T1 + self.PERRY151_quad*T1**3/3.)
-            return (H2-H1)*calorie
-        elif method == CRCSTD:
-            return (T2-T1)*self.CRCSTD_Cp
-        elif method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral(T1, T2)
-        elif method == LASTOVKA_S:
-            dH = (Lastovka_solid_integral(T2, self.similarity_variable)
-                    - Lastovka_solid_integral(T1, self.similarity_variable))
-            return property_mass_to_molar(dH, self.MW)
+        if method == LASTOVKA_S:
+            return (Lastovka_solid_integral(T2, self.similarity_variable, self.MW)
+                    - Lastovka_solid_integral(T1, self.similarity_variable, self.MW))
         else:
             return super().calculate_integral(T1, T2, method)
 
@@ -1476,24 +1387,10 @@ class HeatCapacitySolid(TDependentProperty):
             Calculated integral of the property over the given range,
             [`units`]
         '''
-        if method == PERRY151:
-            S2 = (self.PERRY151_const*log(T2) + self.PERRY151_lin*T2
-                  - self.PERRY151_quadinv/(2.*T2**2) + 0.5*self.PERRY151_quad*T2**2)
-            S1 = (self.PERRY151_const*log(T1) + self.PERRY151_lin*T1
-                  - self.PERRY151_quadinv/(2.*T1**2) + 0.5*self.PERRY151_quad*T1**2)
-            return (S2 - S1)*calorie
-        elif method == CRCSTD:
-            S2 = self.CRCSTD_Cp*log(T2)
-            S1 = self.CRCSTD_Cp*log(T1)
-            return (S2 - S1)
-        elif method == LASTOVKA_S:
-            dS = (Lastovka_solid_integral_over_T(T2, self.similarity_variable)
-                    - Lastovka_solid_integral_over_T(T1, self.similarity_variable))
-            return property_mass_to_molar(dS, self.MW)
-        elif method == WEBBOOK_SHOMATE:
-            return self.webbook_shomate.force_calculate_integral_over_T(T1, T2)
-        else:
-            return super().calculate_integral_over_T(T1, T2, method)
+        if method == LASTOVKA_S:
+            return (Lastovka_solid_integral_over_T(T2, self.similarity_variable, self.MW)
+                    - Lastovka_solid_integral_over_T(T1, self.similarity_variable, self.MW))
+        return super().calculate_integral_over_T(T1, T2, method)
 
 
 
@@ -1562,7 +1459,7 @@ class HeatCapacityLiquidMixture(MixtureProperty):
         self.HeatCapacityLiquids = HeatCapacityLiquids
         super().__init__(**kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1697,7 +1594,7 @@ class HeatCapacitySolidMixture(MixtureProperty):
         self.MWs = MWs
         super().__init__(**kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1791,7 +1688,7 @@ class HeatCapacityGasMixture(MixtureProperty):
         self.MWs = MWs
         super().__init__(**kwargs)
 
-    def load_all_methods(self):
+    def load_all_methods(self, load_data=True):
         r'''Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
@@ -1804,7 +1701,7 @@ class HeatCapacityGasMixture(MixtureProperty):
         to reset the parameters.
         '''
         methods = [LINEAR]
-        self.all_methods = all_methods = set(methods)
+        self.all_methods = set(methods)
 
     def calculate(self, T, P, zs, ws, method):
         r'''Method to calculate heat capacity of a gas mixture at

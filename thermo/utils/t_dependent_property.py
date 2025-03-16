@@ -55,6 +55,9 @@ from chemicals.dippr import (
     EQ106_fitting_jacobian,
     EQ107_fitting_jacobian,
     INTEGRAL_OVER_T_CALCULATION,
+    EQ100_reciprocal, 
+    EQ105_reciprocal, 
+    EQ106_reciprocal,
 )
 from chemicals.elements import allotrope_CAS_to_name, solid_allotrope_map
 from chemicals.heat_capacity import (
@@ -70,12 +73,18 @@ from chemicals.heat_capacity import (
     Zabransky_quasi_polynomial,
     Zabransky_quasi_polynomial_integral,
     Zabransky_quasi_polynomial_integral_over_T,
+    Shomate, 
+    Shomate_integral, 
+    Shomate_integral_over_T,
+    PPDS2, 
+    PPDS15, 
+    TDE_CSExpansion,
 )
 from chemicals.identifiers import sorted_CAS_key
 from chemicals.interface import PPDS14, ISTExpansion, Jasper, REFPROP_sigma, Somayajulu, Watson_sigma
 from chemicals.phase_change import PPDS12, Alibakhshi, Watson, Watson_n
 from chemicals.thermal_conductivity import PPDS3, PPDS8, Chemsep_16
-from chemicals.utils import hash_any_primitive
+from chemicals.utils import hash_any_primitive, rho_to_Vm
 from chemicals.vapor_pressure import (
     Antoine,
     Antoine_AB_coeffs_from_point,
@@ -117,7 +126,7 @@ from chemicals.viscosity import (
     mu_TDE,
     mu_Yaws,
 )
-from chemicals.volume import PPDS17, Rackett_fit, TDE_VDNS_rho, volume_VDI_PPDS
+from chemicals.volume import PPDS17, Rackett_fit, TDE_VDNS_rho, volume_VDI_PPDS, SNM0, COSTALD, Rackett
 from fluids.numerics import (
     brenth,
     chebder,
@@ -786,6 +795,64 @@ class TDependentProperty:
                         {'f': Zabransky_cubic, 'f_int': Zabransky_cubic_integral, 'f_int_over_T': Zabransky_cubic_integral_over_T},
                         {'fit_params': ['a1', 'a2', 'a3', 'a4']}),
 
+    'Shomate': (
+        ['A', 'B', 'C', 'D', 'E'], 
+        [], 
+        {
+            'f': Shomate,
+            'f_int': Shomate_integral,
+            'f_int_over_T': Shomate_integral_over_T
+        },
+        {
+            'fit_params': ['A', 'B', 'C', 'D', 'E'],
+            'initial_guesses': [
+                # Initial guess based on water vapor example
+                {'A': 30.09200, 'B': 6.832514e-3, 'C': 6.793435e-6, 'D': -2.534480e-9, 'E': 82139.0},
+            ]
+        }
+    ),
+    'PPDS2': (
+        ['Ts', 'C_low', 'C_inf', 'a1', 'a2', 'a3', 'a4', 'a5'],
+        [],
+        {'f': PPDS2},
+        {'fit_params': ['Ts', 'C_low', 'C_inf', 'a1', 'a2', 'a3', 'a4', 'a5'],
+         'initial_guesses': [
+             {'Ts': 462.493, 'C_low': 4.54115, 'C_inf': 9.96847, 
+              'a1': -103.419, 'a2': 695.484, 'a3': -2006.1, 
+              'a4': 2476.84, 'a5': -1186.47},
+             {'Ts': 500.0, 'C_low': 5.0, 'C_inf': 10.0, 
+              'a1': -120.0, 'a2': 800.0, 'a3': -2200.0, 
+              'a4': 2600.0, 'a5': -1300.0}
+         ]}
+    ),
+
+    'PPDS15': (
+        ['Tc', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5'],
+        [],
+        {'f': PPDS15},
+        {'fit_params': ['a0', 'a1', 'a2', 'a3', 'a4', 'a5'],
+         'initial_guesses': [
+             {'a0': 0.198892, 'a1': 24.1389, 'a2': -20.2301, 
+              'a3': 5.72481, 'a4': 4.43613e-7, 'a5': -3.10751e-7},
+             {'a0': 0.25, 'a1': 20.0, 'a2': -15.0, 
+              'a3': 4.5, 'a4': 3.5e-7, 'a5': -2.5e-7}
+         ]}
+    ),
+
+    'TDE_CSExpansion': (
+        ['Tc', 'b', 'a1'],
+        ['a2', 'a3', 'a4'],
+        {'f': TDE_CSExpansion},
+        {'fit_params': ['b', 'a1', 'a2', 'a3', 'a4'],
+         'initial_guesses': [
+             {'b': 0.626549, 'a1': 120.705, 'a2': 0.255987, 
+              'a3': 0.000381027, 'a4': -3.03077e-7},
+             {'b': 0.5, 'a1': 110.0, 'a2': 0.2, 
+              'a3': 0.0003, 'a4': -2.5e-7}
+         ]}
+    ),
+
+
     'REFPROP_sigma': (['Tc', 'sigma0', 'n0'], ['sigma1', 'n1', 'sigma2', 'n2'], {'f': REFPROP_sigma},  {'fit_params': ['sigma0', 'n0', 'sigma1', 'n1', 'sigma2', 'n2']}),
     'Somayajulu': (['Tc', 'A', 'B', 'C'], [], {'f': Somayajulu}, {'fit_params': ['A', 'B', 'C']}),
     'Jasper': (['a', 'b',], [], {'f': Jasper}, {'fit_params': ['a', 'b',]}),
@@ -814,8 +881,18 @@ class TDependentProperty:
     'TDE_VDNS_rho': (['Tc', 'rhoc', 'a1', 'a2', 'a3', 'a4', 'MW',], [], {'f': TDE_VDNS_rho}, {'fit_params': ['a1', 'a2', 'a3', 'a4',]}),
     'PPDS17': (['Tc', 'a0', 'a1', 'a2', 'MW',], [], {'f': PPDS17}, {'fit_params': ['a0', 'a1', 'a2', ]}),
 
-    'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [], {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
-    'Rackett_fit': (['Tc', 'rhoc', 'b', 'n', 'MW',], [], {'f': Rackett_fit}, {'fit_params': ['rhoc', 'b', 'n'], 'initial_guesses': [
+    'volume_VDI_PPDS': (['Tc', 'rhoc', 'a', 'b', 'c', 'd', 'MW',], [],
+            {'f': volume_VDI_PPDS}, {'fit_params': ['a', 'b', 'c', 'd',]}),
+    'DIPPR116_rho_to_Vm': (
+        ['Tc', 'rhoc', 'MW'], 
+        ['A', 'B', 'C', 'D'],
+        {'f': lambda T, MW, Tc, rhoc, A, B, C, D: rho_to_Vm(EQ116(T, Tc, rhoc, A, B, C, D), MW)},
+        {'fit_params': ['A', 'B', 'C', 'D']}
+    ),
+    'Rackett_fit': (['Tc', 'Pc', 'Z_RA'], [], {'f': lambda T, **kwargs: Rackett(T, Tc=kwargs['Tc'], Pc=kwargs['Pc'], Zc=kwargs['Z_RA'])}, 
+                            {'fit_params': ['Z_RA',]}),
+
+    'Rackett_density_fit': (['Tc', 'rhoc', 'b', 'n', 'MW',], [], {'f': Rackett_fit}, {'fit_params': ['rhoc', 'b', 'n'], 'initial_guesses': [
         {'n': 0.286, 'b': 0.011, 'rhoc': 28.93}, # near a point from yaws
         {'n': 0.286, 'b': 0.3, 'rhoc': 755.0}, # near a point from yaws
         {'n': 0.259, 'b': 0.233, 'rhoc': 433.1}, # near a point from yaws
@@ -843,18 +920,18 @@ class TDependentProperty:
       ),
     'DIPPR100_inv': ([],
       ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
-      {'f': lambda T, **kwargs: 1.0/EQ100(T, order=0, **kwargs)},
+      {'f': lambda T, **kwargs: EQ100_reciprocal(T, **kwargs)},
       {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
       },
       ),
     'constant': ([],
-      ['A'],
-      {'f': EQ100,
-       'f_der': lambda T, **kwargs: EQ100(T, order=1, **kwargs),
-       'f_int': lambda T, **kwargs: EQ100(T, order=-1, **kwargs),
-       'f_int_over_T': lambda T, **kwargs: EQ100(T, order=INTEGRAL_OVER_T_CALCULATION, **kwargs)},
-      {'fit_params': ['A']},
-      ),
+      ['value'],
+      {'f': lambda T, **kwargs: EQ100(T, A=kwargs['value']),
+       'f_der': lambda T, **kwargs: EQ100(T, A=kwargs['value'], order=1, ),
+       'f_int': lambda T, **kwargs: EQ100(T, A=kwargs['value'], order=-1),
+       'f_int_over_T': lambda T, **kwargs: EQ100(T, A=kwargs['value'], order=INTEGRAL_OVER_T_CALCULATION)},
+      {'fit_params': ['value']},
+     ),
     'linear': ([],
       ['A', 'B'],
       {'f': EQ100,
@@ -1236,10 +1313,33 @@ class TDependentProperty:
           {'A': 15.0, 'B': 0.3, 'C': 7000.0, 'D': 0.3},
           {'A': 0.1, 'B': 0.05, 'C': 3300.0, 'D': 0.1},
           ]}),
-     'DIPPR105_inv': (['A', 'B', 'C', 'D'],
-      [],
-      {'f': lambda T, **kwargs: 1.0/EQ105(T, order=0, **kwargs)},),
+    'DIPPR100_rho_to_Vm': (
+        ['MW', 'A'], 
+        ['B', 'C', 'D', 'E', 'F', 'G'],
+        {'f': lambda T, MW, **params: 0.001 * MW / EQ100(T, **params)},
+        {'fit_params': ['A', 'B', 'C', 'D', 'E', 'F', 'G']}
+    ),
 
+    # in dwsim
+    'DIPPR105_reciprocal': (
+        ['A', 'B', 'C', 'D'], 
+        [],
+        {'f': EQ105_reciprocal},
+        {'fit_params': ['A', 'B', 'C', 'D']}
+    ),
+    'SNM0_fit': (
+        ['Tc', 'Vc', 'omega'],
+        ['delta_SRK'],
+        {'f': SNM0},
+        {'fit_params': ['delta_SRK']}
+    ),
+    'COSTALD_fit': (
+        ['Tc', 'COSTALD_Vchar', 'COSTALD_omega'],
+        [],
+        {'f': lambda T, **kwargs: COSTALD(T, Tc=kwargs['Tc'], Vc=kwargs['COSTALD_Vchar'], 
+                                          omega=kwargs['COSTALD_omega'])},
+        {'fit_params': ['COSTALD_Vchar', 'COSTALD_omega']}
+    ),
      'DIPPR106': (['Tc', 'A', 'B'],
       ['C', 'D', 'E'],
       {'f': EQ106,
@@ -1265,7 +1365,7 @@ class TDependentProperty:
       }),
      'DIPPR106_inv': (['Tc', 'A', 'B'],
         ['C', 'D', 'E'],
-        {'f': lambda T, **kwargs: 1.0/EQ106(T, order=0, **kwargs),},
+        {'f': lambda T, **kwargs: EQ106_reciprocal(T, **kwargs),},
         {'fit_params': ['A', 'B', 'C', 'D', 'E'],
         }),
      'YawsSigma': (['Tc', 'A', 'B'],
@@ -1491,7 +1591,7 @@ class TDependentProperty:
         '''
         return self.as_string()
 
-    def as_string(self, tabular=True, references=True, json_parameters=False):
+    def as_string(self, tabular=True, references=True, json_parameters=False, with_limits=True):
         clsname = self.__class__.__name__
         base = f'{clsname}('
         if self.CASRN:
@@ -1502,6 +1602,8 @@ class TDependentProperty:
                 if not references and isinstance(v, TDependentProperty):
                     continue
                 base += f'{k}={v}, '
+        single_method = len(self.all_methods)
+        single_method_and_T_limits_in_str = False
 
         extrap_str = f'"{self.extrapolation}"' if self.extrapolation is not None else 'None'
         base += f'extrapolation={extrap_str}, '
@@ -1530,16 +1632,24 @@ class TDependentProperty:
 
         if hasattr(self, 'poly_fit_Tmin') and self.poly_fit_Tmin is not None:
             base += f'poly_fit=({self.poly_fit_Tmin}, {self.poly_fit_Tmax}, {self.poly_fit_coeffs}), '
+            if single_method:
+                single_method_and_T_limits_in_str = True
         if hasattr(self, 'exp_poly_fit_Tmin') and self.exp_poly_fit_Tmin is not None:
             base += f'exp_poly_fit=({self.exp_poly_fit_Tmin}, {self.exp_poly_fit_Tmax}, {self.exp_poly_fit_coeffs}), '
+            if single_method:
+                single_method_and_T_limits_in_str = True
         if hasattr(self, 'exp_poly_fit_ln_tau_Tmin') and self.exp_poly_fit_ln_tau_Tmin is not None:
             base += f'exp_poly_fit_ln_tau=({self.exp_poly_fit_ln_tau_Tmin}, {self.exp_poly_fit_ln_tau_Tmax}, {self.exp_poly_fit_ln_tau_Tc}, {self.exp_poly_fit_ln_tau_coeffs}), '
             # if 'Tc=' not in base:
             #     base += 'Tc=%s, ' %(self.exp_poly_fit_ln_tau_Tc)
+            if single_method:
+                single_method_and_T_limits_in_str = True
         if hasattr(self, 'poly_fit_ln_tau_Tmin') and self.poly_fit_ln_tau_Tmin is not None:
             base += f'poly_fit_ln_tau=({self.poly_fit_ln_tau_Tmin}, {self.poly_fit_ln_tau_Tmax}, {self.poly_fit_ln_tau_Tc}, {self.poly_fit_ln_tau_coeffs}), '
             # if 'Tc=' not in base:
             #     base += 'Tc=%s, ' %(self.poly_fit_ln_tau_Tc)
+            if single_method:
+                single_method_and_T_limits_in_str = True
 
 
         for k in self.correlation_parameters.values():
@@ -1554,15 +1664,122 @@ class TDependentProperty:
                 if len(extra_model):
                     # Only add the string if we still have anything
                     base += f'{k}={extra_model}, '
+                    if single_method:
+                        single_method_and_T_limits_in_str = True
+
         if hasattr(self, 'piecewise_methods'):
             piecewise_methods = self.piecewise_methods.copy()
-            piecewise_methods.pop(DEFAULT_PHASE_TRANSITIONS, None)
+            if not json_parameters:
+                piecewise_methods.pop(DEFAULT_PHASE_TRANSITIONS, None)
+                for extra_added_corr in self.extra_correlations_internal:
+                    if extra_added_corr in piecewise_methods:
+                        del piecewise_methods[extra_added_corr]
             base += 'piecewise_methods=%s, ' %({k: {'methods': v[0], 'T_ranges': v[1]} for k, v in piecewise_methods.items()})
-
+        if with_limits and self.method and not single_method_and_T_limits_in_str:
+            base += f'Tmin={self.T_limits[self.method][0]}, Tmax={self.T_limits[self.method][1]}, '
 
         if base[-2:] == ', ':
             base = base[:-2]
         return base + ')'
+
+    def as_method_kwargs(self, data_only=False):
+        # No method - return empty dict
+        if self.method is None:
+            return {}
+
+
+        result = {}
+        if not data_only:
+            for arg in ('Tc', 'Vc', 'Tb', 'Pc', 'Tm', 'Tt', 'Pt', 'Hvap_Tb', 
+                        'Cpl', 'Hfus', 'Vml', 'Vml_Tt', 'Hsub_t', 'StielPolar', 'dipole', 'MW', 
+                        'similarity_variable', 'omega', 'Cvgm','mug', 'Zc', 'Cpgm', 
+                        'iscyclic_aliphatic',):
+                if hasattr(self, arg):
+                    arg_obj = getattr(self, arg)
+                    if arg_obj is not None and type(arg_obj) in {float, int, str, bool}:
+                        result[arg] = arg_obj
+        result['extrapolation'] = self.extrapolation
+            
+        # Handle piecewise methods
+        if hasattr(self, 'piecewise_methods') and self.method in self.piecewise_methods:
+            methods_dict = self.piecewise_methods[self.method]
+            
+            # Add the piecewise structure
+            result['piecewise_methods'] = {
+                self.method: {
+                    'methods': methods_dict[0],
+                    'T_ranges': methods_dict[1]
+                }
+            }
+            result['method'] = self.method
+            result['Tmin'] = self.Tmin
+            result['Tmax'] = self.Tmax
+            
+            # Add parameters for each sub-method
+            sub_methods = methods_dict[0]
+            for param_name, correlation_name in self.correlation_parameters.items():
+                correlation_dict = getattr(self, correlation_name, None)
+                if correlation_dict:
+                    # Check each sub-method
+                    sub_method_params = {}
+                    for sub_method in sub_methods:
+                        if sub_method in correlation_dict:
+                            sub_method_params[sub_method] = correlation_dict[sub_method]
+                    if sub_method_params:
+                        result[correlation_name] = sub_method_params
+                        
+            return result
+
+
+        # Handle tabular data
+        if hasattr(self, 'tabular_data') and self.tabular_data and self.method in self.tabular_data:
+            result['method'] = self.method
+            result['tabular_data'] = {self.method: self.tabular_data[self.method]}
+            return result
+
+        # Handle correlation parameters
+        for param_name, correlation_name in self.correlation_parameters.items():
+            correlation_dict = getattr(self, correlation_name, None)
+            if correlation_dict and self.method in correlation_dict:
+                # Return only the specific method's parameters
+                result['method'] = self.method
+                result[correlation_name] = {self.method: correlation_dict[self.method]}
+                return result
+        
+        method = self.method
+        if method in (POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU, STABLEPOLY_FIT, EXP_STABLEPOLY_FIT, STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU, CHEB_FIT, EXP_CHEB_FIT, CHEB_FIT_LN_TAU, EXP_CHEB_FIT_LN_TAU):
+            params = self._get_special_fit_params(method)
+            MODEL_TO_PARAMETERS = {
+                'POLY_FIT': 'polynomial_parameters',
+                'EXP_POLY_FIT': 'exp_polynomial_parameters',
+                'POLY_FIT_LN_TAU': 'polynomial_ln_tau_parameters',
+                'EXP_POLY_FIT_LN_TAU': 'exp_polynomial_ln_tau_parameters',
+                'STABLEPOLY_FIT': 'stable_polynomial_parameters',
+                'EXP_STABLEPOLY_FIT': 'exp_stable_polynomial_parameters',
+                'STABLEPOLY_FIT_LN_TAU': 'stable_polynomial_ln_tau_parameters',
+                'EXP_STABLEPOLY_FIT_LN_TAU': 'exp_stable_polynomial_ln_tau_parameters',
+                'CHEB_FIT': 'chebyshev_parameters',
+                'EXP_CHEB_FIT': 'exp_chebyshev_parameters', 
+                'CHEB_FIT_LN_TAU': 'chebyshev_ln_tau_parameters',
+                'EXP_CHEB_FIT_LN_TAU': 'exp_chebyshev_ln_tau_parameters',
+            }
+            name = MODEL_TO_PARAMETERS[method]
+            model_name = name.replace('_parameters', '_fit')
+            result[name] = {model_name: params}
+            method = model_name
+            result['CASRN'] = self.CASRN
+            result['Tmin'] = self.Tmin
+            result['Tmax'] = self.Tmax
+            result['method'] = method
+            return result
+
+        if method and not data_only:
+            result['CASRN'] = self.CASRN
+            result['Tmin'] = self.Tmin
+            result['Tmax'] = self.Tmax
+            result['method'] = method
+            return result                
+        return {}
 
     def __call__(self, T):
         r'''Convenience method to calculate the property; calls
@@ -1676,11 +1893,27 @@ class TDependentProperty:
                 # del state[obj_name]
             except:
                 pass
+        # Handle correlations with lambdas
+        if 'correlations' in state:
+            correlations = {}
+            for name, (func, kwargs, model, extra) in state['correlations'].items():
+                # Store just the model name instead of the lambda
+                correlations[name] = (None, kwargs, model, extra)
+            state['correlations'] = correlations
         return state
 
     def __setstate__(self, state):
         self._load_json_CAS_references(state)
         self.__dict__.update(state)
+
+        # Restore correlation functions
+        if 'correlations' in state:
+            correlations = {}
+            for name, (_, kwargs, model, extra) in state['correlations'].items():
+                if model in self.correlation_models:
+                    func = self.correlation_models[model][2]['f']
+                    correlations[name] = (func, kwargs, model, extra)
+            self.correlations = correlations
 
 
     @classmethod
@@ -2717,6 +2950,17 @@ class TDependentProperty:
         elif method == EXP_CHEB_FIT_LN_TAU:
             return f'{self.__class__.__name__}(load_data=False, Tc={self.exp_cheb_fit_ln_tau_Tc!r}, exp_cheb_fit_ln_tau=({self.exp_cheb_fit_ln_tau_Tmin!r}, {self.exp_cheb_fit_ln_tau_Tmax!r}, {self.exp_cheb_fit_ln_tau_Tc!r}, {self.exp_cheb_fit_ln_tau_coeffs!r}))'
 
+    def _get_special_fit_params(self, method):
+        params = {
+            "Tmin": getattr(self, f"{method.lower()}_Tmin", None),
+            "Tmax": getattr(self, f"{method.lower()}_Tmax", None),
+            "coeffs": getattr(self, f"{method.lower()}_coeffs", None),
+        }
+        if "_ln_tau" in method.lower():
+            params["Tc"] = getattr(self, f"{method.lower()}_Tc", None)
+        
+        return {k: v for k, v in params.items() if v is not None}
+
     def _base_calculate(self, T, method):
         if method in self.correlations:
             call, kwargs, model, extra = self.correlations[method]
@@ -2730,15 +2974,23 @@ class TDependentProperty:
             elif model == 'exp_stable_polynomial_ln_tau':
                 return exp_horner_stable_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
 
-            elif method == 'chebyshev':
+            elif model == 'chebyshev':
                 return chebval(T, kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif method == 'exp_chebyshev':
+            elif model == 'exp_chebyshev':
                 return exp_cheb(T, kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif method == 'chebyshev_ln_tau':
+            elif model == 'chebyshev_ln_tau':
                 return chebval_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
-            elif method == 'exp_chebyshev_ln_tau':
+            elif model == 'exp_chebyshev_ln_tau':
                 return exp_cheb_ln_tau(T, kwargs['Tc'], kwargs['coeffs'], extra['offset'], extra['scale'])
 
+            elif model == 'polynomial':
+                return horner(kwargs['coeffs'], T)
+            elif model == 'exp_polynomial':
+                return exp_horner_backwards(T, kwargs['coeffs'])
+            elif model == 'polynomial_ln_tau':
+                return horner_backwards_ln_tau(T, kwargs['Tc'], kwargs['coeffs'])
+            elif model == 'exp_polynomial_ln_tau':
+                return exp_horner_backwards_ln_tau(T, kwargs['Tc'], kwargs['coeffs'])
             return call(T, **kwargs)
         elif method == POLY_FIT:
             return horner(self.poly_fit_coeffs, T)
@@ -3237,34 +3489,53 @@ class TDependentProperty:
 
         extra = {}
         if model == 'polynomial':
-            extra['int_coeffs'] = polyint(coeffs)
-            extra['T_int_T_coeffs'], extra['log_coeff'] = polyint_over_x(coeffs)
-            d_coeffs = polyder(coeffs[::-1])
-            d2_coeffs = polyder(d_coeffs)
-            d2_coeffs.reverse()
-            d_coeffs.reverse()
-            extra['d_coeffs'] = d_coeffs
-            extra['d2_coeffs'] = d2_coeffs
+            # Only compute integral coefficients if this is a heat capacity correlation
+            is_Cp = self.units == 'J/mol/K'
+            if is_Cp:
+                extra['int_coeffs'] = polyint(coeffs)
+                extra['T_int_T_coeffs'], extra['log_coeff'] = polyint_over_x(coeffs)
+
             Tmax_value, Tmax_slope, Tmax_dT2 = horner_and_der2(coeffs, Tmax)
             extra['Tmax_value'] = Tmax_value
             extra['Tmax_slope'] = Tmax_slope
-            extra['Tmax_dT2'] = Tmax_dT2
 
             Tmin_value, Tmin_slope, Tmin_dT2 = horner_and_der2(coeffs, Tmin)
             extra['Tmin_value'] = Tmin_value
             extra['Tmin_slope'] = Tmin_slope
-            extra['Tmin_dT2'] = Tmin_dT2
 
-        if model == 'exp_polynomial':
-            # Not really used yet
-            exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope, exp_poly_fit_Tmax_dT2 = exp_horner_backwards_and_der2(
+        elif model == 'exp_polynomial':
+            # Compute values and slopes at endpoints for extrapolation
+            exp_poly_fit_Tmax_value, exp_poly_fit_Tmax_slope = exp_horner_backwards_and_der(
                 Tmax, coeffs)
-            exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope, exp_poly_fit_Tmin_dT2 = exp_horner_backwards_and_der2(
+            exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope = exp_horner_backwards_and_der(
                 Tmin, coeffs)
+            
+            extra['Tmax_value'] = exp_poly_fit_Tmax_value
             extra['Tmax_slope'] = exp_poly_fit_Tmax_slope
-            extra['Tmax_dT2'] = exp_poly_fit_Tmax_dT2
+            extra['Tmin_value'] = exp_poly_fit_Tmin_value
             extra['Tmin_slope'] = exp_poly_fit_Tmin_slope
-            extra['Tmin_dT2'] = exp_poly_fit_Tmin_dT2
+
+        elif model == 'polynomial_ln_tau':
+            Tc = kwargs['Tc']
+            # Compute values and slopes at endpoints for extrapolation
+            Tmax_value, Tmax_slope = horner_backwards_ln_tau_and_der(Tmax, Tc, coeffs)
+            extra['Tmax_value'] = Tmax_value
+            extra['Tmax_slope'] = Tmax_slope
+
+            Tmin_value, Tmin_slope = horner_backwards_ln_tau_and_der(Tmin, Tc, coeffs)
+            extra['Tmin_value'] = Tmin_value
+            extra['Tmin_slope'] = Tmin_slope
+
+        elif model == 'exp_polynomial_ln_tau':
+            Tc = kwargs['Tc']
+            # Compute values and slopes at endpoints for extrapolation
+            Tmax_value, Tmax_slope = exp_horner_backwards_ln_tau_and_der(Tmax, Tc, coeffs)
+            extra['Tmax_value'] = Tmax_value
+            extra['Tmax_slope'] = Tmax_slope
+
+            Tmin_value, Tmin_slope = exp_horner_backwards_ln_tau_and_der(Tmin, Tc, coeffs)
+            extra['Tmin_value'] = Tmin_value
+            extra['Tmin_slope'] = Tmin_slope
 
 
 
@@ -3311,12 +3582,11 @@ class TDependentProperty:
             extra['d1_coeffs'] = chebyshev_d1_coeffs = chebder(coeffs, m=1, scl=scale)
             extra['d2_coeffs'] = chebyshev_d2_coeffs = chebder(chebyshev_d1_coeffs, m=1, scl=scale)
             extra['d3_coeffs'] = chebyshev_d3_coeffs = chebder(chebyshev_d2_coeffs, m=1, scl=scale)
-            extra['d4_coeffs'] = chebyshev_d4_coeffs = chebder(chebyshev_d3_coeffs, m=1, scl=scale)
             extra['int_coeffs'] = chebyshev_int_coeffs = chebint(coeffs, scl=1.0/scale)
 
         self.correlations[name] = (call, kwargs, model, extra)
 
-    def add_piecewise_method(self, name, method_names, T_ranges):
+    def add_piecewise_method(self, name, method_names, T_ranges, select=True):
         r'''Method to add a piecewise method made of already added other methods.
         This can be useful in the event of multiple solid phases.
         However, if the methods are not continuous at the transitions,
@@ -3331,6 +3601,9 @@ class TDependentProperty:
         T_ranges : list[float]
             A list of temperatures consisting of [Tmin, T_transition1, ..., Tmax];
             this is size len(method_names) + 1, [K]
+        select : bool, optional
+            Whether to select the method, [-]
+
 
         Notes
         -----
@@ -3353,7 +3626,8 @@ class TDependentProperty:
         d[name] = (method_names, T_ranges, T_ranges[1:])
         self.T_limits[name] = (Tmin, Tmax)
         self.all_methods.add(name)
-        self.method = name
+        if select:
+            self.method = name
 
 
     def add_correlation(self, name, model, Tmin, Tmax, select=True, **kwargs):
@@ -3375,7 +3649,7 @@ class TDependentProperty:
             Maximum temperature to use the method at, [K]
         kwargs : dict
             Various keyword arguments accepted by the model, [-]
-        select: bool
+        select : bool
             Whether to set the method as the default, [-]
 
         Notes
@@ -3495,7 +3769,7 @@ class TDependentProperty:
         self.T_limits[name] = (0. if Tmin is None else Tmin,
                                inf if Tmax is None else Tmax)
 
-    def add_tabular_data(self, Ts, properties, name=None, check_properties=True):
+    def add_tabular_data(self, Ts, properties, name=None, check_properties=True, select=True):
         r'''Method to set tabular data to be used for interpolation.
         Ts must be in increasing order. If no name is given, data will be
         assigned the name 'Tabular data series #x', where x is the number of
@@ -3515,6 +3789,8 @@ class TDependentProperty:
             If True, the properties will be checked for validity with
             :obj:`test_property_validity` and raise an exception if any are not
             valid
+        select: bool
+            Whether to set the method as the default, [-]
         '''
         # Ts must be in increasing order.
         if check_properties:
@@ -3530,7 +3806,8 @@ class TDependentProperty:
         self.T_limits[name] = (min(Ts), max(Ts))
 
         self.all_methods.add(name)
-        self.method = name
+        if select:
+            self.method = name
 
     def solve_property(self, goal):
         r'''Method to solve for the temperature at which a property is at a
@@ -3563,8 +3840,6 @@ class TDependentProperty:
             except ValueError:
                 raise Exception('To within the implemented temperature range, it is not possible to calculate the desired value.')
         else:
-            # if self.method == POLY_FIT:
-            #     return self.solve_prop_poly_fit(goal)
             high = self.Tc if self.critical_zero and self.Tc is not None else None
             x0 = T_limits[0]
             x1 = T_limits[1]
@@ -3581,42 +3856,7 @@ class TDependentProperty:
                     if high is not None and x0 > high:
                         x0 = high*(1-1e-6)
                     f0 = error(x0)
-            #try:
             return secant(error, x0=x0, x1=x1, f0=f0, f1=f1, low=1e-4, xtol=1e-12, bisection=True, high=high)
-            #except:
-            #    return secant(error, x0=x0, x1=x1, f0=f0, f1=f1, low=1e-4, xtol=1e-12, bisection=True, high=high, damping=.01)
-
-    # def solve_property_exp_poly_fit(self, goal):
-    #     exp_poly_fit_Tmin, exp_poly_fit_Tmax = self.exp_poly_fit_Tmin, self.exp_poly_fit_Tmax
-    #     exp_poly_fit_Tmin_slope, exp_poly_fit_Tmax_slope = self.exp_poly_fit_Tmin_slope, self.exp_poly_fit_Tmax_slope
-    #     exp_poly_fit_Tmin_value, exp_poly_fit_Tmax_value = self.exp_poly_fit_Tmin_value, self.exp_poly_fit_Tmax_value
-
-    #     coeffs = self.exp_poly_fit_coeffs
-
-    #     T_low = log(goal*exp(exp_poly_fit_Tmin*exp_poly_fit_Tmin_slope - exp_poly_fit_Tmin_value))/exp_poly_fit_Tmin_slope
-    #     if T_low <= exp_poly_fit_Tmin:
-    #         return T_low
-    #     T_high = log(goal*exp(exp_poly_fit_Tmax*exp_poly_fit_Tmax_slope - exp_poly_fit_Tmax_value))/exp_poly_fit_Tmax_slope
-    #     if T_high >= exp_poly_fit_Tmax:
-    #         return T_high
-    #     else:
-    #         lnPGoal = log(goal)
-    #         def to_solve(T):
-    #             # dPsat and Psat are both in log basis
-    #             dPsat = Psat = 0.0
-    #             for c in coeffs:
-    #                 dPsat = T*dPsat + Psat
-    #                 Psat = T*Psat + c
-
-    #             return Psat - lnPGoal, dPsat
-    #         # Guess with the two extrapolations from the linear fits
-    #         # By definition both guesses are in the range of they would have been returned
-    #         if T_low > exp_poly_fit_Tmax:
-    #             T_low = exp_poly_fit_Tmax
-    #         if T_high < exp_poly_fit_Tmin:
-    #             T_high = exp_poly_fit_Tmin
-    #         T = newton(to_solve, 0.5*(T_low + T_high), fprime=True, low=exp_poly_fit_Tmin, high=exp_poly_fit_Tmax)
-    #         return T
 
 
     def _calculate_derivative_transformed(self, T, method, order=1,
@@ -3710,8 +3950,6 @@ class TDependentProperty:
                     return chebval(T, extra['d2_coeffs'], extra['offset'], extra['scale'])
                 if order == 3:
                     return chebval(T, extra['d3_coeffs'], extra['offset'], extra['scale'])
-                if order == 4:
-                    return chebval(T, extra['d4_coeffs'], extra['offset'], extra['scale'])
             elif model == 'exp_chebyshev':
                 if order == 1:
                     return exp_cheb_and_der(T, kwargs['coeffs'], extra['d1_coeffs'], extra['offset'], extra['scale'])[1]
@@ -3953,6 +4191,21 @@ class TDependentProperty:
             local_method = self.local_methods[method]
             if local_method.f_int is not None:
                 return local_method.f_int(T1, T2)
+        if hasattr(self, 'piecewise_methods') and method in self.piecewise_methods:
+            if T2 < T1:
+                return -self.calculate_integral(T2, T1, method)
+            
+            method_names, T_ranges, transition_Ts = self.piecewise_methods[method]
+            integral = 0.
+            Ta = T1
+            
+            for Tmax, method_name in zip(transition_Ts, method_names):
+                if T2 <= Tmax:
+                    return integral + self.calculate_integral(Ta, T2, method_name)
+                elif Ta < Tmax:
+                    integral += self.calculate_integral(Ta, Tmax, method_name)
+                    Ta = Tmax
+            return integral + self.calculate_integral(Ta, T2, method_names[-1])
         return float(quad(self.calculate, T1, T2, args=(method,))[0])
 
     def T_dependent_property_integral(self, T1, T2):
@@ -4098,6 +4351,21 @@ class TDependentProperty:
             calls = self.correlation_models[model][2]
             if 'f_int_over_T' in calls:
                 return calls['f_int_over_T'](T2, **kwargs) - calls['f_int_over_T'](T1, **kwargs)
+        if method in getattr(self, 'piecewise_methods', {}):
+            if T2 < T1:
+                return -self.calculate_integral_over_T(T2, T1, method)
+            
+            method_names, T_ranges, transition_Ts = self.piecewise_methods[method]
+            integral = 0.
+            Ta = T1
+            
+            for Tmax, method_name in zip(transition_Ts, method_names):
+                if T2 <= Tmax:
+                    return integral + self.calculate_integral_over_T(Ta, T2, method_name)
+                elif Ta < Tmax:
+                    integral += self.calculate_integral_over_T(Ta, Tmax, method_name)
+                    Ta = Tmax
+            return integral + self.calculate_integral_over_T(Ta, T2, method_names[-1])
 
         if method in self.local_methods:
             local_method = self.local_methods[method]
@@ -4427,6 +4695,8 @@ class TDependentProperty:
             raise ValueError("Not outside normal range")
         if extrapolation == 'constant':
             return 0.
+        elif extrapolation == 'nolimit':
+            return self.calculate_derivative(T, method, order)
         elif extrapolation in ('linear', 'Arrhenius', 'DIPPR101_ABC', 'AntoineAB', 'DIPPR106_AB', 'DIPPR106_ABC', 'EXP_POLY_LN_TAU2', 'EXP_POLY_LN_TAU3'):
             key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs
@@ -4437,6 +4707,8 @@ class TDependentProperty:
             if extrapolation == 'linear':
                 if order == 1:
                     return coeffs[1]
+                elif order > 1:
+                    return 0.0
             elif extrapolation == 'Arrhenius':
                 T_ref, P_ref, slope = coeffs
                 if order == 1:
@@ -4783,7 +5055,7 @@ class TDependentProperty:
 
 
 
-        if method is None or (found_allotropes and method in do_not_set_methods) or method in self.extra_correlations_internal:
+        if method is None or (found_allotropes and method in do_not_set_methods) or (method in self.extra_correlations_internal and not 'method' in kwargs):
             all_methods = self.all_methods
             for i in self.ranked_methods:
                 if i in all_methods:
@@ -4805,7 +5077,7 @@ class TDependentProperty:
                 self.ranked_methods = ranked_methods
 
 
-    def load_all_methods(self, load_data):
+    def load_all_methods(self, load_data=True):
         self.all_methods = set()
         """Set of all methods available for a given CASRN and properties;
         filled by :obj:`load_all_methods`."""
