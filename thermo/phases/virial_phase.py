@@ -1348,7 +1348,7 @@ class VirialGas(IdealGasDeparturePhase):
         r'''Method to calculate and return the molar departure enthalpy.
 
         .. math::
-           H_{dep} = \frac{R T^{2} \left(2 V \frac{d}{d T} B{\left(T \right)}
+           H_{dep} = -\frac{R T^{2} \left(2 V \frac{d}{d T} B{\left(T \right)}
            + \frac{d}{d T} C{\left(T \right)}\right)}{2 V^{2}} - R T \left(-1
             + \frac{V^{2} + V B{\left(T \right)} + C{\left(T \right)}}{V^{2}}
             \right)
@@ -1382,7 +1382,7 @@ class VirialGas(IdealGasDeparturePhase):
         T, V = self.T, self._V
         V2 = V*V
         RT = self.R*T
-        self._H_dep = H_dep = RT*(T*(2.0*V*self.dB_dT() + self.dC_dT())/(2.0*V2)
+        self._H_dep = H_dep = -RT*(T*(2.0*V*self.dB_dT() + self.dC_dT())/(2.0*V2)
                - (-1.0 + (V2 + V*self.B() + self.C())/V2))
         return H_dep
 
@@ -1391,7 +1391,7 @@ class VirialGas(IdealGasDeparturePhase):
         molar departure enthalpy.
 
         .. math::
-           \frac{\partial H_{dep}}{\partial T} = \frac{R \left(2 T^{2} V
+           \frac{\partial H_{dep}}{\partial T} = -\frac{R \left(2 T^{2} V
            \frac{d^{2}}{d T^{2}} B{\left(T \right)} + T^{2} \frac{d^{2}}{d T^{2}}
            C{\left(T \right)} + 2 T V \frac{d}{d T} B{\left(T \right)}
            - 2 V B{\left(T \right)} - 2 C{\left(T \right)}\right)}{2 V^{2}}
@@ -1412,7 +1412,7 @@ class VirialGas(IdealGasDeparturePhase):
         dB_dT = self.dB_dT()
         d2B_dT2 = self.d2B_dT2()
         d2C_dT2 = self.d2C_dT2()
-        self._dH_dep_dT = dH_dep_dT = (self.R*(2.0*T*T*V*d2B_dT2 + T*T*d2C_dT2
+        self._dH_dep_dT = dH_dep_dT = -(self.R*(2.0*T*T*V*d2B_dT2 + T*T*d2C_dT2
             + 2.0*T*V*dB_dT - 2.0*V*B - 2.0*C)/(2.0*V*V))
         return dH_dep_dT
 
@@ -1424,7 +1424,7 @@ class VirialGas(IdealGasDeparturePhase):
 
         .. math::
            \left(\frac{\partial H_{dep}}{\partial P}\right)_{V} =
-           - R \left(-1 + \frac{V^{2} + V B{\left(P \right)} + C{\left(P \right)}}
+           -(- R \left(-1 + \frac{V^{2} + V B{\left(P \right)} + C{\left(P \right)}}
            {V^{2}}\right) \frac{d}{d P} T{\left(P \right)} - \frac{R \left(- 2 V
            \operatorname{dB_{dT}}{\left(P \right)} - \operatorname{dC_{dT}}
            {\left(P \right)}\right) T{\left(P \right)} \frac{d}{d P} T{\left(P
@@ -1432,7 +1432,7 @@ class VirialGas(IdealGasDeparturePhase):
             + \frac{d}{d P} C{\left(P \right)}\right) T{\left(P \right)}}{V^{2}}
             - \frac{R \left(- 2 V \frac{d}{d P} \operatorname{dB_{dT}}
            {\left(P \right)} - \frac{d}{d P} \operatorname{dC_{dT}}{\left(P
-            \right)}\right) T^{2}{\left(P \right)}}{2 V^{2}}
+            \right)}\right) T^{2}{\left(P \right)}}{2 V^{2}})
 
         Returns
         -------
@@ -1445,7 +1445,7 @@ class VirialGas(IdealGasDeparturePhase):
         from sympy import *
         R, V, P = symbols('R, V, P')
         dB_dT, dC_dT, T, B, C = symbols('dB_dT, dC_dT, T, B, C', cls=Function)
-        H_dep_const_V = -R*T(P)**2*(-2*V*dB_dT(P)- dC_dT(P))/(2*V**2) - R*T(P)*(-1 + (V**2 + V*B(P) + C(P))/V**2)
+        H_dep_const_V = -(-R*T(P)**2*(-2*V*dB_dT(P)- dC_dT(P))/(2*V**2) - R*T(P)*(-1 + (V**2 + V*B(P) + C(P))/V**2))
         print(diff(H_dep_const_V, P))
         """
         T, V = self.T, self._V
@@ -1462,7 +1462,7 @@ class VirialGas(IdealGasDeparturePhase):
 
         V2 = V*V
 
-        dH_dep_dP_V = (-R*(-1.0 + (V2 + V*B + C)/V2)*dT_dP_V - R*(-2.0*V*dB_dT - dC_dT)*T*dT_dP_V/V2
+        dH_dep_dP_V = -(-R*(-1.0 + (V2 + V*B + C)/V2)*dT_dP_V - R*(-2.0*V*dB_dT - dC_dT)*T*dT_dP_V/V2
                            - R*(V*dB_dP_V + dC_dP_V)*T/V2
                            - R*(-2.0*V*d2B_dTdP_V - d2C_dTdP_V)*T*T/(2.0*V2))
         return dH_dep_dP_V
@@ -1514,14 +1514,14 @@ class VirialGas(IdealGasDeparturePhase):
 
         .. math::
            \left(\frac{\partial H_{dep}}{\partial P}\right)_{T} =
-           \frac{R T^{2} dB_{dT} \frac{d}{d P} V{\left(P \right)}}{V^{2}{\left(P
+           -(\frac{R T^{2} dB_{dT} \frac{d}{d P} V{\left(P \right)}}{V^{2}{\left(P
             \right)}} + \frac{R T^{2} \left(- 2 dB_{dT} V{\left(P \right)}
             - dC_{dT}\right) \frac{d}{d P} V{\left(P \right)}}{V^{3}{\left(P
             \right)}} - R T \left(\frac{B \frac{d}{d P} V{\left(P \right)}
             + 2 V{\left(P \right)} \frac{d}{d P} V{\left(P \right)}}{V^{2}
             {\left(P \right)}} - \frac{2 \left(B V{\left(P \right)} + C + V^{2}
             {\left(P \right)}\right) \frac{d}{d P} V{\left(P \right)}}
-            {V^{3}{\left(P \right)}}\right)
+            {V^{3}{\left(P \right)}}\right))
 
         Returns
         -------
@@ -1534,7 +1534,7 @@ class VirialGas(IdealGasDeparturePhase):
         from sympy import *
         R, P, T, B, C, dB_dT, dC_dT = symbols('R, P, T, B, C, dB_dT, dC_dT')
         V = symbols('V', cls=Function)
-        H_dep_const_T = -R*T**2*(-2*V(P)*dB_dT - dC_dT)/(2*V(P)**2) - R*T*(-1 + (V(P)**2 + V(P)*B + C)/V(P)**2)
+        H_dep_const_T = -(-R*T**2*(-2*V(P)*dB_dT - dC_dT)/(2*V(P)**2) - R*T*(-1 + (V(P)**2 + V(P)*B + C)/V(P)**2))
         print(diff(H_dep_const_T, P))
         """
         T, V = self.T, self._V
@@ -1544,7 +1544,7 @@ class VirialGas(IdealGasDeparturePhase):
         dC_dT = self.dC_dT()
         dV_dP = self.dV_dP()
 
-        dH_dep_dP_T =(R*T**2*dB_dT*dV_dP/V**2 + R*T**2*(-2*dB_dT*V - dC_dT)*dV_dP/V**3 - R*T*((B*dV_dP + 2*V*dV_dP)/V**2 - 2*(B*V + C + V**2)*dV_dP/V**3))
+        dH_dep_dP_T = -(R*T**2*dB_dT*dV_dP/V**2 + R*T**2*(-2*dB_dT*V - dC_dT)*dV_dP/V**3 - R*T*((B*dV_dP + 2*V*dV_dP)/V**2 - 2*(B*V + C + V**2)*dV_dP/V**3))
         return dH_dep_dP_T
 
     def dS_dep_dP_T(self):
@@ -1595,9 +1595,9 @@ class VirialGas(IdealGasDeparturePhase):
 
         .. math::
            \left(\frac{\partial H_{dep}}{\partial V}\right)_{T} =
-           \frac{R T^{2} dB_{dT}}{V^{2}} + \frac{R T^{2} \left(- 2 V dB_{dT}
+           -(\frac{R T^{2} dB_{dT}}{V^{2}} + \frac{R T^{2} \left(- 2 V dB_{dT}
             - dC_{dT}\right)}{V^{3}} - R T \left(\frac{B + 2 V}{V^{2}}
-            - \frac{2 \left(B V + C + V^{2}\right)}{V^{3}}\right)
+            - \frac{2 \left(B V + C + V^{2}\right)}{V^{3}}\right))
 
         Returns
         -------
@@ -1610,7 +1610,7 @@ class VirialGas(IdealGasDeparturePhase):
         from sympy import *
         R, V, T, B, C, dB_dT, dC_dT = symbols('R, V, T, B, C, dB_dT, dC_dT')
         P = symbols('P', cls=Function)
-        H_dep_const_T = -R*T**2*(-2*V*dB_dT - dC_dT)/(2*V**2) - R*T*(-1 + (V**2 + V*B + C)/V**2)
+        H_dep_const_T = -(-R*T**2*(-2*V*dB_dT - dC_dT)/(2*V**2) - R*T*(-1 + (V**2 + V*B + C)/V**2))
         print(diff(H_dep_const_T, V))
         """
         T, V = self.T, self._V
@@ -1618,7 +1618,7 @@ class VirialGas(IdealGasDeparturePhase):
         C = self.C()
         dB_dT = self.dB_dT()
         dC_dT = self.dC_dT()
-        return (R*T**2*dB_dT/V**2 + R*T**2*(-2*V*dB_dT - dC_dT)/V**3 - R*T*((B + 2*V)/V**2 - 2*(B*V + C + V**2)/V**3))
+        return -(R*T**2*dB_dT/V**2 + R*T**2*(-2*V*dB_dT - dC_dT)/V**3 - R*T*((B + 2*V)/V**2 - 2*(B*V + C + V**2)/V**3))
 
 
     def dS_dep_dV_T(self):
@@ -1660,7 +1660,7 @@ class VirialGas(IdealGasDeparturePhase):
 
         .. math::
            \left(\frac{\partial H_{dep}}{\partial V}\right)_{P} =
-           - R \left(-1 + \frac{V^{2} + V B{\left(V \right)} + C{\left(V \right)}}
+           -(- R \left(-1 + \frac{V^{2} + V B{\left(V \right)} + C{\left(V \right)}}
             {V^{2}}\right) \frac{d}{d V} T{\left(V \right)} - R \left(\frac{V
             \frac{d}{d V} B{\left(V \right)} + 2 V + B{\left(V \right)}
            + \frac{d}{d V} C{\left(V \right)}}{V^{2}} - \frac{2 \left(V^{2}
@@ -1673,7 +1673,7 @@ class VirialGas(IdealGasDeparturePhase):
             - \frac{d}{d V} \operatorname{dC_{dT}}{\left(V \right)}\right)
             T^{2}{\left(V \right)}}{2 V^{2}} + \frac{R \left(- 2 V
             \operatorname{dB_{dT}}{\left(V \right)} - \operatorname{dC_{dT}}
-            {\left(V \right)}\right) T^{2}{\left(V \right)}}{V^{3}}
+            {\left(V \right)}\right) T^{2}{\left(V \right)}}{V^{3}})
 
         Returns
         -------
@@ -1686,7 +1686,7 @@ class VirialGas(IdealGasDeparturePhase):
         from sympy import *
         R, V, P = symbols('R, V, P')
         dB_dT, dC_dT, T, B, C = symbols('dB_dT, dC_dT, T, B, C', cls=Function)
-        H_dep_const_P = -R*T(V)**2*(-2*V*dB_dT(V)- dC_dT(V))/(2*V**2) - R*T(V)*(-1 + (V**2 + V*B(V) + C(V))/V**2)
+        H_dep_const_P = -(-R*T(V)**2*(-2*V*dB_dT(V)- dC_dT(V))/(2*V**2) - R*T(V)*(-1 + (V**2 + V*B(V) + C(V))/V**2))
         print((diff(H_dep_const_P, V)))
         """
         T, V = self.T, self._V
@@ -1699,9 +1699,9 @@ class VirialGas(IdealGasDeparturePhase):
         dC_dV_P = self.dC_dV_P()
         d2B_dTdV_P = self.d2B_dTdV_P()
         d2C_dTdV_P = self.d2C_dTdV_P()
-        return (-R*(-1 + (V**2 + V*B + C)/V**2)*dT_dV - R*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2
+        return -((-R*(-1 + (V**2 + V*B + C)/V**2)*dT_dV - R*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2
                 - 2*(V**2 + V*B + C)/V**3)*T - R*(-2*V*dB_dT - dC_dT)*T*dT_dV/V**2
-            - R*(-2*V*d2B_dTdV_P - 2*dB_dT - d2C_dTdV_P)*T**2/(2*V**2) + R*(-2*V*dB_dT - dC_dT)*T**2/V**3)
+            - R*(-2*V*d2B_dTdV_P - 2*dB_dT - d2C_dTdV_P)*T**2/(2*V**2) + R*(-2*V*dB_dT - dC_dT)*T**2/V**3))
 
     def dS_dep_dV_P(self):
         r'''Method to calculate and return the first volume derivative of

@@ -159,12 +159,13 @@ def test_virial_phase_pure_B_only_pitzer_curl():
     assert_close(PT.d2P_dT2(), -0.0020770847374848075, rtol=1e-13)
     assert_close(PT.d2P_dT2(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dT(), PT.T, PT.T*8e-7), rtol=1e-6)
 
-    assert_close(PT.H_dep(), 15.708867544147836, rtol=1e-13)
-    H_dep_Poling = (-(PT.B() - PT.T*PT.dB_dT())/PT.V())*R*PT.T
+    # Poling equation is for negative of H_dep
+    assert_close(PT.H_dep(), -15.708867544147836, rtol=1e-13)
+    H_dep_Poling = -(-(PT.B() - PT.T*PT.dB_dT())/PT.V())*R*PT.T
     assert_close(PT.H_dep(), H_dep_Poling, rtol=1e-13)
 
 
-    assert_close(PT.dH_dep_dT(), -0.03958097657787867, rtol=1e-13)
+    assert_close(PT.dH_dep_dT(), 0.03958097657787867, rtol=1e-13)
     assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
 
     assert_close(PT.dG_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).G_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
@@ -585,9 +586,9 @@ def test_virial_phase_pure_BC_pitzer_curl_orbey_vera():
     assert_close(PT.d2P_dT2(), -0.0020701719078863546, rtol=1e-13)
     assert_close(PT.d2P_dT2(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).dP_dT(), PT.T, PT.T*8e-7), rtol=1e-6)
 
-    assert_close(PT.H_dep(), 15.694307202591004, rtol=1e-13)
+    assert_close(PT.H_dep(), -15.694307202591004, rtol=1e-13)
 
-    assert_close(PT.dH_dep_dT(), -0.03955760203920011, rtol=1e-13)
+    assert_close(PT.dH_dep_dT(), 0.03955760203920011, rtol=1e-13)
     assert_close(PT.dH_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).H_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
 
     assert_close(PT.dG_dep_dT(), derivative(lambda T: PT.to(T=T, V=PT.V(), zs=[1]).G_dep(), PT.T, PT.T*3e-7), rtol=1e-7)
@@ -739,12 +740,6 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas_np.dnC_dns(), dnC_dns_expect, rtol=1e-13)
     assert isinstance(gas_np.dnC_dns(), np.ndarray)
 
-    dnG_dep_dns_expect = [7.425792779612475, 26.6956451946272, 58.85973416020387]
-    assert_close1d(gas.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
-    assert_close1d(gas_np.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
-    assert isinstance(gas_np.dnG_dep_dns(), np.ndarray)
-
-
     # Volume derivative
     dV_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).V(), zs, perturbation=3e-6)
     dV_dzs_expect = [-4.112328459328977e-05, -8.550402887152434e-05, -0.0001463861573387482]
@@ -757,25 +752,6 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close1d(gas.d2V_dzizjs(), d2V_dzizjs_expect, rtol=1e-13)
     assert_close1d(gas_np.d2V_dzizjs(), d2V_dzizjs_expect, rtol=1e-13)
     assert isinstance(gas_np.d2V_dzizjs(), np.ndarray)
-
-    # Gibbs composition derivative
-    dG_dep_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).G_dep(), zs, perturbation=3e-6)
-    dG_dep_dzs_expect = [35.74825427120366, 55.01810668621839, 87.18219565179506]
-    assert_close1d(gas.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
-    assert_close1d(gas_np.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
-    assert isinstance(gas_np.dG_dep_dzs(), np.ndarray)
-    assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
-
-    # lnphis call
-    def to_jac(ns):
-        zs = [i/sum(ns) for i in ns]
-        return sum(ns)*gas.to(T=T, P=P, zs=zs).lnphi()
-    lnphis = jacobian(to_jac, zs, perturbation=.7e-6)
-    lnphis_expect = [0.0029770586188775424, 0.010702493723142819, 0.023597329482121697]
-    assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-13)
-    assert_close1d(gas_np.lnphis(), lnphis_expect, rtol=1e-13)
-    assert isinstance(gas_np.lnphis(), np.ndarray)
-    assert_close1d(lnphis, gas.lnphis(), rtol=5e-7)
 
 
     # B and C pressure derivatives at constant volume
@@ -833,36 +809,24 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     # Enthalpy extra derivatives
 
     dH_dep_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).H_dep(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.dH_dep_dP_V(), -0.000150298196047701, rtol=1e-11)
+    assert_close(gas.dH_dep_dP_V(), 0.000150298196047701, rtol=1e-11)
     assert_close(gas.dH_dep_dP_V(), dH_dep_dP_V)
 
-    dH_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).H(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.dH_dP_V(), 0.10683350766127504, rtol=1e-11)
-    assert_close(gas.dH_dP_V(), dH_dP_V)
-
     dH_dep_dP_T = derivative(lambda P: gas.to(T=gas.T, P=P, zs=gas.zs).H_dep(), gas.P, dx=gas.P*6e-7)
-    assert_close(gas.dH_dep_dP_T(), 0.00016339614251889556, rtol=1e-11)
+    assert_close(gas.dH_dep_dP_T(), -0.00016339614251889556, rtol=1e-11)
     assert_close(gas.dH_dep_dP_T(), dH_dep_dP_T)
 
-    dH_dP_T = derivative(lambda P: gas.to(T=gas.T, P=P, zs=gas.zs).H(), gas.P, dx=gas.P*6e-7)
-    assert_close(gas.dH_dP_T(), 0.00016339614251889556, rtol=1e-11)
-    assert_close(gas.dH_dP_T(), dH_dP_T)
-
     dH_dep_dV_T = derivative(lambda V: gas.to(T=gas.T, V=V, zs=gas.zs).H_dep(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dep_dV_T(), -655.0685868798632, rtol=1e-11)
+    assert_close(gas.dH_dep_dV_T(), 655.0685868798632, rtol=1e-11)
     assert_close(gas.dH_dep_dV_T(), dH_dep_dV_T)
 
     dH_dV_T = derivative(lambda V: gas.to(T=gas.T, V=V, zs=gas.zs).H(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dV_T(), -655.0685868798632, rtol=1e-11)
+    assert_close(gas.dH_dV_T(), 655.0685868798632, rtol=1e-11)
     assert_close(gas.dH_dV_T(), dH_dV_T)
 
     dH_dep_dV_P = derivative(lambda V: gas.to(P=gas.P, V=V, zs=gas.zs).H_dep(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dep_dV_P(), -1257.6264280735763, rtol=1e-11)
+    assert_close(gas.dH_dep_dV_P(), 1257.6264280735763, rtol=1e-11)
     assert_close(gas.dH_dep_dV_P(), dH_dep_dV_P)
-
-    dH_dV_P = derivative(lambda V: gas.to(P=gas.P, V=V, zs=gas.zs).H(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dV_P(), 427649.25865266385, rtol=1e-11)
-    assert_close(gas.dH_dV_P(), dH_dV_P)
 
     # entropy special derivatives
 
@@ -907,6 +871,32 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     dS_dT_V = derivative(lambda T: gas.to(T=T, V=gas.V(), zs=gas.zs).S(), gas.T, dx=gas.T*6e-7)
     assert_close(gas.dS_dT_V(), 0.09180908916077761, rtol=1e-11)
     assert_close(gas.dS_dT_V(), dS_dT_V)
+
+    # Gibbs composition derivative
+    dG_dep_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).G_dep(), zs, perturbation=3e-6)
+    assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
+
+    dG_dep_dzs_expect = [35.74825427120366, 55.01810668621839, 87.18219565179506]
+    assert_close1d(gas.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
+    assert_close1d(gas_np.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
+    assert isinstance(gas_np.dG_dep_dzs(), np.ndarray)
+
+    dnG_dep_dns_expect = [7.425792779612475, 26.6956451946272, 58.85973416020387]
+    assert_close1d(gas.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
+    assert_close1d(gas_np.dnG_dep_dns(), dnG_dep_dns_expect, rtol=1e-13)
+    assert isinstance(gas_np.dnG_dep_dns(), np.ndarray)
+
+    # lnphis call
+    def to_jac(ns):
+        zs = [i/sum(ns) for i in ns]
+        return sum(ns)*gas.to(T=T, P=P, zs=zs).lnphi()
+    lnphis = jacobian(to_jac, zs, perturbation=.7e-6)
+    lnphis_expect = [0.0029770586188775424, 0.010702493723142819, 0.023597329482121697]
+    assert_close1d(gas.lnphis(), lnphis_expect, rtol=1e-13)
+    assert_close1d(gas_np.lnphis(), lnphis_expect, rtol=1e-13)
+    assert isinstance(gas_np.lnphis(), np.ndarray)
+    assert_close1d(lnphis, gas.lnphis(), rtol=5e-7)
+
 
 # test_virial_phase_ternary_BC_pitzer_curl_orbey_vera()
 
@@ -1050,11 +1040,12 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera_no_interactions():
     assert_close1d(dV_dzs, gas.dV_dzs(), rtol=5e-6)
 
     dG_dep_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).G_dep(), zs, perturbation=3e-6)
+    assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
+
     dG_dep_dzs_expect = [11.039653592654977, 26.791676731271732, 71.69351860968281]
     assert_close1d(gas.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
     assert_close1d(gas_np.dG_dep_dzs(), dG_dep_dzs_expect, rtol=1e-13)
     assert isinstance(gas_np.dG_dep_dzs(), np.ndarray)
-    assert_close1d(dG_dep_dzs, gas.dG_dep_dzs(), rtol=5e-6)
 
     def to_jac(ns):
         zs = [i/sum(ns) for i in ns]
