@@ -565,7 +565,7 @@ class ViscosityLiquid(TPDependentProperty):
                     E=C5,
                     select=False
                 )
-        if CASRN in viscosity.mu_data_VDI_PPDS_7.index:
+        if CASRN in viscosity.mu_data_VDI_PPDS_7.index and CASRN not in ("78-83-1",):
             coeffs = viscosity.mu_values_PPDS_7[
                 viscosity.mu_data_VDI_PPDS_7.index.get_loc(CASRN)].tolist()
             Tmin, Tmax = determine_PPDS9_limits(coeffs, self.Tm, self.Tc)
