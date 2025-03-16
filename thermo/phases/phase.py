@@ -35,6 +35,7 @@ from chemicals.utils import (
     Joule_Thomson,
     dns_to_dn_partials,
     dxs_to_dns,
+    dxs_to_dn_partials,
     hash_any_primitive,
     isentropic_exponent_PT,
     isentropic_exponent_PV,
@@ -1504,6 +1505,10 @@ class Phase:
         '''
         out = zeros(self.N) if self.vectorized else [0.0]*self.N
         return dxs_to_dns(self.dH_dzs(), self.zs, out)
+
+    def dnH_dns(self):
+        out = zeros(self.N) if self.vectorized else [0.0]*self.N
+        return dxs_to_dn_partials(self.dH_dzs(), self.zs, self.H(), out)
 
     def dS_dns(self):
         r'''Method to calculate and return the mole number derivative of the
