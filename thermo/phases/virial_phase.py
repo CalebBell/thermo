@@ -933,7 +933,7 @@ class VirialGas(IdealGasDeparturePhase):
         coefficients into a single `B` coefficient.
 
         * 'linear': :math:`B = \sum_i y_i B_i`
-        * 'theory': :math:` B = \sum_i \sum_j y_i y_j B(T)`
+        * 'theory': :math:`B = \sum_i \sum_j y_i y_j B(T)`
     C_mixing_rule : str, optional
         The method used to combine the pure and/or interaction third `C` virial
         coefficients into a single `C` coefficient.
@@ -1941,6 +1941,7 @@ class VirialGas(IdealGasDeparturePhase):
 
     def B(self):
         r'''Method to calculate and return the `B` second virial coefficient.
+
         Returns
         -------
         B : float
@@ -1973,6 +1974,7 @@ class VirialGas(IdealGasDeparturePhase):
     def dB_dT(self):
         r'''Method to calculate and return the first temperature derivative of
         the `B` second virial coefficient.
+
         Returns
         -------
         dB_dT : float
@@ -2006,6 +2008,7 @@ class VirialGas(IdealGasDeparturePhase):
     def d2B_dT2(self):
         r'''Method to calculate and return the second temperature derivative of
         the `B` second virial coefficient.
+
         Returns
         -------
         d2B_dT2 : float
@@ -2039,6 +2042,7 @@ class VirialGas(IdealGasDeparturePhase):
     def d3B_dT3(self):
         r'''Method to calculate and return the third temperature derivative of
         the `B` second virial coefficient.
+
         Returns
         -------
         d3B_dT3 : float
@@ -2073,6 +2077,7 @@ class VirialGas(IdealGasDeparturePhase):
 
     def C(self):
         r'''Method to calculate and return the `C` third virial coefficient.
+
         Returns
         -------
         C : float
@@ -2108,6 +2113,7 @@ class VirialGas(IdealGasDeparturePhase):
     def dC_dT(self):
         r'''Method to calculate and return the first temperature derivative of
         the `C` third virial coefficient.
+
         Returns
         -------
         dC_dT : float
@@ -2145,6 +2151,7 @@ class VirialGas(IdealGasDeparturePhase):
     def d2C_dT2(self):
         r'''Method to calculate and return the second temperature derivative of
         the `C` third virial coefficient.
+
         Returns
         -------
         d2C_dT2 : float
@@ -2183,6 +2190,7 @@ class VirialGas(IdealGasDeparturePhase):
     def d3C_dT3(self):
         r'''Method to calculate and return the third temperature derivative of
         the `C` third virial coefficient.
+
         Returns
         -------
         d3C_dT3 : float

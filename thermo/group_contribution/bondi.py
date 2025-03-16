@@ -26,9 +26,9 @@ This functionality requires the RDKit library to work.
 .. contents:: :local:
 
 
-.. autofunction:: thermo.group_contribution.bondi_van_der_waals_surface_area_volume
-.. autofunction:: thermo.group_contribution.R_from_Van_der_Waals_volume
-.. autofunction:: thermo.group_contribution.Q_from_Van_der_Waals_area
+.. autofunction:: thermo.group_contribution.bondi.bondi_van_der_waals_surface_area_volume
+.. autofunction:: thermo.group_contribution.bondi.R_from_Van_der_Waals_volume
+.. autofunction:: thermo.group_contribution.bondi.Q_from_Van_der_Waals_area
 
 
 '''
