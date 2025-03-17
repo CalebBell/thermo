@@ -1511,7 +1511,7 @@ def test_basic_compare_H_dep_vs_literature_equations():
         
         # Combine terms and multiply by RT
         # The equation has the negative of H_Dep in it
-        return - self.R*T*(first_term + second_term)
+        return - R*T*(first_term + second_term)
         
 
     def H_dep_Walas(self):
@@ -1545,7 +1545,6 @@ def test_basic_compare_H_dep_vs_literature_equations():
         C = self.C()  # mixture third virial coefficient
         dB_dT = self.dB_dT()  # temperature derivative of B
         dC_dT = self.dC_dT()  # temperature derivative of C
-        R = self.R   # gas constant
         
         # First term: PT(dB/dT - B/T)
         first_term = P*T*(dB_dT - B/T)
@@ -1606,7 +1605,7 @@ def test_basic_compare_S_dep_vs_literature_equations():
         dC_dT = self.dC_dT()  # temperature derivative of C
         
         # Calculate Z factor
-        Z = self.P*V/(self.R*T)
+        Z = self.P*V/(R*T)
         ln_Z = log(Z)
         
         # First term: (B + T*dB/dT)/V
@@ -1619,7 +1618,7 @@ def test_basic_compare_S_dep_vs_literature_equations():
         second_term = (C + T*dC_dT)/(2.0*V*V)
         
         # Combine terms and multiply by -R
-        S_dep = -self.R*(first_term + second_term - ln_Z)
+        S_dep = -R*(first_term + second_term - ln_Z)
         
         return S_dep
 
@@ -1655,7 +1654,6 @@ def test_basic_compare_S_dep_vs_literature_equations():
         C = self.C()  # mixture third virial coefficient
         dB_dT = self.dB_dT()  # temperature derivative of B
         dC_dT = self.dC_dT()  # temperature derivative of C
-        R = self.R   # gas constant
         
         # Calculate B' and C'
         B_prime = B/(R*T)
@@ -1718,12 +1716,14 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
         zs = self.zs  # mole fractions (y in the equation)
         
         # Calculate Z factor for the mixture (z_mixt)
-        Z = self.P*V/(self.R*self.T)
+        Z = self.P*V/(R*self.T)
         ln_Z = log(Z)
         
         # Get interaction coefficients
+        has_cross_C_coefficients = self.C_mixing_rule == 'Orentlicher-Prausnitz'
+
         B_interactions = self.model.B_interactions()
-        C_interactions = self.model.C_interactions() if self.has_cross_C_coefficients else None
+        C_interactions = self.model.C_interactions() if has_cross_C_coefficients else None
         
         N = self.N
         lnphis = [0.0]*N
@@ -1737,7 +1737,7 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
             
             # Second term: (3/2v²) * sum(y_j * y_k * C_ijk)
             sum_yy_C = 0.0
-            if self.has_cross_C_coefficients and self.model.C_model != VIRIAL_C_ZERO:
+            if has_cross_C_coefficients and self.model.C_model != VIRIAL_C_ZERO:
                 for j in range(N):
                     for k in range(N):
                         C_ijk = 0.0
@@ -1778,7 +1778,7 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
         zs = self.zs  # mole fractions (y in the equation)
         
         # Calculate Z factor for the mixture
-        Z = self.P*V/(self.R*self.T)
+        Z = self.P*V/(R*self.T)
         ln_Z = log(Z)
         
         # Get interaction coefficients
@@ -1823,7 +1823,7 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
         C = self.C()  # mixture third virial coefficient
         
         # Calculate Z factor
-        Z = self.P*V/(self.R*self.T)
+        Z = self.P*V/(R*self.T)
         ln_Z = log(Z)
         
         # Apply the formula from Poling
@@ -1859,7 +1859,7 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
         C = self.C()  # mixture third virial coefficient
         
         # Calculate Z factor
-        Z = self.P*V/(self.R*T)
+        Z = self.P*V/(R*T)
         ln_Z = log(Z)
         
         # First term: -2B/V
@@ -1869,7 +1869,7 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
         second_term = -3.0*C/(2.0*V*V)
         
         # Combine terms and multiply by RT
-        G_dep = -self.R*T*(first_term + second_term + ln_Z)
+        G_dep = -R*T*(first_term + second_term + ln_Z)
         
         return G_dep
 
