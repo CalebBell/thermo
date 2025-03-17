@@ -1496,7 +1496,7 @@ def test_basic_compare_H_dep_vs_literature_equations():
         Notes
         -----
         '''
-        V = self._V  # molar volume
+        V = self.V()  # molar volume
         T = self.T   # temperature
         B = self.B()  # mixture second virial coefficient
         C = self.C()  # mixture third virial coefficient
@@ -1598,7 +1598,7 @@ def test_basic_compare_S_dep_vs_literature_equations():
         This method uses the virial equation truncated after the C term.
         The equation gives the departure from the ideal gas state.
         '''
-        V = self._V  # molar volume
+        V = self.V()  # molar volume
         T = self.T   # temperature
         B = self.B()  # mixture second virial coefficient
         C = self.C()  # mixture third virial coefficient
@@ -1712,7 +1712,7 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
         The zs member variable is used as the mole fractions (y_j in the equation).
         This method requires interaction virial coefficients B_ij and C_ijk.
         '''
-        V = self._V  # molar volume
+        V = self.V()  # molar volume
         v_inv = 1.0/V
         v2_inv = v_inv*v_inv
         zs = self.zs  # mole fractions (y in the equation)
@@ -1773,7 +1773,7 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
         This simplified form uses only the second virial coefficient (B) terms.
         The zs member variable is used as the mole fractions (y_i in the equation).
         '''
-        V = self._V  # molar volume
+        V = self.V()  # molar volume
         v_inv = 1.0/V
         zs = self.zs  # mole fractions (y in the equation)
         
@@ -1818,7 +1818,7 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
         The equation is truncated after the C term as higher-order terms are
         rarely available.
         '''
-        V = self._V  # molar volume
+        V = self.V()  # molar volume
         B = self.B()  # mixture second virial coefficient
         C = self.C()  # mixture third virial coefficient
         
@@ -1853,7 +1853,7 @@ def test_basic_compare_G_dep_lnphi_lnphis_vs_literature_equations():
         Mathematically, this is equivalent to RT*ln(φ), where φ is the
         fugacity coefficient.
         '''
-        V = self._V  # molar volume
+        V = self.V()  # molar volume
         T = self.T   # temperature
         B = self.B()  # mixture second virial coefficient
         C = self.C()  # mixture third virial coefficient
