@@ -124,7 +124,7 @@ from fluids.numerics import (
 from fluids.numerics import numpy as np
 
 from thermo.coolprop import CPiP_min
-from thermo.phases import IAPWS95, CEOSGas, CEOSLiquid, CoolPropPhase, Phase
+from thermo.phases import IAPWS95Gas, IAPWS95Liquid, CEOSGas, CEOSLiquid, CoolPropPhase, Phase
 from thermo.phases.phase_utils import lnphis_direct
 
 LASTOVKA_SHAW = 'Lastovka Shaw'
@@ -2905,9 +2905,6 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
         else:
             min_bound = phase.T_MIN_FIXED
             max_bound = phase.T_MAX_FIXED
-#        if isinstance(phase, IAPWS95):
-#            min_bound = 235.0
-#            max_bound = 5000.0
     elif iter_var == 'P':
         min_bound = Phase.P_MIN_FIXED*(1.0 - 1e-12)
         max_bound = Phase.P_MAX_FIXED*(1.0 + 1e-12)
@@ -2949,9 +2946,11 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
 
     ytol = 1e-8*abs(spec_val)
 
+    is_iapws95 = phase.__class__ is IAPWS95Gas or phase.__class__ is IAPWS95Liquid
+
     if iter_var == 'T' and spec in ('S', 'H'):
         ytol = ytol/100
-    if isinstance(phase, IAPWS95):
+    if is_iapws95:
         # Objective function isn't quite as nice and smooth as desired
         ytol = None
 
@@ -2959,7 +2958,7 @@ def solve_PTV_HSGUA_1P(phase, zs, fixed_var_val, spec_val, fixed_var,
                                                    iter_var=iter_var, fixed_var=fixed_var, spec=spec, oscillation_detection=oscillation_detection,
                                                    minimum_progress=1e-4, maxiter=maxiter, fprime=True, xtol=xtol,
                                                    bounded=True, min_bound=min_bound, max_bound=max_bound, spec_fun=spec_fun)
-    if isinstance(phase, IAPWS95) and abs(err) > 1e-4:
+    if is_iapws95 and abs(err) > 1e-4:
         raise ValueError("Bad solution found")
     T, P = phase.T, phase.P
     return T, P, phase, iterations, err

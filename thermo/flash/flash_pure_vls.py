@@ -498,8 +498,8 @@ class FlashPureVLS(Flash):
                 raise PhaseExistenceImpossible("Specified T is in the supercritical region", zs=zs, T=T)
 
             Psat = iapws95_Psat(T)
-            sat_gas = self.gas.to(T=T, V=rho_to_Vm(iapws95_rhog_sat(T), self.gas._MW), zs=zs)
-            sat_liq = self.liquid.to(T=T, V=rho_to_Vm(iapws95_rhol_sat(T), self.liquid._MW), zs=zs)
+            sat_gas = self.gas.to(T=T, V=rho_to_Vm(iapws95_rhog_sat(T), self.gas.MW()), zs=zs)
+            sat_liq = self.liquid.to(T=T, V=rho_to_Vm(iapws95_rhol_sat(T), self.liquid.MW()), zs=zs)
             return Psat, sat_liq, sat_gas, 0, 0.0
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)

@@ -4628,7 +4628,7 @@ class Phase:
         '''
         """
 
-        This expression is readily obtainable with SymTy:
+        This expression is readily obtainable with SymPy:
 
         >>> from sympy import * # doctest: +SKIP
         >>> P, T, MW = symbols('P, T, MW') # doctest: +SKIP

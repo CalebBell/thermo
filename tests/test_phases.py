@@ -3071,12 +3071,13 @@ def test_IAPWS97_basics():
 def test_transport_IAPWS95():
     liquid = IAPWS95Liquid(T=300, P=1e5, zs=[1])
 
-    mu_point = liquid.to(T=647.35, V=rho_to_Vm(372, IAPWS95Liquid._MW), zs=[1])
+    mu_point = liquid.to(T=647.35, V=rho_to_Vm(372, liquid.MW()), zs=[1])
     assert_close(mu_point.mu(), 45.688204e-6, rtol=2e-8)
     assert_close(mu_point.mu(), 45.688204e-6, rtol=2e-8)
 
     assert_close(mu_point.k(), 650.319402E-3, rtol=1e-9)
-    del mu_point._k
+    if hasattr(mu_point, '_k'):
+        del mu_point._k
     assert_close(mu_point.k(), 650.319402E-3, rtol=1e-9)
 
 def test_IAPWS95_initialization():
@@ -3091,7 +3092,7 @@ def test_IAPWS95_initialization():
     for same_point in objs:
         assert_close(liquid.T, same_point.T, rtol=1e-16)
         assert_close(liquid.P, same_point.P, rtol=1e-16)
-        assert_close(liquid._V, same_point._V, rtol=1e-16)
+        assert_close(liquid.V(), same_point.V(), rtol=1e-16)
         assert_close(liquid.tau, same_point.tau, rtol=1e-16)
         assert_close(liquid.delta, same_point.delta, rtol=1e-15)
 
@@ -3102,7 +3103,7 @@ def test_IAPWS95_initialization():
     for similar_point in objs:
         assert_close(liquid.T, similar_point.T, rtol=1e-13)
         assert_close(liquid.P, similar_point.P, rtol=1e-10)
-        assert_close(liquid._V, similar_point._V, rtol=1e-16)
+        assert_close(liquid.V(), similar_point.V(), rtol=1e-16)
         assert_close(liquid.tau, similar_point.tau, rtol=1e-13)
         assert_close(liquid.delta, similar_point.delta, rtol=1e-15)
 
