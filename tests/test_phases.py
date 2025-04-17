@@ -3296,7 +3296,7 @@ def test_Helmholtz_phase_export():
         assert hash(liquid) == hash(liquid2)
         assert liquid == liquid2
 
-        liquid3 = Phase.from_json(json.loads(json.dumps(liquid.as_json())))
+        liquid3 = ph.from_json(json.loads(json.dumps(liquid.as_json())))
         assert liquid.model_hash() == liquid3.model_hash()
         assert liquid.state_hash() == liquid3.state_hash()
         assert hash(liquid) == hash(liquid3)

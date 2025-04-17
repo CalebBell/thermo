@@ -211,7 +211,7 @@ class Phase:
         >>> import json
         >>> from thermo import IAPWS95Liquid
         >>> phase = IAPWS95Liquid(T=300, P=1e5, zs=[1])
-        >>> new_phase = Phase.from_json(json.loads(json.dumps(phase.as_json())))
+        >>> new_phase = IAPWS95Liquid.from_json(json.loads(json.dumps(phase.as_json())))
         >>> assert phase == new_phase
         '''
         return JsonOptEncodable.as_json(self, cache, option)

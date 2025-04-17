@@ -504,31 +504,43 @@ warn_chemicals_msg ="""`chemicals <https://github.com/CalebBell/chemicals>`_ is 
             `chemicals <https://github.com/CalebBell/chemicals>`_
             fairly easily once the data entry is complete."""
 
-
 class ChemicalConstantsPackage:
-    non_vector_properties = ('atomss', 'Carcinogens', 'CASs', 'CASis', 'Ceilings', 'charges',
-                 'conductivities', 'dipoles', 'economic_statuses', 'formulas', 'Gfgs',
-                 'Gfgs_mass', 'GWPs', 'Hcs', 'Hcs_lower', 'Hcs_lower_mass', 'Hcs_mass',
-                 'Hfgs', 'Hfgs_mass', 'Hfus_Tms', 'Hfus_Tms_mass', 'Hsub_Tts',
-                 'Hsub_Tts_mass', 'Hvap_298s', 'Hvap_298s_mass', 'Hvap_Tbs', 'Hvap_Tbs_mass',
-                 'InChI_Keys', 'InChIs', 'legal_statuses', 'LFLs', 'logPs',
-                 'molecular_diameters', 'MWs', 'names', 'aliases', 'ODPs', 'omegas',
-                 'Parachors', 'Pcs', 'phase_STPs', 'Psat_298s', 'PSRK_groups',
-                 'Pts', 'PubChems', 'rhocs', 'rhocs_mass', 'rhol_STPs',
-                 'rhol_STPs_mass', 'RIs', 'S0gs', 'S0gs_mass', 'Sfgs',
-                 'Sfgs_mass', 'similarity_variables', 'Skins', 'smiless',
-                 'STELs', 'StielPolars', 'Stockmayers', 'Tautoignitions',
-                 'Tbs', 'Tcs', 'Tflashs', 'Tms', 'Tts', 'TWAs', 'UFLs',
-                 'UNIFAC_Dortmund_groups', 'UNIFAC_groups',
-                 'Van_der_Waals_areas', 'Van_der_Waals_volumes', 'Vcs',
-                 'Vml_STPs', 'Vml_Tms', 'Zcs', 'UNIFAC_Rs', 'UNIFAC_Qs',
-                 'rhos_Tms', 'Vms_Tms', 'rhos_Tms_mass',  'solubility_parameters',
-                 'Vml_60Fs', 'rhol_60Fs', 'rhol_60Fs_mass',
-                 'conductivity_Ts', 'RI_Ts',
-                 'Vmg_STPs', 'rhog_STPs', 'rhog_STPs_mass', 'sigma_STPs',
-                 'sigma_Tms', 'sigma_Tbs', 'Hf_STPs', 'Hf_STPs_mass',
-                 'functional_groups',
-                 )
+    non_vector_properties = (
+        # Basic Identifiers
+        'names', 'aliases', 'MWs', 'formulas', 'CASs', 'CASis', 'PubChems', 'smiless', 'InChIs', 'InChI_Keys',
+        # Physical State Properties  
+        'phase_STPs', 'atomss', 'charges', 'functional_groups',
+        # Critical Properties
+        'Tcs', 'Pcs', 'Vcs', 'Zcs', 'rhocs', 'rhocs_mass',
+        # Phase Change Properties
+        'Tms', 'Tbs', 'Tts', 'Pts', 'Tflashs', 'Tautoignitions',
+        # Thermodynamic Properties
+        'Hfus_Tms', 'Hfus_Tms_mass', 'Hvap_Tbs', 'Hvap_Tbs_mass', 'Hvap_298s', 'Hvap_298s_mass',
+        'Hsub_Tts', 'Hsub_Tts_mass', 'Hfgs', 'Hfgs_mass', 'Gfgs', 'Gfgs_mass', 'Sfgs', 'Sfgs_mass',
+        'S0gs', 'S0gs_mass', 'Hf_STPs', 'Hf_STPs_mass', 'Hcs', 'Hcs_mass', 'Hcs_lower', 'Hcs_lower_mass',
+        # Volumetric Properties
+        'Vml_STPs', 'Vml_60Fs', 'Vml_Tms', 'Vms_Tms', 'Vmg_STPs',
+        # Density Properties  
+        'rhol_STPs', 'rhol_STPs_mass', 'rhol_60Fs', 'rhol_60Fs_mass',
+        'rhog_STPs', 'rhog_STPs_mass', 'rhos_Tms', 'rhos_Tms_mass',
+        # Surface and Interface Properties
+        'sigma_STPs', 'sigma_Tbs', 'sigma_Tms', 'Parachors',
+        # Transport Properties
+        'conductivities', 'conductivity_Ts', 'RIs', 'RI_Ts',
+        # Safety Data
+        'LFLs', 'UFLs', 'TWAs', 'STELs', 'Ceilings', 'Skins', 'Carcinogens', 'legal_statuses',
+        # Environmental Properties
+        'economic_statuses', 'GWPs', 'ODPs',
+        # Molecular Interaction Properties
+        'logPs', 'Psat_298s', 'dipoles', 'Stockmayers', 'molecular_diameters', 'omegas', 'StielPolars', 'solubility_parameters',
+        # Van der Waals Properties
+        'Van_der_Waals_volumes', 'Van_der_Waals_areas',
+        # UNIFAC and Group Contribution
+        'UNIFAC_groups', 'UNIFAC_Dortmund_groups', 'PSRK_groups', 'UNIFAC_Rs', 'UNIFAC_Qs',
+        # Other Properties
+        'similarity_variables',
+    )
+    
     __full_path__ = f"{__module__}.{__qualname__}"
     properties = ('atom_fractions',) + non_vector_properties
     """Tuple of all properties that can be held by this object."""
@@ -711,7 +723,7 @@ class ChemicalConstantsPackage:
         --------
         >>> base = ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
         >>> base.with_new_constants(Tms=[40.0, 20.0, 10.0, 30.0], omegas=[0.0, 0.1, 0.2, 0.3])
-        ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.0, 0.1, 0.2, 0.3], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0], Tms=[40.0, 20.0, 10.0, 30.0])
+        ChemicalConstantsPackage(names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], MWs=[18.01528, 106.165, 106.165, 106.165], Tcs=[647.14, 630.3, 616.2, 617.0], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tms=[40.0, 20.0, 10.0, 30.0], omegas=[0.0, 0.1, 0.2, 0.3])
         '''
         new = {}
         properties = self.non_vector_properties
@@ -760,11 +772,11 @@ class ChemicalConstantsPackage:
         --------
         >>> base = ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
         >>> base.subset([0])
-        ChemicalConstantsPackage(MWs=[18.01528], names=['water'], omegas=[0.344], Pcs=[22048320.0], Tcs=[647.14])
+        ChemicalConstantsPackage(names=['water'], MWs=[18.01528], Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344])
         >>> base.subset(slice(1,4))
-        ChemicalConstantsPackage(MWs=[106.165, 106.165, 106.165], names=['o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.3118, 0.324, 0.331], Pcs=[3732000.0, 3511000.0, 3541000.0], Tcs=[630.3, 616.2, 617.0])
+        ChemicalConstantsPackage(names=['o-xylene', 'p-xylene', 'm-xylene'], MWs=[106.165, 106.165, 106.165], Tcs=[630.3, 616.2, 617.0], Pcs=[3732000.0, 3511000.0, 3541000.0], omegas=[0.3118, 0.324, 0.331])
         >>> base.subset(idxs=[0, 3], properties=('names', 'MWs'))
-        ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
+        ChemicalConstantsPackage(names=['water', 'm-xylene'], MWs=[18.01528, 106.165])
 
         Swap the first and second components
 
@@ -1400,7 +1412,7 @@ Create a package with water and the xylenes, suitable for use with equations of
 state:
 
 >>> ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
-ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
+ChemicalConstantsPackage(names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], MWs=[18.01528, 106.165, 106.165, 106.165], Tcs=[647.14, 630.3, 616.2, 617.0], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], omegas=[0.344, 0.3118, 0.324, 0.331])
 
 Notes
 -----

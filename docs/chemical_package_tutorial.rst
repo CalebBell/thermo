@@ -41,7 +41,7 @@ It is the intention for these :obj:`ChemicalConstantsPackage <thermo.chemical_pa
 The :obj:`__repr__ <thermo.chemical_package.ChemicalConstantsPackage.__repr__>` of the :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` object returns a representation of the object that can be used to reconstruct it:
 
 >>> constants
-ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
+ChemicalConstantsPackage(names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], MWs=[18.01528, 106.165, 106.165, 106.165], Tcs=[647.14, 630.3, 616.2, 617.0], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], omegas=[0.344, 0.3118, 0.324, 0.331])
 >>> hash(eval(constants.__repr__())) == hash(constants)
 True
 
@@ -51,24 +51,23 @@ Creating Smaller ChemicalConstantsPackage Objects
 It is possible to create a new, smaller :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` with fewer components by using the :obj:`subset <thermo.chemical_package.ChemicalConstantsPackage.subset>` method, which accepts either indexes or slices and returns a new object:
 
 >>> constants.subset([0, 1])
-ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'o-xylene'], omegas=[0.344, 0.3118], Pcs=[22048320.0, 3732000.0], Tcs=[647.14, 630.3])
+ChemicalConstantsPackage(names=['water', 'o-xylene'], MWs=[18.01528, 106.165], Tcs=[647.14, 630.3], Pcs=[22048320.0, 3732000.0], omegas=[0.344, 0.3118])
 >>> constants.subset(slice(1,3))
-ChemicalConstantsPackage(MWs=[106.165, 106.165], names=['o-xylene', 'p-xylene'], omegas=[0.3118, 0.324], Pcs=[3732000.0, 3511000.0], Tcs=[630.3, 616.2])
+ChemicalConstantsPackage(names=['o-xylene', 'p-xylene'], MWs=[106.165, 106.165], Tcs=[630.3, 616.2], Pcs=[3732000.0, 3511000.0], omegas=[0.3118, 0.324])
 >>> constants.subset([0])
-ChemicalConstantsPackage(MWs=[18.01528], names=['water'], omegas=[0.344], Pcs=[22048320.0], Tcs=[647.14])
+ChemicalConstantsPackage(names=['water'], MWs=[18.01528], Tcs=[647.14], Pcs=[22048320.0], omegas=[0.344])
 
 It is also possible to reduce the number of properties set with the `subset` methods:
 
 >>> constants.subset([1, 3], properties=('names', 'MWs'))
-ChemicalConstantsPackage(MWs=[106.165, 106.165], names=['o-xylene', 'm-xylene'])
-
+ChemicalConstantsPackage(names=['o-xylene', 'm-xylene'], MWs=[106.165, 106.165])
 
 Adding or Replacing Constants
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 It is possible to create a new :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>` with added properties and/or replacing the old properties, from an existing object. This is helpful if better values for select properties are known. The :obj:`with_new_constants <thermo.chemical_package.ChemicalConstantsPackage.with_new_constants>` method does this.
 
 >>> constants.with_new_constants(Tcs=[650.0, 630.0, 620.0, 620.0], Tms=[20.0, 100.0, 50.0, 12.3])
-ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[650.0, 630.0, 620.0, 620.0], Tms=[20.0, 100.0, 50.0, 12.3])
+ChemicalConstantsPackage(names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], MWs=[18.01528, 106.165, 106.165, 106.165], Tcs=[650.0, 630.0, 620.0, 620.0], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tms=[20.0, 100.0, 50.0, 12.3], omegas=[0.344, 0.3118, 0.324, 0.331])
 
 Creating ChemicalConstantsPackage Objects from chemicals
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -81,13 +80,13 @@ A convenience method exists to load these constants from a different data files 
 
 When working with a fixed set of components, it may be a good idea to take this generated package, select only those properties being used, convert it to a string, and then embed that new object in a program. This will remove the need to load various data files, and if `chemicals` updates data files, different results won't be obtained from your constants package.
 
->>> small_obj = obj.subset(properties=('names', 'CASs', 'MWs', 'Tcs', 'Pcs', 'omegas', 'Tbs', 'Tms', 'atomss'))
+>>> small_obj = obj.subset(properties=('names', 'CASs', 'MWs', 'Tcs', 'Pcs', 'omegas', 'Tbs', 'Tms'))
 >>> small_obj
-ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4, 'O': 1}, {'C': 2, 'H': 6, 'O': 1}, {'C': 3, 'H': 8, 'O': 1}], CASs=['67-56-1', '64-17-5', '67-63-0'], MWs=[32.04186, 46.06844, 60.09502], names=['methanol', 'ethanol', 'isopropanol'], omegas=[0.5625, 0.646, 0.665], Pcs=[8215850.0, 6268000.0, 4764000.0], Tbs=[337.632383296, 351.570441659, 355.36], Tcs=[513.38, 514.71, 508.3], Tms=[175.15, 159.05, 183.65])
+ChemicalConstantsPackage(names=['methanol', 'ethanol', 'isopropanol'], MWs=[32.04186, 46.06844, 60.09502], CASs=['67-56-1', '64-17-5', '67-63-0'], Tcs=[513.38, 514.71, 508.3], Pcs=[8215850.0, 6268000.0, 4764000.0], Tms=[175.15, 159.05, 183.65], Tbs=[337.632383296, 351.570441659, 355.36], omegas=[0.5625, 0.646, 0.665])
 
 Once the object is printed, the generated text can be copy/pasted as valid Python into a program:
 
->>> obj = ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4, 'O': 1}, {'C': 2, 'H': 6, 'O': 1}, {'C': 3, 'H': 8, 'O': 1}], CASs=['67-56-1', '64-17-5', '67-63-0'], MWs=[32.04186, 46.06844, 60.09502], names=['methanol', 'ethanol', 'isopropanol'], omegas=[0.5589999999999999, 0.635, 0.665], Pcs=[8084000.0, 6137000.0, 4764000.0], Tbs=[337.65, 351.39, 355.36], Tcs=[512.5, 514.0, 508.3], Tms=[175.15, 159.05, 183.65])
+>>> obj = ChemicalConstantsPackage(CASs=['67-56-1', '64-17-5', '67-63-0'], MWs=[32.04186, 46.06844, 60.09502], names=['methanol', 'ethanol', 'isopropanol'], omegas=[0.5589999999999999, 0.635, 0.665], Pcs=[8084000.0, 6137000.0, 4764000.0], Tbs=[337.65, 351.39, 355.36], Tcs=[512.5, 514.0, 508.3], Tms=[175.15, 159.05, 183.65])
 
 
 .. warning::
