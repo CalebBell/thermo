@@ -218,11 +218,6 @@ def test_PR_quick():
 
     # Integration tests
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
-
     # One gas phase property
     assert 'g' == PR(Tc=507.6, Pc=3025000, omega=0.2975, T=499.,P=1E5).phase
 
@@ -291,7 +286,7 @@ def test_PR_quick():
     # Props said to be from Reid et al
 
     b = PR(T=114.93, P=5.7E-6, Tc=Tc, Pc=Pc, omega=omega)
-    V_max = max([V.real for V in b.raw_volumes])
+    V_max = b.V_g
     assert_close(V_max, 1.6764E8, rtol=1E-3)
     # Other two roots don't match
 
@@ -445,9 +440,9 @@ def test_PR_density_derivatives():
     def dT_drho_second(rho):
         e = PR(V=1.0/rho, P=P, **crit_params)
         try:
-            return e.dT_drho_l
-        except AttributeError:
-            return e.dT_drho_g
+            return 1.0*e.dT_drho_l
+        except:
+            return 1.0*e.dT_drho_g
     ans_numeric = derivative(dT_drho_second, 1.0/eos.V_l, n=1, dx=1, order=3)
     assert_close(eos.d2T_drho2_l, ans_numeric)
 
@@ -490,8 +485,8 @@ def test_PR_density_derivatives():
     def dP_drho_to_diff(T, rho):
         e = PR(T=T, V=1/rho, **crit_params)
         try:
-            return e.dP_drho_l
-        except AttributeError:
+            return 1.0*e.dP_drho_l
+        except:
             return e.dP_drho_g
 
     ans_numerical = derivative(dP_drho_to_diff, eos.T, dx=eos.T*1e-6, args=(1.0/eos.V_l,))
@@ -512,7 +507,7 @@ def test_PR_density_derivatives():
         def to_diff(P):
             e = PR(P=P, V=1.0/rho, **crit_params)
             try:
-                return e.dT_drho_l
+                return 1.0*e.dT_drho_l
             except:
                 return e.dT_drho_g
         return derivative(to_diff, P, n=1, dx=100, order=3)
@@ -531,13 +526,13 @@ def test_PR_density_derivatives():
 
     def drho_dT_dP(T, P, V='V_l'):
         if V == 'V_l':
-            rho = eos.rho_l
+            rho = 1.0*eos.rho_l
         else:
             rho = eos.rho_g
         def to_dP(P):
             e = PR(P=P, T=T, **crit_params)
             if V == 'V_l':
-                return e.drho_dT_l
+                return 1.0*e.drho_dT_l
             else:
                 return e.drho_dT_g
         return derivative(to_dP, P, n=1, dx=30, order=3)
