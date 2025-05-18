@@ -33,12 +33,12 @@ PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1000000.0)
 
 The :obj:`__repr__ <thermo.eos.GCEOS.__repr__>` string is designed to show all the inputs to the object. 
 
-We can check the volume solutions with the :obj:`raw_volumes <thermo.eos.GCEOS.raw_volumes>` attribute:
+We can check the volumes:
 
->>> eos.raw_volumes
-(0.0001560731847856, 0.002141876816741, 0.000919295474982)
+>>> eos.V_l, eos.V_g
+(0.000156073184, 0.0021418768167)
 
-At this point there are three real volume, so there is a liquid-like and a vapor-like solution available. The :obj:`phase <thermo.eos.GCEOS.phase>` attribute will have the value of 'l/g' in this state; otherwise it will be 'l' or 'g'.
+There is a liquid-like and a vapor-like solution available. The :obj:`phase <thermo.eos.GCEOS.phase>` attribute will have the value of 'l/g' in this state; otherwise it will be 'l' or 'g'.
 
 >>> eos.phase
 'l/g'

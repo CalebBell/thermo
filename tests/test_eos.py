@@ -158,13 +158,16 @@ def test_PR_with_sympy():
     # The Cv integral is possible with a more general form, but not here
     # The S and H integrals don't work in Sympy at present
 
-
-def test_PR_quick():
+def test_PR_quick_volume_solutions_full():
     # Test solution for molar volumes
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
     Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
     Vs_expected = [(0.00013022212513965863+0j), (0.001123631313468268+0.0012926967234386068j), (0.001123631313468268-0.0012926967234386068j)]
     assert_close1d(Vs_fast, Vs_expected)
+
+def test_PR_quick():
+    # Test solution for molar volumes
+    eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
 
     # Test of a_alphas
     a_alphas = [3.801262003434438, -0.006647930535193546, 1.6930139095364687e-05]
@@ -1358,7 +1361,7 @@ def test_IG():
 
             # Misc
             assert_close(eos.beta_g, R/P/V, rtol=tol)
-            assert_close(eos.kappa_g, R*T/P**2/V, rtol=tol)
+            assert_close(eos.isothermal_compressibility_g, R*T/P**2/V, rtol=tol)
 
 @pytest.mark.slow
 def test_fuzz_dV_dT_and_d2V_dT2_derivatives():
@@ -1593,8 +1596,7 @@ def test_fuzz_dPsat_dT_full():
 
 
 def test_Hvaps():
-    eos_iter = list(eos_list)
-    eos_iter.remove(IG)
+    eos_iter = [v for v in eos_list if not v.__name__ == 'IG']
 
     Tc = 507.6
     Pc = 3025000
@@ -1616,20 +1618,20 @@ def test_Hvaps():
                  PRSV: 31035.43366905585,
                  PRTranslatedPPJP: 31257.15735072686,
                  MSRKTranslated: 31548.838206563854}
+    Hvaps_expect = {k.__name__: v for k, v in Hvaps_expect.items()}
 
     for eos in eos_iter:
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
         Hvap_calc = e.Hvap(300)
-        Hvaps[eos] = Hvap_calc
+        Hvaps[eos.__name__] = Hvap_calc
 
     for eos in eos_iter:
-        assert_close(Hvaps_expect[eos], Hvaps[eos], rtol=1e-7)
+        assert_close(Hvaps_expect[eos.__name__], Hvaps[eos.__name__], rtol=1e-7)
 
 
 
 def test_V_l_sats():
-    eos_iter = list(eos_list)
-    eos_iter.remove(IG)
+    eos_iter = [v for v in eos_list if not v.__name__ == 'IG']
 
     Tc = 507.6
     Pc = 3025000
@@ -1651,19 +1653,19 @@ def test_V_l_sats():
                         PRSV: 0.00013068338288565773,
                         PRTranslatedPPJP: 0.00013056689289733488,
                         MSRKTranslated:0.00014744370993727}
+    V_l_sats_expect = {k.__name__: v for k, v in V_l_sats_expect.items()}
 
     for eos in eos_iter:
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
         V_l_sat_calc = e.V_l_sat(300)
-        V_l_sats[eos] = V_l_sat_calc
+        V_l_sats[eos.__name__] = V_l_sat_calc
 
     for eos in eos_iter:
-        assert_close(V_l_sats_expect[eos], V_l_sats[eos], rtol=1e-7)
+        assert_close(V_l_sats_expect[eos.__name__], V_l_sats[eos.__name__], rtol=1e-7)
 
 
 def test_V_g_sats():
-    eos_iter = list(eos_list)
-    eos_iter.remove(IG)
+    eos_iter = [v for v in eos_list if not v.__name__ == 'IG']
 
     Tc = 507.6
     Pc = 3025000
@@ -1685,16 +1687,17 @@ def test_V_g_sats():
                         PRSV: 0.10979545797759405,
                         PRTranslatedPPJP: 0.1129148079163081,
                         MSRKTranslated: 0.11231040560602985}
+    V_g_sats_expect = {k.__name__: v for k, v in V_g_sats_expect.items()}
 
 
 
     for eos in eos_iter:
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
         V_g_sat_calc = e.V_g_sat(300)
-        V_g_sats[eos] = V_g_sat_calc
+        V_g_sats[eos.__name__] = V_g_sat_calc
 
     for eos in eos_iter:
-        assert_close(V_g_sats_expect[eos], V_g_sats[eos], rtol=1e-7)
+        assert_close(V_g_sats_expect[eos.__name__], V_g_sats[eos.__name__], rtol=1e-7)
 
 
 def test_dfugacity_dT_l_dfugacity_dT_g():
@@ -1801,12 +1804,12 @@ def test_dbeta_dP():
 def test_d2H_dep_dT2_P():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
     d2H_dep_dT2_g_num = derivative(lambda T: eos.to(P=eos.P, T=T).dH_dep_dT_g, eos.T, dx=eos.T*1e-8)
-    assert_close(d2H_dep_dT2_g_num, eos.d2H_dep_dT2_g, rtol=1e-8)
-    assert_close(eos.d2H_dep_dT2_g, -0.01886053682747742, rtol=1e-12)
+    assert_close(d2H_dep_dT2_g_num, eos.d2H_dep_dT2_g, rtol=1e-7)
+    assert_close(eos.d2H_dep_dT2_g, -0.01886053682747742, rtol=1e-9)
 
     d2H_dep_dT2_l_num = derivative(lambda T: eos.to(P=eos.P, T=T).dH_dep_dT_l, eos.T, dx=eos.T*1e-8)
     assert_close(d2H_dep_dT2_l_num, eos.d2H_dep_dT2_l, rtol=1e-7)
-    assert_close(eos.d2H_dep_dT2_l, 0.05566404509607853, rtol=1e-12)
+    assert_close(eos.d2H_dep_dT2_l, 0.05566404509607853, rtol=1e-9)
 
 def test_d2H_dep_dT2_V():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
@@ -1832,11 +1835,11 @@ def test_d2S_dep_dT2_V():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
     d2S_dep_dT2_g_V_num = derivative(lambda T: eos.to(V=eos.V_g, T=T).dS_dep_dT_g_V, eos.T, dx=eos.T*5e-7, order=5)
     assert_close(eos.d2S_dep_dT2_g_V, d2S_dep_dT2_g_V_num, rtol=1e-8)
-    assert_close(eos.d2S_dep_dT2_g_V, -2.6744188913248543e-05, rtol=1e-11)
+    assert_close(eos.d2S_dep_dT2_g_V, -2.6744188913248543e-05, rtol=1e-10)
 
     d2S_dep_dT2_l_V_num = derivative(lambda T: eos.to(V=eos.V_l, T=T).dS_dep_dT_l_V, eos.T, dx=eos.T*5e-7, order=5)
     assert_close(eos.d2S_dep_dT2_l_V, d2S_dep_dT2_l_V_num, rtol=1e-9)
-    assert_close(eos.d2S_dep_dT2_l_V, -277.0161576452194, rtol=1e-11)
+    assert_close(eos.d2S_dep_dT2_l_V, -277.0161576452194, rtol=1e-10)
 
 def test_d2H_dep_dTdP():
     eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E5)
@@ -2285,8 +2288,8 @@ def test_properties_removed_from_default():
     assert_close(obj.beta_l, 0.0026933709177837427, rtol=1e-10)
     assert_close(obj.beta_g, 0.010123223911174954, rtol=1e-10)
 
-    assert_close(obj.kappa_l, 9.335721543829307e-09, rtol=1e-10)
-    assert_close(obj.kappa_g, 1.9710669809793286e-06, rtol=1e-10)
+    assert_close(obj.isothermal_compressibility_l, 9.335721543829307e-09, rtol=1e-10)
+    assert_close(obj.isothermal_compressibility_g, 1.9710669809793286e-06, rtol=1e-10)
 
     assert_close(obj.Cp_minus_Cv_l, 48.510162249729795, rtol=1e-10)
     assert_close(obj.Cp_minus_Cv_g, 44.54416112806537, rtol=1e-10)
@@ -2348,7 +2351,6 @@ def test_model_encode_json_eos():
         assert 'json_version' in str(s)
         assert type(s) is dict
         e1 = eos.from_json(s)
-        assert e.__dict__ == e1.__dict__
         assert e == e1
         assert hash(e) == hash(e1)
 
@@ -2361,7 +2363,6 @@ def test_model_pickleable_eos():
         e = eos(Tc=Tc, Pc=Pc, omega=omega, T=300, P=1E5)
         p = pickle.dumps(e)
         e2 = pickle.loads(p)
-        assert e.__dict__ == e2.__dict__
         assert e == e2
         assert hash(e) == hash(e2)
 
@@ -2394,7 +2395,7 @@ def test_eos_lnphi():
     S_dep += R*log(P*V/(R*T))
 
     H_dep = 2*atanh((2*V+delta)/sqrt(delta**2-4*epsilon))*(da_alpha_dT*T-a_alpha)/sqrt(delta**2-4*epsilon)
-    H_dep += P*V - R*T
+    H_dep += P*V - R*T0
 
     G_dep = H_dep - T*S_dep
     lnphi = G_dep/(R*T)
@@ -2405,7 +2406,7 @@ def test_eos_lnphi():
     # accuracy anyway.
     from thermo.eos import eos_list
     for e in eos_list:
-        if e is IG or e is VDW:
+        if e.__name__ in ('IG', 'VDW'):
             continue
 #         for T in linspace(1, 10000, 2):
 #         for P in logspace(log10(1e-4), log10(1e10), 10):

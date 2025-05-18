@@ -673,7 +673,7 @@ class SublimationPressure(TDependentProperty):
         self.all_methods = set(methods)
         if all((self.Tt, self.Pt, self.Hsub_t)):
             methods.append(PSUB_CLAPEYRON)
-            T_limits[PSUB_CLAPEYRON] = (1.0, self.Tt*1.5)
+            T_limits[PSUB_CLAPEYRON] = (0.02*self.Tt, self.Tt*1.5)
         if CASRN is not None and CASRN == '7732-18-5':
             methods.append(IAPWS_PSUB)
             T_limits[IAPWS_PSUB] = (50.0, iapws95_Tt)

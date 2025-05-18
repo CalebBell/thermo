@@ -1395,13 +1395,18 @@ def test_PRMIXTranslatedPPJP_vs_pure():
     assert_allclose(eos.phis_g[0], eos_pure.phi_g, rtol=1e-12)
 
 
-def test_SRKMIXTranslatedConsistent_vs_pure():
-    # Test solution for molar volumes
+def test_SRKMIXTranslatedConsistent_vs_pure_volume():
     eos = SRKMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=300, P=1e6)
     eos_pure = SRKTranslatedConsistent(Tc=33.2, Pc=1296960.0, omega=-0.22, T=300, P=1e6)
     eos_pure_copy = eos.pures()[0]
     assert_close1d(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
     assert_close1d(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+
+def test_SRKMIXTranslatedConsistent_vs_pure():
+    # Test solution for molar volumes
+    eos = SRKMIXTranslatedConsistent(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=300, P=1e6)
+    eos_pure = SRKTranslatedConsistent(Tc=33.2, Pc=1296960.0, omega=-0.22, T=300, P=1e6)
+    eos_pure_copy = eos.pures()[0]
 
     # Test of a_alphas
     a_alphas_expect = (1.281189532964332e-05, -5.597692089837639e-07, 2.3057572995770314e-08)

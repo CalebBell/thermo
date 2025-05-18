@@ -4074,7 +4074,7 @@ class GCEOS:
 
         Returns
         -------
-        P_discriminant_zeros : float
+        P_discriminant_zeros : list[float]
             Pressures which make the discriminants zero, [Pa]
 
         Notes
@@ -4175,7 +4175,8 @@ class GCEOS:
             # Do not know how to handle
             roots = [r.real for r in roots if (r.real >= 0.0)]
             roots.sort()
-        return roots
+            return roots
+        return list(roots)
 
 
     def _P_discriminant_zero(self, low):
@@ -4716,6 +4717,8 @@ class GCEOS:
         '''
         return -self.dV_dP_l/self.V_l
 
+    isothermal_compressibility_l = kappa_l
+
     @property
     def kappa_g(self):
         r'''Isothermal (constant-temperature) expansion coefficient for the gas
@@ -4725,6 +4728,7 @@ class GCEOS:
             \kappa = \frac{-1}{V}\frac{\partial V}{\partial P}
         '''
         return -self.dV_dP_g/self.V_g
+    isothermal_compressibility_g = kappa_g
 
     @property
     def V_dep_l(self):
@@ -7095,7 +7099,7 @@ class GCEOS:
         r'''The natural logarithm of the fugacity coefficient for
         the gas phase, [-].
         '''
-        return log(self.phi_g)
+        return self.G_dep_g*R_inv/self.T
 
 
 class IG(GCEOS):
@@ -7139,7 +7143,7 @@ class IG(GCEOS):
     (0.003325785047261296, 'g')
     >>> eos.H_dep_g, eos.S_dep_g, eos.U_dep_g, eos.G_dep_g, eos.A_dep_g
     (0.0, 0.0, 0.0, 0.0, 0.0)
-    >>> eos.beta_g, eos.kappa_g, eos.Cp_dep_g, eos.Cv_dep_g
+    >>> eos.beta_g, eos.isothermal_compressibility_g, eos.Cp_dep_g, eos.Cv_dep_g
     (0.0025, 1e-06, 0.0, 0.0)
     >>> eos.fugacity_g, eos.PIP_g, eos.Z_g, eos.dP_dT_g
     (1000000.0, 0.9999999999999999, 1.0, 2500.0)
@@ -7362,7 +7366,7 @@ class PR(GCEOS):
     (297.21342811, 210.38840980)
     >>> eos.beta_l, eos.beta_g
     (0.00269337091778, 0.0101232239111)
-    >>> eos.kappa_l, eos.kappa_g
+    >>> eos.isothermal_compressibility_l, eos.isothermal_compressibility_g
     (9.3357215438e-09, 1.97106698097e-06)
     >>> eos.Cp_minus_Cv_l, eos.Cp_minus_Cv_g
     (48.510162249, 44.544161128)
