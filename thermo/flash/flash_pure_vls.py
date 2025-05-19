@@ -1083,7 +1083,6 @@ class FlashPureVLS(Flash):
         liq_VF_interpolators = self.liq_VF_interpolators
         gas_VF_interpolators = self.gas_VF_interpolators
         from scipy.interpolate import CubicSpline
-
         for base_prop, base_idx in zip(self.VF_data_base_props, self.VF_data_base_idxs):
             xs = liq_props[base_idx]
             for i, k in enumerate(props):

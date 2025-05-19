@@ -72,8 +72,8 @@ Once an object has been created, it can be used to instantiate new :obj:`GCEOS <
 PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=300.0, P=100000.0)
 >>> eos.to(V=1e2, P=1e5)
 PR(Tc=507.6, Pc=3025000.0, omega=0.2975, P=100000.0, V=100.0)
->>> eos.to(V=1e2, T=300)
-PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=300, V=100.0)
+>>> eos.to(V=1e2, T=300.0)
+PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=300.0, V=100.0)
 
 As was seen in the examples above, any two of `T`, `P`, `V` can be used to specify the state of the object. The input variables of the object are stored and can be checked with :obj:`state_specs <thermo.eos.GCEOS.state_specs>` :
 

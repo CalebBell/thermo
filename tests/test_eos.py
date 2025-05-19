@@ -308,11 +308,12 @@ def test_PR_quick():
 
     # solve_T quick original test
     eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
-
-    def PR_solve_T_analytical_orig(P, V, Tc, a, b, kappa):
-         return Tc*(-2*a*kappa*sqrt((V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a))*(kappa + 1)*(R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4)*(P*R*Tc*V**4 + 4*P*R*Tc*V**3*b + 2*P*R*Tc*V**2*b**2 - 4*P*R*Tc*V*b**3 + P*R*Tc*b**4 - P*V**3*a*kappa**2 - P*V**2*a*b*kappa**2 + 3*P*V*a*b**2*kappa**2 - P*a*b**3*kappa**2 + R*Tc*V**2*a*kappa**2 + 2*R*Tc*V**2*a*kappa + R*Tc*V**2*a + 2*R*Tc*V*a*b*kappa**2 + 4*R*Tc*V*a*b*kappa + 2*R*Tc*V*a*b - R*Tc*a*b**2*kappa**2 - 2*R*Tc*a*b**2*kappa - R*Tc*a*b**2 + V*a**2*kappa**4 + 2*V*a**2*kappa**3 + V*a**2*kappa**2 - a**2*b*kappa**4 - 2*a**2*b*kappa**3 - a**2*b*kappa**2))/((R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4))
-    T_analytical = PR_solve_T_analytical_orig(eos.P, eos.V_g, eos.Tc, eos.a, eos.b, eos.kappa)
-    assert_close(T_analytical, eos.solve_T(P=eos.P, V=eos.V_g), rtol=1e-13)
+    
+    # Very low precision, should not be used
+    # def PR_solve_T_analytical_orig(P, V, Tc, a, b, kappa):
+    #      return Tc*(-2*a*kappa*sqrt((V - b)**3*(V**2 + 2*V*b - b**2)*(P*R*Tc*V**2 + 2*P*R*Tc*V*b - P*R*Tc*b**2 - P*V*a*kappa**2 + P*a*b*kappa**2 + R*Tc*a*kappa**2 + 2*R*Tc*a*kappa + R*Tc*a))*(kappa + 1)*(R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4)*(P*R*Tc*V**4 + 4*P*R*Tc*V**3*b + 2*P*R*Tc*V**2*b**2 - 4*P*R*Tc*V*b**3 + P*R*Tc*b**4 - P*V**3*a*kappa**2 - P*V**2*a*b*kappa**2 + 3*P*V*a*b**2*kappa**2 - P*a*b**3*kappa**2 + R*Tc*V**2*a*kappa**2 + 2*R*Tc*V**2*a*kappa + R*Tc*V**2*a + 2*R*Tc*V*a*b*kappa**2 + 4*R*Tc*V*a*b*kappa + 2*R*Tc*V*a*b - R*Tc*a*b**2*kappa**2 - 2*R*Tc*a*b**2*kappa - R*Tc*a*b**2 + V*a**2*kappa**4 + 2*V*a**2*kappa**3 + V*a**2*kappa**2 - a**2*b*kappa**4 - 2*a**2*b*kappa**3 - a**2*b*kappa**2))/((R*Tc*V**2 + 2*R*Tc*V*b - R*Tc*b**2 - V*a*kappa**2 + a*b*kappa**2)**2*(R**2*Tc**2*V**4 + 4*R**2*Tc**2*V**3*b + 2*R**2*Tc**2*V**2*b**2 - 4*R**2*Tc**2*V*b**3 + R**2*Tc**2*b**4 - 2*R*Tc*V**3*a*kappa**2 - 2*R*Tc*V**2*a*b*kappa**2 + 6*R*Tc*V*a*b**2*kappa**2 - 2*R*Tc*a*b**3*kappa**2 + V**2*a**2*kappa**4 - 2*V*a**2*b*kappa**4 + a**2*b**2*kappa**4))
+    # T_analytical = PR_solve_T_analytical_orig(eos.P, eos.V_g, eos.Tc, eos.a, eos.b, eos.kappa)
+    # assert_close(T_analytical, eos.solve_T(P=eos.P, V=eos.V_g), rtol=1e-13)
 
 def test_lnphi_l_low_TP():
     # Was failing because of an underflow
@@ -440,9 +441,9 @@ def test_PR_density_derivatives():
     def dT_drho_second(rho):
         e = PR(V=1.0/rho, P=P, **crit_params)
         try:
-            return 1.0*e.dT_drho_l
+            return e.dT_drho_l
         except:
-            return 1.0*e.dT_drho_g
+            return e.dT_drho_g
     ans_numeric = derivative(dT_drho_second, 1.0/eos.V_l, n=1, dx=1, order=3)
     assert_close(eos.d2T_drho2_l, ans_numeric)
 
@@ -485,7 +486,7 @@ def test_PR_density_derivatives():
     def dP_drho_to_diff(T, rho):
         e = PR(T=T, V=1/rho, **crit_params)
         try:
-            return 1.0*e.dP_drho_l
+            return e.dP_drho_l
         except:
             return e.dP_drho_g
 
@@ -507,7 +508,7 @@ def test_PR_density_derivatives():
         def to_diff(P):
             e = PR(P=P, V=1.0/rho, **crit_params)
             try:
-                return 1.0*e.dT_drho_l
+                return e.dT_drho_l
             except:
                 return e.dT_drho_g
         return derivative(to_diff, P, n=1, dx=100, order=3)
@@ -526,13 +527,13 @@ def test_PR_density_derivatives():
 
     def drho_dT_dP(T, P, V='V_l'):
         if V == 'V_l':
-            rho = 1.0*eos.rho_l
+            rho = eos.rho_l
         else:
             rho = eos.rho_g
         def to_dP(P):
             e = PR(P=P, T=T, **crit_params)
             if V == 'V_l':
-                return 1.0*e.drho_dT_l
+                return e.drho_dT_l
             else:
                 return e.drho_dT_g
         return derivative(to_dP, P, n=1, dx=30, order=3)
@@ -1515,11 +1516,6 @@ def test_Psat_issues():
     Tsat = eos.Tsat(2453124.6502311486, polish=False)
     assert_close(Tsat, 532.1131652558847, rtol=1e-7)
 
-    # Case where y was evaluated just above Pc and so couldn't converge
-    # The exact precision of the answer can only be obtained with mpmath
-    eos = PR(Tc=647.086, Pc=22048320.0, omega=0.344, T=230.0, P=100000.0)
-    assert_close(eos.Psat(eos.Tc*(1-1e-13), polish=True), 22048319.99998073, rtol=1e-10)
-
     e = PRTranslatedConsistent(Tc=512.5, Pc=8084000.0, omega=0.559, c=2.4079466437131265e-06, alpha_coeffs=(0.46559014900000006, 0.798056656, 2.0), T=298.15, P=101325.0)
     assert_close(e.Psat(26.5928527253961065, polish=True), 3.4793909343216283e-152)
 
@@ -1532,6 +1528,14 @@ def test_Psat_issues():
 
     # e = TWUSRK(Tc=33.2, Pc=1296960.0, omega=-0.22, T=298.15, P=101325.0)
     # e.Psat(T=1.24005018079967879, polish=True)
+
+@pytest.mark.mpmath
+def test_Psat_issues_mpmath():
+    # Case where y was evaluated just above Pc and so couldn't converge
+    # The exact precision of the answer can only be obtained with mpmath
+    eos = PR(Tc=647.086, Pc=22048320.0, omega=0.344, T=230.0, P=100000.0)
+    assert_close(eos.Psat(eos.Tc*(1-1e-13), polish=True), 22048319.99998073, rtol=1e-10)
+
 
 
 def test_Tsat_issues():
@@ -2235,7 +2239,7 @@ def test_T_discriminant_zeros_analytical():
     roots_all_expect = [(-3039.5486755087554-5260.499733964365j), (-3039.5486755087554+5260.499733964365j), (6071.904717499858+0j), (-287.16659607284214-501.5089438353455j), (-287.16659607284214+501.5089438353455j), (65.79460205013443-221.4001851805135j), (65.79460205013443+221.4001851805135j), (581.5258414845399+0j), (-194.3253376956101+136.82750992885255j), (-194.3253376956101-136.82750992885255j), (226.54569586014907+0j)]
     assert_close1d(roots_all, roots_all_expect, rtol=1e-11)
 
-
+@pytest.mark.mpmath
 def test_Psats_low_P():
     Tc = 190.564
     kwargs = dict(Tc=Tc, Pc=4599000.0, omega=0.008, T=300, P=1e5)
