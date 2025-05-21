@@ -163,13 +163,13 @@ Van der Waals Equations of State
 ================================
 .. autoclass:: VDW
    :show-inheritance:
-   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, T_discriminant_zeros_analytical, P_discriminant_zeros_analytical, delta, epsilon, omega, Zc
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, P_discriminant_zeros_analytical, delta, epsilon, omega, Zc
 
 Redlich-Kwong Equations of State
 ================================
 .. autoclass:: RK
    :show-inheritance:
-   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, T_discriminant_zeros_analytical, epsilon, omega, Zc, c1, c2
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, epsilon, omega, Zc, c1, c2
 
 Ideal Gas Equation of State
 ===========================
@@ -9275,63 +9275,6 @@ class VDW(GCEOS):
         self.no_T_spec = True
         return (P*V**2*(V - self.b) + V*self.a - self.a*self.b)/(R*V**2)
 
-    def T_discriminant_zeros_analytical(self, valid=False):
-        r'''Method to calculate the temperatures which zero the discriminant
-        function of the :obj:`VDW` eos. This is an analytical cubic function solved
-        analytically.
-
-        Parameters
-        ----------
-        valid : bool
-            Whether to filter the calculated temperatures so that they are all
-            real, and positive only, [-]
-
-        Returns
-        -------
-        T_discriminant_zeros : list[float]
-            Temperatures which make the discriminant zero, [K]
-
-        Notes
-        -----
-        Calculated analytically. Derived as follows. Has multiple solutions.
-
-        >>> from sympy import * # doctest:+SKIP
-        >>> P, T, V, R, b, a = symbols('P, T, V, R, b, a') # doctest:+SKIP
-        >>> delta, epsilon = 0, 0 # doctest:+SKIP
-        >>> eta = b # doctest:+SKIP
-        >>> B = b*P/(R*T) # doctest:+SKIP
-        >>> deltas = delta*P/(R*T) # doctest:+SKIP
-        >>> thetas = a*P/(R*T)**2 # doctest:+SKIP
-        >>> epsilons = epsilon*(P/(R*T))**2 # doctest:+SKIP
-        >>> etas = eta*P/(R*T) # doctest:+SKIP
-        >>> a_coeff = 1 # doctest:+SKIP
-        >>> b_coeff = (deltas - B - 1) # doctest:+SKIP
-        >>> c = (thetas + epsilons - deltas*(B+1)) # doctest:+SKIP
-        >>> d = -(epsilons*(B+1) + thetas*etas) # doctest:+SKIP
-        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d # doctest:+SKIP
-        >>> base = -(expand(disc/P**2*R**3*T**3/a)) # doctest:+SKIP
-        >>> base_T = simplify(base*T**3) # doctest:+SKIP
-        >>> sln = collect(expand(base_T), T).args # doctest:+SKIP
-        '''
-        P, a, b = self.P, self.a_alpha, self.b
-
-        b2 = b*b
-        x1 = P*b2
-        x0 = 12.0*x1
-
-        d = 4.0*P*R_inv2*R_inv*(a*a + x1*(x1 +  2.0*a))
-        c = (x0 - 20.0*a)*R_inv2*b*P
-        b_coeff = (x0 - a)*R_inv
-        a_coeff = 4.0*b
-
-        roots = roots_cubic(a_coeff, b_coeff, c, d)
-#        roots = np.roots([a_coeff, b_coeff, c, d]).tolist()
-        if valid:
-            # TODO - only include ones when switching phases from l/g to either g/l
-            # Do not know how to handle
-            roots = [r.real for r in roots if (r.real >= 0.0 and (abs(r.imag) <= 1e-12))]
-            roots.sort()
-        return roots
 
     @staticmethod
     def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
@@ -9636,86 +9579,11 @@ class RK(GCEOS):
             # Turns out the above solution does not cover all cases
         return super().solve_T(P, V, solution=solution)
 
-
-    def T_discriminant_zeros_analytical(self, valid=False):
-        r'''Method to calculate the temperatures which zero the discriminant
-        function of the `RK` eos. This is an analytical function with an
-        11-coefficient polynomial which is solved with `numpy`.
-
-        Parameters
-        ----------
-        valid : bool
-            Whether to filter the calculated temperatures so that they are all
-            real, and positive only, [-]
-
-        Returns
-        -------
-        T_discriminant_zeros : float
-            Temperatures which make the discriminant zero, [K]
-
-        Notes
-        -----
-        Calculated analytically. Derived as follows. Has multiple solutions.
-
-        >>> from sympy import *  # doctest:+SKIP
-        >>> P, T, V, R, b, a, Troot = symbols('P, T, V, R, b, a, Troot') # doctest:+SKIP
-        >>> a_alpha = a/sqrt(T) # doctest:+SKIP
-        >>> delta, epsilon = b, 0 # doctest:+SKIP
-        >>> eta = b # doctest:+SKIP
-        >>> B = b*P/(R*T) # doctest:+SKIP
-        >>> deltas = delta*P/(R*T) # doctest:+SKIP
-        >>> thetas = a_alpha*P/(R*T)**2 # doctest:+SKIP
-        >>> epsilons = epsilon*(P/(R*T))**2 # doctest:+SKIP
-        >>> etas = eta*P/(R*T) # doctest:+SKIP
-        >>> a_coeff = 1 # doctest:+SKIP
-        >>> b_coeff = (deltas - B - 1) # doctest:+SKIP
-        >>> c = (thetas + epsilons - deltas*(B+1)) # doctest:+SKIP
-        >>> d = -(epsilons*(B+1) + thetas*etas) # doctest:+SKIP
-        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d # doctest:+SKIP
-        >>> new_disc = disc.subs(sqrt(T), Troot) # doctest:+SKIP
-        >>> new_T_base = expand(expand(new_disc)*Troot**15) # doctest:+SKIP
-        >>> ans = collect(new_T_base, Troot).args # doctest:+SKIP
-        '''
-        P, a, b, epsilon, delta = self.P, self.a, self.b, self.epsilon, self.delta
-
-        a *= self.Tc**0.5 # pre-dates change in alpha definition
-
-        P2 = P*P
-        P3 = P2*P
-        P4 = P2*P2
-        R_inv4 = R_inv2*R_inv2
-        R_inv5 = R_inv4*R_inv
-        R_inv6 = R_inv4*R_inv2
-        b2 = b*b
-        b3 = b2*b
-        b4 = b2*b2
-        a2 = a*a
-        x5 = 15.0*a2
-        x8 = 2.0*P3
-        x9 = b4*b*R_inv
-        x13 = 6.0*R_inv*R_inv2
-
-        coeffs = [P2*b2*R_inv2,
-                  0.0,
-                  P3*b3*x13,
-                  -a*b*P2*x13,
-                  13.0*R_inv4*P4*b4,
-                  -32.0*a*P3*R_inv4*b2,
-                  P2*R_inv4*(12.0*P3*x9 + a2),
-                  -42.0*a*b3*P4*R_inv5,
-                  b*R_inv5*x8*(x5 + x8*x9),
-                  -12.0*P2*P3*a*R_inv6*b4,
-                  -R_inv6*b2*P4*x5,
-                  -4.0*a2*a*P3*R_inv6]
-
-        roots = np.roots(coeffs).tolist()
-        roots = [i*i for i in roots]
-        if valid:
-            # TODO - only include ones when switching phases from l/g to either g/l
-            # Do not know how to handle
-            roots = [r.real for r in roots if (r.real >= 0.0 and (abs(r.imag) <= 1e-12))]
-            roots.sort()
-        return roots
+def SRK_P_max_at_V(Tc, a, b, m, V):
+    P_max = -R*Tc*a*(m**2 + 2*m + 1)/(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)
+    if P_max < 0.0:
+        return None
+    return P_max
 
 class SRK(GCEOS):
     r'''Class for solving the Soave-Redlich-Kwong [1]_ [2]_ [3]_ cubic
@@ -9949,11 +9817,7 @@ class SRK(GCEOS):
         except:
             Tc, a, m, b = self.Tcs[0], self.ais[0], self.ms[0], self.bs[0]
 
-        P_max = -R*Tc*a*(m**2 + 2*m + 1)/(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)
-        if P_max < 0.0:
-            return None
-        return P_max
-
+        return SRK_P_max_at_V(Tc, a, b, m, V)
 
     def solve_T(self, P, V, solution=None):
         r'''Method to calculate `T` from a specified `P` and `V` for the SRK
@@ -10086,7 +9950,7 @@ class SRKTranslated(SRK):
         Acentric factor, [-]
     alpha_coeffs : tuple or None
         Coefficients which may be specified by subclasses; set to None to use
-        the original Peng-Robinson alpha function, [-]
+        the original SRK alpha function, [-]
     c : float, optional
         Volume translation parameter, [m^3/mol]
     T : float, optional
@@ -10725,8 +10589,13 @@ class APISRK(SRK):
 
     def P_max_at_V(self, V):
         if self.S2 == 0:
-            self.m = self.S1
-            return SRK.P_max_at_V(self, V)
+            m = self.S1
+            try:
+                Tc, a, b = self.Tc, self.a, self.b
+            except:
+                Tc, a, b = self.Tcs[0], self.ais[0], self.bs[0]
+            return SRK_P_max_at_V(Tc, a, b, m, V)
+
         return GCEOS.P_max_at_V(self, V)
 
 

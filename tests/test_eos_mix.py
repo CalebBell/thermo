@@ -83,7 +83,7 @@ def test_PRMIX_quick():
     a_alphas = (0.21876490011332972, -0.0006346637957108072, 3.6800265478701025e-06)
     a_alphas_fast = eos.a_alpha_and_derivatives(eos.T)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(eos.T, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(eos.T)
     assert_close1d(a_alphas, a_alphas_slow)
     assert_close(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False), rtol=1e-12)
 
@@ -543,7 +543,7 @@ def test_PRMIX_VS_PR():
     a_alphas = (3.8012620034344384, -0.006647930535193548, 1.693013909536469e-05)
     a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=True)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_slow)
 
     # PR back calculation for T
@@ -567,11 +567,6 @@ def test_PRMIX_VS_PR():
 
     # Integration tests
     eos = PRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.00013, T=299)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
-
 
 def test_PR78MIX():
     # Copied and pasted example from PR78.
@@ -609,7 +604,7 @@ def test_SRKMIX_quick():
     a_alphas = (0.21053508135768303, -0.0007568164048417844, 4.650780763765838e-06)
     a_alphas_fast = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_slow)
     assert_close(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False), rtol=1e-12)
 
@@ -663,7 +658,7 @@ def test_SRKMIX_vs_SRK():
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_fast)
     assert_close(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False), rtol=1e-12)
-    assert_close(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=False), rtol=1e-12)
+    assert_close(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False), rtol=1e-12)
 
     # PR back calculation for T
     eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], V=0.0001468210773547259, P=1E6)
@@ -687,10 +682,6 @@ def test_SRKMIX_vs_SRK():
 
     # Integration tests
     eos = SRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299.,V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
 
 
@@ -725,7 +716,7 @@ def test_VDWIX_quick():
     a_alphas = [0.18035232263614895, 0.0, 0.0]
     a_alphas_fast = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_slow)
 
     # back calculation for T, both solutions
@@ -779,7 +770,7 @@ def test_PRSVMIX_vs_PRSV():
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_fast, rtol=1e-12)
 
-    a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_fast, rtol=1e-12)
 
     # PR back calculation for T
@@ -814,9 +805,10 @@ def test_PRSVMIX_quick():
     a_alphas = (0.21897593315687267, -0.0006396071449056316, 3.715015383907643e-06)
     a_alphas_fast = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_slow)
-    [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
+
+    assert_close(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False), rtol=1e-12)
 
     # back calculation for T, both solutions
     for V in [3.623553616564366e-05, 0.0007002423865480607]:
@@ -866,7 +858,7 @@ def test_PRSV2MIX_vs_PRSV():
 
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_fast = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_fast)
 
     [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
@@ -895,7 +887,7 @@ def test_PRSV2MIX_quick():
     a_alphas = (0.21897593315687267, -0.0006396071449056315, 3.715015383907642e-06)
     a_alphas_fast = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_slow)
 
     [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
@@ -949,7 +941,7 @@ def test_TWUPRMIX_vs_TWUPR():
     a_alphas = (3.8069848647566698, -0.006971714700883658, 2.366703486824857e-05)
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_slow)
     [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
@@ -976,10 +968,6 @@ def test_TWUPRMIX_vs_TWUPR():
 
     # Integration tests
     eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
     # Superctitical test
     eos = TWUPRMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=900., P=1E6)
@@ -997,7 +985,7 @@ def test_TWUPRMIX_quick():
     a_alphas = (0.21887744827068994, -0.0006338028987948183, 3.358462881663777e-06)
     a_alphas_fast = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_slow)
     [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
@@ -1048,7 +1036,7 @@ def test_TWUSRKMIX_vs_TWUSRK():
     a_alphas = (3.7196696151053654, -0.00726972623757774, 2.3055902218261955e-05)
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_allclose(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(299)
     assert_allclose(a_alphas, a_alphas_slow)
     [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
@@ -1075,10 +1063,6 @@ def test_TWUSRKMIX_vs_TWUSRK():
 
     # Integration tests
     eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299.,V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
     # Superctitical test
     eos = TWUSRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=900., P=1E6)
@@ -1096,7 +1080,7 @@ def test_TWUSRKMIX_quick():
     a_alphas = (0.2101906113921238, -0.0007322002407973534, 2.600317479929538e-06)
     a_alphas_fast = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_slow)
     [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
@@ -1148,7 +1132,7 @@ def test_APISRKMIX_vs_APISRK():
     a_alphas = (3.727476773890392, -0.007334914894987986, 1.9482553059883725e-05)
     a_alphas_fast = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(299, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(299)
     assert_close1d(a_alphas, a_alphas_slow)
     [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
@@ -1184,10 +1168,6 @@ def test_APISRKMIX_vs_APISRK():
 
     # Integration tests
     eos = APISRKMIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299.,V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_allclose(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
     # Test vs. pure with S1, S2
     eos = APISRKMIX(Tcs=[514.0], Pcs=[6137000], omegas=[0.2975], zs=[1], S1s=[1.678665], S2s=[-0.216396], P=1E6, T=299)
@@ -1208,7 +1188,7 @@ def test_APISRKMIX_quick():
     a_alphas = (0.2108068740329283, -0.0007639202977930443, 4.705536792825722e-06)
     a_alphas_fast = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_slow)
     [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
@@ -1263,7 +1243,7 @@ def test_RKMIX_quick():
     a_alphas = (0.21560553557204304, -0.0009374153720523612, 1.2227157026769929e-05)
     a_alphas_fast = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_fast)
-    a_alphas_slow = eos.a_alpha_and_derivatives(115, quick=False)
+    a_alphas_slow = eos.a_alpha_and_derivatives(115)
     assert_close1d(a_alphas, a_alphas_slow)
     [assert_allclose(a_alphas[0], eos.a_alpha_and_derivatives(eos.T, full=False, quick=i), rtol=1e-12) for i in (True, False)]
 
@@ -1457,8 +1437,7 @@ def test_SRKMIXTranslated_vs_pure():
     eos = SRKMIXTranslated(Tcs=[33.2], Pcs=[1296960.0], omegas=[-0.22], zs=[1], T=300, P=1e6, cs=[-1.2e-6])
     eos_pure = SRKTranslated(Tc=33.2, Pc=1296960.0, omega=-0.22, T=300, P=1e6, c=-1.2e-6)
     eos_pure_copy = eos.pures()[0]
-    assert_close1d(eos_pure.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
-    assert_close1d(eos_pure_copy.sorted_volumes, eos.sorted_volumes, rtol=1e-13)
+    assert_close(eos_pure.V_l, eos.V_l, rtol=1e-13)
 
     # Test of a_alphas
     a_alphas_expect = (0.014083672720010676, -2.3594195225440124e-05, 5.908718415457152e-08)

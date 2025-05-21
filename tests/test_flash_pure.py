@@ -842,7 +842,7 @@ def test_Psat_plot(fluid, eos):
     Tmin = kwargs['Tc']*.03
     if eos is RK:
         Tmin = kwargs['Tc']*.2
-    errs, Psats_num, Psats_fit, plot_fig = obj.Psat_errors(plot=True, show=False, pts=100,
+    errs, Psats_num, Psats_fit, plot_fig = GCEOS.Psat_errors(obj, plot=True, show=False, pts=100,
                                      Tmin=Tmin, Tmax=kwargs['Tc'], Pmin=1e-100)
 
 

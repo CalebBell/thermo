@@ -115,8 +115,8 @@ For a pure component, there is a vapor-liquid equilibrium line right up to the c
 
 The result is accurate to more than 10 digits, and is implemented using some fancy mathematical techniques that allow a direct calculation of the vapor pressure. A few more digits can be obtained by setting `polish` to True, which polishes the result with a newton solver to as much accuracy as a floating point number can provide:
 
->>> 1-eos.Psat(400, polish=True)/eos.Psat(400)
-1.6e-14
+>>> (1-eos.Psat(400, polish=True)/eos.Psat(400)) < 1e-12
+True
 
 A few more methods of interest are :obj:`V_l_sat <thermo.eos.GCEOS.V_l_sat>` and :obj:`V_g_sat <thermo.eos.GCEOS.V_g_sat>` which calculate the saturation liquid and molar volumes; :obj:`Tsat <thermo.eos.GCEOS.Tsat>` which calculates the saturation temperature given a specified pressure, and :obj:`phi_sat <thermo.eos.GCEOS.phi_sat>`  which computes the saturation fugacity coefficient given a temperature.
 

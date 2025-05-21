@@ -223,6 +223,7 @@ from thermo.eos import (
     PRTranslatedPPJP,
     SRKTranslated,
     SRKTranslatedConsistent,
+    SRK_P_max_at_V
 )
 from thermo.eos_alpha_functions import (
     APISRK_a_alpha_and_derivatives_vectorized,
@@ -11490,10 +11491,9 @@ class APISRKMIX(SRKMIX, APISRK):
 
     def P_max_at_V(self, V):
         if self.N == 1 and self.S2s[0] == 0:
-            self.ms = self.S1s
-            P_max_at_V = SRK.P_max_at_V(self, V)
-            del self.ms
-            return P_max_at_V
+            m = self.S1s[0]
+            Tc, a, b = self.Tcs[0], self.ais[0], self.bs[0]
+            return SRK_P_max_at_V(Tc, a, b, m, V)
         return GCEOSMIX.P_max_at_V(self, V)
 
 

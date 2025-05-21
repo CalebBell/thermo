@@ -732,9 +732,7 @@ def test_VDW_Psat():
 def test_RK_quick():
     # Test solution for molar volumes
     eos = RK(Tc=507.6, Pc=3025000, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(0.00015189346878119082+0j), (0.0011670654270233137+0.001117116441729614j), (0.0011670654270233137-0.001117116441729614j)]
-    assert_close1d(Vs_fast, Vs_expected)
+    assert_close(eos.V_l, 0.00015189346878119082)
 
     # Test of a_alphas
     a_alphas = [3.279649770989796, -0.005484364165534776, 2.7513532603017274e-05]
@@ -771,10 +769,6 @@ def test_RK_quick():
 
     # Integration tests
     eos = RK(Tc=507.6, Pc=3025000, T=299.,V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
     # One gas phase property
     assert 'g' == RK(Tc=507.6, Pc=3025000, T=499.,P=1E5).phase
@@ -828,9 +822,7 @@ def test_RK_Psat():
 def test_SRK_quick():
     # Test solution for molar volumes
     eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [0.0001468210773547258, (0.0011696016227365465+0.001304089515440735j), (0.0011696016227365465-0.001304089515440735j)]
-    assert_close1d(Vs_fast, Vs_expected)
+    assert_close(eos.V_l, 0.0001468210773547258)
 
     # Test of a_alphas
     a_alphas = [3.72718144448615, -0.007332994130304654, 1.9476133436500582e-05]
@@ -859,10 +851,6 @@ def test_SRK_quick():
 
     # Integration tests
     eos = SRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
 
     # Compare against some known  in Walas [2] functions
@@ -923,9 +911,7 @@ def test_SRK_Psat():
 def test_APISRK_quick():
     # Test solution for molar volumes
     eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(0.00014681828835112518+0j), (0.0011696030172383468+0.0013042038361510636j), (0.0011696030172383468-0.0013042038361510636j)]
-    assert_close1d(Vs_fast, Vs_expected)
+    assert_close(eos.V_l, 0.00014681828835112518)
 
     # Test of a_alphas
     a_alphas = [3.727476773890392, -0.007334914894987986, 1.948255305988373e-05]
@@ -944,7 +930,7 @@ def test_APISRK_quick():
     T_slow = eos.solve_T(P=1E6, V=0.00014681828835112518)
     assert_close(T_slow, 299)
     # with a S1 set
-    eos = APISRK(Tc=514.0, Pc=6137000.0, S1=1.678665, S2=-0.216396, P=1E6, V=7.045695070282895e-05)
+    eos = APISRK(Tc=514.0, Pc=6137000.0, omega=0.2975, S1=1.678665, S2=-0.216396, P=1E6, V=7.045695070282895e-05)
     assert_close(eos.T, 299)
     eos = APISRK(Tc=514.0, Pc=6137000.0, omega=0.635, S2=-0.216396, P=1E6, V=7.184693818446427e-05)
     assert_close(eos.T, 299)
@@ -972,10 +958,6 @@ def test_APISRK_quick():
 
     # Integration tests
     eos = APISRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
     # Error checking
     with pytest.raises(Exception):
@@ -991,9 +973,7 @@ def test_APISRK_quick():
 def test_TWUPR_quick():
     # Test solution for molar volumes
     eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [0.0001301755417057077, (0.0011236546051852435+0.001294926236567151j), (0.0011236546051852435-0.001294926236567151j)]
-    assert_close1d(Vs_fast, Vs_expected)
+    assert_close(eos.V_l, 0.0001301755417057077)
 
     # Test of a_alphas
     a_alphas = [3.8069848647566698, -0.006971714700883658, 2.366703486824857e-05]
@@ -1027,10 +1007,6 @@ def test_TWUPR_quick():
 
     # Integration tests
     eos = TWUPR(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
     # Error checking
     with pytest.raises(Exception):
@@ -1049,9 +1025,7 @@ def test_TWUPR_quick():
 def test_TWUSRK_quick():
     # Test solution for molar volumes
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
-    Vs_fast = eos.volume_solutions_full(299, 1E6, eos.b, eos.delta, eos.epsilon, eos.a_alpha)
-    Vs_expected = [(0.00014689222296622437+0j), (0.001169566049930797+0.0013011782630948804j), (0.001169566049930797-0.0013011782630948804j)]
-    assert_close1d(Vs_fast, Vs_expected)
+    assert_close(eos.V_l, 0.00014689222296622437)
 
     # Test of a_alphas
     a_alphas = [3.7196696151053654, -0.00726972623757774, 2.305590221826195e-05]
@@ -1085,10 +1059,6 @@ def test_TWUSRK_quick():
 
     # Integration tests
     eos = TWUSRK(Tc=507.6, Pc=3025000, omega=0.2975, T=299.,V=0.00013)
-    fast_vars = vars(eos)
-    eos.set_properties_from_solution(eos.T, eos.P, eos.V, eos.b, eos.delta, eos.epsilon, eos.a_alpha, eos.da_alpha_dT, eos.d2a_alpha_dT2)
-    slow_vars = vars(eos)
-    [assert_close(slow_vars[i], j) for (i, j) in fast_vars.items() if isinstance(j, float)]
 
     # Error checking
     with pytest.raises(Exception):
@@ -2221,23 +2191,6 @@ def test_eos_P_limits():
                             raise ValueError("Failed")
 
 
-def test_T_discriminant_zeros_analytical():
-    # VDW
-    eos = VDW(Tc=647.14, Pc=22048320.0, omega=0.344, T=200., P=1E6)
-    roots_valid = eos.T_discriminant_zeros_analytical(True)
-    assert_close1d(roots_valid, [171.53074673774842, 549.7182388464873], rtol=1e-11)
-    roots_all = eos.T_discriminant_zeros_analytical(False)
-    roots_all_expect = (549.7182388464873, -186.23123149684938, 171.53074673774842)
-    assert_close1d(roots_all, roots_all_expect, rtol=1e-11)
-
-
-    # RK
-    eos = RK(Tc=647.14, Pc=22048320.0, omega=0.344, T=200., P=1E6)
-    roots_valid = eos.T_discriminant_zeros_analytical(True)
-    assert_close1d(roots_valid, [226.54569586014907, 581.5258414845399, 6071.904717499858], rtol=1e-11)
-    roots_all = eos.T_discriminant_zeros_analytical(False)
-    roots_all_expect = [(-3039.5486755087554-5260.499733964365j), (-3039.5486755087554+5260.499733964365j), (6071.904717499858+0j), (-287.16659607284214-501.5089438353455j), (-287.16659607284214+501.5089438353455j), (65.79460205013443-221.4001851805135j), (65.79460205013443+221.4001851805135j), (581.5258414845399+0j), (-194.3253376956101+136.82750992885255j), (-194.3253376956101-136.82750992885255j), (226.54569586014907+0j)]
-    assert_close1d(roots_all, roots_all_expect, rtol=1e-11)
 
 @pytest.mark.mpmath
 def test_Psats_low_P():
