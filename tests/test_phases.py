@@ -1484,15 +1484,15 @@ def test_CEOS_phis():
     assert_close1d(liquid_gas.lnphis_G_min(), [-0.0076796355290965155, -0.008453288415352122, -0.004934801579277686], rtol=1e-12)
 
     # not fully implemented, change answers later
-    assert_close(gas.d2H_dep_dT2(), -0.005152154534022128, rtol=.05)
-    assert_close(liquid.d2H_dep_dT2(), 0.10497212232734983, rtol=.05)
-    assert_close(gas_liquid.d2H_dep_dT2(), -0.3061197417986963, rtol=.05)
-    assert_close(liquid_gas.d2H_dep_dT2(), -0.0014181599480259665, rtol=.05)
+    assert_close(gas.d2H_dep_dT2(), -0.005138897570011184, rtol=.05)
+    assert_close(liquid.d2H_dep_dT2(), 0.10896144062159303, rtol=.05)
+    assert_close(gas_liquid.d2H_dep_dT2(), -0.2781910979720301, rtol=.05)
+    assert_close(liquid_gas.d2H_dep_dT2(), -0.0014130135750233216, rtol=.05)
 
-    assert_close(gas.d2H_dep_dT2_V(), -0.0004541011757809128, rtol=.05)
-    assert_close(liquid.d2H_dep_dT2_V(), -0.11743722035666537, rtol=.05)
-    assert_close(gas_liquid.d2H_dep_dT2_V(), -0.8323910932197357, rtol=.05)
-    assert_close(liquid_gas.d2H_dep_dT2_V(), -0.00017633836181849124, rtol=.05)
+    assert_close(gas.d2H_dep_dT2_V(), -0.0004408442117699687, rtol=.05)
+    assert_close(liquid.d2H_dep_dT2_V(), -0.11344790206242217, rtol=.05)
+    assert_close(gas_liquid.d2H_dep_dT2_V(), -0.8044624493930695, rtol=.05)
+    assert_close(liquid_gas.d2H_dep_dT2_V(), -0.00017119198881584627, rtol=.05)
 
     assert_close(gas.d2H_dTdP(), 8.32983680179208e-06, rtol=1e-12)
     assert_close(liquid.d2H_dTdP(), -2.994583380426358e-07, rtol=1e-12)

@@ -48,7 +48,7 @@ Standard Peng Robinson
 .. autoclass:: thermo.eos_mix.PRMIX
    :show-inheritance:
    :members: eos_pure, a_alphas_vectorized, a_alpha_and_derivatives_vectorized,
-             d3a_alpha_dT3, d3a_alpha_dT3_vectorized, fugacity_coefficients,
+             d3a_alpha_dT3, fugacity_coefficients,
              dlnphis_dT, dlnphis_dP, dlnphis_dzs, ddelta_dzs, ddelta_dns,
              d2delta_dzizjs, d2delta_dninjs, d3delta_dninjnks, depsilon_dzs,
              depsilon_dns, d2epsilon_dzizjs, d2epsilon_dninjs,
@@ -204,6 +204,7 @@ from fluids.constants import R
 from fluids.numerics import UnconvergedError, broyden2, catanh, exp, log, newton_system, solve_2_direct, sqrt, trunc_exp
 from fluids.numerics import numpy as np
 from fluids.numerics.arrays import det, subset_matrix
+from fluids.numerics import derivative
 
 from thermo.eos import (
     APISRK,
@@ -6845,45 +6846,9 @@ class PRMIX(GCEOSMIX, PR):
             return self._d3a_alpha_dT3
         except AttributeError:
             pass
-        tot = 0.0
-        zs = self.zs
-        vs = self.d3a_alpha_dT3_vectorized(self.T)
-        if self.vectorized:
-            tot += float(dot(zs, vs))
-        else:
-            for i in range(self.N):
-                tot += zs[i]*vs[i]
+        tot = derivative(lambda T: self.to(T=T, P=self.P, zs=self.zs).d2a_alpha_dT2, x0=self.T, dx=self.T*1e-7)
         self._d3a_alpha_dT3 = tot
         return tot
-
-    def d3a_alpha_dT3_vectorized(self, T):
-        r'''Method to calculate the third temperature derivative of
-        pure-component `a_alphas` for the PR EOS. This vectorized implementation
-        is added for extra speed.
-
-        Parameters
-        ----------
-        T : float
-            Temperature, [K]
-
-        Returns
-        -------
-        d3a_alpha_dT3s : list[float]
-            Third temperature derivative of coefficient calculated by
-            EOS-specific method, [J^2/mol^2/Pa/K^3]
-        '''
-        ais, kappas, Tcs = self.ais, self.kappas, self.Tcs
-        T_inv = 1.0/T
-        N = self.N
-
-        d3a_alpha_dT3s = zeros(N) if self.vectorized else [0.0]*N
-        for i in range(N):
-            kappa = kappas[i]
-            x0 = 1.0/Tcs[i]
-            x1 = sqrt(T*x0)
-            v = (-ais[i]*0.75*kappa*(kappa*x0 - x1*(kappa*(x1 - 1.0) - 1.0)*T_inv)*T_inv*T_inv)
-            d3a_alpha_dT3s[i] = v
-        return d3a_alpha_dT3s
 
     def fugacity_coefficients(self, Z):
         r'''Literature formula for calculating fugacity coefficients for each
