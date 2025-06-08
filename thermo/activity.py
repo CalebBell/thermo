@@ -377,20 +377,6 @@ class GibbsExcess:
 
     __hash__ = state_hash
 
-    def exact_hash(self):
-        r'''Method to calculate and return a hash representing the exact state
-        of the object. This includes `T`, `xs`,
-        the model class, and which values have already been calculated.
-
-        Returns
-        -------
-        hash : int
-            Hash of the object, [-]
-        '''
-        d = object_data(self)
-        ans = hash_any_primitive((self.__class__.__name__, d))
-        return ans
-
     def as_json(self, cache=None, option=0):
         r'''Method to create a JSON-friendly representation of the Gibbs Excess
         model which can be stored, and reloaded later.

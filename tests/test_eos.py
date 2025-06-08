@@ -614,6 +614,12 @@ def test_PRSV():
     assert_close(T_slow, 299)
 
 
+    # One solve_T that did not work
+    test = PRSV(P=1e16, V=0.3498789873827434, Tc=507.6, Pc=3025000.0, omega=0.2975)
+    assert_close(test.T, 421177338800932.0)
+
+def test_PRSV_kappa1_Tr_limit():
+    # Discontinuous, not recommended
     # Test the bool to control its behavior
     eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6, kappa1=0.05104)
     assert_close(eos.kappa, 0.7977689278061457)
@@ -630,10 +636,6 @@ def test_PRSV():
 
     with pytest.raises(Exception):
         PRSV(Tc=507.6, Pc=3025000, omega=0.2975, P=1E6, kappa1=0.05104)
-
-    # One solve_T that did not work
-    test = PRSV(P=1e16, V=0.3498789873827434, Tc=507.6, Pc=3025000.0, omega=0.2975)
-    assert_close(test.T, 421177338800932.0)
 
 
 
@@ -1511,7 +1513,7 @@ def test_Psat_issues_mpmath():
 def test_Tsat_issues():
     # This point should be easy to solve and should not require full evaluations
     # Cannot test that but this can be manually checked
-    base = PRTranslatedConsistent(Tc=647.14, Pc=22048320.0, omega=0.344, c=5.2711e-06, alpha_coeffs=[0.3872, 0.87587208, 1.9668], T=298.15, P=101325.0)
+    base = PRTranslatedConsistent(Tc=647.14, Pc=22048320.0, omega=0.344, c=5.2711e-06, alpha_coeffs=(0.3872, 0.87587208, 1.9668), T=298.15, P=101325.0)
     assert_close(base.Tsat(1e5), 371.95148202471137, rtol=1e-6)
 
     # Case was not solving with newton to the desired tolerance - increased xtol

@@ -146,8 +146,8 @@ New  :obj:`GCEOSMIX <thermo.eos_mix.GCEOSMIX>` objects can be created with the :
 PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.5, 0.5], T=300.0, P=100000.0)
 >>> eos.to(T=300.0, P=1e5, zs=[.1, .9])
 PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.1, 0.9], T=300.0, P=100000.0)
->>> eos.to(V=1, P=1e5, zs=[.4, .6])
-PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.4, 0.6], P=100000.0, V=1)
+>>> eos.to(V=1.0, P=1e5, zs=[.4, .6])
+PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.4, 0.6], P=100000.0, V=1.0)
 >>> eos.to(V=1.0, T=300.0, zs=[.4, .6])
 PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.4, 0.6], T=300.0, V=1.0)
 
@@ -204,17 +204,6 @@ True
 False
 
 :obj:`state_hash <thermo.eos.GCEOS.state_hash>` is the __hash__ method of the object.
-
-And finally it is possible to see if two objects are exactly identical, including cached calculation results, by using the  :obj:`exact_hash <thermo.eos.GCEOS.exact_hash>` method:
-
->>> PR_case3 = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0.41],[0.41,0]])
->>> PR_case.state_hash() == PR_case3.state_hash()
-True
->>> PR_case.exact_hash() == PR_case3.exact_hash()
-True
->>> _ = PR_case.da_alpha_dT_ijs
->>> PR_case.exact_hash() == PR_case3.exact_hash()
-False
 
 Serialization
 ^^^^^^^^^^^^^

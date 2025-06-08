@@ -1063,7 +1063,7 @@ def test_some_flashes_bad(hacks):
 
     assert_close(flasher.flash(T=800, P=1e7).G(), flasher.flash(T=725.87092453, P=1e7).G(), rtol=1e-10)
 
-def test_EOS_dew_bubble_same_eos_id():
+def test_EOS_dew_bubble_same_eos():
     constants = ChemicalConstantsPackage(Tcs=[405.6], Pcs=[11277472.5], omegas=[0.25], MWs=[17.03052], CASs=['7664-41-7'])
     HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [7.444966286051841e-23, 9.444106746563928e-20,
                             -1.2490299714587002e-15, 2.6693560979905865e-12, -2.5695131746723413e-09, 1.2022442523089315e-06,
@@ -1078,10 +1078,10 @@ def test_EOS_dew_bubble_same_eos_id():
     # Test which covers the ID of returned dew/bubble flash phases are the same
     # for the EOS case
     res = flasher.flash(P=1e5, VF=.5)
-    assert res.gas.eos_mix is res.liquid0.eos_mix
+    assert res.gas.T == res.liquid0.T
 
     res = flasher.flash(T=300, VF=.5)
-    assert res.gas.eos_mix is res.liquid0.eos_mix
+    assert res.gas.P == res.liquid0.P
 
 @pytest.mark.parametrize("hacks", [True, False])
 def test_VS_issue_PRSV(hacks):
@@ -1538,7 +1538,7 @@ def test_VL_EOSMIX_fast_return(hacks):
                                              ViscosityLiquids=[ViscosityLiquid(exp_poly_fit=(273.17, 647.086, [-3.2967840446295976e-19, 1.083422738340624e-15, -1.5170905583877102e-12, 1.1751285808764222e-09, -5.453683174592268e-07, 0.00015251508129341616, -0.024118558027652552, 1.7440690494170135, -24.96090630337129]))],
                                              ViscosityGases=[ViscosityGas(poly_fit=(273.16, 1073.15, [-1.1818252575481647e-27, 6.659356591849417e-24, -1.5958127917299133e-20, 2.1139343137119052e-17, -1.6813187290802144e-14, 8.127448028541097e-12, -2.283481528583874e-09, 3.674008403495927e-07, -1.9313694390100466e-05]))])
     eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
-    alpha_coeffs=[[0.3872, 0.87587208, 1.9668]], cs=[5.2711E-6])
+    alpha_coeffs=[(0.3872, 0.87587208, 1.9668)], cs=[5.2711E-6])
     gas = CEOSGas(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases, T=T, P=P, zs=zs)
     flasher = FlashPureVLS(constants, properties, liquids=[liq], gas=gas, solids=[])

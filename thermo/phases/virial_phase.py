@@ -338,21 +338,6 @@ class VirialCSP:
 
     __hash__ = state_hash
 
-    def exact_hash(self):
-        r'''Method to calculate and return a hash representing the exact state
-        of the object.
-
-        Returns
-        -------
-        hash : int
-            Hash of the object, [-]
-        '''
-        d = self.__dict__
-        ans = hash_any_primitive((self.__class__.__name__, self.state_hash(), self.model_hash(), d))
-        return ans
-
-
-
     def __eq__(self, other):
         return self.__hash__() == hash(other)
 

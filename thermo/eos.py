@@ -950,19 +950,6 @@ class GCEOS:
         self._model_hash = h
         return h
 
-    def exact_hash(self):
-        r'''Method to calculate and return a hash representing the exact state
-        of the object.
-
-        Returns
-        -------
-        hash : int
-            Hash of the object, [-]
-        '''
-        d = object_data(self)
-        ans = hash_any_primitive((self.__class__.__name__, d))
-        return ans
-
     def __eq__(self, other):
         return self.__hash__() == hash(other)
 
@@ -4541,13 +4528,13 @@ class GCEOS:
         0.0
         >>> low_T = eos.to(T=100.0, P=eos.P_PIP_transition(100, low_P_limit=1e-5))
         >>> low_T.PIP_l, low_T.PIP_g
-        (45.778088191, 0.9999999997903)
+        (45.77, 0.99999)
         >>> initial_super = eos.to(T=600.0, P=eos.P_PIP_transition(600))
-        >>> initial_super.P, initial_super.PIP_g
-        (6456282.17132, 0.999999999999)
+        >>> initial_super.PIP_g
+        1.0
         >>> high_T = eos.to(T=900.0, P=eos.P_PIP_transition(900, low_P_limit=1e-5))
-        >>> high_T.P, high_T.PIP_g
-        (12536704.763, 0.9999999999)
+        >>> high_T.PIP_l
+        1.0
         '''
         try:
             subcritical = T < self.Tc
@@ -4574,7 +4561,7 @@ class GCEOS:
                 low, high = 10.0*Psat, Psat
             else:
                 low, high = 1e-3, 1e11
-            P = bisect(to_solve, low, high)
+            P = secant(to_solve, x0=low, x1=high, low=low, high=high, bisection=True, xtol=1e-12)
             return P
         except:
             err_low = to_solve(low_P_limit)

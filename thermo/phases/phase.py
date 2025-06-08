@@ -260,23 +260,6 @@ class Phase:
 
     __hash__ = state_hash
 
-    def exact_hash(self):
-        r'''Method to calculate and return a hash representing the exact state
-        of the object.
-
-        Returns
-        -------
-        hash : int
-            Hash of the object, [-]
-        '''
-        # Ensure the hash is set so it is always part of the object hash
-        self.model_hash(False)
-        self.model_hash(True)
-        self.state_hash()
-        d = object_data(self)
-        ans = hash_any_primitive((self.__class__.__name__, d))
-        return ans
-
 
     def is_same_model(self, other_phase, ignore_phase=False):
         r'''Method to check whether or not a model is the exact same

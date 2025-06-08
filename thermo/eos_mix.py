@@ -198,6 +198,7 @@ from cmath import log as clog
 
 from chemicals.flash_basic import K_value, Wilson_K_value
 from chemicals.rachford_rice import Rachford_Rice_flash_error, flash_inner_loop
+from chemicals.flash_basic import flash_wilson
 from chemicals.utils import d2ns_to_dn2_partials, d2xs_to_dxdn_partials, dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, normalize
 from fluids.constants import R
 from fluids.numerics import UnconvergedError, broyden2, catanh, exp, log, newton_system, solve_2_direct, sqrt, trunc_exp
@@ -345,16 +346,16 @@ class GCEOSMIX(GCEOS):
         ----------
         idxs : list[int] or Slice
             Indexes of components that should be included, [-]
+        state_specs : float
+            Keyword arguments which can be any of `T`, `P`, `V`, `zs`; `zs`
+            is optional, as are (`T`, `P`, `V`), but if any of (`T`, `P`, `V`)
+            are specified, a second one is required as well, [various]
 
         Returns
         -------
         subset_eos : :obj:`GCEOSMIX`
             Multicomponent :obj:`GCEOSMIX` at the same specified specs but with a
             composition normalized to 1 and with fewer components, [-]
-        state_specs : float
-            Keyword arguments which can be any of `T`, `P`, `V`, `zs`; `zs`
-            is optional, as are (`T`, `P`, `V`), but if any of (`T`, `P`, `V`)
-            are specified, a second one is required as well, [various]
 
         Notes
         -----
@@ -1944,11 +1945,9 @@ class GCEOSMIX(GCEOS):
         info = []
         def err_and_jacobian(lnKs_guess):
             err =  self._err_VL_jacobian(lnKs_guess, T, P, zs, near_critical=near_critical, err_also=True, info=info)
-#            print(lnKs_guess[-1], err[0])
             return err[0], err[1]
         def err(lnKs_guess):
             err = self._err_VL(lnKs_guess, T, P, zs, near_critical=near_critical, info=info)
-#            print(lnKs_guess[-1], err[0])
             return err
 
         ans, count = broyden2(fun=err, jac=err_and_jacobian, xs=lnKs_guess, xtol=xtol, maxiter=maxiter, jac_has_fun=True, skip_J=True)
@@ -1956,167 +1955,33 @@ class GCEOSMIX(GCEOS):
         return V_over_F, xs, ys, eos_l, eos_g, count
 
     def sequential_substitution_VL(self, Ks_initial=None, maxiter=1000,
-                                   xtol=1E-13, near_critical=True, Ks_extra=None,
-                                   xs=None, ys=None, trivial_solution_tol=1e-5, info=None,
-                                   full_alphas=False):
-#        print(self.zs, Ks)
+                                   xtol=1E-13,
+                                   xs=None, ys=None, trivial_solution_tol=1e-5):
         T, P, zs = self.T, self.P, self.zs
         V_over_F = None
         if xs is not None and ys is not None:
             pass
         else:
-            # TODO use flash_wilson here
             if Ks_initial is None:
-                Ks = [Wilson_K_value(T, P, Tci, Pci, omega) for Pci, Tci, omega in zip(self.Pcs, self.Tcs, self.omegas)]
+                _, _, VF, xs, ys = flash_wilson(zs, self.Tcs, self.Pcs, self.omegas, T=T, P=P)
             else:
                 Ks = Ks_initial
-            xs = None
-            try:
                 V_over_F, xs, ys = flash_inner_loop(zs, Ks)
-            except ValueError as e:
-                if Ks_extra is not None:
-                    for Ks in Ks_extra:
-                        try:
-                            V_over_F, xs, ys = flash_inner_loop(zs, Ks)
-                            break
-                        except ValueError as e:
-                            pass
-                if xs is None:
-                    raise(e)
-
-#        print(xs, ys, 'innerloop')
-#        Z_l_prev = None
-#        Z_g_prev = None
 
         for i in range(maxiter):
-            if not near_critical:
-                eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True, full_alphas=full_alphas)
-                eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False, full_alphas=full_alphas)
+            eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True, full_alphas=False)
+            eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False, full_alphas=False)
+            try:
                 lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
+            except AttributeError:
+                lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_l)
+            try:
                 lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
-            else:
-                eos_g = self.to_TP_zs_fast(T=T, P=P, zs=ys, only_l=False, only_g=True, full_alphas=full_alphas)
-                eos_l = self.to_TP_zs_fast(T=T, P=P, zs=xs, only_l=True, only_g=False, full_alphas=full_alphas)
-                try:
-                    lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_g)
-                except AttributeError:
-                    lnphis_g = eos_g.fugacity_coefficients(eos_g.Z_l)
-                try:
-                    lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_l)
-                except AttributeError:
-                    lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_g)
+            except AttributeError:
+                lnphis_l = eos_l.fugacity_coefficients(eos_l.Z_g)
 
-
-#                eos_g = self.to_TP_zs(T=self.T, P=self.P, zs=ys)
-#                eos_l = self.to_TP_zs(T=self.T, P=self.P, zs=xs)
-#                if 0:
-#                    if hasattr(eos_g, 'lnphis_g') and hasattr(eos_g, 'lnphis_l'):
-#                        if Z_l_prev is not None and Z_g_prev is not None:
-#                            if abs(eos_g.Z_g - Z_g_prev) < abs(eos_g.Z_l - Z_g_prev):
-#                                lnphis_g = eos_g.lnphis_g
-#                                fugacities_g = eos_g.fugacities_g
-#                                Z_g_prev = eos_g.Z_g
-#                            else:
-#                                lnphis_g = eos_g.lnphis_l
-#                                fugacities_g = eos_g.fugacities_l
-#                                Z_g_prev = eos_g.Z_l
-#                        else:
-#                            if eos_g.G_dep_g < eos_g.lnphis_l:
-#                                lnphis_g = eos_g.lnphis_g
-#                                fugacities_g = eos_g.fugacities_g
-#                                Z_g_prev = eos_g.Z_g
-#                            else:
-#                                lnphis_g = eos_g.lnphis_l
-#                                fugacities_g = eos_g.fugacities_l
-#                                Z_g_prev = eos_g.Z_l
-#                    else:
-#                        try:
-#                            lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
-#                            fugacities_g = eos_g.fugacities_g
-#                            Z_g_prev = eos_g.Z_g
-#                        except AttributeError:
-#                            lnphis_g = eos_g.lnphis_l#fugacity_coefficients(eos_g.Z_l, ys)
-#                            fugacities_g = eos_g.fugacities_l
-#                            Z_g_prev = eos_g.Z_l
-#                    if hasattr(eos_l, 'lnphis_g') and hasattr(eos_l, 'lnphis_l'):
-#                        if Z_l_prev is not None and Z_g_prev is not None:
-#                            if abs(eos_l.Z_l - Z_l_prev) < abs(eos_l.Z_g - Z_l_prev):
-#                                lnphis_l = eos_l.lnphis_g
-#                                fugacities_l = eos_l.fugacities_g
-#                                Z_l_prev = eos_l.Z_g
-#                            else:
-#                                lnphis_l = eos_l.lnphis_l
-#                                fugacities_l = eos_l.fugacities_l
-#                                Z_l_prev = eos_l.Z_l
-#                        else:
-#                            if eos_l.G_dep_g < eos_l.lnphis_l:
-#                                lnphis_l = eos_l.lnphis_g
-#                                fugacities_l = eos_l.fugacities_g
-#                                Z_l_prev = eos_l.Z_g
-#                            else:
-#                                lnphis_l = eos_l.lnphis_l
-#                                fugacities_l = eos_l.fugacities_l
-#                                Z_l_prev = eos_l.Z_l
-#                    else:
-#                        try:
-#                            lnphis_l = eos_l.lnphis_g#fugacity_coefficients(eos_l.Z_g, ys)
-#                            fugacities_l = eos_l.fugacities_g
-#                            Z_l_prev = eos_l.Z_g
-#                        except AttributeError:
-#                            lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, ys)
-#                            fugacities_l = eos_l.fugacities_l
-#                            Z_l_prev = eos_l.Z_l
-#                elif 0:
-#                    if hasattr(eos_g, 'lnphis_g') and hasattr(eos_g, 'lnphis_l'):
-#                        if eos_g.G_dep_g < eos_g.lnphis_l:
-#                            lnphis_g = eos_g.lnphis_g
-#                            fugacities_g = eos_g.fugacities_g
-#                        else:
-#                            lnphis_g = eos_g.lnphis_l
-#                            fugacities_g = eos_g.fugacities_l
-#                    else:
-#                        try:
-#                            lnphis_g = eos_g.lnphis_g#fugacity_coefficients(eos_g.Z_g, ys)
-#                            fugacities_g = eos_g.fugacities_g
-#                        except AttributeError:
-#                            lnphis_g = eos_g.lnphis_l#fugacity_coefficients(eos_g.Z_l, ys)
-#                            fugacities_g = eos_g.fugacities_l
-#
-#                    if hasattr(eos_l, 'lnphis_g') and hasattr(eos_l, 'lnphis_l'):
-#                        if eos_l.G_dep_g < eos_l.lnphis_l:
-#                            lnphis_l = eos_l.lnphis_g
-#                            fugacities_l = eos_l.fugacities_g
-#                        else:
-#                            lnphis_l = eos_l.lnphis_l
-#                            fugacities_l = eos_l.fugacities_l
-#                    else:
-#                        try:
-#                            lnphis_l = eos_l.lnphis_g#fugacity_coefficients(eos_l.Z_g, ys)
-#                            fugacities_l = eos_l.fugacities_g
-#                        except AttributeError:
-#                            lnphis_l = eos_l.lnphis_l#fugacity_coefficients(eos_l.Z_l, ys)
-#                            fugacities_l = eos_l.fugacities_l
-#
-#                else:
-#            print(phis_l, phis_g, 'phis')
             Ks = [exp(l - g) for l, g in zip(lnphis_l, lnphis_g)] # K_value(phi_l=l, phi_g=g)
-#            print(Ks)
-            # Hack - no idea if this will work
-#            maxK = max(Ks)
-#            if maxK < 1:
-#                Ks[Ks.index(maxK)] = 1.1
-#            minK = min(Ks)
-#            if minK >= 1:
-#                Ks[Ks.index(minK)] = .9
-
-
-#            print(Ks, 'Ks into RR')
             V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
-#            if any(i < 0 for i in xs_new):
-#                print('hil', xs_new)
-#
-#            if any(i < 0 for i in ys_new):
-#                print('hig', ys_new)
 
             for xi in xs_new:
                 if xi < 0.0:
@@ -2130,7 +1995,6 @@ class GCEOSMIX(GCEOS):
                     break
 
             # Claimed error function in CONVENTIONAL AND RAPID FLASH CALCULATIONS FOR THE SOAVE-REDLICH-KWONG AND PENG-ROBINSON EQUATIONS OF STATE
-
             err3 = 0.0
             # Suggested tolerance 1e-15
             for Ki, xi, yi in zip(Ks, xs, ys):
@@ -2138,34 +2002,14 @@ class GCEOSMIX(GCEOS):
                 # Could divide by the old Ks as well.
                 err_i = Ki*xi/yi - 1.0
                 err3 += err_i*err_i
-                # or use absolute for tolerance...
-
-#            err2 = sum([(exp(l-g)-1.0)**2  ])
-#            err2 = 0.0
-#            for l, g in zip(fugacities_l, fugacities_g):
-#                err_i = (l/g-1.0)
-#                err2 += err_i*err_i
-           # Suggested tolerance 1e-15
-            # This is a better metric because it does not involve  hysterisis
-#            print(err3, err2)
-
-#            err = (sum([abs(x_new - x_old) for x_new, x_old in zip(xs_new, xs)]) +
-#                  sum([abs(y_new - y_old) for y_new, y_old in zip(ys_new, ys)]))
-#            print(err, err2)
             xs, ys = xs_new, ys_new
-#            print(i, 'err', err, err2, 'xs, ys', xs, ys, 'VF', V_over_F)
-            if near_critical:
-                comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
-                if comp_difference < trivial_solution_tol:
-                    raise ValueError("Converged to trivial condition, compositions of both phases equal")
-#            print(xs)
+            comp_difference = sum([abs(xi - yi) for xi, yi in zip(xs, ys)])
+            if comp_difference < trivial_solution_tol:
+                raise ValueError("Converged to trivial condition, compositions of both phases equal")
             if err3 < xtol:
                 break
             if i == maxiter-1:
                 raise ValueError('End of SS without convergence')
-
-        if info is not None:
-            info[:] = (i, err3)
         return V_over_F, xs, ys, eos_l, eos_g
 
     def stabiliy_iteration_Michelsen(self, T, P, zs, Ks_initial=None,

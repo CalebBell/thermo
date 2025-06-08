@@ -364,7 +364,7 @@ class FlashPureVLS(Flash):
             if gas.eos_mix.phase == 'l/g':
                 gas.eos_mix.solve_missing_volumes()
                 if gas.eos_mix.G_dep_l < gas.eos_mix.G_dep_g:
-                    l = self.liquid.to_TP_zs(T, P, zs, other_eos=gas.eos_mix)
+                    l = self.liquid.to_TP_zs(T, P, zs)
                     return None, [l], [], betas, None
                 return gas, [], [], betas, None
             elif gas.eos_mix.phase == 'g':
@@ -508,7 +508,7 @@ class FlashPureVLS(Flash):
             if T > self.constants.Tcs[0]:
                 raise PhaseExistenceImpossible("Specified T is in the supercritical region", zs=zs, T=T)
 
-            sat_liq = self.liquids[0].to_TP_zs(T, Psat, zs, other_eos=gas.eos_mix)
+            sat_liq = self.liquids[0].to_TP_zs(T, Psat, zs)
             return Psat, sat_liq, gas, 0, 0.0
 
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
@@ -537,7 +537,7 @@ class FlashPureVLS(Flash):
             except:
                 raise PhaseExistenceImpossible("Failed to calculate VL equilibrium T; likely supercritical", zs=zs, P=P)
             sat_gas = self.gas.to_TP_zs(Tsat, P, zs)
-            sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs, other_eos=sat_gas.eos_mix)
+            sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs)
             return Tsat, sat_liq, sat_gas, 0, 0.0
         elif self.VL_IG_activity:
             Tsat = self.correlations.VaporPressures[0].solve_property(P)
