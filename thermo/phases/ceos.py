@@ -393,7 +393,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     def P_transitions(self):
         e = self.eos_mix
-        return e.P_discriminant_zeros_analytical(e.T, e.b, e.delta, e.epsilon, e.a_alpha, valid=True)
+        return [v.real for v in e.P_discriminant_zeros_analytical(e.T, e.b, e.delta, e.epsilon, e.a_alpha, valid=True)]
         # EOS is guaranteed to be at correct temperature
         try:
             return [self.eos_mix.P_discriminant_zero_l()]

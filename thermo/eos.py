@@ -2294,6 +2294,7 @@ class GCEOS:
                 a_alpha = self.a_alpha_and_derivatives(T, full=False)
                 P_dets = self.P_discriminant_zeros_analytical(T=T, b=self.b, delta=self.delta,
                                                               epsilon=self.epsilon, a_alpha=a_alpha, valid=True)
+                P_dets = [v.real for v in P_dets]
                 if P_dets:
                     P_det_min = min(P_dets)
                     P_det_max = max(P_dets)
