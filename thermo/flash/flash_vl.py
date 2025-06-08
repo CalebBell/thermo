@@ -666,7 +666,11 @@ class FlashVL(Flash):
         if G_liq < G_gas: # How handle equal?
             min_phase, other_phase = liquid, gas
         elif G_liq == G_gas:
-            min_phase, other_phase = (liquid, gas) if liquid.phase == 'l' else (gas, liquid)
+            PIP = liquid.PIP()
+            if PIP <= 1.0:
+                min_phase, other_phase = gas, liquid
+            else:
+                min_phase, other_phase = liquid, gas
         else:
             min_phase, other_phase = gas, liquid
 
