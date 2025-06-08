@@ -604,6 +604,7 @@ class CEOSGas(CEOSPhase):
     @property
     def phase(self):
         phase = self.eos_mix.phase
+        self.eos_mix.solve_missing_volumes()
         if phase in ('l', 'g'):
             return phase
         return 'g'
@@ -891,6 +892,7 @@ class CEOSLiquid(CEOSPhase):
     @property
     def phase(self):
         phase = self.eos_mix.phase
+        self.eos_mix.solve_missing_volumes()
         if phase in ('g', 'l'):
             return phase
         return 'l'
