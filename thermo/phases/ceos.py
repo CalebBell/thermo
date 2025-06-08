@@ -350,8 +350,11 @@ class CEOSPhase(IdealGasDeparturePhase):
         try:
             phase = self.assigned_phase
         except:
-            phase = self.phase
-            if phase == 'l/g': phase = 'g'
+            PIP = self.PIP()
+            if PIP <= 1.0:
+                phase = 'g'
+            else:
+                phase = 'l'
         try:
             ws = self._ws
         except:
@@ -371,8 +374,11 @@ class CEOSPhase(IdealGasDeparturePhase):
         try:
             phase = self.assigned_phase
         except:
-            phase = self.phase
-            if phase == 'l/g': phase = 'g'
+            PIP = self.PIP()
+            if PIP <= 1.0:
+                phase = 'g'
+            else:
+                phase = 'l'
         if phase == 'g':
             k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         elif phase == 'l':
