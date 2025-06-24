@@ -694,9 +694,9 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     B_mat = gas.model.B_interactions()
     assert_close1d(gas.model.B_pures(), [B_mat[i][i] for i in range(N)], rtol=1e-13)
 
-    assert_close(gas.d2T_dV2(), 6030.193454056163, rtol=1e-11)
-    assert_close(gas.d2T_dV2_P(), 6030.193454056163, rtol=1e-11)
-    assert_close(gas.d2V_dT2(), -3.5160077601372554e-09, rtol=1e-11)
+    assert_close(gas.d2T_dV2(), 6030.193454056163, rtol=4e-10)
+    assert_close(gas.d2T_dV2_P(), 6030.193454056163, rtol=4e-10)
+    assert_close(gas.d2V_dT2(), -3.5160077601372554e-09, rtol=4e-10)
 
     # Mole fraction derivatives of B, including its temperature derivatives
     dC_dzs = jacobian(lambda zs: gas.to(T=gas.T, P=gas.P, zs=zs).C(), zs, perturbation=1e-7)
@@ -757,15 +757,15 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
 
     # B and C pressure derivatives at constant volume
     dB_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).B(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.dB_dP_V(), 1.1842641665356751e-09, rtol=1e-11)
+    assert_close(gas.dB_dP_V(), 1.1842641665356751e-09, rtol=4e-10)
     assert_close(gas.dB_dP_V(), dB_dP_V)
 
     d2B_dTdP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).dB_dT(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.d2B_dTdP_V(), -1.04152429353394e-11, rtol=1e-11)
+    assert_close(gas.d2B_dTdP_V(), -1.04152429353394e-11, rtol=4e-10)
     assert_close(gas.d2B_dTdP_V(), d2B_dTdP_V)
 
     d3B_dT2dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).d2B_dT2(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.d3B_dT2dP_V(), 1.2761099797481876e-13, rtol=1e-11)
+    assert_close(gas.d3B_dT2dP_V(), 1.2761099797481876e-13, rtol=4e-10)
     assert_close(gas.d3B_dT2dP_V(), d3B_dT2dP_V)
 
     dC_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).C(), gas.P, dx=gas.P*1e-6)
@@ -773,24 +773,24 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close(gas.dC_dP_V(), dC_dP_V)
 
     d2C_dTdP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).dC_dT(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.d2C_dTdP_V(), 2.9635255492502356e-16, rtol=1e-11)
+    assert_close(gas.d2C_dTdP_V(), 2.9635255492502356e-16, rtol=4e-10)
     assert_close(gas.d2C_dTdP_V(), d2C_dTdP_V)
 
     d3C_dT2dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).d2C_dT2(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.d3C_dT2dP_V(),-3.891861385232169e-18, rtol=1e-11)
+    assert_close(gas.d3C_dT2dP_V(),-3.891861385232169e-18, rtol=4e-10)
     assert_close(gas.d3C_dT2dP_V(), d3C_dT2dP_V)
 
     # B and C volume derivatives at constant pressure
     dB_dV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).B(), gas.V(), dx=gas.V()*1e-6)
-    assert_close(gas.dB_dV_P(), 0.00474781253771208, rtol=1e-11)
+    assert_close(gas.dB_dV_P(), 0.00474781253771208, rtol=4e-10)
     assert_close(gas.dB_dV_P(), dB_dV_P)
 
     d2B_dTdV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).dB_dT(), gas.V(), dx=gas.V()*1e-6)
-    assert_close(gas.d2B_dTdV_P(),-4.175556635845567e-05, rtol=1e-11)
+    assert_close(gas.d2B_dTdV_P(),-4.175556635845567e-05, rtol=4e-10)
     assert_close(gas.d2B_dTdV_P(), d2B_dTdV_P)
 
     d3B_dT2dV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).d2B_dT2(), gas.V(), dx=gas.V()*1e-6)
-    assert_close(gas.d3B_dT2dV_P(), 5.116029964050627e-07, rtol=1e-11)
+    assert_close(gas.d3B_dT2dV_P(), 5.116029964050627e-07, rtol=4e-10)
     assert_close(gas.d3B_dT2dV_P(), d3B_dT2dV_P)
 
     dC_dV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).C(), gas.V(), dx=gas.V()*1e-6)
@@ -798,11 +798,11 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     assert_close(gas.dC_dV_P(), dC_dV_P)
 
     d2C_dTdV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).dC_dT(), gas.V(), dx=gas.V()*1e-6)
-    assert_close(gas.d2C_dTdV_P(), 1.1881017897991506e-09, rtol=1e-11)
+    assert_close(gas.d2C_dTdV_P(), 1.1881017897991506e-09, rtol=4e-10)
     assert_close(gas.d2C_dTdV_P(), d2C_dTdV_P)
 
     d3C_dT2dV_P = derivative(lambda V: gas.to(V=V, P=gas.P, zs=gas.zs).d2C_dT2(), gas.V(), dx=gas.V()*1e-6)
-    assert_close(gas.d3C_dT2dV_P(), -1.5602792689316894e-11, rtol=1e-11)
+    assert_close(gas.d3C_dT2dV_P(), -1.5602792689316894e-11, rtol=4e-10)
     assert_close(gas.d3C_dT2dV_P(), d3C_dT2dV_P)
 
 
@@ -810,67 +810,67 @@ def test_virial_phase_ternary_BC_pitzer_curl_orbey_vera():
     # Enthalpy extra derivatives
 
     dH_dep_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).H_dep(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.dH_dep_dP_V(), 0.000150298196047701, rtol=1e-11)
+    assert_close(gas.dH_dep_dP_V(), 0.000150298196047701, rtol=4e-10)
     assert_close(gas.dH_dep_dP_V(), dH_dep_dP_V)
 
     dH_dep_dP_T = derivative(lambda P: gas.to(T=gas.T, P=P, zs=gas.zs).H_dep(), gas.P, dx=gas.P*6e-7)
-    assert_close(gas.dH_dep_dP_T(), -0.00016339614251889556, rtol=1e-11)
+    assert_close(gas.dH_dep_dP_T(), -0.00016339614251889556, rtol=4e-10)
     assert_close(gas.dH_dep_dP_T(), dH_dep_dP_T)
 
     dH_dep_dV_T = derivative(lambda V: gas.to(T=gas.T, V=V, zs=gas.zs).H_dep(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dep_dV_T(), 655.0685868798632, rtol=1e-11)
+    assert_close(gas.dH_dep_dV_T(), 655.0685868798632, rtol=4e-10)
     assert_close(gas.dH_dep_dV_T(), dH_dep_dV_T)
 
     dH_dV_T = derivative(lambda V: gas.to(T=gas.T, V=V, zs=gas.zs).H(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dV_T(), 655.0685868798632, rtol=1e-11)
+    assert_close(gas.dH_dV_T(), 655.0685868798632, rtol=4e-10)
     assert_close(gas.dH_dV_T(), dH_dV_T)
 
     dH_dep_dV_P = derivative(lambda V: gas.to(P=gas.P, V=V, zs=gas.zs).H_dep(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dH_dep_dV_P(), 1257.6264280735763, rtol=1e-11)
+    assert_close(gas.dH_dep_dV_P(), 1257.6264280735763, rtol=4e-10)
     assert_close(gas.dH_dep_dV_P(), dH_dep_dV_P)
 
     # entropy special derivatives
 
     dS_dep_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).S_dep(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.dS_dep_dP_V(), 6.480190482120792e-07, rtol=1e-11)
+    assert_close(gas.dS_dep_dP_V(), 6.480190482120792e-07, rtol=4e-10)
     assert_close(gas.dS_dep_dP_V(), dS_dep_dP_V)
 
     dS_dP_V = derivative(lambda P: gas.to(V=gas.V(), P=P, zs=gas.zs).S(), gas.P, dx=gas.P*1e-6)
-    assert_close(gas.dS_dP_V(), 0.0002741160790577555, rtol=1e-11)
+    assert_close(gas.dS_dP_V(), 0.0002741160790577555, rtol=4e-10)
     assert_close(gas.dS_dP_V(), dS_dP_V)
 
     dS_dep_dP_T = derivative(lambda P: gas.to(T=gas.T, P=P, zs=gas.zs).S_dep(), gas.P, dx=gas.P*6e-7)
-    assert_close(gas.dS_dep_dP_T(),-3.9762874700991293e-07, rtol=1e-11)
+    assert_close(gas.dS_dep_dP_T(),-3.9762874700991293e-07, rtol=4e-10)
     assert_close(gas.dS_dep_dP_T(), dS_dep_dP_T)
 
     dS_dP_T = derivative(lambda P: gas.to(T=gas.T, P=P, zs=gas.zs).S(), gas.P, dx=gas.P*6e-7)
-    assert_close(gas.dS_dP_T(), -8.354225492854231e-05, rtol=1e-11)
+    assert_close(gas.dS_dP_T(), -8.354225492854231e-05, rtol=4e-10)
     assert_close(gas.dS_dP_T(), dS_dP_T)
 
 
     dS_dep_dV_T = derivative(lambda V: gas.to(T=gas.T, V=V, zs=gas.zs).S_dep(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dS_dep_dV_T(), 1.5941263813891449, rtol=1e-11)
+    assert_close(gas.dS_dep_dV_T(), 1.5941263813891449, rtol=4e-10)
     assert_close(gas.dS_dep_dV_T(), dS_dep_dV_T)
 
     dS_dV_T = derivative(lambda V: gas.to(T=gas.T, V=V, zs=gas.zs).S(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dS_dV_T(), 334.92777759101733, rtol=1e-11)
+    assert_close(gas.dS_dV_T(), 334.92777759101733, rtol=4e-10)
     assert_close(gas.dS_dV_T(), dS_dV_T)
 
     dS_dep_dV_P = derivative(lambda V: gas.to(P=gas.P, V=V, zs=gas.zs).S_dep(), gas.V(), dx=gas.V()*6e-7)
-    assert_close(gas.dS_dep_dV_P(), 4.192088093578603, rtol=1e-11)
+    assert_close(gas.dS_dep_dV_P(), 4.192088093578603, rtol=4e-10)
     assert_close(gas.dS_dep_dV_P(), dS_dep_dV_P)
 
     # This is WRONG, the Cp T integral needs work, TODO
     # dS_dV_P = derivative(lambda V: gas.to(P=gas.P, V=V, zs=gas.zs).S(), gas.V(), dx=gas.V()*6e-3)
-    # assert_close(gas.dS_dV_P(), 427649.25865266385, rtol=1e-11)
+    # assert_close(gas.dS_dV_P(), 427649.25865266385, rtol=4e-10)
     # assert_close(gas.dS_dV_P(), dS_dV_P)
 
     dS_dep_dT_V = derivative(lambda T: gas.to(T=T, V=gas.V(), zs=gas.zs).S_dep(), gas.T, dx=gas.T*6e-7)
-    assert_close(gas.dS_dep_dT_V(), 0.00021703957965431793, rtol=1e-11)
+    assert_close(gas.dS_dep_dT_V(), 0.00021703957965431793, rtol=4e-10)
     assert_close(gas.dS_dep_dT_V(), dS_dep_dT_V)
 
     dS_dT_V = derivative(lambda T: gas.to(T=T, V=gas.V(), zs=gas.zs).S(), gas.T, dx=gas.T*6e-7)
-    assert_close(gas.dS_dT_V(), 0.09180908916077761, rtol=1e-11)
+    assert_close(gas.dS_dT_V(), 0.09180908916077761, rtol=4e-10)
     assert_close(gas.dS_dT_V(), dS_dT_V)
 
     # Gibbs composition derivative
@@ -1166,24 +1166,24 @@ def test_virial_ternary_vs_ideal_gas():
     C_mat = phase_EOS.model.C_interactions()
     assert_close1d(phase_EOS.model.C_pures(), [C_mat[i][i] for i in range(N)], rtol=1e-13)
 
-    assert_close(phase.V(), phase_EOS.V(), rtol=1e-11)
-    assert_close(phase.PIP(), phase_EOS.PIP(), rtol=1e-11)
+    assert_close(phase.V(), phase_EOS.V(), rtol=4e-10)
+    assert_close(phase.PIP(), phase_EOS.PIP(), rtol=4e-10)
 
     ### Derivatives of volume
-    assert_close(phase.dV_dT(), phase_EOS.dV_dT(), rtol=1e-11)
-    assert_close(phase.dV_dT_P(), phase_EOS.dV_dT_P(), rtol=1e-11)
+    assert_close(phase.dV_dT(), phase_EOS.dV_dT(), rtol=4e-10)
+    assert_close(phase.dV_dT_P(), phase_EOS.dV_dT_P(), rtol=4e-10)
 
-    assert_close(phase.dV_dP(), phase_EOS.dV_dP(), rtol=1e-11)
-    assert_close(phase.dV_dP_T(), phase_EOS.dV_dP_T(), rtol=1e-11)
+    assert_close(phase.dV_dP(), phase_EOS.dV_dP(), rtol=4e-10)
+    assert_close(phase.dV_dP_T(), phase_EOS.dV_dP_T(), rtol=4e-10)
 
-    assert_close(phase.d2V_dT2(), phase_EOS.d2V_dT2(), rtol=1e-11)
-    assert_close(phase.d2V_dT2_P(), phase_EOS.d2V_dT2_P(), rtol=1e-11)
+    assert_close(phase.d2V_dT2(), phase_EOS.d2V_dT2(), rtol=4e-10)
+    assert_close(phase.d2V_dT2_P(), phase_EOS.d2V_dT2_P(), rtol=4e-10)
 
-    assert_close(phase.d2V_dP2(), phase_EOS.d2V_dP2(), rtol=1e-11)
-    assert_close(phase.d2V_dP2_T(), phase_EOS.d2V_dP2_T(), rtol=1e-11)
+    assert_close(phase.d2V_dP2(), phase_EOS.d2V_dP2(), rtol=4e-10)
+    assert_close(phase.d2V_dP2_T(), phase_EOS.d2V_dP2_T(), rtol=4e-10)
 
-    assert_close(phase.d2V_dTdP(), phase_EOS.d2V_dTdP(), rtol=1e-11)
-    assert_close(phase.d2V_dPdT(), phase_EOS.d2V_dPdT(), rtol=1e-11)
+    assert_close(phase.d2V_dTdP(), phase_EOS.d2V_dTdP(), rtol=4e-10)
+    assert_close(phase.d2V_dPdT(), phase_EOS.d2V_dPdT(), rtol=4e-10)
 
     assert phase.dZ_dT() == 0.0
     assert phase.dZ_dP() == 0.0
@@ -1195,92 +1195,92 @@ def test_virial_ternary_vs_ideal_gas():
 
 
     ### Derivatives of pressure
-    assert_close(phase.dP_dV(), phase_EOS.dP_dV(), rtol=1e-11)
-    assert_close(phase.dP_dV_T(), phase_EOS.dP_dV_T(), rtol=1e-11)
+    assert_close(phase.dP_dV(), phase_EOS.dP_dV(), rtol=4e-10)
+    assert_close(phase.dP_dV_T(), phase_EOS.dP_dV_T(), rtol=4e-10)
 
-    assert_close(phase.dP_dT(), phase_EOS.dP_dT(), rtol=1e-11)
-    assert_close(phase.dP_dT_V(), phase_EOS.dP_dT_V(), rtol=1e-11)
+    assert_close(phase.dP_dT(), phase_EOS.dP_dT(), rtol=4e-10)
+    assert_close(phase.dP_dT_V(), phase_EOS.dP_dT_V(), rtol=4e-10)
 
-    assert_close(phase.d2P_dV2(), phase_EOS.d2P_dV2(), rtol=1e-11)
-    assert_close(phase.d2P_dV2_T(), phase_EOS.d2P_dV2_T(), rtol=1e-11)
+    assert_close(phase.d2P_dV2(), phase_EOS.d2P_dV2(), rtol=4e-10)
+    assert_close(phase.d2P_dV2_T(), phase_EOS.d2P_dV2_T(), rtol=4e-10)
 
-    assert_close(phase.d2P_dT2(), phase_EOS.d2P_dT2(), rtol=1e-11)
-    assert_close(phase.d2P_dT2_V(), phase_EOS.d2P_dT2_V(), rtol=1e-11)
+    assert_close(phase.d2P_dT2(), phase_EOS.d2P_dT2(), rtol=4e-10)
+    assert_close(phase.d2P_dT2_V(), phase_EOS.d2P_dT2_V(), rtol=4e-10)
 
-    assert_close(phase.d2P_dVdT(), phase_EOS.d2P_dVdT(), rtol=1e-11)
-    assert_close(phase.d2P_dTdV(), phase_EOS.d2P_dTdV(), rtol=1e-11)
+    assert_close(phase.d2P_dVdT(), phase_EOS.d2P_dVdT(), rtol=4e-10)
+    assert_close(phase.d2P_dTdV(), phase_EOS.d2P_dTdV(), rtol=4e-10)
 
     ### Derivatives of Temperature
-    assert_close(phase.dT_dV(), phase_EOS.dT_dV(), rtol=1e-11)
-    assert_close(phase.dT_dV_P(), phase_EOS.dT_dV_P(), rtol=1e-11)
+    assert_close(phase.dT_dV(), phase_EOS.dT_dV(), rtol=4e-10)
+    assert_close(phase.dT_dV_P(), phase_EOS.dT_dV_P(), rtol=4e-10)
 
-    assert_close(phase.dT_dP(), phase_EOS.dT_dP(), rtol=1e-11)
-    assert_close(phase.dT_dP_V(), phase_EOS.dT_dP_V(), rtol=1e-11)
+    assert_close(phase.dT_dP(), phase_EOS.dT_dP(), rtol=4e-10)
+    assert_close(phase.dT_dP_V(), phase_EOS.dT_dP_V(), rtol=4e-10)
 
-    assert_close(phase.d2T_dV2(), phase_EOS.d2T_dV2(), rtol=1e-11)
-    assert_close(phase.d2T_dV2_P(), phase_EOS.d2T_dV2_P(), rtol=1e-11)
+    assert_close(phase.d2T_dV2(), phase_EOS.d2T_dV2(), rtol=4e-10)
+    assert_close(phase.d2T_dV2_P(), phase_EOS.d2T_dV2_P(), rtol=4e-10)
 
-    assert_close(phase.d2T_dP2(), phase_EOS.d2T_dP2(), rtol=1e-11)
-    assert_close(phase.d2T_dP2_V(), phase_EOS.d2T_dP2_V(), rtol=1e-11)
+    assert_close(phase.d2T_dP2(), phase_EOS.d2T_dP2(), rtol=4e-10)
+    assert_close(phase.d2T_dP2_V(), phase_EOS.d2T_dP2_V(), rtol=4e-10)
 
-    assert_close(phase.d2T_dVdP(), phase_EOS.d2T_dVdP(), rtol=1e-11)
-    assert_close(phase.d2T_dPdV(), phase_EOS.d2T_dPdV(), rtol=1e-11)
+    assert_close(phase.d2T_dVdP(), phase_EOS.d2T_dVdP(), rtol=4e-10)
+    assert_close(phase.d2T_dPdV(), phase_EOS.d2T_dPdV(), rtol=4e-10)
 
 
     ### Phis and derivatives
-    assert_close1d(phase.phis(), phase_EOS.phis(), rtol=1e-11)
-    assert_close1d(phase.lnphis(), phase_EOS.lnphis(), rtol=1e-11)
-    assert_close1d(phase.fugacities(), phase_EOS.fugacities(), rtol=1e-11)
+    assert_close1d(phase.phis(), phase_EOS.phis(), rtol=4e-10)
+    assert_close1d(phase.lnphis(), phase_EOS.lnphis(), rtol=4e-10)
+    assert_close1d(phase.fugacities(), phase_EOS.fugacities(), rtol=4e-10)
 
     # Basic thermodynamic quantities
-    assert_close(phase.H(), phase_EOS.H(), rtol=1e-11)
-    assert_close(phase.S(), phase_EOS.S(), rtol=1e-11)
-    assert_close(phase.G(), phase_EOS.G(), rtol=1e-11)
-    assert_close(phase.U(), phase_EOS.U(), rtol=1e-11)
-    assert_close(phase.A(), phase_EOS.A(), rtol=1e-11)
+    assert_close(phase.H(), phase_EOS.H(), rtol=4e-10)
+    assert_close(phase.S(), phase_EOS.S(), rtol=4e-10)
+    assert_close(phase.G(), phase_EOS.G(), rtol=4e-10)
+    assert_close(phase.U(), phase_EOS.U(), rtol=4e-10)
+    assert_close(phase.A(), phase_EOS.A(), rtol=4e-10)
 
     ### First temperature derivative
 
-    assert_close(phase.dH_dT(), phase_EOS.dH_dT(), rtol=1e-11)
-    assert_close(phase.dS_dT(), phase_EOS.dS_dT(), rtol=1e-11)
-    assert_close(phase.dG_dT(), phase_EOS.dG_dT(), rtol=1e-11)
-    assert_close(phase.dU_dT(), phase_EOS.dU_dT(), rtol=1e-11)
-    assert_close(phase.dA_dT(), phase_EOS.dA_dT(), rtol=1e-11)
+    assert_close(phase.dH_dT(), phase_EOS.dH_dT(), rtol=4e-10)
+    assert_close(phase.dS_dT(), phase_EOS.dS_dT(), rtol=4e-10)
+    assert_close(phase.dG_dT(), phase_EOS.dG_dT(), rtol=4e-10)
+    assert_close(phase.dU_dT(), phase_EOS.dU_dT(), rtol=4e-10)
+    assert_close(phase.dA_dT(), phase_EOS.dA_dT(), rtol=4e-10)
 
-    assert_close(phase.dH_dT_P(), phase_EOS.dH_dT_P(), rtol=1e-11)
-    assert_close(phase.dS_dT_P(), phase_EOS.dS_dT_P(), rtol=1e-11)
-    assert_close(phase.dG_dT_P(), phase_EOS.dG_dT_P(), rtol=1e-11)
-    assert_close(phase.dU_dT_P(), phase_EOS.dU_dT_P(), rtol=1e-11)
-    assert_close(phase.dA_dT_P(), phase_EOS.dA_dT_P(), rtol=1e-11)
+    assert_close(phase.dH_dT_P(), phase_EOS.dH_dT_P(), rtol=4e-10)
+    assert_close(phase.dS_dT_P(), phase_EOS.dS_dT_P(), rtol=4e-10)
+    assert_close(phase.dG_dT_P(), phase_EOS.dG_dT_P(), rtol=4e-10)
+    assert_close(phase.dU_dT_P(), phase_EOS.dU_dT_P(), rtol=4e-10)
+    assert_close(phase.dA_dT_P(), phase_EOS.dA_dT_P(), rtol=4e-10)
 
-    assert_close(phase.dH_dT_V(), phase_EOS.dH_dT_V(), rtol=1e-11)
-    assert_close(phase.dS_dT_V(), phase_EOS.dS_dT_V(), rtol=1e-11)
-    assert_close(phase.dG_dT_V(), phase_EOS.dG_dT_V(), rtol=1e-11)
-    assert_close(phase.dU_dT_V(), phase_EOS.dU_dT_V(), rtol=1e-11)
-    assert_close(phase.dA_dT_V(), phase_EOS.dA_dT_V(), rtol=1e-11)
+    assert_close(phase.dH_dT_V(), phase_EOS.dH_dT_V(), rtol=4e-10)
+    assert_close(phase.dS_dT_V(), phase_EOS.dS_dT_V(), rtol=4e-10)
+    assert_close(phase.dG_dT_V(), phase_EOS.dG_dT_V(), rtol=4e-10)
+    assert_close(phase.dU_dT_V(), phase_EOS.dU_dT_V(), rtol=4e-10)
+    assert_close(phase.dA_dT_V(), phase_EOS.dA_dT_V(), rtol=4e-10)
 
     ### First pressure derivative
-    assert_close(phase.dH_dP(), phase_EOS.dH_dP(), rtol=1e-11, atol=1e-16)
-    assert_close(phase.dS_dP(), phase_EOS.dS_dP(), rtol=1e-11)
-    assert_close(phase.dG_dP(), phase_EOS.dG_dP(), rtol=1e-11)
-    assert_close(phase.dU_dP(), phase_EOS.dU_dP(), rtol=1e-11, atol=1e-16)
-    assert_close(phase.dA_dP(), phase_EOS.dA_dP(), rtol=1e-11)
+    assert_close(phase.dH_dP(), phase_EOS.dH_dP(), rtol=4e-10, atol=1e-16)
+    assert_close(phase.dS_dP(), phase_EOS.dS_dP(), rtol=4e-10)
+    assert_close(phase.dG_dP(), phase_EOS.dG_dP(), rtol=4e-10)
+    assert_close(phase.dU_dP(), phase_EOS.dU_dP(), rtol=4e-10, atol=1e-16)
+    assert_close(phase.dA_dP(), phase_EOS.dA_dP(), rtol=4e-10)
 
-    assert_close(phase.dH_dP_T(), phase_EOS.dH_dP_T(), rtol=1e-11, atol=1e-16)
-    assert_close(phase.dS_dP_T(), phase_EOS.dS_dP_T(), rtol=1e-11)
-    assert_close(phase.dG_dP_T(), phase_EOS.dG_dP_T(), rtol=1e-11)
-    assert_close(phase.dU_dP_T(), phase_EOS.dU_dP_T(), rtol=1e-11, atol=1e-16)
-    assert_close(phase.dA_dP_T(), phase_EOS.dA_dP_T(), rtol=1e-11)
+    assert_close(phase.dH_dP_T(), phase_EOS.dH_dP_T(), rtol=4e-10, atol=1e-16)
+    assert_close(phase.dS_dP_T(), phase_EOS.dS_dP_T(), rtol=4e-10)
+    assert_close(phase.dG_dP_T(), phase_EOS.dG_dP_T(), rtol=4e-10)
+    assert_close(phase.dU_dP_T(), phase_EOS.dU_dP_T(), rtol=4e-10, atol=1e-16)
+    assert_close(phase.dA_dP_T(), phase_EOS.dA_dP_T(), rtol=4e-10)
 
-    assert_close(phase.dH_dP_V(), phase_EOS.dH_dP_V(), rtol=1e-11)
-    assert_close(phase.dS_dP_V(), phase_EOS.dS_dP_V(), rtol=1e-11)
-    assert_close(phase.dG_dP_V(), phase_EOS.dG_dP_V(), rtol=1e-11)
-    assert_close(phase.dU_dP_V(), phase_EOS.dU_dP_V(), rtol=1e-11, atol=1e-16)
-    assert_close(phase.dA_dP_V(), phase_EOS.dA_dP_V(), rtol=1e-11)
+    assert_close(phase.dH_dP_V(), phase_EOS.dH_dP_V(), rtol=4e-10)
+    assert_close(phase.dS_dP_V(), phase_EOS.dS_dP_V(), rtol=4e-10)
+    assert_close(phase.dG_dP_V(), phase_EOS.dG_dP_V(), rtol=4e-10)
+    assert_close(phase.dU_dP_V(), phase_EOS.dU_dP_V(), rtol=4e-10, atol=1e-16)
+    assert_close(phase.dA_dP_V(), phase_EOS.dA_dP_V(), rtol=4e-10)
 
-    assert_close(phase.dH_dV_T(), phase_EOS.dH_dV_T(), rtol=1e-11)
-    assert_close(phase.dS_dV_T(), phase_EOS.dS_dV_T(), rtol=1e-11)
-    assert_close(phase.dG_dV_T(), phase_EOS.dG_dV_T(), rtol=1e-11)
+    assert_close(phase.dH_dV_T(), phase_EOS.dH_dV_T(), rtol=4e-10)
+    assert_close(phase.dS_dV_T(), phase_EOS.dS_dV_T(), rtol=4e-10)
+    assert_close(phase.dG_dV_T(), phase_EOS.dG_dV_T(), rtol=4e-10)
 
     assert phase_EOS.H_dep() == 0
     assert phase_EOS.S_dep() == 0

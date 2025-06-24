@@ -212,7 +212,7 @@ All cubic EOS models offer a :obj:`as_json <thermo.eos.GCEOS.as_json>` method an
 >>> import json
 >>> eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
 >>> json_stuff = json.dumps(eos.as_json())
->>> new_eos = GCEOSMIX.from_json(json.loads(json_stuff))
+>>> new_eos = PRSV2MIX.from_json(json.loads(json_stuff))
 >>> assert new_eos == eos
 
 Other json libraries can be used besides the standard json library by design.

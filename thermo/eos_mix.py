@@ -474,7 +474,7 @@ class GCEOSMIX(GCEOS):
         >>> import pickle
         >>> eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
         >>> json_stuff = pickle.dumps(eos.as_json())
-        >>> new_eos = GCEOSMIX.from_json(pickle.loads(json_stuff))
+        >>> new_eos = PRSV2MIX.from_json(pickle.loads(json_stuff))
         >>> assert new_eos == eos
         '''
         return JsonOptEncodable.from_json(json_repr, cache)
@@ -516,8 +516,8 @@ class GCEOSMIX(GCEOS):
         Examples
         --------
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
-        >>> base.to_TP_zs_fast(T=300, P=1e5, zs=base.zs)
-        RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.6, 0.4], T=300, P=100000.0)
+        >>> base.to_TP_zs_fast(T=300.0, P=1e5, zs=base.zs)
+        RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.6, 0.4], T=300.0, P=100000.0)
         '''
         new = self.__class__.__new__(self.__class__) # potentially also object.__new__(self.__class__)
         new.N, new.Tcs, new.Pcs, new.omegas, new.kijs, new.one_minus_kijs, new.kwargs, new.ais, new.bs, new.vectorized = (
@@ -593,8 +593,8 @@ class GCEOSMIX(GCEOS):
         Examples
         --------
         >>> base = RKMIX(T=500.0, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.6, 0.4])
-        >>> base.to_TP_zs(T=300, P=1e5, zs=[.1, 0.9])
-        RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.1, 0.9], T=300, P=100000.0)
+        >>> base.to_TP_zs(T=300.0, P=1e5, zs=[.1, 0.9])
+        RKMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0], [0.0, 0.0]], zs=[0.1, 0.9], T=300.0, P=100000.0)
         '''
         if T != self.T or P != self.P or zs != self.zs:
             return self.__class__(T=T, P=P, zs=zs, Tcs=self.Tcs, Pcs=self.Pcs, omegas=self.omegas, only_l=only_l, only_g=only_g, fugacities=fugacities, **self.kwargs)

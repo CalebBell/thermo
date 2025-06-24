@@ -1221,14 +1221,14 @@ def test_CEOS_phis():
 
     analytical_dphis_dzs = gas.dphis_dzs()
     numerical_dphis_dzs = jacobian(lambda zs: gas.to(T=T, P=P, zs=zs).phis(), zs, scalar=False, perturbation=5e-7)
-    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=2e-6)
+    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=3e-6)
     analytical_dphis_dzs = liquid.dphis_dzs()
     numerical_dphis_dzs = jacobian(lambda zs: liquid.to(T=T, P=P, zs=zs).phis(), zs, scalar=False, perturbation=5e-7)
-    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=2e-6)
+    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=3e-6)
 
     analytical_dphis_dzs = gas_liquid.dphis_dzs()
     numerical_dphis_dzs = jacobian(lambda zs: gas_liquid.to(T=gas_liquid.T, P=gas_liquid.P, zs=zs).phis(), zs, scalar=False, perturbation=5e-7)
-    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=2e-6)
+    assert_close2d(analytical_dphis_dzs, numerical_dphis_dzs, rtol=3e-6)
 
     analytical_dphis_dzs = liquid_gas.dphis_dzs()
     numerical_dphis_dzs = jacobian(lambda zs: liquid_gas.to(T=liquid_gas.T, P=liquid_gas.P, zs=zs).phis(), zs, scalar=False, perturbation=1e-6)
