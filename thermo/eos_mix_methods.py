@@ -1486,8 +1486,6 @@ def VDW_dlnphis_dT(T, P, Z, dZ_dT, b, a_alpha, da_alpha_dT, bs, ais, N, dlnphis_
     
     T_inv = 1.0/T
     T_inv2 = T_inv*T_inv
-    A = a_alpha*P*R2_inv*T_inv2
-    B = b*P*R_inv*T_inv
     x0 = a_alpha
     x4 = 1.0/Z
     x5 = 4.0*P*R2_inv*x4*T_inv2*T_inv
