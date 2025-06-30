@@ -283,6 +283,8 @@ from thermo.eos_mix_methods import (
     a_alpha_and_derivatives_quadratic_terms,
     a_alpha_quadratic_terms,
     eos_mix_dV_dzs,
+    VDW_dlnphis_dT,
+    VDW_dlnphis_dP,
 )
 from thermo.serialize import JsonOptEncodable
 
@@ -10062,7 +10064,6 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         This expression was derived using SymPy and optimized with the `cse`
         technique.
         '''
-        zs = self.zs
         if phase == 'g':
             Z = self.Z_g
             dZ_dT = self.dZ_dT_g
@@ -10071,32 +10072,9 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             dZ_dT = self.dZ_dT_l
 
         N = self.N
-        T, P, ais, bs, b = self.T, self.P, self.ais, self.bs, self.b
-
-        T_inv = 1.0/T
-        T_inv2 = T_inv*T_inv
-        A = self.a_alpha*P*R2_inv*T_inv2
-        B = b*P*R_inv*T_inv
-
-        x0 = self.a_alpha
-        x4 = 1.0/Z
-        x5 = 4.0*P*R2_inv*x4*T_inv2*T_inv
-
-        x8 = 2*P*R2_inv*T_inv2*dZ_dT/Z**2
-        x9 = P*R2_inv*x4*T_inv2*self.da_alpha_dT/x0
-        x10 = 1.0/P
-        x11 = R*x10*(T*dZ_dT + Z)/(-R*T*x10*Z + b)**2
-        x13 = b*T_inv*R_inv
-        x14 = P*x13*x4 - 1.0
-        x15 = x4*(P*x13*(T_inv + x4*dZ_dT) - x14*dZ_dT)/x14
-
-        # Composition stuff
-        d_lnphis_dTs = zeros(N) if self.vectorized else [0.0]*N
-        for i in range(N):
-            x1 = (ais[i]*x0)**0.5
-            d_lhphi_dT = -bs[i]*x11 + x1*x5 + x1*x8 - x1*x9 + x15
-            d_lnphis_dTs[i] = d_lhphi_dT
-        return d_lnphis_dTs
+        return VDW_dlnphis_dT(self.T, self.P, Z, dZ_dT, self.b, self.a_alpha, 
+                            self.da_alpha_dT, self.bs, self.ais, N,
+                            dlnphis_dT=zeros(N) if self.vectorized else [0.0]*N)
 
     def dlnphis_dP(self, phase):
         r'''Generic formula for calculating the pressure derivaitve of
@@ -10123,37 +10101,15 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
         This expression was derived using SymPy and optimized with the `cse`
         technique.
         '''
-        zs = self.zs
         if phase == 'l':
             Z, dZ_dP = self.Z_l, self.dZ_dP_l
         else:
             Z, dZ_dP = self.Z_g, self.dZ_dP_g
-        a_alpha = self.a_alpha
+
         N = self.N
-        T, P, bs, b, ais = self.T, self.P, self.bs, self.b, self.ais
-
-        T_inv = 1.0/T
-        RT_inv = T_inv*R_inv
-
-        x3 = T_inv*T_inv
-        x5 = 1.0/Z
-        x6 = 2.0*R2_inv*x3*x5
-        x8 = 2.0*P*R2_inv*x3*dZ_dP*x5*x5
-        x9 = 1./P
-        x10 = Z*x9
-        x11 = R*T*x9*(-x10 + dZ_dP)/(-R*T*x10 + b)**2
-        x12 = P*x5
-        x13 = b*RT_inv
-        x14 = x12*x13 - 1.0
-        x15 = -x5*(-x13*(x12*dZ_dP - 1.0) + x14*dZ_dP)/x14
-
-        d_lnphi_dPs = zeros(N) if self.vectorized else [0.0]*N
-        for i in range(N):
-            x1 = (ais[i]*a_alpha)**0.5
-            d_lnphi_dP = -bs[i]*x11 - x1*x6 + x1*x8 + x15
-            d_lnphi_dPs[i] = d_lnphi_dP
-        return d_lnphi_dPs
-
+        return VDW_dlnphis_dP(self.T, self.P, Z, dZ_dP, self.b, self.a_alpha, 
+                            self.bs, self.ais, N,
+                            dlnphis_dP=zeros(N) if self.vectorized else [0.0]*N)
     @property
     def ddelta_dzs(self):
         r'''Helper method for calculating the composition derivatives of

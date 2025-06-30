@@ -305,6 +305,9 @@ R_inv2 = R_inv*R_inv
 
 def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
                                     da_alpha_dT, d2a_alpha_dT2):
+    if epsilon == 0.0 and delta == 0.0 and da_alpha_dT == 0.0 and d2a_alpha_dT2 == 0.0:
+        return main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
+                                    da_alpha_dT, d2a_alpha_dT2)
     epsilon2 = epsilon + epsilon
     x0 = 1.0/(V - b)
     x1 = 1.0/(V*(V + delta) + epsilon)

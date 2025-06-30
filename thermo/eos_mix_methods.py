@@ -94,6 +94,8 @@ __all__ = ['a_alpha_aijs_composition_independent',
 
            'SRK_translated_lnphis_fastest',
 
+           'VDW_dlnphis_dT', 'VDW_dlnphis_dP',
+
 
            'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
 
@@ -1478,3 +1480,52 @@ def SRK_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs
                            a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns,
                            depsilon_dns, lnphis=lnphis)
 
+def VDW_dlnphis_dT(T, P, Z, dZ_dT, b, a_alpha, da_alpha_dT, bs, ais, N, dlnphis_dT=None):
+    if dlnphis_dT is None:
+        dlnphis_dT = [0.0]*N
+    
+    T_inv = 1.0/T
+    T_inv2 = T_inv*T_inv
+    A = a_alpha*P*R2_inv*T_inv2
+    B = b*P*R_inv*T_inv
+    x0 = a_alpha
+    x4 = 1.0/Z
+    x5 = 4.0*P*R2_inv*x4*T_inv2*T_inv
+    x8 = 2*P*R2_inv*T_inv2*dZ_dT/Z**2
+    x9 = P*R2_inv*x4*T_inv2*da_alpha_dT/x0
+    x10 = 1.0/P
+    x11 = R*x10*(T*dZ_dT + Z)/(-R*T*x10*Z + b)**2
+    x13 = b*T_inv*R_inv
+    x14 = P*x13*x4 - 1.0
+    x15 = x4*(P*x13*(T_inv + x4*dZ_dT) - x14*dZ_dT)/x14
+    for i in range(N):
+        x1 = (ais[i]*x0)**0.5
+        d_lhphi_dT = -bs[i]*x11 + x1*x5 + x1*x8 - x1*x9 + x15
+        dlnphis_dT[i] = d_lhphi_dT
+        
+    return dlnphis_dT
+
+
+def VDW_dlnphis_dP(T, P, Z, dZ_dP, b, a_alpha, bs, ais, N, dlnphis_dP=None):
+    if dlnphis_dP is None:
+        dlnphis_dP = [0.0]*N
+    
+    T_inv = 1.0/T
+    RT_inv = T_inv*R_inv
+    x3 = T_inv*T_inv
+    x5 = 1.0/Z
+    x6 = 2.0*R2_inv*x3*x5
+    x8 = 2.0*P*R2_inv*x3*dZ_dP*x5*x5
+    x9 = 1./P
+    x10 = Z*x9
+    x11 = R*T*x9*(-x10 + dZ_dP)/(-R*T*x10 + b)**2
+    x12 = P*x5
+    x13 = b*RT_inv
+    x14 = x12*x13 - 1.0
+    x15 = -x5*(-x13*(x12*dZ_dP - 1.0) + x14*dZ_dP)/x14
+    for i in range(N):
+        x1 = (ais[i]*a_alpha)**0.5
+        d_lnphi_dP = -bs[i]*x11 - x1*x6 + x1*x8 + x15
+        dlnphis_dP[i] = d_lnphi_dP
+        
+    return dlnphis_dP
