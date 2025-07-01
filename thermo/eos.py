@@ -396,6 +396,31 @@ def main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
     Cv_dep = 0.0
     return (dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep)
 
+def main_derivatives_and_departures_ideal(T, P, V, b, delta, epsilon, a_alpha,
+                                          da_alpha_dT, d2a_alpha_dT2):
+    # First derivatives
+    # dP/dT = R/V = P/T
+    dP_dT = P / T
+    
+    # dP/dV = -RT/V^2 = -P^2/(RT)
+    dP_dV = -P * P / (R * T)
+    
+    # Second derivatives
+    # d2P/dT2 = 0
+    d2P_dT2 = 0.0
+    
+    # d2P/dV2 = 2RT/V^3 = 2P^3/(R^2*T^2)
+    d2P_dV2 = 2.0 * P * P * P / (R * R * T * T)
+    
+    # d2P/dTdV = -R/V^2 = -P^2/(R*T^2)
+    d2P_dTdV = -P * P / (R * T * T)
+    
+    # All departure properties are zero for ideal gas
+    H_dep = 0.0
+    S_dep = 0.0
+    Cv_dep = 0.0
+    
+    return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
 
 def eos_lnphi(T, P, V, b, delta, epsilon, a_alpha):
     r'''Calculate the log fugacity coefficient of the general cubic equation

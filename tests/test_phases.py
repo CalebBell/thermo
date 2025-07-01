@@ -2966,6 +2966,36 @@ def test_IdealGas_vs_IGMIX():
     assert phase.U_dep() == 0
     assert phase.A_dep() == 0
 
+def test_ideal_gas_derivatives_function():
+    from thermo.eos import main_derivatives_and_departures_ideal
+    constants = ChemicalConstantsPackage(Tcs=[508.1, 536.2, 512.5], Pcs=[4700000.0, 5330000.0, 8084000.0], omegas=[0.309, 0.21600000000000003, 0.5589999999999999],
+                                 MWs=[58.07914, 119.37764000000001, 32.04186], CASs=['67-64-1', '67-66-3', '67-56-1'], names=['acetone', 'chloroform', 'methanol'])
+    HeatCapacityGases = [HeatCapacityGas(poly_fit=(200.0, 1000.0, [-1.3320002425347943e-21, 6.4063345232664645e-18, -1.251025808150141e-14, 1.2265314167534311e-11, -5.535306305509636e-09, -4.32538332013644e-08, 0.0010438724775716248, -0.19650919978971002, 63.84239495676709])),
+                     HeatCapacityGas(poly_fit=(200.0, 1000.0, [1.5389278550737367e-21, -8.289631533963465e-18, 1.9149760160518977e-14, -2.470836671137373e-11, 1.9355882067011222e-08, -9.265600540761629e-06, 0.0024825718663005762, -0.21617464276832307, 48.149539665907696])),
+                     HeatCapacityGas(poly_fit=(50.0, 1000.0, [2.3511458696647882e-21, -9.223721411371584e-18, 1.3574178156001128e-14, -8.311274917169928e-12, 4.601738891380102e-10, 1.78316202142183e-06, -0.0007052056417063217, 0.13263597297874355, 28.44324970462924]))]
+    
+    test_points = [(350.0, 1e6, [0.2, 0.3, 0.5]), (1000.0, 1e8, [0.1, 0.4, 0.5]), (50.0, 1e3, [0.33, 0.33, 0.34]), 
+                   (2500.0, 1e9, [0.9, 0.05, 0.05]), (123.456, 7.89e5, [0.123, 0.456, 0.421]), (5000.0, 1e-3, [0.01, 0.01, 0.98]),
+                   (77.3, 5.67e7, [0.789, 0.123, 0.088]), (1500.0, 4.32e4, [0.555, 0.222, 0.223]), (25.0, 1e10, [0.05, 0.9, 0.05]),
+                   (10000.0, 1.0, [0.999, 0.0005, 0.0005])]
+    
+    for T, P, zs in test_points:
+        phase = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
+        V = phase.V()
+        dP_dT_func, dP_dV_func, d2P_dT2_func, d2P_dV2_func, d2P_dTdV_func, H_dep_func, S_dep_func, Cv_dep_func = \
+            main_derivatives_and_departures_ideal(T, P, V, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        
+        assert_close(dP_dT_func, phase.dP_dT(), rtol=1e-15)
+        assert_close(dP_dV_func, phase.dP_dV(), rtol=1e-15)
+        assert_close(d2P_dT2_func, phase.d2P_dT2(), rtol=1e-15)
+        assert_close(d2P_dV2_func, phase.d2P_dV2(), rtol=1e-15)
+        assert_close(d2P_dTdV_func, phase.d2P_dTdV(), rtol=1e-15)
+        assert_close(H_dep_func, phase.H_dep(), rtol=1e-15, atol=1e-16)
+        assert_close(S_dep_func, phase.S_dep(), rtol=1e-15, atol=1e-16)
+        assert H_dep_func == 0.0
+        assert S_dep_func == 0.0
+        assert Cv_dep_func == 0.0
+
 def test_IdealGas_vs_IGMIX_formation_properties():
     """Test formation properties consistency between IdealGas and IGMIX for different initialization methods"""
     # Setup base test data
