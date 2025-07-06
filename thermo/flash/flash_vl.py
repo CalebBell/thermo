@@ -558,7 +558,7 @@ class FlashVL(Flash):
         fugacities_trial = min_phase.fugacities_lowest_Gibbs()
         zs_trial = min_phase.zs
 
-        if self.supports_lnphis_args and 1:
+        if self.supports_lnphis_args and 0:
             other_phase_arg = other_phase.lnphis_args()
             functional = True
         else:
@@ -708,7 +708,7 @@ class FlashVL(Flash):
 
 
     def sequential_substitution_2P(self, T, P, zs, xs_guess, ys_guess, liquid_phase, gas_phase, V_over_F_guess, maxiter, tol):
-        if self.supports_lnphis_args and 1:
+        if self.supports_lnphis_args and 0:
 
             if liquid_phase.T != T or liquid_phase.P != P:
                 liquid_phase = liquid_phase.to_TP_zs(T=T, P=P, zs=xs_guess)

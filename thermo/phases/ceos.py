@@ -317,18 +317,20 @@ class CEOSPhase(IdealGasDeparturePhase):
                    eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0, lnphis)
 
     def lnphis_at_zs(self, zs, most_stable=False):
-        # eos_mix = self.eos_mix
-        # if eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX', 'SRKMIX', 'RKMIX'):
-        return lnphis_direct(zs, *self.lnphis_args(most_stable))
-        # return self.to_TP_zs(self.T, self.P, zs).lnphis()
+        eos_mix = self.eos_mix
+        if eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX', 'SRKMIX', 'RKMIX'):
+            return lnphis_direct(zs, *self.lnphis_args(most_stable))
+        return self.to_TP_zs(self.T, self.P, zs).lnphis()
 
     def fugacities_at_zs(self, zs, most_stable=False):
-        P = self.P
-        lnphis = lnphis_direct(zs, *self.lnphis_args(most_stable))
-        if self.vectorized:
-            return trunc_exp_numpy(lnphis)*P*zs
-        else:
-            return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
+        if self.eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX', 'SRKMIX', 'RKMIX'):
+            P = self.P
+            lnphis = lnphis_direct(zs, *self.lnphis_args(most_stable))
+            if self.vectorized:
+                return trunc_exp_numpy(lnphis)*P*zs
+            else:
+                return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
+        return self.to_TP_zs(self.T, self.P, zs).fugacities()
 
     def T_max_at_V(self, V):
         T_max = self.eos_mix.T_max_at_V(V)

@@ -305,6 +305,9 @@ R_inv2 = R_inv*R_inv
 
 def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
                                     da_alpha_dT, d2a_alpha_dT2):
+    if b == 0.0 and a_alpha == 0.0:
+        return main_derivatives_and_departures_ideal(T, P, V, b, delta, epsilon, a_alpha,
+                                                    da_alpha_dT, d2a_alpha_dT2)
     if epsilon == 0.0 and delta == 0.0 and da_alpha_dT == 0.0 and d2a_alpha_dT2 == 0.0:
         return main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
                                     da_alpha_dT, d2a_alpha_dT2)
@@ -1445,7 +1448,7 @@ class GCEOS:
            Butterworth-Heinemann, 1985.
         '''
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
-        self.main_derivatives_and_departures(T, P, V, b, delta, epsilon,
+        main_derivatives_and_departures(T, P, V, b, delta, epsilon,
                                              a_alpha, da_alpha_dT,
                                              d2a_alpha_dT2))
         try:
@@ -2687,7 +2690,7 @@ class GCEOS:
     def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
 
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
-        self.main_derivatives_and_departures(T, P, V, b, delta, epsilon,
+        main_derivatives_and_departures(T, P, V, b, delta, epsilon,
                                              a_alpha, da_alpha_dT,
                                              d2a_alpha_dT2))
         try:
@@ -7162,7 +7165,7 @@ class IG(GCEOS):
     >>> eos.beta_g, eos.isothermal_compressibility_g, eos.Cp_dep_g, eos.Cv_dep_g
     (0.0025, 1e-06, 0.0, 0.0)
     >>> eos.fugacity_g, eos.PIP_g, eos.Z_g, eos.dP_dT_g
-    (1000000.0, 0.9999999999999999, 1.0, 2500.0)
+    (1000000.0, 1.0, 1.0, 2500.0)
 
     Notes
     -----
@@ -9202,7 +9205,6 @@ class VDW(GCEOS):
 
     _P_zero_l_cheb_coeffs = [0.23949680596158576, -0.28552048884377407, 0.17223773827357045, -0.10535895068953466, 0.06539081523178862, -0.04127943642449526, 0.02647106353835149, -0.017260750015435533, 0.011558172064668568, -0.007830624115831804, 0.005422844032253547, -0.00383463423135285, 0.0027718803475398936, -0.0020570084561681613, 0.0015155074622906842, -0.0011495238177958583, 0.000904782154904249, -0.000683347677699564, 0.0005800187592994201, -0.0004529246894177611, 0.00032901743817593566, -0.0002990561659229427, 0.00023524411148843384, -0.00019464055011993858, 0.0001441665975916752, -0.00013106835607900116, 9.72812311007959e-05, -7.611327134024459e-05, 5.240433315348986e-05, -3.6415012576658176e-05, 3.89310794418167e-05, -2.2160354688301534e-05, 2.7908599229672926e-05, 1.6405692108915904e-05, -1.3931165551671343e-06, -4.80770003354232e-06]
     P_zero_l_cheb_limits = (0.002354706203222534, 9.0)
-    main_derivatives_and_departures = staticmethod(main_derivatives_and_departures_VDW)
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
         self.Tc = Tc
         self.Pc = Pc
