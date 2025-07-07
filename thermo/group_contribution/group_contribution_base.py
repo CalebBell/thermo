@@ -167,6 +167,53 @@ def str_group_assignment_to_dict(counts, pair_separator=',', key_val_separator='
 
 
 
+def smart_ignore_combinations(things_to_ignore, max_remove=4):
+    """
+    Generate combinations to ignore, treating both whole groups and individual matches as removal units.
+    This generates duplicates at this time unfortunately, but should find correct solutions faster overall
+    
+    Args:
+        things_to_ignore: List of (group_id, match_tuple) pairs
+        max_remove: Maximum number of removal operations to try
+        
+    Yields:
+        Sets of (group_id, match_tuple) pairs to ignore
+    """
+    # Group matches by group_id
+    from collections import defaultdict
+    matches_by_group = defaultdict(list)
+    for group_id, match_tuple in things_to_ignore:
+        matches_by_group[group_id].append((group_id, match_tuple))
+    
+    # Create removal units: whole groups (for multi-match groups) + individual matches (for single-match groups)
+    removal_units = []
+    
+    for group_id, matches in matches_by_group.items():
+        if len(matches) > 1:
+            # Multi-match group: add as a whole group removal unit
+            removal_units.append(('group', group_id, matches))
+        else:
+            # Single-match group: add as individual match removal unit
+            removal_units.append(('individual', group_id, matches[0]))
+    
+    # For multi-match groups, also add individual matches as removal units
+    for group_id, matches in matches_by_group.items():
+        if len(matches) > 1:
+            for match in matches:
+                removal_units.append(('individual', group_id, match))
+    
+    # Generate combinations of removal units
+    for num_units in range(1, min(len(removal_units), max_remove) + 1):
+        for unit_combo in combinations(removal_units, num_units):
+            ignore_set = set()
+            for unit_type, group_id, data in unit_combo:
+                if unit_type == 'group':
+                    # data is list of matches
+                    ignore_set.update(data)
+                else:
+                    # data is single match tuple
+                    ignore_set.add(data)
+            yield ignore_set
 
 def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     r'''Fragments a molecule into a set of unique groups and counts as
@@ -403,7 +450,8 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         for remove in range(1, remove_up_to+1):
             if done:
                 break
-            for ignore_matches in combinations(things_to_ignore, remove):
+            for ignore_matches in smart_ignore_combinations(things_to_ignore, max_remove=4):
+            # for ignore_matches in combinations(things_to_ignore, remove):
                 tries += 1
                 if tries > max_tries:
                     break
