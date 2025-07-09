@@ -3612,13 +3612,14 @@ class GCEOS:
         def err(a_alpha):
             # Needs some work right up to critical point
             Vs = self.volume_solutions(T, P, b, delta, epsilon, a_alpha)
-            good_roots = [i.real for i in Vs if i.imag == 0.0 and i.real > 0.0]
+            good_roots = [i.real for i in Vs if (i.imag == 0.0 and i.real > b)]
             good_root_count = len(good_roots)
-            if good_root_count == 1:
-                raise ValueError("Guess did not have two roots")
+            if good_root_count == 1 or good_root_count == 0:
+                raise ValueError("Cannot proceed with convergence")
             V_l, V_g = min(good_roots), max(good_roots)
-#            print(V_l, V_g, a_alpha)
-            return fug(V_l, a_alpha) - fug(V_g, a_alpha)
+            err = fug(V_l, a_alpha) - fug(V_g, a_alpha)
+            # print(V_l, V_g, a_alpha, err)
+            return err
 
         if a_alpha_guess is None:
             try:
@@ -3629,7 +3630,33 @@ class GCEOS:
         try:
             return secant(err, a_alpha_guess, xtol=1e-13)
         except:
-            return secant(err, self.to(T=T, P=Psat).a_alpha, xtol=1e-13)
+            base_guess = self.to(T=T, P=Psat).a_alpha
+            try:
+                return secant(err, base_guess, xtol=1e-13)
+            except:
+                Tc, Pc = self.Tc, self.Pc
+                def sub_to_solve(a_alpha):
+                    alpha = a_alpha/self.a
+                    Tr = T/Tc
+                    x = alpha/Tr - 1.
+                    if Tr > 0.999 and not isinstance(self, RK):
+                        y = horner(self.Psat_coeffs_critical, x)
+                        Psat_inner = y*Tr*Pc
+                    else:
+                        Psat_ranges_low = self.Psat_ranges_low
+                        if x > Psat_ranges_low[-1]:
+                            x = Psat_ranges_low[-1]
+
+                        for i in range(len(Psat_ranges_low)):
+                            if x < Psat_ranges_low[i]:
+                                break
+                        y = 0.0
+                        for c in self.Psat_coeffs_low[i]:
+                            y = y*x + c
+                        Psat_inner = exp(y)*Tr*Pc
+                    return Psat_inner - Psat
+                inner_a_alpha = secant(sub_to_solve, base_guess, xtol=1e-13,  additional_guesses=True)
+                return secant(err, inner_a_alpha, x1=inner_a_alpha*(1+1e-7), xtol=1e-11, additional_guesses=True)
 
     def to_TP(self, T, P):
         r'''Method to construct a new EOS object at the spcified `T` and `P`.
