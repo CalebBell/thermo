@@ -565,22 +565,22 @@ class ViscosityLiquid(TPDependentProperty):
                     E=C5,
                     select=False
                 )
-        if CASRN in viscosity.mu_data_VDI_PPDS_7.index and CASRN not in ("78-83-1",):
-            coeffs = viscosity.mu_values_PPDS_7[
-                viscosity.mu_data_VDI_PPDS_7.index.get_loc(CASRN)].tolist()
-            Tmin, Tmax = determine_PPDS9_limits(coeffs, self.Tm, self.Tc)
-            self.add_correlation(
-                name=VDI_PPDS,
-                model='PPDS9',
-                Tmin=Tmin,
-                Tmax=Tmax,
-                A=coeffs[0],
-                B=coeffs[1],
-                C=coeffs[2],
-                D=coeffs[3],
-                E=coeffs[4],
-                select=False
-            )
+            if CASRN in viscosity.mu_data_VDI_PPDS_7.index and CASRN not in ("78-83-1",):
+                coeffs = viscosity.mu_values_PPDS_7[
+                    viscosity.mu_data_VDI_PPDS_7.index.get_loc(CASRN)].tolist()
+                Tmin, Tmax = determine_PPDS9_limits(coeffs, self.Tm, self.Tc)
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model='PPDS9',
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=coeffs[0],
+                    B=coeffs[1],
+                    C=coeffs[2],
+                    D=coeffs[3],
+                    E=coeffs[4],
+                    select=False
+                )
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
             T_limits[LETSOU_STIEL] = (0.25*self.Tc, self.Tc)
