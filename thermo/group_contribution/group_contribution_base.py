@@ -667,7 +667,7 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
             for j in i:
                 matched_atoms.extend(j)
         if len(matched_atoms) < atom_count:
-            status = "Matched %d of %d atoms only" %(len(matched_atoms), atom_count)
+            status = f"Matched {len(matched_atoms)} of {atom_count} atoms only"
             success = False
         elif len(matched_atoms) > atom_count:
             status = "Matched some atoms repeatedly: %s" %( [i for i, c in Counter(matched_atoms).items() if c > 1])

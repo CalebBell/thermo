@@ -342,7 +342,7 @@ class EquilibriumState:
             liquid_bulk.correlations = correlations
             liquid_bulk.settings = settings
             for i, l in enumerate(liquids):
-                setattr(self, "liquid%d"%(i), l)
+                setattr(self, f"liquid{i}", l)
                 l.assigned_phase = "l"
         elif liquid_count:
             l = liquids[0]
@@ -360,7 +360,7 @@ class EquilibriumState:
             solid_bulk.correlations = correlations
             solid_bulk.flasher = flasher
             for i, s in enumerate(solids):
-                setattr(self, "solid%d" %(i), s)
+                setattr(self, f"solid{i}", s)
 
         self.bulk = bulk = Bulk(T, P, zs, self.phases, betas)
         bulk.result = self

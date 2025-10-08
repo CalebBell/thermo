@@ -1384,7 +1384,7 @@ class StreamArgs:
                 if ms[i] is not None:
                     ni = property_molar_to_mass(ms[i], MWs[i])
                     if ns[i] is not None and abs((ns[i]  - ni)/ni) > n_tol:
-                        raise ValueError("Flow specification is overspecified and inconsistent on component %d" %i)
+                        raise ValueError(f"Flow specification is overspecified and inconsistent on component {i}")
                     else:
                         ns[i] = ni
 

@@ -3390,9 +3390,9 @@ class TDependentProperty:
                             value = self.extrapolate_derivative(T=T, method=method, order=order)
                         properties.append(value)
                     plot_fun(Ts, properties, label=method)
-            plt.ylabel(self.name + ", " + self.units + "/K^%d derivative of order %d" % (order, order))
+            plt.ylabel(f"{self.name}, {self.units}/K^{order} derivative of order {order}")
 
-            title = self.name + " derivative of order %d" % order
+            title = f"{self.name} derivative of order {order}"
             if self.CASRN:
                 title += " of " + self.CASRN
             plt.title(title)

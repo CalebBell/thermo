@@ -1905,7 +1905,7 @@ class Flash:
                 y1_bubble.append(res.gas.zs[0])
             except Exception as e:
                 if ignore_errors:
-                    print("Failed on pt %d" %(i), e)
+                    print(f"Failed on pt {i}", e)
                 else:
                     raise e
         if values:

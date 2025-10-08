@@ -364,16 +364,16 @@ class StabilityTester:
             else:
                 if expect_aqueous:
                     if idx == 0:
-                        return "pure%d" %(self.water_index)
+                        return f"pure{self.water_index}"
                     return ("Wilson liquid",  "Wilson liquid third", "Wilson gas third", "Wilson gas")[idx-1]
                 else:
                     return ("Wilson liquid",  "Wilson liquid third", "Wilson gas third", "Wilson gas")[idx]
         if expect_aqueous:
             idx -= 1
         elif idx > 3 and idx <= 3 + self.N:
-            return "pure%d" %(idx-3)
+            return f"pure{idx-3}"
         elif idx > 3+self.N:
-            return "random%d" %(idx-(3+self.N))
+            return f"random{idx-(3+self.N)}"
 
     def incipient_guess_named(self, T, P, zs, name, zero_fraction=1E-6):
         N = self.N
