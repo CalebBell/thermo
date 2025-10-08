@@ -3480,7 +3480,7 @@ def load_group_assignments_DDBST():
     folder = os.path.join(os.path.dirname(__file__), "Phase Change")
     with open(os.path.join(folder, "DDBST UNIFAC assignments.tsv")) as f:
         _group_assignments = [DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments]
-        for line in f.readlines():
+        for line in f:
             key, valids, original, modified, PSRK = line.split("\t")
             # list of whether or not each method was correctly identified or not
             valids = [i == "1" for i in valids.split(" ")]

@@ -62,7 +62,7 @@ for name in dir(thermo):
             obj = wrap_numpydoc_obj(obj)
         except Exception as e:
             failed_wrapping = True
-            print(f"Current implementation of {str(obj)} contains documentation not "
+            print(f"Current implementation of {obj!s} contains documentation not "
                   "parseable and cound not be wrapped to use pint:")
             print(e)
     elif isinstance(obj, str):

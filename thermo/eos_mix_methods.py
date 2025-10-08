@@ -853,9 +853,9 @@ def eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_
         # Use the lowest Gibbs energy root
         V_low = V0
         if V1 != 0.0:
-            if V_low > V1 and V1 > b:
+            if V_low > V1 > b:
                 V_low = V1
-            if V_low > V2 and V2 > b:
+            if V_low > V2 > b:
                 V_low = V2
         V_high = V0
         if V1 != 0.0:
@@ -873,9 +873,9 @@ def eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_
     elif not g:
         # Prefer liquid, ensure V0 is the smalest root
         if V1 != 0.0:
-            if V0 > V1 and V1 > b:
+            if V0 > V1 > b:
                 V0 = V1
-            if V0 > V2 and V2 > b:
+            if V0 > V2 > b:
                 V0 = V2
     else:
         if V1 != 0.0:

@@ -2353,7 +2353,7 @@ class TDependentProperty:
                         continue
 
                     all_fit_parameter_options.append(our_fit_parameters)
-                    a_model_kwargs = {k: 0.0 for k in optional_args[i:]}
+                    a_model_kwargs = dict.fromkeys(optional_args[i:], 0.0)
                     a_model_kwargs.update(model_kwargs)
                     all_model_kwargs.append(a_model_kwargs)
                 else:

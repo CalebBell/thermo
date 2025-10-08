@@ -54,7 +54,8 @@ class BondiGroupContribution(BaseGroupContribution):
         """
         Initialize the GroupContribution object with group name, volume contribution, and polarizability.
 
-        Parameters:
+        Parameters
+        ----------
         - group (str): The name or identifier of the group.
         - group_id (int): Unique identifier for the group.
         - Vw (float): Volume contribution in cm^3/mole.

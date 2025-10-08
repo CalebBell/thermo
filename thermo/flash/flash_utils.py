@@ -4448,7 +4448,7 @@ def TPV_solve_HSGUA_guesses_VL(zs, method, constants, correlations,
     elif method == IDEAL_WILSON:
         HeatCapacityGases = correlations.HeatCapacityGases
         EnthalpyVaporizations = correlations.EnthalpyVaporizations
-        def flash_model(T, P, zs): # noqa: F811
+        def flash_model(T, P, zs):
             _, _, VF, xs, ys = flash_wilson(zs, constants.Tcs, constants.Pcs, constants.omegas, T=T, P=P)
             return VF, xs, ys
 
