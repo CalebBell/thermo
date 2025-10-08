@@ -271,24 +271,24 @@ if not numerics.is_micropython:
         # pytest timings are hard to measure with lazy loading
         complete_lazy_loading()
 
-    if numerics.PY37:
-        def __getattr__(name):
-            global vectorized, numba, units, numba_vectorized
-            if name == 'vectorized':
-                import thermo.vectorized
-                return thermo.vectorized
-            if name == 'numba':
-                import thermo.numba
-                return thermo.numba
-            if name == 'units':
-                import thermo.units
-                return thermo.units
-            if name == 'numba_vectorized':
-                import thermo.numba_vectorized
-                return thermo.numba_vectorized
-            raise AttributeError(f"module {__name__} has no attribute {name}")
-    else:
-        pass
+    def __getattr__(name):
+        if name == 'vectorized':
+            import thermo.vectorized
+            globals()[name] = thermo.vectorized
+            return thermo.vectorized
+        if name == 'numba':
+            import thermo.numba
+            globals()[name] = thermo.numba
+            return thermo.numba
+        if name == 'units':
+            import thermo.units
+            globals()[name] = thermo.units
+            return thermo.units
+        if name == 'numba_vectorized':
+            import thermo.numba_vectorized
+            globals()[name] = thermo.numba_vectorized
+            return thermo.numba_vectorized
+        raise AttributeError(f"module {__name__} has no attribute {name}")
 
 try:
     thermo_dir = os.path.dirname(__file__)

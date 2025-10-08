@@ -135,7 +135,7 @@ from chemicals.iapws import (
     iapws95_rhol_sat,
     iapws95_Tc,
 )
-from chemicals.utils import PY37, can_load_data, mixing_simple, os_path_join, source_path, ws_to_zs
+from chemicals.utils import mixing_simple, os_path_join, source_path, ws_to_zs
 from fluids.constants import N_A, e
 from fluids.numerics import chebval, exp, horner, isnan
 
@@ -176,20 +176,16 @@ def _load_electrochem_data():
     _loaded_electrochem_data = True
 
 
-if PY37:
-    def __getattr__(name):
-        if name in ('cond_data_Lange', 'Marcus_ion_conductivities', 'CRC_ion_conductivities',
-                    'Magomedovk_thermal_cond', 'CRC_aqueous_thermodynamics',
-                    'electrolyte_dissociation_reactions',
-                    'cond_data_Lange', 'cond_data_McCleskey',
-                    'Laliberte_data'):
-            if not _loaded_electrochem_data:
-                _load_electrochem_data()
-            return globals()[name]
-        raise AttributeError(f"module {__name__} has no attribute {name}")
-else:
-    if can_load_data:
-        _load_electrochem_data()
+def __getattr__(name):
+    if name in ('cond_data_Lange', 'Marcus_ion_conductivities', 'CRC_ion_conductivities',
+                'Magomedovk_thermal_cond', 'CRC_aqueous_thermodynamics',
+                'electrolyte_dissociation_reactions',
+                'cond_data_Lange', 'cond_data_McCleskey',
+                'Laliberte_data'):
+        if not _loaded_electrochem_data:
+            _load_electrochem_data()
+        return globals()[name]
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 ### Laliberty Viscosity Functions
 

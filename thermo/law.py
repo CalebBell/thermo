@@ -32,7 +32,7 @@ __all__ = [#'DSL_data', 'TSCA_data',
 import os
 
 from chemicals.identifiers import CAS_to_int
-from chemicals.utils import PY37, can_load_data, os_path_join, to_num
+from chemicals.utils import os_path_join, to_num
 
 DSL = 'DSL'
 TSCA = 'TSCA'
@@ -101,17 +101,13 @@ def load_law_data():
     # 161162-67-6 is not a valid CAS number and was removed.
 
 
-if PY37:
-    def __getattr__(name):
-        if name in ('DSL_data', 'TSCA_data',
-                    'EINECS_data', 'SPIN_data',
-                    'NLP_data'):
-            load_law_data()
-            return globals()[name]
-        raise AttributeError(f"module {__name__} has no attribute {name}")
-else: # pragma: no cover
-    if can_load_data:
+def __getattr__(name):
+    if name in ('DSL_data', 'TSCA_data',
+                'EINECS_data', 'SPIN_data',
+                'NLP_data'):
         load_law_data()
+        return globals()[name]
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
 legal_status_methods = [COMBINED, DSL, TSCA, EINECS, SPIN, NLP]

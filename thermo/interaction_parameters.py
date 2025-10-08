@@ -53,7 +53,6 @@ import os
 from math import isnan
 
 from chemicals.identifiers import check_CAS, sorted_CAS_key
-from chemicals.utils import PY37, can_load_data
 
 
 class InteractionParameterDB:
@@ -593,16 +592,11 @@ def load_all_scalar_parameters():
 
     _loaded_scalars = True
 
-if PY37:
-    def __getattr__(name):
-        if name in ('IPDB',):
-            load_all_interaction_parameters()
-            return globals()[name]
-        if name in ('SPDB',):
-            load_all_scalar_parameters()
-            return globals()[name]
-        raise AttributeError(f"module {__name__} has no attribute {name}")
-else:
-    if can_load_data:
+def __getattr__(name):
+    if name in ('IPDB',):
         load_all_interaction_parameters()
+        return globals()[name]
+    if name in ('SPDB',):
         load_all_scalar_parameters()
+        return globals()[name]
+    raise AttributeError(f"module {__name__} has no attribute {name}")

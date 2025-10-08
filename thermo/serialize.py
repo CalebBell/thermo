@@ -29,7 +29,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_
 # This module SHOULD NOT import anything from thermo
 import sys
 
-from chemicals.utils import PY37, object_data
+from chemicals.utils import object_data
 from fluids.numerics import numpy as np
 
 __all__ = ['object_from_json', 'json_default']
@@ -173,17 +173,13 @@ def _load_json():
 
 orjson = None
 
-if PY37:
-    def __getattr__(name):
-        global json, json_loaded
-        if name == 'json':
-            import json
-            json_loaded = True
-            return json
-        raise AttributeError(f"module {__name__} has no attribute {name}")
-else:
-    import json
-    json_loaded = True
+def __getattr__(name):
+    if name == 'json':
+        import json
+        globals()['json'] = json
+        globals()['json_loaded'] = True
+        return json
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
 

@@ -161,7 +161,6 @@ __all__ = ['UNIFAC_gammas','UNIFAC', 'UNIFAC_psi', 'DOUFMG', 'DOUFSG', 'UFSG', '
 import os
 
 from chemicals.identifiers import CAS_to_int
-from chemicals.utils import PY37, can_load_data
 from fluids.constants import R
 from fluids.numerics import exp, log
 from fluids.numerics import numpy as np
@@ -3431,16 +3430,12 @@ def load_unifac_ip():
     _unifac_ip_loaded = True
 
 
-if PY37:
-    def __getattr__(name):
-        if name in ('UFIP', 'LLEUFIP', 'LUFIP', 'DOUFIP2006', 'DOUFIP2016',
-                    'NISTUFIP', 'NISTKTUFIP', 'PSRKIP', 'VTPRIP', 'UF2IP'):
-            load_unifac_ip()
-            return globals()[name]
-        raise AttributeError(f"module {__name__} has no attribute {name}")
-else:
-    if can_load_data:
+def __getattr__(name):
+    if name in ('UFIP', 'LLEUFIP', 'LUFIP', 'DOUFIP2006', 'DOUFIP2016',
+                'NISTUFIP', 'NISTKTUFIP', 'PSRKIP', 'VTPRIP', 'UF2IP'):
         load_unifac_ip()
+        return globals()[name]
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
 

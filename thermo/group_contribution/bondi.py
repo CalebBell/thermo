@@ -825,7 +825,7 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
 
     # Convert units:
     # V_vdw: cm³/mol -> m³/mol
-    # A_vdw: cm²/mol × 10⁹ -> m²/mol
+    # A_vdw: cm²/mol x 10⁹ -> m²/mol
     V_vdw *= 1e-6
     A_vdw *= 0.0001 * 1e9
 
