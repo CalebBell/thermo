@@ -22,6 +22,9 @@ extend-ignore = [
     "FIX002", # TODO are OK
     "FIX004", # HACK is OK
     
+    "SIM109", # multiple equality comparisons are more performant than a set in small cases
+    "PLR1714", # multiple equality comparisons are more performant than a set in small cases
+
     "D415", # First docstring line should end with a period, question mark, or exclamation point
     "DTZ004", # utcfromtimestamp makes sense for atmosphere model
     "PGH003", # type ignoring makes sense for numba-related things
