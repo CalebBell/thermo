@@ -37,7 +37,14 @@ from thermo.nrtl import nrtl_dtaus_dT as dln_henries_dT
 from thermo.nrtl import nrtl_taus as ln_henries
 from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
 from thermo.phases.phase import Phase
-from thermo.utils import POLY_FIT, TRANSFORM_SECOND_DERIVATIVE_RATIO, TRANSFORM_SECOND_LOG_DERIVATIVE, TRANSFORM_DERIVATIVE_RATIO, TRANSFORM_LOG_DERIVATIVE, TRANSFORM_LOG
+from thermo.utils import (
+    POLY_FIT,
+    TRANSFORM_DERIVATIVE_RATIO,
+    TRANSFORM_LOG,
+    TRANSFORM_LOG_DERIVATIVE,
+    TRANSFORM_SECOND_DERIVATIVE_RATIO,
+    TRANSFORM_SECOND_LOG_DERIVATIVE,
+)
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.volume import VolumeLiquid, VolumeSolid
 

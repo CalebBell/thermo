@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__all__ = ["IAPWS95", "IAPWS95Gas", "IAPWS95Liquid", "IAPWS97", "IAPWS06"]
+__all__ = ["IAPWS06", "IAPWS95", "IAPWS97", "IAPWS95Gas", "IAPWS95Liquid"]
 
 from cmath import log as logc
 from math import exp

@@ -21,7 +21,7 @@ SOFTWARE.
 '''
 
 
-__all__ = ["standard_entropy", "S0_basis_converter", "standard_state_ideal_gas_formation"]
+__all__ = ["S0_basis_converter", "standard_entropy", "standard_state_ideal_gas_formation"]
 
 from chemicals.elements import periodic_table
 from chemicals.reaction import standard_formation_reaction

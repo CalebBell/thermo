@@ -59,22 +59,22 @@ Mixture Surface Tension
 '''
 
 
-__all__ = ["surface_tension_methods", "SurfaceTension",
-           "surface_tension_mixture_methods", "SurfaceTensionMixture"]
+__all__ = [
+    "SurfaceTension",
+    "SurfaceTensionMixture",
+    "surface_tension_methods",
+    "surface_tension_mixture_methods",
+]
 
 from chemicals import interface, miscdata
-from chemicals.dippr import EQ106
 from chemicals.iapws import iapws95_Tc
 from chemicals.interface import (
     Aleem,
     Brock_Bird,
     Diguilio_Teja,
-    Jasper,
     Miqueu,
     Pitzer_sigma,
-    REFPROP_sigma,
     Sastri_Rao,
-    Somayajulu,
     Winterfeld_Scriven_Davis,
     Zuo_Stenby,
     sigma_IAPWS,

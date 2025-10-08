@@ -24,7 +24,9 @@ from math import log10
 
 import numpy as np
 from fluids.numerics import assert_close, assert_close1d, assert_close2d, assert_close3d
+
 from thermo.activity import GibbsExcess
+
 
 def check_np_output_activity(model, modelnp, modelnp2):
     # model is flat, scalar, list-based model

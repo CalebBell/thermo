@@ -85,24 +85,40 @@ Mixture Gas Viscosity
 '''
 
 
-__all__ = ["viscosity_liquid_methods", "viscosity_liquid_methods_P",
-           "ViscosityLiquid", "ViscosityGas", "viscosity_gas_methods",
-           "viscosity_gas_methods_P", "ViscosityLiquidMixture",
-           "ViscosityGasMixture", "viscosity_liquid_mixture_methods",
-           "viscosity_gas_mixture_methods",
-           "MIXING_LOG_MOLAR", "MIXING_LOG_MASS",
-           "BROKAW", "HERNING_ZIPPERER", "WILKE",
-           "DUTT_PRASAD", "VISWANATH_NATARAJAN_3", "VISWANATH_NATARAJAN_2",
-           "VISWANATH_NATARAJAN_2E", "LETSOU_STIEL", "PRZEDZIECKI_SRIDHAR",
-           "LUCAS", "GHARAGHEIZI", "YOON_THODOS", "STIEL_THODOS", "LUCAS_GAS"]
+__all__ = [
+    "BROKAW",
+    "DUTT_PRASAD",
+    "GHARAGHEIZI",
+    "HERNING_ZIPPERER",
+    "LETSOU_STIEL",
+    "LUCAS",
+    "LUCAS_GAS",
+    "MIXING_LOG_MASS",
+    "MIXING_LOG_MOLAR",
+    "PRZEDZIECKI_SRIDHAR",
+    "STIEL_THODOS",
+    "VISWANATH_NATARAJAN_2",
+    "VISWANATH_NATARAJAN_2E",
+    "VISWANATH_NATARAJAN_3",
+    "WILKE",
+    "YOON_THODOS",
+    "ViscosityGas",
+    "ViscosityGasMixture",
+    "ViscosityLiquid",
+    "ViscosityLiquidMixture",
+    "viscosity_gas_methods",
+    "viscosity_gas_methods_P",
+    "viscosity_gas_mixture_methods",
+    "viscosity_liquid_methods",
+    "viscosity_liquid_methods_P",
+    "viscosity_liquid_mixture_methods",
+]
 
 from chemicals import miscdata, viscosity
-from chemicals.dippr import EQ101, EQ102
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import JOBACK, lookup_VDI_tabular_data
 from chemicals.utils import none_and_length_check
 from chemicals.viscosity import (
-    PPDS9,
     Brokaw,
     Herning_Zipperer,
     Letsou_Stiel,
@@ -110,16 +126,13 @@ from chemicals.viscosity import (
     Lucas_gas,
     Przedziecki_Sridhar,
     Stiel_Thodos,
-    Viswanath_Natarajan_2,
-    Viswanath_Natarajan_2_exponential,
-    Viswanath_Natarajan_3,
     Wilke_prefactored,
     Wilke_prefactors,
     Yoon_Thodos,
     dPPDS9_dT,
     viscosity_gas_Gharagheizi,
 )
-from fluids.numerics import brenth, exp, horner, isinf, isnan, log, sqrt
+from fluids.numerics import brenth, exp, isinf, isnan, log, sqrt
 
 from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
@@ -140,6 +153,7 @@ from thermo.utils import (
 )
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import VolumeGas, VolumeLiquid
+
 
 def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
     """Determines valid temperature limits for the PPDS9 viscosity equation by analyzing

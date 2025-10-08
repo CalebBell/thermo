@@ -22,8 +22,14 @@ SOFTWARE.
 '''
 
 
-__all__ = ["Stream", "EnergyStream", "StreamArgs", "EquilibriumStream",
-           "energy_balance", "mole_balance"]
+__all__ = [
+    "EnergyStream",
+    "EquilibriumStream",
+    "Stream",
+    "StreamArgs",
+    "energy_balance",
+    "mole_balance",
+]
 
 #import enum
 try:

@@ -144,20 +144,36 @@ Data for UNIFAC 2.0
 '''
 
 
-__all__ = ["UNIFAC_gammas","UNIFAC", "UNIFAC_psi", "DOUFMG", "DOUFSG", "UFSG", "UFMG",
-
-           "DDBST_UNIFAC_assignments",
-           "DDBST_MODIFIED_UNIFAC_assignments", "DDBST_PSRK_assignments",
-           "UNIFAC_group_assignment_DDBST",
-
-           "UNIFAC_RQ", "Van_der_Waals_volume", "Van_der_Waals_area",
-           "load_group_assignments_DDBST",
-
-           "PSRKSG", "LLEUFSG", "LLEMG",
-            "LUFSG", "NISTUFSG", "NISTUFMG",
-           "VTPRSG", "VTPRMG", "NISTKTUFSG", "NISTKTUFMG",
-           "LUFMG", "PSRKMG",
-           "unifac_gammas_from_args"]
+__all__ = [
+    "DOUFMG",
+    "DOUFSG",
+    "LLEMG",
+    "LLEUFSG",
+    "LUFMG",
+    "LUFSG",
+    "NISTKTUFMG",
+    "NISTKTUFSG",
+    "NISTUFMG",
+    "NISTUFSG",
+    "PSRKMG",
+    "PSRKSG",
+    "UFMG",
+    "UFSG",
+    "UNIFAC",
+    "UNIFAC_RQ",
+    "VTPRMG",
+    "VTPRSG",
+    "DDBST_MODIFIED_UNIFAC_assignments",
+    "DDBST_PSRK_assignments",
+    "DDBST_UNIFAC_assignments",
+    "UNIFAC_gammas",
+    "UNIFAC_group_assignment_DDBST",
+    "UNIFAC_psi",
+    "Van_der_Waals_area",
+    "Van_der_Waals_volume",
+    "load_group_assignments_DDBST",
+    "unifac_gammas_from_args",
+]
 import os
 
 from chemicals.identifiers import CAS_to_int
@@ -166,7 +182,15 @@ from fluids.numerics import exp, log
 from fluids.numerics import numpy as np
 
 from thermo.activity import GibbsExcess
-from thermo.group_contribution.group_contribution_base import BaseGroupContribution, str_group_assignment_to_dict, priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
+from thermo.group_contribution.group_contribution_base import (
+    AROMATIC_BOND,
+    DOUBLE_BOND,
+    SINGLE_BOND,
+    TRIPLE_BOND,
+    BaseGroupContribution,
+    priority_from_atoms,
+    str_group_assignment_to_dict,
+)
 
 try:
     import threading

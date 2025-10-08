@@ -21,11 +21,11 @@ SOFTWARE.
 '''
 
 __all__ = [
-    "Phase",
     "IdealGasDeparturePhase",
+    "Phase",
+    "derivatives_jacobian",
     "derivatives_thermodynamic",
     "derivatives_thermodynamic_mass",
-    "derivatives_jacobian",
 ]
 
 from math import sqrt
@@ -34,15 +34,14 @@ from chemicals.utils import (
     Cp_minus_Cv,
     Joule_Thomson,
     dns_to_dn_partials,
-    dxs_to_dns,
     dxs_to_dn_partials,
+    dxs_to_dns,
     hash_any_primitive,
     isentropic_exponent_PT,
     isentropic_exponent_PV,
     isentropic_exponent_TV,
     mixing_simple,
     normalize,
-    object_data,
     phase_identification_parameter,
     property_molar_to_mass,
     speed_of_sound,
@@ -51,14 +50,10 @@ from chemicals.virial import B_from_Z
 from fluids.constants import R, R_inv
 from fluids.core import c_ideal_gas, thermal_diffusivity
 from fluids.numerics import (
-    horner,
-    horner_log,
     is_micropython,
     jacobian,
     log,
     newton_system,
-    poly_fit_integral_over_T_value,
-    poly_fit_integral_value,
     trunc_exp,
     trunc_exp_numpy,
     trunc_log,
@@ -68,7 +63,6 @@ from fluids.numerics import numpy as np
 
 from thermo import phases
 from thermo.serialize import JsonOptEncodable
-from thermo.utils import POLY_FIT
 
 try:
     dot, zeros, array = np.dot, np.zeros, np.array

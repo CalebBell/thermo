@@ -107,13 +107,17 @@ Mixture Solid Heat Capacity
 '''
 
 
-__all__ = ["heat_capacity_gas_methods",
-           "HeatCapacityGas",
-           "heat_capacity_liquid_methods",
-           "HeatCapacityLiquid",
-           "heat_capacity_solid_methods",
-           "HeatCapacitySolid", "HeatCapacitySolidMixture",
-           "HeatCapacityGasMixture", "HeatCapacityLiquidMixture"]
+__all__ = [
+    "HeatCapacityGas",
+    "HeatCapacityGasMixture",
+    "HeatCapacityLiquid",
+    "HeatCapacityLiquidMixture",
+    "HeatCapacitySolid",
+    "HeatCapacitySolidMixture",
+    "heat_capacity_gas_methods",
+    "heat_capacity_liquid_methods",
+    "heat_capacity_solid_methods",
+]
 from chemicals import heat_capacity, miscdata
 from chemicals.heat_capacity import (
     Dadgostar_Shaw,
@@ -128,15 +132,12 @@ from chemicals.heat_capacity import (
     Lastovka_solid_integral_over_T,
     Rowlinson_Bondi,
     Rowlinson_Poling,
-    TRCCp,
-    TRCCp_integral,
-    TRCCp_integral_over_T,
 )
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import JOBACK, lookup_VDI_tabular_data
 from chemicals.utils import mixing_simple, property_mass_to_molar
 from fluids.constants import R, calorie
-from fluids.numerics import horner, isnan, log, quad
+from fluids.numerics import isnan
 
 from thermo import electrochem
 from thermo.coolprop import (

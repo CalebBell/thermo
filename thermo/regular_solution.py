@@ -72,10 +72,14 @@ try:
 except (ImportError, AttributeError):
     pass
 
-__all__ = ["RegularSolution", "regular_solution_gammas",
-           "regular_solution_gammas_binaries",
-           "regular_solution_gammas_binaries_jac",
-           "FloryHuggins", "Hansen"]
+__all__ = [
+    "FloryHuggins",
+    "Hansen",
+    "RegularSolution",
+    "regular_solution_gammas",
+    "regular_solution_gammas_binaries",
+    "regular_solution_gammas_binaries_jac",
+]
 
 def regular_solution_His(SPs, coeffs, N, His=None):
     if His is None:

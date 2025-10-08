@@ -32,9 +32,12 @@ SOFTWARE.
 '''
 
 
-__all__ = ["PropertyPackage", "Ideal",
-           "IdealCaloric",
-           "StabilityTester"]
+__all__ = [
+    "Ideal",
+    "IdealCaloric",
+    "PropertyPackage",
+    "StabilityTester",
+]
 
 try:
     from random import seed, uniform

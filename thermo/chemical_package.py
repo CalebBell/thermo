@@ -82,7 +82,7 @@ from chemicals.phase_change import Hfus, Tb, Tm
 from chemicals.reaction import Gibbs_formation, Hfg, Hfl, Hfs, S0g
 from chemicals.refractivity import RI
 from chemicals.safety import LFL, STEL, TWA, UFL, Carcinogen, Ceiling, Skin, T_autoignition, T_flash
-from chemicals.solubility import solubility_parameter, hansen_delta_d, hansen_delta_p, hansen_delta_h
+from chemicals.solubility import solubility_parameter
 from chemicals.triple import Pt, Tt
 from chemicals.utils import Parachor, hash_any_primitive
 from fluids.constants import R
@@ -109,13 +109,12 @@ from thermo.thermal_conductivity import (
     ThermalConductivityLiquidMixture,
     ThermalConductivitySolid,
 )
-from thermo.unifac import UNIFAC_RQ, UNIFAC_group_assignment_DDBST, Van_der_Waals_area, Van_der_Waals_volume
+from thermo.unifac import UFSG, UNIFAC_RQ, UNIFAC_group_assignment_DDBST, Van_der_Waals_area, Van_der_Waals_volume
 from thermo.utils import identify_phase
 from thermo.utils.mixture_property import MixtureProperty
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.viscosity import ViscosityGas, ViscosityGasMixture, ViscosityLiquid, ViscosityLiquidMixture
 from thermo.volume import VolumeGas, VolumeGasMixture, VolumeLiquid, VolumeLiquidMixture, VolumeSolid, VolumeSolidMixture
-from thermo.unifac import UFSG
 
 CAS_H2O = "7732-18-5"
 

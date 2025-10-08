@@ -52,7 +52,7 @@ from fluids.numerics import trunc_exp
 
 from thermo.activity import GibbsExcess, d2interaction_exp_dT2, d3interaction_exp_dT3, dinteraction_exp_dT, gibbs_excess_gammas, interaction_exp
 
-__all__ = ["UNIQUAC", "UNIQUAC_gammas", "UNIQUAC_gammas_binary", "UNIQUAC_gammas_binaries"]
+__all__ = ["UNIQUAC", "UNIQUAC_gammas", "UNIQUAC_gammas_binaries", "UNIQUAC_gammas_binary"]
 
 try:
     array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log

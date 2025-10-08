@@ -67,7 +67,7 @@ References
 
 
 __all__ = ["GibbsExcess", "IdealSolution"]
-from chemicals.utils import d2xs_to_dxdn_partials, dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, normalize, object_data
+from chemicals.utils import d2xs_to_dxdn_partials, dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, normalize
 from fluids.constants import R, R_inv
 from fluids.numerics import derivative, exp, hessian, jacobian, log, trunc_exp
 from fluids.numerics import numpy as np

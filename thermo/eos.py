@@ -251,22 +251,41 @@ at all.
 '''
 
 
-__all__ = ["GCEOS", "PR", "SRK", "PR78", "PRSV", "PRSV2", "VDW", "RK",
-"APISRK", "TWUPR", "TWUSRK", "eos_list", "eos_2P_list",
-"IG", "PRTranslatedPPJP", "SRKTranslatedPPJP",
-"PRTranslatedConsistent", "SRKTranslatedConsistent", "MSRKTranslated",
-"SRKTranslated", "PRTranslated", "PRTranslatedCoqueletChapoyRichon",
-"PRTranslatedTwu", "PRTranslatedPoly",
-"main_derivatives_and_departures",
-                "main_derivatives_and_departures_VDW",
-                "eos_lnphi"
+__all__ = [
+    "APISRK",
+    "GCEOS",
+    "IG",
+    "PR",
+    "PR78",
+    "PRSV",
+    "PRSV2",
+    "RK",
+    "SRK",
+    "TWUPR",
+    "TWUSRK",
+    "VDW",
+    "MSRKTranslated",
+    "PRTranslated",
+    "PRTranslatedConsistent",
+    "PRTranslatedCoqueletChapoyRichon",
+    "PRTranslatedPPJP",
+    "PRTranslatedPoly",
+    "PRTranslatedTwu",
+    "SRKTranslated",
+    "SRKTranslatedConsistent",
+    "SRKTranslatedPPJP",
+    "eos_2P_list",
+    "eos_list",
+    "eos_lnphi",
+    "main_derivatives_and_departures",
+    "main_derivatives_and_departures_VDW"
 ]
 
 from cmath import log as clog
 from math import isinf, isnan, log1p, log10
 
 from chemicals.flash_basic import Wilson_K_value
-from chemicals.utils import hash_any_primitive, object_data
+from chemicals.utils import hash_any_primitive
 from fluids.constants import R, mmHg
 from fluids.numerics import (
     NoSolutionError,

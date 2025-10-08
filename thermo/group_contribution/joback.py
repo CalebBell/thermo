@@ -49,11 +49,11 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 '''
 
 
-__all__ = ["Joback", "DikyJoback"]
+__all__ = ["DikyJoback", "Joback"]
 
 from fluids.numerics import exp, horner
 
-from thermo.group_contribution.group_contribution_base import smarts_fragment, smarts_fragment_priority, priority_from_atoms, BaseGroupContribution
+from thermo.group_contribution.group_contribution_base import BaseGroupContribution, priority_from_atoms, smarts_fragment
 
 rdkit_missing = "RDKit is not installed; it is required to use this functionality"
 

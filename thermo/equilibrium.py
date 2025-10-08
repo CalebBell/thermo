@@ -81,11 +81,24 @@ PHASE_REFERENCES = [PHASE_GAS, PHASE_LIQUID0, PHASE_LIQUID1, PHASE_LIQUID2,
                     PHASE_SOLID1, PHASE_SOLID2, PHASE_SOLID3, PHASE_BULK_SOLID,
                     PHASE_BULK]
 
-__all__.extend(["PHASE_GAS", "PHASE_LIQUID0", "PHASE_LIQUID1", "PHASE_LIQUID2",
-                "PHASE_LIQUID3", "PHASE_BULK_LIQUID", "PHASE_WATER_LIQUID",
-                "PHASE_LIGHTEST_LIQUID", "PHASE_HEAVIEST_LIQUID", "PHASE_SOLID0",
-                "PHASE_SOLID1", "PHASE_SOLID2", "PHASE_SOLID3", "PHASE_BULK_SOLID",
-                "PHASE_BULK", "PHASE_REFERENCES"])
+__all__.extend([
+    "PHASE_BULK",
+    "PHASE_BULK_LIQUID",
+    "PHASE_BULK_SOLID",
+    "PHASE_GAS",
+    "PHASE_HEAVIEST_LIQUID",
+    "PHASE_LIGHTEST_LIQUID",
+    "PHASE_LIQUID0",
+    "PHASE_LIQUID1",
+    "PHASE_LIQUID2",
+    "PHASE_LIQUID3",
+    "PHASE_REFERENCES",
+    "PHASE_SOLID0",
+    "PHASE_SOLID1",
+    "PHASE_SOLID2",
+    "PHASE_SOLID3",
+    "PHASE_WATER_LIQUID",
+])
 
 class EquilibriumState:
     r"""Class to represent a thermodynamic equilibrium state with one or more

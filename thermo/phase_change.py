@@ -56,16 +56,19 @@ Enthalpy of Sublimation
 '''
 
 
-__all__ = ["enthalpy_vaporization_methods", "EnthalpyVaporization",
-           "enthalpy_sublimation_methods", "EnthalpySublimation"]
+__all__ = [
+    "EnthalpySublimation",
+    "EnthalpyVaporization",
+    "enthalpy_sublimation_methods",
+    "enthalpy_vaporization_methods",
+]
 
 
 
 from chemicals import miscdata, phase_change
-from chemicals.dippr import EQ106
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import lookup_VDI_tabular_data
-from chemicals.phase_change import MK, PPDS12, SMK, Alibakhshi, Chen, Clapeyron, Liu, Pitzer, Riedel, Velasco, Vetere, Watson
+from chemicals.phase_change import MK, SMK, Chen, Clapeyron, Liu, Pitzer, Riedel, Velasco, Vetere, Watson
 from fluids.numerics import isnan
 
 from thermo.coolprop import CoolProp_failing_PT_flashes, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp

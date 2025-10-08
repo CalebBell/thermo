@@ -28,9 +28,13 @@ This functionality requires the RDKit library to work.
 
 .. autofunction:: thermo.group_contribution.Wilson_Jasperson
 '''
-__all__ = ["Wilson_Jasperson", "Wilson_Jasperson_Tc_increments",
-           "Wilson_Jasperson_Pc_increments",
-           "Wilson_Jasperson_Tc_groups", "Wilson_Jasperson_Pc_groups"]
+__all__ = [
+    "Wilson_Jasperson",
+    "Wilson_Jasperson_Pc_groups",
+    "Wilson_Jasperson_Pc_increments",
+    "Wilson_Jasperson_Tc_groups",
+    "Wilson_Jasperson_Tc_increments",
+]
 from math import exp
 
 from chemicals.elements import simple_formula_parser

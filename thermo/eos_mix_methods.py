@@ -60,46 +60,57 @@ Faster implementations which do not store N^2 matrices:
 
 # .. autofunction:: PR_lnphis
 # .. autofunction:: PR_lnphis_fastest
-__all__ = ["a_alpha_aijs_composition_independent",
-           "a_alpha_and_derivatives", "a_alpha_and_derivatives_full",
-           "a_alpha_quadratic_terms", "a_alpha_and_derivatives_quadratic_terms",
-           "PR_lnphis", "VDW_lnphis", "SRK_lnphis", "eos_mix_lnphis_general",
-
-           "VDW_lnphis_fastest", "PR_lnphis_fastest",
-           "SRK_lnphis_fastest", "RK_lnphis_fastest",
-           "PR_translated_lnphis_fastest",
-
-           "G_dep_lnphi_d_helper",
-
-           "RK_d3delta_dninjnks",
-           "PR_ddelta_dzs", "PR_ddelta_dns",
-           "PR_d2delta_dninjs", "PR_d3delta_dninjnks",
-
-           "PR_depsilon_dns", "PR_d2epsilon_dninjs", "PR_d3epsilon_dninjnks",
-           "PR_d2epsilon_dzizjs", "PR_depsilon_dzs",
-
-           "PR_translated_d2delta_dninjs", "PR_translated_d3delta_dninjnks",
-           "PR_translated_d3epsilon_dninjnks",
-
-           "PR_translated_ddelta_dzs", "PR_translated_ddelta_dns",
-           "PR_translated_depsilon_dzs", "PR_translated_depsilon_dns",
-           "PR_translated_d2epsilon_dzizjs", "PR_translated_d2epsilon_dninjs",
-
-           "SRK_translated_ddelta_dns", "SRK_translated_depsilon_dns",
-           "SRK_translated_d2epsilon_dzizjs", "SRK_translated_depsilon_dzs",
-           "SRK_translated_d2delta_dninjs",
-           "SRK_translated_d3delta_dninjnks",
-           "SRK_translated_d2epsilon_dninjs", "SRK_translated_d3epsilon_dninjnks",
-
-
-           "SRK_translated_lnphis_fastest",
-
-           "VDW_dlnphis_dT", "VDW_dlnphis_dP",
-
-
-           "eos_mix_db_dns", "eos_mix_da_alpha_dns",
-
-           "eos_mix_dV_dzs", "eos_mix_a_alpha_volume"]
+__all__ = [
+    "G_dep_lnphi_d_helper",
+    "PR_d2delta_dninjs",
+    "PR_d2epsilon_dninjs",
+    "PR_d2epsilon_dzizjs",
+    "PR_d3delta_dninjnks",
+    "PR_d3epsilon_dninjnks",
+    "PR_ddelta_dns",
+    "PR_ddelta_dzs",
+    "PR_depsilon_dns",
+    "PR_depsilon_dzs",
+    "PR_lnphis",
+    "PR_lnphis_fastest",
+    "PR_translated_d2delta_dninjs",
+    "PR_translated_d2epsilon_dninjs",
+    "PR_translated_d2epsilon_dzizjs",
+    "PR_translated_d3delta_dninjnks",
+    "PR_translated_d3epsilon_dninjnks",
+    "PR_translated_ddelta_dns",
+    "PR_translated_ddelta_dzs",
+    "PR_translated_depsilon_dns",
+    "PR_translated_depsilon_dzs",
+    "PR_translated_lnphis_fastest",
+    "RK_d3delta_dninjnks",
+    "RK_lnphis_fastest",
+    "SRK_lnphis",
+    "SRK_lnphis_fastest",
+    "SRK_translated_d2delta_dninjs",
+    "SRK_translated_d2epsilon_dninjs",
+    "SRK_translated_d2epsilon_dzizjs",
+    "SRK_translated_d3delta_dninjnks",
+    "SRK_translated_d3epsilon_dninjnks",
+    "SRK_translated_ddelta_dns",
+    "SRK_translated_depsilon_dns",
+    "SRK_translated_depsilon_dzs",
+    "SRK_translated_lnphis_fastest",
+    "VDW_dlnphis_dP",
+    "VDW_dlnphis_dT",
+    "VDW_lnphis",
+    "VDW_lnphis_fastest",
+    "a_alpha_aijs_composition_independent",
+    "a_alpha_and_derivatives",
+    "a_alpha_and_derivatives_full",
+    "a_alpha_and_derivatives_quadratic_terms",
+    "a_alpha_quadratic_terms",
+    "eos_mix_a_alpha_volume",
+    "eos_mix_dV_dzs",
+    "eos_mix_da_alpha_dns",
+    "eos_mix_db_dns",
+    "eos_mix_lnphis_general",
+]
 from math import log, sqrt
 
 from fluids.constants import R

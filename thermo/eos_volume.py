@@ -73,12 +73,22 @@ Higher-Precision Solvers
 
 '''
 
-__all__ = ["volume_solutions_mpmath", "volume_solutions_mpmath_float",
-           "volume_solutions_NR", "volume_solutions_NR_low_P", "volume_solutions_halley",
-           "volume_solutions_fast", "volume_solutions_Cardano", "volume_solutions_a1",
-           "volume_solutions_a2", "volume_solutions_numpy", "volume_solutions_ideal",
-           "volume_solutions_doubledouble_float",
-           "volume_solution_polish", "volume_solutions_sympy"]
+__all__ = [
+    "volume_solution_polish",
+    "volume_solutions_Cardano",
+    "volume_solutions_NR",
+    "volume_solutions_NR_low_P",
+    "volume_solutions_a1",
+    "volume_solutions_a2",
+    "volume_solutions_doubledouble_float",
+    "volume_solutions_fast",
+    "volume_solutions_halley",
+    "volume_solutions_ideal",
+    "volume_solutions_mpmath",
+    "volume_solutions_mpmath_float",
+    "volume_solutions_numpy",
+    "volume_solutions_sympy",
+]
 
 
 from cmath import sqrt as csqrt

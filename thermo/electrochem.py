@@ -104,18 +104,33 @@ attribute of this module.
 '''
 
 
-__all__ = ["Laliberte_density", "Laliberte_heat_capacity",
-           "Laliberte_viscosity","Laliberte_viscosity_mix",
-           "Laliberte_viscosity_w",
-           "Laliberte_viscosity_i", "Laliberte_density_w",
-           "Laliberte_density_i", "Laliberte_density_mix", "Laliberte_heat_capacity_w",
-           "Laliberte_heat_capacity_i","Laliberte_heat_capacity_mix",
-           "dilute_ionic_conductivity", "conductivity_McCleskey",
-           "conductivity", "conductivity_methods", "conductivity_all_methods",
-           "thermal_conductivity_Magomedov", "Magomedov_mix", "ionic_strength", "Kweq_1981",
-           "Kweq_IAPWS_gas", "Kweq_IAPWS", "Kweq_Arcis_Tremaine_Bandura_Lvov",
-           "balance_ions",
-           ]
+__all__ = [
+    "Kweq_1981",
+    "Kweq_Arcis_Tremaine_Bandura_Lvov",
+    "Kweq_IAPWS",
+    "Kweq_IAPWS_gas",
+    "Laliberte_density",
+    "Laliberte_density_i",
+    "Laliberte_density_mix",
+    "Laliberte_density_w",
+    "Laliberte_heat_capacity",
+    "Laliberte_heat_capacity_i",
+    "Laliberte_heat_capacity_mix",
+    "Laliberte_heat_capacity_w",
+    "Laliberte_viscosity",
+    "Laliberte_viscosity_i",
+    "Laliberte_viscosity_mix",
+    "Laliberte_viscosity_w",
+    "Magomedov_mix",
+    "balance_ions",
+    "conductivity",
+    "conductivity_McCleskey",
+    "conductivity_all_methods",
+    "conductivity_methods",
+    "dilute_ionic_conductivity",
+    "ionic_strength",
+    "thermal_conductivity_Magomedov",
+]
 
 import os
 from math import log10

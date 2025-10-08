@@ -22,10 +22,18 @@ SOFTWARE.
 '''
 from chemicals.elements import simple_formula_parser
 
-__all__ = ["str_group_assignment_to_dict", "group_assignment_to_str",
-           "smarts_fragment_priority", "smarts_fragment", "priority_from_atoms",
-           "SINGLE_BOND", "DOUBLE_BOND", "TRIPLE_BOND", "AROMATIC_BOND",
-           "BaseGroupContribution"]
+__all__ = [
+    "AROMATIC_BOND",
+    "DOUBLE_BOND",
+    "SINGLE_BOND",
+    "TRIPLE_BOND",
+    "BaseGroupContribution",
+    "group_assignment_to_str",
+    "priority_from_atoms",
+    "smarts_fragment",
+    "smarts_fragment_priority",
+    "str_group_assignment_to_dict",
+]
 
 SINGLE_BOND = "single"
 DOUBLE_BOND = "double"
@@ -344,9 +352,8 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     # excludes H
     DEBUG_VISUALIZATION = False
     if DEBUG_VISUALIZATION:
-        from rdkit.Chem import Draw
         import matplotlib.pyplot as plt
-        from matplotlib import colors
+        from rdkit.Chem import Draw
 
         # First, count total number of matches across all patterns
         total_matches = sum(len(matches) for matches in all_matches.values())

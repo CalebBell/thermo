@@ -30,12 +30,22 @@ This functionality requires the RDKit library to work.
 .. autofunction:: thermo.group_contribution.fragment_PPR78
 
 '''
-__all__ = ["PPR78_kij", "PPR78_kijs", "PPR78_GROUP_IDS", "PPR78_INTERACTIONS", "PPR78_GROUPS", "fragment_PPR78"]
+__all__ = ["PPR78_GROUPS", "PPR78_GROUP_IDS", "PPR78_INTERACTIONS", "PPR78_kij", "PPR78_kijs", "fragment_PPR78"]
 
 from math import sqrt
+
 from fluids.constants import R
-from thermo.group_contribution.group_contribution_base import smarts_fragment_priority, BaseGroupContribution
-from thermo.group_contribution.group_contribution_base import priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
+
+from thermo.group_contribution.group_contribution_base import (
+    AROMATIC_BOND,
+    DOUBLE_BOND,
+    SINGLE_BOND,
+    TRIPLE_BOND,
+    BaseGroupContribution,
+    priority_from_atoms,
+    smarts_fragment_priority,
+)
+
 
 class PPR78GroupContribution(BaseGroupContribution):
     __slots__ = ("group", "group_id", "atoms", "bonds", "smarts", "priority", "hydrogen_from_smarts", "smart_rdkit")

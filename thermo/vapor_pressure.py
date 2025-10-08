@@ -57,35 +57,26 @@ Sublimation Pressure
 '''
 
 
-__all__ = ["vapor_pressure_methods", "VaporPressure", "SublimationPressure",
-           "sublimation_pressure_methods"]
+__all__ = [
+    "SublimationPressure",
+    "VaporPressure",
+    "sublimation_pressure_methods",
+    "vapor_pressure_methods",
+]
 
-from math import e, inf
+from math import e
 
 from chemicals import miscdata, vapor_pressure
-from chemicals.dippr import EQ101
 from chemicals.iapws import iapws11_Psub, iapws95_dPsat_dT, iapws95_Psat, iapws95_Tc, iapws95_Tt
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals.vapor_pressure import (
     Ambrose_Walton,
-    Antoine,
     Edalat,
     Lee_Kesler,
     Psub_Clapeyron,
     Sanjari,
-    TRC_Antoine_extended,
-    Wagner,
-    Wagner_original,
     boiling_critical_relation,
-    d2Antoine_dT2,
-    d2TRC_Antoine_extended_dT2,
-    d2Wagner_dT2,
-    d2Wagner_original_dT2,
-    dAntoine_dT,
-    dTRC_Antoine_extended_dT,
-    dWagner_dT,
-    dWagner_original_dT,
 )
 from fluids.numerics import NoSolutionError, exp, isnan, log
 

@@ -23,9 +23,9 @@ SOFTWARE.
 __all__ = [
     "activity_pointer_reference_dicts",
     "activity_reference_pointer_dicts",
-    "object_lookups",
-    "lnphis_direct",
     "fugacities_direct",
+    "lnphis_direct",
+    "object_lookups",
 ]
 
 from fluids.numerics import log, trunc_exp
@@ -42,7 +42,7 @@ from thermo.eos_mix_methods import (
     VDW_lnphis_fastest,
 )
 from thermo.nrtl import NRTL, nrtl_gammas_from_args
-from thermo.regular_solution import RegularSolution, Hansen, FloryHuggins, regular_solution_gammas
+from thermo.regular_solution import FloryHuggins, Hansen, RegularSolution, regular_solution_gammas
 from thermo.serialize import object_lookups
 from thermo.unifac import UNIFAC, unifac_gammas_from_args
 from thermo.uniquac import UNIQUAC, uniquac_gammas_from_args

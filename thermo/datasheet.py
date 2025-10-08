@@ -21,8 +21,13 @@ SOFTWARE.
 '''
 
 
-__all__ = ["tabulate_solid", "tabulate_liq", "tabulate_gas",
-           "tabulate_constants", "tabulate_streams"]
+__all__ = [
+    "tabulate_constants",
+    "tabulate_gas",
+    "tabulate_liq",
+    "tabulate_solid",
+    "tabulate_streams",
+]
 
 from collections import OrderedDict
 

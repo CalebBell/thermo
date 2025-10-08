@@ -21,11 +21,21 @@ SOFTWARE.
 '''
 
 
-__all__ = ["alpha_Twu91_objf", "alpha_Twu91_objfc", "fit_function",
-           "Twu91_check_params", "postproc_lmfit",
-           "alpha_poly_objf", "alpha_poly_objfc", "poly_check_params",
-           "fit_polynomial", "poly_fit_statistics", "fit_cheb_poly_auto",
-           "data_fit_statistics", "fit_customized"]
+__all__ = [
+    "Twu91_check_params",
+    "alpha_Twu91_objf",
+    "alpha_Twu91_objfc",
+    "alpha_poly_objf",
+    "alpha_poly_objfc",
+    "data_fit_statistics",
+    "fit_cheb_poly_auto",
+    "fit_customized",
+    "fit_function",
+    "fit_polynomial",
+    "poly_check_params",
+    "poly_fit_statistics",
+    "postproc_lmfit",
+]
 
 import fluids
 from fluids.numerics import (
@@ -61,7 +71,7 @@ try:
 except:
     pass
 
-from math import log, pi, isinf, isnan
+from math import log, pi
 
 
 def split_data(x, y, folds=5, seed=42):

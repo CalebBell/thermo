@@ -22,12 +22,19 @@ SOFTWARE.
 
 
 __all__ = [#'DSL_data', 'TSCA_data',
-           #'EINECS_data', 'SPIN_data', 'NLP_data',
-           "CAN_DSL_flags", "TSCA_flags",
-           "legal_status_methods",
-           "legal_status", "HPV_data", "_ECHATonnageDict", "_EPACDRDict",
-           "economic_status", "economic_status_methods", "load_economic_data",
-           "load_law_data"]
+    #'EINECS_data', 'SPIN_data', 'NLP_data',
+    "CAN_DSL_flags",
+    "HPV_data",
+    "TSCA_flags",
+    "_ECHATonnageDict",
+    "_EPACDRDict",
+    "economic_status",
+    "economic_status_methods",
+    "legal_status",
+    "legal_status_methods",
+    "load_economic_data",
+    "load_law_data",
+]
 
 import os
 

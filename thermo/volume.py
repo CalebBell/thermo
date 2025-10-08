@@ -109,15 +109,23 @@ Mixture Solid Volume
 
 
 __all__ = [
-"volume_liquid_methods", "volume_liquid_methods_P", "VolumeLiquid", "VolumeSupercriticalLiquid",
- "volume_gas_methods", "VolumeGas",
-"volume_gas_mixture_methods", "volume_solid_mixture_methods",
-           "volume_solid_methods", "VolumeSolid",
-           "VolumeLiquidMixture", "VolumeGasMixture", "VolumeSolidMixture",
-           "Tait_parameters_COSTALD"]
+    "Tait_parameters_COSTALD",
+    "VolumeGas",
+    "VolumeGasMixture",
+    "VolumeLiquid",
+    "VolumeLiquidMixture",
+    "VolumeSolid",
+    "VolumeSolidMixture",
+    "VolumeSupercriticalLiquid",
+    "volume_gas_methods",
+    "volume_gas_mixture_methods",
+    "volume_liquid_methods",
+    "volume_liquid_methods_P",
+    "volume_solid_methods",
+    "volume_solid_mixture_methods",
+]
 
 from chemicals import miscdata, volume
-from chemicals.dippr import EQ105, EQ116
 from chemicals.miscdata import COMMON_CHEMISTRY, lookup_VDI_tabular_data
 from chemicals.utils import mixing_simple, none_and_length_check, rho_to_Vm
 from chemicals.virial import BVirial_Abbott, BVirial_Pitzer_Curl, BVirial_Tsonopoulos, BVirial_Tsonopoulos_extended
@@ -129,7 +137,6 @@ from chemicals.volume import (
     Campbell_Thodos,
     COSTALD_compressed,
     COSTALD_mixture,
-    CRC_inorganic,
     Goodman,
     Rackett,
     Rackett_mixture,
@@ -143,6 +150,7 @@ from fluids.numerics import exp, horner, horner_and_der2, isnan, linspace, np, p
 from thermo import electrochem
 from thermo.coolprop import CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.electrochem import Laliberte_density
+from thermo.eos import PR
 from thermo.utils import (
     COOLPROP,
     DIPPR_PERRY_8E,
@@ -157,7 +165,6 @@ from thermo.utils import (
     TPDependentProperty,
 )
 from thermo.vapor_pressure import VaporPressure
-from thermo.eos import PR
 
 
 def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):

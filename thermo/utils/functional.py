@@ -20,9 +20,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__all__ = ["has_matplotlib", "Stateva_Tsvetkov_TPDF", "TPD",
-"assert_component_balance", "assert_energy_balance", "allclose_variable",
-"identify_phase", "phase_select_property"]
+__all__ = [
+    "TPD",
+    "Stateva_Tsvetkov_TPDF",
+    "allclose_variable",
+    "assert_component_balance",
+    "assert_energy_balance",
+    "has_matplotlib",
+    "identify_phase",
+    "phase_select_property",
+]
 
 from chemicals.utils import mix_multiple_component_flows, velocity_to_molar_velocity
 from fluids.constants import R

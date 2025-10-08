@@ -21,15 +21,27 @@ SOFTWARE.
 '''
 
 
-__all__ = ["has_CoolProp", "coolprop_dict", "CP_fluid", "coolprop_fluids",
-"CoolProp_T_dependent_property", "CoolProp_failing_PT_flashes",
-"PropsSI", "PhaseSI","HAPropsSI", "AbstractState",
-"Helmholtz_A0", "Helmholtz_dA0_dtau", "Helmholtz_d2A0_dtau2",
-"Helmholtz_d3A0_dtau3",
-"CoolProp_json_alpha0_to_kwargs",
-"Helmholtz_A0_data",
-"Cp_ideal_gas_Helmholtz", "H_ideal_gas_Helmholtz",
-"S_ideal_gas_Helmholtz"]
+__all__ = [
+    "AbstractState",
+    "CP_fluid",
+    "CoolProp_T_dependent_property",
+    "CoolProp_failing_PT_flashes",
+    "CoolProp_json_alpha0_to_kwargs",
+    "Cp_ideal_gas_Helmholtz",
+    "HAPropsSI",
+    "H_ideal_gas_Helmholtz",
+    "Helmholtz_A0",
+    "Helmholtz_A0_data",
+    "Helmholtz_d2A0_dtau2",
+    "Helmholtz_d3A0_dtau3",
+    "Helmholtz_dA0_dtau",
+    "PhaseSI",
+    "PropsSI",
+    "S_ideal_gas_Helmholtz",
+    "coolprop_dict",
+    "coolprop_fluids",
+    "has_CoolProp",
+]
 import os
 from math import exp, log
 

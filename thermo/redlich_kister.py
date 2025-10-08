@@ -29,9 +29,16 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 .. contents:: :local:
 '''
 
-__all__ = ["redlich_kister_reverse","redlich_kister_reverse_2d", "redlich_kister_excess_inner",
-"redlich_kister_build_structure", "redlich_kister_T_dependence", "redlich_kister_excess_inner_binary",
-"redlich_kister_excess_binary", "redlich_kister_fitting_to_use"]
+__all__ = [
+    "redlich_kister_T_dependence",
+    "redlich_kister_build_structure",
+    "redlich_kister_excess_binary",
+    "redlich_kister_excess_inner",
+    "redlich_kister_excess_inner_binary",
+    "redlich_kister_fitting_to_use",
+    "redlich_kister_reverse",
+    "redlich_kister_reverse_2d",
+]
 from math import log
 
 

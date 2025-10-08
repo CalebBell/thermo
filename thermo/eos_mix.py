@@ -188,23 +188,40 @@ Lists of Equations of State
 '''
 
 
-__all__ = ["GCEOSMIX", "PRMIX", "SRKMIX", "PR78MIX", "VDWMIX", "PRSVMIX",
-"PRSV2MIX", "TWUPRMIX", "TWUSRKMIX", "APISRKMIX", "IGMIX", "RKMIX",
-"PRMIXTranslatedConsistent", "PRMIXTranslatedPPJP", "PRMIXTranslated",
-"SRKMIXTranslatedConsistent", "PSRK", "MSRKMIXTranslated",
-"eos_mix_list", "eos_mix_no_coeffs_list", "SRKMIXTranslated", "one_minus_kijs"]
+__all__ = [
+    "APISRKMIX",
+    "GCEOSMIX",
+    "IGMIX",
+    "PR78MIX",
+    "PRMIX",
+    "PRSV2MIX",
+    "PRSVMIX",
+    "PSRK",
+    "RKMIX",
+    "SRKMIX",
+    "TWUPRMIX",
+    "TWUSRKMIX",
+    "VDWMIX",
+    "MSRKMIXTranslated",
+    "PRMIXTranslated",
+    "PRMIXTranslatedConsistent",
+    "PRMIXTranslatedPPJP",
+    "SRKMIXTranslated",
+    "SRKMIXTranslatedConsistent",
+    "eos_mix_list",
+    "eos_mix_no_coeffs_list",
+    "one_minus_kijs",
+]
 
 from cmath import log as clog
 
-from chemicals.flash_basic import K_value, Wilson_K_value
+from chemicals.flash_basic import K_value, Wilson_K_value, flash_wilson
 from chemicals.rachford_rice import Rachford_Rice_flash_error, flash_inner_loop
-from chemicals.flash_basic import flash_wilson
 from chemicals.utils import d2ns_to_dn2_partials, d2xs_to_dxdn_partials, dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, normalize
 from fluids.constants import R
-from fluids.numerics import UnconvergedError, broyden2, catanh, exp, log, newton_system, solve_2_direct, sqrt, trunc_exp
+from fluids.numerics import UnconvergedError, broyden2, catanh, derivative, exp, log, newton_system, solve_2_direct, sqrt, trunc_exp
 from fluids.numerics import numpy as np
 from fluids.numerics.arrays import det, subset_matrix
-from fluids.numerics import derivative
 
 from thermo.eos import (
     APISRK,
@@ -223,9 +240,9 @@ from thermo.eos import (
     PRTranslated,
     PRTranslatedConsistent,
     PRTranslatedPPJP,
+    SRK_P_max_at_V,
     SRKTranslated,
     SRKTranslatedConsistent,
-    SRK_P_max_at_V
 )
 from thermo.eos_alpha_functions import (
     APISRK_a_alpha_and_derivatives_vectorized,
@@ -277,14 +294,14 @@ from thermo.eos_mix_methods import (
     SRK_translated_ddelta_dns,
     SRK_translated_depsilon_dns,
     SRK_translated_depsilon_dzs,
+    VDW_dlnphis_dP,
+    VDW_dlnphis_dT,
     VDW_lnphis,
     a_alpha_aijs_composition_independent,
     a_alpha_and_derivatives_full,
     a_alpha_and_derivatives_quadratic_terms,
     a_alpha_quadratic_terms,
     eos_mix_dV_dzs,
-    VDW_dlnphis_dT,
-    VDW_dlnphis_dP,
 )
 from thermo.serialize import JsonOptEncodable
 

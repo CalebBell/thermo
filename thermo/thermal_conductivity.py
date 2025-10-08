@@ -114,22 +114,31 @@ Pure Solid Thermal Conductivity
 
 
 __all__ = [
- "ThermalConductivityGasMixture", "ThermalConductivityLiquidMixture",
- "MAGOMEDOV", "DIPPR_9H", "FILIPPOV", "LINDSAY_BROMLEY",
- "thermal_conductivity_liquid_methods", "ThermalConductivityLiquid",
-
- "thermal_conductivity_gas_methods",
- "thermal_conductivity_gas_methods_P", "ThermalConductivityGas",
-
-"GHARAGHEIZI_L", "NICOLA", "NICOLA_ORIGINAL", "SATO_RIEDEL", "SHEFFY_JOHNSON",
-"BAHADORI_L", "LAKSHMI_PRASAD", "MISSENARD", "DIPPR_9G",
-
-"ThermalConductivitySolid",
+    "BAHADORI_L",
+    "DIPPR_9G",
+    "DIPPR_9H",
+    "FILIPPOV",
+    "GHARAGHEIZI_L",
+    "LAKSHMI_PRASAD",
+    "LINDSAY_BROMLEY",
+    "MAGOMEDOV",
+    "MISSENARD",
+    "NICOLA",
+    "NICOLA_ORIGINAL",
+    "SATO_RIEDEL",
+    "SHEFFY_JOHNSON",
+    "ThermalConductivityGas",
+    "ThermalConductivityGasMixture",
+    "ThermalConductivityLiquid",
+    "ThermalConductivityLiquidMixture",
+    "ThermalConductivitySolid",
+    "thermal_conductivity_gas_methods",
+    "thermal_conductivity_gas_methods_P",
+    "thermal_conductivity_liquid_methods",
 ]
 
 
 from chemicals import miscdata, thermal_conductivity
-from chemicals.dippr import EQ100, EQ102
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals.thermal_conductivity import (
     DIPPR9B,
@@ -157,7 +166,7 @@ from chemicals.thermal_conductivity import (
 )
 from chemicals.utils import none_and_length_check
 from fluids.constants import R
-from fluids.numerics import horner, sqrt
+from fluids.numerics import sqrt
 
 from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp

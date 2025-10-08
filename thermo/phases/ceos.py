@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ["CEOSLiquid", "CEOSGas"]
+__all__ = ["CEOSGas", "CEOSLiquid"]
 from fluids.numerics import numpy as np
 from fluids.numerics import trunc_exp, trunc_exp_numpy
 

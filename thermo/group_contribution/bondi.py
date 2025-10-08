@@ -32,9 +32,18 @@ This functionality requires the RDKit library to work.
 
 
 '''
-__all__ = ["BondiGroupContribution", "BONDI_SUBGROUPS", "BONDI_GROUPS", "bondi_van_der_waals_surface_area_volume", "Q_from_Van_der_Waals_area", "R_from_Van_der_Waals_volume"]
-from thermo.functional_groups import FG_CARBOXYLIC_ACID, FG_AMIDE, identify_conjugated_bonds, identify_functional_group_atoms, count_rings_by_atom_counts
-from thermo.group_contribution.group_contribution_base import smarts_fragment_priority, BaseGroupContribution, priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
+__all__ = ["BONDI_GROUPS", "BONDI_SUBGROUPS", "BondiGroupContribution", "Q_from_Van_der_Waals_area", "R_from_Van_der_Waals_volume", "bondi_van_der_waals_surface_area_volume"]
+from thermo.functional_groups import FG_AMIDE, FG_CARBOXYLIC_ACID, count_rings_by_atom_counts, identify_conjugated_bonds, identify_functional_group_atoms
+from thermo.group_contribution.group_contribution_base import (
+    AROMATIC_BOND,
+    DOUBLE_BOND,
+    SINGLE_BOND,
+    TRIPLE_BOND,
+    BaseGroupContribution,
+    priority_from_atoms,
+    smarts_fragment_priority,
+)
+
 
 # reasonably complete
 class BondiGroupContribution(BaseGroupContribution):

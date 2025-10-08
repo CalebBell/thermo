@@ -32,7 +32,7 @@ import sys
 from chemicals.utils import object_data
 from fluids.numerics import numpy as np
 
-__all__ = ["object_from_json", "json_default"]
+__all__ = ["json_default", "object_from_json"]
 try:
     array = np.array
     int_types = frozenset([np.short, np.ushort, np.intc, np.uintc, np.int_,
