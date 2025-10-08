@@ -1721,9 +1721,9 @@ class VirialGas(IdealGasDeparturePhase):
         dC_dV_P = self.dC_dV_P()
         d2B_dTdV_P = self.d2B_dTdV_P()
         d2C_dTdV_P = self.d2C_dTdV_P()
-        return -((-R*(-1 + (V**2 + V*B + C)/V**2)*dT_dV - R*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2
+        return -(-R*(-1 + (V**2 + V*B + C)/V**2)*dT_dV - R*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2
                 - 2*(V**2 + V*B + C)/V**3)*T - R*(-2*V*dB_dT - dC_dT)*T*dT_dV/V**2
-            - R*(-2*V*d2B_dTdV_P - 2*dB_dT - d2C_dTdV_P)*T**2/(2*V**2) + R*(-2*V*dB_dT - dC_dT)*T**2/V**3))
+            - R*(-2*V*d2B_dTdV_P - 2*dB_dT - d2C_dTdV_P)*T**2/(2*V**2) + R*(-2*V*dB_dT - dC_dT)*T**2/V**3)
 
     def dS_dep_dV_P(self):
         r"""Method to calculate and return the first volume derivative of

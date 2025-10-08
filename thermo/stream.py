@@ -212,7 +212,7 @@ class StreamArgs:
     and True for `EquilibriumState` and `EquilibriumStream`"""
     __full_path__ = f"{__module__}.{__qualname__}"
 
-    __slots__ = ("specifications", "multiple_composition_basis", "Vf_TP", "Q_TP", "flasher", "_state_cache", "_flash")
+    __slots__ = ("Q_TP", "Vf_TP", "_flash", "_state_cache", "flasher", "multiple_composition_basis", "specifications")
     obj_references = ("flasher", "_flash")
 
     as_json = JsonOptEncodable.as_json

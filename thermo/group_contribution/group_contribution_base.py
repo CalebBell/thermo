@@ -89,8 +89,16 @@ def load_rdkit_modules():
             raise Exception(rdkit_missing)
 
 class BaseGroupContribution:
-    __slots__ = ("group", "group_id", "smarts", "smart_rdkit",
-                 "hydrogen_from_smarts", "priority", "atoms", "bonds")
+    __slots__ = (
+        "atoms",
+        "bonds",
+        "group",
+        "group_id",
+        "hydrogen_from_smarts",
+        "priority",
+        "smart_rdkit",
+        "smarts",
+    )
 
     def __init__(self, group, smarts=None, priority=None, atoms=None,
                  bonds=None, hydrogen_from_smarts=False, group_id=None):

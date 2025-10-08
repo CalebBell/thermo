@@ -643,7 +643,7 @@ class Bulk(Phase):
 
     bulk_phase_type = True
 
-    __slots__ = ("phases", "phase_fractions", "phase_bulk", "result", "constants", "correlations", "flasher", "settings")
+    __slots__ = ("constants", "correlations", "flasher", "phase_bulk", "phase_fractions", "phases", "result", "settings")
     model_attributes = ()
     obj_references = ("phases", "result", "constants", "correlations", "flasher", "settings")
     json_version = 1

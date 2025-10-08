@@ -163,8 +163,21 @@ CoolProp_Tmax_overrides = {
 class CP_fluid:
     # Basic object to store constants for a coolprop fluid, much faster than
     # calling coolprop to retrieve the data when needed
-    __slots__ = ["Tmin", "Tmax", "Pmax", "has_melting_line", "Tc", "Pc", "Tt",
-                 "omega", "HEOS", "CAS", "Vc", "Pt", "Tb"]
+    __slots__ = [
+        "CAS",
+        "HEOS",
+        "Pc",
+        "Pmax",
+        "Pt",
+        "Tb",
+        "Tc",
+        "Tmax",
+        "Tmin",
+        "Tt",
+        "Vc",
+        "has_melting_line",
+        "omega",
+    ]
     @property
     def has_k(self):
         return self.CAS in CoolProp_has_k_CASs and self.CAS not in CoolProp_k_failing_CASs

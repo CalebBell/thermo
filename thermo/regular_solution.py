@@ -1268,6 +1268,7 @@ class FloryHuggins(GibbsExcess):
     .. [2] Kooijman, Harry A., and Ross Taylor. The ChemSep Book. Books on
        Demand Norderstedt, Germany, 2000.
     """
+
     model_id = 410
 
     _cached_calculated_attributes = RegularSolution._cached_calculated_attributes
@@ -1593,7 +1594,6 @@ class Hansen(GibbsExcess):
 
     Examples
     --------
-
     [2]_ presents a number of examplese in their supporting material. No specific
     concentration was specified for what mole fraction was used to evaluate infinite
     dilution coefficients, however 2-3% seems to fit the data points provided in many
@@ -1640,6 +1640,7 @@ class Hansen(GibbsExcess):
     .. [3] Hansen, Charles M. Hansen Solubility Parameters: A User's Handbook.
        CRC press, 2007.
     """
+
     model_id = 420
     _cached_calculated_attributes = RegularSolution._cached_calculated_attributes
     _model_attributes = tuple(v for v in RegularSolution._model_attributes if v not in ("SPs","lambda_coeffs",))  + ("delta_d", "delta_p", "delta_h", "alpha")

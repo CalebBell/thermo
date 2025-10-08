@@ -282,6 +282,7 @@ class GibbsExcess:
     immutable.
 
     """
+
     T_DEFAULT = 298.15
     _x_infinite_dilution = 0.0
     """When set, this will be the limiting mole fraction used to approximate
@@ -289,9 +290,25 @@ class GibbsExcess:
     as not all models can mathematically be evaluated at zero mole-fraction."""
 
 
-    __slots__ = ("T", "N", "xs", "vectorized", "_GE", "_dGE_dT", "_SE","_d2GE_dT2", "_d2GE_dTdxs", "_dGE_dxs",
-                  "_gammas", "_dgammas_dns", "_dgammas_dT", "_d2GE_dxixjs",  "_dHE_dxs", "_dSE_dxs",
-                  "_model_hash")
+    __slots__ = (
+        "N",
+        "T",
+        "_GE",
+        "_SE",
+        "_d2GE_dT2",
+        "_d2GE_dTdxs",
+        "_d2GE_dxixjs",
+        "_dGE_dT",
+        "_dGE_dxs",
+        "_dHE_dxs",
+        "_dSE_dxs",
+        "_dgammas_dT",
+        "_dgammas_dns",
+        "_gammas",
+        "_model_hash",
+        "vectorized",
+        "xs",
+    )
 
     recalculable_attributes = ("_GE", "_dGE_dT", "_SE","_d2GE_dT2", "_d2GE_dTdxs", "_dGE_dxs",
                   "_gammas", "_dgammas_dns", "_dgammas_dT", "_d2GE_dxixjs",  "_dHE_dxs", "_dSE_dxs")

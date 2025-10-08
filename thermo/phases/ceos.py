@@ -80,9 +80,23 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     """
 
-    __slots__ = ("eos_class", "eos_kwargs", "vectorized", "HeatCapacityGases", "N",
-    "Hfs", "Gfs", "Sfs", "composition_independent",
-     "eos_mix", "T", "P", "zs", "_model_hash_ignore_phase", "_model_hash")
+    __slots__ = (
+        "Gfs",
+        "HeatCapacityGases",
+        "Hfs",
+        "N",
+        "P",
+        "Sfs",
+        "T",
+        "_model_hash",
+        "_model_hash_ignore_phase",
+        "composition_independent",
+        "eos_class",
+        "eos_kwargs",
+        "eos_mix",
+        "vectorized",
+        "zs",
+    )
     ideal_gas_basis = True
 
     pure_references = ("HeatCapacityGases",)

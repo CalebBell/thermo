@@ -1226,6 +1226,7 @@ class DikyJoback:
        W. Vincent Wilding. The Properties of Gases and Liquids, Sixth
        Edition. 6th edition. New York: McGraw Hill, 2023.
     '''
+
     def __init__(self, mol):
         load_rdkit_modules()
 

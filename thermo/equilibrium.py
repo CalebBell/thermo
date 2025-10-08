@@ -231,11 +231,36 @@ class EquilibriumState:
 
     __full_path__ = f"{__module__}.{__qualname__}"
 
-    __slots__ = ("T", "P", "zs", "N", "gas_count", "liquid_count", "solid_count", "phase_count", "gas",
-                 "liquids", "solids", "phases", "betas", "gas_beta", "liquids_betas", "solids_betas",
-                 "liquid_zs", #'liquid_bulk',
-                  "liquid0", "liquid1", "liquid2", "bulk", "flash_specs", "flash_convergence",
-                 "flasher", "settings", "constants", "correlations", "__dict__")
+    __slots__ = (
+        "N",
+        "P",
+        "T",
+        "__dict__",
+        "betas",
+        "bulk",
+        "constants",
+        "correlations",
+        "flash_convergence",
+        "flash_specs",
+        "flasher",
+        "gas",
+        "gas_beta",
+        "gas_count",
+        "liquid0",
+        "liquid1",
+        "liquid2",
+        "liquid_count",
+        "liquid_zs", #'liquid_bulk',
+        "liquids",
+        "liquids_betas",
+        "phase_count",
+        "phases",
+        "settings",
+        "solid_count",
+        "solids",
+        "solids_betas",
+        "zs",
+    )
 
     obj_references = ("liquid_bulk", "solid_bulk", "bulk", "gas", "liquids", "phases",
                     "solids",  "settings", "constants", "correlations", "flasher",

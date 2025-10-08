@@ -48,7 +48,7 @@ from thermo.group_contribution.group_contribution_base import (
 
 
 class PPR78GroupContribution(BaseGroupContribution):
-    __slots__ = ("group", "group_id", "atoms", "bonds", "smarts", "priority", "hydrogen_from_smarts", "smart_rdkit")
+    __slots__ = ("atoms", "bonds", "group", "group_id", "hydrogen_from_smarts", "priority", "smart_rdkit", "smarts")
     def __init__(self, group, atoms=None, bonds=None, smarts=None, priority=None, hydrogen_from_smarts=False, group_id=None):
         self.group = group
         self.atoms = atoms
