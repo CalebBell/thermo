@@ -259,86 +259,86 @@ def regular_solution_d3GE_dxixjxks(Vs, SPs, Hi_sums, dGE_dxs, N, GE, xsVs_sum_in
 def flory_huggins_GE(xs, Vs, Aijs, T, xsVs, xsVs_sum_inv):
     fh_term = 0.0
     tmp = [0.0] * len(xs)
-    
+
     for i in range(len(xs)):
         tmp[i] = Vs[i] * xsVs_sum_inv
-    
+
     # Calculate ln of tmp values
     for i in range(len(tmp)):
         tmp[i] = log(tmp[i])
-    
+
     for i in range(len(xs)):
         fh_term += xs[i] * tmp[i]
-    
+
     return R * T * fh_term + regular_solution_GE_from_Aijs(xsVs, Aijs, xsVs_sum_inv)
 
 def flory_huggins_dGE_dT(xs, Vs):
     Vi_avg = 0.0
     for i in range(len(xs)):
         Vi_avg += Vs[i] * xs[i]
-    
+
     tot = 0.0
     for i in range(len(xs)):
         tot += xs[i] * log(Vs[i] / Vi_avg)
-    
+
     return R * tot
 
 def flory_huggins_d2GE_dTdxs(xs, Vs, d2GE_dTdxs=None):
     if d2GE_dTdxs is None:
         d2GE_dTdxs = [0.0] * len(xs)
-        
+
     Vi_avg = 0.0
     for i in range(len(xs)):
         Vi_avg += Vs[i] * xs[i]
-    
+
     for i in range(len(xs)):
         Vi = Vs[i]
         term1 = log(Vi / Vi_avg)
         term2 = Vi / Vi_avg
         d2GE_dTdxs[i] = R * (term1 - term2)
-    
+
     return d2GE_dTdxs
 
 def flory_huggins_dGE_dxs(xs, Vs, Hi_sums, N, xsVs_sum_inv, GE, T, dGE_dxs=None):
     if dGE_dxs is None:
         dGE_dxs = [0.0] * N
-        
+
     RT = R * T
-    
+
     # Remove the extra term from GE
     for i in range(N):
         GE -= RT * xs[i] * log(Vs[i] * xsVs_sum_inv)
-    
+
     # First, call the regular solution dGE_dxs
     regular_solution_dGE_dxs(Vs, Hi_sums, N, xsVs_sum_inv, GE, dGE_dxs)
-    
+
     # Then, add the Flory-Huggins term
     for i in range(N):
         flory_huggins_term = RT * (log(Vs[i] * xsVs_sum_inv) - Vs[i] * xsVs_sum_inv)
         dGE_dxs[i] += flory_huggins_term
-    
+
     return dGE_dxs
 
 def flory_huggins_d2GE_dxixjs(GE, xs, Vs, SPs, Hi_sums, N, T, lambda_coeffs, xsVs_sum_inv, d2GE_dxixjs=None):
     if d2GE_dxixjs is None:
         d2GE_dxixjs = [[0.0] * N for _ in range(N)]
-    
+
     RT = R * T
-    
+
     # Remove the extra term from GE
     for i in range(N):
         GE = GE - RT * xs[i] * log(Vs[i] * xsVs_sum_inv)
-    
+
     # Call the regular solution dGE_dxs
     dGE_dxs = [0.0] * N
     regular_solution_dGE_dxs(Vs, Hi_sums, N, xsVs_sum_inv, GE, dGE_dxs)
-    
+
     # Call the regular solution's d2GE_dxixjs
     regular_solution_d2GE_dxixjs(
         Vs, SPs, Hi_sums, dGE_dxs, N, GE, lambda_coeffs,
         xsVs_sum_inv, d2GE_dxixjs
     )
-    
+
     # Add Flory-Huggins specific terms
     RTf = RT * xsVs_sum_inv
     for i in range(N):
@@ -346,34 +346,34 @@ def flory_huggins_d2GE_dxixjs(GE, xs, Vs, SPs, Hi_sums, N, T, lambda_coeffs, xsV
         for j in range(N):
             flory_huggins_term = RTf * (factor * Vs[j] - Vs[i] - Vs[j])
             d2GE_dxixjs[i][j] = d2GE_dxixjs[i][j] + flory_huggins_term
-    
+
     return d2GE_dxixjs
 
 def flory_huggins_d3GE_dxixjxks(xs, Vs, SPs, Hi_sums, N, T, GE, xsVs_sum_inv, lambda_coeffs, d3GE_dxixjxks=None):
     if d3GE_dxixjxks is None:
         d3GE_dxixjxks = [[[0.0] * N for _ in range(N)] for _ in range(N)]
-    
+
     RT = R * T
-    
+
     # Remove the extra term from GE
     for i in range(N):
         GE = GE - RT * xs[i] * log(Vs[i] * xsVs_sum_inv)
-    
+
     # Call the regular solution dGE_dxs
     dGE_dxs = [0.0] * N
     regular_solution_dGE_dxs(Vs, Hi_sums, N, xsVs_sum_inv, GE, dGE_dxs)
-    
+
     d2GE_dxixjs = [[0.0] * N for _ in range(N)]
     regular_solution_d2GE_dxixjs(
         Vs, SPs, Hi_sums, dGE_dxs, N, GE, lambda_coeffs,
         xsVs_sum_inv, d2GE_dxixjs
     )
-    
+
     regular_solution_d3GE_dxixjxks(
         Vs, SPs, Hi_sums, dGE_dxs, N, GE, xsVs_sum_inv,
         d2GE_dxixjs, lambda_coeffs, d3GE_dxixjxks
     )
-    
+
     # Add Flory-Huggins specific terms
     for i in range(N):
         for j in range(N):
@@ -381,15 +381,15 @@ def flory_huggins_d3GE_dxixjxks(xs, Vs, SPs, Hi_sums, N, T, GE, xsVs_sum_inv, la
                 m_sum = 0.0
                 for m in range(N):
                     m_sum += -2.0 * Vs[i] * Vs[j] * Vs[k] * xs[m] * xsVs_sum_inv * xsVs_sum_inv * xsVs_sum_inv
-                
+
                 flory_huggins_term = RT * (
                     m_sum + xsVs_sum_inv * xsVs_sum_inv * (
                         Vs[i] * Vs[j] + Vs[i] * Vs[k] + Vs[j] * Vs[k]
                     )
                 )
-                
+
                 d3GE_dxixjxks[i][j][k] = d3GE_dxixjxks[i][j][k] + flory_huggins_term
-    
+
     return d3GE_dxixjxks
 
 class RegularSolution(GibbsExcess):
@@ -459,7 +459,7 @@ class RegularSolution(GibbsExcess):
 
     .. math::
         A_{mn} = 0.5(\delta_m - \delta_n)^2 - \delta_m \delta_n k_{mn}
-    
+
     Coefficients from models in that form can be used with this model simply
     by negating the `k_{mn}` parameters:
 
@@ -660,20 +660,20 @@ class RegularSolution(GibbsExcess):
         Return a list of tuples (index_i, index_j) for each (i, j) pair where
         the lambda interaction coefficient is zero. As Regular Solution parameters
         can be asymmetric, (i,j) does not imply (j,i).
-        
+
         Returns
         -------
         missing_params : list[tuple[int, int]]
             List of tuples of component indices with missing interaction parameters, [-].
         '''
         missing_params = []
-        
+
         for i in range(self.N):
             for j in range(self.N):
                 if i != j:  # Skip diagonal elements
                     if self.lambda_coeffs[i][j] == 0.0:
                         missing_params.append((i, j))
-        
+
         return missing_params
 
 
@@ -1030,7 +1030,7 @@ class RegularSolution(GibbsExcess):
                                                       **kwargs)
 
 
-                                                      
+
     _gamma_parameter_guesses = [#{'lambda12': 1.0, 'lambda21': 1.0}, # 1 is always tried!
                                 {'lambda12': 4.843102, 'lambda21': 5.698181},
                                 {'lambda12': 1e7, 'lambda21': -1e7},
@@ -1203,10 +1203,10 @@ class FloryHuggins(GibbsExcess):
     r"""Class for representing a liquid with excess Gibbs energy represented by the 
     Flory-Huggins model. This model extends the Regular Solution model by adding 
     entropic contributions from the different sizes of molecules.
-    
+
     .. math::
         G^E = RT\sum_i x_i \ln\left(\frac{V_i}{\sum_j x_j V_j}\right) + \frac{\sum_m \sum_n (x_m x_n V_m V_n A_{mn})}{\sum_m x_m V_m}
-    
+
     .. math::
         A_{mn} = 0.5(\delta_m - \delta_n)^2 + \delta_m \delta_n k_{mn}
 
@@ -1228,7 +1228,7 @@ class FloryHuggins(GibbsExcess):
         temperature of 298.15 K, [Pa^0.5]
     lambda_coeffs : list[list[float]], optional
         Optional interaction parameters, [-]
-    
+
     Attributes
     ----------
     T : float
@@ -1249,11 +1249,11 @@ class FloryHuggins(GibbsExcess):
     Examples
     --------
     The example below uses parameters from ChemSep for ethanol and water.
-    
+
     >>> GE = FloryHuggins(T=298.15, xs=[0.5, 0.5], Vs=[0.05868e-3, 0.01807e-3], SPs=[26140.0, 47860.0])
     >>> GE.gammas()
     [1.672945693, 5.9663471]
-    
+
     This matches the values calculated from ChemSep exactly.
 
     References
@@ -1300,7 +1300,7 @@ class FloryHuggins(GibbsExcess):
         GE = self._GE = flory_huggins_GE(self.xs, self.Vs, self.Aijs, self.T, 
                                         self.xsVs, self.xsVs_sum_inv)
         return GE
-    
+
     def dGE_dT(self):
         r'''Calculate and return the temperature derivative of excess Gibbs
         energy of a liquid phase.
@@ -1348,10 +1348,10 @@ class FloryHuggins(GibbsExcess):
             d2GE_dTdxs = [0.0] * self.N
         else:
             d2GE_dTdxs = zeros(self.N)
-        
+
         self._d2GE_dTdxs = flory_huggins_d2GE_dTdxs(self.xs, self.Vs, d2GE_dTdxs)
         return self._d2GE_dTdxs
-    
+
     def dGE_dxs(self):
         r'''Calculate and return the mole fraction derivatives of excess Gibbs
         energy of a liquid phase using the regular solution model.
@@ -1382,17 +1382,17 @@ class FloryHuggins(GibbsExcess):
             GE = self._GE
         except:
             GE = self.GE()
-        
+
         if not self.vectorized:
             dGE_dxs = [0.0] * self.N
         else:
             dGE_dxs = zeros(self.N)
-            
+
         self._dGE_dxs = flory_huggins_dGE_dxs(
             self.xs, self.Vs, self.Hi_sums(), self.N,
             self.xsVs_sum_inv, GE, self.T, dGE_dxs)
         return self._dGE_dxs
-    
+
     def d2GE_dxixjs(self):
         r'''Calculate and return the second mole fraction derivatives of excess
         Gibbs energy of a liquid phase using the regular solution model.
@@ -1402,7 +1402,7 @@ class FloryHuggins(GibbsExcess):
         .. math::
             \frac{\partial^2 G^E}{\partial x_i \partial x_j} = RT\left[\frac{V_iV_j}{\left(\sum_m x_m V_m\right)^2} - \frac{V_i + V_j}{\sum_m x_m V_m}\right]
             + \frac{\partial^2 G^E}{\partial x_i \partial x_j}_{\text{RS}}
-    
+
 
         Returns
         -------
@@ -1425,12 +1425,12 @@ class FloryHuggins(GibbsExcess):
             d2GE_dxixjs = [[0.0] * N for i in range(N)]
         else:
             d2GE_dxixjs = zeros((N, N))
-            
+
         try:
             Hi_sums = self._Hi_sums
         except:
             Hi_sums = self.Hi_sums()
-            
+
         d2GE_dxixjs = flory_huggins_d2GE_dxixjs(
             GE, self.xs, self.Vs, self.SPs, Hi_sums,
             N, self.T, self.lambda_coeffs,
@@ -1438,7 +1438,7 @@ class FloryHuggins(GibbsExcess):
         )
         self._d2GE_dxixjs = d2GE_dxixjs
         return d2GE_dxixjs
-    
+
     def d3GE_dxixjxks(self):
         r'''Calculate and return the third mole fraction derivatives of excess
         Gibbs energy.
@@ -1448,7 +1448,7 @@ class FloryHuggins(GibbsExcess):
         .. math::
             \frac{\partial^3 G^E}{\partial x_i \partial x_j \partial x_k} = RT\left[-\frac{2V_iV_jV_k}{\left(\sum_m x_m V_m\right)^3} + \frac{V_iV_j + V_iV_k + V_jV_k}{\left(\sum_m x_m V_m\right)^2}\right]
             + \frac{\partial^3 G^E}{\partial x_i \partial x_j \partial x_k}_{\text{RS}} 
-        
+
 
         Returns
         -------
@@ -1462,7 +1462,7 @@ class FloryHuggins(GibbsExcess):
             return self._d3GE_dxixjxks
         except:
             pass
-            
+
         N = self.N
         try:
             GE = self._GE
@@ -1476,7 +1476,7 @@ class FloryHuggins(GibbsExcess):
             d3GE_dxixjxks = [[[0.0] * N for _ in range(N)] for _ in range(N)]
         else:
             d3GE_dxixjxks = zeros((N, N, N))
-            
+
         d3GE_dxixjxks = flory_huggins_d3GE_dxixjxks(
             self.xs, self.Vs, self.SPs, Hi_sums,
             N, self.T, GE, self.xsVs_sum_inv,
@@ -1484,11 +1484,11 @@ class FloryHuggins(GibbsExcess):
         )
         self._d3GE_dxixjxks = d3GE_dxixjxks
         return d3GE_dxixjxks
-    
+
 def hansen_Aijs_His(delta_d, delta_p, delta_h, output=None, alpha=1.0, multiplier=1.0):
     """Calculate either Aijs or His matrix for Hansen model using specified multiplier.
     Supports `alpha` as a scaling factor.
-    
+
     Parameters
     ----------
     delta_d : list[float]
@@ -1503,12 +1503,12 @@ def hansen_Aijs_His(delta_d, delta_p, delta_h, output=None, alpha=1.0, multiplie
         Optional scaling factor, defaults to 1.0, [-]
     multiplier : float
         Multiplier to convert between Aijs (0.5) and His (1.0) calculations, [-]
-        
+
     Returns
     -------
     output : list[list[float]]
         Calculated symmetric matrix of interaction parameters, [Pa]
-    
+
     Notes
     -----
     The calculations produce a symmetric matrix where each element represents the
@@ -1522,7 +1522,7 @@ def hansen_Aijs_His(delta_d, delta_p, delta_h, output=None, alpha=1.0, multiplie
         output = [[0.0]*N for _ in range(N)]
     if alpha is None:
         alpha = 1.0
-    
+
     factor = alpha * multiplier
     for i in range(N):
         for j in range(N):
@@ -1545,20 +1545,20 @@ class Hansen(GibbsExcess):
     r"""Class for representing a liquid with excess Gibbs energy represented by the 
     Hansen model. This model extends the Flory-Huggins approach by considering three
     different types of molecular interactions: dispersive, polar, and hydrogen bonding.
-    
+
     The excess Gibbs energy is calculated using:
-    
+
     .. math::
         G^E = RT\sum_i x_i \ln\left(\frac{V_i}{\sum_j x_j V_j}\right) + \frac{\sum_m \sum_n (x_m x_n V_m V_n A_{mn})}{\sum_m x_m V_m}
-    
+
     Where the interaction parameters A_{mn} are calculated using Hansen parameters:
-    
+
     .. math::
         A_{mn} = \alpha \left[ (\delta_{d,m} - \delta_{d,n})^2 + 0.25(\delta_{p,m} - \delta_{p,n})^2 + 0.25(\delta_{h,m} - \delta_{h,n})^2 \right]
 
     The alpha term can be taken as 1, adjusted to fit a particular data set, or set to 0.6
     as recommended in [1]_.
-    
+
     Parameters
     ----------
     T : float
@@ -1575,7 +1575,7 @@ class Hansen(GibbsExcess):
         Hansen hydrogen bonding parameters for each component, [Pa^0.5]
     alpha : float, optional
         Optional scaling factor for the interaction terms, defaults to 1.0, [-]
-        
+
     Notes
     -----
     The Hansen model uses the same mathematical framework as the Flory-Huggins model
@@ -1586,7 +1586,7 @@ class Hansen(GibbsExcess):
 
     The `delta` and `Vs` terms can be specified in units of cm^3/mol and MPa^0.5
     and the 
-    
+
     Examples
     --------
 
@@ -1666,20 +1666,20 @@ class Hansen(GibbsExcess):
         else:
             xsVs = xs*Vs
             xsVs_sum = float(npsum(xsVs))
-            
+
         self.xsVs = xsVs
         self.xsVs_sum = xsVs_sum
         self.xsVs_sum_inv = 1.0/xsVs_sum
 
         self.Aijs = hansen_Aijs(self.delta_d, self.delta_p, self.delta_h, alpha=self.alpha)
         self.His = hansen_His(self.delta_d, self.delta_p, self.delta_h, alpha=self.alpha)
-        
+
     def __repr__(self):
         return (f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}, '
                 f'Vs={self.Vs!r}, delta_d={self.delta_d!r}, '
                 f'delta_p={self.delta_p!r}, delta_h={self.delta_h!r}, '
                 f'alpha={self.alpha!r})')
-                
+
     def to_T_xs(self, T, xs):
         r'''Method to construct a new :obj:`Hansen` instance at
         temperature `T`, and mole fractions `xs`
@@ -1723,7 +1723,7 @@ class Hansen(GibbsExcess):
         else:
             xsVs = xs*Vs
             xsVs_sum = float(npsum(xsVs))
-            
+
 
         new.xsVs = xsVs
         new.xsVs_sum = xsVs_sum
@@ -1745,7 +1745,7 @@ class Hansen(GibbsExcess):
         Return an empty list as Hansen parameters cannot be considered "missing" - 
         zero values for delta_d, delta_p, and delta_h are physically meaningful
         and represent absence of that type of molecular interaction.
-        
+
         Returns
         -------
         missing_params : list[tuple[int, int]]

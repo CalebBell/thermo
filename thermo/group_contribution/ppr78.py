@@ -828,14 +828,14 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
     >>> # Example for methane-ethane system using original PPR78
     >>> PPR78_kij(298.15, {"CH3": 1}, {"CH3": 2}, Tc1=190.564, Pc1=4599200, omega1=0.01142, Tc2=305.322, Pc2=4872200, omega2=0.0995)
     -0.009617659
-    
+
     >>> # Same system using extended PPR78
     >>> PPR78_kij(298.15, {"CH3": 1}, {"CH3": 2}, Tc1=190.564, Pc1=4599200, omega1=0.01142, Tc2=305.322, Pc2=4872200, omega2=0.0995, version='extended')
     -0.009617659
     '''
     if version not in ('original', 'extended'):
         raise ValueError("version must be either 'original' or 'extended'")
-        
+
     # Select the appropriate interaction parameters based on version
     if string:
         interactions = EPPR78_INTERACTIONS_BY_STR if version == 'extended' else PPR78_INTERACTIONS_BY_STR
@@ -859,17 +859,17 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
     # Calculate a parameters
     m1 = calculate_m(omega1)
     m2 = calculate_m(omega2)
-    
+
     ai_T1 = (OMEGA_A * R**2 * Tc1**2 / Pc1) * (1 + m1 * (1 - sqrt(T/Tc1)))**2
     ai_T2 = (OMEGA_A * R**2 * Tc2**2 / Pc2) * (1 + m2 * (1 - sqrt(T/Tc2)))**2
 
     # Calculate group fractions
     total_groups1 = sum(molecule1_groups.values())
     total_groups2 = sum(molecule2_groups.values())
-    
+
     alpha_i = {group: count/total_groups1 for group, count in molecule1_groups.items()}
     alpha_j = {group: count/total_groups2 for group, count in molecule2_groups.items()}
-    
+
     # Calculate first term (group contribution)
     term1 = 0.0
     for group_k in set(alpha_i.keys()) | set(alpha_j.keys()):
@@ -878,24 +878,24 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
             alpha_jk = alpha_j.get(group_k, 0.0)
             alpha_il = alpha_i.get(group_l, 0.0)
             alpha_jl = alpha_j.get(group_l, 0.0)
-            
+
             A_kl, B_kl = interactions[(group_k, group_l)]
-            
+
             if A_kl != 0:
                 delta_k = alpha_ik - alpha_jk
                 delta_l = alpha_il - alpha_jl
                 term1 += delta_k * delta_l * A_kl * (298.15/T)**(B_kl/A_kl - 1)
     term1 *= -0.5
     term1 *= 1e6
-    
+
     # Calculate second term (EOS parameters)
     sqrt_ai_T1 = sqrt(ai_T1)
     sqrt_ai_T2 = sqrt(ai_T2)
     term2 = ((sqrt_ai_T1/bi_1) - (sqrt_ai_T2/bi_2))**2
-    
+
     # Calculate denominator
     denominator = 2 * sqrt(ai_T1 * ai_T2)/(bi_1 * bi_2)
-    
+
     # Final calculation
     kij_value = (term1 - term2)/denominator
     return kij_value
@@ -903,7 +903,7 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
 def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original', string=True):
     r"""Calculate the binary interaction parameter (kij) matrix for a mixture of components 
     at a specified temperature using the PPR78 method.
-    
+
     Parameters
     ----------
     T : float
@@ -921,13 +921,13 @@ def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original', string=True):
         Version of the method to use ('original' or 'extended'), defaults to 'original'
     string : bool
         Whether the group counts are in the format {'CH3': 2} etc or {5: 2}
-        
+
     Returns
     -------
     list[list[float]]
         Square matrix of kij values where matrix[i][j] gives the interaction
         parameter between components i and j
-        
+
     Examples
     --------
     >>> # Calculate kij matrix for methane-ethane-propane mixture using original PPR78
@@ -943,10 +943,10 @@ def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original', string=True):
     """
     if version not in ('original', 'extended'):
         raise ValueError("version must be either 'original' or 'extended'")
-        
+
     n_components = len(groups)
     kij_matrix = [[0.0 for _ in range(n_components)] for _ in range(n_components)]
-    
+
     # Calculate upper triangle
     for i in range(n_components):
         for j in range(i+1, n_components):
@@ -966,7 +966,7 @@ def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original', string=True):
             # Set both (i,j) and (j,i) due to symmetry
             kij_matrix[i][j] = kij
             kij_matrix[j][i] = kij
-            
+
     return kij_matrix
 
 def readable_assignment_PPR78(assignment):
@@ -978,25 +978,25 @@ def readable_assignment_EPPR78(assignment):
 def fragment_PPR78(rdkitmols, version='original'):
     """Fragment a list of RDKit molecules according to PPR78 or EPPR78 group contribution method.
     Failed fragmentations (not all atoms had a group in the method) return None.
-    
+
     Parameters
     ----------
     rdkitmols : list[rdkit.Chem.rdchem.Mol]
         List of RDKit molecule objects to fragment
     version : str, optional
         Version of the method to use ('original' or 'extended'), defaults to 'original'
-        
+
     Returns
     -------
     list[Union[dict, None]]
         List of dictionaries containing group counts for each molecule, or None if 
         fragmentation failed. Dictionary format is {group_name: count}
-        
+
     Notes
     -----
     Group contributions are calculated using the PPR78 (original) or EPPR78 (extended) 
     method. Failed fragmentations return None instead of raising an exception.
-    
+
     Examples
     --------
     >>> from rdkit import Chem  # doctest:+SKIP
@@ -1007,10 +1007,10 @@ def fragment_PPR78(rdkitmols, version='original'):
     """
     if version not in ('original', 'extended'):
         raise ValueError("version must be either 'original' or 'extended'")
-    
+
     # Select appropriate group catalog
     catalog = EPPR78_GROUPS_LIST if version == 'extended' else PPR78_GROUPS_LIST
-    
+
     results = []
     for mol in rdkitmols:
         try:
@@ -1018,13 +1018,13 @@ def fragment_PPR78(rdkitmols, version='original'):
             if mol is None:
                 results.append(None)
                 continue
-                
+
             # Attempt fragmentation
             assignment, _, _, success, _ = smarts_fragment_priority(
                 catalog=catalog,
                 rdkitmol=mol
             )
-            
+
             # Convert successful assignments to readable format
             if success:
                 if version == 'extended':
@@ -1034,9 +1034,9 @@ def fragment_PPR78(rdkitmols, version='original'):
                 results.append(groups)
             else:
                 results.append(None)
-                
+
         except Exception:
             # Catch any exceptions and return None for failed molecules
             results.append(None)
-            
+
     return results

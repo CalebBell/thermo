@@ -39,12 +39,12 @@ from thermo.group_contribution.group_contribution_base import smarts_fragment_pr
 # reasonably complete
 class BondiGroupContribution(BaseGroupContribution):
     __slots__ = BaseGroupContribution.__slots__ + ('Vw', 'Aw',)
-    
+
     def __init__(self, group, group_id, Vw, Aw, smarts=None,
                  priority=None, atoms=None, bonds=None, hydrogen_from_smarts=False):
         """
         Initialize the GroupContribution object with group name, volume contribution, and polarizability.
-        
+
         Parameters:
         - group (str): The name or identifier of the group.
         - group_id (int): Unique identifier for the group.
@@ -486,12 +486,12 @@ def count_bonds_near_acid_amide(mol):
     # Get all atoms in carboxyl and amide groups
     carboxyl_matches = identify_functional_group_atoms(mol, FG_CARBOXYLIC_ACID)
     amide_matches = identify_functional_group_atoms(mol, FG_AMIDE)
-    
+
     # Combine all group atoms into a set
     group_atoms = set()
     for match in carboxyl_matches + amide_matches:
         group_atoms.update(match)
-    
+
     # Count qualifying single bonds
     count = 0
     for atom_idx in group_atoms:
@@ -503,7 +503,7 @@ def count_bonds_near_acid_amide(mol):
                 bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
                 if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
                     count += 1
-    
+
     return count
 
 def count_dioxane_rings(mol):
@@ -516,12 +516,12 @@ def count_dioxane_rings(mol):
 def count_conjugation_interrupting_bonds(mol):
     """Count single bonds between conjugated double bonds.
     Each such bond contributes a decrement of 0.25 to Vw.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
         Molecule to analyze
-        
+
     Returns
     -------
     int
@@ -538,7 +538,7 @@ def count_cis_condensed_naphthenes(mol):
     # does not seem to work with rdkit
     ring_info = mol.GetRingInfo()
     ring_atoms = ring_info.AtomRings()
-    
+
     cis_fusions = 0
     for i, ring1 in enumerate(ring_atoms):
         for j, ring2 in enumerate(ring_atoms[i+1:], i+1):
@@ -552,14 +552,14 @@ def count_cis_condensed_naphthenes(mol):
                 atom2 = mol.GetAtomWithIdx(fusion_atoms[1])
                 if atom1.GetChiralTag() == atom2.GetChiralTag():
                     cis_fusions += 1
-                    
+
     return cis_fusions
 
 def count_transcondensed_and_free_cycloalkyl(mol):
     """Count cyclopentyl and cyclohexyl rings that are either:
     1. Free (not connected to other rings)
     2. Part of trans-condensed ring systems
-    
+
     Each ring contributes a decrement of 1.14 to Vw and 0.57 to Aw.
     """
     # descriptions are very vague, unlikely to get clarification 60 years later
@@ -571,19 +571,19 @@ def count_transcondensed_and_free_cycloalkyl(mol):
     ring_atoms = ring_info.AtomRings()
     if len(ring_atoms) == 1:
         return 0
-    
+
     count = 0
-    
+
     # Check each ring
     for i, ring in enumerate(ring_atoms):
         # Skip if not 5 or 6-membered
         if len(ring) not in [5, 6]:
             continue
-            
+
         # Check if it's all carbons (cyclopentyl/cyclohexyl)
         if not all(mol.GetAtomWithIdx(idx).GetSymbol() == 'C' for idx in ring):
             continue
-            
+
         # Find other rings this ring is fused to
         fused_to = []
         for j, other_ring in enumerate(ring_atoms):
@@ -591,12 +591,12 @@ def count_transcondensed_and_free_cycloalkyl(mol):
                 shared = set(ring) & set(other_ring)
                 if len(shared) == 2:  # Standard fusion point
                     fused_to.append((other_ring, shared))
-        
+
         if not fused_to:
             # This is a free cycloalkyl ring, count it and move to next ring
             count += 1
             continue
-            
+
         # Check if all fusions to this ring are trans (different)
         all_trans = True
         for other_ring, shared in fused_to:
@@ -608,10 +608,10 @@ def count_transcondensed_and_free_cycloalkyl(mol):
             if atom1.GetChiralTag() != atom2.GetChiralTag():
                 all_trans = False
                 break
-        
+
         if all_trans and fused_to:
             count += 1
-            
+
     return count
 
 # checked with various groups
@@ -643,16 +643,16 @@ def find_methylene_rings_condensed_to_aromatic_rings(mol):
     '''
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
-    
+
     # Convert to sets for easier intersection operations
     ring_sets = [set(r) for r in atom_rings]
-    
+
     # Find aromatic rings (benzene rings)
     aromatic_rings = []
     for i, ring in enumerate(ring_sets):
         if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
             aromatic_rings.append(i)
-    
+
     # Find potential methylene rings (non-aromatic) condensed to benzene
     methylene_ring_candidates = []
     for arom_idx in aromatic_rings:
@@ -660,12 +660,12 @@ def find_methylene_rings_condensed_to_aromatic_rings(mol):
         for i, ring in enumerate(ring_sets):
             if i == arom_idx:
                 continue
-            
+
             # Check if rings share exactly 2 atoms
             shared = arom_ring.intersection(ring)
             if len(shared) != 2:
                 continue
-                
+
             # Check if shared atoms are adjacent in both rings
             # Convert shared atoms to list for indexing
             shared_list = list(shared)
@@ -707,23 +707,23 @@ def find_methylene_rings_condensed_to_aromatic_rings(mol):
                 atom.GetDegree() != 2):
                 is_methylene = False
                 break
-        
+
         if is_methylene:
             # Add sorted tuple of atom indices for uniqueness
             methylene_rings.append(tuple(sorted(ring)))
-    
+
     # Remove any duplicates and return
     return sorted(list(set(methylene_rings)))
 
 def bondi_fragmentation(rdkitmol):
     """
     Fragment an RDKit molecule into Bondi group contributions.
-    
+
     Parameters
     ----------
     rdkitmol : rdkit.Chem.rdchem.Mol
         RDKit molecule object representing the chemical structure.
-    
+
     Returns
     -------
     dict
@@ -735,7 +735,7 @@ def bondi_fragmentation(rdkitmol):
     assignment, _, _, success, _ = smarts_fragment_priority(catalog=BONDI_SUBGROUPS, rdkitmol=rdkitmol)
     if not success:
         return {}, False
-        
+
     # Dictionary of functions to count special groups
     count_functions = {
         47: lambda: count_transcondensed_and_free_cycloalkyl(rdkitmol),  # Trans-condensed/free cycloalkyl
@@ -745,13 +745,13 @@ def bondi_fragmentation(rdkitmol):
         51: lambda: count_conjugation_interrupting_bonds(rdkitmol),  # Conjugation interrupting bonds
         52: lambda: count_bonds_near_acid_amide(rdkitmol)  # Bonds near acid/amides
     }
-    
+
     # Add counts only if they're non-zero
     for group_id, count_func in count_functions.items():
         count = count_func()
         if count > 0:
             assignment[group_id] = count
-            
+
     return assignment, True
 
 def bondi_van_der_waals_surface_area_volume(rdkitmol):
@@ -808,7 +808,7 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
     """
     # Fragment the molecule into Bondi group contributions
     assignment, success = bondi_fragmentation(rdkitmol)
-    
+
     if not success:
         raise ValueError("Could not fragment molecule")
 

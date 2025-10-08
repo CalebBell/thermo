@@ -5883,7 +5883,7 @@ class Phase:
     def dG_dep_dT(self):
         """Calculate the temperature derivative of the departure Gibbs energy
         at constant pressure.
-        
+
         Returns
         -------
         dG_dep_dT : float
@@ -5893,7 +5893,7 @@ class Phase:
             return self._dG_dep_dT
         except AttributeError:
             pass
-            
+
         T = self.T
         # Using G_dep = H_dep - T*S_dep
         # dG_dep/dT = dH_dep/dT - S_dep - T*dS_dep/dT

@@ -1699,11 +1699,11 @@ class TDependentProperty:
                     if arg_obj is not None and type(arg_obj) in {float, int, str, bool}:
                         result[arg] = arg_obj
         result['extrapolation'] = self.extrapolation
-            
+
         # Handle piecewise methods
         if hasattr(self, 'piecewise_methods') and self.method in self.piecewise_methods:
             methods_dict = self.piecewise_methods[self.method]
-            
+
             # Add the piecewise structure
             result['piecewise_methods'] = {
                 self.method: {
@@ -1714,7 +1714,7 @@ class TDependentProperty:
             result['method'] = self.method
             result['Tmin'] = self.Tmin
             result['Tmax'] = self.Tmax
-            
+
             # Add parameters for each sub-method
             sub_methods = methods_dict[0]
             for param_name, correlation_name in self.correlation_parameters.items():
@@ -1727,7 +1727,7 @@ class TDependentProperty:
                             sub_method_params[sub_method] = correlation_dict[sub_method]
                     if sub_method_params:
                         result[correlation_name] = sub_method_params
-                        
+
             return result
 
 
@@ -1745,7 +1745,7 @@ class TDependentProperty:
                 result['method'] = self.method
                 result[correlation_name] = {self.method: correlation_dict[self.method]}
                 return result
-        
+
         method = self.method
         if method in (POLY_FIT, EXP_POLY_FIT, POLY_FIT_LN_TAU, EXP_POLY_FIT_LN_TAU, STABLEPOLY_FIT, EXP_STABLEPOLY_FIT, STABLEPOLY_FIT_LN_TAU, EXP_STABLEPOLY_FIT_LN_TAU, CHEB_FIT, EXP_CHEB_FIT, CHEB_FIT_LN_TAU, EXP_CHEB_FIT_LN_TAU):
             params = self._get_special_fit_params(method)
@@ -2958,7 +2958,7 @@ class TDependentProperty:
         }
         if "_ln_tau" in method.lower():
             params["Tc"] = getattr(self, f"{method.lower()}_Tc", None)
-        
+
         return {k: v for k, v in params.items() if v is not None}
 
     def _base_calculate(self, T, method):
@@ -3509,7 +3509,7 @@ class TDependentProperty:
                 Tmax, coeffs)
             exp_poly_fit_Tmin_value, exp_poly_fit_Tmin_slope = exp_horner_backwards_and_der(
                 Tmin, coeffs)
-            
+
             extra['Tmax_value'] = exp_poly_fit_Tmax_value
             extra['Tmax_slope'] = exp_poly_fit_Tmax_slope
             extra['Tmin_value'] = exp_poly_fit_Tmin_value
@@ -4194,11 +4194,11 @@ class TDependentProperty:
         if hasattr(self, 'piecewise_methods') and method in self.piecewise_methods:
             if T2 < T1:
                 return -self.calculate_integral(T2, T1, method)
-            
+
             method_names, T_ranges, transition_Ts = self.piecewise_methods[method]
             integral = 0.
             Ta = T1
-            
+
             for Tmax, method_name in zip(transition_Ts, method_names):
                 if T2 <= Tmax:
                     return integral + self.calculate_integral(Ta, T2, method_name)
@@ -4354,11 +4354,11 @@ class TDependentProperty:
         if method in getattr(self, 'piecewise_methods', {}):
             if T2 < T1:
                 return -self.calculate_integral_over_T(T2, T1, method)
-            
+
             method_names, T_ranges, transition_Ts = self.piecewise_methods[method]
             integral = 0.
             Ta = T1
-            
+
             for Tmax, method_name in zip(transition_Ts, method_names):
                 if T2 <= Tmax:
                     return integral + self.calculate_integral_over_T(Ta, T2, method_name)

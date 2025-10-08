@@ -1483,7 +1483,7 @@ def SRK_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs
 def VDW_dlnphis_dT(T, P, Z, dZ_dT, b, a_alpha, da_alpha_dT, bs, ais, N, dlnphis_dT=None):
     if dlnphis_dT is None:
         dlnphis_dT = [0.0]*N
-    
+
     T_inv = 1.0/T
     T_inv2 = T_inv*T_inv
     x0 = a_alpha
@@ -1500,14 +1500,14 @@ def VDW_dlnphis_dT(T, P, Z, dZ_dT, b, a_alpha, da_alpha_dT, bs, ais, N, dlnphis_
         x1 = (ais[i]*x0)**0.5
         d_lhphi_dT = -bs[i]*x11 + x1*x5 + x1*x8 - x1*x9 + x15
         dlnphis_dT[i] = d_lhphi_dT
-        
+
     return dlnphis_dT
 
 
 def VDW_dlnphis_dP(T, P, Z, dZ_dP, b, a_alpha, bs, ais, N, dlnphis_dP=None):
     if dlnphis_dP is None:
         dlnphis_dP = [0.0]*N
-    
+
     T_inv = 1.0/T
     RT_inv = T_inv*R_inv
     x3 = T_inv*T_inv
@@ -1525,5 +1525,5 @@ def VDW_dlnphis_dP(T, P, Z, dZ_dP, b, a_alpha, bs, ais, N, dlnphis_dP=None):
         x1 = (ais[i]*a_alpha)**0.5
         d_lnphi_dP = -bs[i]*x11 - x1*x6 + x1*x8 + x15
         dlnphis_dP[i] = d_lnphi_dP
-        
+
     return dlnphis_dP

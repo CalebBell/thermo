@@ -135,7 +135,7 @@ Data for UNIFAC 2.0
 
     Interaction parameters for the unifac 2.0 model - note there is a variant for the Dortmund modified UNIFAC as well.
     All groups and subgroups are the same as the original model. These are not used by default in this module. The citation is
-    
+
     Hayer, Nicolas, Thorsten Wendel, Stephan Mandt, Hans Hasse, and Fabian Jirasek. "Advancing Thermodynamic 
     Group-Contribution Methods by Machine Learning: UNIFAC 2.0." 
     Chemical Engineering Journal 504 (January 15, 2025): 158667. https://doi.org/10.1016/j.cej.2024.158667.
@@ -954,7 +954,7 @@ DOUFSG[106] = UNIFAC_subgroup(106, 'AC2S', 52, 'ACS', 1.4621, 0.78,
                              atoms={'C': 2, 'S': 1},
                              bonds={AROMATIC_BOND: 3},
                              smarts='[cX3;H0][sX2][cX3;H0]')
-                             
+
 DOUFSG[107] = UNIFAC_subgroup(107, 'H2COCH', 53, 'EPOXIDES', 1.3601, 1.8031,
                              atoms={'C': 2, 'O': 1, 'H': 3}, 
                              bonds={SINGLE_BOND: 3},
@@ -992,7 +992,7 @@ DOUFSG[114] = UNIFAC_subgroup(114, 'CH2CH3CB', 55, 'CARBONAT', 2.42, 2.2497,
                              atoms={'C': 3, 'O': 3, 'H': 5},
                              bonds={SINGLE_BOND: 4, DOUBLE_BOND: 1},
                              smarts='[CX4H3][OX2][CX3](=[OX1])[OX2][CX4H2]')  # e.g. methyl ethyl carbonate
-                             
+
 DOUFSG[119] = UNIFAC_subgroup(119, 'H2COCH2', 53, 'EPOXIDES', 1.063, 1.123,
                              atoms={'C': 2, 'O': 1, 'H': 4}, 
                              bonds={SINGLE_BOND: 3},
@@ -1883,7 +1883,7 @@ NISTUFSG[160] = UNIFAC_subgroup(160, 'AC2HO', 77, 'Furan', 1.1404, 0.76, priorit
 NISTUFSG[161] = UNIFAC_subgroup(161, 'AC2O', 77, 'Furan', 0.9743, 0.48,
                                atoms={'C': 2, 'O': 1}, bonds={AROMATIC_BOND: 2},
                                smarts='[cX3H0][oX2][cX3H0]')  # Two substituted aromatic carbons next to furan O
-                               
+
 NISTUFSG[188] = UNIFAC_subgroup(188, 'c-CH2-NH', 78, 'c-CNH', 1.207, 0.936,
                                atoms={'C': 1, 'H': 3, 'N': 1}, bonds={SINGLE_BOND: 1},
                                smarts='[CX4H2;R][NX3H1;R]')  # Ring CH2 connected to NH
@@ -5749,7 +5749,7 @@ class UNIFAC(GibbsExcess):
         '''
         missing_params = []
         psi_a = self.psi_a
-        
+
         for i in range(self.N_groups):
             for j in range(self.N_groups):
                 if i != j:

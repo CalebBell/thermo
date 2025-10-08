@@ -342,7 +342,7 @@ class VaporPressure(TDependentProperty):
     """Maximum valid value of vapor pressure. Set slightly above the critical
     point estimated for Iridium; Mercury's 160 MPa critical point is the
     highest known."""
-    
+
     ranked_methods = [IAPWS_PSAT, HEOS_FIT, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                       ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, LANDOLT, AMBROSE_WALTON,

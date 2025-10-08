@@ -299,7 +299,7 @@ class HeatCapacityGas(TDependentProperty):
     extra_correlations_internal.add(TRCIG)
     extra_correlations_internal.add(WEBBOOK_SHOMATE)
     extra_correlations_internal.update(WEBBOOK_SHOMATE_INTERVALS)
-    
+
 
     _fit_force_n = {}
     """Dictionary containing method: fit_n, for use in methods which should
@@ -844,14 +844,14 @@ class HeatCapacityLiquid(TDependentProperty):
                     for i, range_data in enumerate(Cp_dat):
                         name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f'{WEBBOOK_SHOMATE}_{i+1}'
                         range_data_list.append((range_data, name))
-                    
+
                     # Sort by Tmin (first element of range_data)
                     range_data_list.sort(key=lambda x: x[0][0])
-                    
+
                     # Process in sorted order
                     method_names = []
                     T_ranges = [range_data_list[0][0][0]]  # Start with first Tmin
-                    
+
                     for range_data, name in range_data_list:
                         method_names.append(name)
                         self.add_correlation(
@@ -867,7 +867,7 @@ class HeatCapacityLiquid(TDependentProperty):
                             select=False
                         )
                         T_ranges.append(range_data[1])
-                        
+
                     if len(Cp_dat) > 1:
                         self.add_piecewise_method(
                             name=WEBBOOK_SHOMATE,
@@ -898,7 +898,7 @@ class HeatCapacityLiquid(TDependentProperty):
                 ZABRANSKY_QUASIPOLYNOMIAL_C: heat_capacity.zabransky_dict_iso_p,
                 ZABRANSKY_QUASIPOLYNOMIAL_SAT: heat_capacity.zabransky_dict_sat_p
             }
-            
+
             for method_name, data_dict in quasi_dict_mapping.items():
                 if CASRN in data_dict:
                     model = data_dict[CASRN]
@@ -931,18 +931,18 @@ class HeatCapacityLiquid(TDependentProperty):
                     for i, model in enumerate(spline_list):
                         name = method_name if len(spline_list) == 1 else f"{method_name}_{i+1}"
                         models_and_ranges.append((model, name, model.Tmin, model.Tmax))
-                    
+
                     # Sort by Tmin
                     models_and_ranges.sort(key=lambda x: x[2])
-                    
+
                     # Now process in sorted order
                     method_names = []
                     T_ranges = [models_and_ranges[0][2]]  # Start with first Tmin
-                    
+
                     for model, name, Tmin, Tmax in models_and_ranges:
                         method_names.append(name)
                         T_ranges.append(Tmax)
-                        
+
                         self.add_correlation(
                             name=name,
                             model='Zabransky_cubic',
@@ -954,7 +954,7 @@ class HeatCapacityLiquid(TDependentProperty):
                             a4=model.coeffs[3],
                             select=False
                         )
-                        
+
                     # Only add piecewise method if there are multiple ranges
                     if len(spline_list) > 1:
                         self.add_piecewise_method(

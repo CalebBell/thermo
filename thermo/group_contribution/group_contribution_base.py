@@ -83,7 +83,7 @@ def load_rdkit_modules():
 class BaseGroupContribution:
     __slots__ = ('group', 'group_id', 'smarts', 'smart_rdkit', 
                  'hydrogen_from_smarts', 'priority', 'atoms', 'bonds')
-    
+
     def __init__(self, group, smarts=None, priority=None, atoms=None, 
                  bonds=None, hydrogen_from_smarts=False, group_id=None):
         self.group = group
@@ -171,11 +171,11 @@ def smart_ignore_combinations(things_to_ignore, max_remove=4):
     """
     Generate combinations to ignore, treating both whole groups and individual matches as removal units.
     This generates duplicates at this time unfortunately, but should find correct solutions faster overall
-    
+
     Args:
         things_to_ignore: List of (group_id, match_tuple) pairs
         max_remove: Maximum number of removal operations to try
-        
+
     Yields:
         Sets of (group_id, match_tuple) pairs to ignore
     """
@@ -184,10 +184,10 @@ def smart_ignore_combinations(things_to_ignore, max_remove=4):
     matches_by_group = defaultdict(list)
     for group_id, match_tuple in things_to_ignore:
         matches_by_group[group_id].append((group_id, match_tuple))
-    
+
     # Create removal units: whole groups (for multi-match groups) + individual matches (for single-match groups)
     removal_units = []
-    
+
     for group_id, matches in matches_by_group.items():
         if len(matches) > 1:
             # Multi-match group: add as a whole group removal unit
@@ -195,13 +195,13 @@ def smart_ignore_combinations(things_to_ignore, max_remove=4):
         else:
             # Single-match group: add as individual match removal unit
             removal_units.append(('individual', group_id, matches[0]))
-    
+
     # For multi-match groups, also add individual matches as removal units
     for group_id, matches in matches_by_group.items():
         if len(matches) > 1:
             for match in matches:
                 removal_units.append(('individual', group_id, match))
-    
+
     # Generate combinations of removal units
     for num_units in range(1, min(len(removal_units), max_remove) + 1):
         for unit_combo in combinations(removal_units, num_units):
@@ -270,7 +270,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             status = 'Failed to construct mol'
             success = False
             return {}, success, status
-    
+
 
     # Remove this
     catalog = [i for i in catalog if i.priority is not None]
@@ -325,7 +325,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                         success = True
                         status = 'OK'
                         return counts, group_assignments, matched_atoms, success, status
-        
+
         if hits:
             all_matches[key] = hits
             counts[key] = len(hits)
@@ -347,10 +347,10 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         from rdkit.Chem import Draw
         import matplotlib.pyplot as plt
         from matplotlib import colors
-        
+
         # First, count total number of matches across all patterns
         total_matches = sum(len(matches) for matches in all_matches.values())
-        
+
         if total_matches > 0:
             # Calculate grid dimensions - still use 3 columns
             n_cols = 3
@@ -363,44 +363,44 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                 axes = axes.flatten()
             else:
                 axes = [axes]
-                
+
             # Single highlight color since each match gets its own subplot
             highlight_color = (0.678, 0.847, 0.902)  # lightblue
-            
+
             current_ax_idx = 0
             for group_id, matches in all_matches.items():
                 pattern_obj = group_to_obj[group_id]
-                
+
                 # Make a subplot for each individual match
                 for match_idx, match in enumerate(matches):
                     if current_ax_idx < len(axes):
                         ax = axes[current_ax_idx]
-                        
+
                         # Create a copy of the molecule for this visualization
                         mol_copy = Chem.Mol(rdkitmol)
-                        
+
                         # Add atom indices as labels
                         for atom in mol_copy.GetAtoms():
                             atom.SetProp('atomLabel', str(atom.GetIdx()))
-                        
+
                         # Create the image with this single match highlighted
                         img = Draw.MolToImage(mol_copy, 
                                             highlightAtoms=list(match),
                                             highlightColor=highlight_color)
-                        
+
                         ax.imshow(img)
                         ax.axis('off')
-                        
+
                         # Add pattern info as title
                         ax.set_title(f"Group {group_id}\nMatch {match_idx + 1}\nSMARTS: {pattern_obj.smarts}", 
                                 fontsize=10, pad=10)
-                        
+
                         current_ax_idx += 1
-            
+
             # Remove empty subplots
             for idx in range(current_ax_idx, len(axes)):
                 fig.delaxes(axes[idx])
-                
+
             plt.tight_layout()
             plt.show()
 

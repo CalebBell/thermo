@@ -878,7 +878,7 @@ class GibbsExcess:
         except:
             pass
         return GibbsExcess.gammas(self)
-    
+
     def gammas_numerical(self):
         # for testing purposes
         def nGE_func(ns):
@@ -886,7 +886,7 @@ class GibbsExcess:
             xs = [n / total_n for n in ns]
             return total_n * self.to_T_xs(T=self.T, xs=xs).GE()
         dnGE_dns = jacobian(nGE_func, self.xs, perturbation=1e-7)
-        
+
         RT_inv = 1.0/(self.T *R)
         gammas = np.exp(np.array(dnGE_dns)*RT_inv) if self.vectorized else [exp(v*RT_inv) for v in dnGE_dns]
         return gammas
@@ -934,12 +934,12 @@ class GibbsExcess:
         '''
         gammas = self.gammas()
         dgammas_dT = self.dgammas_dT()
-        
+
         if not self.vectorized:
             return [dgamma_dT / gamma for gamma, dgamma_dT in zip(gammas, dgammas_dT)]
         else:
             return dgammas_dT / gammas
-    
+
     def dgammas_dns(self):
         r'''Calculate and return the mole number derivative of activity
         coefficients of a liquid phase using an activity coefficient model.

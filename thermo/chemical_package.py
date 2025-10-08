@@ -540,7 +540,7 @@ class ChemicalConstantsPackage:
         # Other Properties
         'similarity_variables',
     )
-    
+
     __full_path__ = f"{__module__}.{__qualname__}"
     properties = ('atom_fractions',) + non_vector_properties
     """Tuple of all properties that can be held by this object."""

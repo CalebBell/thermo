@@ -1642,7 +1642,7 @@ class UNIQUAC(GibbsExcess):
                                                 d2thetas_dxixjs=d2thetas_dxixjs, thetaj_taus_jis=thetaj_taus_jis, 
                                                 d2GE_dxixjs=d2GE_dxixjs)
         return self._d2GE_dxixjs
-                
+
 #            debug_mat.append(debug_row)
         if self.vectorized:
             d2GE_dxixjs = array(d2GE_dxixjs)
@@ -1656,7 +1656,7 @@ class UNIQUAC(GibbsExcess):
         calculations through their effect on the tau terms. Parameter values cannot be
         made "missing" as they always affect the model results through the combinatorial
         and residual terms.
-        
+
         Returns
         -------
         missing_params : list[tuple[int, int]]

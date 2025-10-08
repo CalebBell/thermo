@@ -1820,7 +1820,7 @@ class GibbsExcessLiquid(Phase):
         if not self.use_phis_sat:
             self._d2phis_sat_dT2 = [0.0]*self.N
             return self._d2phis_sat_dT2
-            
+
 
         T = self.T
         self._d2phis_sat_dT2 = d2phis_sat_dT2 = []

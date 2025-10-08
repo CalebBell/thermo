@@ -1760,7 +1760,7 @@ class VirialGas(IdealGasDeparturePhase):
         d2C_dTdV_P = self.d2C_dTdV_P()
         return (R*V**2*((V*dB_dV_P + 2*V + B + dC_dV_P)/V**2 - 2*(V**2 + V*B + C)/V**3)/(V**2 + V*B + C) + (-2*R*B - 2*R*T*dB_dT - R*T*d2C_dTdV_P - R*dC_dT*dT_dV - R*dC_dV_P + V*(-2*R*T*d2B_dTdV_P - 2*R*dB_dT*dT_dV - 2*R*dB_dV_P))/(2*V**2) - (-R*C - R*T*dC_dT + V*(-2*R*B - 2*R*T*dB_dT))/V**3)
 
- 
+
     def S_dep(self):
         r'''Method to calculate and return the molar departure entropy.
 

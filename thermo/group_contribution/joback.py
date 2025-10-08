@@ -182,7 +182,7 @@ class JobackGroupContribution(BaseGroupContribution):
         'Tc', 'Pc', 'Vc', 'Tb', 'Tm', 'Hform', 'Gform',
         'Cpa', 'Cpb', 'Cpc', 'Cpd', 'Hfus', 'Hvap', 'mua', 'mub'
     )
-    
+
     def __init__(self, group, Tc=None, Pc=None, Vc=None, Tb=None, Tm=None, 
                  Hform=None, Gform=None, Cpa=None, Cpb=None, Cpc=None, Cpd=None,
                  Hfus=None, Hvap=None, mua=None, mub=None, smarts=None, 
@@ -200,7 +200,7 @@ class JobackGroupContribution(BaseGroupContribution):
         self.hydrogen_from_smarts = hydrogen_from_smarts
         self.smart_rdkit = None
         self.group_id = group_id
-        
+
         # Initialize Joback-specific attributes
         self.Tc = Tc
         self.Pc = Pc
@@ -1011,7 +1011,7 @@ class DikyJobackGroupContribution(BaseGroupContribution):
         self.hydrogen_from_smarts = hydrogen_from_smarts
         self.smart_rdkit = None
         self.group_id = group_id
-        
+
         # Initialize DikyJoback-specific attributes
         # self.A0 = A0
         # self.A1 = A1
@@ -1137,7 +1137,7 @@ DIKY_JOBACK_GROUPS = {
     33: DikyJobackGroupContribution(
         group_id=33, group=">N-", A0=-22.180, A1=15.386, A2=-18.387, A3=7.228,
         atoms={'N': 1}, smarts="[#7X3H0;!$([#7](~O)~O)]"),
-        
+
     34: DikyJobackGroupContribution(
         group_id=34, group="=N-", A0=-5.019, A1=9.540, A2=-13.522, A3=6.531,
         atoms={'N': 1}, smarts="[#7X2H0;!R]"),
@@ -1181,7 +1181,7 @@ class DikyJoback:
     r'''Class to estimate ideal-gas heat capacity using the a variant of the Joback
     method with contributions refit and extended by NIST's Vladimir Diky,
     as shown in [1]_.
-    
+
     The correlation:
 
     .. math::
@@ -1241,7 +1241,7 @@ class DikyJoback:
         )
         self.status = status
         self.success = success
-        
+
         if success:
             # Add the entity term (always exactly one)
             self.counts[42] = 1
@@ -1254,12 +1254,12 @@ class DikyJoback:
                     self.counts[43] = self.counts.get(43, 0) + 1
                 elif ring_size == 4:
                     self.counts[44] = self.counts.get(44, 0) + 1
-            
+
             # Compute coefficients
             self.coeffs = self.get_coefficients(self.counts)
         else:
             self.coeffs = None
-        
+
     @staticmethod
     def get_coefficients(counts):
         r'''Computes the polynomial coefficients for ideal-gas heat capacity calculation
@@ -1286,7 +1286,7 @@ class DikyJoback:
         [1.589, 0.19505, 3.09e-06, -5.247e-08]
         '''
         A0, A1, A2, A3 = 0.0, 0.0, 0.0, 0.0
-        
+
         # Sum all group contributions (including entity term and ring corrections)
         for group_id, n in counts.items():
             g = DIKY_JOBACK_GROUPS[group_id]
@@ -1294,9 +1294,9 @@ class DikyJoback:
             A1 += n * g.A1
             A2 += n * g.A2
             A3 += n * g.A3
-                    
+
         return [A0, A1, A2, A3]
-    
+
     def Cpig(self, T):
         r'''Computes ideal-gas heat capacity at a specified temperature
         of an organic compound using the Joback method as a function of

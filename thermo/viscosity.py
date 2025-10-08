@@ -144,7 +144,7 @@ from thermo.volume import VolumeGas, VolumeLiquid
 def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
     """Determines valid temperature limits for the PPDS9 viscosity equation by analyzing
     its behavior at various points and its derivatives.
-    
+
     Parameters
     ----------
     coeffs : list[float]
@@ -153,7 +153,7 @@ def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
         Melting temperature [K]
     Tc : float, optional
         Critical temperature [K]
-        
+
     Returns
     -------
     tuple[float, float]
@@ -161,42 +161,42 @@ def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
     """
     low = low_orig = min(coeffs[2], coeffs[3])
     high = high_orig = max(coeffs[2], coeffs[3])
-    
+
     # Check derivative behavior near boundaries
     if low > 0.0:
         dmu_low_under, _ = dPPDS9_dT(low*0.9995, *coeffs)
         dmu_low_above, _ = dPPDS9_dT(low*1.0005, *coeffs)
-    
+
     if high > 0.0:
         dmu_high_under, _ = dPPDS9_dT(high*0.9995, *coeffs)
         dmu_high_above, _ = dPPDS9_dT(high*1.0005, *coeffs)
-    
+
     # Check at phase transition points if available
     if Tm is not None:
         dmu_Tm, _ = dPPDS9_dT(Tm, *coeffs)
     if Tc is not None:
         dmu_Tc_under, _ = dPPDS9_dT(Tc, *coeffs)
-    
+
     # Adjust limits based on derivative behavior
     if high > 0.0 and low < 0.0 or isinf(dmu_low_under) or isinf(dmu_low_above):
         low = 0.1*high
         high = high-1.0
     else:
         low, high = low + 5.0, high + 5.0
-    
+
     # Override with phase transition points if available
     if Tm is not None:
         low = Tm
     if Tc is not None and dmu_Tc_under < 0.0:
         high = Tc
-        
+
     # Special case handling
     if Tm is not None and Tc is not None and low_orig < 0 and Tm < high_orig < Tc and dmu_Tc_under < 0.0:
         low = high_orig + 1.0
-    
+
     if high == high_orig:
         high -= 1.0
-    
+
     # Check for derivative sign change in range
     dmu_low, _ = dPPDS9_dT(low, *coeffs)
     dmu_high, _ = dPPDS9_dT(high, *coeffs)
@@ -208,7 +208,7 @@ def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
             high = T_switch
         else:
             low = T_switch
-            
+
     return low, high
 
 DUTT_PRASAD = 'DUTT_PRASAD'

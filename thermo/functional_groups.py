@@ -276,7 +276,7 @@ __all__ = [# sulfur
            'ALL_FUNCTIONAL_GROUPS', 'FUNCTIONAL_GROUP_CHECKS',
            'identify_functional_groups', 'identify_functional_group_atoms',
            'identify_conjugated_bonds',
-           
+
         'FG_ACID', 'FG_ACYL_HALIDE', 'FG_ALCOHOL', 'FG_ALDEHYDE', 'FG_ALKANE', 'FG_ALKENE', 
         'FG_ALKYLALUMINIUM', 'FG_ALKYLLITHIUM', 'FG_ALKYLMAGNESIUM_HALIDE', 'FG_ALKYNE', 'FG_AMIDE', 
         'FG_AMIDINE', 'FG_AMINE', 'FG_ANHYDRIDE', 'FG_AROMATIC', 'FG_AZIDE', 'FG_AZO', 'FG_BORINIC_ACID',
@@ -2879,19 +2879,19 @@ def benene_rings(mol):
 
 def count_rings_by_atom_counts(mol, atom_counts):
     """Counts rings containing exactly specified numbers of each atom type.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
         Molecule to analyze
     atom_counts : dict
         Dictionary of atomic symbols and their required counts, e.g. {'O': 2, 'C': 4}
-        
+
     Returns
     -------
     int
         Number of rings matching the criteria
-        
+
     Examples
     --------
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
@@ -2901,43 +2901,43 @@ def count_rings_by_atom_counts(mol, atom_counts):
     0
     """
     ring_size = sum(atom_counts.values())
-    
+
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
-    
+
     matching_rings = 0
     for ring in rings:
         # Check ring size
         if len(ring) != ring_size:
             continue
-            
+
         # Count all atoms in this ring
         ring_atom_counts = {}
         for atom_idx in ring:
             atom = mol.GetAtomWithIdx(atom_idx)
             symbol = atom.GetSymbol()
             ring_atom_counts[symbol] = ring_atom_counts.get(symbol, 0) + 1
-        
+
         # Check if counts match exactly
         matches = True
         for atom_type, required_count in atom_counts.items():
             if ring_atom_counts.get(atom_type, 0) != required_count:
                 matches = False
                 break
-                
+
         # Check no other atoms are present
         if matches and len(ring_atom_counts) != len(atom_counts):
             continue
-            
+
         if matches:
             matching_rings += 1
-            
+
     return matching_rings
 
 def identify_conjugated_bonds(mol):
    """Find conjugated double bond systems and their connecting single bonds.
    Each conjugated system will contribute a decrement of 0.25 to Vw.
-   
+
    Returns list of tuples ((c1,c2), (c3,c4), (c2,c3)) where:
    - (c1,c2) represents one C=C double bond
    - (c3,c4) represents another C=C double bond 
@@ -2960,10 +2960,10 @@ def identify_conjugated_bonds(mol):
            # Store the double bond as a sorted tuple of atom indices
            atoms = tuple(sorted([atom.GetIdx(), other_atom.GetIdx()]))
            double_bonds.append(atoms)
-   
+
    # Stage 2: Remove duplicate double bonds
    double_bonds = list(set(double_bonds))
-   
+
    # Stage 3: Find connecting single bonds between double bond systems
    conjugated_systems = []
    for bond1 in double_bonds:
@@ -2983,7 +2983,7 @@ def identify_conjugated_bonds(mol):
                        # Store ((C=C), (C=C), (C-C))
                        conjugated = (bond1, bond2, tuple(sorted([c1, c2])))
                        conjugated_systems.append(conjugated)
-   
+
     # Stage 4: Remove duplicates while preserving order
     # Convert to set of ((C=C, C=C), C-C) for deduplication
     # The two double bonds can be in either order, but the single bond must stay separate
@@ -2996,7 +2996,7 @@ def identify_conjugated_bonds(mol):
        (double_bonds[0], double_bonds[1], single_bond) 
        for double_bonds, single_bond in unique_systems
    ]
-    
+
 
 radionuclides = {
     'H': {3},  # Tritium
@@ -3506,17 +3506,17 @@ def identify_functional_groups(mol):
     to identify which chemical classes it is part of and which functional groups it 
     contains. This is not a fragmentation algorithm and any number of functional groups
     may be detected; each found will be present only once.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
         The molecule to analyze
-        
+
     Returns
     -------
     functional_groups : set[str]
         Set of constants representing the functional groups present in the molecule
-        
+
     Examples
     --------
     >>> from rdkit import Chem # doctest:+SKIP
@@ -3552,7 +3552,7 @@ SMARTS_PATTERNS = {
     FG_OXIME: oxime_smarts,
     FG_PYRIDYL: pyridyl_smarts,
     FG_CARBAMATE: carbamate_smarts,
-    
+
     # Sulfur Groups
     FG_MERCAPTAN: mercaptan_smarts,
     FG_SULFIDE: sulfide_smarts,
@@ -3572,18 +3572,18 @@ SMARTS_PATTERNS = {
     FG_THIONOESTER: thionoester_smarts,
     FG_CARBODITHIOIC_ACID: carbodithioic_acid_smarts,
     FG_CARBODITHIO: carbodithio_smarts,
-    
+
     # Silicon Groups
     FG_SILOXANE: siloxane_smarts,
     FG_SILYL_ETHER: silyl_ether_smarts,
-    
+
     # Hydrocarbon Groups
     FG_ALKANE: alkane_smarts,
     FG_BRANCHED_ALKANE: branched_alkane_smarts,
     FG_ALKENE: alkene_smarts,
     FG_ALKYNE: alkyne_smarts,
     FG_AROMATIC: aromatic_smarts,
-    
+
     # Oxygen Groups
     FG_ALCOHOL: alcohol_smarts,
     FG_ACID: acid_smarts,
@@ -3602,26 +3602,26 @@ SMARTS_PATTERNS = {
     FG_ETHER: ether_smarts,
     FG_PHENOL: phenol_smarts,
     FG_ESTER: ester_smarts,
-    
+
     # Boron Groups
     FG_BORONIC_ACID: boronic_acid_smarts,
     FG_BORONIC_ESTER: boronic_ester_smarts,
     FG_BORINIC_ACID: borinic_acid_smarts,
     FG_BORINIC_ESTER: borinic_ester_smarts,
-    
+
     # Phosphorus Groups
     FG_PHOSPHINE: phosphine_smarts,
     FG_PHOSPHONIC_ACID: phosphonic_acid_smarts,
     FG_PHOSPHODIESTER: phosphodiester_smarts,
     FG_PHOSPHATE: phosphate_smarts,
-    
+
     # Halogen Groups
     FG_HALOALKANE: haloalkane_smarts,
     FG_FLUOROALKANE: fluoroalkane_smarts,
     FG_CHLOROALKANE: chloroalkane_smarts,
     FG_BROMOALKANE: bromoalkane_smarts,
     FG_IODOALKANE: iodoalkane_smarts,
-    
+
     # Amine Groups
     FG_AMINE: all_amine_smarts,
     FG_PRIMARY_AMINE: primary_amine_smarts,
@@ -3649,24 +3649,24 @@ SMARTS_PATTERNS = {
     FG_POLYOL: None,
     FG_RADIONUCLIDE: None,
     FG_INORGANIC: None,
-    
+
 }
 
 def identify_functional_group_atoms(mol, functional_group):
     """Returns the unique atoms involved in all instances of a functional group.
-    
+
     Parameters
     ----------
     mol : rdkit.Chem.rdchem.Mol
         Molecule to analyze
     functional_group : str
         One of the FG_ constants representing the functional group to find
-        
+
     Returns
     -------
     list[tuple]
         List of sorted tuples containing atom indices for each unique match of the functional group
-    
+
     Examples
     --------
     Acetic acid
@@ -3679,23 +3679,23 @@ def identify_functional_group_atoms(mol, functional_group):
         raise ValueError("Missing molecule")
     if functional_group not in SMARTS_PATTERNS:
         raise ValueError(f"Unknown functional group: {functional_group}")
-    
+
     patterns = SMARTS_PATTERNS[functional_group]
     if patterns is None:
         raise ValueError("Specified group is not supported")
-        
+
     # Handle both single patterns and lists of patterns
     if isinstance(patterns, str):
         patterns = [patterns]
-    
+
     # Collect all matches from all patterns
     all_matches = []
     for pattern in patterns:
         matches = mol.GetSubstructMatches(smarts_mol_cache(pattern))
         all_matches.extend(matches)
-    
+
     # Convert matches to sorted tuples and deduplicate
     unique_matches = {tuple(sorted(match)) for match in all_matches}
-    
+
     # Return as sorted list for consistent ordering
     return sorted(list(unique_matches))
