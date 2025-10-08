@@ -335,7 +335,7 @@ class SurfaceTension(TDependentProperty):
             if CASRN in interface.sigma_data_Mulero_Cachadina.index:
                 sigma0, n0, sigma1, n1, sigma2, n2, Tc, Tmin, Tmax = interface.sigma_values_Mulero_Cachadina[
                     interface.sigma_data_Mulero_Cachadina.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=STREFPROP, model="REFPROP_sigma", Tmin=Tmin, Tmax=Tmax, 
+                self.add_correlation(name=STREFPROP, model="REFPROP_sigma", Tmin=Tmin, Tmax=Tmax,
                                     sigma0=sigma0, n0=n0, sigma1=sigma1, n1=n1, sigma2=sigma2, n2=n2, Tc=Tc, select=False)
 
             if CASRN in interface.sigma_data_Somayajulu2.index:

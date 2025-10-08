@@ -1204,8 +1204,8 @@ def regular_solution_gammas_binaries_jac(xs, Vs, SPs, Ts, lambda12, lambda21, ja
 
 
 class FloryHuggins(GibbsExcess):
-    r"""Class for representing a liquid with excess Gibbs energy represented by the 
-    Flory-Huggins model. This model extends the Regular Solution model by adding 
+    r"""Class for representing a liquid with excess Gibbs energy represented by the
+    Flory-Huggins model. This model extends the Regular Solution model by adding
     entropic contributions from the different sizes of molecules.
 
     .. math::
@@ -1301,7 +1301,7 @@ class FloryHuggins(GibbsExcess):
             return self._GE
         except AttributeError:
             pass
-        GE = self._GE = flory_huggins_GE(self.xs, self.Vs, self.Aijs, self.T, 
+        GE = self._GE = flory_huggins_GE(self.xs, self.Vs, self.Aijs, self.T,
                                         self.xsVs, self.xsVs_sum_inv)
         return GE
 
@@ -1332,7 +1332,7 @@ class FloryHuggins(GibbsExcess):
         derivatives of excess Gibbs energy.
 
         .. math::
-            \frac{\partial^2 g^E}{\partial x_i \partial T} = 
+            \frac{\partial^2 g^E}{\partial x_i \partial T} =
             R\left[\ln\left(\frac{V_i}{\sum_j x_j V_j}\right) - \frac{V_i}{\sum_j x_j V_j}\right]
 
         Returns
@@ -1361,7 +1361,7 @@ class FloryHuggins(GibbsExcess):
         energy of a liquid phase using the regular solution model.
 
         .. math::
-            \frac{\partial G^E}{\partial x_i} = RT\left[\ln\left(\frac{V_i}{\sum_j x_j V_j}\right) - \frac{V_i}{\sum_j x_j V_j}\right] 
+            \frac{\partial G^E}{\partial x_i} = RT\left[\ln\left(\frac{V_i}{\sum_j x_j V_j}\right) - \frac{V_i}{\sum_j x_j V_j}\right]
             + \frac{-V_i G^E + \sum_m V_i V_m x_m[\delta_i\delta_m(k_{mi} + k_{im}) + (\delta_i - \delta_m)^2]}{\sum_m V_m x_m}
 
         Or as an addition to the regular solution equation:
@@ -1451,7 +1451,7 @@ class FloryHuggins(GibbsExcess):
 
         .. math::
             \frac{\partial^3 G^E}{\partial x_i \partial x_j \partial x_k} = RT\left[-\frac{2V_iV_jV_k}{\left(\sum_m x_m V_m\right)^3} + \frac{V_iV_j + V_iV_k + V_jV_k}{\left(\sum_m x_m V_m\right)^2}\right]
-            + \frac{\partial^3 G^E}{\partial x_i \partial x_j \partial x_k}_{\text{RS}} 
+            + \frac{\partial^3 G^E}{\partial x_i \partial x_j \partial x_k}_{\text{RS}}
 
 
         Returns
@@ -1546,7 +1546,7 @@ def hansen_His(delta_d, delta_p, delta_h, His=None, alpha=None):
     return hansen_Aijs_His(delta_d, delta_p, delta_h, His, alpha, 1.0)
 
 class Hansen(GibbsExcess):
-    r"""Class for representing a liquid with excess Gibbs energy represented by the 
+    r"""Class for representing a liquid with excess Gibbs energy represented by the
     Hansen model. This model extends the Flory-Huggins approach by considering three
     different types of molecular interactions: dispersive, polar, and hydrogen bonding.
 
@@ -1589,7 +1589,7 @@ class Hansen(GibbsExcess):
     modified interaction parameters.
 
     The `delta` and `Vs` terms can be specified in units of cm^3/mol and MPa^0.5
-    and the 
+    and the
 
     Examples
     --------
@@ -1599,7 +1599,7 @@ class Hansen(GibbsExcess):
     dilution coefficients, however 2-3% seems to fit the data points provided in many
     cases. The 0.6 `alpha` also seems to have been used in their paper.
 
-    1-nitropropane as solvent, 2-methylbutane as solute from [2]_ - expected 
+    1-nitropropane as solvent, 2-methylbutane as solute from [2]_ - expected
     infinite dilution activity coefficient of 3.5:
 
     >>> xs = [.97, 0.03]
@@ -1629,15 +1629,15 @@ class Hansen(GibbsExcess):
 
     References
     ----------
-    .. [1] Lindvig, Thomas, Michael L Michelsen, and Georgios M Kontogeorgis. "A 
-       Flory-Huggins Model Based on the Hansen Solubility Parameters." Fluid 
-       Phase Equilibria 203, no. 1 (December 1, 2002): 247-60. 
+    .. [1] Lindvig, Thomas, Michael L Michelsen, and Georgios M Kontogeorgis. "A
+       Flory-Huggins Model Based on the Hansen Solubility Parameters." Fluid
+       Phase Equilibria 203, no. 1 (December 1, 2002): 247-60.
        https://doi.org/10.1016/S0378-3812(02)00184-X.
     .. [2] Brouwer, Thomas, and Boelo Schuur. "Model Performances Evaluated for Infinite
        Dilution Activity Coefficients Prediction at 298.15 K." Industrial & Engineering
-       Chemistry Research 58, no. 20 (May 22, 2019): 8903-14. 
+       Chemistry Research 58, no. 20 (May 22, 2019): 8903-14.
        https://doi.org/10.1021/acs.iecr.9b00727.
-    .. [3] Hansen, Charles M. Hansen Solubility Parameters: A User's Handbook. 
+    .. [3] Hansen, Charles M. Hansen Solubility Parameters: A User's Handbook.
        CRC press, 2007.
     """
     model_id = 420
@@ -1736,7 +1736,7 @@ class Hansen(GibbsExcess):
 
     Hi_sums = FloryHuggins.Hi_sums
     GE = FloryHuggins.GE
-    dGE_dT = FloryHuggins.dGE_dT  
+    dGE_dT = FloryHuggins.dGE_dT
     d2GE_dT2 = FloryHuggins.d2GE_dT2
     d3GE_dT3 = FloryHuggins.d3GE_dT3
     d2GE_dTdxs = FloryHuggins.d2GE_dTdxs
@@ -1746,7 +1746,7 @@ class Hansen(GibbsExcess):
 
     def missing_interaction_parameters(self):
         r'''
-        Return an empty list as Hansen parameters cannot be considered "missing" - 
+        Return an empty list as Hansen parameters cannot be considered "missing" -
         zero values for delta_d, delta_p, and delta_h are physically meaningful
         and represent absence of that type of molecular interaction.
 

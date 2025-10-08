@@ -1637,9 +1637,9 @@ class UNIQUAC(GibbsExcess):
         else:
             d2GE_dxixjs = zeros((N, N))
 
-        self._d2GE_dxixjs = uniquac_d2GE_dxixjs(N=N, T=T, xs=xs, qs=qs, taus=taus, phis=phis, thetas=thetas, 
-                                                dphis_dxs=dphis_dxs, d2phis_dxixjs=d2phis_dxixjs, dthetas_dxs=dthetas_dxs, 
-                                                d2thetas_dxixjs=d2thetas_dxixjs, thetaj_taus_jis=thetaj_taus_jis, 
+        self._d2GE_dxixjs = uniquac_d2GE_dxixjs(N=N, T=T, xs=xs, qs=qs, taus=taus, phis=phis, thetas=thetas,
+                                                dphis_dxs=dphis_dxs, d2phis_dxixjs=d2phis_dxixjs, dthetas_dxs=dthetas_dxs,
+                                                d2thetas_dxixjs=d2thetas_dxixjs, thetaj_taus_jis=thetaj_taus_jis,
                                                 d2GE_dxixjs=d2GE_dxixjs)
         return self._d2GE_dxixjs
 
@@ -1652,7 +1652,7 @@ class UNIQUAC(GibbsExcess):
     def missing_interaction_parameters(self):
         r'''
         Return an empty list as UNIQUAC does not have a concept of "missing parameters".
-        All parameter values, including zeros, will impact the phase equilibria 
+        All parameter values, including zeros, will impact the phase equilibria
         calculations through their effect on the tau terms. Parameter values cannot be
         made "missing" as they always affect the model results through the combinatorial
         and residual terms.

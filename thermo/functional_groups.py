@@ -3064,7 +3064,7 @@ def identify_conjugated_bonds(mol):
 
    Returns list of tuples ((c1,c2), (c3,c4), (c2,c3)) where:
    - (c1,c2) represents one C=C double bond
-   - (c3,c4) represents another C=C double bond 
+   - (c3,c4) represents another C=C double bond
    - (c2,c3) represents the single bond connecting them
    """
    from rdkit import Chem
@@ -3117,7 +3117,7 @@ def identify_conjugated_bonds(mol):
    )
    # Convert back to list of tuples
    return [
-       (double_bonds[0], double_bonds[1], single_bond) 
+       (double_bonds[0], double_bonds[1], single_bond)
        for double_bonds, single_bond in unique_systems
    ]
 
@@ -3614,20 +3614,20 @@ ALL_FUNCTIONAL_GROUPS = [
 
 # Dictionary mapping functional group constants to their corresponding functions
 FG_TO_FUNCTION = {
-    fg_const: FUNCTIONAL_GROUP_CHECKS[i] 
+    fg_const: FUNCTIONAL_GROUP_CHECKS[i]
     for i, fg_const in enumerate(ALL_FUNCTIONAL_GROUPS)
 }
 
 # Dictionary mapping functions to their corresponding functional group constants
 FUNCTION_TO_FG = {
-    func: fg_const 
+    func: fg_const
     for fg_const, func in FG_TO_FUNCTION.items()
 }
 
 
 def identify_functional_groups(mol):
     """Given an RDKit molecule, match a set of different SMARTS patterns against it
-    to identify which chemical classes it is part of and which functional groups it 
+    to identify which chemical classes it is part of and which functional groups it
     contains. This is not a fragmentation algorithm and any number of functional groups
     may be detected; each found will be present only once.
 
@@ -3750,19 +3750,19 @@ SMARTS_PATTERNS = {
     FG_AMINE: all_amine_smarts,
     FG_PRIMARY_AMINE: primary_amine_smarts,
     FG_SECONDARY_AMINE: secondary_amine_smarts,
-    FG_TERTIARY_AMINE: [tertiary_amine_smarts, tertiary_amine_smarts_aliphatic, 
-                       tertiary_amine_smarts_aromatic, tertiary_amine_smarts_mixed, 
+    FG_TERTIARY_AMINE: [tertiary_amine_smarts, tertiary_amine_smarts_aliphatic,
+                       tertiary_amine_smarts_aromatic, tertiary_amine_smarts_mixed,
                        tertiary_amine_1],
     FG_QUAT: quat_smarts,
 
     # Organometallic Groups
     FG_ALKYLLITHIUM: alkyllithium_smarts,
     FG_ALKYLALUMINIUM: alkylaluminium_smarts,
-    FG_ALKYLMAGNESIUM_HALIDE: [smarts_alkylmagnesium_halide_Mg0, 
+    FG_ALKYLMAGNESIUM_HALIDE: [smarts_alkylmagnesium_halide_Mg0,
                               smarts_alkylmagnesium_halide_Mg1,
                               smarts_alkylmagnesium_halide_Mg2],
 
-    FG_ISONITRILE: isonitrile_smarts, 
+    FG_ISONITRILE: isonitrile_smarts,
     FG_NITRILE: nitrile_smarts,
     FG_CARBOXYLIC_ACID: carboxylic_acid_smarts,
 

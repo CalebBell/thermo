@@ -581,7 +581,7 @@ class TDependentProperty:
           :obj:`EQ106 <chemicals.dippr.EQ106>`'s
           equation at the temperature limits using only the A, B, and C
           coefficient.
-        * 'Arrhenius': fits the model at its temperature limits to an Arrhenius 
+        * 'Arrhenius': fits the model at its temperature limits to an Arrhenius
           linear model in 1/T and log(property) space
 
     It is possible to use different extrapolation methods for the
@@ -802,8 +802,8 @@ class TDependentProperty:
                         {"fit_params": ["a1", "a2", "a3", "a4"]}),
 
     "Shomate": (
-        ["A", "B", "C", "D", "E"], 
-        [], 
+        ["A", "B", "C", "D", "E"],
+        [],
         {
             "f": Shomate,
             "f_int": Shomate_integral,
@@ -823,11 +823,11 @@ class TDependentProperty:
         {"f": PPDS2},
         {"fit_params": ["Ts", "C_low", "C_inf", "a1", "a2", "a3", "a4", "a5"],
          "initial_guesses": [
-             {"Ts": 462.493, "C_low": 4.54115, "C_inf": 9.96847, 
-              "a1": -103.419, "a2": 695.484, "a3": -2006.1, 
+             {"Ts": 462.493, "C_low": 4.54115, "C_inf": 9.96847,
+              "a1": -103.419, "a2": 695.484, "a3": -2006.1,
               "a4": 2476.84, "a5": -1186.47},
-             {"Ts": 500.0, "C_low": 5.0, "C_inf": 10.0, 
-              "a1": -120.0, "a2": 800.0, "a3": -2200.0, 
+             {"Ts": 500.0, "C_low": 5.0, "C_inf": 10.0,
+              "a1": -120.0, "a2": 800.0, "a3": -2200.0,
               "a4": 2600.0, "a5": -1300.0}
          ]}
     ),
@@ -838,9 +838,9 @@ class TDependentProperty:
         {"f": PPDS15},
         {"fit_params": ["a0", "a1", "a2", "a3", "a4", "a5"],
          "initial_guesses": [
-             {"a0": 0.198892, "a1": 24.1389, "a2": -20.2301, 
+             {"a0": 0.198892, "a1": 24.1389, "a2": -20.2301,
               "a3": 5.72481, "a4": 4.43613e-7, "a5": -3.10751e-7},
-             {"a0": 0.25, "a1": 20.0, "a2": -15.0, 
+             {"a0": 0.25, "a1": 20.0, "a2": -15.0,
               "a3": 4.5, "a4": 3.5e-7, "a5": -2.5e-7}
          ]}
     ),
@@ -851,9 +851,9 @@ class TDependentProperty:
         {"f": TDE_CSExpansion},
         {"fit_params": ["b", "a1", "a2", "a3", "a4"],
          "initial_guesses": [
-             {"b": 0.626549, "a1": 120.705, "a2": 0.255987, 
+             {"b": 0.626549, "a1": 120.705, "a2": 0.255987,
               "a3": 0.000381027, "a4": -3.03077e-7},
-             {"b": 0.5, "a1": 110.0, "a2": 0.2, 
+             {"b": 0.5, "a1": 110.0, "a2": 0.2,
               "a3": 0.0003, "a4": -2.5e-7}
          ]}
     ),
@@ -890,12 +890,12 @@ class TDependentProperty:
     "volume_VDI_PPDS": (["Tc", "rhoc", "a", "b", "c", "d", "MW",], [],
             {"f": volume_VDI_PPDS}, {"fit_params": ["a", "b", "c", "d",]}),
     "DIPPR116_rho_to_Vm": (
-        ["Tc", "rhoc", "MW"], 
+        ["Tc", "rhoc", "MW"],
         ["A", "B", "C", "D"],
         {"f": lambda T, MW, Tc, rhoc, A, B, C, D: rho_to_Vm(EQ116(T, Tc, rhoc, A, B, C, D), MW)},
         {"fit_params": ["A", "B", "C", "D"]}
     ),
-    "Rackett_fit": (["Tc", "Pc", "Z_RA"], [], {"f": lambda T, **kwargs: Rackett(T, Tc=kwargs["Tc"], Pc=kwargs["Pc"], Zc=kwargs["Z_RA"])}, 
+    "Rackett_fit": (["Tc", "Pc", "Z_RA"], [], {"f": lambda T, **kwargs: Rackett(T, Tc=kwargs["Tc"], Pc=kwargs["Pc"], Zc=kwargs["Z_RA"])},
                             {"fit_params": ["Z_RA",]}),
 
     "Rackett_density_fit": (["Tc", "rhoc", "b", "n", "MW",], [], {"f": Rackett_fit}, {"fit_params": ["rhoc", "b", "n"], "initial_guesses": [
@@ -1320,7 +1320,7 @@ class TDependentProperty:
           {"A": 0.1, "B": 0.05, "C": 3300.0, "D": 0.1},
           ]}),
     "DIPPR100_rho_to_Vm": (
-        ["MW", "A"], 
+        ["MW", "A"],
         ["B", "C", "D", "E", "F", "G"],
         {"f": lambda T, MW, **params: 0.001 * MW / EQ100(T, **params)},
         {"fit_params": ["A", "B", "C", "D", "E", "F", "G"]}
@@ -1328,7 +1328,7 @@ class TDependentProperty:
 
     # in dwsim
     "DIPPR105_reciprocal": (
-        ["A", "B", "C", "D"], 
+        ["A", "B", "C", "D"],
         [],
         {"f": EQ105_reciprocal},
         {"fit_params": ["A", "B", "C", "D"]}
@@ -1342,7 +1342,7 @@ class TDependentProperty:
     "COSTALD_fit": (
         ["Tc", "COSTALD_Vchar", "COSTALD_omega"],
         [],
-        {"f": lambda T, **kwargs: COSTALD(T, Tc=kwargs["Tc"], Vc=kwargs["COSTALD_Vchar"], 
+        {"f": lambda T, **kwargs: COSTALD(T, Tc=kwargs["Tc"], Vc=kwargs["COSTALD_Vchar"],
                                           omega=kwargs["COSTALD_omega"])},
         {"fit_params": ["COSTALD_Vchar", "COSTALD_omega"]}
     ),
@@ -1696,9 +1696,9 @@ class TDependentProperty:
 
         result = {}
         if not data_only:
-            for arg in ("Tc", "Vc", "Tb", "Pc", "Tm", "Tt", "Pt", "Hvap_Tb", 
-                        "Cpl", "Hfus", "Vml", "Vml_Tt", "Hsub_t", "StielPolar", "dipole", "MW", 
-                        "similarity_variable", "omega", "Cvgm","mug", "Zc", "Cpgm", 
+            for arg in ("Tc", "Vc", "Tb", "Pc", "Tm", "Tt", "Pt", "Hvap_Tb",
+                        "Cpl", "Hfus", "Vml", "Vml_Tt", "Hsub_t", "StielPolar", "dipole", "MW",
+                        "similarity_variable", "omega", "Cvgm","mug", "Zc", "Cpgm",
                         "iscyclic_aliphatic",):
                 if hasattr(self, arg):
                     arg_obj = getattr(self, arg)
@@ -1765,7 +1765,7 @@ class TDependentProperty:
                 "STABLEPOLY_FIT_LN_TAU": "stable_polynomial_ln_tau_parameters",
                 "EXP_STABLEPOLY_FIT_LN_TAU": "exp_stable_polynomial_ln_tau_parameters",
                 "CHEB_FIT": "chebyshev_parameters",
-                "EXP_CHEB_FIT": "exp_chebyshev_parameters", 
+                "EXP_CHEB_FIT": "exp_chebyshev_parameters",
                 "CHEB_FIT_LN_TAU": "chebyshev_ln_tau_parameters",
                 "EXP_CHEB_FIT_LN_TAU": "exp_chebyshev_ln_tau_parameters",
             }
@@ -1784,7 +1784,7 @@ class TDependentProperty:
             result["Tmin"] = self.Tmin
             result["Tmax"] = self.Tmax
             result["method"] = method
-            return result                
+            return result
         return {}
 
     def __call__(self, T):
@@ -4982,7 +4982,7 @@ class TDependentProperty:
                     for corr_i, corr_kwargs in correlation_dict.items():
                         self.add_correlation(name=corr_i, model=correlation_name,
                                              **corr_kwargs)
-        if kwargs.get("tabular_data", None):
+        if kwargs.get("tabular_data"):
             for name, (Ts, properties) in kwargs["tabular_data"].items():
                 self.add_tabular_data(Ts, properties, name=name, check_properties=False)
             kwargs.pop("tabular_data")
@@ -5061,7 +5061,7 @@ class TDependentProperty:
 
 
 
-        if method is None or (found_allotropes and method in do_not_set_methods) or (method in self.extra_correlations_internal and not "method" in kwargs):
+        if method is None or (found_allotropes and method in do_not_set_methods) or (method in self.extra_correlations_internal and "method" not in kwargs):
             all_methods = self.all_methods
             for i in self.ranked_methods:
                 if i in all_methods:

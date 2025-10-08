@@ -347,7 +347,7 @@ class HeatCapacityGas(TDependentProperty):
                     # if isnan(Tmin_jb): Tmin_jb = 100.0 # The same groups are defined for Tm as for Cp, should never be a nan
                     if isnan(Tmax_jb): Tmax_jb = 10000.0
                     self.add_correlation(name=JOBACK, model="DIPPR100", Tmin=Tmin_jb, Tmax=Tmax_jb, A=float(jb_df.at[CASRN_int, "Cpg0"]),
-                                         B=float(jb_df.at[CASRN_int, "Cpg1"]), C=float(jb_df.at[CASRN_int, "Cpg2"]), 
+                                         B=float(jb_df.at[CASRN_int, "Cpg1"]), C=float(jb_df.at[CASRN_int, "Cpg2"]),
                                          D=Cpg3, select=False)
             if CASRN in heat_capacity.WebBook_Shomate_coefficients:
                 phase_values = heat_capacity.WebBook_Shomate_coefficients[CASRN]
@@ -358,13 +358,13 @@ class HeatCapacityGas(TDependentProperty):
                     for i, range_data in enumerate(Cp_dat):
                         name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f"{WEBBOOK_SHOMATE}_{i+1}"
                         method_names.append(name)
-                        self.add_correlation(name=name, model="Shomate", Tmin=range_data[0],  Tmax=range_data[1],  
-                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5], 
+                        self.add_correlation(name=name, model="Shomate", Tmin=range_data[0],  Tmax=range_data[1],
+                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5],
                                              E=range_data[6], select=False
                         )
                         T_ranges.append(range_data[1])
                     if len(Cp_dat) > 1:
-                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)            
+                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)
             if CASRN in heat_capacity.TRC_gas_data.index:
                 Tmin, Tmax, a0, a1, a2, a3, a4, a5, a6, a7, _, _, _ = heat_capacity.TRC_gas_values[
                     heat_capacity.TRC_gas_data.index.get_loc(CASRN)].tolist()
@@ -391,10 +391,10 @@ class HeatCapacityGas(TDependentProperty):
                     POLING_Tmax = 1000.0
                 self.add_correlation(name=POLING_POLY, model="DIPPR100", Tmin=POLING_Tmin, Tmax=POLING_Tmax, A=R*a0, B=R*a1, C=R*a2, D=R*a3, E=R*a4, select=False)
             if CASRN in heat_capacity.Cp_data_Poling.index and not isnan(heat_capacity.Cp_data_Poling.at[CASRN, "Cpg"]):
-                self.add_correlation(name=POLING_CONST, model="DIPPR100", Tmin=298.15-50.0, Tmax=298.15+50.0, 
+                self.add_correlation(name=POLING_CONST, model="DIPPR100", Tmin=298.15-50.0, Tmax=298.15+50.0,
                                      A=float(heat_capacity.Cp_data_Poling.at[CASRN, "Cpg"]), select=False)
             if CASRN in heat_capacity.CRC_standard_data.index and not isnan(heat_capacity.CRC_standard_data.at[CASRN, "Cpg"]):
-                self.add_correlation(name=CRCSTD, model="DIPPR100", Tmin=298.15-50.0, Tmax=298.15+50.0, 
+                self.add_correlation(name=CRCSTD, model="DIPPR100", Tmin=298.15-50.0, Tmax=298.15+50.0,
                                      A=float(heat_capacity.CRC_standard_data.at[CASRN, "Cpg"]), select=False)
             if CASRN in miscdata.VDI_saturation_dict:
                 # NOTE: VDI data is for the saturation curve, i.e. at increasing
@@ -893,7 +893,7 @@ class HeatCapacityLiquid(TDependentProperty):
                     Tmax=298.15+50.0,
                     value=float(heat_capacity.CRC_standard_data.at[CASRN, "Cpl"]),
                     select=False
-                )            
+                )
             quasi_dict_mapping = {
                 ZABRANSKY_QUASIPOLYNOMIAL: heat_capacity.zabransky_dict_const_p,
                 ZABRANSKY_QUASIPOLYNOMIAL_C: heat_capacity.zabransky_dict_iso_p,
@@ -1276,13 +1276,13 @@ class HeatCapacitySolid(TDependentProperty):
                     for i, range_data in enumerate(Cp_dat):
                         name = WEBBOOK_SHOMATE if len(Cp_dat) == 1 else f"{WEBBOOK_SHOMATE}_{i+1}"
                         method_names.append(name)
-                        self.add_correlation(name=name, model="Shomate", Tmin=range_data[0],  Tmax=range_data[1],  
-                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5], 
+                        self.add_correlation(name=name, model="Shomate", Tmin=range_data[0],  Tmax=range_data[1],
+                                             A=range_data[2], B=range_data[3], C=range_data[4], D=range_data[5],
                                              E=range_data[6], select=False
                         )
                         T_ranges.append(range_data[1])
                     if len(Cp_dat) > 1:
-                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)            
+                        self.add_piecewise_method(name=WEBBOOK_SHOMATE, method_names=method_names, T_ranges=T_ranges, select=False)
             if CASRN in heat_capacity.Cp_dict_JANAF_solid:
                 methods.append(miscdata.JANAF)
                 Ts, props = heat_capacity.Cp_dict_JANAF_solid[CASRN]
@@ -1298,7 +1298,7 @@ class HeatCapacitySolid(TDependentProperty):
                     Tmax=Tmax,
                     A=data["Const"]*calorie,
                     B=data["Lin"]*calorie,
-                    C=data["Quad"]*calorie, 
+                    C=data["Quad"]*calorie,
                     D=0.0,
                     E=data["Quadinv"]*calorie,
                     select=False

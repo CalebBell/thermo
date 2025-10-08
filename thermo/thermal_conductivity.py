@@ -413,7 +413,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
                     thermal_conductivity.k_data_Perrys_8E_2_315.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=DIPPR_PERRY_8E,
-                    model="DIPPR100", 
+                    model="DIPPR100",
                     Tmin=Tmin,
                     Tmax=Tmax,
                     A=C1,
@@ -436,7 +436,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
                     Tmin=1e-3,
                     Tmax=1e4,
                     A=A,  # constant term
-                    B=B,  # T term 
+                    B=B,  # T term
                     C=C,  # T^2 term
                     D=D,  # T^3 term
                     E=E,  # T^4 term

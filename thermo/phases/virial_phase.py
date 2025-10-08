@@ -272,7 +272,7 @@ class VirialCSP:
 
     nonstate_constants = ("Tcs", "Pcs", "Vcs", "omegas", "B_model", "cross_B_model",
                           "cross_B_model_kijs", "B_model_Meng_as",
-                          "B_model_Tsonopoulos_extended_as", "B_model_Tsonopoulos_extended_bs", 
+                          "B_model_Tsonopoulos_extended_as", "B_model_Tsonopoulos_extended_bs",
                           "C_model", "cross_C_model")
 
     def __repr__(self):
@@ -1135,7 +1135,7 @@ class VirialGas(IdealGasDeparturePhase):
         S_dep = integrate(dP_dT - R/V, (V, oo, V)) + R*log(Z)
         G_dep = Hdep2 - T*S_dep
         G_dep = simplify(G_dep)
-        print(G_dep) 
+        print(G_dep)
         # gives R*T*(-2*V**2*log((V**2 + V*B(T) + C(T))/V**2) + 4*V*B(T) + 3*C(T))/(2*V**2)
 
         In Sympy:

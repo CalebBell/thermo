@@ -95,7 +95,7 @@ EPPR78_GROUPS["CH4"] = PPR78GroupContribution("CH4", atoms={"C": 1, "H": 4}, bon
 EPPR78_GROUPS["C2H6"] = PPR78GroupContribution("C2H6", atoms={"C": 2, "H": 6}, bonds={}, smarts="[CH3X4]-[CH3X4]", group_id=6)
 EPPR78_GROUPS["CHaro"] = PPR78GroupContribution("CHaro", atoms={"C": 1, "H": 1}, bonds={AROMATIC_BOND: 2}, smarts="[cH]", group_id=7)
 EPPR78_GROUPS["Caro"] = PPR78GroupContribution("Caro", atoms={"C": 1}, bonds={AROMATIC_BOND: 2}, smarts="[c]", group_id=8)
-EPPR78_GROUPS["Cfused_aromatic"] = PPR78GroupContribution("Cfused_aromatic", atoms={"C": 1}, bonds={AROMATIC_BOND: 3}, 
+EPPR78_GROUPS["Cfused_aromatic"] = PPR78GroupContribution("Cfused_aromatic", atoms={"C": 1}, bonds={AROMATIC_BOND: 3},
     smarts=[ #ACENAPHTHENE has 2 fused groups, FLUORANTHENE has 6, NAPHTHACENE, 6, and INDENE 0. FLUORENE is supposed to have 0, this finds 2
         "[c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a;$([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a]([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a]))]",
     ], priority=10000, group_id=9)
@@ -107,14 +107,14 @@ EPPR78_GROUPS["H2S"] = PPR78GroupContribution("H2S", atoms={"S": 1, "H": 2}, bon
 EPPR78_GROUPS["SH"] = PPR78GroupContribution("SH", atoms={"S": 1, "H": 1}, bonds={}, smarts="[S;H1]", group_id=15)
 
 # Water
-EPPR78_GROUPS["H2O"] = PPR78GroupContribution("H2O", 
-    atoms={"O": 1, "H": 2}, 
-    bonds={}, 
+EPPR78_GROUPS["H2O"] = PPR78GroupContribution("H2O",
+    atoms={"O": 1, "H": 2},
+    bonds={},
     smarts="[OH2]", group_id=16)
 
 # Ethylene
 EPPR78_GROUPS["C2H4"] = PPR78GroupContribution("C2H4",
-    atoms={"C": 2, "H": 4}, 
+    atoms={"C": 2, "H": 4},
     bonds={DOUBLE_BOND: 1}, priority=10000,
     smarts="[CH2]=[CH2]", group_id=17)
 
@@ -743,7 +743,7 @@ EPPR78_INTERACTIONS[(EPPR78_GROUPS["HC≡C"], EPPR78_GROUPS["C≡C"])] = (-497.6
 
 ZERO_PARAMETER = (0.0, 0.0)
 
-for interactions_dict, groups_dict in [(PPR78_INTERACTIONS, PPR78_GROUPS), 
+for interactions_dict, groups_dict in [(PPR78_INTERACTIONS, PPR78_GROUPS),
                                      (EPPR78_INTERACTIONS, EPPR78_GROUPS)]:
     groups = list(groups_dict.values())
     for group1 in groups:
@@ -772,10 +772,10 @@ EPPR78_GROUPS_LIST = list(EPPR78_GROUPS.values())
 PPR78_INTERACTIONS_BY_STR = {(group1.group, group2.group): value for (group1, group2), value in PPR78_INTERACTIONS.items()}
 EPPR78_INTERACTIONS_BY_STR = {(group1.group, group2.group): value for (group1, group2), value in EPPR78_INTERACTIONS.items()}
 
-PPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value 
+PPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value
                            for (group1, group2), value in PPR78_INTERACTIONS.items()}
-EPPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value 
-                            for (group1, group2), value in EPPR78_INTERACTIONS.items()}                    
+EPPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value
+                            for (group1, group2), value in EPPR78_INTERACTIONS.items()}
 
 def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2, omega2, version="original", string=True):
     r'''Calculate binary interaction parameter kij(T) between two molecules using the PPR78 method.
@@ -911,7 +911,7 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
     return kij_value
 
 def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version="original", string=True):
-    r"""Calculate the binary interaction parameter (kij) matrix for a mixture of components 
+    r"""Calculate the binary interaction parameter (kij) matrix for a mixture of components
     at a specified temperature using the PPR78 method.
 
     Parameters
@@ -943,10 +943,10 @@ def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version="original", string=True):
     >>> # Calculate kij matrix for methane-ethane-propane mixture using original PPR78
     >>> groups = [
     ...     {"CH3": 1},              # methane
-    ...     {"CH3": 2},              # ethane  
+    ...     {"CH3": 2},              # ethane
     ...     {"CH3": 2, "CH2": 1}     # propane
     ... ]
-    >>> Tc = [190.564, 305.322, 369.83]  
+    >>> Tc = [190.564, 305.322, 369.83]
     >>> Pc = [4599200, 4872200, 4248000]
     >>> omega = [0.01142, 0.0995, 0.1523]
     >>> matrix = PPR78_kijs(298.15, groups, Tc, Pc, omega)
@@ -999,12 +999,12 @@ def fragment_PPR78(rdkitmols, version="original"):
     Returns
     -------
     list[Union[dict, None]]
-        List of dictionaries containing group counts for each molecule, or None if 
+        List of dictionaries containing group counts for each molecule, or None if
         fragmentation failed. Dictionary format is {group_name: count}
 
     Notes
     -----
-    Group contributions are calculated using the PPR78 (original) or EPPR78 (extended) 
+    Group contributions are calculated using the PPR78 (original) or EPPR78 (extended)
     method. Failed fragmentations return None instead of raising an exception.
 
     Examples

@@ -5891,7 +5891,7 @@ class Phase:
         T = self.T
         # Using G_dep = H_dep - T*S_dep
         # dG_dep/dT = dH_dep/dT - S_dep - T*dS_dep/dT
-        self._dG_dep_dT = (self.dH_dep_dT() - self.S_dep() 
+        self._dG_dep_dT = (self.dH_dep_dT() - self.S_dep()
                         - T*self.dS_dep_dT())
         return self._dG_dep_dT
 
@@ -6127,7 +6127,7 @@ Returns
 -------
 {t} : float
     The {b_name} derivative of {a_name} of the phase at constant {c_name}, [{a_units}/{b_units}]
-"""     
+"""
             setattr(Phase, t, _der)
             try:
                 _der.__doc__ = doc

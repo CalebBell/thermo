@@ -136,8 +136,8 @@ Data for UNIFAC 2.0
     Interaction parameters for the unifac 2.0 model - note there is a variant for the Dortmund modified UNIFAC as well.
     All groups and subgroups are the same as the original model. These are not used by default in this module. The citation is
 
-    Hayer, Nicolas, Thorsten Wendel, Stephan Mandt, Hans Hasse, and Fabian Jirasek. "Advancing Thermodynamic 
-    Group-Contribution Methods by Machine Learning: UNIFAC 2.0." 
+    Hayer, Nicolas, Thorsten Wendel, Stephan Mandt, Hans Hasse, and Fabian Jirasek. "Advancing Thermodynamic
+    Group-Contribution Methods by Machine Learning: UNIFAC 2.0."
     Chemical Engineering Journal 504 (January 15, 2025): 158667. https://doi.org/10.1016/j.cej.2024.158667.
 
     :type: dict[int: dict[int: float]]
@@ -980,17 +980,17 @@ DOUFSG[106] = UNIFAC_subgroup(106, "AC2S", 52, "ACS", 1.4621, 0.78,
                              smarts="[cX3;H0][sX2][cX3;H0]")
 
 DOUFSG[107] = UNIFAC_subgroup(107, "H2COCH", 53, "EPOXIDES", 1.3601, 1.8031,
-                             atoms={"C": 2, "O": 1, "H": 3}, 
+                             atoms={"C": 2, "O": 1, "H": 3},
                              bonds={SINGLE_BOND: 3},
                              smarts="[CX4H2]1[CX4H1][OX2H0]1")  # Example: 1,2-Epoxybutane
 
 DOUFSG[108] = UNIFAC_subgroup(108, "COCH", 53, "EPOXIDES", 0.683, 0.3418,
-                             atoms={"C": 2, "O": 1, "H": 1}, 
+                             atoms={"C": 2, "O": 1, "H": 1},
                              bonds={SINGLE_BOND: 3},
                              smarts="[CX4H0]1[CX4H1][OX2H0]1")  # Fully substituted on one carbon
 
 DOUFSG[109] = UNIFAC_subgroup(109, "HCOCH", 53, "EPOXIDES", 0.9104, 0.6538,
-                             atoms={"C": 2, "O": 1, "H": 2}, 
+                             atoms={"C": 2, "O": 1, "H": 2},
                              bonds={SINGLE_BOND: 3},
                              smarts="[CX4H1]1[CX4H1][OX2H0]1")  # Example: 2,3-Epoxybutane
 
@@ -1018,12 +1018,12 @@ DOUFSG[114] = UNIFAC_subgroup(114, "CH2CH3CB", 55, "CARBONAT", 2.42, 2.2497,
                              smarts="[CX4H3][OX2][CX3](=[OX1])[OX2][CX4H2]")  # e.g. methyl ethyl carbonate
 
 DOUFSG[119] = UNIFAC_subgroup(119, "H2COCH2", 53, "EPOXIDES", 1.063, 1.123,
-                             atoms={"C": 2, "O": 1, "H": 4}, 
+                             atoms={"C": 2, "O": 1, "H": 4},
                              bonds={SINGLE_BOND: 3},
                              smarts="[CX4H2]1[CX4H2][OX2H0]1")  # Example: ethylene oxide
 
 DOUFSG[153] = UNIFAC_subgroup(153, "H2COC", 53, "EPOXIDES", 0.9104, 0.6538,
-                             atoms={"C": 2, "O": 1, "H": 2}, 
+                             atoms={"C": 2, "O": 1, "H": 2},
                              bonds={SINGLE_BOND: 3},
                              smarts="[CX4H2]1[CX4H0][OX2H0]1")  # Example: 1,2-Epoxy-2-methylpropane
 
@@ -1158,7 +1158,7 @@ DOUFMG[91] = ("OTF", [197])
 # Added Rev 6
 DOUFMG[61] = ("SULFIDES", [122, 123, 124])
 DOUFMG[93] = ("DISULFIDES", [201])
-# from  
+# from
 # Hector, Torben, and Jürgen Gmehling. “Present Status of the Modified UNIFAC Model for the Prediction of Phase Equilibria and Excess Enthalpies for Systems with Ionic Liquids.” Fluid Phase Equilibria 371 (June 15, 2014): 82–92. https://doi.org/10.1016/j.fluid.2014.03.006.
 # and http://www.ddbst.com/PublishedParametersUNIFACDO.html which was updated in 2018
 DOUFMG[98] = ("SO4", [209, 210])
@@ -1270,14 +1270,14 @@ VTPRSG[116] = UNIFAC_subgroup(116, "AC-CHO", 57, "AC-CHO", 0.0, 1.0,
               atoms={"C": 2, "H": 1, "O": 1},
               bonds={SINGLE_BOND: 1, DOUBLE_BOND: 1})
 
-VTPRSG[139] = UNIFAC_subgroup(139, "CF2H", 68, "CF2H", 0.0, 1.6643, 
-              smarts="[CH1](F)(F)", 
-              atoms={"C": 1, "H": 1, "F": 2}, 
+VTPRSG[139] = UNIFAC_subgroup(139, "CF2H", 68, "CF2H", 0.0, 1.6643,
+              smarts="[CH1](F)(F)",
+              atoms={"C": 1, "H": 1, "F": 2},
               bonds={SINGLE_BOND: 3})
 
-VTPRSG[140] = UNIFAC_subgroup(140, "CF2H2", 68, "CF2H", 0.0, 1.3304, 
-              smarts="[CH2](F)F", 
-              atoms={"C": 1, "H": 2, "F": 2}, 
+VTPRSG[140] = UNIFAC_subgroup(140, "CF2H2", 68, "CF2H", 0.0, 1.3304,
+              smarts="[CH2](F)F",
+              atoms={"C": 1, "H": 2, "F": 2},
               bonds={SINGLE_BOND: 4})
 VTPRSG[142] = UNIFAC_subgroup(142, "CF2Cl", 70, "CF2Cl2", 0.0, 1.8506,
               smarts="[CX4;H0](F)(F)(Cl)",  # extra attachment to C is just not hydrogen to avoid 139
@@ -1434,7 +1434,7 @@ NISTUFMG[52] = ("C=C(cy)", [30, 31, 32], "Cyclic unsaturated hydrocarbon chains"
 # Added
 
 NISTUFSG = {}
-NISTUFSG[1] = UNIFAC_subgroup(1, "CH3", 1, "CH2", 0.6325, 1.0608, 
+NISTUFSG[1] = UNIFAC_subgroup(1, "CH3", 1, "CH2", 0.6325, 1.0608,
                              atoms=UFSG[1].atoms, bonds=UFSG[1].bonds, smarts=UFSG[1].smarts)
 NISTUFSG[2] = UNIFAC_subgroup(2, "CH2", 1, "CH2", 0.6325, 0.7081,
                              atoms=UFSG[2].atoms, bonds=UFSG[2].bonds, smarts=UFSG[2].smarts)
@@ -1696,7 +1696,7 @@ NISTUFSG[102] = UNIFAC_subgroup(102, "CON(CH3)CH2", 48, "CONR2", 2.2739, 1.5754,
 # CON(CH2)2 = corresponds to DOUFSG[103] 'AM(CH2)2': N,N-diethylformamide type structure
 NISTUFSG[103] = UNIFAC_subgroup(103, "CON(CH2)2", 48, "CONR2", 2.0767, 1.1866,
                                atoms=DOUFSG[103].atoms, bonds=DOUFSG[103].bonds, smarts=DOUFSG[103].smarts)
-# HCONHCH3 = corresponds to DOUFSG[93] 'HCONHCH3': N-methylformamide specifically 
+# HCONHCH3 = corresponds to DOUFSG[93] 'HCONHCH3': N-methylformamide specifically
 NISTUFSG[93] = UNIFAC_subgroup(93, "HCONHCH3", 49, "HCONR", 2.4617, 2.192,
                               atoms=DOUFSG[93].atoms, bonds=DOUFSG[93].bonds, smarts=DOUFSG[93].smarts)
 # HCONHCH2 = corresponds to DOUFSG[94] 'HCONHCH2': N-ethylformamide specifically
@@ -1741,11 +1741,11 @@ NISTUFSG[113] = UNIFAC_subgroup(113, "(CH2O)2CO", 55, "Carbonate", 2.6078, 2.2,
 NISTUFSG[114] = UNIFAC_subgroup(114, "(CH3O)COOCH2", 55, "Carbonate", 2.8214, 2.508,
                                atoms=DOUFSG[114].atoms, bonds=DOUFSG[114].bonds, smarts=DOUFSG[114].smarts)
 NISTUFSG[199] = UNIFAC_subgroup(199, "(ACO)COOCH2", 55, "Carbonate", 2.2854, 1.78,
-                               atoms={"C": 3, "O": 3, "H": 2}, 
+                               atoms={"C": 3, "O": 3, "H": 2},
                                bonds={SINGLE_BOND: 4, DOUBLE_BOND: 1, AROMATIC_BOND: 1},
                                smarts="[cX3][OX2][CX3](=[OX1])[OX2][CX4H2]")  # Aromatic-O-C(=O)-O-CH2
 NISTUFSG[200] = UNIFAC_subgroup(200, "(ACO)CO(OAC)", 55, "Carbonate", 1.9895, 1.36,
-                               atoms={"C": 3, "O": 3}, 
+                               atoms={"C": 3, "O": 3},
                                bonds={SINGLE_BOND: 4, DOUBLE_BOND: 1, AROMATIC_BOND: 2},
                                smarts="[cX3][OX2][CX3](=[OX1])[OX2][cX3]")  # Aromatic-O-C(=O)-O-Aromatic
 NISTUFSG[110] = UNIFAC_subgroup(110, "CH2SuCH2", 56, "Sulfone", 2.687, 2.12,
@@ -1753,11 +1753,11 @@ NISTUFSG[110] = UNIFAC_subgroup(110, "CH2SuCH2", 56, "Sulfone", 2.687, 2.12,
 NISTUFSG[111] = UNIFAC_subgroup(111, "CH2SuCH", 56, "Sulfone", 2.46, 1.808,
                                atoms=DOUFSG[111].atoms, bonds=DOUFSG[111].bonds, smarts=DOUFSG[111].smarts)
 NISTUFSG[122] = UNIFAC_subgroup(122, "ACSO2", 56, "Sulfone", 1.7034, 1.16,
-                               atoms={"C": 1, "S": 1, "O": 2}, 
+                               atoms={"C": 1, "S": 1, "O": 2},
                                bonds={DOUBLE_BOND: 2, AROMATIC_BOND: 1},
                                smarts="[cX3][SX4](=[OX1])(=[OX1])")  # Aromatic-SO2-Alkyl
 NISTUFSG[123] = UNIFAC_subgroup(123, "ACCHO", 57, "ACCHO", 1.3632, 1.068,
-                              atoms={"C": 2, "H": 1, "O": 1}, 
+                              atoms={"C": 2, "H": 1, "O": 1},
                               bonds={AROMATIC_BOND: 1, SINGLE_BOND: 1, DOUBLE_BOND: 1},
                               smarts="[cX3][CX3H1]=O")  # Aromatic aldehyde
 NISTUFSG[124] = UNIFAC_subgroup(124, "ACCOOH", 58, "ACCOOH", 1.6664, 1.344,
@@ -1765,29 +1765,29 @@ NISTUFSG[124] = UNIFAC_subgroup(124, "ACCOOH", 58, "ACCOOH", 1.6664, 1.344,
                               bonds={AROMATIC_BOND: 1, SINGLE_BOND: 2, DOUBLE_BOND: 1},
                               smarts="[cX3][CX3](=O)[OX2H1]")  # Aromatic carboxylic acid
 NISTUFSG[127] = UNIFAC_subgroup(127, "AC-O-CO-CH3", 59, "AC-O-CO", 2.2815, 1.848,
-                               atoms={"C": 2, "O": 2, "H": 3}, 
+                               atoms={"C": 2, "O": 2, "H": 3},
                                bonds={AROMATIC_BOND: 1, SINGLE_BOND: 2, DOUBLE_BOND: 1},
                                smarts="[cX3][OX2][CX3](=[OX1])[CH3]")  # Phenyl acetate pattern
 NISTUFSG[128] = UNIFAC_subgroup(128, "AC-O-CO-CH2", 59, "AC-O-CO", 2.0547, 1.54,
-                               atoms={"C": 2, "O": 2, "H": 2}, 
+                               atoms={"C": 2, "O": 2, "H": 2},
                                bonds={AROMATIC_BOND: 1, SINGLE_BOND: 2, DOUBLE_BOND: 1},
                                smarts="[cX3][OX2][CX3](=[OX1])[CH2]")  # Phenyl propionate-like pattern
 NISTUFSG[129] = UNIFAC_subgroup(129, "AC-O-CO-CH", 59, "AC-O-CO", 1.8273, 1.228,
-                               atoms={"C": 2, "O": 2, "H": 1}, 
+                               atoms={"C": 2, "O": 2, "H": 1},
                                bonds={AROMATIC_BOND: 1, SINGLE_BOND: 2, DOUBLE_BOND: 1},
                                smarts="[cX3][OX2][CX3](=[OX1])[CH1]")  # Phenyl isobutyrate-like pattern
 NISTUFSG[130] = UNIFAC_subgroup(130, "AC-O-CO-C", 59, "AC-O-CO", 1.5999, 1,
-                               atoms={"C": 2, "O": 2}, 
+                               atoms={"C": 2, "O": 2},
                                bonds={AROMATIC_BOND: 1, SINGLE_BOND: 2, DOUBLE_BOND: 1},
                                smarts="[cX3][OX2][CX3](=[OX1])[CH0]")  # Phenyl tert-pentanoate-like pattern
 NISTUFSG[131] = UNIFAC_subgroup(131, "-O-CH2-CH2-OH", 60, "OCCOH", 2.1226, 1.904,
                                atoms=UFSG[100].atoms, bonds=UFSG[100].bonds, smarts=UFSG[100].smarts)  # Can reuse from UFSG
 NISTUFSG[132] = UNIFAC_subgroup(132, "-O-CH-CH2-OH", 60, "OCCOH", 1.8952, 1.592,
-                               atoms={"C": 2, "H": 4, "O": 2}, 
+                               atoms={"C": 2, "H": 4, "O": 2},
                                bonds={SINGLE_BOND: 3}, priority=11003,
                                smarts="[OX2;H0][CX4;H1][CX4;H2][OX2;H1]")
 NISTUFSG[133] = UNIFAC_subgroup(133, "-O-CH2-CH-OH", 60, "OCCOH", 1.8952, 1.592,
-                               atoms={"C": 2, "H": 4, "O": 2}, 
+                               atoms={"C": 2, "H": 4, "O": 2},
                                bonds={SINGLE_BOND: 3}, priority=11004,
                                smarts="[OX2;H0][CX4;H2][CX4;H1][OX2;H1]")
 NISTUFSG[134] = UNIFAC_subgroup(134, "CH3-S-", 61, "CH2S", 1.6131, 1.368,
@@ -1797,7 +1797,7 @@ NISTUFSG[135] = UNIFAC_subgroup(135, "-CH2-S-", 61, "CH2S", 1.3863, 1.06,
 NISTUFSG[136] = UNIFAC_subgroup(136, ">CH-S-", 61, "CH2S", 1.1589, 0.748,
                               atoms=UFSG[104].atoms, bonds=UFSG[104].bonds, smarts=UFSG[104].smarts)
 NISTUFSG[137] = UNIFAC_subgroup(137, "->C-S-", 61, "CH2S", 0.9314, 0.52,
-                              atoms={"C": 1, "S": 1}, 
+                              atoms={"C": 1, "S": 1},
                               bonds={SINGLE_BOND: 1}, priority=40542,
                               smarts="[CX4;H0][SX2]")  # Quaternary carbon connected to sulfide
 NISTUFSG[187] = UNIFAC_subgroup(187, "ACS", 61, "CH2S", 1.0771, 0.64,
@@ -1846,8 +1846,8 @@ NISTUFSG[145] = UNIFAC_subgroup(145, "CFCl2", 67, "CFCl2", 2.2103, 1.896,
                                bonds={SINGLE_BOND: 3}, priority=20000,
                                smarts="[CX4;H0](Cl)(F)(Cl)")
 NISTUFSG[146] = UNIFAC_subgroup(146, "CF2H", 68, "CF2H", 0.9736, 0.88,
-                               smarts="[CX4;H1](F)(F)", 
-                               atoms={"C": 1, "H": 1, "F": 2}, 
+                               smarts="[CX4;H1](F)(F)",
+                               atoms={"C": 1, "H": 1, "F": 2},
                                bonds={SINGLE_BOND: 2})
 NISTUFSG[147] = UNIFAC_subgroup(147, "CF2ClH", 69, "CF2ClH", 1.7396, 1.6,
                                atoms={"C": 1, "F": 2, "Cl": 1, "H": 1},
@@ -1957,7 +1957,7 @@ NISTUFSG[176] = UNIFAC_subgroup(176, "->Si-O-", 81, "SiO", 1.1044, 0.466,
                                smarts="[SiX4;H0][OX2]")  # Silicon with no H and oxygen
 # Oxime groups
 # note CH=NOH duplicated another 309 group CH2(O)2, so it was reassigned 1309 in thermo
-# https://github.com/CalebBell/thermo/issues/158 
+# https://github.com/CalebBell/thermo/issues/158
 NISTUFSG[1309] = UNIFAC_subgroup(1309, "CH=NOH", 82, "Oxime", 1.499, 1.46,
                                atoms={"C": 1, "N": 1, "O": 1, "H": 2}, bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
                                smarts="[CX3;H1]=[NX2][OX2;H1]")  # CH=N-OH pattern
@@ -2282,10 +2282,10 @@ PSRKSG[137] = UNIFAC_subgroup(137, "HCOCH", 51, "EPOXY", 1.1378, 0.6960,
 PSRKSG[138] = UNIFAC_subgroup(138, "HCOC", 51, "EPOXY", 0.9104, 0.4680,
                              atoms=DOUFSG[108].atoms,
                              bonds=DOUFSG[108].bonds,
-                             smarts=DOUFSG[108].smarts) 
+                             smarts=DOUFSG[108].smarts)
 
 PSRKSG[139] = UNIFAC_subgroup(139, "H2COCH2", 51, "EPOXY", 1.5926, 1.3200,
-                             atoms=DOUFSG[119].atoms,  
+                             atoms=DOUFSG[119].atoms,
                              bonds=DOUFSG[119].bonds,
                              smarts=DOUFSG[119].smarts)
 
@@ -2857,12 +2857,12 @@ NISTKTUFSG[42] = UNIFAC_subgroup(42, "CH3-CO-", 9, "CH2CO", 1.6724, 1.488,
 NISTKTUFSG[43] = UNIFAC_subgroup(43, "-CH2-CO-", 9, "CH2CO", 1.4457, 1.18,
                                 atoms=UFSG[19].atoms, bonds=UFSG[19].bonds, smarts=UFSG[19].smarts)
 NISTKTUFSG[44] = UNIFAC_subgroup(44, ">CH-CO-", 9, "CH2CO", 1.2182, 0.868,
-                                atoms=NISTUFSG[301].atoms, 
+                                atoms=NISTUFSG[301].atoms,
                                 bonds=NISTUFSG[301].bonds,
                                 smarts=NISTUFSG[301].smarts)
 NISTKTUFSG[45] = UNIFAC_subgroup(45, "->C-CO-", 9, "CH2CO", 0.9908, 0.64,
                                 atoms=NISTUFSG[302].atoms,
-                                bonds=NISTUFSG[302].bonds, 
+                                bonds=NISTUFSG[302].bonds,
                                 smarts=NISTUFSG[302].smarts)
 NISTKTUFSG[48] = UNIFAC_subgroup(48, "-CHO", 10, "CHO", 0.998, 0.948,
                                 atoms=NISTUFSG[20].atoms,
@@ -2877,7 +2877,7 @@ NISTKTUFSG[52] = UNIFAC_subgroup(52, "-CH2-COO-", 11, "CCOO", 1.6764, 1.42,
                                 bonds=NISTUFSG[22].bonds,
                                 smarts=NISTUFSG[22].smarts)
 NISTKTUFSG[53] = UNIFAC_subgroup(53, ">CH-COO-", 11, "CCOO", 1.4489, 1.108,
-                                atoms={"C": 2, "H": 1, "O": 2}, 
+                                atoms={"C": 2, "H": 1, "O": 2},
                                 bonds={DOUBLE_BOND: 1, SINGLE_BOND: 2},
                                 smarts="[CX4;H1][CX3](=[OX1])[OX2]", priority=10000)
 NISTKTUFSG[54] = UNIFAC_subgroup(54, "->C-COO-", 11, "CCOO", 1.2215, 0.88,
@@ -2911,7 +2911,7 @@ NISTKTUFSG[63] = UNIFAC_subgroup(63, "-CH2-O- (cy)", 13, "CH2O", 0.9183, 1.1,
 NISTKTUFSG[66] = UNIFAC_subgroup(66, "CH3-NH2", 14, "CNH2", 1.5959, 1.544,
                                 atoms=UFSG[28].atoms,
                                 bonds=UFSG[28].bonds,
-                                smarts=UFSG[28].smarts) 
+                                smarts=UFSG[28].smarts)
 NISTKTUFSG[67] = UNIFAC_subgroup(67, "-CH2-NH2", 14, "CNH2", 1.3692, 1.236,
                                 atoms=UFSG[29].atoms,
                                 bonds=UFSG[29].bonds,
@@ -2921,7 +2921,7 @@ NISTKTUFSG[68] = UNIFAC_subgroup(68, ">CH-NH2", 14, "CNH2", 1.1417, 0.924,
                                 bonds=UFSG[30].bonds,
                                 smarts=UFSG[30].smarts)
 NISTKTUFSG[69] = UNIFAC_subgroup(69, "->C-NH2", 14, "CNH2", 0.9275, 0.696,
-                                atoms=NISTUFSG[85].atoms,  
+                                atoms=NISTUFSG[85].atoms,
                                 bonds=NISTUFSG[85].bonds,
                                 smarts=NISTUFSG[85].smarts)
 NISTKTUFSG[71] = UNIFAC_subgroup(71, "CH3-NH-", 15, "(C)2NH", 1.4337, 1.244,
@@ -2959,51 +2959,51 @@ NISTKTUFSG[81] = UNIFAC_subgroup(81, ">AC-N<", 17, "ACNH2", 0.6506, 0.212,
 NISTKTUFSG[76] = UNIFAC_subgroup(76, "C5H5N", 18, "Pyridine", 2.9993, 2.113,
                                 atoms=UFSG[37].atoms,
                                 bonds=UFSG[37].bonds,
-                                smarts=UFSG[37].smarts)  
+                                smarts=UFSG[37].smarts)
 NISTKTUFSG[77] = UNIFAC_subgroup(77, "C5H4N-", 18, "Pyridine", 2.8332, 1.833,
                                 atoms=UFSG[38].atoms,
                                 bonds=UFSG[38].bonds,
-                                smarts=UFSG[38].smarts)  
+                                smarts=UFSG[38].smarts)
 NISTKTUFSG[78] = UNIFAC_subgroup(78, "C5H3N<", 18, "Pyridine", 2.667, 1.553,
                                 atoms=UFSG[39].atoms,
                                 bonds=UFSG[39].bonds,
-                                smarts=UFSG[39].smarts)  
+                                smarts=UFSG[39].smarts)
 NISTKTUFSG[85] = UNIFAC_subgroup(85, "CH3-CN", 19, "CCN", 1.8701, 1.724,
                                 atoms=UFSG[40].atoms,
                                 bonds=UFSG[40].bonds,
-                                smarts=UFSG[40].smarts)  
+                                smarts=UFSG[40].smarts)
 NISTKTUFSG[86] = UNIFAC_subgroup(86, "-CH2-CN", 19, "CCN", 1.6434, 1.416,
                                 atoms=UFSG[41].atoms,
                                 bonds=UFSG[41].bonds,
-                                smarts=UFSG[41].smarts)  
+                                smarts=UFSG[41].smarts)
 NISTKTUFSG[87] = UNIFAC_subgroup(87, ">CH-CN", 19, "CCN", 1.416, 1.104,
-                                atoms=NISTUFSG[303].atoms,  
-                                bonds=NISTUFSG[303].bonds,  
-                                smarts=NISTUFSG[303].smarts)  
+                                atoms=NISTUFSG[303].atoms,
+                                bonds=NISTUFSG[303].bonds,
+                                smarts=NISTUFSG[303].smarts)
 NISTKTUFSG[88] = UNIFAC_subgroup(88, "->C-CN", 19, "CCN", 1.1885, 0.876,
-                                atoms=NISTUFSG[304].atoms,  
-                                bonds=NISTUFSG[304].bonds,  
-                                smarts=NISTUFSG[304].smarts)  
+                                atoms=NISTUFSG[304].atoms,
+                                bonds=NISTUFSG[304].bonds,
+                                smarts=NISTUFSG[304].smarts)
 NISTKTUFSG[94] = UNIFAC_subgroup(94, "-COOH", 20, "COOH", 1.3013, 1.224,
                                 atoms=UFSG[42].atoms,
                                 bonds=UFSG[42].bonds,
-                                smarts=UFSG[42].smarts)  
+                                smarts=UFSG[42].smarts)
 NISTKTUFSG[95] = UNIFAC_subgroup(95, "HCOOH", 20, "COOH", 1.528, 1.532,
                                 atoms=UFSG[43].atoms,
                                 bonds=UFSG[43].bonds,
-                                smarts=UFSG[43].smarts)  
+                                smarts=UFSG[43].smarts)
 NISTKTUFSG[99] = UNIFAC_subgroup(99, "-CH2-Cl", 21, "CCl", 1.4654, 1.264,
                                 atoms=UFSG[44].atoms,
                                 bonds=UFSG[44].bonds,
-                                smarts=UFSG[44].smarts)  
+                                smarts=UFSG[44].smarts)
 NISTKTUFSG[100] = UNIFAC_subgroup(100, ">CH-Cl", 21, "CCl", 1.238, 0.952,
                                  atoms=UFSG[45].atoms,
                                  bonds=UFSG[45].bonds,
-                                 smarts=UFSG[45].smarts)  
+                                 smarts=UFSG[45].smarts)
 NISTKTUFSG[101] = UNIFAC_subgroup(101, "->CCl", 21, "CCl", 1.0106, 0.724,
                                  atoms=UFSG[46].atoms,
                                  bonds=UFSG[46].bonds,
-                                 smarts=UFSG[46].smarts)  
+                                 smarts=UFSG[46].smarts)
 NISTKTUFSG[102] = UNIFAC_subgroup(102, "CH2Cl2", 22, "CCl2", 2.2564, 1.988,
                                  atoms=UFSG[47].atoms,
                                  bonds=UFSG[47].bonds,
@@ -3045,8 +3045,8 @@ NISTKTUFSG[134] = UNIFAC_subgroup(134, ">CH-NO2", 26, "CNO2", 1.5544, 1.248,
                                  bonds=UFSG[56].bonds,
                                  smarts=UFSG[56].smarts)
 NISTKTUFSG[135] = UNIFAC_subgroup(135, "->C-NO2", 26, "CNO2", 1.327, 1.02,
-                                atoms=NISTUFSG[305].atoms,  
-                                bonds=NISTUFSG[305].bonds,  
+                                atoms=NISTUFSG[305].atoms,
+                                bonds=NISTUFSG[305].bonds,
                                 smarts=NISTUFSG[305].smarts)
 NISTKTUFSG[136] = UNIFAC_subgroup(136, ">AC-NO2", 27, "ACNO2", 1.4199, 1.104,
                                  atoms=UFSG[57].atoms,
@@ -3065,12 +3065,12 @@ NISTKTUFSG[139] = UNIFAC_subgroup(139, "-CH2-SH", 29, "CH3SH", 1.651, 1.368,
                                  bonds=UFSG[60].bonds,
                                  smarts=UFSG[60].smarts)
 NISTKTUFSG[140] = UNIFAC_subgroup(140, ">CH-SH", 29, "CH3SH", 1.4232, 0.228,
-                                atoms=NISTUFSG[192].atoms,  
-                                bonds=NISTUFSG[192].bonds,  
+                                atoms=NISTUFSG[192].atoms,
+                                bonds=NISTUFSG[192].bonds,
                                 smarts=NISTUFSG[192].smarts)
 NISTKTUFSG[141] = UNIFAC_subgroup(141, "->C-SH", 29, "CH3SH", 1.1958, 0,
-                                atoms=NISTUFSG[193].atoms,  
-                                bonds=NISTUFSG[193].bonds,  
+                                atoms=NISTUFSG[193].atoms,
+                                bonds=NISTUFSG[193].bonds,
                                 smarts=NISTUFSG[193].smarts)
 NISTKTUFSG[50] = UNIFAC_subgroup(50, "C5H4O2", 30, "Furfural", 3.168, 2.484,
                                  atoms=UFSG[61].atoms,
@@ -3497,7 +3497,7 @@ def load_group_assignments_DDBST():
 thread_local_storage = threading.local()
 
 def init_ddbst_UNIFAC_db():
-    """ Initialize the database connection and cursor for the current thread if not already done. """
+    """Initialize the database connection and cursor for the current thread if not already done."""
     if not hasattr(thread_local_storage, "conn"):
         # Create a new connection and cursor for the thread
         import sqlite3
@@ -5200,7 +5200,7 @@ class UNIFAC(GibbsExcess):
     psi_abc : tuple(list[list[float]], 3), optional
         `psi` interaction parameters between each subgroup; indexed
         [subgroup][subgroup], not symmetrical; first arg is the matrix for `a`,
-        then `b`, and then `c`. Only one of `psi_abc` or `psi_coeffs` 
+        then `b`, and then `c`. Only one of `psi_abc` or `psi_coeffs`
         or `psi_a` and `psi_b` and `psi_c` is required, [-]
     psi_coeffs : list[list[tuple(float, 3)]], optional
         `psi` interaction parameters between each subgroup; indexed
@@ -5208,15 +5208,15 @@ class UNIFAC(GibbsExcess):
         or `psi_coeffs` or `psi_a` and `psi_b` and `psi_c` is required, [-]
     psi_a : list[list[float]], optional
         `psi` a term interaction parameters between each subgroup; indexed
-        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or 
+        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or
         `psi_a` and `psi_b` and `psi_c` is required, [-]
     psi_b : list[list[float]], optional
         `psi` b term interaction parameters between each subgroup; indexed
-        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or 
+        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or
         `psi_a` and `psi_b` and `psi_c` is required, [-]
     psi_c : list[list[float]], optional
         `psi` c term interaction parameters between each subgroup; indexed
-        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or 
+        [subgroup][subgroup]. Only one of `psi_abc` or `psi_coeffs` or
         `psi_a` and `psi_b` and `psi_c` is required, [-]
     version : int, optional
         Which version of the model to use [-]
@@ -5354,7 +5354,7 @@ class UNIFAC(GibbsExcess):
             UNIFAC interaction parameter data; available dictionaries in this
             module include UFIP (original), DOUFIP2006 (Dortmund parameters
             published in 2006), DOUFIP2016 (Dortmund parameters published in
-            2016), NISTUFIP, and UF2IP (matrix completion - all interactions are present). 
+            2016), NISTUFIP, and UF2IP (matrix completion - all interactions are present).
             The default depends on the given `version`, [-]
         version : int, optional
             Which version of the model to use. Defaults to 0, [-]

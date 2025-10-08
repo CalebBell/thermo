@@ -731,7 +731,7 @@ def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha):
             if rel_err < 1e-14 or V == Vi:
                 # Conditional check probably not worth it
                 break
-        if i == 1 and V > 1.5*b or V < b:
+        if (i == 1 and V > 1.5*b) or V < b:
             # try:
                 # try:
             try:

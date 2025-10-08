@@ -183,10 +183,10 @@ class JobackGroupContribution(BaseGroupContribution):
         "Cpa", "Cpb", "Cpc", "Cpd", "Hfus", "Hvap", "mua", "mub"
     )
 
-    def __init__(self, group, Tc=None, Pc=None, Vc=None, Tb=None, Tm=None, 
+    def __init__(self, group, Tc=None, Pc=None, Vc=None, Tb=None, Tm=None,
                  Hform=None, Gform=None, Cpa=None, Cpb=None, Cpc=None, Cpd=None,
-                 Hfus=None, Hvap=None, mua=None, mub=None, smarts=None, 
-                 priority=None, atoms=None, bonds=None, 
+                 Hfus=None, Hvap=None, mua=None, mub=None, smarts=None,
+                 priority=None, atoms=None, bonds=None,
                  hydrogen_from_smarts=False, group_id=None):
         # Initialize base attributes
         self.group = group
@@ -383,8 +383,8 @@ class Joback:
        Properties from Group-Contributions." Chemical Engineering
        Communications 57, no. 1-6 (July 1, 1987): 233-43.
        doi:10.1080/00986448708960487.
-    .. [3] Elliott, J. Richard, Vladimir Diky, Thomas A. Knotts IV, and 
-       W. Vincent Wilding. The Properties of Gases and Liquids, Sixth 
+    .. [3] Elliott, J. Richard, Vladimir Diky, Thomas A. Knotts IV, and
+       W. Vincent Wilding. The Properties of Gases and Liquids, Sixth
        Edition. 6th edition. New York: McGraw Hill, 2023.
     '''
 
@@ -1189,7 +1189,7 @@ class DikyJoback:
         C_p^o(T) = \sum_{j} N_j \Bigl(A_{0j} + A_{1j} T + A_{2j} T^2 + A_{3j} T^3\Bigr)
 
     where:
-      - The summation is over all first-order groups and 
+      - The summation is over all first-order groups and
         exactly one "entity term" as part of the second-order corrections,
         and ring-size corrections are added for each 3 and 4 size ring.
 
@@ -1222,8 +1222,8 @@ class DikyJoback:
 
     References
     ----------
-    .. [1] Elliott, J. Richard, Vladimir Diky, Thomas A. Knotts IV, and 
-       W. Vincent Wilding. The Properties of Gases and Liquids, Sixth 
+    .. [1] Elliott, J. Richard, Vladimir Diky, Thomas A. Knotts IV, and
+       W. Vincent Wilding. The Properties of Gases and Liquids, Sixth
        Edition. 6th edition. New York: McGraw Hill, 2023.
     '''
     def __init__(self, mol):

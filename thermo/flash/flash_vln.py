@@ -459,7 +459,7 @@ class FlashVLN(FlashVL):
 
 
         # Can still be a VLL solution now that a new phase has been added
-        if (LL_solved and (self.max_liquids == 2) or (VL_solved and self.max_liquids == 1) or (self.N < 3 and (VL_solved or LL_solved))):
+        if ((LL_solved and (self.max_liquids == 2)) or (VL_solved and self.max_liquids == 1) or (self.N < 3 and (VL_solved or LL_solved))):
             # Check the Gibbs
             if G_2P < G_min_1P:
                 return sln_2P

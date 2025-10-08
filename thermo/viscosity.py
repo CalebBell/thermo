@@ -192,7 +192,7 @@ def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
         dmu_Tc_under, _ = dPPDS9_dT(Tc, *coeffs)
 
     # Adjust limits based on derivative behavior
-    if high > 0.0 and low < 0.0 or isinf(dmu_low_under) or isinf(dmu_low_above):
+    if (high > 0.0 and low < 0.0) or isinf(dmu_low_under) or isinf(dmu_low_above):
         low = 0.1*high
         high = high-1.0
     else:

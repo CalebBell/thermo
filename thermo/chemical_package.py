@@ -507,7 +507,7 @@ class ChemicalConstantsPackage:
     non_vector_properties = (
         # Basic Identifiers
         "names", "aliases", "MWs", "formulas", "CASs", "CASis", "PubChems", "smiless", "InChIs", "InChI_Keys",
-        # Physical State Properties  
+        # Physical State Properties
         "phase_STPs", "atomss", "charges", "functional_groups",
         # Critical Properties
         "Tcs", "Pcs", "Vcs", "Zcs", "rhocs", "rhocs_mass",
@@ -519,7 +519,7 @@ class ChemicalConstantsPackage:
         "S0gs", "S0gs_mass", "Hf_STPs", "Hf_STPs_mass", "Hcs", "Hcs_mass", "Hcs_lower", "Hcs_lower_mass",
         # Volumetric Properties
         "Vml_STPs", "Vml_60Fs", "Vml_Tms", "Vms_Tms", "Vmg_STPs",
-        # Density Properties  
+        # Density Properties
         "rhol_STPs", "rhol_STPs_mass", "rhol_60Fs", "rhol_60Fs_mass",
         "rhog_STPs", "rhog_STPs_mass", "rhos_Tms", "rhos_Tms_mass",
         # Surface and Interface Properties
@@ -764,7 +764,7 @@ class ChemicalConstantsPackage:
         All properties should have been specified before constructing the first
         ChemicalConstantsPackage.
 
-        This function is a general one that also be used for reordering, 
+        This function is a general one that also be used for reordering,
         moving, swapping, and removing components simultaneously.
 
         Examples
@@ -1704,7 +1704,7 @@ class PropertyCorrelationsPackage:
 
         Notes
         -----
-        This function is a general one that also be used for reordering, 
+        This function is a general one that also be used for reordering,
         moving, swapping, and removing components simultaneously.
         """
         is_slice = isinstance(idxs, slice)

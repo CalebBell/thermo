@@ -401,12 +401,12 @@ class VaporPressure(TDependentProperty):
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
             df_wb = miscdata.webbook_data
             if CASRN_int in df_wb.index and not isnan(float(df_wb.at[CASRN_int, "AntoineA"])):
-                self.add_correlation(name=ANTOINE_WEBBOOK, model="Antoine", 
-                                     Tmin=float(df_wb.at[CASRN_int, "AntoineTmin"]), 
+                self.add_correlation(name=ANTOINE_WEBBOOK, model="Antoine",
+                                     Tmin=float(df_wb.at[CASRN_int, "AntoineTmin"]),
                                      Tmax=float(df_wb.at[CASRN_int, "AntoineTmax"]),
-                                     A=float(df_wb.at[CASRN_int, "AntoineA"]), 
-                                     B=float(df_wb.at[CASRN_int, "AntoineB"]), 
-                                     C=float(df_wb.at[CASRN_int, "AntoineC"]), 
+                                     A=float(df_wb.at[CASRN_int, "AntoineA"]),
+                                     B=float(df_wb.at[CASRN_int, "AntoineB"]),
+                                     C=float(df_wb.at[CASRN_int, "AntoineC"]),
                                      base=e, select=False)
             if CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
                 methods.append(WAGNER_MCGARRY)
@@ -421,12 +421,12 @@ class VaporPressure(TDependentProperty):
                                      a=A, b=B, c=C, d=D, select=False)
             if CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
                 A, B, C, Tc, to, n, E, F, ANTOINE_EXTENDED_POLING_Tmin, ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=ANTOINE_EXTENDED_POLING, model="TRC_Antoine_extended", 
+                self.add_correlation(name=ANTOINE_EXTENDED_POLING, model="TRC_Antoine_extended",
                                      Tmin=ANTOINE_EXTENDED_POLING_Tmin, Tmax=ANTOINE_EXTENDED_POLING_Tmax,
                                      A=A, B=B, C=C, Tc=Tc, to=to, n=n, E=E, F=F, select=False)
             if CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
                 A, B, C, ANTOINE_POLING_Tmin, ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=ANTOINE_POLING, model="Antoine", 
+                self.add_correlation(name=ANTOINE_POLING, model="Antoine",
                                      Tmin=ANTOINE_POLING_Tmin, Tmax=ANTOINE_POLING_Tmax,
                                      A=A, B=B, C=C, base=10.0, select=False)
             if CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
@@ -448,7 +448,7 @@ class VaporPressure(TDependentProperty):
                                      a=A, b=B, c=C, d=D, select=False)
             if CASRN in vapor_pressure.Psat_data_Landolt_Antoine.index:
                 A, B, C, Tmin, Tmax = vapor_pressure.Psat_values_Landolt_Antoine[vapor_pressure.Psat_data_Landolt_Antoine.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=LANDOLT, model="Antoine", 
+                self.add_correlation(name=LANDOLT, model="Antoine",
                                      Tmin=Tmin, Tmax=Tmax,
                                      A=A, B=B, C=C, base=e, select=False)
         if all((self.Tb, self.Tc, self.Pc)):

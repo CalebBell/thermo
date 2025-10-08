@@ -10089,7 +10089,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             dZ_dT = self.dZ_dT_l
 
         N = self.N
-        return VDW_dlnphis_dT(self.T, self.P, Z, dZ_dT, self.b, self.a_alpha, 
+        return VDW_dlnphis_dT(self.T, self.P, Z, dZ_dT, self.b, self.a_alpha,
                             self.da_alpha_dT, self.bs, self.ais, N,
                             dlnphis_dT=zeros(N) if self.vectorized else [0.0]*N)
 
@@ -10124,7 +10124,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
             Z, dZ_dP = self.Z_g, self.dZ_dP_g
 
         N = self.N
-        return VDW_dlnphis_dP(self.T, self.P, Z, dZ_dP, self.b, self.a_alpha, 
+        return VDW_dlnphis_dP(self.T, self.P, Z, dZ_dP, self.b, self.a_alpha,
                             self.bs, self.ais, N,
                             dlnphis_dP=zeros(N) if self.vectorized else [0.0]*N)
     @property

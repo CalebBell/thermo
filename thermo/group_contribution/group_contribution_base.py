@@ -89,10 +89,10 @@ def load_rdkit_modules():
             raise Exception(rdkit_missing)
 
 class BaseGroupContribution:
-    __slots__ = ("group", "group_id", "smarts", "smart_rdkit", 
+    __slots__ = ("group", "group_id", "smarts", "smart_rdkit",
                  "hydrogen_from_smarts", "priority", "atoms", "bonds")
 
-    def __init__(self, group, smarts=None, priority=None, atoms=None, 
+    def __init__(self, group, smarts=None, priority=None, atoms=None,
                  bonds=None, hydrogen_from_smarts=False, group_id=None):
         self.group = group
         self.smarts = smarts
@@ -391,7 +391,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                             atom.SetProp("atomLabel", str(atom.GetIdx()))
 
                         # Create the image with this single match highlighted
-                        img = Draw.MolToImage(mol_copy, 
+                        img = Draw.MolToImage(mol_copy,
                                             highlightAtoms=list(match),
                                             highlightColor=highlight_color)
 
@@ -399,7 +399,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                         ax.axis("off")
 
                         # Add pattern info as title
-                        ax.set_title(f"Group {group_id}\nMatch {match_idx + 1}\nSMARTS: {pattern_obj.smarts}", 
+                        ax.set_title(f"Group {group_id}\nMatch {match_idx + 1}\nSMARTS: {pattern_obj.smarts}",
                                 fontsize=10, pad=10)
 
                         current_ax_idx += 1

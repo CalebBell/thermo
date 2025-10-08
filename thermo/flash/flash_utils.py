@@ -305,7 +305,7 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                 err_i = Ki*xi/yi - 1.0
                 err += err_i*err_i
 
-        if err > 0.0 and err in (err1, err2, err3) or error_increases > 3:
+        if (err > 0.0 and err in (err1, err2, err3)) or error_increases > 3:
             raise OscillationError("Converged to cycle in errors, no progress being made")
         # Accept the new compositions
         # if not limited_Z:
@@ -391,7 +391,7 @@ def sequential_substitution_2P_functional(T, P, zs, xs_guess, ys_guess,
                 err_i = Ki*xi/yi - 1.0
                 err += err_i*err_i
 
-        if err > 0.0 and err in (err1, err2, err3) or error_increases > 3:
+        if (err > 0.0 and err in (err1, err2, err3)) or error_increases > 3:
             raise OscillationError("Converged to cycle in errors, no progress being made")
 
         comp_difference = 0.0
@@ -2030,7 +2030,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
             if V_diff is not None:
                 V_iter, V_const = iter_phase.V(), const_phase.V()
                 V_ratio = V_iter/V_const
-                if 1.0 - V_diff < V_ratio < 1.0 + V_diff or skip > 0 or V_iter_last and (abs(min(V_iter, V_iter_last)/max(V_iter, V_iter_last)) < .8):
+                if 1.0 - V_diff < V_ratio < 1.0 + V_diff or skip > 0 or (V_iter_last and (abs(min(V_iter, V_iter_last)/max(V_iter, V_iter_last)) < .8)):
                     # Relax the constraint for the iterating on variable so two different phases exist
                     #if iter_phase.eos_mix.phase in ('l', 'g') and iter_phase.eos_mix.phase == const_phase.eos_mix.phase:
                     # Alternatively, try a stability test here

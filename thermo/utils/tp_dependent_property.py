@@ -123,7 +123,7 @@ class TPDependentProperty(TDependentProperty):
 
         self.tabular_extrapolation_permitted = kwargs.get("tabular_extrapolation_permitted", True)
 
-        if kwargs.get("tabular_data_P", None):
+        if kwargs.get("tabular_data_P"):
             for name, (Ts, Ps, properties) in kwargs["tabular_data_P"].items():
                 self.add_tabular_data_P(Ts, Ps, properties, name=name, check_properties=False)
 

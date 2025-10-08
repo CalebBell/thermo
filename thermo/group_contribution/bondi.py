@@ -690,13 +690,13 @@ def find_methylene_rings_condensed_to_aromatic_rings(mol):
                         for atom_idx in ring:
                             atom = mol.GetAtomWithIdx(atom_idx)
                             if (atom.GetSymbol() == "C" and
-                                atom.GetTotalNumHs() == 2 and 
+                                atom.GetTotalNumHs() == 2 and
                                 atom.GetDegree() == 2):
                                 has_ch2 = True
                                 break
                         if has_ch2:
                             methylene_ring_candidates.append(ring)
-                        break                        
+                        break
     # Now check each candidate ring to see if it's a true methylene ring
 #     print(methylene_ring_candidates, 'methylene_ring_candidates')
     methylene_rings = []
@@ -711,7 +711,7 @@ def find_methylene_rings_condensed_to_aromatic_rings(mol):
             # - Must be carbon
             # - Must have exactly 2 hydrogens
             # - Must have exactly 2 bonds (to other ring carbons)
-            if (atom.GetSymbol() != "C" or 
+            if (atom.GetSymbol() != "C" or
                 atom.GetTotalNumHs() != 2 or
                 atom.GetDegree() != 2):
                 is_methylene = False
@@ -768,8 +768,8 @@ def bondi_van_der_waals_surface_area_volume(rdkitmol):
     Calculate the van der Waals volume `V_vdw` and surface area `A_vdw`
     for a given molecule using Bondi group contributions.
 
-    This function identifies the Bondi groups present in the molecule 
-    using SMARTS-based fragmentation and computes the total van der Waals 
+    This function identifies the Bondi groups present in the molecule
+    using SMARTS-based fragmentation and computes the total van der Waals
     volume and surface area from the Bondi group contributions method.
 
     Parameters
