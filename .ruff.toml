@@ -17,6 +17,8 @@ exclude = [
 select = ["ALL"]
 
 extend-ignore = [
+    "PD008", # .at with pandas is fine with me
+    "RUF059", # Allow unused variables
     "FIX002", # TODO are OK
     "FIX004", # HACK is OK
     
@@ -32,6 +34,9 @@ extend-ignore = [
     "PERF203", # `try`-`except` within a loop incurs performance overhead
     "PERF401", # PERF401 Use a list comprehension to create a transformed list
 
+    "PLR1730", # use of min/max are less performant than `if
+    "PLC0415", # Allow lazy imports
+
     # chemicals specific
     "E701", # lots of this here
     
@@ -43,7 +48,6 @@ extend-ignore = [
     "PLE0604",
     
     "TD002","TD003","TD004","TD005",
-
 
     # Originally from astropy's pyproject.toml, see about removing many of them later
     
