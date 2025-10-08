@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ['GraysonStreed', 'ChaoSeader']
+__all__ = ["GraysonStreed", "ChaoSeader"]
 
 from math import log10
 
@@ -30,10 +30,10 @@ from thermo.activity import IdealSolution
 from thermo.phases.phase import Phase
 
 # hydrogen, methane
-Grayson_Streed_special_CASs = {'1333-74-0', '74-82-8'}
+Grayson_Streed_special_CASs = {"1333-74-0", "74-82-8"}
 
 class GraysonStreed(Phase):
-    phase = force_phase = 'l'
+    phase = force_phase = "l"
     is_gas = False
     is_liquid = True
     # revised one
@@ -43,10 +43,10 @@ class GraysonStreed(Phase):
     version = 1
 
     pure_references = tuple()
-    model_attributes = ('Tcs', 'Pcs', 'omegas', '_CASs',
-                        'GibbsExcessModel') + pure_references
+    model_attributes = ("Tcs", "Pcs", "omegas", "_CASs",
+                        "GibbsExcessModel") + pure_references
 
-    obj_references = ('HeatCapacityGases', 'GibbsExcessModel', 'result', 'constants', 'correlations')
+    obj_references = ("HeatCapacityGases", "GibbsExcessModel", "result", "constants", "correlations")
 
     def to_TP_zs(self, T, P, zs):
         new = self.__class__.__new__(self.__class__)
@@ -144,9 +144,9 @@ class GraysonStreed(Phase):
 
             if regular[i]:
                 coeffs = self.simple_coeffs
-            elif CASs[i] == '1333-74-0':
+            elif CASs[i] == "1333-74-0":
                 coeffs = self.hydrogen_coeffs
-            elif CASs[i] == '74-82-8':
+            elif CASs[i] == "74-82-8":
                 coeffs = self.methane_coeffs
             else:
                 raise ValueError("Fail")

@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ['GibbsEOS',]
+__all__ = ["GibbsEOS",]
 
 from thermo.phases.phase import Phase
 
@@ -33,12 +33,12 @@ class GibbsEOS(Phase):
 
     def dV_dP(self):
         # easy
-        '''from sympy import *
+        """from sympy import *
         T, P = symbols('T, P')
         G = symbols('G', cls=Function)
         V = diff(G(T, P), P)
         diff(V, P)
-        '''
+        """
         return self.d2G_dP2()
 
     dV_dP_T = dV_dP

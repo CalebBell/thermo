@@ -28,17 +28,17 @@ import os
 
 from thermo.chemical import ChemicalConstants
 
-folder = os.path.join(os.path.dirname(__file__), 'Misc')
+folder = os.path.join(os.path.dirname(__file__), "Misc")
 
 
 
 
 
 def loadChemicalConstants(data, rows=True):
-    '''Accepts either a marshal-style list-of-lists with fixed indexes, or
+    """Accepts either a marshal-style list-of-lists with fixed indexes, or
     takes in the json-style dict-of-dicts-of-dicts.
     Returns a dictionary of ChemicalConstants indexed by their CASs.
-    '''
+    """
     loaded_chemicals = {}
     # Question: What if every database is a per-datasource one
     # And I fit all methods to apolynom to within their range?
@@ -66,26 +66,26 @@ def loadChemicalConstants(data, rows=True):
             add_chemical(kwargs)
     else:
         for CAS, item in data.items():
-            kwargs= dict(CAS=CAS, Tc=item['Tc']['value'],
-                    Pc=item['Pc']['value'],
-                    Vc=item['Vc']['value'],
-                    omega=item['omega']['value'],
-                    Tb=item['Tb']['value'],
-                    Tm=item['Tm']['value'],
-                    Tt=item['Tt']['value'],
-                    Pt=item['Pt']['value'],
-                    Hfus=item['Hfus']['value'],
-                    Hsub=item['Hsub']['value'],
-                    Hfg=item['Hfg']['value'],
-                    dipole=item['dipole']['value'])
+            kwargs= dict(CAS=CAS, Tc=item["Tc"]["value"],
+                    Pc=item["Pc"]["value"],
+                    Vc=item["Vc"]["value"],
+                    omega=item["omega"]["value"],
+                    Tb=item["Tb"]["value"],
+                    Tm=item["Tm"]["value"],
+                    Tt=item["Tt"]["value"],
+                    Pt=item["Pt"]["value"],
+                    Hfus=item["Hfus"]["value"],
+                    Hsub=item["Hsub"]["value"],
+                    Hfg=item["Hfg"]["value"],
+                    dipole=item["dipole"]["value"])
 
             for prop_key, store in marshal_properties:
                 try:
                     prop_data = item[prop_key]
-                    Tmin, Tmax = prop_data['Tmin'], prop_data['Tmax']
-                    coefficients = prop_data['coefficients']
-                    if 'Tc' in prop_data:
-                        kwargs[prop_key] = (Tmin, Tmax, prop_data['Tc'], coefficients)
+                    Tmin, Tmax = prop_data["Tmin"], prop_data["Tmax"]
+                    coefficients = prop_data["coefficients"]
+                    if "Tc" in prop_data:
+                        kwargs[prop_key] = (Tmin, Tmax, prop_data["Tc"], coefficients)
                     else:
                         kwargs[prop_key] = (Tmin, Tmax, coefficients)
                 except KeyError:
@@ -107,26 +107,26 @@ def marshal_json_data(full_data, path):
     marshal_rows = []
     for CAS, data in full_data.items():
         row = [CAS]
-        row.append(data['Tc']['value'])
-        row.append(data['Pc']['value'])
-        row.append(data['Vc']['value'])
-        row.append(data['omega']['value'])
-        row.append(data['Tb']['value'])
-        row.append(data['Tm']['value'])
-        row.append(data['Tt']['value'])
-        row.append(data['Pt']['value'])
-        row.append(data['Hfus']['value'])
-        row.append(data['Hsub']['value'])
-        row.append(data['Hfg']['value'])
-        row.append(data['dipole']['value'])
+        row.append(data["Tc"]["value"])
+        row.append(data["Pc"]["value"])
+        row.append(data["Vc"]["value"])
+        row.append(data["omega"]["value"])
+        row.append(data["Tb"]["value"])
+        row.append(data["Tm"]["value"])
+        row.append(data["Tt"]["value"])
+        row.append(data["Pt"]["value"])
+        row.append(data["Hfus"]["value"])
+        row.append(data["Hsub"]["value"])
+        row.append(data["Hfg"]["value"])
+        row.append(data["dipole"]["value"])
 
         for prop_key, store in marshal_properties:
             try:
                 prop_data = data[prop_key]
-                Tmin, Tmax = prop_data['Tmin'], prop_data['Tmax']
-                coefficients = prop_data['coefficients']
-                if 'Tc' in prop_data:
-                    Tc = prop_data['Tc']
+                Tmin, Tmax = prop_data["Tmin"], prop_data["Tmax"]
+                coefficients = prop_data["coefficients"]
+                if "Tc" in prop_data:
+                    Tc = prop_data["Tc"]
                     row = (Tmin, Tmax, Tc, coefficients)
                 else:
                     row = (Tmin, Tmax, coefficients)
@@ -137,35 +137,35 @@ def marshal_json_data(full_data, path):
 
         marshal_rows.append(row)
 
-    f = open(path, 'wb')
+    f = open(path, "wb")
     marshal.dump(marshal_rows, f, 2)
     f.close()
     return marshal_rows
 
 
 
-marshal_properties = [('HeatCapacityGas', True),
-           ('HeatCapacityLiquid', True),
-           ('HeatCapacitySolid', True),
+marshal_properties = [("HeatCapacityGas", True),
+           ("HeatCapacityLiquid", True),
+           ("HeatCapacitySolid", True),
 
-           ('ThermalConductivityLiquid', True),
-           ('ThermalConductivityGas', True),
+           ("ThermalConductivityLiquid", True),
+           ("ThermalConductivityGas", True),
 
-           ('ViscosityLiquid', True),
-           ('ViscosityGas', True),
+           ("ViscosityLiquid", True),
+           ("ViscosityGas", True),
 
-           ('EnthalpyVaporization', True),
-           ('VaporPressure', True),
-           ('VolumeLiquid', True),
-           ('SublimationPressure', True),
-           ('EnthalpySublimation', True),
-           ('VolumeSolid', True),
-           ('SurfaceTension', True),
+           ("EnthalpyVaporization", True),
+           ("VaporPressure", True),
+           ("VolumeLiquid", True),
+           ("SublimationPressure", True),
+           ("EnthalpySublimation", True),
+           ("VolumeSolid", True),
+           ("SurfaceTension", True),
            ]
 
 
-json_path = os.path.join(folder, 'constants dump.json')
-binary_path = os.path.join(folder, 'binary dump.marshal')
+json_path = os.path.join(folder, "constants dump.json")
+binary_path = os.path.join(folder, "binary dump.marshal")
 skip = not os.path.exists(json_path)
 
 loaded_chemicals = {}
@@ -199,5 +199,5 @@ if not skip:
             pass
 
     if not from_json:
-        marshal_rows = marshal.load(open(binary_path, 'rb'))
+        marshal_rows = marshal.load(open(binary_path, "rb"))
         loaded_chemicals = loadChemicalConstants(marshal_rows, rows=True)

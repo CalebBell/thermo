@@ -28,9 +28,9 @@ This functionality requires the RDKit library to work.
 
 .. autofunction:: thermo.group_contribution.Wilson_Jasperson
 '''
-__all__ = ['Wilson_Jasperson', 'Wilson_Jasperson_Tc_increments',
-           'Wilson_Jasperson_Pc_increments',
-           'Wilson_Jasperson_Tc_groups', 'Wilson_Jasperson_Pc_groups']
+__all__ = ["Wilson_Jasperson", "Wilson_Jasperson_Tc_increments",
+           "Wilson_Jasperson_Pc_increments",
+           "Wilson_Jasperson_Tc_groups", "Wilson_Jasperson_Pc_groups"]
 from math import exp
 
 from chemicals.elements import simple_formula_parser
@@ -54,105 +54,105 @@ from thermo.functional_groups import (
 )
 
 Wilson_Jasperson_Tc_increments = {
-'H': 0.002793,
-'D': 0.002793,
-'T': 0.002793,
-'He': 0.32,
-'B': 0.019,
-'C': 0.008532,
-'N': 0.019181,
-'O': 0.020341,
-'F': 0.00881,
-'Ne': 0.0364,
-'Al': 0.088,
-'Si': 0.02,
-'P': 0.012,
-'S': 0.007271,
-'Cl': 0.011151,
-'Ar': 0.0168,
-'Ti': 0.014,
-'V': 0.0186,
-'Ga': 0.059,
-'Ge': 0.031,
-'As': 0.007,
-'Se': 0.0103,
-'Br': 0.012447,
-'Kr': 0.0133,
-'Rb': -0.027,
-'Zr': 0.175,
-'Nb': 0.0176,
-'Mo': 0.007,
-'Sn': 0.02,
-'Sb': 0.01,
-'Te': 0,
-'I': 0.0059,
-'Xe': 0.017,
-'Cs': -0.0275,
-'Hf': 0.219,
-'Ta': 0.013,
-'W': 0.011,
-'Re': 0.014,
-'Os': -0.05,
-'Hg': 0,
-'Bi': 0,
-'Rn': 0.007,
-'U': 0.015,
+"H": 0.002793,
+"D": 0.002793,
+"T": 0.002793,
+"He": 0.32,
+"B": 0.019,
+"C": 0.008532,
+"N": 0.019181,
+"O": 0.020341,
+"F": 0.00881,
+"Ne": 0.0364,
+"Al": 0.088,
+"Si": 0.02,
+"P": 0.012,
+"S": 0.007271,
+"Cl": 0.011151,
+"Ar": 0.0168,
+"Ti": 0.014,
+"V": 0.0186,
+"Ga": 0.059,
+"Ge": 0.031,
+"As": 0.007,
+"Se": 0.0103,
+"Br": 0.012447,
+"Kr": 0.0133,
+"Rb": -0.027,
+"Zr": 0.175,
+"Nb": 0.0176,
+"Mo": 0.007,
+"Sn": 0.02,
+"Sb": 0.01,
+"Te": 0,
+"I": 0.0059,
+"Xe": 0.017,
+"Cs": -0.0275,
+"Hf": 0.219,
+"Ta": 0.013,
+"W": 0.011,
+"Re": 0.014,
+"Os": -0.05,
+"Hg": 0,
+"Bi": 0,
+"Rn": 0.007,
+"U": 0.015,
 }
 
 Wilson_Jasperson_Pc_increments = {
-'H': 0.1266,
-'D': 0.1266,
-'T': 0.1266,
-'He': 0.434,
-'B': 0.91,
-'C': 0.72983,
-'N': 0.44805,
-'O': 0.4336,
-'F': 0.32868,
-'Ne': 0.126,
-'Al': 6.05,
-'Si': 1.34,
-'P': 1.22,
-'S': 1.04713,
-'Cl': 0.97711,
-'Ar': 0.796,
-'Ti': 1.19,
-'V': None ,
-'Ga': None ,
-'Ge': 1.42,
-'As': 2.68,
-'Se': 1.2,
-'Br': 0.97151,
-'Kr': 1.11,
-'Rb': None ,
-'Zr': 1.11,
-'Nb': 2.71,
-'Mo': 1.69,
-'Sn': 1.95,
-'Sb': None ,
-'Te': 0.43,
-'I': 1.31593,
-'Xe': 1.66,
-'Cs': 6.33,
-'Hf': 1.07,
-'Ta': None ,
-'W': 1.08,
-'Re': None ,
-'Os': None ,
-'Hg': -0.08,
-'Bi': 0.69,
-'Rn': 2.05,
-'U': 2.04,
+"H": 0.1266,
+"D": 0.1266,
+"T": 0.1266,
+"He": 0.434,
+"B": 0.91,
+"C": 0.72983,
+"N": 0.44805,
+"O": 0.4336,
+"F": 0.32868,
+"Ne": 0.126,
+"Al": 6.05,
+"Si": 1.34,
+"P": 1.22,
+"S": 1.04713,
+"Cl": 0.97711,
+"Ar": 0.796,
+"Ti": 1.19,
+"V": None ,
+"Ga": None ,
+"Ge": 1.42,
+"As": 2.68,
+"Se": 1.2,
+"Br": 0.97151,
+"Kr": 1.11,
+"Rb": None ,
+"Zr": 1.11,
+"Nb": 2.71,
+"Mo": 1.69,
+"Sn": 1.95,
+"Sb": None ,
+"Te": 0.43,
+"I": 1.31593,
+"Xe": 1.66,
+"Cs": 6.33,
+"Hf": 1.07,
+"Ta": None ,
+"W": 1.08,
+"Re": None ,
+"Os": None ,
+"Hg": -0.08,
+"Bi": 0.69,
+"Rn": 2.05,
+"U": 2.04,
 }
 
-Wilson_Jasperson_Tc_groups = {'OH_large': 0.01, 'OH_small': 0.0350, '-O-': -0.0075, 'amine': -0.004,
-                            '-CHO': 0, '>CO': -0.0550, '-COOH': 0.017, '-COO-': -0.015,
-                             '-CN': 0.017, '-NO2': -0.02, 'halide': 0.002, 'sulfur_groups': 0.0,
-                            'siloxane': -0.025}
-Wilson_Jasperson_Pc_groups = {'OH_large': 0, 'OH_small': 0, '-O-': 0, 'amine': 0,
-                            '-CHO': 0.5, '>CO': 0, '-COOH': 0.5, '-COO-': 0,
-                             '-CN': 1.5, '-NO2': 1.0, 'halide': 0, 'sulfur_groups': 0.0,
-                            'siloxane': -0.5}
+Wilson_Jasperson_Tc_groups = {"OH_large": 0.01, "OH_small": 0.0350, "-O-": -0.0075, "amine": -0.004,
+                            "-CHO": 0, ">CO": -0.0550, "-COOH": 0.017, "-COO-": -0.015,
+                             "-CN": 0.017, "-NO2": -0.02, "halide": 0.002, "sulfur_groups": 0.0,
+                            "siloxane": -0.025}
+Wilson_Jasperson_Pc_groups = {"OH_large": 0, "OH_small": 0, "-O-": 0, "amine": 0,
+                            "-CHO": 0.5, ">CO": 0, "-COOH": 0.5, "-COO-": 0,
+                             "-CN": 1.5, "-NO2": 1.0, "halide": 0, "sulfur_groups": 0.0,
+                            "siloxane": -0.5}
 
 def Wilson_Jasperson(mol, Tb, second_order=True):
     r'''Estimate the critical temperature and pressure of a molecule using
@@ -229,24 +229,24 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
 
     group_contributions = {}
     OH_matches = rdkitmol.GetSubstructMatches(smarts_mol_cache(alcohol_smarts))
-    if 'C' in atoms:
-        if atoms['C'] >= 5:
-            group_contributions['OH_large'] = len(OH_matches)
+    if "C" in atoms:
+        if atoms["C"] >= 5:
+            group_contributions["OH_large"] = len(OH_matches)
         else:
-            group_contributions['OH_small'] = len(OH_matches)
+            group_contributions["OH_small"] = len(OH_matches)
 
     ether_O_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ether_smarts))
-    group_contributions['-O-'] = len(ether_O_matches)
+    group_contributions["-O-"] = len(ether_O_matches)
 
 
-    group_contributions['-CN'] = 0
+    group_contributions["-CN"] = 0
     amine_groups = set()
-    if 'N' in atoms:
+    if "N" in atoms:
         nitro_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(nitro_smarts))
-        group_contributions['-NO2'] = len(nitro_matches)
+        group_contributions["-NO2"] = len(nitro_matches)
 
         nitrile_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(nitrile_smarts))
-        group_contributions['-CN'] = len(nitrile_matches)
+        group_contributions["-CN"] = len(nitrile_matches)
 
         for s in all_amine_smarts:
             amine_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(s))
@@ -254,37 +254,37 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
                 # Get the N atom and store its index
                 for at in h:
                     atom = rdkitmol.GetAtomWithIdx(at)
-                    if atom.GetSymbol() == 'N':
+                    if atom.GetSymbol() == "N":
                         amine_groups.add(at)
 #     print(amine_groups)
-    group_contributions['amine'] = len(amine_groups)
+    group_contributions["amine"] = len(amine_groups)
 
-    if 'O' in atoms and 'C' in atoms:
+    if "O" in atoms and "C" in atoms:
         aldehyde_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(aldehyde_smarts))
-        group_contributions['-CHO'] = len(aldehyde_matches)
+        group_contributions["-CHO"] = len(aldehyde_matches)
 
         ketone_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ketone_smarts))
-        group_contributions['>CO'] = len(ketone_matches)
+        group_contributions[">CO"] = len(ketone_matches)
 
         carboxylic_acid_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(carboxylic_acid_smarts))
-        group_contributions['-COOH'] = len(carboxylic_acid_matches)
+        group_contributions["-COOH"] = len(carboxylic_acid_matches)
 
         ester_matches =  rdkitmol.GetSubstructMatches(smarts_mol_cache(ester_smarts))
-        group_contributions['-COO-'] = len(ester_matches)
+        group_contributions["-COO-"] = len(ester_matches)
 
 
 
-    group_contributions['halide'] = 1 if is_haloalkane(rdkitmol) else 0
+    group_contributions["halide"] = 1 if is_haloalkane(rdkitmol) else 0
 
-    group_contributions['sulfur_groups'] = 0
-    if 'S' in atoms:
+    group_contributions["sulfur_groups"] = 0
+    if "S" in atoms:
         for s in (mercaptan_smarts, sulfide_smarts, disulfide_smarts):
-            group_contributions['sulfur_groups'] += len(rdkitmol.GetSubstructMatches(smarts_mol_cache(s)))
+            group_contributions["sulfur_groups"] += len(rdkitmol.GetSubstructMatches(smarts_mol_cache(s)))
 
-    group_contributions['siloxane'] = 0
-    if 'Si' in atoms:
+    group_contributions["siloxane"] = 0
+    if "Si" in atoms:
         siloxane_matches = rdkitmol.GetSubstructMatches(smarts_mol_cache(siloxane_smarts))
-        group_contributions['siloxane'] = len(siloxane_matches)
+        group_contributions["siloxane"] = len(siloxane_matches)
 
 #     group_contributions = {'OH_large': 0, '-O-': 0, 'amine': 0, '-CHO': 0,
 #                            '>CO': 0, '-COOH': 0, '-COO-': 0, '-CN': 0,

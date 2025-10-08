@@ -153,19 +153,19 @@ if not numerics.is_micropython:
     #from chemicals import *
 
 
-    __all__ = ['rachford_rice', 'flash_basic', 'chemical', 'chemical_package', 'combustion', 'critical', 'flash',
-     'dipole', 'electrochem', 'elements', 'environment', 'eos', 'eos_mix',
-     'heat_capacity',  'identifiers', 'group_contribution', 'law', 'lennard_jones',
-     'miscdata',
-     'permittivity', 'phase_change', 'phases', 'property_package', 'reaction',
-     'refractivity', 'safety', 'solubility', 'interface', 'interaction_parameters',
-     'thermal_conductivity', 'triple', 'utils',
-     'vapor_pressure', 'virial', 'viscosity', 'volume', 'acentric', 'coolprop',
-     'datasheet', 'dippr', 'unifac', 'stream', 'mixture',
-     'chemical_utils', 'wilson', 'nrtl', 'uniquac', 'regular_solution',
-     'equilibrium', 'phase_identification', 'temperature', 'fitting',
-     'eos_alpha_functions', 'eos_volume', 'bulk', 'eos_mix_methods', 'activity',
-     'functional_groups', 'redlich_kister']
+    __all__ = ["rachford_rice", "flash_basic", "chemical", "chemical_package", "combustion", "critical", "flash",
+     "dipole", "electrochem", "elements", "environment", "eos", "eos_mix",
+     "heat_capacity",  "identifiers", "group_contribution", "law", "lennard_jones",
+     "miscdata",
+     "permittivity", "phase_change", "phases", "property_package", "reaction",
+     "refractivity", "safety", "solubility", "interface", "interaction_parameters",
+     "thermal_conductivity", "triple", "utils",
+     "vapor_pressure", "virial", "viscosity", "volume", "acentric", "coolprop",
+     "datasheet", "dippr", "unifac", "stream", "mixture",
+     "chemical_utils", "wilson", "nrtl", "uniquac", "regular_solution",
+     "equilibrium", "phase_identification", "temperature", "fitting",
+     "eos_alpha_functions", "eos_volume", "bulk", "eos_mix_methods", "activity",
+     "functional_groups", "redlich_kister"]
 
     __all__.extend(eos_volume.__all__)
     __all__.extend(eos_alpha_functions.__all__)
@@ -229,8 +229,8 @@ if not numerics.is_micropython:
 
     # backwards compatibility hack to allow thermo.chemical.Mixture to still be importable
     try:
-        chemical.__dict__['Mixture'] = mixture.Mixture
-        chemical.__dict__['Stream'] = stream.Stream
+        chemical.__dict__["Mixture"] = mixture.Mixture
+        chemical.__dict__["Stream"] = stream.Stream
     except:
         pass
     # However, they cannot go in thermo.chemical's __all__ or they will appear in the
@@ -267,24 +267,24 @@ if not numerics.is_micropython:
             pass
         except:
             pass
-    if hasattr(os, '_called_from_test'):
+    if hasattr(os, "_called_from_test"):
         # pytest timings are hard to measure with lazy loading
         complete_lazy_loading()
 
     def __getattr__(name):
-        if name == 'vectorized':
+        if name == "vectorized":
             import thermo.vectorized
             globals()[name] = thermo.vectorized
             return thermo.vectorized
-        if name == 'numba':
+        if name == "numba":
             import thermo.numba
             globals()[name] = thermo.numba
             return thermo.numba
-        if name == 'units':
+        if name == "units":
             import thermo.units
             globals()[name] = thermo.units
             return thermo.units
-        if name == 'numba_vectorized':
+        if name == "numba_vectorized":
             import thermo.numba_vectorized
             globals()[name] = thermo.numba_vectorized
             return thermo.numba_vectorized
@@ -293,7 +293,7 @@ if not numerics.is_micropython:
 try:
     thermo_dir = os.path.dirname(__file__)
 except:
-    thermo_dir = ''
+    thermo_dir = ""
 
-__version__ = '0.4.2'
+__version__ = "0.4.2"
 

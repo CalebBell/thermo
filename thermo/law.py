@@ -23,52 +23,52 @@ SOFTWARE.
 
 __all__ = [#'DSL_data', 'TSCA_data',
            #'EINECS_data', 'SPIN_data', 'NLP_data',
-           'CAN_DSL_flags', 'TSCA_flags',
-           'legal_status_methods',
-           'legal_status', 'HPV_data', '_ECHATonnageDict', '_EPACDRDict',
-           'economic_status', 'economic_status_methods', 'load_economic_data',
-           'load_law_data']
+           "CAN_DSL_flags", "TSCA_flags",
+           "legal_status_methods",
+           "legal_status", "HPV_data", "_ECHATonnageDict", "_EPACDRDict",
+           "economic_status", "economic_status_methods", "load_economic_data",
+           "load_law_data"]
 
 import os
 
 from chemicals.identifiers import CAS_to_int
 from chemicals.utils import os_path_join, to_num
 
-DSL = 'DSL'
-TSCA = 'TSCA'
-EINECS = 'EINECS'
-NLP = 'NLP'
-SPIN = 'SPIN'
-COMBINED = 'COMBINED'
-UNLISTED = 'UNLISTED'
-LISTED = 'LISTED'
+DSL = "DSL"
+TSCA = "TSCA"
+EINECS = "EINECS"
+NLP = "NLP"
+SPIN = "SPIN"
+COMBINED = "COMBINED"
+UNLISTED = "UNLISTED"
+LISTED = "LISTED"
 
 
 
 
 CAN_DSL_flags = {0: LISTED,
-                 1: 'Non-Domestic Substances List (NDSL)',
-                 2: 'Significant New Activity (SNAc)',
-                 3: 'Ministerial Condition pertaining to this substance',
-                 4: 'Domestic Substances List, removed (DSL_REM)',
-                 5: 'Minister of the Environment has imposed a Ministerial '
-                    'Prohibition pertaining to this substance'}
+                 1: "Non-Domestic Substances List (NDSL)",
+                 2: "Significant New Activity (SNAc)",
+                 3: "Ministerial Condition pertaining to this substance",
+                 4: "Domestic Substances List, removed (DSL_REM)",
+                 5: "Minister of the Environment has imposed a Ministerial "
+                    "Prohibition pertaining to this substance"}
 
 
 TSCA_flags = {
-    'UV': 'Class 2 substance within the UVCB group; unknown molecular formula/structural diagram',
-    'E': 'subject of a Section 5(e) Consent Order under TSCA',
-    'F': 'subject of a Section 5(f) Rule under TSCA',
-    'N': 'polymeric substance containing no free-radical initiator in its Inventory name but is considered to cover the designated polymer made with any free-radical initiator regardless of the amount used',
-    'P': 'commenced Premanufacture Notice (PMN) substance',
-    'R': 'subject of a Section 6 risk management rule under TSCA',
-    'S': 'identified in a final Significant New Uses Rule',
-    'SP': 'identified in a proposed Significant New Uses Rule',
-    'T': 'subject of a final Section 4 test rule under TSCA',
-    'TP': 'subject of a proposed Section 4 test rule under TSCA',
-    'XU': 'exempt from reporting under Chemical Date Reporting Rule (formerly the Inventory Update Reporting Rule), i.e., Partial Updating of the TSCA Inventory Data Base Production and Site Reports (40 CFR 711)',
-    'Y1': 'exempt polymer that has a number-average molecular weight of 1,000 or greater',
-    'Y2': 'exempt polymer that is a polyester and is made only from reactants included in a specified list of low-concern reactants that comprises one of the eligibility criteria for the exemption rule'
+    "UV": "Class 2 substance within the UVCB group; unknown molecular formula/structural diagram",
+    "E": "subject of a Section 5(e) Consent Order under TSCA",
+    "F": "subject of a Section 5(f) Rule under TSCA",
+    "N": "polymeric substance containing no free-radical initiator in its Inventory name but is considered to cover the designated polymer made with any free-radical initiator regardless of the amount used",
+    "P": "commenced Premanufacture Notice (PMN) substance",
+    "R": "subject of a Section 6 risk management rule under TSCA",
+    "S": "identified in a final Significant New Uses Rule",
+    "SP": "identified in a proposed Significant New Uses Rule",
+    "T": "subject of a final Section 4 test rule under TSCA",
+    "TP": "subject of a proposed Section 4 test rule under TSCA",
+    "XU": "exempt from reporting under Chemical Date Reporting Rule (formerly the Inventory Update Reporting Rule), i.e., Partial Updating of the TSCA Inventory Data Base Production and Site Reports (40 CFR 711)",
+    "Y1": "exempt polymer that has a number-average molecular weight of 1,000 or greater",
+    "Y2": "exempt polymer that is a polyester and is made only from reactants included in a specified list of low-concern reactants that comprises one of the eligibility criteria for the exemption rule"
 }
 
 def load_law_data():
@@ -79,32 +79,32 @@ def load_law_data():
     except:
         pass
     import pandas as pd
-    folder = os_path_join(os.path.dirname(__file__), 'Law')
+    folder = os_path_join(os.path.dirname(__file__), "Law")
 
 
 # Data is stored as integers to reduce memory usage
-    DSL_data = pd.read_csv(os.path.join(folder, 'Canada Feb 11 2015 - DSL.csv.gz'),
-                           sep='\t', index_col=0, compression='gzip')
+    DSL_data = pd.read_csv(os.path.join(folder, "Canada Feb 11 2015 - DSL.csv.gz"),
+                           sep="\t", index_col=0, compression="gzip")
 
-    TSCA_data = pd.read_csv(os.path.join(folder, 'TSCA Inventory 2016-01.csv.gz'),
-                           sep='\t', index_col=0, compression='gzip')
+    TSCA_data = pd.read_csv(os.path.join(folder, "TSCA Inventory 2016-01.csv.gz"),
+                           sep="\t", index_col=0, compression="gzip")
 
 
-    EINECS_data = pd.read_csv(os.path.join(folder, 'EINECS 2015-03.csv.gz'),
-                              index_col=0, compression='gzip')
+    EINECS_data = pd.read_csv(os.path.join(folder, "EINECS 2015-03.csv.gz"),
+                              index_col=0, compression="gzip")
 
-    SPIN_data = pd.read_csv(os.path.join(folder, 'SPIN Inventory 2015-03.csv.gz'),
-                           compression='gzip', index_col=0)
+    SPIN_data = pd.read_csv(os.path.join(folder, "SPIN Inventory 2015-03.csv.gz"),
+                           compression="gzip", index_col=0)
 
-    NLP_data = pd.read_csv(os.path.join(folder, 'EC Inventory No Longer Polymers (NLP).csv'),
-                           sep='\t', index_col=0)
+    NLP_data = pd.read_csv(os.path.join(folder, "EC Inventory No Longer Polymers (NLP).csv"),
+                           sep="\t", index_col=0)
     # 161162-67-6 is not a valid CAS number and was removed.
 
 
 def __getattr__(name):
-    if name in ('DSL_data', 'TSCA_data',
-                'EINECS_data', 'SPIN_data',
-                'NLP_data'):
+    if name in ("DSL_data", "TSCA_data",
+                "EINECS_data", "SPIN_data",
+                "NLP_data"):
         load_law_data()
         return globals()[name]
     raise AttributeError(f"module {__name__} has no attribute {name}")
@@ -213,7 +213,7 @@ def legal_status(CASRN, method=None, get_methods=False, CASi=None):
         method = methods[0]
     if method == DSL:
         if CASi in DSL_data.index:
-            status = CAN_DSL_flags[DSL_data.at[CASi, 'Registry']]
+            status = CAN_DSL_flags[DSL_data.at[CASi, "Registry"]]
         else:
             status = UNLISTED
     elif method == TSCA:
@@ -245,7 +245,7 @@ def legal_status(CASRN, method=None, get_methods=False, CASi=None):
         for method in methods[1:]:
             status[method] = legal_status(CASRN, method=method, CASi=CASi)
     else:
-        raise Exception('Failure in in function')
+        raise Exception("Failure in in function")
     return status
 
 HPV_data, _EPACDRDict, _ECHATonnageDict = [None]*3
@@ -258,20 +258,20 @@ def load_economic_data():
     import zipfile
 
     import pandas as pd
-    folder = os_path_join(os.path.dirname(__file__), 'Law')
+    folder = os_path_join(os.path.dirname(__file__), "Law")
 
 
     """OECD are chemicals produced by and OECD members in > 1000 tonnes/year."""
-    HPV_data = pd.read_csv(os.path.join(folder, 'HPV 2015 March 3.csv'),
-                           sep='\t', index_col=0)
+    HPV_data = pd.read_csv(os.path.join(folder, "HPV 2015 March 3.csv"),
+                           sep="\t", index_col=0)
     # 13061-29-2 not valid and removed
 
     _ECHATonnageDict = {}
-    with zipfile.ZipFile(os.path.join(folder, 'ECHA Tonnage Bands.csv.zip')) as z:
+    with zipfile.ZipFile(os.path.join(folder, "ECHA Tonnage Bands.csv.zip")) as z:
         with z.open(z.namelist()[0]) as f:
             for line in f.readlines():
                 # for some reason, the file must be decoded to UTF8 first
-                CAS, band = line.decode("utf-8").strip('\n').split('\t')
+                CAS, band = line.decode("utf-8").strip("\n").split("\t")
                 if CAS in _ECHATonnageDict:
                     if band in _ECHATonnageDict[CAS]:
                         pass
@@ -282,7 +282,7 @@ def load_economic_data():
 
 
     _EPACDRDict = {}
-    with open(os.path.join(folder, 'EPA 2012 Chemical Data Reporting.csv')) as f:
+    with open(os.path.join(folder, "EPA 2012 Chemical Data Reporting.csv")) as f:
         """EPA summed reported chemical usages. In metric tonnes/year after conversion.
         Many producers keep their date confidential.
         This was originally in terms of lb/year, but rounded to the nearest kg.
@@ -290,15 +290,15 @@ def load_economic_data():
         """
         next(f)
         for line in f:
-            values = line.rstrip().split('\t')
+            values = line.rstrip().split("\t")
             CAS, manufactured, imported, exported = to_num(values)
             _EPACDRDict[CAS] = {"Manufactured": manufactured/1000., "Imported": imported/1000.,
                                 "Exported": exported/1000.}
 
 
-EPACDR = 'EPA Chemical Data Reporting (2012)'
-ECHA = 'European Chemicals Agency Total Tonnage Bands'
-OECD = 'OECD high production volume chemicals'
+EPACDR = "EPA Chemical Data Reporting (2012)"
+ECHA = "European Chemicals Agency Total Tonnage Bands"
+OECD = "OECD high production volume chemicals"
 
 economic_status_methods = [EPACDR, ECHA, OECD]
 
@@ -324,7 +324,7 @@ def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
 
     def list_methods():
         methods = []
-        methods.append('Combined')
+        methods.append("Combined")
         if CASRN in _EPACDRDict:
             methods.append(EPACDR)
         if CASRN in _ECHATonnageDict:
@@ -338,20 +338,20 @@ def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
         method = list_methods()[0]
     # This is the calculate, given the method section
     if method == EPACDR:
-        status = 'US public: ' + str(_EPACDRDict[CASRN])
+        status = "US public: " + str(_EPACDRDict[CASRN])
     elif method == ECHA:
         status = _ECHATonnageDict[CASRN]
     elif method == OECD:
-        status = 'OECD HPV Chemicals'
-    elif method == 'Combined':
+        status = "OECD HPV Chemicals"
+    elif method == "Combined":
         status = []
         if CASRN in _EPACDRDict:
-            status += ['US public: ' + str(_EPACDRDict[CASRN])]
+            status += ["US public: " + str(_EPACDRDict[CASRN])]
         if CASRN in _ECHATonnageDict:
             status += _ECHATonnageDict[CASRN]
         if CASi in HPV_data.index:
-            status += ['OECD HPV Chemicals']
+            status += ["OECD HPV Chemicals"]
     else:
-        raise Exception('Failure in in function')
+        raise Exception("Failure in in function")
     return status
 

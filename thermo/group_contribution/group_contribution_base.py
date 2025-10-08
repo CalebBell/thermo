@@ -22,37 +22,37 @@ SOFTWARE.
 '''
 from chemicals.elements import simple_formula_parser
 
-__all__ = ['str_group_assignment_to_dict', 'group_assignment_to_str',
-           'smarts_fragment_priority', 'smarts_fragment', 'priority_from_atoms',
-           'SINGLE_BOND', 'DOUBLE_BOND', 'TRIPLE_BOND', 'AROMATIC_BOND',
-           'BaseGroupContribution']
+__all__ = ["str_group_assignment_to_dict", "group_assignment_to_str",
+           "smarts_fragment_priority", "smarts_fragment", "priority_from_atoms",
+           "SINGLE_BOND", "DOUBLE_BOND", "TRIPLE_BOND", "AROMATIC_BOND",
+           "BaseGroupContribution"]
 
-SINGLE_BOND = 'single'
-DOUBLE_BOND = 'double'
-TRIPLE_BOND = 'triple '
-AROMATIC_BOND = 'aromatic'
+SINGLE_BOND = "single"
+DOUBLE_BOND = "double"
+TRIPLE_BOND = "triple "
+AROMATIC_BOND = "aromatic"
 
 def priority_from_atoms(atoms, bonds=None):
     priority = 0
 
-    if 'H' in atoms:
-        priority += atoms['H']
+    if "H" in atoms:
+        priority += atoms["H"]
 
-    if 'C' in atoms:
-        priority += atoms['C']*100
+    if "C" in atoms:
+        priority += atoms["C"]*100
 
-    if 'O' in atoms:
-        priority += atoms['O']*150
-    if 'N' in atoms:
-        priority += atoms['N']*175
-    if 'Cl' in atoms:
-        priority += atoms['Cl']*300
-    if 'F' in atoms:
-        priority += atoms['F']*400
-    if 'Si' in atoms:
-        priority += atoms['Si']*200
-    if 'S' in atoms:
-        priority += atoms['S']*250
+    if "O" in atoms:
+        priority += atoms["O"]*150
+    if "N" in atoms:
+        priority += atoms["N"]*175
+    if "Cl" in atoms:
+        priority += atoms["Cl"]*300
+    if "F" in atoms:
+        priority += atoms["F"]*400
+    if "Si" in atoms:
+        priority += atoms["Si"]*200
+    if "S" in atoms:
+        priority += atoms["S"]*250
 
     if bonds is not None:
         priority += bonds.get(SINGLE_BOND, 0)*2
@@ -63,7 +63,7 @@ def priority_from_atoms(atoms, bonds=None):
 
 
 
-rdkit_missing = 'RDKit is not installed; it is required to use this functionality'
+rdkit_missing = "RDKit is not installed; it is required to use this functionality"
 
 loaded_rdkit = False
 Chem, Descriptors, AllChem, rdMolDescriptors = None, None, None, None
@@ -81,8 +81,8 @@ def load_rdkit_modules():
             raise Exception(rdkit_missing)
 
 class BaseGroupContribution:
-    __slots__ = ('group', 'group_id', 'smarts', 'smart_rdkit', 
-                 'hydrogen_from_smarts', 'priority', 'atoms', 'bonds')
+    __slots__ = ("group", "group_id", "smarts", "smart_rdkit", 
+                 "hydrogen_from_smarts", "priority", "atoms", "bonds")
 
     def __init__(self, group, smarts=None, priority=None, atoms=None, 
                  bonds=None, hydrogen_from_smarts=False, group_id=None):
@@ -97,8 +97,8 @@ class BaseGroupContribution:
 
 
 
-def group_assignment_to_str(counts, pair_separator=',', key_val_separator=':'):
-    r'''Take a group contribution dictionary, and turn it into a string.
+def group_assignment_to_str(counts, pair_separator=",", key_val_separator=":"):
+    r"""Take a group contribution dictionary, and turn it into a string.
     The string is usually more memory efficient.
 
     Parameters
@@ -123,14 +123,14 @@ def group_assignment_to_str(counts, pair_separator=',', key_val_separator=':'):
     --------
     >>> group_assignment_to_str({1: 5, 4: 1, 9: 5, 10: 1, 81: 1})
     '1:5,4:1,9:5,10:1,81:1'
-    '''
+    """
     elements = []
     for k, v in counts.items():
         elements.append(f"{k}{key_val_separator}{v}")
     return pair_separator.join(elements)
 
-def str_group_assignment_to_dict(counts, pair_separator=',', key_val_separator=':'):
-    r'''Take a group contribution string, and turn it into a dictionary.
+def str_group_assignment_to_dict(counts, pair_separator=",", key_val_separator=":"):
+    r"""Take a group contribution string, and turn it into a dictionary.
 
     Parameters
     ----------
@@ -156,7 +156,7 @@ def str_group_assignment_to_dict(counts, pair_separator=',', key_val_separator='
     {1: 5, 4: 1, 9: 5, 10: 1, 81: 1}
     >>> str_group_assignment_to_dict('')
     {}
-    '''
+    """
     if not counts:
         return {}
     groups = {}
@@ -191,23 +191,23 @@ def smart_ignore_combinations(things_to_ignore, max_remove=4):
     for group_id, matches in matches_by_group.items():
         if len(matches) > 1:
             # Multi-match group: add as a whole group removal unit
-            removal_units.append(('group', group_id, matches))
+            removal_units.append(("group", group_id, matches))
         else:
             # Single-match group: add as individual match removal unit
-            removal_units.append(('individual', group_id, matches[0]))
+            removal_units.append(("individual", group_id, matches[0]))
 
     # For multi-match groups, also add individual matches as removal units
     for group_id, matches in matches_by_group.items():
         if len(matches) > 1:
             for match in matches:
-                removal_units.append(('individual', group_id, match))
+                removal_units.append(("individual", group_id, match))
 
     # Generate combinations of removal units
     for num_units in range(1, min(len(removal_units), max_remove) + 1):
         for unit_combo in combinations(removal_units, num_units):
             ignore_set = set()
             for unit_type, group_id, data in unit_combo:
-                if unit_type == 'group':
+                if unit_type == "group":
                     # data is list of matches
                     ignore_set.update(data)
                 else:
@@ -216,7 +216,7 @@ def smart_ignore_combinations(things_to_ignore, max_remove=4):
             yield ignore_set
 
 def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
-    r'''Fragments a molecule into a set of unique groups and counts as
+    r"""Fragments a molecule into a set of unique groups and counts as
     specified by the `catalog`, which is a list of objects containing
     the attributes `smarts`, `group`, and `priority`.
 
@@ -256,18 +256,18 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
 
     Examples
     --------
-    '''
+    """
     if not loaded_rdkit:
         load_rdkit_modules()
     if rdkitmol is None and smi is None:
-        raise Exception('Either an rdkit mol or a smiles string is required')
+        raise Exception("Either an rdkit mol or a smiles string is required")
     if type(rdkitmol) is str and smi is None:
         # swap for convinience
         rdkitmol, smi = smi, rdkitmol
     if smi is not None:
         rdkitmol = Chem.MolFromSmiles(smi)
         if rdkitmol is None:
-            status = 'Failed to construct mol'
+            status = "Failed to construct mol"
             success = False
             return {}, success, status
 
@@ -278,7 +278,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     rdkitmol_Hs = Chem.AddHs(rdkitmol)
     # H_count = rdkitmol_Hs.GetNumAtoms() - rdkitmol.GetNumAtoms()
     atoms = simple_formula_parser(rdMolDescriptors.CalcMolFormula(rdkitmol))
-    H_count = atoms.get('H', 0)
+    H_count = atoms.get("H", 0)
 
     H_counts_by_idx = {}
     all_atom_idxs = set()
@@ -288,7 +288,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
         all_atom_idxs.add(at_idx)
 
     atom_count = len(all_atom_idxs)
-    status = 'OK'
+    status = "OK"
     success = True
 
     counts = {}
@@ -311,19 +311,19 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             hits = list(hits)
         else:
             hits = list(rdkitmol.GetSubstructMatches(patt))
-            if not hits and len(obj.atoms) == 1 and 'H' in obj.atoms:
+            if not hits and len(obj.atoms) == 1 and "H" in obj.atoms:
                 hits = list(rdkitmol_Hs.GetSubstructMatches(patt))
                 # Special handling for H2 molecule
                 if hits:
                     # If this is a hydrogen-only group (like H2) and the molecule has only H atoms
                     num_atoms = rdkitmol_Hs.GetNumAtoms()
-                    if num_atoms == H_count and H_count == obj.atoms['H']:
+                    if num_atoms == H_count and H_count == obj.atoms["H"]:
                         # For H2, return all expected values
                         counts = {key: 1}  # One instance of this group (H2)
                         group_assignments = {key: [()]}  # Empty tuple as there are no heavy atoms
                         matched_atoms = set()  # No heavy atoms to match
                         success = True
-                        status = 'OK'
+                        status = "OK"
                         return counts, group_assignments, matched_atoms, success, status
 
         if hits:
@@ -381,7 +381,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
 
                         # Add atom indices as labels
                         for atom in mol_copy.GetAtoms():
-                            atom.SetProp('atomLabel', str(atom.GetIdx()))
+                            atom.SetProp("atomLabel", str(atom.GetIdx()))
 
                         # Create the image with this single match highlighted
                         img = Draw.MolToImage(mol_copy, 
@@ -389,7 +389,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                                             highlightColor=highlight_color)
 
                         ax.imshow(img)
-                        ax.axis('off')
+                        ax.axis("off")
 
                         # Add pattern info as title
                         ax.set_title(f"Group {group_id}\nMatch {match_idx + 1}\nSMARTS: {pattern_obj.smarts}", 
@@ -417,13 +417,13 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
             if group_to_obj[found_group].hydrogen_from_smarts:
                 hydrogens_found += sum(H_counts_by_idx[i] for i in found_atoms)
             else:
-                hydrogens_found += group_to_obj[found_group].atoms.get('H', 0)
+                hydrogens_found += group_to_obj[found_group].atoms.get("H", 0)
 
     #hydrogens_found = sum(group_to_obj[g].atoms.get('H', 0)*v for g, v in final_group_counts.items())
     hydrogens_matched = hydrogens_found == H_count
 
     if len(all_heavies_matched_by_a_pattern) != atom_count:
-        status = 'Did not match all atoms present'
+        status = "Did not match all atoms present"
         success = False
         return final_group_counts, final_assignments, matched_atoms, success, status
 
@@ -468,7 +468,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                         if group_to_obj[found_group].hydrogen_from_smarts:
                             hydrogens_found += sum(H_counts_by_idx[i] for i in found_atoms)
                         else:
-                            hydrogens_found += group_to_obj[found_group].atoms.get('H', 0)
+                            hydrogens_found += group_to_obj[found_group].atoms.get("H", 0)
 
                 hydrogens_matched = hydrogens_found == H_count
                 success = heavy_atom_matched and hydrogens_matched
@@ -478,7 +478,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
                     break
 
     if not success:
-        status = 'Did not match all atoms present'
+        status = "Did not match all atoms present"
 
     return final_group_counts, final_assignments, matched_atoms, success, status
 
@@ -496,7 +496,7 @@ def run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs,
                     continue
 
                 # If the group matches everything, check the group has the right number of hydrogens
-                if match_set == all_atom_idxs and H_count and obj.atoms.get('H', 0) != H_count:
+                if match_set == all_atom_idxs and H_count and obj.atoms.get("H", 0) != H_count:
                     continue
 
                 if (obj.group_id, match) in ignore_matches:
@@ -518,7 +518,7 @@ def run_match(catalog_by_priority, all_matches, ignore_matches, all_atom_idxs,
 
 
 def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
-    r'''Fragments a molecule into a set of unique groups and counts as
+    r"""Fragments a molecule into a set of unique groups and counts as
     specified by the `catalog`. The molecule can either be an rdkit
     molecule object, or a smiles string which will be parsed by rdkit.
     Returns a dictionary of groups and their counts according to the
@@ -565,21 +565,21 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
 
     >>> smarts_fragment(catalog=J_BIGGS_JOBACK_SMARTS_id_dict, smi='CCC(=O)OC(=O)CC') # doctest:+SKIP
     ({1: 2, 2: 2, 28: 2}, False, 'Matched some atoms repeatedly: [4]')
-    '''
+    """
     if not loaded_rdkit:
         load_rdkit_modules()
     if rdkitmol is None and smi is None:
-        raise Exception('Either an rdkit mol or a smiles string is required')
+        raise Exception("Either an rdkit mol or a smiles string is required")
     if smi is not None:
         rdkitmol = Chem.MolFromSmiles(smi)
         if rdkitmol is None:
-            status = 'Failed to construct mol'
+            status = "Failed to construct mol"
             success = False
             return {}, success, status
     from collections import Counter
 
     atom_count = len(rdkitmol.GetAtoms())
-    status = 'OK'
+    status = "OK"
     success = True
 
     counts = {}
@@ -642,7 +642,7 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
         for j in i:
             matched_atoms.update(j)
     if len(matched_atoms) != atom_count:
-        status = 'Did not match all atoms present'
+        status = "Did not match all atoms present"
         success = False
 
     # Check the atom aount again, this time looking for duplicate matches (only if have yet to fail)
@@ -652,10 +652,10 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
             for j in i:
                 matched_atoms.extend(j)
         if len(matched_atoms) < atom_count:
-            status = 'Matched %d of %d atoms only' %(len(matched_atoms), atom_count)
+            status = "Matched %d of %d atoms only" %(len(matched_atoms), atom_count)
             success = False
         elif len(matched_atoms) > atom_count:
-            status = 'Matched some atoms repeatedly: %s' %( [i for i, c in Counter(matched_atoms).items() if c > 1])
+            status = "Matched some atoms repeatedly: %s" %( [i for i, c in Counter(matched_atoms).items() if c > 1])
             success = False
 
     return counts, success, status

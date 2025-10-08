@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__all__ = ['IAPWS95', 'IAPWS95Gas', 'IAPWS95Liquid', 'IAPWS97', 'IAPWS06']
+__all__ = ["IAPWS95", "IAPWS95Gas", "IAPWS95Liquid", "IAPWS97", "IAPWS06"]
 
 from cmath import log as logc
 from math import exp
@@ -39,7 +39,7 @@ from thermo.phases.phase import Phase
 # from thermo.chemical_package import iapws_correlations
 
 class IAPWS95(HelmholtzEOS):
-    model_name = 'iapws95'
+    model_name = "iapws95"
     _MW = iapws.iapws95_MW
     Tc = iapws.iapws95_Tc
     Pc = iapws.iapws95_Pc
@@ -138,14 +138,14 @@ class IAPWS95(HelmholtzEOS):
 
 
     def mu(self):
-        r'''Calculate and return the viscosity of water according to the IAPWS.
+        r"""Calculate and return the viscosity of water according to the IAPWS.
         For details, see :obj:`chemicals.viscosity.mu_IAPWS`.
 
         Returns
         -------
         mu : float
             Viscosity of water, [Pa*s]
-        '''
+        """
         try:
             return self._mu
         except:
@@ -154,14 +154,14 @@ class IAPWS95(HelmholtzEOS):
         return self._mu
 
     def k(self):
-        r'''Calculate and return the thermal conductivity of water according to the IAPWS.
+        r"""Calculate and return the thermal conductivity of water according to the IAPWS.
         For details, see :obj:`chemicals.thermal_conductivity.k_IAPWS`.
 
         Returns
         -------
         k : float
             Thermal conductivity of water, [W/m/K]
-        '''
+        """
         try:
             return self._k
         except:
@@ -185,10 +185,10 @@ class IAPWS95(HelmholtzEOS):
 class IAPWS95Gas(IAPWS95):
     is_gas = True
     is_liquid = False
-    force_phase = 'g'
+    force_phase = "g"
 
 class IAPWS95Liquid(IAPWS95):
-    force_phase = 'l'
+    force_phase = "l"
     is_gas = False
     is_liquid = True
 
@@ -202,8 +202,8 @@ class IAPWS95Liquid(IAPWS95):
         return self._sigma
 
 class IAPWS97(Phase):
-    model_name = 'iapws97'
-    model_attributes = ('model_name',)
+    model_name = "iapws97"
+    model_attributes = ("model_name",)
     _MW = 18.015268
     R = 461.526
     Tc = 647.096
@@ -588,7 +588,7 @@ class IAPWS97(Phase):
 
     ### Derivatives
     def dV_dP(self):
-        '''
+        """
         from sympy import *
         R, T, MW, P, Pref, Tref = symbols('R, T, MW, P, Pref, Tref')
         dG_dpif = symbols('dG_dpi', cls=Function)
@@ -599,7 +599,7 @@ class IAPWS97(Phase):
         print(diff(V, P))
 
         MW*R*T*Subs(Derivative(dG_dpi(Tref/T, _xi_2), _xi_2), _xi_2, P/Pref)/(1000*Pref**2)
-        '''
+        """
         try:
             return self._dV_dP
         except:
@@ -652,14 +652,14 @@ class IAPWS97(Phase):
 
 class IAPWS06(GibbsEOS):
     T_MAX_FLASH = T_MAX_FIXED = 273.16 # Above this ice does not form
-    force_phase = 's'
-    phase = 's'
+    force_phase = "s"
+    phase = "s"
     is_gas = False
     is_liquid = False
     is_solid = True
 
-    model_name = 'iapws06'
-    model_attributes = ('model_name',)
+    model_name = "iapws06"
+    model_attributes = ("model_name",)
     _MW = 18.015268
     zs = [1.0]
     cmps = [0]

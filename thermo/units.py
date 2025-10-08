@@ -21,7 +21,7 @@ SOFTWARE.
 '''
 
 
-__all__ = ['u']
+__all__ = ["u"]
 import types
 
 import thermo
@@ -30,9 +30,9 @@ try:
     from pint import _DEFAULT_REGISTRY as u
 
 except ImportError: # pragma: no cover
-    raise ImportError('The unit handling in fluids requires the installation '
-                      'of the package pint, available on pypi or from '
-                      'https://github.com/hgrecco/pint')
+    raise ImportError("The unit handling in fluids requires the installation "
+                      "of the package pint, available on pypi or from "
+                      "https://github.com/hgrecco/pint")
 from fluids.units import wrap_numpydoc_obj
 
 __funcs = {}
@@ -41,7 +41,7 @@ failed_wrapping = False
 
 
 for name in dir(thermo):
-    if name in ('__getattr__', '__test__'):
+    if name in ("__getattr__", "__test__"):
         continue
     obj = getattr(thermo, name)
     if isinstance(obj, types.FunctionType):
@@ -62,12 +62,12 @@ for name in dir(thermo):
             obj = wrap_numpydoc_obj(obj)
         except Exception as e:
             failed_wrapping = True
-            print(f'Current implementation of {str(obj)} contains documentation not '
-                  'parseable and cound not be wrapped to use pint:')
+            print(f"Current implementation of {str(obj)} contains documentation not "
+                  "parseable and cound not be wrapped to use pint:")
             print(e)
     elif isinstance(obj, str):
         continue
-    if name == '__all__':
+    if name == "__all__":
         continue
     __all__.append(name)
     __funcs.update({name: obj})

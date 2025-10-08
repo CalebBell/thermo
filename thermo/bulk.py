@@ -71,7 +71,7 @@ Bulk Settings Class
 
 '''
 
-__all__ = ['Bulk', 'BulkSettings', 'default_settings']
+__all__ = ["Bulk", "BulkSettings", "default_settings"]
 
 from chemicals.utils import Joule_Thomson, hash_any_primitive, isobaric_expansion, isothermal_compressibility, object_data, speed_of_sound
 from fluids.constants import R, atm
@@ -90,23 +90,23 @@ I guess it's going to need MW as well.
 Does not have any flow property.
 """
 
-EQUILIBRIUM_DERIVATIVE = 'EQUILIBRIUM_DERIVATIVE'
-FROM_DERIVATIVE_SETTINGS = 'FROM_DERIVATIVE_SETTINGS'
+EQUILIBRIUM_DERIVATIVE = "EQUILIBRIUM_DERIVATIVE"
+FROM_DERIVATIVE_SETTINGS = "FROM_DERIVATIVE_SETTINGS"
 
-MOLE_WEIGHTED = 'MOLE_WEIGHTED'
-MASS_WEIGHTED = 'MASS_WEIGHTED'
-VOLUME_WEIGHTED = 'VOLUME_WEIGHTED'
+MOLE_WEIGHTED = "MOLE_WEIGHTED"
+MASS_WEIGHTED = "MASS_WEIGHTED"
+VOLUME_WEIGHTED = "VOLUME_WEIGHTED"
 
-LOG_PROP_MOLE_WEIGHTED = 'LOG_PROP_MOLE_WEIGHTED'
-LOG_PROP_MASS_WEIGHTED = 'LOG_PROP_MASS_WEIGHTED'
-LOG_PROP_VOLUME_WEIGHTED = 'LOG_PROP_VOLUME_WEIGHTED'
+LOG_PROP_MOLE_WEIGHTED = "LOG_PROP_MOLE_WEIGHTED"
+LOG_PROP_MASS_WEIGHTED = "LOG_PROP_MASS_WEIGHTED"
+LOG_PROP_VOLUME_WEIGHTED = "LOG_PROP_VOLUME_WEIGHTED"
 
-POWER_PROP_MOLE_WEIGHTED = 'POWER_PROP_MOLE_WEIGHTED'
-POWER_PROP_MASS_WEIGHTED = 'POWER_PROP_MASS_WEIGHTED'
-POWER_PROP_VOLUME_WEIGHTED = 'POWER_PROP_VOLUME_WEIGHTED'
+POWER_PROP_MOLE_WEIGHTED = "POWER_PROP_MOLE_WEIGHTED"
+POWER_PROP_MASS_WEIGHTED = "POWER_PROP_MASS_WEIGHTED"
+POWER_PROP_VOLUME_WEIGHTED = "POWER_PROP_VOLUME_WEIGHTED"
 
-MINIMUM_PHASE_PROP = 'MINIMUM_PHASE_PROP'
-MAXIMUM_PHASE_PROP = 'MAXIMUM_PHASE_PROP'
+MINIMUM_PHASE_PROP = "MINIMUM_PHASE_PROP"
+MAXIMUM_PHASE_PROP = "MAXIMUM_PHASE_PROP"
 
 DP_DT_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                  LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
@@ -124,7 +124,7 @@ D2P_DT2_METHODS = D2P_DV2_METHODS
 D2P_DTDV_METHODS = D2P_DV2_METHODS
 """List of all valid and implemented calculation methods for the `D2P_DTDV` bulk setting"""
 
-FIROOZABADI_PAN = 'FIROOZABADI_PAN'
+FIROOZABADI_PAN = "FIROOZABADI_PAN"
 
 SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                 LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED,
@@ -149,8 +149,8 @@ JT_METHODS = BETA_METHODS
 
 
 
-AS_ONE_LIQUID = 'AS_ONE_LIQUID' # Calculate a transport property as if there was one liquid phase
-AS_ONE_GAS = 'AS_ONE_GAS' # Calculate a transport property as if there was one gas phase and liquids or solids
+AS_ONE_LIQUID = "AS_ONE_LIQUID" # Calculate a transport property as if there was one liquid phase
+AS_ONE_GAS = "AS_ONE_GAS" # Calculate a transport property as if there was one gas phase and liquids or solids
 
 MU_LL_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                  AS_ONE_LIQUID,
@@ -171,12 +171,12 @@ SIGMA_LL_METHODS = MU_LL_METHODS
 SIGMA_LL_METHODS_set = frozenset(SIGMA_LL_METHODS)
 
 
-BEATTIE_WHALLEY_MU_VL = 'Beattie Whalley'
-MCADAMS_MU_VL = 'McAdams'
-CICCHITTI_MU_VL = 'Cicchitti'
-LUN_KWOK_MU_VL = 'Lin Kwok'
-FOURAR_BORIES_MU_VL = 'Fourar Bories'
-DUCKLER_MU_VL = 'Duckler'
+BEATTIE_WHALLEY_MU_VL = "Beattie Whalley"
+MCADAMS_MU_VL = "McAdams"
+CICCHITTI_MU_VL = "Cicchitti"
+LUN_KWOK_MU_VL = "Lin Kwok"
+FOURAR_BORIES_MU_VL = "Fourar Bories"
+DUCKLER_MU_VL = "Duckler"
 MU_VL_CORRELATIONS = [BEATTIE_WHALLEY_MU_VL, MCADAMS_MU_VL, CICCHITTI_MU_VL,
                       LUN_KWOK_MU_VL, FOURAR_BORIES_MU_VL, DUCKLER_MU_VL]
 MU_VL_CORRELATIONS_SET = set(MU_VL_CORRELATIONS)
@@ -190,13 +190,13 @@ K_VL_METHODS = K_LL_METHODS + [AS_ONE_GAS]
 """List of all valid and implemented mixing rules for the `K_VL` setting"""
 K_VL_METHODS_SET = set(K_VL_METHODS)
 
-__all__.extend(['MOLE_WEIGHTED', 'MASS_WEIGHTED', 'VOLUME_WEIGHTED', 'EQUILIBRIUM_DERIVATIVE',
-                'LOG_PROP_MOLE_WEIGHTED', 'LOG_PROP_MASS_WEIGHTED', 'LOG_PROP_VOLUME_WEIGHTED',
-                'POWER_PROP_MOLE_WEIGHTED', 'POWER_PROP_MASS_WEIGHTED', 'POWER_PROP_VOLUME_WEIGHTED',
-                'AS_ONE_GAS', 'AS_ONE_LIQUID',
-                'BEATTIE_WHALLEY_MU_VL', 'MCADAMS_MU_VL','CICCHITTI_MU_VL',
-                'LUN_KWOK_MU_VL', 'FOURAR_BORIES_MU_VL', 'DUCKLER_MU_VL',
-                'MINIMUM_PHASE_PROP', 'MAXIMUM_PHASE_PROP', 'FROM_DERIVATIVE_SETTINGS',
+__all__.extend(["MOLE_WEIGHTED", "MASS_WEIGHTED", "VOLUME_WEIGHTED", "EQUILIBRIUM_DERIVATIVE",
+                "LOG_PROP_MOLE_WEIGHTED", "LOG_PROP_MASS_WEIGHTED", "LOG_PROP_VOLUME_WEIGHTED",
+                "POWER_PROP_MOLE_WEIGHTED", "POWER_PROP_MASS_WEIGHTED", "POWER_PROP_VOLUME_WEIGHTED",
+                "AS_ONE_GAS", "AS_ONE_LIQUID",
+                "BEATTIE_WHALLEY_MU_VL", "MCADAMS_MU_VL","CICCHITTI_MU_VL",
+                "LUN_KWOK_MU_VL", "FOURAR_BORIES_MU_VL", "DUCKLER_MU_VL",
+                "MINIMUM_PHASE_PROP", "MAXIMUM_PHASE_PROP", "FROM_DERIVATIVE_SETTINGS",
                 ])
 
 mole_methods = {MOLE_WEIGHTED, LOG_PROP_MOLE_WEIGHTED, POWER_PROP_MOLE_WEIGHTED}
@@ -373,16 +373,16 @@ class BulkSettings:
     non_json_attributes = []
     vectorized = False
 
-    settings = ('dP_dT', 'dP_dV', 'd2P_dV2', 'd2P_dT2', 'd2P_dTdV', 'mu_LL', 'mu_LL_power_exponent',
-                'mu_VL', 'mu_VL_power_exponent', 'k_LL', 'k_LL_power_exponent', 'k_VL', 'k_VL_power_exponent',
-                'sigma_LL', 'sigma_LL_power_exponent', 'T_liquid_volume_ref', 'T_normal', 'P_normal', 'T_standard',
-                'P_standard', 'T_gas_ref', 'P_gas_ref', 'speed_of_sound', 'kappa', 'isobaric_expansion',
-                'Joule_Thomson', 'VL_ID', 'VL_ID_settings', 'S_ID', 'S_ID_settings', 'solid_sort_method',
-                'liquid_sort_method', 'liquid_sort_cmps', 'solid_sort_cmps', 'liquid_sort_cmps_neg', 'solid_sort_cmps_neg',
-                'liquid_sort_prop', 'solid_sort_prop', 'phase_sort_higher_first', 'water_sort', 'equilibrium_perturbation')
+    settings = ("dP_dT", "dP_dV", "d2P_dV2", "d2P_dT2", "d2P_dTdV", "mu_LL", "mu_LL_power_exponent",
+                "mu_VL", "mu_VL_power_exponent", "k_LL", "k_LL_power_exponent", "k_VL", "k_VL_power_exponent",
+                "sigma_LL", "sigma_LL_power_exponent", "T_liquid_volume_ref", "T_normal", "P_normal", "T_standard",
+                "P_standard", "T_gas_ref", "P_gas_ref", "speed_of_sound", "kappa", "isobaric_expansion",
+                "Joule_Thomson", "VL_ID", "VL_ID_settings", "S_ID", "S_ID_settings", "solid_sort_method",
+                "liquid_sort_method", "liquid_sort_cmps", "solid_sort_cmps", "liquid_sort_cmps_neg", "solid_sort_cmps_neg",
+                "liquid_sort_prop", "solid_sort_prop", "phase_sort_higher_first", "water_sort", "equilibrium_perturbation")
 
     def as_json(self, cache=None, option=0):
-        r'''Method to create a JSON-friendly representation of the BulkSettings
+        r"""Method to create a JSON-friendly representation of the BulkSettings
         object which can be stored, and reloaded later.
 
         Returns
@@ -402,12 +402,12 @@ class BulkSettings:
         >>> assert type(json_str) is str
         >>> obj_copy = BulkSettings.from_json(json.loads(json_str))
         >>> assert obj_copy == obj
-        '''
+        """
         return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
     def from_json(cls, json_repr, cache=None):
-        r'''Method to create a BulkSettings object from a JSON-friendly
+        r"""Method to create a BulkSettings object from a JSON-friendly
         serialization of another BulkSettings.
 
         Parameters
@@ -431,11 +431,11 @@ class BulkSettings:
         >>> json_view = obj.as_json()
         >>> new_obj = BulkSettings.from_json(json_view)
         >>> assert obj == new_obj
-        '''
+        """
         return JsonOptEncodable.from_json(json_repr, cache)
 
     def __repr__(self):
-        r'''Method to create a string representation of the BulkSettings object, with
+        r"""Method to create a string representation of the BulkSettings object, with
         the goal of making it easy to obtain standalone code which reproduces
         the current state of the phase. This is extremely helpful in creating
         new test cases.
@@ -446,31 +446,31 @@ class BulkSettings:
             String which is valid Python and recreates the current state of
             the object if ran, [-]
 
-        '''
-        base = f'{self.__class__.__name__}('
+        """
+        base = f"{self.__class__.__name__}("
         for s in self.settings:
             if hasattr(self, s) and getattr(self, s) is not None:
                 val = getattr(self, s)
                 if type(val) is str:
                     val = f"'{val}'"
-                base += f'{s}={val}, '
-        if base[-2:] == ', ':
+                base += f"{s}={val}, "
+        if base[-2:] == ", ":
             base = base[:-2]
-        base += ')'
+        base += ")"
         return base
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)
 
     def __hash__(self):
-        r'''Method to calculate and return a hash representing the exact state
+        r"""Method to calculate and return a hash representing the exact state
         of the object.
 
         Returns
         -------
         hash : int
             Hash of the object, [-]
-        '''
+        """
         d = object_data(self)
         ans = hash_any_primitive((self.__class__.__name__, d))
         return ans
@@ -628,9 +628,9 @@ class Bulk(Phase):
 
     bulk_phase_type = True
 
-    __slots__ = ('phases', 'phase_fractions', 'phase_bulk', 'result', 'constants', 'correlations', 'flasher', 'settings')
+    __slots__ = ("phases", "phase_fractions", "phase_bulk", "result", "constants", "correlations", "flasher", "settings")
     model_attributes = ()
-    obj_references = ('phases', 'result', 'constants', 'correlations', 'flasher', 'settings')
+    obj_references = ("phases", "result", "constants", "correlations", "flasher", "settings")
     json_version = 1
     non_json_attributes = []
 
@@ -649,7 +649,7 @@ class Bulk(Phase):
 
     @property
     def beta(self):
-        r'''Phase fraction of the bulk phase. Should always be 1 when
+        r"""Phase fraction of the bulk phase. Should always be 1 when
         representing all phases of a flash; but can be less than one if
         representing multiple solids or liquids as a single phase in a larger
         mixture.
@@ -658,12 +658,12 @@ class Bulk(Phase):
         -------
         beta : float
             Phase fraction of bulk, [-]
-        '''
+        """
         return sum(self.phase_fractions)
 
     @property
     def betas_mass(self):
-        r'''Method to calculate and return the mass fraction of all of the
+        r"""Method to calculate and return the mass fraction of all of the
         phases in the bulk.
 
         Returns
@@ -674,7 +674,7 @@ class Bulk(Phase):
 
         Notes
         -----
-        '''
+        """
         betas = self.phase_fractions
         phase_iter = range(len(betas))
         MWs_phases = [i.MW() for i in self.phases]
@@ -691,7 +691,7 @@ class Bulk(Phase):
 
     @property
     def betas_volume(self):
-        r'''Method to calculate and return the volume fraction of all of the
+        r"""Method to calculate and return the volume fraction of all of the
         phases in the bulk.
 
         Returns
@@ -702,7 +702,7 @@ class Bulk(Phase):
 
         Notes
         -----
-        '''
+        """
         betas = self.phase_fractions
         phase_iter = range(len(betas))
         Vs_phases = [i.V() for i in self.phases]
@@ -719,7 +719,7 @@ class Bulk(Phase):
 
     @property
     def betas_volume_liquid_ref(self):
-        r'''Method to calculate and return the standard liquid volume fraction of all of the
+        r"""Method to calculate and return the standard liquid volume fraction of all of the
         phases in the bulk.
 
         Returns
@@ -730,7 +730,7 @@ class Bulk(Phase):
 
         Notes
         -----
-        '''
+        """
         betas = self.phase_fractions
         phase_iter = range(len(betas))
         Vs_phases = [i.V_liquid_ref() for i in self.phases]
@@ -803,7 +803,7 @@ class Bulk(Phase):
 
 
     def mu(self):
-        r'''Calculate and return the viscosity of the bulk according to the
+        r"""Calculate and return the viscosity of the bulk according to the
         selected viscosity settings in :obj:`BulkSettings`, the settings in
         :obj:`ViscosityGasMixture <thermo.viscosity.ViscosityGasMixture>` and
         :obj:`ViscosityLiquidMixture <thermo.viscosity.ViscosityLiquidMixture>`,
@@ -815,7 +815,7 @@ class Bulk(Phase):
         -------
         mu : float
             Viscosity of bulk phase calculated with mixing rules, [Pa*s]
-        '''
+        """
         try:
             return self._mu
         except AttributeError:
@@ -826,10 +826,10 @@ class Bulk(Phase):
         if phase_count == 1:
             self._mu = mu = self.phases[0].mu()
             return mu
-        elif self.phase_bulk == 'l' or self.result.gas is None:
+        elif self.phase_bulk == "l" or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
             mu = self._property_mixing_rule(self.settings.mu_LL, self.settings.mu_LL_power_exponent,
-                                            self.correlations.ViscosityLiquidMixture, 'mu')
+                                            self.correlations.ViscosityLiquidMixture, "mu")
             self._mu = mu
             return mu
 
@@ -862,7 +862,7 @@ class Bulk(Phase):
         return mu
 
     def k(self):
-        r'''Calculate and return the thermal conductivity of the bulk according to the
+        r"""Calculate and return the thermal conductivity of the bulk according to the
         selected thermal conductivity settings in :obj:`BulkSettings`, the settings in
         :obj:`ThermalConductivityGasMixture <thermo.thermal_conductivity.ThermalConductivityGasMixture>` and
         :obj:`ThermalConductivityLiquidMixture <thermo.thermal_conductivity.ThermalConductivityLiquidMixture>`,
@@ -874,7 +874,7 @@ class Bulk(Phase):
         -------
         k : float
             Thermal Conductivity of bulk phase calculated with mixing rules, [Pa*s]
-        '''
+        """
         try:
             return self._k
         except AttributeError:
@@ -885,10 +885,10 @@ class Bulk(Phase):
         if phase_count == 1:
             self._k = k = self.phases[0].k()
             return k
-        elif self.phase_bulk == 'l' or self.result.gas is None:
+        elif self.phase_bulk == "l" or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
             k = self._property_mixing_rule(self.settings.k_LL, self.settings.k_LL_power_exponent,
-                                           self.correlations.ThermalConductivityLiquidMixture, 'k')
+                                           self.correlations.ThermalConductivityLiquidMixture, "k")
             self._k = k
             return k
 
@@ -912,7 +912,7 @@ class Bulk(Phase):
         return k
 
     def sigma(self):
-        r'''Calculate and return the surface tension of the bulk according to the
+        r"""Calculate and return the surface tension of the bulk according to the
         selected surface tension settings in :obj:`BulkSettings`, the settings in
         :obj:`SurfaceTensionMixture <thermo.interface.SurfaceTensionMixture>`
         and the configured pure-component settings in
@@ -928,7 +928,7 @@ class Bulk(Phase):
         A value is only returned if all phases in the bulk are liquids; this
         property is for a liquid-ideal gas calculation, not the interfacial
         tension between two liquid phases.
-        '''
+        """
         try:
             return self._sigma
         except AttributeError:
@@ -940,10 +940,10 @@ class Bulk(Phase):
         if phase_count == 1 and self.result.gas is None:
             self._sigma = sigma = self.phases[0].sigma()
             return sigma
-        elif self.phase_bulk == 'l' or self.result.gas is None:
+        elif self.phase_bulk == "l" or self.result.gas is None:
             # Multiple liquids - either a bulk liquid, or a result with no gases
             sigma = self._property_mixing_rule(self.settings.sigma_LL, self.settings.sigma_LL_power_exponent,
-                                               self.correlations.SurfaceTensionMixture, 'sigma')
+                                               self.correlations.SurfaceTensionMixture, "sigma")
             self._sigma = sigma
             return sigma
         else:
@@ -953,7 +953,7 @@ class Bulk(Phase):
 
 
     def MW(self):
-        r'''Method to calculate and return the molecular weight of the bulk
+        r"""Method to calculate and return the molecular weight of the bulk
         phase. This is a phase-fraction weighted calculation.
 
         .. math::
@@ -963,7 +963,7 @@ class Bulk(Phase):
         -------
         MW : float
             Molecular weight, [g/mol]
-        '''
+        """
         try:
             return self._MW
         except:
@@ -977,7 +977,7 @@ class Bulk(Phase):
         return MW
 
     def V(self):
-        r'''Method to calculate and return the molar volume of the bulk phase.
+        r"""Method to calculate and return the molar volume of the bulk phase.
         This is a phase-fraction weighted calculation.
 
         .. math::
@@ -987,7 +987,7 @@ class Bulk(Phase):
         -------
         V : float
             Molar volume, [m^3/mol]
-        '''
+        """
         try:
             return self._V
         except AttributeError:
@@ -1001,7 +1001,7 @@ class Bulk(Phase):
         return V
 
     def V_iter(self, force=False):
-        r'''Method to calculate and return the molar volume of the bulk phase,
+        r"""Method to calculate and return the molar volume of the bulk phase,
         with precision suitable for a `TV` calculation to calculate a matching
         pressure. This is a phase-fraction weighted calculation.
 
@@ -1012,7 +1012,7 @@ class Bulk(Phase):
         -------
         V : float or mpf
             Molar volume, [m^3/mol]
-        '''
+        """
         betas, phases = self.phase_fractions, self.phases
         V = 0.0
         for i in range(len(betas)):
@@ -1021,7 +1021,7 @@ class Bulk(Phase):
 
 
     def Cp(self):
-        r'''Method to calculate and return the constant-temperature and
+        r"""Method to calculate and return the constant-temperature and
         constant phase-fraction heat capacity of the bulk phase.
         This is a phase-fraction weighted calculation.
 
@@ -1032,7 +1032,7 @@ class Bulk(Phase):
         -------
         Cp : float
             Molar heat capacity, [J/(mol*K)]
-        '''
+        """
         try:
             return self._Cp
         except AttributeError:
@@ -1048,7 +1048,7 @@ class Bulk(Phase):
     dH_dT = Cp
 
     def H(self):
-        r'''Method to calculate and return the constant-temperature and
+        r"""Method to calculate and return the constant-temperature and
         constant phase-fraction enthalpy of the bulk phase.
         This is a phase-fraction weighted calculation.
 
@@ -1059,7 +1059,7 @@ class Bulk(Phase):
         -------
         H : float
             Molar enthalpy, [J/(mol)]
-        '''
+        """
         try:
             return self._H
         except AttributeError:
@@ -1073,7 +1073,7 @@ class Bulk(Phase):
         return H
 
     def S(self):
-        r'''Method to calculate and return the constant-temperature and
+        r"""Method to calculate and return the constant-temperature and
         constant phase-fraction entropy of the bulk phase.
         This is a phase-fraction weighted calculation.
 
@@ -1084,7 +1084,7 @@ class Bulk(Phase):
         -------
         S : float
             Molar entropy, [J/(mol*K)]
-        '''
+        """
         try:
             return self._S
         except AttributeError:
@@ -1230,7 +1230,7 @@ class Bulk(Phase):
         return dA_dP
 
     def H_reactive(self):
-        r'''Method to calculate and return the constant-temperature and
+        r"""Method to calculate and return the constant-temperature and
         constant phase-fraction reactive enthalpy of the bulk phase.
         This is a phase-fraction weighted calculation.
 
@@ -1241,7 +1241,7 @@ class Bulk(Phase):
         -------
         H_reactive : float
             Reactive molar enthalpy, [J/(mol)]
-        '''
+        """
         try:
             return self._H_reactive
         except AttributeError:
@@ -1255,7 +1255,7 @@ class Bulk(Phase):
         return H_reactive
 
     def S_reactive(self):
-        r'''Method to calculate and return the constant-temperature and
+        r"""Method to calculate and return the constant-temperature and
         constant phase-fraction reactive entropy of the bulk phase.
         This is a phase-fraction weighted calculation.
 
@@ -1266,7 +1266,7 @@ class Bulk(Phase):
         -------
         S_reactive : float
             Reactive molar entropy, [J/(mol*K)]
-        '''
+        """
         try:
             return self._S_reactive
         except AttributeError:
@@ -1280,7 +1280,7 @@ class Bulk(Phase):
         return S_reactive
 
     def dP_dT_frozen(self):
-        r'''Method to calculate and return the constant-volume derivative of
+        r"""Method to calculate and return the constant-volume derivative of
         pressure with respect to temperature of the bulk phase, at constant
         phase fractions and phase compositions.
         This is a molar phase-fraction weighted calculation.
@@ -1295,7 +1295,7 @@ class Bulk(Phase):
         dP_dT_frozen : float
             Frozen constant-volume derivative of pressure with respect to
             temperature of the bulk phase, [Pa/K]
-        '''
+        """
         try:
             return self._dP_dT_frozen
         except AttributeError:
@@ -1309,7 +1309,7 @@ class Bulk(Phase):
         return dP_dT_frozen
 
     def dP_dV_frozen(self):
-        r'''Method to calculate and return the constant-temperature derivative of
+        r"""Method to calculate and return the constant-temperature derivative of
         pressure with respect to volume of the bulk phase, at constant
         phase fractions and phase compositions.
         This is a molar phase-fraction weighted calculation.
@@ -1324,7 +1324,7 @@ class Bulk(Phase):
         dP_dV_frozen : float
             Frozen constant-temperature derivative of pressure with respect to
             volume of the bulk phase, [Pa*mol/m^3]
-        '''
+        """
         try:
             return self._dP_dV_frozen
         except AttributeError:
@@ -1338,7 +1338,7 @@ class Bulk(Phase):
         return dP_dV_frozen
 
     def d2P_dT2_frozen(self):
-        r'''Method to calculate and return the second constant-volume derivative
+        r"""Method to calculate and return the second constant-volume derivative
         of pressure with respect to temperature of the bulk phase, at constant
         phase fractions and phase compositions.
         This is a molar phase-fraction weighted calculation.
@@ -1353,7 +1353,7 @@ class Bulk(Phase):
         d2P_dT2_frozen : float
             Frozen constant-volume second derivative of pressure with respect to
             temperature of the bulk phase, [Pa/K^2]
-        '''
+        """
         try:
             return self._d2P_dT2_frozen
         except AttributeError:
@@ -1367,7 +1367,7 @@ class Bulk(Phase):
         return d2P_dT2_frozen
 
     def d2P_dV2_frozen(self):
-        r'''Method to calculate and return the constant-temperature second
+        r"""Method to calculate and return the constant-temperature second
         derivative of pressure with respect to volume of the bulk phase, at
         constant phase fractions and phase compositions.
         This is a molar phase-fraction weighted calculation.
@@ -1382,7 +1382,7 @@ class Bulk(Phase):
         d2P_dV2_frozen : float
             Frozen constant-temperature second derivative of pressure with
             respect to volume of the bulk phase, [Pa*mol^2/m^6]
-        '''
+        """
         try:
             return self._d2P_dV2_frozen
         except AttributeError:
@@ -1396,7 +1396,7 @@ class Bulk(Phase):
         return d2P_dV2_frozen
 
     def d2P_dTdV_frozen(self):
-        r'''Method to calculate and return the second
+        r"""Method to calculate and return the second
         derivative of pressure with respect to volume and temperature of the
         bulk phase, at constant phase fractions and phase compositions.
         This is a molar phase-fraction weighted calculation.
@@ -1411,7 +1411,7 @@ class Bulk(Phase):
         d2P_dTdV_frozen : float
             Frozen second derivative of pressure with
             respect to volume and temperature of the bulk phase, [Pa*mol^2/m^6]
-        '''
+        """
         try:
             return self._d2P_dTdV_frozen
         except AttributeError:
@@ -1424,10 +1424,10 @@ class Bulk(Phase):
         self._d2P_dTdV_frozen = d2P_dTdV_frozen
         return d2P_dTdV_frozen
 
-    def _equilibrium_derivative(self, of='P', wrt='T', const='V'):
-        '''Calculate the equilibrium derivative of a property by performing
+    def _equilibrium_derivative(self, of="P", wrt="T", const="V"):
+        """Calculate the equilibrium derivative of a property by performing
         a numerical derivative on flash calculations.
-        '''
+        """
         const_value = self.value(const)
         wrt_value = self.value(wrt)
         of_value = self.value(of)
@@ -1445,71 +1445,71 @@ class Bulk(Phase):
 
 
     def dP_dT(self):
-        r'''Method to calculate and return the first temperature derivative of
+        r"""Method to calculate and return the first temperature derivative of
         pressure of the bulk according to the selected calculation methodology.
 
         Returns
         -------
         dP_dT : float
             First temperature derivative of pressure, [Pa/K]
-        '''
+        """
         dP_dT_method = self.settings.dP_dT
         if dP_dT_method == MOLE_WEIGHTED:
             return self.dP_dT_frozen()
         elif dP_dT_method == EQUILIBRIUM_DERIVATIVE:
-            return self._equilibrium_derivative(of='P', wrt='T', const='V')
-        return self._property_mixing_rule(dP_dT_method, None, None, 'dP_dT')
+            return self._equilibrium_derivative(of="P", wrt="T", const="V")
+        return self._property_mixing_rule(dP_dT_method, None, None, "dP_dT")
 
     dP_dT_V = dP_dT
 
     def dP_dV(self):
-        r'''Method to calculate and return the first volume derivative of
+        r"""Method to calculate and return the first volume derivative of
         pressure of the bulk according to the selected calculation methodology.
 
         Returns
         -------
         dP_dV : float
             First volume derivative of pressure, [Pa*mol/m^3]
-        '''
+        """
         dP_dV_method = self.settings.dP_dV
         if dP_dV_method == MOLE_WEIGHTED:
             return self.dP_dV_frozen()
         elif dP_dV_method == EQUILIBRIUM_DERIVATIVE:
-            return self._equilibrium_derivative(of='P', wrt='V', const='T')
-        return self._property_mixing_rule(dP_dV_method, None, None, 'dP_dV')
+            return self._equilibrium_derivative(of="P", wrt="V", const="T")
+        return self._property_mixing_rule(dP_dV_method, None, None, "dP_dV")
 
     dP_dV_T = dP_dV
 
     def d2P_dT2(self):
-        r'''Method to calculate and return the second temperature derivative of
+        r"""Method to calculate and return the second temperature derivative of
         pressure of the bulk according to the selected calculation methodology.
 
         Returns
         -------
         d2P_dT2 : float
             Second temperature derivative of pressure, [Pa/K^2]
-        '''
+        """
         d2P_dT2_method = self.settings.d2P_dT2
         if d2P_dT2_method == MOLE_WEIGHTED:
             return self.d2P_dT2_frozen()
-        return self._property_mixing_rule(d2P_dT2_method, None, None, 'd2P_dT2')
+        return self._property_mixing_rule(d2P_dT2_method, None, None, "d2P_dT2")
 
     def d2P_dV2(self):
-        r'''Method to calculate and return the second volume derivative of
+        r"""Method to calculate and return the second volume derivative of
         pressure of the bulk according to the selected calculation methodology.
 
         Returns
         -------
         d2P_dV2 : float
             Second volume derivative of pressure, [Pa*mol^2/m^6]
-        '''
+        """
         d2P_dV2_method = self.settings.d2P_dV2
         if d2P_dV2_method == MOLE_WEIGHTED:
             return self.d2P_dV2_frozen()
-        return self._property_mixing_rule(d2P_dV2_method, None, None, 'd2P_dV2')
+        return self._property_mixing_rule(d2P_dV2_method, None, None, "d2P_dV2")
 
     def d2P_dTdV(self):
-        r'''Method to calculate and return the second derivative of
+        r"""Method to calculate and return the second derivative of
         pressure with respect to temperature and volume of the bulk according
         to the selected calculation methodology.
 
@@ -1517,15 +1517,15 @@ class Bulk(Phase):
         -------
         d2P_dTdV : float
             Second volume derivative of pressure, [mol*Pa^2/(J*K)]
-        '''
+        """
         d2P_dTdV_method = self.settings.d2P_dTdV
         if d2P_dTdV_method == MOLE_WEIGHTED:
             return self.d2P_dTdV_frozen()
-        return self._property_mixing_rule(d2P_dTdV_method, None, None, 'd2P_dTdV')
+        return self._property_mixing_rule(d2P_dTdV_method, None, None, "d2P_dTdV")
 
 
     def isobaric_expansion(self):
-        r'''Method to calculate and return the isobatic expansion coefficient
+        r"""Method to calculate and return the isobatic expansion coefficient
         of the bulk according to the selected calculation methodology.
 
         .. math::
@@ -1535,20 +1535,20 @@ class Bulk(Phase):
         -------
         beta : float
             Isobaric coefficient of a thermal expansion, [1/K]
-        '''
+        """
         beta_method = self.settings.isobaric_expansion
         if beta_method == EQUILIBRIUM_DERIVATIVE:
             if self.phase_bulk is not None:
                 # Cannot perform an equilibrium derivative for a sub-bulk
                 # equilibrium conditions are not satisfied
                 return None
-            return self._equilibrium_derivative(of='V', wrt='T', const='P')/self.V()
+            return self._equilibrium_derivative(of="V", wrt="T", const="P")/self.V()
         elif beta_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
-        return self._property_mixing_rule(beta_method, None, None, 'isobaric_expansion')
+        return self._property_mixing_rule(beta_method, None, None, "isobaric_expansion")
 
     def kappa(self):
-        r'''Method to calculate and return the isothermal compressibility
+        r"""Method to calculate and return the isothermal compressibility
         of the bulk according to the selected calculation methodology.
 
         .. math::
@@ -1558,20 +1558,20 @@ class Bulk(Phase):
         -------
         kappa : float
             Isothermal coefficient of compressibility, [1/Pa]
-        '''
+        """
         kappa_method = self.settings.kappa
         if kappa_method == EQUILIBRIUM_DERIVATIVE:
             if self.phase_bulk is not None:
                 # Cannot perform an equilibrium derivative for a sub-bulk
                 # equilibrium conditions are not satisfied
                 return None
-            return -self._equilibrium_derivative(of='V', wrt='P', const='T')/self.V()
+            return -self._equilibrium_derivative(of="V", wrt="P", const="T")/self.V()
         elif kappa_method == FROM_DERIVATIVE_SETTINGS:
             return isothermal_compressibility(self.V(), self.dV_dP())
-        return self._property_mixing_rule(kappa_method, None, None, 'kappa')
+        return self._property_mixing_rule(kappa_method, None, None, "kappa")
 
     def Joule_Thomson(self):
-        r'''Method to calculate and return the Joule-Thomson coefficient
+        r"""Method to calculate and return the Joule-Thomson coefficient
         of the bulk according to the selected calculation methodology.
 
         .. math::
@@ -1581,20 +1581,20 @@ class Bulk(Phase):
         -------
         mu_JT : float
             Joule-Thomson coefficient [K/Pa]
-        '''
+        """
         Joule_Thomson_method = self.settings.Joule_Thomson
         if Joule_Thomson_method == EQUILIBRIUM_DERIVATIVE:
             if self.phase_bulk is not None:
                 # Cannot perform an equilibrium derivative for a sub-bulk
                 # equilibrium conditions are not satisfied
                 return None
-            return self._equilibrium_derivative(of='T', wrt='P', const='H')
+            return self._equilibrium_derivative(of="T", wrt="P", const="H")
         elif Joule_Thomson_method == FROM_DERIVATIVE_SETTINGS:
             return Joule_Thomson(self.T, self.V(), self.Cp(), self.dV_dT())
-        return self._property_mixing_rule(Joule_Thomson_method, None, None, 'Joule_Thomson')
+        return self._property_mixing_rule(Joule_Thomson_method, None, None, "Joule_Thomson")
 
     def speed_of_sound(self):
-        r'''Method to calculate and return the molar speed of sound
+        r"""Method to calculate and return the molar speed of sound
         of the bulk according to the selected calculation methodology.
 
         .. math::
@@ -1611,17 +1611,17 @@ class Bulk(Phase):
         -------
         w : float
             Speed of sound for a real gas, [m*kg^0.5/(s*mol^0.5)]
-        '''
+        """
         speed_of_sound_method = self.settings.speed_of_sound
         if speed_of_sound_method == FROM_DERIVATIVE_SETTINGS:
             return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
         elif speed_of_sound_method == EQUILIBRIUM_DERIVATIVE:
-            return self._equilibrium_derivative(of='P', wrt='rho', const='S')**0.5
+            return self._equilibrium_derivative(of="P", wrt="rho", const="S")**0.5
         elif speed_of_sound_method == FIROOZABADI_PAN:
             # Equation 3.103 Thermodynamics and Applications in Hydrocarbon Energy Production
-            Cs = -1.0/self.V()*self._equilibrium_derivative(of='V', wrt='P', const='S')
+            Cs = -1.0/self.V()*self._equilibrium_derivative(of="V", wrt="P", const="S")
             return sqrt(self.V()/Cs)
-        return self._property_mixing_rule(speed_of_sound_method, None, None, 'speed_of_sound')
+        return self._property_mixing_rule(speed_of_sound_method, None, None, "speed_of_sound")
 
     def Tmc(self):
         try:

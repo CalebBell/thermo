@@ -29,9 +29,9 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 .. contents:: :local:
 '''
 
-__all__ = ['redlich_kister_reverse','redlich_kister_reverse_2d', 'redlich_kister_excess_inner',
-'redlich_kister_build_structure', 'redlich_kister_T_dependence', 'redlich_kister_excess_inner_binary',
-'redlich_kister_excess_binary', 'redlich_kister_fitting_to_use']
+__all__ = ["redlich_kister_reverse","redlich_kister_reverse_2d", "redlich_kister_excess_inner",
+"redlich_kister_build_structure", "redlich_kister_T_dependence", "redlich_kister_excess_inner_binary",
+"redlich_kister_excess_binary", "redlich_kister_fitting_to_use"]
 from math import log
 
 
@@ -56,7 +56,7 @@ def redlich_kister_reverse(data_1d):
 
 
 def redlich_kister_excess_inner(N, N_terms, a_tensor, xs):
-    r'''Calculate the excess property for a given set of composition
+    r"""Calculate the excess property for a given set of composition
     and temperature-independent constants.
 
     .. math::
@@ -88,7 +88,7 @@ def redlich_kister_excess_inner(N, N_terms, a_tensor, xs):
     Temperature dependent constants should be calculated
     in an outer function.
 
-    '''
+    """
     excess = 0.0
     for i in range(N):
         outer = 0.0
@@ -106,7 +106,7 @@ def redlich_kister_excess_inner(N, N_terms, a_tensor, xs):
     return excess*0.5
 
 def redlich_kister_build_structure(N, shape, data, indexes):
-    r'''Builds a redlich-kister compatible
+    r"""Builds a redlich-kister compatible
     tensor (data structure) from pairs of indexes, and
     the coefficients associated with those indexes.
     This is especially important because of the asymmetry
@@ -135,7 +135,7 @@ def redlich_kister_build_structure(N, shape, data, indexes):
     -----
     This is a fairly computationally intensive calculation
     and should be cached
-    '''
+    """
     out = []
 
     if len(shape) == 1:
@@ -177,7 +177,7 @@ def redlich_kister_build_structure(N, shape, data, indexes):
 
 
 def redlich_kister_T_dependence(structure, T, N, N_terms, N_T):
-    r'''Compute a redlich-kister set of A coefficients from
+    r"""Compute a redlich-kister set of A coefficients from
     a temperature-dependent data struture with number
     of temperature-dependent terms `N_T`. Essentially
     this takes a 4d array and returns a 3d one.
@@ -202,7 +202,7 @@ def redlich_kister_T_dependence(structure, T, N, N_terms, N_T):
 
     Notes
     -----
-    '''
+    """
     T2 = T*T
     Tinv = 1.0/T
     T2inv = Tinv*Tinv
@@ -245,7 +245,7 @@ def redlich_kister_T_dependence(structure, T, N, N_terms, N_T):
 
 
 def redlich_kister_excess_inner_binary(ais, xs):
-    r'''Compute the redlich-kister excess for a binary
+    r"""Compute the redlich-kister excess for a binary
     system. This calculation is optimized. This works
     with the same values of coefficients as `redlich_kister_excess_inner`
     but without the excess dimensionality of the input
@@ -265,7 +265,7 @@ def redlich_kister_excess_inner_binary(ais, xs):
 
     Notes
     -----
-    '''
+    """
     x0, x1 = xs
     x_diff = (x0 - x1)
     x_product = x0*x1

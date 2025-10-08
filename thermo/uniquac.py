@@ -52,7 +52,7 @@ from fluids.numerics import trunc_exp
 
 from thermo.activity import GibbsExcess, d2interaction_exp_dT2, d3interaction_exp_dT3, dinteraction_exp_dT, gibbs_excess_gammas, interaction_exp
 
-__all__ = ['UNIQUAC', 'UNIQUAC_gammas', 'UNIQUAC_gammas_binary', 'UNIQUAC_gammas_binaries']
+__all__ = ["UNIQUAC", "UNIQUAC_gammas", "UNIQUAC_gammas_binary", "UNIQUAC_gammas_binaries"]
 
 try:
     array, zeros, npsum, nplog = np.array, np.zeros, np.sum, np.log
@@ -636,16 +636,16 @@ class UNIQUAC(GibbsExcess):
     _x_infinite_dilution = 1e-12
     model_id = 300
 
-    _model_attributes = ('tau_as', 'tau_bs', 'tau_cs',
-                        'tau_ds', 'tau_es', 'tau_fs',
-                        'rs', 'qs')
-    _cached_calculated_attributes = ('_qsxs_sum_inv', '_thetaj_d3taus_dT3_jis',
-                 '_thetas', '_d2taus_dT2', '_thetaj_dtaus_dT_jis', '_thetaj_taus_jis', '_thetaj_d2taus_dT2_jis',
-                 '_dthetas_dxs', '_rsxs_sum_inv', '_phis_inv', '_dtaus_dT',
-                 '_d3taus_dT3', '_d2phis_dxixjs',
-                 '_phis', '_dphis_dxs', '_taus', '_thetaj_taus_jis_inv', '_d2thetas_dxixjs', '_d3GE_dT3')
+    _model_attributes = ("tau_as", "tau_bs", "tau_cs",
+                        "tau_ds", "tau_es", "tau_fs",
+                        "rs", "qs")
+    _cached_calculated_attributes = ("_qsxs_sum_inv", "_thetaj_d3taus_dT3_jis",
+                 "_thetas", "_d2taus_dT2", "_thetaj_dtaus_dT_jis", "_thetaj_taus_jis", "_thetaj_d2taus_dT2_jis",
+                 "_dthetas_dxs", "_rsxs_sum_inv", "_phis_inv", "_dtaus_dT",
+                 "_d3taus_dT3", "_d2phis_dxixjs",
+                 "_phis", "_dphis_dxs", "_taus", "_thetaj_taus_jis_inv", "_d2thetas_dxixjs", "_d3GE_dT3")
 
-    __slots__ = GibbsExcess.__slots__ + _model_attributes + _cached_calculated_attributes + ('zero_coeffs',)
+    __slots__ = GibbsExcess.__slots__ + _model_attributes + _cached_calculated_attributes + ("zero_coeffs",)
 
     def gammas_args(self, T=None):
         if T is not None:
@@ -662,7 +662,7 @@ class UNIQUAC(GibbsExcess):
     gammas_from_args = staticmethod(uniquac_gammas_from_args)
 
     def __repr__(self):
-        s = '{}(T={}, xs={}, rs={}, qs={}, ABCDEF={})'.format(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
+        s = "{}(T={}, xs={}, rs={}, qs={}, ABCDEF={})".format(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
                 (self.tau_as,  self.tau_bs, self.tau_cs,
                  self.tau_ds, self.tau_es, self.tau_fs))
         return s
@@ -718,12 +718,12 @@ class UNIQUAC(GibbsExcess):
                 self.tau_es = [[i[4] for i in l] for l in tau_coeffs]
                 self.tau_fs = [[i[5] for i in l] for l in tau_coeffs]
             else:
-                self.tau_as = array(tau_coeffs[:,:,0], order='C', copy=True)
-                self.tau_bs = array(tau_coeffs[:,:,1], order='C', copy=True)
-                self.tau_cs = array(tau_coeffs[:,:,2], order='C', copy=True)
-                self.tau_ds = array(tau_coeffs[:,:,3], order='C', copy=True)
-                self.tau_es = array(tau_coeffs[:,:,4], order='C', copy=True)
-                self.tau_fs = array(tau_coeffs[:,:,5], order='C', copy=True)
+                self.tau_as = array(tau_coeffs[:,:,0], order="C", copy=True)
+                self.tau_bs = array(tau_coeffs[:,:,1], order="C", copy=True)
+                self.tau_cs = array(tau_coeffs[:,:,2], order="C", copy=True)
+                self.tau_ds = array(tau_coeffs[:,:,3], order="C", copy=True)
+                self.tau_es = array(tau_coeffs[:,:,4], order="C", copy=True)
+                self.tau_fs = array(tau_coeffs[:,:,5], order="C", copy=True)
         else:
             len_ABCDEF = len(ABCDEF)
             if len_ABCDEF == 0 or ABCDEF[0] is None:
@@ -752,7 +752,7 @@ class UNIQUAC(GibbsExcess):
                 self.tau_fs = ABCDEF[5]
 
     def to_T_xs(self, T, xs):
-        r'''Method to construct a new :obj:`UNIQUAC` instance at
+        r"""Method to construct a new :obj:`UNIQUAC` instance at
         temperature `T`, and mole fractions `xs`
         with the same parameters as the existing object.
 
@@ -773,7 +773,7 @@ class UNIQUAC(GibbsExcess):
         If the new temperature is the same temperature as the existing
         temperature, if the `tau` terms or their derivatives have been
         calculated, they will be set to the new object as well.
-        '''
+        """
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
@@ -808,7 +808,7 @@ class UNIQUAC(GibbsExcess):
 
 
     def taus(self):
-        r'''Calculate and return the `tau` terms for the UNIQUAC model for the
+        r"""Calculate and return the `tau` terms for the UNIQUAC model for the
         system temperature.
 
         .. math::
@@ -823,7 +823,7 @@ class UNIQUAC(GibbsExcess):
         Notes
         -----
         These `tau ij` values (and the coefficients) are NOT symmetric.
-        '''
+        """
         try:
             return self._taus
         except AttributeError:
@@ -845,7 +845,7 @@ class UNIQUAC(GibbsExcess):
         return taus
 
     def dtaus_dT(self):
-        r'''Calculate and return the temperature derivative of the `tau` terms
+        r"""Calculate and return the temperature derivative of the `tau` terms
         for the UNIQUAC model for a specified temperature.
 
         .. math::
@@ -863,7 +863,7 @@ class UNIQUAC(GibbsExcess):
         Notes
         -----
         These values (and the coefficients) are NOT symmetric.
-        '''
+        """
         try:
             return self._dtaus_dT
         except AttributeError:
@@ -888,7 +888,7 @@ class UNIQUAC(GibbsExcess):
         return dtaus_dT
 
     def d2taus_dT2(self):
-        r'''Calculate and return the second temperature derivative of the `tau`
+        r"""Calculate and return the second temperature derivative of the `tau`
          terms for the UNIQUAC model for a specified temperature.
 
         .. math::
@@ -909,7 +909,7 @@ class UNIQUAC(GibbsExcess):
         Notes
         -----
         These values (and the coefficients) are NOT symmetric.
-        '''
+        """
         try:
             return self._d2taus_dT2
         except AttributeError:
@@ -936,7 +936,7 @@ class UNIQUAC(GibbsExcess):
         return d2taus_dT2s
 
     def d3taus_dT3(self):
-        r'''Calculate and return the third temperature derivative of the `tau`
+        r"""Calculate and return the third temperature derivative of the `tau`
         terms for the UNIQUAC model for a specified temperature.
 
         .. math::
@@ -959,7 +959,7 @@ class UNIQUAC(GibbsExcess):
         Notes
         -----
         These values (and the coefficients) are NOT symmetric.
-        '''
+        """
         try:
             return self._d3taus_dT3
         except AttributeError:
@@ -987,7 +987,7 @@ class UNIQUAC(GibbsExcess):
         return d3taus_dT3s
 
     def phis(self):
-        r'''Calculate and return the `phi` parameters at the system
+        r"""Calculate and return the `phi` parameters at the system
         composition and temperature.
 
         .. math::
@@ -1000,7 +1000,7 @@ class UNIQUAC(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._phis
         except AttributeError:
@@ -1029,7 +1029,7 @@ class UNIQUAC(GibbsExcess):
         return phis_inv
 
     def dphis_dxs(self):
-        r'''
+        r"""
 
         if i != j:
 
@@ -1041,7 +1041,7 @@ class UNIQUAC(GibbsExcess):
         .. math::
             \frac{\partial \phi_i}{x_j} = \frac{-r_i r_j x_i}{(\sum_k r_k x_k)^2} + \frac{r_i}{\sum_k r_k x_k}
 
-        '''
+        """
         try:
             return self._dphis_dxs
         except AttributeError:
@@ -1055,7 +1055,7 @@ class UNIQUAC(GibbsExcess):
         return dphis_dxs
 
     def d2phis_dxixjs(self):
-        r'''
+        r"""
 
         if i != j:
 
@@ -1065,7 +1065,7 @@ class UNIQUAC(GibbsExcess):
 
         .. math::
 
-        '''
+        """
         try:
             return self._d2phis_dxixjs
         except AttributeError:
@@ -1086,7 +1086,7 @@ class UNIQUAC(GibbsExcess):
         return d2phis_dxixjs
 
     def thetas(self):
-        r'''Calculate and return the `theta` parameters at the system
+        r"""Calculate and return the `theta` parameters at the system
         composition and temperature.
 
         .. math::
@@ -1099,7 +1099,7 @@ class UNIQUAC(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._thetas
         except AttributeError:
@@ -1114,7 +1114,7 @@ class UNIQUAC(GibbsExcess):
         return thetas
 
     def dthetas_dxs(self):
-        r'''
+        r"""
 
         if i != j:
 
@@ -1126,7 +1126,7 @@ class UNIQUAC(GibbsExcess):
         .. math::
             \frac{\partial \theta_i}{x_j} = \frac{-r_i r_j x_i}{(\sum_k r_k x_k)^2} + \frac{r_i}{\sum_k r_k x_k}
 
-        '''
+        """
         try:
             return self._dthetas_dxs
         except AttributeError:
@@ -1141,7 +1141,7 @@ class UNIQUAC(GibbsExcess):
         return dthetas_dxs
 
     def d2thetas_dxixjs(self):
-        r'''
+        r"""
 
         if i != j:
 
@@ -1151,7 +1151,7 @@ class UNIQUAC(GibbsExcess):
 
         .. math::
 
-        '''
+        """
         try:
             return self._d2thetas_dxixjs
         except AttributeError:
@@ -1299,7 +1299,7 @@ class UNIQUAC(GibbsExcess):
         return thetaj_d3taus_dT3_jis
 
     def GE(self):
-        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        r"""Calculate and return the excess Gibbs energy of a liquid phase
         using the UNIQUAC model.
 
         .. math::
@@ -1314,7 +1314,7 @@ class UNIQUAC(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._GE
         except AttributeError:
@@ -1328,7 +1328,7 @@ class UNIQUAC(GibbsExcess):
         return gE
 
     def dGE_dT(self):
-        r'''Calculate and return the temperature derivative of excess Gibbs
+        r"""Calculate and return the temperature derivative of excess Gibbs
         energy of a liquid phase using the UNIQUAC model.
 
         .. math::
@@ -1343,7 +1343,7 @@ class UNIQUAC(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._dGE_dT
         except AttributeError:
@@ -1358,7 +1358,7 @@ class UNIQUAC(GibbsExcess):
         return dGE
 
     def d2GE_dT2(self):
-        r'''Calculate and return the second temperature derivative of excess
+        r"""Calculate and return the second temperature derivative of excess
         Gibbs energy of a liquid phase using the UNIQUAC model.
 
         .. math::
@@ -1375,7 +1375,7 @@ class UNIQUAC(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2GE_dT2
         except AttributeError:
@@ -1395,7 +1395,7 @@ class UNIQUAC(GibbsExcess):
         return d2GE_dT2
 
     def d3GE_dT3(self):
-        r'''Calculate and return the third temperature derivative of excess
+        r"""Calculate and return the third temperature derivative of excess
         Gibbs energy of a liquid phase using the UNIQUAC model.
 
         .. math::
@@ -1414,7 +1414,7 @@ class UNIQUAC(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d3GE_dT3
         except AttributeError:
@@ -1433,7 +1433,7 @@ class UNIQUAC(GibbsExcess):
         return d3GE_dT3
 
     def dGE_dxs(self):
-        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        r"""Calculate and return the mole fraction derivatives of excess Gibbs
         energy using the UNIQUAC model.
 
         .. math::
@@ -1456,7 +1456,7 @@ class UNIQUAC(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._dGE_dxs
         except:
@@ -1483,7 +1483,7 @@ class UNIQUAC(GibbsExcess):
         return dGE_dxs
 
     def d2GE_dTdxs(self):
-        r'''Calculate and return the temperature derivative of mole fraction
+        r"""Calculate and return the temperature derivative of mole fraction
         derivatives of excess Gibbs energy using the UNIQUAC model.
 
         .. math::
@@ -1509,7 +1509,7 @@ class UNIQUAC(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2GE_dTdxs
         except AttributeError:
@@ -1599,7 +1599,7 @@ class UNIQUAC(GibbsExcess):
         return d2GE_dTdxs
 
     def d2GE_dxixjs(self):
-        r'''Calculate and return the second mole fraction derivatives of excess
+        r"""Calculate and return the second mole fraction derivatives of excess
         Gibbs energy using the UNIQUAC model.
 
         .. math::
@@ -1614,7 +1614,7 @@ class UNIQUAC(GibbsExcess):
         -----
         The formula is extremely long and painful; see the source code for
         details.
-        '''
+        """
         try:
             return self._d2GE_dxixjs
         except AttributeError:
@@ -1668,7 +1668,7 @@ class UNIQUAC(GibbsExcess):
     @classmethod
     def regress_binary_parameters(cls, gammas, xs, rs, qs, use_numba=False,
                                   do_statistics=True, **kwargs):
-        r'''Perform a basic regression to determine the values of the `tau`
+        r"""Perform a basic regression to determine the values of the `tau`
         terms in the UNIQUAC model, given a series of known or predicted
         activity coefficients and mole fractions.
 
@@ -1761,7 +1761,7 @@ class UNIQUAC(GibbsExcess):
         >>> stats['MAE']
         0.0254
 
-        '''
+        """
         if use_numba:
             from thermo.numba import UNIQUAC_gammas_binaries as work_func
             rs = array(rs)
@@ -1791,8 +1791,8 @@ class UNIQUAC(GibbsExcess):
         gammas_working = np.array(gammas_working)
 
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
-                                                      fit_parameters=['tau12', 'tau21'],
-                                                      use_fit_parameters=['tau12', 'tau21'],
+                                                      fit_parameters=["tau12", "tau21"],
+                                                      use_fit_parameters=["tau12", "tau21"],
                                                       initial_guesses=cls._gamma_parameter_guesses,
                                                       analytical_jac=None,
                                                       use_numba=use_numba,
@@ -1801,19 +1801,19 @@ class UNIQUAC(GibbsExcess):
 
 
     _gamma_parameter_guesses = [#{'tau12': 1, 'tau21': 1}, # 1 is always tried
-                            {'tau12': 1.0529981904211922, 'tau21': 1.1976772649513237},
-                            {'tau12': 1.8748910210873349, 'tau21': 998.612171671497}, # Found seeking gamma = 1 for rs, qs = [[1.4, 7.219], [39.95, 47.2727]]
-                            {'tau12': 0.6080855151163854, 'tau21': 1.5266917396579502},  # Found seeking gamma = 1 for rs, qs = [[30.49447368421054, 38.253], [30.195389473684212, 42.39346842105263]]
-                            {'tau12': 0.75, 'tau21': 0.053}, # triethylamine and water from ChemSep main
-                            {'tau12': 0.51, 'tau21': 0.00115}, # triethylamine and water from ChemSep main low T
-                            {'tau12': 0.0003578, 'tau21': 32.6}, # acetic acid and 1-propanol from ChemSep main
-                            {'tau12': 0.00056, 'tau21': 41.9}, # acetone and chloroform from ChemSep main
-                            {'tau12': 1.45, 'tau21': 2.2e-7}, # methanol and ethene, chloro- from ChemSep main
+                            {"tau12": 1.0529981904211922, "tau21": 1.1976772649513237},
+                            {"tau12": 1.8748910210873349, "tau21": 998.612171671497}, # Found seeking gamma = 1 for rs, qs = [[1.4, 7.219], [39.95, 47.2727]]
+                            {"tau12": 0.6080855151163854, "tau21": 1.5266917396579502},  # Found seeking gamma = 1 for rs, qs = [[30.49447368421054, 38.253], [30.195389473684212, 42.39346842105263]]
+                            {"tau12": 0.75, "tau21": 0.053}, # triethylamine and water from ChemSep main
+                            {"tau12": 0.51, "tau21": 0.00115}, # triethylamine and water from ChemSep main low T
+                            {"tau12": 0.0003578, "tau21": 32.6}, # acetic acid and 1-propanol from ChemSep main
+                            {"tau12": 0.00056, "tau21": 41.9}, # acetone and chloroform from ChemSep main
+                            {"tau12": 1.45, "tau21": 2.2e-7}, # methanol and ethene, chloro- from ChemSep main
                             ]
 
     for i in range(len(_gamma_parameter_guesses)):
         r = _gamma_parameter_guesses[i]
-        _gamma_parameter_guesses.append({'tau12': r['tau21'], 'tau21': r['tau12']})
+        _gamma_parameter_guesses.append({"tau12": r["tau21"], "tau21": r["tau12"]})
 
 
 

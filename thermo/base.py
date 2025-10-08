@@ -23,7 +23,7 @@ import os
 
 try:  # pragma: no cover
     from appdirs import user_config_dir
-    data_dir = user_config_dir('thermo')
+    data_dir = user_config_dir("thermo")
     if not os.path.exists(data_dir):
         try:
             os.mkdir(data_dir)
@@ -35,4 +35,4 @@ except:  # pragma: no cover
 try:
     source_path = os.path.dirname(__file__) # micropython
 except:
-    source_path = ''
+    source_path = ""

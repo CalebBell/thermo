@@ -59,8 +59,8 @@ Mixture Surface Tension
 '''
 
 
-__all__ = ['surface_tension_methods', 'SurfaceTension',
-           'surface_tension_mixture_methods', 'SurfaceTensionMixture']
+__all__ = ["surface_tension_methods", "SurfaceTension",
+           "surface_tension_mixture_methods", "SurfaceTensionMixture"]
 
 from chemicals import interface, miscdata
 from chemicals.dippr import EQ106
@@ -87,19 +87,19 @@ from thermo.heat_capacity import HeatCapacityLiquid
 from thermo.utils import LINEAR, REFPROP_FIT, VDI_TABULAR, MixtureProperty, TDependentProperty
 from thermo.volume import VolumeLiquid
 
-STREFPROP = 'REFPROP'
-SOMAYAJULU2 = 'SOMAYAJULU2'
-SOMAYAJULU = 'SOMAYAJULU'
-JASPER = 'JASPER'
-MIQUEU = 'MIQUEU'
-BROCK_BIRD = 'BROCK_BIRD'
-SASTRI_RAO = 'SASTRI_RAO'
-PITZER_SIGMA = 'PITZER_SIGMA'
-ZUO_STENBY = 'ZUO_STENBY'
-HAKIM_STEINBERG_STIEL = 'HAKIM_STEINBERG_STIEL'
-ALEEM = 'Aleem'
-VDI_PPDS = 'VDI_PPDS'
-IAPWS_SIGMA = 'IAPWS_SIGMA'
+STREFPROP = "REFPROP"
+SOMAYAJULU2 = "SOMAYAJULU2"
+SOMAYAJULU = "SOMAYAJULU"
+JASPER = "JASPER"
+MIQUEU = "MIQUEU"
+BROCK_BIRD = "BROCK_BIRD"
+SASTRI_RAO = "SASTRI_RAO"
+PITZER_SIGMA = "PITZER_SIGMA"
+ZUO_STENBY = "ZUO_STENBY"
+HAKIM_STEINBERG_STIEL = "HAKIM_STEINBERG_STIEL"
+ALEEM = "Aleem"
+VDI_PPDS = "VDI_PPDS"
+IAPWS_SIGMA = "IAPWS_SIGMA"
 
 
 surface_tension_methods = [IAPWS_SIGMA, REFPROP_FIT, STREFPROP, SOMAYAJULU2, SOMAYAJULU, VDI_PPDS, VDI_TABULAR,
@@ -231,8 +231,8 @@ class SurfaceTension(TDependentProperty):
        Berlin; New York:: Springer, 2010.
     '''
 
-    name = 'Surface tension'
-    units = 'N/m'
+    name = "Surface tension"
+    units = "N/m"
     interpolation_T = None
     """No interpolation transformation by default."""
     interpolation_property = None
@@ -262,8 +262,8 @@ class SurfaceTension(TDependentProperty):
     only ever be fit to a specific `n` value"""
     _fit_force_n[JASPER] = 2
 
-    custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'StielPolar',
-                   'Hvap_Tb', 'Vml', 'Cpl')
+    custom_args = ("MW", "Tb", "Tc", "Pc", "Vc", "Zc", "omega", "StielPolar",
+                   "Hvap_Tb", "Vml", "Cpl")
 
 
     extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
@@ -274,13 +274,13 @@ class SurfaceTension(TDependentProperty):
     extra_correlations_internal.add(VDI_PPDS)
 
 
-    obj_references = pure_references = ('Vml', 'Cpl')
+    obj_references = pure_references = ("Vml", "Cpl")
     obj_references_types = pure_reference_types = (VolumeLiquid, HeatCapacityLiquid)
 
 
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
-                 omega=None, StielPolar=None, Hvap_Tb=None, CASRN='', Vml=None,
-                 Cpl=None, extrapolation='DIPPR106_AB', **kwargs):
+                 omega=None, StielPolar=None, Hvap_Tb=None, CASRN="", Vml=None,
+                 Cpl=None, extrapolation="DIPPR106_AB", **kwargs):
         self.MW = MW
         self.Tb = Tb
         self.Tc = Tc
@@ -299,10 +299,10 @@ class SurfaceTension(TDependentProperty):
 
     @staticmethod
     def _method_indexes():
-        '''Returns a dictionary of method: index for all methods
+        """Returns a dictionary of method: index for all methods
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
-        '''
+        """
         return {STREFPROP: interface.sigma_data_Mulero_Cachadina.index,
                 SOMAYAJULU2: interface.sigma_data_Somayajulu2.index,
                 SOMAYAJULU: interface.sigma_data_Somayajulu.index,
@@ -312,7 +312,7 @@ class SurfaceTension(TDependentProperty):
                 }
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         and :obj:`all_methods` as a set of methods for which the data exists for.
@@ -321,32 +321,32 @@ class SurfaceTension(TDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = []
         self.all_methods = set()
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
 
         if load_data and CASRN:
-            if CASRN == '7732-18-5':  # Water
+            if CASRN == "7732-18-5":  # Water
                 methods.append(IAPWS_SIGMA)
                 T_limits[IAPWS_SIGMA] = (273.15-25.0, iapws95_Tc)
 
             if CASRN in interface.sigma_data_Mulero_Cachadina.index:
                 sigma0, n0, sigma1, n1, sigma2, n2, Tc, Tmin, Tmax = interface.sigma_values_Mulero_Cachadina[
                     interface.sigma_data_Mulero_Cachadina.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=STREFPROP, model='REFPROP_sigma', Tmin=Tmin, Tmax=Tmax, 
+                self.add_correlation(name=STREFPROP, model="REFPROP_sigma", Tmin=Tmin, Tmax=Tmax, 
                                     sigma0=sigma0, n0=n0, sigma1=sigma1, n1=n1, sigma2=sigma2, n2=n2, Tc=Tc, select=False)
 
             if CASRN in interface.sigma_data_Somayajulu2.index:
                 Tt, Tc, A, B, C = interface.sigma_values_Somayajulu2[
                     interface.sigma_data_Somayajulu2.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=SOMAYAJULU2, model='Somayajulu', Tmin=Tt, Tmax=Tc, Tc=Tc, A=A, B=B, C=C, select=False)
+                self.add_correlation(name=SOMAYAJULU2, model="Somayajulu", Tmin=Tt, Tmax=Tc, Tc=Tc, A=A, B=B, C=C, select=False)
 
             if CASRN in interface.sigma_data_Somayajulu.index:
                 Tt, Tc, A, B, C = interface.sigma_values_Somayajulu[
                     interface.sigma_data_Somayajulu.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=SOMAYAJULU, model='Somayajulu', Tmin=Tt, Tmax=Tc, Tc=Tc, A=A, B=B, C=C, select=False)
+                self.add_correlation(name=SOMAYAJULU, model="Somayajulu", Tmin=Tt, Tmax=Tc, Tc=Tc, A=A, B=B, C=C, select=False)
 
             if CASRN in interface.sigma_data_Jasper_Lange.index:
                 a, b, Tmin, Tmax = interface.sigma_values_Jasper_Lange[
@@ -356,13 +356,13 @@ class SurfaceTension(TDependentProperty):
                     Tmax = a / b + 273.15
                 if isnan(Tmin):
                     Tmin = 0.0
-                self.add_correlation(name=JASPER, model='Jasper', Tmin=Tmin, Tmax=Tmax, a=a, b=b, select=False)
+                self.add_correlation(name=JASPER, model="Jasper", Tmin=Tmin, Tmax=Tmax, a=a, b=b, select=False)
             if CASRN in interface.sigma_data_VDI_PPDS_11.index:
                 Tm, Tc, A, B, C, D, E = interface.sigma_values_VDI_PPDS_11[
                     interface.sigma_data_VDI_PPDS_11.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=VDI_PPDS,
-                    model='DIPPR106',
+                    model="DIPPR106",
                     Tmin=Tm,
                     Tmax=Tc,
                     Tc=Tc,
@@ -375,7 +375,7 @@ class SurfaceTension(TDependentProperty):
                 )
 
             if CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(CASRN, 'sigma')
+                Ts, props = lookup_VDI_tabular_data(CASRN, "sigma")
                     # mercury missing values
                 if Ts:
                     self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
@@ -397,7 +397,7 @@ class SurfaceTension(TDependentProperty):
 
         if all((self.Tb, self.Hvap_Tb, self.MW)):
             # Cache Cpl at Tb for ease of calculation of Tmax
-            self.Cpl_Tb = self.Cpl(self.Tb) if hasattr(self.Cpl, '__call__') else self.Cpl
+            self.Cpl_Tb = self.Cpl(self.Tb) if hasattr(self.Cpl, "__call__") else self.Cpl
             if self.Cpl_Tb:
                 self.Cpl_Tb = property_molar_to_mass(self.Cpl_Tb, self.MW)
                 methods.append(ALEEM)
@@ -412,7 +412,7 @@ class SurfaceTension(TDependentProperty):
         self.all_methods.update(methods)
 
     def calculate(self, T, method):
-        r'''Method to calculate surface tension of a liquid at temperature `T`
+        r"""Method to calculate surface tension of a liquid at temperature `T`
         with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -429,7 +429,7 @@ class SurfaceTension(TDependentProperty):
         -------
         sigma : float
             Surface tension of the liquid at T, [N/m]
-        '''
+        """
         if method == IAPWS_SIGMA:
             return sigma_IAPWS(T)
         elif method == BROCK_BIRD:
@@ -443,7 +443,7 @@ class SurfaceTension(TDependentProperty):
         elif method == MIQUEU:
             return Miqueu(T, self.Tc, self.Vc, self.omega)
         elif method == ALEEM:
-            Cpl = self.Cpl(T) if hasattr(self.Cpl, '__call__') else self.Cpl
+            Cpl = self.Cpl(T) if hasattr(self.Cpl, "__call__") else self.Cpl
             Cpl = property_molar_to_mass(Cpl, self.MW)
             try:
                 Vml = self.Vml.T_dependent_property(T)
@@ -458,8 +458,8 @@ class SurfaceTension(TDependentProperty):
             return self._base_calculate(T, method)
 
 
-WINTERFELDSCRIVENDAVIS = 'Winterfeld, Scriven, and Davis (1978)'
-DIGUILIOTEJA = 'Diguilio and Teja (1988)'
+WINTERFELDSCRIVENDAVIS = "Winterfeld, Scriven, and Davis (1978)"
+DIGUILIOTEJA = "Diguilio and Teja (1988)"
 
 surface_tension_mixture_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, LINEAR]
 """Holds all methods available for the :obj:`SurfaceTensionMixture` class, for use in
@@ -467,7 +467,7 @@ iterating over them."""
 
 
 class SurfaceTensionMixture(MixtureProperty):
-    '''Class for dealing with surface tension of a mixture as a function of
+    """Class for dealing with surface tension of a mixture as a function of
     temperature, pressure, and composition.
     Consists of two mixing rules specific to surface tension, and mole
     weighted averaging.
@@ -522,10 +522,10 @@ class SurfaceTensionMixture(MixtureProperty):
     ----------
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
-    '''
+    """
 
-    name = 'Surface tension'
-    units = 'N/m'
+    name = "Surface tension"
+    units = "N/m"
     property_min = 0
     """Mimimum valid value of surface tension. This occurs at the critical
     point exactly."""
@@ -535,11 +535,11 @@ class SurfaceTensionMixture(MixtureProperty):
 
     ranked_methods = [WINTERFELDSCRIVENDAVIS, DIGUILIOTEJA, LINEAR]
 
-    pure_references = ('SurfaceTensions', 'VolumeLiquids')
+    pure_references = ("SurfaceTensions", "VolumeLiquids")
     pure_reference_types = (SurfaceTension, VolumeLiquid)
-    obj_references = ('SurfaceTensions', 'VolumeLiquids')
+    obj_references = ("SurfaceTensions", "VolumeLiquids")
 
-    pure_constants = ('MWs', 'Tbs', 'Tcs')
+    pure_constants = ("MWs", "Tbs", "Tcs")
     custom_args = pure_constants
 
     def __init__(self, MWs=[], Tbs=[], Tcs=[], CASs=[], SurfaceTensions=[],
@@ -553,7 +553,7 @@ class SurfaceTensionMixture(MixtureProperty):
         super().__init__(correct_pressure_pure=correct_pressure_pure, load_data=load_data, **kwargs)
 
     def load_all_methods(self, load_data=True):
-        r'''Method to initialize the object by precomputing any values which
+        r"""Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
         :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
@@ -563,7 +563,7 @@ class SurfaceTensionMixture(MixtureProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = set()
         methods.add(LINEAR) # Needs sigma
         methods.add(WINTERFELDSCRIVENDAVIS) # Nothing to load, needs rhoms, sigma
@@ -574,7 +574,7 @@ class SurfaceTensionMixture(MixtureProperty):
         self.all_methods = methods
 
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate surface tension of a liquid mixture at
+        r"""Method to calculate surface tension of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -598,7 +598,7 @@ class SurfaceTensionMixture(MixtureProperty):
         -------
         sigma : float
             Surface tension of the liquid at given conditions, [N/m]
-        '''
+        """
         if method == DIGUILIOTEJA:
             return Diguilio_Teja(T=T, xs=zs, sigmas_Tb=self.sigmas_Tb,
                                  Tbs=self.Tbs, Tcs=self.Tcs)

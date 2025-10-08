@@ -163,8 +163,6 @@ extend-ignore = [
     "TRY300",  
     "TRY301",  
     "TRY400",  
-    "Q000",  
-    "Q002",  
     
     "PYI024", # PYI024 Use `typing.NamedTuple` instead of `collections.namedtuple
 ]

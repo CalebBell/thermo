@@ -60,46 +60,46 @@ Faster implementations which do not store N^2 matrices:
 
 # .. autofunction:: PR_lnphis
 # .. autofunction:: PR_lnphis_fastest
-__all__ = ['a_alpha_aijs_composition_independent',
-           'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
-           'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
-           'PR_lnphis', 'VDW_lnphis', 'SRK_lnphis', 'eos_mix_lnphis_general',
+__all__ = ["a_alpha_aijs_composition_independent",
+           "a_alpha_and_derivatives", "a_alpha_and_derivatives_full",
+           "a_alpha_quadratic_terms", "a_alpha_and_derivatives_quadratic_terms",
+           "PR_lnphis", "VDW_lnphis", "SRK_lnphis", "eos_mix_lnphis_general",
 
-           'VDW_lnphis_fastest', 'PR_lnphis_fastest',
-           'SRK_lnphis_fastest', 'RK_lnphis_fastest',
-           'PR_translated_lnphis_fastest',
+           "VDW_lnphis_fastest", "PR_lnphis_fastest",
+           "SRK_lnphis_fastest", "RK_lnphis_fastest",
+           "PR_translated_lnphis_fastest",
 
-           'G_dep_lnphi_d_helper',
+           "G_dep_lnphi_d_helper",
 
-           'RK_d3delta_dninjnks',
-           'PR_ddelta_dzs', 'PR_ddelta_dns',
-           'PR_d2delta_dninjs', 'PR_d3delta_dninjnks',
+           "RK_d3delta_dninjnks",
+           "PR_ddelta_dzs", "PR_ddelta_dns",
+           "PR_d2delta_dninjs", "PR_d3delta_dninjnks",
 
-           'PR_depsilon_dns', 'PR_d2epsilon_dninjs', 'PR_d3epsilon_dninjnks',
-           'PR_d2epsilon_dzizjs', 'PR_depsilon_dzs',
+           "PR_depsilon_dns", "PR_d2epsilon_dninjs", "PR_d3epsilon_dninjnks",
+           "PR_d2epsilon_dzizjs", "PR_depsilon_dzs",
 
-           'PR_translated_d2delta_dninjs', 'PR_translated_d3delta_dninjnks',
-           'PR_translated_d3epsilon_dninjnks',
+           "PR_translated_d2delta_dninjs", "PR_translated_d3delta_dninjnks",
+           "PR_translated_d3epsilon_dninjnks",
 
-           'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',
-           'PR_translated_depsilon_dzs', 'PR_translated_depsilon_dns',
-           'PR_translated_d2epsilon_dzizjs', 'PR_translated_d2epsilon_dninjs',
+           "PR_translated_ddelta_dzs", "PR_translated_ddelta_dns",
+           "PR_translated_depsilon_dzs", "PR_translated_depsilon_dns",
+           "PR_translated_d2epsilon_dzizjs", "PR_translated_d2epsilon_dninjs",
 
-           'SRK_translated_ddelta_dns', 'SRK_translated_depsilon_dns',
-           'SRK_translated_d2epsilon_dzizjs', 'SRK_translated_depsilon_dzs',
-           'SRK_translated_d2delta_dninjs',
-           'SRK_translated_d3delta_dninjnks',
-           'SRK_translated_d2epsilon_dninjs', 'SRK_translated_d3epsilon_dninjnks',
-
-
-           'SRK_translated_lnphis_fastest',
-
-           'VDW_dlnphis_dT', 'VDW_dlnphis_dP',
+           "SRK_translated_ddelta_dns", "SRK_translated_depsilon_dns",
+           "SRK_translated_d2epsilon_dzizjs", "SRK_translated_depsilon_dzs",
+           "SRK_translated_d2delta_dninjs",
+           "SRK_translated_d3delta_dninjnks",
+           "SRK_translated_d2epsilon_dninjs", "SRK_translated_d3epsilon_dninjnks",
 
 
-           'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
+           "SRK_translated_lnphis_fastest",
 
-           'eos_mix_dV_dzs', 'eos_mix_a_alpha_volume']
+           "VDW_dlnphis_dT", "VDW_dlnphis_dP",
+
+
+           "eos_mix_db_dns", "eos_mix_da_alpha_dns",
+
+           "eos_mix_dV_dzs", "eos_mix_a_alpha_volume"]
 from math import log, sqrt
 
 from fluids.constants import R
@@ -117,7 +117,7 @@ root_two_p1 = root_two + 1.0
 
 def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs, a_alpha_ijs=None,
 a_alpha_roots=None, a_alpha_ij_roots_inv=None):
-    r'''Calculates the matrix :math:`(a\alpha)_{ij}` as well as the array
+    r"""Calculates the matrix :math:`(a\alpha)_{ij}` as well as the array
     :math:`\sqrt{(a\alpha)_{i}}` and the matrix
     :math:`\frac{1}{\sqrt{(a\alpha)_{i}}\sqrt{(a\alpha)_{j}}}`.
 
@@ -167,7 +167,7 @@ a_alpha_roots=None, a_alpha_ij_roots_inv=None):
     [0.49910914213, 0.80538784840]
     >>> a_alpha_ij_roots_inv
     [[4.0142919105, 2.487707997796], [2.487707997796, 1.54166443799]]
-    '''
+    """
     N = len(a_alphas)
     _sqrt = sqrt
 
@@ -226,7 +226,7 @@ def a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs=None,
 def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                                  one_minus_kijs, a_alpha_ijs=None, a_alpha_roots=None,
                                  a_alpha_ij_roots_inv=None):
-    r'''Calculates the `a_alpha` term, and its first two temperature
+    r"""Calculates the `a_alpha` term, and its first two temperature
     derivatives, for an equation of state along with the
     matrix quantities calculated in the process.
 
@@ -344,7 +344,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
     [[-0.000510202800, -0.0006937567844], [-0.000693756784, -0.00111311535]]
     >>> d2a_alpha_dT2_ijs
     [[1.865112885e-06, 2.4734471244e-06], [2.4734471244e-06, 3.8843319e-06]]
-    '''
+    """
     # For 44 components, takes 150 us in PyPy.
 
     N = len(a_alphas)
@@ -431,7 +431,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
 
 def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
                             a_alpha_j_rows=None, vec0=None):
-    r'''Calculates the `a_alpha` term for an equation of state along with the
+    r"""Calculates the `a_alpha` term for an equation of state along with the
     vector quantities needed to compute the fugacities of the mixture. This
     routine is efficient in both numba and PyPy.
 
@@ -488,7 +488,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
     >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, 299.0, zs, one_minus_kijs)
     >>> a_alpha, a_alpha_j_rows
     (0.58562139582, [0.35469988173, 0.61604757237])
-    '''
+    """
     N = len(a_alphas)
     if a_alpha_j_rows is None:
         a_alpha_j_rows = [0.0]*N
@@ -548,7 +548,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
                                             da_alpha_dTs, d2a_alpha_dT2s, T,
                                             zs, one_minus_kijs, a_alpha_j_rows=None,
                                             da_alpha_dT_j_rows=None):
-    r'''Calculates the `a_alpha` term, and its first two temperature
+    r"""Calculates the `a_alpha` term, and its first two temperature
     derivatives, for an equation of state along with the
     vector quantities needed to compute the fugacitie and temperature
     derivatives of fugacities of the mixture. This
@@ -659,7 +659,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
     >>> d2a_alpha_dT2s = [1.8651128859234162e-06, 3.884331923127011e-06]
     >>> a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs, d2a_alpha_dT2s, 299.0, zs, one_minus_kijs)
     (0.58562139582, -0.001018667672, 3.56669817856e-06, [0.35469988173, 0.61604757237], [-0.000672387374, -0.001064293501])
-    '''
+    """
     N = len(a_alphas)
     a_alpha = da_alpha_dT = d2a_alpha_dT2 = 0.0
 

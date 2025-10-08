@@ -21,11 +21,11 @@ SOFTWARE.
 '''
 
 __all__ = [
-    'activity_pointer_reference_dicts',
-    'activity_reference_pointer_dicts',
-    'object_lookups',
-    'lnphis_direct',
-    'fugacities_direct',
+    "activity_pointer_reference_dicts",
+    "activity_reference_pointer_dicts",
+    "object_lookups",
+    "lnphis_direct",
+    "fugacities_direct",
 ]
 
 from fluids.numerics import log, trunc_exp
@@ -49,14 +49,14 @@ from thermo.uniquac import UNIQUAC, uniquac_gammas_from_args
 from thermo.wilson import Wilson, wilson_gammas_from_args
 
 activity_pointer_reference_dicts = {
-    'thermo.activity.IdealSolution': IdealSolution,
-    'thermo.wilson.Wilson': Wilson,
-    'thermo.unifac.UNIFAC': UNIFAC,
-    'thermo.regular_solution.RegularSolution': RegularSolution,
-    'thermo.regular_solution.FloryHuggins': FloryHuggins,
-    'thermo.regular_solution.Hansen': Hansen,
-    'thermo.uniquac.UNIQUAC': UNIQUAC,
-    'thermo.nrtl.NRTL': NRTL,
+    "thermo.activity.IdealSolution": IdealSolution,
+    "thermo.wilson.Wilson": Wilson,
+    "thermo.unifac.UNIFAC": UNIFAC,
+    "thermo.regular_solution.RegularSolution": RegularSolution,
+    "thermo.regular_solution.FloryHuggins": FloryHuggins,
+    "thermo.regular_solution.Hansen": Hansen,
+    "thermo.uniquac.UNIQUAC": UNIQUAC,
+    "thermo.nrtl.NRTL": NRTL,
 }
 activity_reference_pointer_dicts = {
     v: k for k, v in activity_pointer_reference_dicts.items()

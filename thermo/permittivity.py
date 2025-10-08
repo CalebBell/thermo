@@ -42,7 +42,7 @@ Pure Liquid Permittivity
 '''
 
 
-__all__ = ['PermittivityLiquid']
+__all__ = ["PermittivityLiquid"]
 
 from chemicals import permittivity
 from chemicals.iapws import iapws95_Pc, iapws95_rho, iapws95_rhol_sat, iapws95_Tc
@@ -51,16 +51,16 @@ from fluids.numerics import isnan
 
 from thermo.utils import TDependentProperty
 
-CRC = 'CRC'
-CRC_CONSTANT = 'CRC_CONSTANT'
-IAPWS_PERMITTIVITY = 'IAPWS_PERMITTIVITY'
+CRC = "CRC"
+CRC_CONSTANT = "CRC_CONSTANT"
+IAPWS_PERMITTIVITY = "IAPWS_PERMITTIVITY"
 permittivity_methods = [CRC, CRC_CONSTANT, IAPWS_PERMITTIVITY]
 """Holds all methods available for the :obj:`PermittivityLiquid` class, for use in
 iterating over them."""
 
 
 class PermittivityLiquid(TDependentProperty):
-    r'''Class for dealing with liquid permittivity as a function of temperature.
+    r"""Class for dealing with liquid permittivity as a function of temperature.
     Consists of one temperature-dependent simple expression, one constant
     value source, and IAPWS.
 
@@ -104,10 +104,10 @@ class PermittivityLiquid(TDependentProperty):
     ----------
     .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
-    '''
+    """
 
-    name = 'liquid relative permittivity'
-    units = '-'
+    name = "liquid relative permittivity"
+    units = "-"
     interpolation_T = None
     """No interpolation transformation by default."""
     interpolation_property = None
@@ -138,11 +138,11 @@ class PermittivityLiquid(TDependentProperty):
 
     @staticmethod
     def _method_indexes():
-        '''Returns a dictionary of method: index for all methods
+        """Returns a dictionary of method: index for all methods
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
-        '''
-        A = permittivity.permittivity_data_CRC['A'].values
+        """
+        A = permittivity.permittivity_data_CRC["A"].values
         return {CRC_CONSTANT: permittivity.permittivity_data_CRC.index,
                 CRC: [CAS for i, CAS in enumerate(permittivity.permittivity_data_CRC.index)
                       if not isnan(A[i])],
@@ -150,12 +150,12 @@ class PermittivityLiquid(TDependentProperty):
 
     custom_args = ()
 
-    def __init__(self, CASRN='', extrapolation='linear', **kwargs):
+    def __init__(self, CASRN="", extrapolation="linear", **kwargs):
         self.CASRN = CASRN
         super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         and :obj:`all_methods` as a set of methods for which the data exists for.
@@ -164,27 +164,27 @@ class PermittivityLiquid(TDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         self.all_methods = methods = set()
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         if load_data and CASRN:
             if CASRN in permittivity.permittivity_data_CRC.index:
                 CRC_CONSTANT_T, CRC_permittivity, A, B, C, D, Tmin, Tmax = permittivity.permittivity_values_CRC[permittivity.permittivity_data_CRC.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=CRC_CONSTANT,model='DIPPR100',Tmin=CRC_CONSTANT_T,Tmax=CRC_CONSTANT_T, A=CRC_permittivity, select=False)
+                self.add_correlation(name=CRC_CONSTANT,model="DIPPR100",Tmin=CRC_CONSTANT_T,Tmax=CRC_CONSTANT_T, A=CRC_permittivity, select=False)
                 if isnan(Tmin) and isnan(Tmax):
                     Tmin, Tmax = CRC_CONSTANT_T, CRC_CONSTANT_T
                 CRC_coeffs = [0.0 if isnan(x) else x for x in [A, B, C, D] ]
                 if CRC_coeffs[0] and not isnan(Tmin):
-                    self.add_correlation(name=CRC, model='DIPPR100',Tmin=Tmin,Tmax=Tmax, A=CRC_coeffs[0], B=CRC_coeffs[1], C=CRC_coeffs[2],D=CRC_coeffs[3], select=False)
+                    self.add_correlation(name=CRC, model="DIPPR100",Tmin=Tmin,Tmax=Tmax, A=CRC_coeffs[0], B=CRC_coeffs[1], C=CRC_coeffs[2],D=CRC_coeffs[3], select=False)
 
-        if CASRN == '7732-18-5':
+        if CASRN == "7732-18-5":
             methods.add(IAPWS_PERMITTIVITY)
             T_limits[IAPWS_PERMITTIVITY] = (273.15, 873.15)
 
 
     def calculate(self, T, method):
-        r'''Method to calculate permittivity of a liquid at temperature `T`
+        r"""Method to calculate permittivity of a liquid at temperature `T`
         with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -201,7 +201,7 @@ class PermittivityLiquid(TDependentProperty):
         -------
         epsilon : float
             Relative permittivity of the liquid at T, [-]
-        '''
+        """
         if method == IAPWS_PERMITTIVITY:
             if T <= iapws95_Tc:
                 rho = iapws95_rhol_sat(T)

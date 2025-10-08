@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ['CEOSLiquid', 'CEOSGas']
+__all__ = ["CEOSLiquid", "CEOSGas"]
 from fluids.numerics import numpy as np
 from fluids.numerics import trunc_exp, trunc_exp_numpy
 
@@ -35,7 +35,7 @@ except:
     pass
 
 class CEOSPhase(IdealGasDeparturePhase):
-    r'''Class for representing a cubic equation of state gas phase
+    r"""Class for representing a cubic equation of state gas phase
     as a phase object. All departure
     properties are actually calculated by the code in :obj:`thermo.eos` and
     :obj:`thermo.eos_mix`.
@@ -78,35 +78,35 @@ class CEOSPhase(IdealGasDeparturePhase):
     >>> phase.Cp()
     29.2285050
 
-    '''
+    """
 
-    __slots__ = ('eos_class', 'eos_kwargs', 'vectorized', 'HeatCapacityGases', 'N',
-    'Hfs', 'Gfs', 'Sfs', 'composition_independent',
-     'eos_mix', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
+    __slots__ = ("eos_class", "eos_kwargs", "vectorized", "HeatCapacityGases", "N",
+    "Hfs", "Gfs", "Sfs", "composition_independent",
+     "eos_mix", "T", "P", "zs", "_model_hash_ignore_phase", "_model_hash")
     ideal_gas_basis = True
 
-    pure_references = ('HeatCapacityGases',)
+    pure_references = ("HeatCapacityGases",)
     pure_reference_types = (HeatCapacityGas,)
-    obj_references = ('eos_mix', 'result', 'constants', 'correlations', 'HeatCapacityGases')
+    obj_references = ("eos_mix", "result", "constants", "correlations", "HeatCapacityGases")
 
 
-    pointer_references = ('eos_class',)
+    pointer_references = ("eos_class",)
     pointer_reference_dicts = (eos_mix_full_path_dict,)
     """Tuple of dictionaries for string -> object
     """
     reference_pointer_dicts = (eos_mix_full_path_reverse_dict,)
 
-    model_attributes = ('Hfs', 'Gfs', 'Sfs', 'eos_class',
-                        'eos_kwargs') + pure_references
+    model_attributes = ("Hfs", "Gfs", "Sfs", "eos_class",
+                        "eos_kwargs") + pure_references
 
     def _custom_as_json(self, d, cache):
-        d['eos_class'] = d['eos_class'].__full_path__
+        d["eos_class"] = d["eos_class"].__full_path__
 
     def _custom_from_json(self, *args):
         self.eos_class = eos_mix_full_path_dict[self.eos_class]
 
     def __repr__(self):
-        r'''Method to create a string representation of the phase object, with
+        r"""Method to create a string representation of the phase object, with
         the goal of making it easy to obtain standalone code which reproduces
         the current state of the phase. This is extremely helpful in creating
         new test cases.
@@ -117,19 +117,19 @@ class CEOSPhase(IdealGasDeparturePhase):
             String which is valid Python and recreates the current state of
             the object if ran, [-]
 
-        '''
+        """
         eos_kwargs = str(self.eos_kwargs).replace("'", '"')
         try:
-            Cpgs = ', '.join(str(o) for o in self.HeatCapacityGases)
+            Cpgs = ", ".join(str(o) for o in self.HeatCapacityGases)
         except:
-            Cpgs = ''
-        base = f'{self.__class__.__name__}(eos_class={self.eos_class.__name__}, eos_kwargs={eos_kwargs}, HeatCapacityGases=[{Cpgs}], '
-        for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
+            Cpgs = ""
+        base = f"{self.__class__.__name__}(eos_class={self.eos_class.__name__}, eos_kwargs={eos_kwargs}, HeatCapacityGases=[{Cpgs}], "
+        for s in ("Hfs", "Gfs", "Sfs", "T", "P", "zs"):
             if hasattr(self, s) and getattr(self, s) is not None:
-                base += f'{s}={getattr(self, s)}, '
-        if base[-2:] == ', ':
+                base += f"{s}={getattr(self, s)}, "
+        if base[-2:] == ", ":
             base = base[:-2]
-        base += ')'
+        base += ")"
         return base
 
     def __init__(self, eos_class, eos_kwargs, HeatCapacityGases=None, Hfs=None,
@@ -143,8 +143,8 @@ class CEOSPhase(IdealGasDeparturePhase):
         self.HeatCapacityGases = HeatCapacityGases
         if HeatCapacityGases is not None:
             self.N = N = len(HeatCapacityGases)
-        elif 'Tcs' in eos_kwargs:
-            self.N = N = len(eos_kwargs['Tcs'])
+        elif "Tcs" in eos_kwargs:
+            self.N = N = len(eos_kwargs["Tcs"])
         self.Hfs = Hfs
         self.Gfs = Gfs
         self.Sfs = Sfs
@@ -232,7 +232,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         new.P = P
         new.zs = zs
         if new.composition_independent:
-            new.force_phase = 'g'
+            new.force_phase = "g"
 
         try:
             new.N = self.N
@@ -277,7 +277,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         new.P = P
         new.zs = zs
         if new.composition_independent:
-            new.force_phase = 'g'
+            new.force_phase = "g"
         try:
             new.N = self.N
         except:
@@ -286,7 +286,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         return new
     def lnphis_G_min(self):
         eos_mix = self.eos_mix
-        if eos_mix.phase == 'l/g':
+        if eos_mix.phase == "l/g":
             # Check both phases are solved, and complete if not
             eos_mix.solve_missing_volumes()
             if eos_mix.G_dep_l < eos_mix.G_dep_g:
@@ -318,12 +318,12 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     def lnphis_at_zs(self, zs, most_stable=False):
         eos_mix = self.eos_mix
-        if eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX', 'SRKMIX', 'RKMIX'):
+        if eos_mix.__class__.__name__ in ("PRMIX", "VDWMIX", "SRKMIX", "RKMIX"):
             return lnphis_direct(zs, *self.lnphis_args(most_stable))
         return self.to_TP_zs(self.T, self.P, zs).lnphis()
 
     def fugacities_at_zs(self, zs, most_stable=False):
-        if self.eos_mix.__class__.__name__ in ('PRMIX', 'VDWMIX', 'SRKMIX', 'RKMIX'):
+        if self.eos_mix.__class__.__name__ in ("PRMIX", "VDWMIX", "SRKMIX", "RKMIX"):
             P = self.P
             lnphis = lnphis_direct(zs, *self.lnphis_args(most_stable))
             if self.vectorized:
@@ -354,14 +354,14 @@ class CEOSPhase(IdealGasDeparturePhase):
         except:
             PIP = self.PIP()
             if PIP <= 1.0:
-                phase = 'g'
+                phase = "g"
             else:
-                phase = 'l'
+                phase = "l"
         try:
             ws = self._ws
         except:
             ws = self.ws()
-        if phase == 'g':
+        if phase == "g":
             mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, ws)
         else:
             mu = self.correlations.ViscosityLiquidMixture.mixture_property(self.T, self.P, self.zs, ws)
@@ -378,12 +378,12 @@ class CEOSPhase(IdealGasDeparturePhase):
         except:
             PIP = self.PIP()
             if PIP <= 1.0:
-                phase = 'g'
+                phase = "g"
             else:
-                phase = 'l'
-        if phase == 'g':
+                phase = "l"
+        if phase == "g":
             k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
-        elif phase == 'l':
+        elif phase == "l":
             k = self.correlations.ThermalConductivityLiquidMixture.mixture_property(self.T, self.P, self.zs, self.ws())
         self._k = k
         return k
@@ -415,7 +415,7 @@ class CEOSPhase(IdealGasDeparturePhase):
             return [self.eos_mix.T_discriminant_zero_g()]
 
     def d2P_dTdV(self):
-        r'''Method to calculate and return the second derivative of
+        r"""Method to calculate and return the second derivative of
         pressure with respect to temperature and volume of the phase.
 
         .. math::
@@ -428,10 +428,10 @@ class CEOSPhase(IdealGasDeparturePhase):
         -------
         d2P_dTdV : float
             Second volume derivative of pressure, [mol*Pa^2/(J*K)]
-        '''
+        """
 
     def lnphis(self):
-        r'''Method to calculate and return the log of fugacity coefficients of
+        r"""Method to calculate and return the log of fugacity coefficients of
         each component in the phase. The calculation is performed by
         :obj:`thermo.eos_mix.GCEOSMIX.fugacity_coefficients` or a simpler formula in the case
         of most specific models.
@@ -440,9 +440,9 @@ class CEOSPhase(IdealGasDeparturePhase):
         -------
         lnphis : list[float]
             Log fugacity coefficients, [-]
-        '''
+        """
     def dlnphis_dT(self):
-        r'''Method to calculate and return the first temperature derivative of
+        r"""Method to calculate and return the first temperature derivative of
         the log of fugacity coefficients of
         each component in the phase. The calculation is performed by
         :obj:`thermo.eos_mix.GCEOSMIX.dlnphis_dT` or a simpler formula in the
@@ -452,10 +452,10 @@ class CEOSPhase(IdealGasDeparturePhase):
         -------
         dlnphis_dT : list[float]
             First temperature derivative of log fugacity coefficients, [1/K]
-        '''
+        """
 
     def dlnphis_dP(self):
-        r'''Method to calculate and return the first pressure derivative of
+        r"""Method to calculate and return the first pressure derivative of
         the log of fugacity coefficients of
         each component in the phase. The calculation is performed by
         :obj:`thermo.eos_mix.GCEOSMIX.dlnphis_dP` or a simpler formula in the
@@ -465,19 +465,19 @@ class CEOSPhase(IdealGasDeparturePhase):
         -------
         dlnphis_dP : list[float]
             First pressure derivative of log fugacity coefficients, [1/Pa]
-        '''
+        """
 
     def V(self):
-        r'''Method to calculate and return the molar volume of the phase.
+        r"""Method to calculate and return the molar volume of the phase.
 
         Returns
         -------
         V : float
             Molar volume, [m^3/mol]
-        '''
+        """
 
     def dP_dT(self):
-        r'''Method to calculate and return the first temperature derivative of
+        r"""Method to calculate and return the first temperature derivative of
         pressure of the phase.
 
         .. math::
@@ -489,11 +489,11 @@ class CEOSPhase(IdealGasDeparturePhase):
         -------
         dP_dT : float
             First temperature derivative of pressure, [Pa/K]
-        '''
+        """
 
 
     def dP_dV(self):
-        r'''Method to calculate and return the first volume derivative of
+        r"""Method to calculate and return the first volume derivative of
         pressure of the phase.
 
         .. math::
@@ -505,11 +505,11 @@ class CEOSPhase(IdealGasDeparturePhase):
         -------
         dP_dV : float
             First volume derivative of pressure, [Pa*mol/m^3]
-        '''
+        """
 
 
     def d2P_dT2(self):
-        r'''Method to calculate and return the second temperature derivative of
+        r"""Method to calculate and return the second temperature derivative of
         pressure of the phase.
 
         .. math::
@@ -521,10 +521,10 @@ class CEOSPhase(IdealGasDeparturePhase):
         -------
         d2P_dT2 : float
             Second temperature derivative of pressure, [Pa/K^2]
-        '''
+        """
 
     def d2P_dV2(self):
-        r'''Method to calculate and return the second volume derivative of
+        r"""Method to calculate and return the second volume derivative of
         pressure of the phase.
 
         .. math::
@@ -538,7 +538,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         -------
         d2P_dV2 : float
             Second volume derivative of pressure, [Pa*mol^2/m^6]
-        '''
+        """
 
 
     def lnphis_lowest_Gibbs(self):
@@ -587,7 +587,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         P_err = abs((self.R*T/(V-eos_mix.b) - eos_mix.a_alpha/(V*V + eos_mix.delta*V + eos_mix.epsilon)) - P)
         if (P_err/P) < 1e-9 and not force:
             return V
-        if self.phase == 'g':
+        if self.phase == "g":
             try:
                 return eos_mix.V_g_mpmath.real
             except:
@@ -607,9 +607,9 @@ class CEOSGas(CEOSPhase):
     def phase(self):
         phase = self.eos_mix.phase
         self.eos_mix.solve_missing_volumes()
-        if phase in ('l', 'g'):
+        if phase in ("l", "g"):
             return phase
-        return 'g'
+        return "g"
 
     def PIP(self):
         try:
@@ -625,15 +625,15 @@ class CEOSGas(CEOSPhase):
 
     def dlnphis_dT(self):
         try:
-            return self.eos_mix.dlnphis_dT('g')
+            return self.eos_mix.dlnphis_dT("g")
         except:
-            return self.eos_mix.dlnphis_dT('l')
+            return self.eos_mix.dlnphis_dT("l")
 
     def dlnphis_dP(self):
         try:
-            return self.eos_mix.dlnphis_dP('g')
+            return self.eos_mix.dlnphis_dP("g")
         except:
-            return self.eos_mix.dlnphis_dP('l')
+            return self.eos_mix.dlnphis_dP("l")
 
     def dlnphis_dns(self):
         eos_mix = self.eos_mix
@@ -895,9 +895,9 @@ class CEOSLiquid(CEOSPhase):
     def phase(self):
         phase = self.eos_mix.phase
         self.eos_mix.solve_missing_volumes()
-        if phase in ('g', 'l'):
+        if phase in ("g", "l"):
             return phase
-        return 'l'
+        return "l"
 
     def PIP(self):
         try:
@@ -913,15 +913,15 @@ class CEOSLiquid(CEOSPhase):
 
     def dlnphis_dT(self):
         try:
-            return self.eos_mix.dlnphis_dT('l')
+            return self.eos_mix.dlnphis_dT("l")
         except:
-            return self.eos_mix.dlnphis_dT('g')
+            return self.eos_mix.dlnphis_dT("g")
 
     def dlnphis_dP(self):
         try:
-            return self.eos_mix.dlnphis_dP('l')
+            return self.eos_mix.dlnphis_dP("l")
         except:
-            return self.eos_mix.dlnphis_dP('g')
+            return self.eos_mix.dlnphis_dP("g")
 
     def dlnphis_dns(self):
         eos_mix = self.eos_mix

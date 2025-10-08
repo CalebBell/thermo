@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-__all__ = ['FlashVLN']
+__all__ = ["FlashVLN"]
 
 from chemicals.exceptions import PhaseCountReducedError, TrivialSolutionError
 from chemicals.rachford_rice import flash_inner_loop
@@ -32,10 +32,10 @@ from thermo.flash.flash_vl import FlashVL
 from thermo.phase_identification import identify_sort_phases
 from thermo.property_package import StabilityTester
 
-CAS_H2O = '7732-18-5'
+CAS_H2O = "7732-18-5"
 
 class FlashVLN(FlashVL):
-    r'''Class for performing flash calculations on multiphase vapor-liquid
+    r"""Class for performing flash calculations on multiphase vapor-liquid
     systems. This rigorous class does not make any assumptions and will search
     for up to the maximum amount of liquid phases specified by the user. Vapor
     and each liquid phase do not need to use a consistent thermodynamic model.
@@ -140,7 +140,7 @@ class FlashVLN(FlashVL):
        Professional, 2000.
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    '''
+    """
 
     SS_NP_MAXITER = FlashVL.PT_SS_MAXITER
     SS_NP_TRIVIAL_TOL = 5e-5
@@ -186,7 +186,7 @@ class FlashVLN(FlashVL):
         self.ideal_gas_basis = all(i.ideal_gas_basis for i in self.phases)
 
 
-        self.aqueous_check = (self.SS_STAB_AQUEOUS_CHECK and '7732-18-5' in constants.CASs)
+        self.aqueous_check = (self.SS_STAB_AQUEOUS_CHECK and "7732-18-5" in constants.CASs)
         self.stab = StabilityTester(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas,
                                     aqueous_check=self.aqueous_check, CASs=constants.CASs)
         try:
@@ -297,8 +297,8 @@ class FlashVLN(FlashVL):
                 maxiter=self.SS_NP_MAXITER, tol=self.SS_NP_TOL,
                 trivial_solution_tol=self.SS_NP_TRIVIAL_TOL
             )
-            return None, slnN[2], [], slnN[0], {'iterations': slnN[3], 'err': slnN[4],
-                                                'stab_guess_name': None}
+            return None, slnN[2], [], slnN[0], {"iterations": slnN[3], "err": slnN[4],
+                                                "stab_guess_name": None}
         if failed:
             return self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution)
 
@@ -306,7 +306,7 @@ class FlashVLN(FlashVL):
     def flash_TP_K_composition_idependent(self, T, P, zs):
         if self.max_phases == 1:
             phase = self.phases[0].to(T=T, P=P, zs=zs)
-            return None, [phase], [], [1.0], {'iterations': 0, 'err': 0}
+            return None, [phase], [], [1.0], {"iterations": 0, "err": 0}
 
 
         Ks = liquid_phis = self.liquid0.phis_at(T, P, zs)
@@ -527,8 +527,8 @@ class FlashVLN(FlashVL):
                 if self.max_phases == 3 and good_betas:
                     if G_2P < G_3P:
                         raise ValueError("Should never happen")
-                    return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
-                                                        'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
+                    return None, sln3[2], [], sln3[0], {"iterations": sln3[3], "err": sln3[4],
+                                                        "stab_guess_name": stab_guess_name, "G_2P": G_2P}
                 if not good_betas or G_3P > G_2P:
                     try_LL_3P_failed = True # used to try to make this False but it just isn't correct
                     failed_3P = True
@@ -553,8 +553,8 @@ class FlashVLN(FlashVL):
                         else:
                             new_G_2P = V_over_F*g.G() + (1.0 - V_over_F)*l.G()
                         if new_G_2P < G_2P:
-                            return None, [l, g], [], [1.0 - V_over_F, V_over_F], {'iterations': iteration, 'err': err,
-                                         'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
+                            return None, [l, g], [], [1.0 - V_over_F, V_over_F], {"iterations": iteration, "err": err,
+                                         "stab_guess_name": stab_guess_name, "G_2P": G_2P}
                             a = 1
                         else:
                             return sln_2P
@@ -575,8 +575,8 @@ class FlashVLN(FlashVL):
 
         if self.N == 3:
             # Cannot have a four phase system with three components (and so on)
-            return None, sln3[2], [], sln3[0], {'iterations': sln3[3], 'err': sln3[4],
-                                                'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
+            return None, sln3[2], [], sln3[0], {"iterations": sln3[3], "err": sln3[4],
+                                                "stab_guess_name": stab_guess_name, "G_2P": G_2P}
 
         # We are here after solving three phases
         liquid_idx = 2
@@ -608,13 +608,13 @@ class FlashVLN(FlashVL):
                                trivial_solution_tol=1e-5
                     )
                     if self.max_phases == len(slnN[0]):
-                        return None, slnN[2], [], slnN[0], {'iterations': slnN[3], 'err': slnN[4],
-                                                                       'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
+                        return None, slnN[2], [], slnN[0], {"iterations": slnN[3], "err": slnN[4],
+                                                                       "stab_guess_name": stab_guess_name, "G_2P": G_2P}
                 except:
                     pass
 
             liquid_idx += 1
 
-        return None, slnN[2], [], slnN[0], {'iterations': slnN[3], 'err': slnN[4],
-                                            'stab_guess_name': stab_guess_name, 'G_2P': G_2P}
+        return None, slnN[2], [], slnN[0], {"iterations": slnN[3], "err": slnN[4],
+                                            "stab_guess_name": stab_guess_name, "G_2P": G_2P}
 

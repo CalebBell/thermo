@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ['HelmholtzEOS']
+__all__ = ["HelmholtzEOS"]
 
 from fluids.numerics import isnan, log
 
@@ -29,10 +29,10 @@ from thermo.phases.phase import Phase
 
 class HelmholtzEOS(Phase):
 
-    model_attributes = ('model_name',)
+    model_attributes = ("model_name",)
 
     def __repr__(self):
-        r'''Method to create a string representation of the phase object, with
+        r"""Method to create a string representation of the phase object, with
         the goal of making it easy to obtain standalone code which reproduces
         the current state of the phase. This is extremely helpful in creating
         new test cases.
@@ -49,15 +49,15 @@ class HelmholtzEOS(Phase):
         >>> phase = IAPWS95Gas(T=300.0, P=1e5, zs=[1.0])
         >>> phase
         IAPWS95Gas(T=300.0, P=100000.0, zs=[1.0])
-        '''
-        base = f'{self.__class__.__name__}('
-        iter_props = ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs') if self.__class__.__name__ not in ('IAPWS95Gas', 'IAPWS95Liquid') else ('T', 'P', 'zs')
+        """
+        base = f"{self.__class__.__name__}("
+        iter_props = ("Hfs", "Gfs", "Sfs", "T", "P", "zs") if self.__class__.__name__ not in ("IAPWS95Gas", "IAPWS95Liquid") else ("T", "P", "zs")
         for s in iter_props:
             if hasattr(self, s) and getattr(self, s) is not None:
-                base += f'{s}={getattr(self, s)}, '
-        if base[-2:] == ', ':
+                base += f"{s}={getattr(self, s)}, "
+        if base[-2:] == ", ":
             base = base[:-2]
-        base += ')'
+        base += ")"
         return base
 
     def V(self):

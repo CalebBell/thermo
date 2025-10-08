@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ['DryAirLemmon', 'HumidAirRP1485']
+__all__ = ["DryAirLemmon", "HumidAirRP1485"]
 
 from chemicals import air
 from chemicals.thermal_conductivity import k_air_lemmon
@@ -33,10 +33,10 @@ from thermo.phases.virial_phase import VirialGas
 
 
 class DryAirLemmon(HelmholtzEOS):
-    model_name = 'lemmon2000'
+    model_name = "lemmon2000"
     is_gas = True
     is_liquid = False
-    force_phase = 'g'
+    force_phase = "g"
 
     # _MW = air.lemmon2000_air_MW = 28.9586
     _MW = 28.96546 # CoolProp
@@ -130,7 +130,7 @@ class DryAirLemmon(HelmholtzEOS):
         return new
 
     def mu(self):
-        r'''Calculate and return the viscosity of air according to the Lemmon
+        r"""Calculate and return the viscosity of air according to the Lemmon
         and Jacobsen (2003) .
         For details, see :obj:`chemicals.viscosity.mu_air_lemmon`.
 
@@ -138,7 +138,7 @@ class DryAirLemmon(HelmholtzEOS):
         -------
         mu : float
             Viscosity of air, [Pa*s]
-        '''
+        """
         try:
             return self._mu
         except:
@@ -147,7 +147,7 @@ class DryAirLemmon(HelmholtzEOS):
         return mu
 
     def k(self):
-        r'''Calculate and return the thermal conductivity of air according to
+        r"""Calculate and return the thermal conductivity of air according to
         Lemmon and Jacobsen (2004)
         For details, see :obj:`chemicals.thermal_conductivity.k_air_lemmon`.
 
@@ -155,7 +155,7 @@ class DryAirLemmon(HelmholtzEOS):
         -------
         k : float
             Thermal conductivity of air, [W/m/K]
-        '''
+        """
         try:
             return self._k
         except:

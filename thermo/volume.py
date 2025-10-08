@@ -109,12 +109,12 @@ Mixture Solid Volume
 
 
 __all__ = [
-'volume_liquid_methods', 'volume_liquid_methods_P', 'VolumeLiquid', 'VolumeSupercriticalLiquid',
- 'volume_gas_methods', 'VolumeGas',
-'volume_gas_mixture_methods', 'volume_solid_mixture_methods',
-           'volume_solid_methods', 'VolumeSolid',
-           'VolumeLiquidMixture', 'VolumeGasMixture', 'VolumeSolidMixture',
-           'Tait_parameters_COSTALD']
+"volume_liquid_methods", "volume_liquid_methods_P", "VolumeLiquid", "VolumeSupercriticalLiquid",
+ "volume_gas_methods", "VolumeGas",
+"volume_gas_mixture_methods", "volume_solid_mixture_methods",
+           "volume_solid_methods", "VolumeSolid",
+           "VolumeLiquidMixture", "VolumeGasMixture", "VolumeSolidMixture",
+           "Tait_parameters_COSTALD"]
 
 from chemicals import miscdata, volume
 from chemicals.dippr import EQ105, EQ116
@@ -184,22 +184,22 @@ def Tait_parameters_COSTALD(Tc, Pc, omega, Tr_min=.27, Tr_max=.95):
     B_params = cheb_to_poly(fun)
     return B_params, [C]
 
-MMSNM0 = 'MMSNM0'
-MMSNM0FIT = 'MMSNM0FIT'
-HTCOSTALD = 'HTCOSTALD'
-HTCOSTALDFIT = 'HTCOSTALDFIT'
-COSTALD_COMPRESSED = 'COSTALD_COMPRESSED'
-RACKETT = 'RACKETT'
-RACKETTFIT = 'RACKETTFIT'
-YEN_WOODS_SAT = 'YEN_WOODS_SAT'
-YAMADA_GUNN = 'YAMADA_GUNN'
-BHIRUD_NORMAL = 'BHIRUD_NORMAL'
-TOWNSEND_HALES = 'TOWNSEND_HALES'
-CAMPBELL_THODOS = 'CAMPBELL_THODOS'
+MMSNM0 = "MMSNM0"
+MMSNM0FIT = "MMSNM0FIT"
+HTCOSTALD = "HTCOSTALD"
+HTCOSTALDFIT = "HTCOSTALDFIT"
+COSTALD_COMPRESSED = "COSTALD_COMPRESSED"
+RACKETT = "RACKETT"
+RACKETTFIT = "RACKETTFIT"
+YEN_WOODS_SAT = "YEN_WOODS_SAT"
+YAMADA_GUNN = "YAMADA_GUNN"
+BHIRUD_NORMAL = "BHIRUD_NORMAL"
+TOWNSEND_HALES = "TOWNSEND_HALES"
+CAMPBELL_THODOS = "CAMPBELL_THODOS"
 
 
-CRC_INORG_L = 'CRC_INORG_L'
-CRC_INORG_L_CONST = 'CRC_INORG_L_CONST'
+CRC_INORG_L = "CRC_INORG_L"
+CRC_INORG_L_CONST = "CRC_INORG_L_CONST"
 
 volume_liquid_methods = [HEOS_FIT, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, MMSNM0FIT, VDI_TABULAR,
                          HTCOSTALDFIT, RACKETTFIT, CRC_INORG_L,
@@ -378,8 +378,8 @@ class VolumeLiquid(TPDependentProperty):
        Berlin; New York:: Springer, 2010.
     '''
 
-    name = 'Liquid molar volume'
-    units = 'm^3/mol'
+    name = "Liquid molar volume"
+    units = "m^3/mol"
     interpolation_T = None
     """No interpolation transformation by default."""
     interpolation_P = None
@@ -406,8 +406,8 @@ class VolumeLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, COSTALD_COMPRESSED, EOS, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
-    obj_references = ('Psat',)
-    pure_references = ('Psat')
+    obj_references = ("Psat",)
+    pure_references = ("Psat")
     obj_references_types = pure_reference_types = (VaporPressure,)
 
     extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
@@ -419,11 +419,11 @@ class VolumeLiquid(TPDependentProperty):
     extra_correlations_internal.add(RACKETTFIT)
     extra_correlations_internal.add(HTCOSTALDFIT)
 
-    custom_args = ('MW', 'Tb', 'Tc', 'Pc', 'Vc', 'Zc', 'omega', 'dipole',
-                   'Psat')
+    custom_args = ("MW", "Tb", "Tc", "Pc", "Vc", "Zc", "omega", "dipole",
+                   "Psat")
     def __init__(self, MW=None, Tb=None, Tc=None, Pc=None, Vc=None, Zc=None,
-                 omega=None, dipole=None, Psat=None, CASRN='',
-                 has_hydroxyl=False, extrapolation='constant', **kwargs):
+                 omega=None, dipole=None, Psat=None, CASRN="",
+                 has_hydroxyl=False, extrapolation="constant", **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.Tb = Tb
@@ -466,7 +466,7 @@ class VolumeLiquid(TPDependentProperty):
 
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         :obj:`all_methods` and obj:`all_methods_P` as a set of methods for
@@ -476,7 +476,7 @@ class VolumeLiquid(TPDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         self.T_limits = T_limits = {}
         self.all_methods = set()
         methods = []
@@ -496,7 +496,7 @@ class VolumeLiquid(TPDependentProperty):
                 B = -k
                 self.add_correlation(
                     name=CRC_INORG_L,
-                    model='DIPPR100_rho_to_Vm',
+                    model="DIPPR100_rho_to_Vm",
                     Tmin=Tm,
                     Tmax=Tmax,
                     MW=MW,
@@ -509,7 +509,7 @@ class VolumeLiquid(TPDependentProperty):
                     volume.rho_data_Perry_8E_105_l.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=DIPPR_PERRY_8E,
-                    model='DIPPR105_reciprocal',
+                    model="DIPPR105_reciprocal",
                     Tmin=Tmin,
                     Tmax=Tmax,
                     A=C1,
@@ -523,7 +523,7 @@ class VolumeLiquid(TPDependentProperty):
                     volume.rho_data_VDI_PPDS_2.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=VDI_PPDS,
-                    model='volume_VDI_PPDS',
+                    model="volume_VDI_PPDS",
                     Tmin=0.3*Tc,
                     Tmax=Tc,
                     MW=MW,
@@ -536,51 +536,51 @@ class VolumeLiquid(TPDependentProperty):
                     select=False
                 )
             if CASRN in volume.rho_data_CRC_inorg_l_const.index:
-                Vm = float(volume.rho_data_CRC_inorg_l_const.at[CASRN, 'Vm'])
+                Vm = float(volume.rho_data_CRC_inorg_l_const.at[CASRN, "Vm"])
                 self.add_correlation(
                     name=CRC_INORG_L_CONST,
-                    model='constant',
+                    model="constant",
                     Tmin=298.15,
                     Tmax=298.15,
                     value=Vm,
                     select=False
                 )
             if CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(CASRN, 'Volume (l)')
+                Ts, props = lookup_VDI_tabular_data(CASRN, "Volume (l)")
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if self.Tc and CASRN in volume.rho_data_COSTALD.index:
                 self.add_correlation(
                     name=HTCOSTALDFIT,
-                    model='COSTALD_fit',
+                    model="COSTALD_fit",
                     Tmin=0.0,
                     Tmax=self.Tc,
                     Tc=self.Tc,
-                    COSTALD_Vchar=float(volume.rho_data_COSTALD.at[CASRN, 'Vchar']),
-                    COSTALD_omega=float(volume.rho_data_COSTALD.at[CASRN, 'omega_SRK']),
+                    COSTALD_Vchar=float(volume.rho_data_COSTALD.at[CASRN, "Vchar"]),
+                    COSTALD_omega=float(volume.rho_data_COSTALD.at[CASRN, "omega_SRK"]),
                     select=False
                 )
-            if self.Tc and self.Pc and CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']):
+            if self.Tc and self.Pc and CASRN in volume.rho_data_COSTALD.index and not isnan(volume.rho_data_COSTALD.at[CASRN, "Z_RA"]):
                 self.add_correlation(
                     name=RACKETTFIT,
-                    model='Rackett_fit',
+                    model="Rackett_fit",
                     Tmin=0.0,
                     Tmax=self.Tc,
                     Tc=self.Tc,
                     Pc=self.Pc,
-                    Z_RA=float(volume.rho_data_COSTALD.at[CASRN, 'Z_RA']),
+                    Z_RA=float(volume.rho_data_COSTALD.at[CASRN, "Z_RA"]),
                     select=False
                 )
             if all((self.Tc, self.Vc, self.omega)):
                 if load_data and CASRN and CASRN in volume.rho_data_SNM0.index:
                     self.add_correlation(
                         name=MMSNM0FIT,
-                        model='SNM0_fit',
+                        model="SNM0_fit",
                         Tmin=0.0,
                         Tmax=self.Tc,
                         Tc=self.Tc,
                         Vc=self.Vc,
                         omega=self.omega,
-                        delta_SRK=float(volume.rho_data_SNM0.at[CASRN, 'delta_SRK']),
+                        delta_SRK=float(volume.rho_data_SNM0.at[CASRN, "delta_SRK"]),
                         select=False
                     )
         if all((self.Tc, self.Vc, self.Zc)):
@@ -614,11 +614,11 @@ class VolumeLiquid(TPDependentProperty):
             if m in self.all_methods_P:
                 self.method_P = m
                 break
-        if not hasattr(self, '_method_P'):
+        if not hasattr(self, "_method_P"):
             self._method_P = None
 
     def calculate(self, T, method):
-        r'''Method to calculate low-pressure liquid molar volume at tempearture
+        r"""Method to calculate low-pressure liquid molar volume at tempearture
         `T` with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -635,7 +635,7 @@ class VolumeLiquid(TPDependentProperty):
         -------
         Vm : float
             Molar volume of the liquid at T and a low pressure, [m^3/mol]
-        '''
+        """
         if method == RACKETT:
             Vm = Rackett(T, self.Tc, self.Pc, self.Zc)
         elif method == YAMADA_GUNN:
@@ -659,7 +659,7 @@ class VolumeLiquid(TPDependentProperty):
         # elif method == RACKETTFIT:
         #     Vm = Rackett(T, self.Tc, self.Pc, self.RACKETT_Z_RA)
         elif method == COOLPROP:
-            Vm = 1./CoolProp_T_dependent_property(T, self.CASRN, 'DMOLAR', 'l')
+            Vm = 1./CoolProp_T_dependent_property(T, self.CASRN, "DMOLAR", "l")
         elif method == EOS:
             Vm = PR(T=T, P=101325.0, Tc=self.Tc, Pc=self.Pc, omega=self.omega).V_l_sat(T)
         else:
@@ -667,7 +667,7 @@ class VolumeLiquid(TPDependentProperty):
         return Vm
 
     def calculate_P(self, T, P, method):
-        r'''Method to calculate pressure-dependent liquid molar volume at
+        r"""Method to calculate pressure-dependent liquid molar volume at
         temperature `T` and pressure `P` with a given method.
 
         This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
@@ -686,7 +686,7 @@ class VolumeLiquid(TPDependentProperty):
         -------
         Vm : float
             Molar volume of the liquid at T and P, [m^3/mol]
-        '''
+        """
         if method == COSTALD_COMPRESSED:
             Vm = self.T_dependent_property(T)
             Psat = self.Psat(T) if callable(self.Psat) else self.Psat
@@ -694,7 +694,7 @@ class VolumeLiquid(TPDependentProperty):
                 Vm = COSTALD_compressed(T, P, Psat, self.Tc, self.Pc, self.omega, Vm)
         elif method == COOLPROP:
 #            assert PhaseSI('T', T, 'P', P, self.CASRN) == 'liquid'
-            Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
+            Vm = 1./PropsSI("DMOLAR", "T", T, "P", P, self.CASRN)
         elif method == EOS:
             Vm = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega).V_l
         else:
@@ -703,7 +703,7 @@ class VolumeLiquid(TPDependentProperty):
 
 
     def test_method_validity_P(self, T, P, method):
-        r'''Method to check the validity of a high-pressure method. For
+        r"""Method to check the validity of a high-pressure method. For
         **COOLPROP**, the fluid must be both a liquid and under the maximum
         pressure of the fluid's EOS. **COSTALD_COMPRESSED** is considered
         valid for all values of temperature and pressure. However, it very
@@ -729,14 +729,14 @@ class VolumeLiquid(TPDependentProperty):
         -------
         validity : bool
             Whether or not a method is valid
-        '''
+        """
         validity = True
         if method == COSTALD_COMPRESSED:
             pass
         elif method == COOLPROP:
-            validity = PhaseSI('T', T, 'P', P, self.CASRN) in ('liquid', 'supercritical_liquid')
+            validity = PhaseSI("T", T, "P", P, self.CASRN) in ("liquid", "supercritical_liquid")
         elif method == EOS:
-            validity = hasattr(PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega), 'V_l')
+            validity = hasattr(PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega), "V_l")
         else:
             return super().test_method_validity_P(T, P, method)
         return validity
@@ -751,12 +751,12 @@ class VolumeLiquid(TPDependentProperty):
         B_coeffs_COSTALD, C_coeffs_COSTALD = Tait_parameters_COSTALD(Tc, self.Pc, self.omega,
                                                      Tr_min=Tr_min,
                                                      Tr_max=Tr_max)
-        if not hasattr(self, 'B_coeffs'):
+        if not hasattr(self, "B_coeffs"):
             B_coeffs = B_coeffs_COSTALD
         else:
             B_coeffs = self.B_coeffs
 
-        if not hasattr(self, 'C_coeffs'):
+        if not hasattr(self, "C_coeffs"):
             C_coeffs = C_coeffs_COSTALD
         else:
             C_coeffs = self.C_coeffs
@@ -841,7 +841,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
     '''
 
     def __init__(self, MW=None, Tc=None, Pc=None,
-                 omega=None,  Psat=None, CASRN='',
+                 omega=None,  Psat=None, CASRN="",
                  extrapolation=None):
         self.CASRN = CASRN
         self.MW = MW
@@ -877,7 +877,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
 
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         :obj:`all_methods` and obj:`all_methods_P` as a set of methods for
@@ -887,7 +887,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = []
         methods_P = []
         self.T_limits = T_limits = {}
@@ -902,7 +902,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         self.all_methods_P = set(methods_P)
 
     def calculate(self, T, method):
-        r'''Method to calculate low-pressure liquid molar volume at tempearture
+        r"""Method to calculate low-pressure liquid molar volume at tempearture
         `T` with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -919,11 +919,11 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         -------
         Vm : float
             Molar volume of the liquid at T and a supercritical pressure, [m^3/mol]
-        '''
+        """
         return self._base_calculate(T, method)
 
     def calculate_P(self, T, P, method):
-        r'''Method to calculate pressure-dependent liquid molar volume at
+        r"""Method to calculate pressure-dependent liquid molar volume at
         temperature `T` and pressure `P` with a given method.
 
         This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
@@ -942,9 +942,9 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         -------
         Vm : float
             Molar volume of the supercritical liquid at T and P, [m^3/mol]
-        '''
+        """
         if method == COOLPROP:
-            Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
+            Vm = 1./PropsSI("DMOLAR", "T", T, "P", P, self.CASRN)
         elif method == EOS:
             eos = PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega)
             try:
@@ -957,7 +957,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
 
 
     def test_method_validity_P(self, T, P, method):
-        r'''Method to check the validity of a high-pressure method. For
+        r"""Method to check the validity of a high-pressure method. For
         **COOLPROP**, the fluid must be both a liquid and under the maximum
         pressure of the fluid's EOS.
         For tabular data, extrapolation outside of the range is used if
@@ -980,21 +980,21 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
         -------
         validity : bool
             Whether or not a method is valid
-        '''
+        """
         validity = True
         if method == COOLPROP:
-            validity = PhaseSI('T', T, 'P', P, self.CASRN) in ('liquid', 'supercritical', 'supercritical_gas', 'supercritical_liquid')
+            validity = PhaseSI("T", T, "P", P, self.CASRN) in ("liquid", "supercritical", "supercritical_gas", "supercritical_liquid")
         elif method == EOS:
-            validity = hasattr(PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega), 'V_l')
+            validity = hasattr(PR(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega), "V_l")
         else:
             return super().test_method_validity_P(T, P, method)
         return validity
 
-LALIBERTE = 'LALIBERTE'
-COSTALD_MIXTURE = 'COSTALD_MIXTURE'
-COSTALD_MIXTURE_FIT = 'COSTALD_MIXTURE_FIT'
-RACKETT = 'RACKETT'
-RACKETT_PARAMETERS = 'RACKETT_PARAMETERS'
+LALIBERTE = "LALIBERTE"
+COSTALD_MIXTURE = "COSTALD_MIXTURE"
+COSTALD_MIXTURE_FIT = "COSTALD_MIXTURE_FIT"
+RACKETT = "RACKETT"
+RACKETT_PARAMETERS = "RACKETT_PARAMETERS"
 volume_liquid_mixture_methods = [LALIBERTE, LINEAR, COSTALD_MIXTURE_FIT, RACKETT_PARAMETERS, COSTALD, RACKETT]
 """Holds all low-pressure methods available for the :obj:`VolumeLiquidMixture` class, for use
 in iterating over them."""
@@ -1004,7 +1004,7 @@ volume_liquid_mixture_P_methods = [COSTALD]
 in iterating over them."""
 
 class VolumeLiquidMixture(MixtureProperty):
-    '''Class for dealing with the molar volume of a liquid mixture as a
+    """Class for dealing with the molar volume of a liquid mixture as a
     function of temperature, pressure, and composition.
     Consists of one electrolyte-specific method, four corresponding states
     methods which do not use pure-component volumes, and one mole-weighted
@@ -1068,10 +1068,10 @@ class VolumeLiquidMixture(MixtureProperty):
     ----------
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
-    '''
+    """
 
-    name = 'Liquid volume'
-    units = 'm^3/mol'
+    name = "Liquid volume"
+    units = "m^3/mol"
     property_min = 0
     """Mimimum valid value of liquid molar volume. It should normally occur at the
     triple point, and be well above this."""
@@ -1081,11 +1081,11 @@ class VolumeLiquidMixture(MixtureProperty):
     ranked_methods = [LALIBERTE, LINEAR, COSTALD_MIXTURE_FIT,
                       RACKETT_PARAMETERS, COSTALD_MIXTURE, RACKETT]
 
-    pure_references = ('VolumeLiquids',)
+    pure_references = ("VolumeLiquids",)
     pure_reference_types = (VolumeLiquid, )
-    obj_references = ('VolumeLiquids',)
+    obj_references = ("VolumeLiquids",)
 
-    pure_constants = ('MWs', 'Tcs', 'Pcs', 'Vcs', 'Zcs', 'omegas')
+    pure_constants = ("MWs", "Tcs", "Pcs", "Vcs", "Zcs", "omegas")
     custom_args = pure_constants
 
     def __init__(self, MWs=[], Tcs=[], Pcs=[], Vcs=[], Zcs=[], omegas=[],
@@ -1102,7 +1102,7 @@ class VolumeLiquidMixture(MixtureProperty):
 
 
     def load_all_methods(self, load_data=True):
-        r'''Method to initialize the object by precomputing any values which
+        r"""Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
         :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
@@ -1112,32 +1112,32 @@ class VolumeLiquidMixture(MixtureProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = [LINEAR]
 
         if none_and_length_check([self.Tcs, self.Vcs, self.omegas]):
             methods.append(COSTALD_MIXTURE)
             if load_data:
                 if none_and_length_check([self.Tcs, self.CASs]) and all(i in volume.rho_data_COSTALD.index for i in self.CASs):
-                    self.COSTALD_Vchars = [float(volume.rho_data_COSTALD.at[CAS, 'Vchar']) for CAS in self.CASs]
-                    self.COSTALD_omegas = [float(volume.rho_data_COSTALD.at[CAS, 'omega_SRK']) for CAS in self.CASs]
+                    self.COSTALD_Vchars = [float(volume.rho_data_COSTALD.at[CAS, "Vchar"]) for CAS in self.CASs]
+                    self.COSTALD_omegas = [float(volume.rho_data_COSTALD.at[CAS, "omega_SRK"]) for CAS in self.CASs]
                     methods.append(COSTALD_MIXTURE_FIT)
 
         if none_and_length_check([self.MWs, self.Tcs, self.Pcs, self.Zcs]):
             methods.append(RACKETT)
             if load_data:
                 if none_and_length_check([self.Tcs, self.CASs]) and all(CAS in volume.rho_data_COSTALD.index for CAS in self.CASs):
-                    Z_RAs = [float(volume.rho_data_COSTALD.at[CAS, 'Z_RA']) for CAS in self.CASs]
+                    Z_RAs = [float(volume.rho_data_COSTALD.at[CAS, "Z_RA"]) for CAS in self.CASs]
                     if not any(np.isnan(Z_RAs)):
                         self.Z_RAs = Z_RAs
                         methods.append(RACKETT_PARAMETERS)
 
-        if load_data and len(self.CASs) > 1 and '7732-18-5' in self.CASs:
+        if load_data and len(self.CASs) > 1 and "7732-18-5" in self.CASs:
             Laliberte_data = electrochem.Laliberte_data
             v1s, v2s, v3s, v4s, v5s, v6s = [], [], [], [], [], []
             laliberte_incomplete = False
             for CAS in self.CASs:
-                if CAS == '7732-18-5':
+                if CAS == "7732-18-5":
                     continue
                 if CAS in Laliberte_data.index:
                     dat = Laliberte_data.loc[CAS].values
@@ -1160,15 +1160,15 @@ class VolumeLiquidMixture(MixtureProperty):
                 self.Laliberte_v4s = v4s
                 self.Laliberte_v5s = v5s
                 self.Laliberte_v6s = v6s
-                wCASs = [i for i in self.CASs if i != '7732-18-5']
+                wCASs = [i for i in self.CASs if i != "7732-18-5"]
                 methods.append(LALIBERTE)
                 self.wCASs = wCASs
-                self.index_w = self.CASs.index('7732-18-5')
+                self.index_w = self.CASs.index("7732-18-5")
 
         self.all_methods = all_methods = set(methods)
 
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate molar volume of a liquid mixture at
+        r"""Method to calculate molar volume of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -1193,7 +1193,7 @@ class VolumeLiquidMixture(MixtureProperty):
         Vm : float
             Molar volume of the liquid mixture at the given conditions,
             [m^3/mol]
-        '''
+        """
         if method == LINEAR:
             if self._correct_pressure_pure:
                 Vms = []
@@ -1233,12 +1233,12 @@ class VolumeLiquidMixture(MixtureProperty):
 
 
 #PR = 'PR'
-CRC_VIRIAL = 'CRC_VIRIAL'
-TSONOPOULOS_EXTENDED = 'TSONOPOULOS_EXTENDED'
-TSONOPOULOS = 'TSONOPOULOS'
-ABBOTT = 'ABBOTT'
-PITZER_CURL = 'PITZER_CURL'
-IDEAL = 'IDEAL'
+CRC_VIRIAL = "CRC_VIRIAL"
+TSONOPOULOS_EXTENDED = "TSONOPOULOS_EXTENDED"
+TSONOPOULOS = "TSONOPOULOS"
+ABBOTT = "ABBOTT"
+PITZER_CURL = "PITZER_CURL"
+IDEAL = "IDEAL"
 volume_gas_methods = [COOLPROP, EOS, CRC_VIRIAL, TSONOPOULOS_EXTENDED, TSONOPOULOS,
                       ABBOTT, PITZER_CURL, IDEAL]
 """Holds all methods available for the :obj:`VolumeGas` class, for use in
@@ -1333,16 +1333,16 @@ class VolumeGas(TPDependentProperty):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
     '''
 
-    name = 'Gas molar volume'
-    units = 'm^3/mol'
+    name = "Gas molar volume"
+    units = "m^3/mol"
     interpolation_T = None
     """No interpolation transformation by default."""
 
     @staticmethod
     def interpolation_P(P):
-        '''Function to make the data-based interpolation as linear as possible.
+        """Function to make the data-based interpolation as linear as possible.
         This transforms the input `P` into the `1/P` domain.
-        '''
+        """
         return 1./P
     interpolation_property = None
     """No interpolation transformation by default."""
@@ -1370,8 +1370,8 @@ class VolumeGas(TPDependentProperty):
     """Default rankings of the pressure-dependent methods."""
 
 
-    custom_args = ('MW', 'Tc', 'Pc', 'omega', 'dipole')
-    def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, omega=None,
+    custom_args = ("MW", "Tc", "Pc", "omega", "dipole")
+    def __init__(self, CASRN="", MW=None, Tc=None, Pc=None, omega=None,
                  dipole=None, extrapolation=None,
                  **kwargs):
         # Only use TPDependentPropoerty functions here
@@ -1384,7 +1384,7 @@ class VolumeGas(TPDependentProperty):
         super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets obj:`all_methods_P` as a
         set of methods for which the data exists for.
@@ -1393,7 +1393,7 @@ class VolumeGas(TPDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods_P = [IDEAL]
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
@@ -1423,7 +1423,7 @@ class VolumeGas(TPDependentProperty):
                 break
 
     def calculate_P(self, T, P, method):
-        r'''Method to calculate pressure-dependent gas molar volume at
+        r"""Method to calculate pressure-dependent gas molar volume at
         temperature `T` and pressure `P` with a given method.
 
         This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
@@ -1442,7 +1442,7 @@ class VolumeGas(TPDependentProperty):
         -------
         Vm : float
             Molar volume of the gas at T and P, [m^3/mol]
-        '''
+        """
         if method == EOS:
             if T < 0.0 or P < 0.0:
                 return None
@@ -1467,14 +1467,14 @@ class VolumeGas(TPDependentProperty):
         elif method == IDEAL:
             Vm = ideal_gas(T, P)
         elif method == COOLPROP:
-            assert PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
-            Vm = 1./PropsSI('DMOLAR', 'T', T, 'P', P, self.CASRN)
+            assert PhaseSI("T", T, "P", P, self.CASRN) in ["gas", "supercritical_gas", "supercritical", "supercritical_liquid"]
+            Vm = 1./PropsSI("DMOLAR", "T", T, "P", P, self.CASRN)
         else:
             return self._base_calculate_P(T, P, method)
         return Vm
 
     def test_method_validity_P(self, T, P, method):
-        r'''Method to check the validity of a pressure and temperature
+        r"""Method to check the validity of a pressure and temperature
         dependent gas molar volume method. For the four CSP methods that
         calculate second virial coefficient, the method is considered valid for
         all temperatures and pressures, with validity checking based on the
@@ -1506,7 +1506,7 @@ class VolumeGas(TPDependentProperty):
         -------
         validity : bool
             Whether or not a method is valid
-        '''
+        """
         validity = True
         if T < 0 or P < 0:
             validity = False
@@ -1522,12 +1522,12 @@ class VolumeGas(TPDependentProperty):
             except:
                 validity = False
         elif method == COOLPROP:
-            validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
+            validity = PhaseSI("T", T, "P", P, self.CASRN) in ["gas", "supercritical_gas", "supercritical", "supercritical_liquid"]
         else:
             return super().test_method_validity_P(T, P, method)
         return validity
 
-LINEAR_MISSING_IDEAL = 'LINEAR_MISSING_IDEAL'
+LINEAR_MISSING_IDEAL = "LINEAR_MISSING_IDEAL"
 
 volume_gas_mixture_methods = [EOS, LINEAR, IDEAL]
 """Holds all methods available for the :obj:`VolumeGasMixture` class, for use
@@ -1537,7 +1537,7 @@ in iterating over them."""
 
 
 class VolumeGasMixture(MixtureProperty):
-    '''Class for dealing with the molar volume of a gas mixture as a
+    """Class for dealing with the molar volume of a gas mixture as a
     function of temperature, pressure, and composition.
     Consists of an equation of state, the ideal gas law, and one mole-weighted
     averaging method.
@@ -1583,10 +1583,10 @@ class VolumeGasMixture(MixtureProperty):
     ----------
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
-    '''
+    """
 
-    name = 'Gas volume'
-    units = 'm^3/mol'
+    name = "Gas volume"
+    units = "m^3/mol"
     property_min = 0.
     """Mimimum valid value of gas molar volume. It should normally be well
     above this."""
@@ -1596,12 +1596,12 @@ class VolumeGasMixture(MixtureProperty):
 
     ranked_methods = [EOS, LINEAR, IDEAL, LINEAR_MISSING_IDEAL]
 
-    pure_references = ('VolumeGases',)
+    pure_references = ("VolumeGases",)
     pure_reference_types = (VolumeGas, )
-    obj_references = ('VolumeGases', 'eos')
+    obj_references = ("VolumeGases", "eos")
 
-    pure_constants = ('MWs', )
-    custom_args = ('MWs', 'eos')
+    pure_constants = ("MWs", )
+    custom_args = ("MWs", "eos")
 
     def __init__(self, eos=None, CASs=[], VolumeGases=[], MWs=[], load_data=False, **kwargs):
         self.CASs = CASs
@@ -1611,7 +1611,7 @@ class VolumeGasMixture(MixtureProperty):
         super().__init__(load_data=load_data, **kwargs)
 
     def load_all_methods(self, load_data=True):
-        r'''Method to initialize the object by precomputing any values which
+        r"""Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
         :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
@@ -1621,14 +1621,14 @@ class VolumeGasMixture(MixtureProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = [LINEAR, IDEAL, LINEAR_MISSING_IDEAL]
         if self.eos:
             methods.append(EOS)
         self.all_methods = all_methods =  set(methods)
 
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate molar volume of a gas mixture at
+        r"""Method to calculate molar volume of a gas mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -1652,7 +1652,7 @@ class VolumeGasMixture(MixtureProperty):
         -------
         Vm : float
             Molar volume of the gas mixture at the given conditions, [m^3/mol]
-        '''
+        """
         if method == LINEAR:
             Vms = [i(T, P) for i in self.VolumeGases]
             return mixing_simple(zs, Vms)
@@ -1677,15 +1677,15 @@ class VolumeGasMixture(MixtureProperty):
 
 
 
-GOODMAN = 'GOODMAN'
-CRC_INORG_S = 'CRC_INORG_S'
+GOODMAN = "GOODMAN"
+CRC_INORG_S = "CRC_INORG_S"
 volume_solid_methods = [GOODMAN, CRC_INORG_S]
 """Holds all methods available for the :obj:`VolumeSolid` class, for use in
 iterating over them."""
 
 
 class VolumeSolid(TDependentProperty):
-    r'''Class for dealing with solid molar volume as a function of temperature.
+    r"""Class for dealing with solid molar volume as a function of temperature.
     Consists of one constant value source, and one simple estimator based on
     liquid molar volume.
 
@@ -1732,10 +1732,10 @@ class VolumeSolid(TDependentProperty):
     ----------
     .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics. [Boca Raton, FL]: CRC press, 2014.
-    '''
+    """
 
-    name = 'Solid molar volume'
-    units = 'm^3/mol'
+    name = "Solid molar volume"
+    units = "m^3/mol"
     interpolation_T = None
     """No interpolation transformation by default."""
     interpolation_property = None
@@ -1753,13 +1753,13 @@ class VolumeSolid(TDependentProperty):
     ranked_methods = [CRC_INORG_S, GOODMAN]
     """Default rankings of the available methods."""
 
-    custom_args = ('MW', 'Tt', 'Vml_Tt')
+    custom_args = ("MW", "Tt", "Vml_Tt")
 
     extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
     extra_correlations_internal.add(CRC_INORG_S)
 
-    def __init__(self, CASRN='', MW=None, Tt=None, Vml_Tt=None,
-                 extrapolation='linear', **kwargs):
+    def __init__(self, CASRN="", MW=None, Tt=None, Vml_Tt=None,
+                 extrapolation="linear", **kwargs):
         self.CASRN = CASRN
         self.MW = MW
         self.Tt = Tt
@@ -1770,7 +1770,7 @@ class VolumeSolid(TDependentProperty):
 
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         and :obj:`all_methods` as a set of methods for which the data exists for.
@@ -1779,7 +1779,7 @@ class VolumeSolid(TDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = []
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
@@ -1788,10 +1788,10 @@ class VolumeSolid(TDependentProperty):
             if CASRN in volume.rho_data_CRC_inorg_s_const.index:
                 self.add_correlation(
                     name=CRC_INORG_S,
-                    model='constant',
+                    model="constant",
                     Tmin=1e-4,
                     Tmax=1e4,
-                    value=float(volume.rho_data_CRC_inorg_s_const.at[CASRN, 'Vm']),
+                    value=float(volume.rho_data_CRC_inorg_s_const.at[CASRN, "Vm"]),
                     select=False
                 )
         if all((self.Tt, self.Vml_Tt, self.MW)):
@@ -1800,7 +1800,7 @@ class VolumeSolid(TDependentProperty):
         self.all_methods.update(methods)
 
     def calculate(self, T, method):
-        r'''Method to calculate the molar volume of a solid at tempearture `T`
+        r"""Method to calculate the molar volume of a solid at tempearture `T`
         with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -1817,7 +1817,7 @@ class VolumeSolid(TDependentProperty):
         -------
         Vms : float
             Molar volume of the solid at T, [m^3/mol]
-        '''
+        """
         if method == GOODMAN:
             Vms = Goodman(T, self.Tt, self.Vml_Tt)
         else:
@@ -1836,7 +1836,7 @@ volume_solid_mixture_methods = [LINEAR]
 in iterating over them."""
 
 class VolumeSolidMixture(MixtureProperty):
-    '''Class for dealing with the molar volume of a solid mixture as a
+    """Class for dealing with the molar volume of a solid mixture as a
     function of temperature, pressure, and composition.
     Consists of only mole-weighted averaging.
 
@@ -1860,10 +1860,10 @@ class VolumeSolidMixture(MixtureProperty):
     **LINEAR**:
         Linear mole fraction mixing rule described in
         :obj:`mixing_simple <chemicals.utils.mixing_simple>`.
-    '''
+    """
 
-    name = 'Solid molar volume'
-    units = 'm^3/mol'
+    name = "Solid molar volume"
+    units = "m^3/mol"
     property_min = 0
     """Molar volume cannot be under 0."""
     property_max = 2e-3
@@ -1872,11 +1872,11 @@ class VolumeSolidMixture(MixtureProperty):
 
     ranked_methods = [LINEAR]
 
-    pure_references = ('VolumeSolids',)
+    pure_references = ("VolumeSolids",)
     pure_reference_types = (VolumeSolid, )
-    obj_references = ('VolumeSolids',)
+    obj_references = ("VolumeSolids",)
 
-    pure_constants = ('MWs', )
+    pure_constants = ("MWs", )
     custom_args = pure_constants
 
     def __init__(self, CASs=[], VolumeSolids=[], MWs=[], load_data=True, **kwargs):
@@ -1889,7 +1889,7 @@ class VolumeSolidMixture(MixtureProperty):
         super().__init__(load_data=load_data, **kwargs)
 
     def load_all_methods(self, load_data=True):
-        r'''Method to initialize the object by precomputing any values which
+        r"""Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
         :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
@@ -1899,12 +1899,12 @@ class VolumeSolidMixture(MixtureProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = [LINEAR]
         self.all_methods = all_methods = set(methods)
 
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate molar volume of a solid mixture at
+        r"""Method to calculate molar volume of a solid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -1929,7 +1929,7 @@ class VolumeSolidMixture(MixtureProperty):
         Vm : float
             Molar volume of the solid mixture at the given conditions,
             [m^3/mol]
-        '''
+        """
         return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):

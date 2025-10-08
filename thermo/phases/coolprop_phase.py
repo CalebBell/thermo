@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 '''
-__all__ = ['CoolPropPhase', 'CoolPropLiquid', 'CoolPropGas']
+__all__ = ["CoolPropPhase", "CoolPropLiquid", "CoolPropGas"]
 
 import sys
 from collections import OrderedDict
@@ -103,7 +103,7 @@ def set_coolprop_constants():
         # Pretty sure about as optimized as can get!
         # zs should be a tuple, not a list
         if type(fluid) is list:
-            fluid = '&'.join(fluid)
+            fluid = "&".join(fluid)
 
         key = (backend, fluid, spec0, spec1, spec_set, phase, zs)
         if key in caching_states_CoolProp:
@@ -163,15 +163,15 @@ class CoolPropPhase(Phase):
 
 
     def __str__(self):
-        if self.phase == 'g':
-            s =  '<{}, '.format('CoolPropGas')
+        if self.phase == "g":
+            s =  "<{}, ".format("CoolPropGas")
         else:
-            s =  '<{}, '.format('CoolPropLiquid')
+            s =  "<{}, ".format("CoolPropLiquid")
         try:
-            s += f'T={self.T:g} K, P={self.P:g} Pa'
+            s += f"T={self.T:g} K, P={self.P:g} Pa"
         except:
             pass
-        s += '>'
+        s += ">"
         return s
 
 #    def __del__(self):
@@ -185,14 +185,14 @@ class CoolPropPhase(Phase):
         try:
             idx = self.AS.phase()
             if idx in CoolProp_gas_phases:
-                return 'g'
-            return 'l'
+                return "g"
+            return "l"
         except:
             if self.prefer_phase == CPliquid:
-                return 'l'
-            return 'g'
+                return "l"
+            return "g"
 
-    model_attributes = ('backend', 'fluid', 'Hfs', 'Gfs', 'Sfs')
+    model_attributes = ("backend", "fluid", "Hfs", "Gfs", "Sfs")
 
     def __init__(self, backend, fluid,
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,  Hfs=None,
@@ -213,7 +213,7 @@ class CoolPropPhase(Phase):
         if type(fluid) is list:
             self.skip_comp = skip_comp = False
         else:
-            self.skip_comp = skip_comp = (backend in ('IF97') or fluid in ('water') or '&' not in fluid)
+            self.skip_comp = skip_comp = (backend in ("IF97") or fluid in ("water") or "&" not in fluid)
             if zs is None:
                 zs = [1.0]
         self.zs = zs

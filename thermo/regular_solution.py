@@ -72,10 +72,10 @@ try:
 except (ImportError, AttributeError):
     pass
 
-__all__ = ['RegularSolution', 'regular_solution_gammas',
-           'regular_solution_gammas_binaries',
-           'regular_solution_gammas_binaries_jac',
-           'FloryHuggins', 'Hansen']
+__all__ = ["RegularSolution", "regular_solution_gammas",
+           "regular_solution_gammas_binaries",
+           "regular_solution_gammas_binaries_jac",
+           "FloryHuggins", "Hansen"]
 
 def regular_solution_His(SPs, coeffs, N, His=None):
     if His is None:
@@ -393,7 +393,7 @@ def flory_huggins_d3GE_dxixjxks(xs, Vs, SPs, Hi_sums, N, T, GE, xsVs_sum_inv, la
     return d3GE_dxixjxks
 
 class RegularSolution(GibbsExcess):
-    r'''Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing an a liquid with excess gibbs energy represented
     by the Regular Solution model. This model is not temperature dependent and
     has limited predictive ability, but can be used without interaction
     parameters. This model is described in [1]_.
@@ -524,16 +524,16 @@ class RegularSolution(GibbsExcess):
        Thermodynamics. 2nd edition. Upper Saddle River, NJ: Prentice Hall, 2012.
     .. [4] Kooijman, Harry A., and Ross Taylor. The ChemSep Book. Books on
        Demand Norderstedt, Germany, 2000.
-    '''
+    """
 
     model_id = 400
 
     gammas_from_args = staticmethod(regular_solution_gammas)
 
-    _cached_calculated_attributes = ('_Hi_sums', '_d3GE_dxixjxks')
-    _model_attributes = ('Vs', 'SPs', 'lambda_coeffs')
+    _cached_calculated_attributes = ("_Hi_sums", "_d3GE_dxixjxks")
+    _model_attributes = ("Vs", "SPs", "lambda_coeffs")
 
-    __slots__ = GibbsExcess.__slots__ + ('xsVs_sum', 'xsVs_sum_inv', 'lambda_coeffs', 'His', 'Aijs', '_lambda_coeffs_zero', 'SPs', 'Vs', 'xsVs') + _cached_calculated_attributes
+    __slots__ = GibbsExcess.__slots__ + ("xsVs_sum", "xsVs_sum_inv", "lambda_coeffs", "His", "Aijs", "_lambda_coeffs_zero", "SPs", "Vs", "xsVs") + _cached_calculated_attributes
     recalculable_attributes = GibbsExcess.recalculable_attributes + _cached_calculated_attributes
 
     def gammas_args(self, T=None):
@@ -600,16 +600,16 @@ class RegularSolution(GibbsExcess):
 
 
     def __repr__(self):
-        s = f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}, Vs={self.Vs}, SPs={self.SPs}'
+        s = f"{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}, Vs={self.Vs}, SPs={self.SPs}"
         if not self._lambda_coeffs_zero:
-            s += f' , lambda_coeffs={self.lambda_coeffs})'
+            s += f" , lambda_coeffs={self.lambda_coeffs})"
         else:
-            s += ')'
+            s += ")"
 
         return s
 
     def to_T_xs(self, T, xs):
-        r'''Method to construct a new :obj:`RegularSolution` instance at
+        r"""Method to construct a new :obj:`RegularSolution` instance at
         temperature `T`, and mole fractions `xs`
         with the same parameters as the existing object.
 
@@ -627,7 +627,7 @@ class RegularSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
@@ -656,7 +656,7 @@ class RegularSolution(GibbsExcess):
         return new
 
     def missing_interaction_parameters(self):
-        r'''
+        r"""
         Return a list of tuples (index_i, index_j) for each (i, j) pair where
         the lambda interaction coefficient is zero. As Regular Solution parameters
         can be asymmetric, (i,j) does not imply (j,i).
@@ -665,7 +665,7 @@ class RegularSolution(GibbsExcess):
         -------
         missing_params : list[tuple[int, int]]
             List of tuples of component indices with missing interaction parameters, [-].
-        '''
+        """
         missing_params = []
 
         for i in range(self.N):
@@ -678,7 +678,7 @@ class RegularSolution(GibbsExcess):
 
 
     def GE(self):
-        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        r"""Calculate and return the excess Gibbs energy of a liquid phase
         using the regular solution model.
 
         .. math::
@@ -694,7 +694,7 @@ class RegularSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         """
         from sympy import *
         GEvar, dGEvar_dT, GEvar_dx, dGEvar_dxixj, H = symbols("GEvar, dGEvar_dT, GEvar_dx, dGEvar_dxixj, H", cls=Function)
@@ -728,7 +728,7 @@ class RegularSolution(GibbsExcess):
 
 
     def dGE_dxs(self):
-        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        r"""Calculate and return the mole fraction derivatives of excess Gibbs
         energy of a liquid phase using the regular solution model.
 
         .. math::
@@ -743,7 +743,7 @@ class RegularSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         """
         dGEdxs = (diff(GE, x0)).subs(GE, GEvar(x0, x1, x2))
         Hi = dGEdxs.args[0].args[1]
@@ -783,7 +783,7 @@ class RegularSolution(GibbsExcess):
         return Hi_sums
 
     def d2GE_dxixjs(self):
-        r'''Calculate and return the second mole fraction derivatives of excess
+        r"""Calculate and return the second mole fraction derivatives of excess
         Gibbs energy of a liquid phase using the regular solution model.
 
         .. math::
@@ -798,7 +798,7 @@ class RegularSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         """
         d2GEdxixjs = diff((diff(GE, x0)).subs(GE, GEvar(x0, x1, x2)), x1).subs(Hi, H(x0, x1, x2))
         d2GEdxixjs
@@ -833,7 +833,7 @@ class RegularSolution(GibbsExcess):
         return d2GE_dxixjs
 
     def d3GE_dxixjxks(self):
-        r'''Calculate and return the third mole fraction derivatives of excess
+        r"""Calculate and return the third mole fraction derivatives of excess
         Gibbs energy.
 
         .. math::
@@ -849,7 +849,7 @@ class RegularSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d3GE_dxixjxks
         except:
@@ -884,7 +884,7 @@ class RegularSolution(GibbsExcess):
         return d3GE_dxixjxks
 
     def d2GE_dTdxs(self):
-        r'''Calculate and return the temperature derivative of mole fraction
+        r"""Calculate and return the temperature derivative of mole fraction
         derivatives of excess Gibbs energy.
 
         .. math::
@@ -898,13 +898,13 @@ class RegularSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 
     def dGE_dT(self):
-        r'''Calculate and return the temperature derivative of excess Gibbs
+        r"""Calculate and return the temperature derivative of excess Gibbs
         energy of a liquid phase.
 
         .. math::
@@ -917,11 +917,11 @@ class RegularSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         return 0.0
 
     def d2GE_dT2(self):
-        r'''Calculate and return the second temperature derivative of excess
+        r"""Calculate and return the second temperature derivative of excess
         Gibbs energy of a liquid phas.
 
         .. math::
@@ -934,11 +934,11 @@ class RegularSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         return 0.0
 
     def d3GE_dT3(self):
-        r'''Calculate and return the third temperature derivative of excess
+        r"""Calculate and return the third temperature derivative of excess
         Gibbs energy of a liquid phase.
 
         .. math::
@@ -951,7 +951,7 @@ class RegularSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         return 0.0
 
 
@@ -1015,9 +1015,9 @@ class RegularSolution(GibbsExcess):
                 return jac_func(xs_working, Vs, SPs, Ts, params[0], params[1], jac_iter)
 
         if symmetric:
-            use_fit_parameters = ['lambda12']
+            use_fit_parameters = ["lambda12"]
         else:
-            use_fit_parameters = ['lambda12', 'lambda21']
+            use_fit_parameters = ["lambda12", "lambda21"]
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
                                                       fit_parameters=use_fit_parameters,
                                                       use_fit_parameters=use_fit_parameters,
@@ -1032,14 +1032,14 @@ class RegularSolution(GibbsExcess):
 
 
     _gamma_parameter_guesses = [#{'lambda12': 1.0, 'lambda21': 1.0}, # 1 is always tried!
-                                {'lambda12': 4.843102, 'lambda21': 5.698181},
-                                {'lambda12': 1e7, 'lambda21': -1e7},
-                                {'lambda12': 0.01, 'lambda21': 0.01},
+                                {"lambda12": 4.843102, "lambda21": 5.698181},
+                                {"lambda12": 1e7, "lambda21": -1e7},
+                                {"lambda12": 0.01, "lambda21": 0.01},
                                 ]
     for i in range(len(_gamma_parameter_guesses)):
         r = _gamma_parameter_guesses[i]
-        if r['lambda21'] != r['lambda12']:
-            _gamma_parameter_guesses.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
+        if r["lambda21"] != r["lambda12"]:
+            _gamma_parameter_guesses.append({"lambda12": r["lambda21"], "lambda21": r["lambda12"]})
     del i, r
 
 
@@ -1052,7 +1052,7 @@ MAX_GAMMA_REGULAR_SOLUTION = 1e10
 
 def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
                                      gammas=None):
-    r'''Calculates activity coefficients with the regular solution model
+    r"""Calculates activity coefficients with the regular solution model
     at fixed `lambda` values for
     a binary system at a series of mole fractions at specified temperatures.
     This is used for
@@ -1113,7 +1113,7 @@ def regular_solution_gammas_binaries(xs, Vs, SPs, Ts, lambda12, lambda21,
     --------
     >>> regular_solution_gammas_binaries([.1, .9, 0.3, 0.7, .85, .15], Vs=[7.421e-05, 8.068e-05], SPs=[19570.2, 18864.7], Ts=[300.0, 400.0, 500.0], lambda12=0.1759, lambda21=0.7991)
     [6818.90697, 1.105437, 62.6628, 2.01184, 1.181434, 137.6232]
-    '''
+    """
     if lambda12 < MIN_LAMBDA_REGULAR_SOLUTION:
         lambda12 = MIN_LAMBDA_REGULAR_SOLUTION
     if lambda21 < MIN_LAMBDA_REGULAR_SOLUTION:
@@ -1282,7 +1282,7 @@ class FloryHuggins(GibbsExcess):
     missing_interaction_parameters = RegularSolution.missing_interaction_parameters
 
     def GE(self):
-        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        r"""Calculate and return the excess Gibbs energy of a liquid phase
         using the Flory-Huggins model.
 
         Returns
@@ -1292,7 +1292,7 @@ class FloryHuggins(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._GE
         except AttributeError:
@@ -1302,7 +1302,7 @@ class FloryHuggins(GibbsExcess):
         return GE
 
     def dGE_dT(self):
-        r'''Calculate and return the temperature derivative of excess Gibbs
+        r"""Calculate and return the temperature derivative of excess Gibbs
         energy of a liquid phase.
 
         .. math::
@@ -1315,7 +1315,7 @@ class FloryHuggins(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._dGE_dT
         except AttributeError:
@@ -1324,7 +1324,7 @@ class FloryHuggins(GibbsExcess):
         return dGE_dT
 
     def d2GE_dTdxs(self):
-        r'''Calculate and return the temperature derivative of mole fraction
+        r"""Calculate and return the temperature derivative of mole fraction
         derivatives of excess Gibbs energy.
 
         .. math::
@@ -1339,7 +1339,7 @@ class FloryHuggins(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2GE_dTdxs
         except AttributeError:
@@ -1353,7 +1353,7 @@ class FloryHuggins(GibbsExcess):
         return self._d2GE_dTdxs
 
     def dGE_dxs(self):
-        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        r"""Calculate and return the mole fraction derivatives of excess Gibbs
         energy of a liquid phase using the regular solution model.
 
         .. math::
@@ -1373,7 +1373,7 @@ class FloryHuggins(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._dGE_dxs
         except AttributeError:
@@ -1394,7 +1394,7 @@ class FloryHuggins(GibbsExcess):
         return self._dGE_dxs
 
     def d2GE_dxixjs(self):
-        r'''Calculate and return the second mole fraction derivatives of excess
+        r"""Calculate and return the second mole fraction derivatives of excess
         Gibbs energy of a liquid phase using the regular solution model.
 
         For brevity, the equation is presented only as an addition to the regular solution equation:
@@ -1411,7 +1411,7 @@ class FloryHuggins(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2GE_dxixjs
         except AttributeError:
@@ -1440,7 +1440,7 @@ class FloryHuggins(GibbsExcess):
         return d2GE_dxixjs
 
     def d3GE_dxixjxks(self):
-        r'''Calculate and return the third mole fraction derivatives of excess
+        r"""Calculate and return the third mole fraction derivatives of excess
         Gibbs energy.
 
         For brevity, the equation is presented only as an addition to the regular solution equation:
@@ -1457,7 +1457,7 @@ class FloryHuggins(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d3GE_dxixjxks
         except:
@@ -1638,11 +1638,11 @@ class Hansen(GibbsExcess):
     """
     model_id = 420
     _cached_calculated_attributes = RegularSolution._cached_calculated_attributes
-    _model_attributes = tuple(v for v in RegularSolution._model_attributes if v not in ('SPs','lambda_coeffs',))  + ('delta_d', 'delta_p', 'delta_h', 'alpha')
+    _model_attributes = tuple(v for v in RegularSolution._model_attributes if v not in ("SPs","lambda_coeffs",))  + ("delta_d", "delta_p", "delta_h", "alpha")
 
 
 
-    __slots__ = tuple(v for v in RegularSolution.__slots__ if v not in ('SPs','lambda_coeffs',)) + ('delta_d', 'delta_p', 'delta_h', 'alpha')
+    __slots__ = tuple(v for v in RegularSolution.__slots__ if v not in ("SPs","lambda_coeffs",)) + ("delta_d", "delta_p", "delta_h", "alpha")
     recalculable_attributes = RegularSolution.recalculable_attributes
 
     def __init__(self, *, xs, Vs, delta_d, delta_p, delta_h, T=GibbsExcess.T_DEFAULT, alpha=1.0):
@@ -1675,13 +1675,13 @@ class Hansen(GibbsExcess):
         self.His = hansen_His(self.delta_d, self.delta_p, self.delta_h, alpha=self.alpha)
 
     def __repr__(self):
-        return (f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}, '
-                f'Vs={self.Vs!r}, delta_d={self.delta_d!r}, '
-                f'delta_p={self.delta_p!r}, delta_h={self.delta_h!r}, '
-                f'alpha={self.alpha!r})')
+        return (f"{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}, "
+                f"Vs={self.Vs!r}, delta_d={self.delta_d!r}, "
+                f"delta_p={self.delta_p!r}, delta_h={self.delta_h!r}, "
+                f"alpha={self.alpha!r})")
 
     def to_T_xs(self, T, xs):
-        r'''Method to construct a new :obj:`Hansen` instance at
+        r"""Method to construct a new :obj:`Hansen` instance at
         temperature `T`, and mole fractions `xs`
         with the same parameters as the existing object.
 
@@ -1699,7 +1699,7 @@ class Hansen(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs

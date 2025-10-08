@@ -73,24 +73,24 @@ Sorting Phases
 
 '''
 
-__all__ = ['vapor_score_Tpc', 'vapor_score_Vpc',
-           'vapor_score_Tpc_weighted', 'vapor_score_Tpc_Vpc',
-           'vapor_score_Wilson', 'vapor_score_Poling',
-           'vapor_score_PIP', 'vapor_score_Bennett_Schmidt',
-           'vapor_score_traces',
+__all__ = ["vapor_score_Tpc", "vapor_score_Vpc",
+           "vapor_score_Tpc_weighted", "vapor_score_Tpc_Vpc",
+           "vapor_score_Wilson", "vapor_score_Poling",
+           "vapor_score_PIP", "vapor_score_Bennett_Schmidt",
+           "vapor_score_traces",
 
-           'score_phases_S', 'score_phases_VL', 'identity_phase_states',
-           'S_ID_METHODS', 'VL_ID_METHODS',
+           "score_phases_S", "score_phases_VL", "identity_phase_states",
+           "S_ID_METHODS", "VL_ID_METHODS",
 
-           'sort_phases', 'identify_sort_phases',
+           "sort_phases", "identify_sort_phases",
 
-           'WATER_FIRST', 'WATER_LAST', 'WATER_NOT_SPECIAL',
-           'WATER_SORT_METHODS', 'KEY_COMPONENTS_SORT', 'PROP_SORT',
-           'SOLID_SORT_METHODS', 'LIQUID_SORT_METHODS',
+           "WATER_FIRST", "WATER_LAST", "WATER_NOT_SPECIAL",
+           "WATER_SORT_METHODS", "KEY_COMPONENTS_SORT", "PROP_SORT",
+           "SOLID_SORT_METHODS", "LIQUID_SORT_METHODS",
 
-           'VL_ID_TPC', 'VL_ID_VPC', 'VL_ID_TPC_VC_WEIGHTED', 'VL_ID_TPC_VPC',
-           'VL_ID_WILSON', 'VL_ID_POLING', 'VL_ID_PIP', 'VL_ID_BS', 'VL_ID_TRACES',
-           'VL_ID_METHODS', 'S_ID_D2P_DVDT', 'S_ID_METHODS',
+           "VL_ID_TPC", "VL_ID_VPC", "VL_ID_TPC_VC_WEIGHTED", "VL_ID_TPC_VPC",
+           "VL_ID_WILSON", "VL_ID_POLING", "VL_ID_PIP", "VL_ID_BS", "VL_ID_TRACES",
+           "VL_ID_METHODS", "S_ID_D2P_DVDT", "S_ID_METHODS",
            ]
 
 
@@ -100,7 +100,7 @@ from chemicals.utils import Vm_to_rho, phase_identification_parameter
 
 
 def vapor_score_Tpc(T, Tcs, zs):
-    r'''Compute a vapor score representing how vapor-like a phase is
+    r"""Compute a vapor score representing how vapor-like a phase is
     (higher, above zero = more vapor like) using the following criteria
 
     .. math::
@@ -141,7 +141,7 @@ def vapor_score_Tpc(T, Tcs, zs):
 
     Notes
     -----
-    '''
+    """
     # Does not work for pure compounds
     Tpc =  0.0
     for i in range(len(zs)):
@@ -149,7 +149,7 @@ def vapor_score_Tpc(T, Tcs, zs):
     return T - Tpc
 
 def vapor_score_Vpc(V, Vcs, zs):
-    r'''Compute a vapor score representing how vapor-like a phase is
+    r"""Compute a vapor score representing how vapor-like a phase is
     (higher, above zero = more vapor like) using the following criteria
 
     .. math::
@@ -186,7 +186,7 @@ def vapor_score_Vpc(V, Vcs, zs):
 
     Notes
     -----
-    '''
+    """
     Vpc =  0.0
     for i in range(len(zs)):
         Vpc += zs[i]*Vcs[i]
@@ -543,9 +543,9 @@ def vapor_score_Bennett_Schmidt(dbeta_dT):
     '''
     return -dbeta_dT
 
-def vapor_score_traces(zs, CASs, Tcs, trace_CASs=['74-82-8', '7727-37-9'],
+def vapor_score_traces(zs, CASs, Tcs, trace_CASs=["74-82-8", "7727-37-9"],
                        min_trace=0.0):
-    r'''Compute a vapor score representing how vapor-like a phase is
+    r"""Compute a vapor score representing how vapor-like a phase is
     (higher, above zero = more vapor like) using the concept of which phase has
     the most of the lightest compound. This nicely sidesteps issues in many
     other methods, at the expense that it cannot be applied when there is only
@@ -594,7 +594,7 @@ def vapor_score_traces(zs, CASs, Tcs, trace_CASs=['74-82-8', '7727-37-9'],
 
     Notes
     -----
-    '''
+    """
     # traces should be the lightest species - high = more vapor like
     if trace_CASs is not None:
         for trace_CAS in trace_CASs:
@@ -614,28 +614,28 @@ def vapor_score_traces(zs, CASs, Tcs, trace_CASs=['74-82-8', '7727-37-9'],
     return comp - min_trace
 
 
-VL_ID_TPC = 'Tpc'
-VL_ID_VPC = 'Vpc'
-VL_ID_TPC_VC_WEIGHTED = 'Tpc Vpc weighted'
-VL_ID_TPC_VPC = 'Tpc Vpc'
-VL_ID_WILSON = 'Wilson'
-VL_ID_POLING = 'Poling'
-VL_ID_PIP = 'PIP'
-VL_ID_BS = 'Bennett-Schmidt'
-VL_ID_TRACES = 'Traces'
+VL_ID_TPC = "Tpc"
+VL_ID_VPC = "Vpc"
+VL_ID_TPC_VC_WEIGHTED = "Tpc Vpc weighted"
+VL_ID_TPC_VPC = "Tpc Vpc"
+VL_ID_WILSON = "Wilson"
+VL_ID_POLING = "Poling"
+VL_ID_PIP = "PIP"
+VL_ID_BS = "Bennett-Schmidt"
+VL_ID_TRACES = "Traces"
 
 VL_ID_METHODS = [VL_ID_TPC, VL_ID_VPC, VL_ID_TPC_VC_WEIGHTED, VL_ID_TPC_VPC,
                  VL_ID_WILSON, VL_ID_POLING, VL_ID_PIP, VL_ID_BS, VL_ID_TRACES]
 """List of all the methods available to perform the Vapor-Liquid phase ID.
 """
-S_ID_D2P_DVDT = 'd2P_dVdT'
+S_ID_D2P_DVDT = "d2P_dVdT"
 S_ID_METHODS = [S_ID_D2P_DVDT]
 """List of all the methods available to perform the solid-liquid phase ID.
 """
 
 def score_phases_S(phases, constants, correlations, method=S_ID_D2P_DVDT,
                    S_ID_settings=None):
-    r'''Score all phases according to how wolid they appear given the
+    r"""Score all phases according to how wolid they appear given the
     provided parameters and a selected method.
 
     A score above zero indicates a solid. More than one phase may have
@@ -659,14 +659,14 @@ def score_phases_S(phases, constants, correlations, method=S_ID_D2P_DVDT,
     -------
     scores : list[float]
         Scores for the phases in the order provided, [-]
-    '''
+    """
     # The higher the score (above zero), the more solid-like
     if method == S_ID_D2P_DVDT:
         scores = [i.d2P_dVdT() for i in phases]
     return scores
 
 def score_phases_VL(phases, constants, correlations, method):
-    r'''Score all phases given the provided parameters and a selected method.
+    r"""Score all phases given the provided parameters and a selected method.
 
     A score above zero indicates a potential gas. More than one phase may have
     a score above zero, in which case the highest scoring phase is the gas,
@@ -715,7 +715,7 @@ def score_phases_VL(phases, constants, correlations, method):
     [0.0003538299416, -2.72255439503e-05]
     >>> score_phases_VL([gas, liq], constants, correlations, method='Poling')
     [0.1767828268, -0.004516837897]
-    '''
+    """
     # The higher the score (above zero), the more vapor-like
     if phases:
         T = phases[0].T
@@ -757,7 +757,7 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
                           S_method=S_ID_D2P_DVDT,
                           VL_ID_settings=None, S_ID_settings=None,
                           skip_solids=False):
-    r'''Identify and the actial phase of all the given phases given the
+    r"""Identify and the actial phase of all the given phases given the
     provided settings.
 
     Parameters
@@ -787,7 +787,7 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
         Liquids that were identified and sorted, [-]
     solids : list[:obj:`Phase <thermo.phases.Phase>`]
         Solids that were identified and sorted, [-]
-    '''
+    """
     # TODO - optimize
     # Takes a while
 
@@ -798,11 +798,11 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
     unknown_phases = []
     for p in phases:
         if p.force_phase is not None:
-            if p.force_phase == 'l':
+            if p.force_phase == "l":
                 liquids.append(p)
-            elif p.force_phase == 's':
+            elif p.force_phase == "s":
                 solids.append(p)
-            elif p.force_phase == 'g':
+            elif p.force_phase == "g":
                 possible_gases.append(p)
         else:
             unknown_phases.append(p)
@@ -841,21 +841,21 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
 
 
 
-DENSITY_MASS = 'DENSITY_MASS'
-DENSITY = 'DENSITY'
-ISOTHERMAL_COMPRESSIBILITY = 'ISOTHERMAL_COMPRESSIBILITY'
-HEAT_CAPACITY = 'HEAT_CAPACITY'
+DENSITY_MASS = "DENSITY_MASS"
+DENSITY = "DENSITY"
+ISOTHERMAL_COMPRESSIBILITY = "ISOTHERMAL_COMPRESSIBILITY"
+HEAT_CAPACITY = "HEAT_CAPACITY"
 L_SORT_PROPS = S_SORT_PROPS = [DENSITY_MASS, DENSITY, ISOTHERMAL_COMPRESSIBILITY,
                 HEAT_CAPACITY]
 
-WATER_FIRST = 'water first'
-WATER_LAST = 'water last'
-WATER_NOT_SPECIAL = 'water not special'
+WATER_FIRST = "water first"
+WATER_LAST = "water last"
+WATER_NOT_SPECIAL = "water not special"
 
 WATER_SORT_METHODS = [WATER_FIRST, WATER_LAST, WATER_NOT_SPECIAL]
 
-KEY_COMPONENTS_SORT = 'key components'
-PROP_SORT = 'prop'
+KEY_COMPONENTS_SORT = "key components"
+PROP_SORT = "prop"
 SOLID_SORT_METHODS = LIQUID_SORT_METHODS = [PROP_SORT, KEY_COMPONENTS_SORT]
 
 def key_cmp_sort(phases, cmps, cmps_neg):
@@ -895,7 +895,7 @@ def mini_sort_phases(phases, sort_method, prop, cmps, cmps_neg,
     return phases
 
 def sort_phases(liquids, solids, constants, settings):
-    r'''Identify and sort all phases given the provided parameters.
+    r"""Identify and sort all phases given the provided parameters.
     This is not a thermodynamic concept; it is just a convinience
     method to make the results of the flash more consistent, because
     the flash algorithms don't care about density or ordering
@@ -931,7 +931,7 @@ def sort_phases(liquids, solids, constants, settings):
     Examples
     --------
 
-    '''
+    """
     if len(liquids) > 1:
         liquids = mini_sort_phases(liquids, sort_method=settings.liquid_sort_method,
                          prop=settings.liquid_sort_prop,
@@ -964,7 +964,7 @@ def sort_phases(liquids, solids, constants, settings):
 
 def identify_sort_phases(phases, betas, constants, correlations, settings,
                          skip_solids=False):
-    r'''Identify and sort all phases given the provided parameters.
+    r"""Identify and sort all phases given the provided parameters.
 
     Parameters
     ----------
@@ -1023,7 +1023,7 @@ def identify_sort_phases(phases, betas, constants, correlations, settings,
     >>> res = identity_phase_states(phases=[liq0, liq1, gas], constants=constants, correlations=properties, VL_method='PIP')
     >>> res[0] is gas, res[1][0] is liq0, res[1][1] is liq1, res[2]
     (True, True, True, [])
-    '''
+    """
     gas, liquids, solids = identity_phase_states(phases, constants, correlations,
                               VL_method=settings.VL_ID,
                               S_method=settings.S_ID,

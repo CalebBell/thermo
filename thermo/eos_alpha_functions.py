@@ -194,29 +194,29 @@ Pure Alpha Functions
 
 
 __all__ = [
-           'PR_a_alphas_vectorized', 'PR_a_alpha_and_derivatives_vectorized',
-           'RK_a_alphas_vectorized', 'RK_a_alpha_and_derivatives_vectorized',
-           'SRK_a_alphas_vectorized', 'SRK_a_alpha_and_derivatives_vectorized',
-           'PRSV_a_alphas_vectorized', 'PRSV_a_alpha_and_derivatives_vectorized',
-           'PRSV2_a_alphas_vectorized', 'PRSV2_a_alpha_and_derivatives_vectorized',
-           'APISRK_a_alphas_vectorized', 'APISRK_a_alpha_and_derivatives_vectorized',
+           "PR_a_alphas_vectorized", "PR_a_alpha_and_derivatives_vectorized",
+           "RK_a_alphas_vectorized", "RK_a_alpha_and_derivatives_vectorized",
+           "SRK_a_alphas_vectorized", "SRK_a_alpha_and_derivatives_vectorized",
+           "PRSV_a_alphas_vectorized", "PRSV_a_alpha_and_derivatives_vectorized",
+           "PRSV2_a_alphas_vectorized", "PRSV2_a_alpha_and_derivatives_vectorized",
+           "APISRK_a_alphas_vectorized", "APISRK_a_alpha_and_derivatives_vectorized",
 
-'a_alpha_base', 'Poly_a_alpha', 'Soave_1972_a_alpha', 'Heyen_a_alpha',
-'Harmens_Knapp_a_alpha', 'Mathias_1983_a_alpha', 'Mathias_Copeman_untruncated_a_alpha',
-    'Mathias_Copeman_poly_a_alpha', 'Gibbons_Laughton_a_alpha', 'Soave_1984_a_alpha',
- 'Yu_Lu_a_alpha', 'Trebble_Bishnoi_a_alpha', 'Melhem_a_alpha', 'Androulakis_a_alpha',
- 'Schwartzentruber_a_alpha', 'Almeida_a_alpha', 'Twu91_a_alpha', 'Soave_1993_a_alpha',
- 'Gasem_a_alpha', 'Coquelet_a_alpha', 'Haghtalab_a_alpha', 'Saffari_a_alpha',
- 'Chen_Yang_a_alpha', 'TwuSRK95_a_alpha', 'TwuPR95_a_alpha', 'Soave_1979_a_alpha',
+"a_alpha_base", "Poly_a_alpha", "Soave_1972_a_alpha", "Heyen_a_alpha",
+"Harmens_Knapp_a_alpha", "Mathias_1983_a_alpha", "Mathias_Copeman_untruncated_a_alpha",
+    "Mathias_Copeman_poly_a_alpha", "Gibbons_Laughton_a_alpha", "Soave_1984_a_alpha",
+ "Yu_Lu_a_alpha", "Trebble_Bishnoi_a_alpha", "Melhem_a_alpha", "Androulakis_a_alpha",
+ "Schwartzentruber_a_alpha", "Almeida_a_alpha", "Twu91_a_alpha", "Soave_1993_a_alpha",
+ "Gasem_a_alpha", "Coquelet_a_alpha", "Haghtalab_a_alpha", "Saffari_a_alpha",
+ "Chen_Yang_a_alpha", "TwuSRK95_a_alpha", "TwuPR95_a_alpha", "Soave_1979_a_alpha",
 
- 'Twu91_alpha_pure', 'Soave_1972_alpha_pure', 'Soave_1979_alpha_pure',
- 'Heyen_alpha_pure', 'Harmens_Knapp_alpha_pure', 'Mathias_1983_alpha_pure',
-    'Mathias_Copeman_untruncated_alpha_pure', 'Gibbons_Laughton_alpha_pure',
-    'Soave_1984_alpha_pure', 'Yu_Lu_alpha_pure', 'Trebble_Bishnoi_alpha_pure',
-    'Melhem_alpha_pure', 'Androulakis_alpha_pure', 'Schwartzentruber_alpha_pure',
-    'Almeida_alpha_pure', 'Soave_1993_alpha_pure', 'Gasem_alpha_pure',
-    'Coquelet_alpha_pure', 'Haghtalab_alpha_pure', 'Saffari_alpha_pure',
-    'Chen_Yang_alpha_pure', 'Mathias_Copeman_a_alpha']
+ "Twu91_alpha_pure", "Soave_1972_alpha_pure", "Soave_1979_alpha_pure",
+ "Heyen_alpha_pure", "Harmens_Knapp_alpha_pure", "Mathias_1983_alpha_pure",
+    "Mathias_Copeman_untruncated_alpha_pure", "Gibbons_Laughton_alpha_pure",
+    "Soave_1984_alpha_pure", "Yu_Lu_alpha_pure", "Trebble_Bishnoi_alpha_pure",
+    "Melhem_alpha_pure", "Androulakis_alpha_pure", "Schwartzentruber_alpha_pure",
+    "Almeida_alpha_pure", "Soave_1993_alpha_pure", "Gasem_alpha_pure",
+    "Coquelet_alpha_pure", "Haghtalab_alpha_pure", "Saffari_alpha_pure",
+    "Chen_Yang_alpha_pure", "Mathias_Copeman_a_alpha"]
 
 
 from fluids.numerics import exp, horner, horner_and_der2, log, sqrt
@@ -228,7 +228,7 @@ except:
     pass
 
 def PR_a_alphas_vectorized(T, Tcs, ais, kappas, a_alphas=None):
-    r'''Calculates the `a_alpha` terms for the Peng-Robinson equation of state
+    r"""Calculates the `a_alpha` terms for the Peng-Robinson equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
 
@@ -267,7 +267,7 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas, a_alphas=None):
     >>> kappas = [0.74192743008, 0.819919992, 0.8800122140799999]
     >>> PR_a_alphas_vectorized(322.29, Tcs=Tcs, ais=ais, kappas=kappas)
     [2.6306811679, 3.6761503348, 4.8593286234]
-    '''
+    """
     N = len(Tcs)
     x0_inv = 1.0/sqrt(T)
     x0 = T*x0_inv
@@ -281,7 +281,7 @@ def PR_a_alphas_vectorized(T, Tcs, ais, kappas, a_alphas=None):
 
 def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas, a_alphas=None,
                                           da_alpha_dTs=None, d2a_alpha_dT2s=None):
-    r'''Calculates the `a_alpha` terms and their first two temperature
+    r"""Calculates the `a_alpha` terms and their first two temperature
     derivatives for the Peng-Robinson equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
@@ -333,7 +333,7 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas, a_alphas=None,
     >>> kappas = [0.74192743008, 0.819919992, 0.8800122140799999]
     >>> PR_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais, kappas=kappas)
     ([2.63068116797, 3.67615033489, 4.859328623453], [-0.0044497546430, -0.00638993749167, -0.0085372308846], [1.066668360e-05, 1.546687574587e-05, 2.07440632117e-05])
-    '''
+    """
     N = len(Tcs)
     x0_inv = 1.0/sqrt(T)
     x0 = T*x0_inv
@@ -358,7 +358,7 @@ def PR_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappas, a_alphas=None,
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def SRK_a_alphas_vectorized(T, Tcs, ais, ms, a_alphas=None):
-    r'''Calculates the `a_alpha` terms for the SRK equation of state
+    r"""Calculates the `a_alpha` terms for the SRK equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
 
@@ -395,7 +395,7 @@ def SRK_a_alphas_vectorized(T, Tcs, ais, ms, a_alphas=None):
     >>> ms = [0.8610138239999999, 0.9436976, 1.007889024]
     >>> SRK_a_alphas_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms)
     [2.549485814512, 3.586598245260, 4.76614806648]
-    '''
+    """
     sqrtT = sqrt(T)
     N = len(Tcs)
     if a_alphas is None:
@@ -408,7 +408,7 @@ def SRK_a_alphas_vectorized(T, Tcs, ais, ms, a_alphas=None):
 def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms, a_alphas=None,
                                            da_alpha_dTs=None,
                                            d2a_alpha_dT2s=None):
-    r'''Calculates the `a_alpha` terms and their first and second temperature
+    r"""Calculates the `a_alpha` terms and their first and second temperature
     derivatives for the SRK equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
     `kappas`.
@@ -460,7 +460,7 @@ def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms, a_alphas=None,
     >>> ms = [0.8610138239999999, 0.9436976, 1.007889024]
     >>> SRK_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais, ms=ms)
     ([2.549485814512, 3.586598245260, 4.76614806648], [-0.004915469296196, -0.00702410108423, -0.00936320876945], [1.236441916324e-05, 1.77752796719e-05, 2.37231823137e-05])
-    '''
+    """
     N = len(Tcs)
     sqrtnT = 1.0/sqrt(T)
     sqrtT = T*sqrtnT
@@ -485,7 +485,7 @@ def SRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, ms, a_alphas=None,
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def RK_a_alphas_vectorized(T, Tcs, ais, a_alphas=None):
-    r'''Calculates the `a_alpha` terms for the RK equation of state
+    r"""Calculates the `a_alpha` terms for the RK equation of state
     given the critical temperatures `Tcs`, and `a` parameters `ais`.
 
     .. math::
@@ -515,7 +515,7 @@ def RK_a_alphas_vectorized(T, Tcs, ais, a_alphas=None):
     >>> ais = [1.9351940385541342, 2.525982668162287, 3.1531036708059315]
     >>> RK_a_alphas_vectorized(322.29, Tcs=Tcs, ais=ais)
     [2.3362073307, 3.16943743055, 4.0825575798]
-    '''
+    """
     N = len(ais)
     if a_alphas is None:
         a_alphas = [0.0]*N
@@ -526,7 +526,7 @@ def RK_a_alphas_vectorized(T, Tcs, ais, a_alphas=None):
 
 def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, a_alphas=None,
                                           da_alpha_dTs=None, d2a_alpha_dT2s=None):
-    r'''Calculates the `a_alpha` terms and their first and second temperature
+    r"""Calculates the `a_alpha` terms and their first and second temperature
     derivatives for the RK equation of state
     given the critical temperatures `Tcs`, and `a` parameters `ais`.
 
@@ -569,7 +569,7 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, a_alphas=None,
     >>> ais = [1.9351940385541342, 2.525982668162287, 3.1531036708059315]
     >>> RK_a_alpha_and_derivatives_vectorized(322.29, Tcs=Tcs, ais=ais)
     ([2.3362073307, 3.16943743055, 4.08255757984], [-0.00362438693525, -0.0049170582868, -0.00633367088622], [1.6868597855e-05, 2.28849403652e-05, 2.94781294155e-05])
-    '''
+    """
     N = len(ais)
     if a_alphas is None:
         a_alphas = [0.0]*N
@@ -593,7 +593,7 @@ def RK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, a_alphas=None,
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, a_alphas=None):
-    r'''Calculates the `a_alpha` terms for the Peng-Robinson-Stryjek-Vera
+    r"""Calculates the `a_alpha` terms for the Peng-Robinson-Stryjek-Vera
     equation of state given the critical temperatures `Tcs`, constants `ais`, PRSV
     parameters `kappa0s` and `kappa1s`.
 
@@ -634,7 +634,7 @@ def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, a_alphas=None):
     >>> kappa1s = [0.05104]
     >>> PRSV_a_alphas_vectorized(299.0, Tcs=Tcs, ais=ais, kappa0s=kappa0s, kappa1s=kappa1s)
     [3.81298569831]
-    '''
+    """
     sqrtT = sqrt(T)
     N = len(Tcs)
     if a_alphas is None:
@@ -650,7 +650,7 @@ def PRSV_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, a_alphas=None):
 def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s,
                                             a_alphas=None, da_alpha_dTs=None,
                                             d2a_alpha_dT2s=None):
-    r'''Calculates the `a_alpha` terms and their first and second derivative
+    r"""Calculates the `a_alpha` terms and their first and second derivative
     for the Peng-Robinson-Stryjek-Vera
     equation of state given the critical temperatures `Tcs`, constants `ais`, PRSV
     parameters `kappa0s` and `kappa1s`.
@@ -727,7 +727,7 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s,
     >>> kappa1s = [0.05104]
     >>> PRSV_a_alpha_and_derivatives_vectorized(299.0, Tcs=Tcs, ais=ais, kappa0s=kappa0s, kappa1s=kappa1s)
     ([3.8129856983], [-0.0069769034748], [2.00265608110e-05])
-    '''
+    """
     r"""
     Formula derived with:
     from sympy import *
@@ -775,7 +775,7 @@ def PRSV_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s,
 
 def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s,
                               a_alphas=None):
-    r'''Calculates the `a_alpha` terms for the Peng-Robinson-Stryjek-Vera 2
+    r"""Calculates the `a_alpha` terms for the Peng-Robinson-Stryjek-Vera 2
     equation of state given the critical temperatures `Tcs`, constants `ais`,
     PRSV2 parameters `kappa0s, `kappa1s`, `kappa2s`, and `kappa3s`.
 
@@ -817,7 +817,7 @@ def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s,
     --------
     >>> PRSV2_a_alphas_vectorized(400.0, Tcs=[507.6], ais=[2.6923169620277805], kappa0s=[0.8074380841890093], kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
     [3.2005700986984]
-    '''
+    """
     sqrtT = sqrt(T)
     N = len(Tcs)
     if a_alphas is None:
@@ -834,7 +834,7 @@ def PRSV2_a_alphas_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s,
 
 def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kappa2s, kappa3s,
                                              a_alphas=None, da_alpha_dTs=None, d2a_alpha_dT2s=None):
-    r'''Calculates the `a_alpha` terms and their first and second derivatives
+    r"""Calculates the `a_alpha` terms and their first and second derivatives
     for the Peng-Robinson-Stryjek-Vera 2
     equation of state given the critical temperatures `Tcs`, constants `ais`,
     PRSV2 parameters `kappa0s, `kappa1s`, `kappa2s`, and `kappa3s`.
@@ -960,7 +960,7 @@ def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kapp
     --------
     >>> PRSV2_a_alpha_and_derivatives_vectorized(400.0, Tcs=[507.6], ais=[2.6923169620277805], kappa0s=[0.8074380841890093], kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
     ([3.2005700986], [-0.005301195971], [1.11181477576e-05])
-    '''
+    """
     sqrtT = sqrt(T)
     T_inv = 1.0/T
     N = len(Tcs)
@@ -1008,7 +1008,7 @@ def PRSV2_a_alpha_and_derivatives_vectorized(T, Tcs, ais, kappa0s, kappa1s, kapp
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
 def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=None):
-    r'''Calculates the `a_alpha` terms for the API SRK equation of state
+    r"""Calculates the `a_alpha` terms for the API SRK equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
     API parameters `S1s` and `S2s`.
 
@@ -1043,7 +1043,7 @@ def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=None):
     --------
     >>> APISRK_a_alphas_vectorized(T=430.0, Tcs=[514.0], ais=[1.2721974560809934],  S1s=[1.678665], S2s=[-0.216396])
     [1.60465652994097]
-    '''
+    """
     N = len(Tcs)
     sqrtT = sqrt(T)
     if a_alphas is None:
@@ -1058,7 +1058,7 @@ def APISRK_a_alphas_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=None):
 
 def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=None,
                                               da_alpha_dTs=None, d2a_alpha_dT2s=None):
-    r'''Calculates the `a_alpha` terms and their first two temperature
+    r"""Calculates the `a_alpha` terms and their first two temperature
     derivatives for the API SRK equation of state
     given the critical temperatures `Tcs`, constants `ais`, and
     API parameters `S1s` and `S2s`.
@@ -1115,7 +1115,7 @@ def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=No
     --------
     >>> APISRK_a_alpha_and_derivatives_vectorized(T=430.0, Tcs=[514.0], ais=[1.2721974560809934],  S1s=[1.678665], S2s=[-0.216396])
     ([1.60465652994], [-0.0043155855337], [8.9931026263e-06])
-    '''
+    """
     N = len(Tcs)
     T_inv = 1.0/T
     c0 = T_inv*T_inv*0.5
@@ -1139,8 +1139,8 @@ def APISRK_a_alpha_and_derivatives_vectorized(T, Tcs, ais, S1s, S2s, a_alphas=No
         d2a_alpha_dT2s[i] = ais[i]*(-x4*(-x2*x7 + x5 + x7) + x6*x6)*c0
     return a_alphas, da_alpha_dTs, d2a_alpha_dT2s
 
-def TWU_a_alpha_common(T, Tc, omega, a, full=True, method='PR'):
-    r'''Function to calculate `a_alpha` and optionally its first and second
+def TWU_a_alpha_common(T, Tc, omega, a, full=True, method="PR"):
+    r"""Function to calculate `a_alpha` and optionally its first and second
     derivatives for the TWUPR or TWUSRK EOS. Returns 'a_alpha', and
     optionally 'da_alpha_dT' and 'd2a_alpha_dT2'.
     Used by `TWUPR` and `TWUSRK`; has little purpose on its own.
@@ -1174,7 +1174,7 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, method='PR'):
     >>> alpha = alpha0 + omega*(alpha1-alpha0)
     >>> # diff(alpha, T)
     >>> # diff(alpha, T, T)
-    '''
+    """
     # e-10 works
     min_a_alpha = 1e-3 # There are a LOT of formulas, and they do not like having zeros
     Tr = T/Tc
@@ -1186,14 +1186,14 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, method='PR'):
         Tr = 4e-3 + (Tr - 0.0)*(1e-3)/5e-3
         T = Tc*Tr
 
-    if method == 'PR':
+    if method == "PR":
         if Tr < 1.0:
             L0, M0, N0 = 0.125283, 0.911807, 1.948150
             L1, M1, N1 = 0.511614, 0.784054, 2.812520
         else:
             L0, M0, N0 = 0.401219, 4.963070, -0.2
             L1, M1, N1 = 0.024955, 1.248089, -8.
-    elif method == 'SRK':
+    elif method == "SRK":
         if Tr < 1.0:
             L0, M0, N0 = 0.141599, 0.919422, 2.496441
             L1, M1, N1 = 0.500315, 0.799457, 3.291790
@@ -1201,7 +1201,7 @@ def TWU_a_alpha_common(T, Tc, omega, a, full=True, method='PR'):
             L0, M0, N0 = 0.441411, 6.500018, -0.20
             L1, M1, N1 = 0.032580,  1.289098, -8.0
     else:
-        raise ValueError('Only `PR` and `SRK` are accepted as method')
+        raise ValueError("Only `PR` and `SRK` are accepted as method")
 
     if not full:
         alpha0 = Tr**(N0*(M0-1.))*exp(L0*(1.-Tr**(N0*M0)))
@@ -1348,7 +1348,7 @@ class a_alpha_base:
 
 class Poly_a_alpha:
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives given that there is a polynomial equation for
         :math:`\alpha`.
 
@@ -1371,13 +1371,13 @@ class Poly_a_alpha:
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
 
-        '''
+        """
         res = horner_and_der2(self.alpha_coeffs, T)
         a = self.a
         return (a*res[0], a*res[1], a*res[2])
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate `a_alpha` given that there is a polynomial
+        r"""Method to calculate `a_alpha` given that there is a polynomial
         equation for :math:`\alpha`.
 
         .. math::
@@ -1392,7 +1392,7 @@ class Poly_a_alpha:
         -------
         a_alpha : float
             Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
-        '''
+        """
         return self.a*horner(self.alpha_coeffs, T)
 
 class Soave_1972_a_alpha(a_alpha_base):
@@ -2012,7 +2012,7 @@ class Twu91_a_alpha(a_alpha_base):
         return a_alphas
 
     def a_alpha_and_derivatives_vectorized(self, T):
-        r'''Method to calculate the pure-component `a_alphas` and their first
+        r"""Method to calculate the pure-component `a_alphas` and their first
         and second derivatives for TWU91 alpha function EOS. This vectorized
         implementation is added for extra speed.
 
@@ -2036,7 +2036,7 @@ class Twu91_a_alpha(a_alpha_base):
         d2a_alpha_dT2s : list[float]
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K**2]
-        '''
+        """
         ais, alpha_coeffs, Tcs = self.ais, self.alpha_coeffs, self.Tcs
         N = len(ais)
         a_alphas = [0.0]*N
@@ -2248,7 +2248,7 @@ class Chen_Yang_a_alpha(a_alpha_base):
 
 class TwuSRK95_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for the Twu alpha function. Uses the set values of `Tc`,
         `omega` and `a`.
 
@@ -2303,11 +2303,11 @@ class TwuSRK95_a_alpha(a_alpha_base):
         >>> alpha = alpha0 + omega*(alpha1-alpha0)  # doctest:+SKIP
         >>> diff(alpha, T)  # doctest:+SKIP
         >>> diff(alpha, T, T)  # doctest:+SKIP
-        '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, method='SRK')
+        """
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, method="SRK")
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` for the Twu alpha function.
+        r"""Method to calculate :math:`a \alpha` for the Twu alpha function.
         Uses the set values of `Tc`, `omega` and `a`.
 
         .. math::
@@ -2343,12 +2343,12 @@ class TwuSRK95_a_alpha(a_alpha_base):
         -----
         This method does not alter the object's state and the temperature
         provided can be a different than that of the object.
-        '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, method='SRK')
+        """
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, method="SRK")
 
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
-        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, method='SRK')
+        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, method="SRK")
                 for i in range(self.N)]
         if self.vectorized:
             return array(a_alphas)
@@ -2358,7 +2358,7 @@ class TwuSRK95_a_alpha(a_alpha_base):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         r0, r1, r2 = [], [], []
         for i in range(self.N):
-            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, method='SRK')
+            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, method="SRK")
             r0.append(v0)
             r1.append(v1)
             r2.append(v2)
@@ -2371,7 +2371,7 @@ class TwuSRK95_a_alpha(a_alpha_base):
 class TwuPR95_a_alpha(a_alpha_base):
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for the Twu alpha function. Uses the set values of `Tc`,
         `omega` and `a`.
 
@@ -2426,11 +2426,11 @@ class TwuPR95_a_alpha(a_alpha_base):
         >>> alpha = alpha0 + omega*(alpha1-alpha0)  # doctest:+SKIP
         >>> diff(alpha, T)  # doctest:+SKIP
         >>> diff(alpha, T, T)  # doctest:+SKIP
-        '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, method='PR')
+        """
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=True, method="PR")
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` for the Twu alpha function.
+        r"""Method to calculate :math:`a \alpha` for the Twu alpha function.
         Uses the set values of `Tc`, `omega` and `a`.
 
         .. math::
@@ -2466,12 +2466,12 @@ class TwuPR95_a_alpha(a_alpha_base):
         -----
         This method does not alter the object's state and the temperature
         provided can be a different than that of the object.
-        '''
-        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, method='PR')
+        """
+        return TWU_a_alpha_common(T, self.Tc, self.omega, self.a, full=False, method="PR")
 
     def a_alphas_vectorized(self, T):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
-        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, method='PR')
+        a_alphas = [TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=False, method="PR")
                 for i in range(self.N)]
         if self.vectorized:
             return array(a_alphas)
@@ -2481,7 +2481,7 @@ class TwuPR95_a_alpha(a_alpha_base):
         Tcs, omegas, ais = self.Tcs, self.omegas, self.ais
         r0, r1, r2 = [], [], []
         for i in range(self.N):
-            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, method='PR')
+            v0, v1, v2 = TWU_a_alpha_common(T, Tcs[i], omegas[i], ais[i], full=True, method="PR")
             r0.append(v0)
             r1.append(v1)
             r2.append(v2)

@@ -55,9 +55,9 @@ Sample Constants and Correlations
 '''
 
 
-__all__ = ['ChemicalConstantsPackage', 'PropertyCorrelationsPackage',
-           'iapws_constants', 'iapws_correlations', 'lemmon2000_constants',
-           'lemmon2000_correlations']
+__all__ = ["ChemicalConstantsPackage", "PropertyCorrelationsPackage",
+           "iapws_constants", "iapws_correlations", "lemmon2000_constants",
+           "lemmon2000_correlations"]
 
 from chemicals import identifiers
 from chemicals.acentric import Stiel_polar_factor, omega
@@ -117,7 +117,7 @@ from thermo.viscosity import ViscosityGas, ViscosityGasMixture, ViscosityLiquid,
 from thermo.volume import VolumeGas, VolumeGasMixture, VolumeLiquid, VolumeLiquidMixture, VolumeSolid, VolumeSolidMixture
 from thermo.unifac import UFSG
 
-CAS_H2O = '7732-18-5'
+CAS_H2O = "7732-18-5"
 
 def _from_IDs(IDs, correlations=False):
 
@@ -159,7 +159,7 @@ def _from_IDs(IDs, correlations=False):
         except:
             pass
     VaporPressures = [VaporPressure(Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], omega=omegas[i], CASRN=CASs[i],
-                                    **user_chemical_property_lookup(CASs[i], 'VaporPressure'))
+                                    **user_chemical_property_lookup(CASs[i], "VaporPressure"))
                         for i in range(N)]
     Psat_298s = [VaporPressures[i].T_dependent_property(298.15) for i in range(N)]
 
@@ -178,7 +178,7 @@ def _from_IDs(IDs, correlations=False):
     Hfus_Tms_mass = [Hfus*1000.0/MW if Hfus is not None else None for Hfus, MW in zip(Hfus_Tms, MWs)]
 
     EnthalpyVaporizations = [EnthalpyVaporization(CASRN=CAS, Tb=Tb, Tc=Tc, Pc=Pc, omega=omega, similarity_variable=sv,
-                                                    **user_chemical_property_lookup(CAS, 'EnthalpyVaporization'))
+                                                    **user_chemical_property_lookup(CAS, "EnthalpyVaporization"))
                                 for CAS, Tb, Tc, Pc, sv, omega in zip(CASs, Tbs, Tcs, Pcs, similarity_variables, omegas)]
 
 
@@ -217,7 +217,7 @@ def _from_IDs(IDs, correlations=False):
     VolumeLiquids = [VolumeLiquid(MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i],
                         Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i],
                         Psat=VaporPressures[i], CASRN=CASs[i],
-                        eos=enclosed_eoss[i], **user_chemical_property_lookup(CASs[i], 'VolumeLiquid'))
+                        eos=enclosed_eoss[i], **user_chemical_property_lookup(CASs[i], "VolumeLiquid"))
                         for i in range(N)]
 
     Vml_Tbs = [VolumeLiquids[i].T_dependent_property(Tbs[i]) if Tbs[i] is not None else None
@@ -233,7 +233,7 @@ def _from_IDs(IDs, correlations=False):
     rhol_STPs_mass = [1e-3*MW/V if V is not None else None for V, MW in zip(Vml_STPs, MWs)]
     rhol_60Fs_mass = [1e-3*MW/V if V is not None else None for V, MW in zip(Vml_60Fs, MWs)]
 
-    VolumeSolids = [VolumeSolid(CASRN=CASs[i], MW=MWs[i], Tt=Tts[i], Vml_Tt=Vml_Tms[i], **user_chemical_property_lookup(CASs[i], 'VolumeSolid')) for i in range(N)]
+    VolumeSolids = [VolumeSolid(CASRN=CASs[i], MW=MWs[i], Tt=Tts[i], Vml_Tt=Vml_Tms[i], **user_chemical_property_lookup(CASs[i], "VolumeSolid")) for i in range(N)]
     Vms_Tms = [VolumeSolids[i].T_dependent_property(Tms[i]) if Tms[i] is not None else None for i in range(N)]
     rhos_Tms = [1.0/V if V is not None else None for V in Vms_Tms]
     rhos_Tms_mass = [1e-3*MW/V if V is not None else None for V, MW in zip(Vms_Tms, MWs)]
@@ -252,13 +252,13 @@ def _from_IDs(IDs, correlations=False):
 
     Hf_STPs, Hf_STPs_mass = [None]*N, [None]*N
     for i in range(N):
-        if phase_STPs[i] == 'g':
+        if phase_STPs[i] == "g":
             Hf_STPs[i] = Hfgs[i]
             Hf_STPs_mass[i] = Hfgs_mass[i]
-        elif phase_STPs[i] == 'l':
+        elif phase_STPs[i] == "l":
             Hf_STPs[i] = Hfls[i]
             Hf_STPs_mass[i] = Hfls_mass[i]
-        elif phase_STPs[i] == 's':
+        elif phase_STPs[i] == "s":
             Hf_STPs[i] = Hfss[i]
             Hf_STPs_mass[i] = Hfss_mass[i]
 
@@ -295,18 +295,18 @@ def _from_IDs(IDs, correlations=False):
 
 
     HeatCapacityGases = [HeatCapacityGas(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i],
-                                            **user_chemical_property_lookup(CASs[i], 'HeatCapacityGas')) for i in range(N)]
+                                            **user_chemical_property_lookup(CASs[i], "HeatCapacityGas")) for i in range(N)]
 
     HeatCapacitySolids = [HeatCapacitySolid(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i],
-                                            **user_chemical_property_lookup(CASs[i], 'HeatCapacitySolid')) for i in range(N)]
+                                            **user_chemical_property_lookup(CASs[i], "HeatCapacitySolid")) for i in range(N)]
     HeatCapacityLiquids = [HeatCapacityLiquid(CASRN=CASs[i], MW=MWs[i], similarity_variable=similarity_variables[i], Tc=Tcs[i], omega=omegas[i],
                                                 Cpgm=HeatCapacityGases[i],
-                                                **user_chemical_property_lookup(CASs[i], 'HeatCapacityLiquid')) for i in range(N)]
+                                                **user_chemical_property_lookup(CASs[i], "HeatCapacityLiquid")) for i in range(N)]
 
 
     EnthalpySublimations = [EnthalpySublimation(CASRN=CASs[i], Tm=Tms[i], Tt=Tts[i],
                                                     Cpg=HeatCapacityGases[i], Cps=HeatCapacitySolids[i],
-                                                    Hvap=EnthalpyVaporizations[i], **user_chemical_property_lookup(CASs[i], 'EnthalpySublimation'))
+                                                    Hvap=EnthalpyVaporizations[i], **user_chemical_property_lookup(CASs[i], "EnthalpySublimation"))
                             for i in range(N)]
 
 
@@ -324,7 +324,7 @@ def _from_IDs(IDs, correlations=False):
         except:
             pass
     Hcs_mass = [Hc*1000.0/MW if Hc is not None else None for Hc, MW in zip(Hcs, MWs)]
-    Hcs_lower = [LHV_from_HHV(Hcs[i], combustion_stoichiometries[i].get('H2O', 0.0)) if Hcs[i] is not None else None
+    Hcs_lower = [LHV_from_HHV(Hcs[i], combustion_stoichiometries[i].get("H2O", 0.0)) if Hcs[i] is not None else None
                     for i in range(N)]
     Hcs_lower_mass = [Hc*1000.0/MW if Hc is not None else None for Hc, MW in zip(Hcs_lower, MWs)]
 
@@ -365,11 +365,11 @@ def _from_IDs(IDs, correlations=False):
     UNIFAC_Dortmund_groups = []
     PSRK_groups = []
     for CAS in CASs:
-        assignment = UNIFAC_group_assignment_DDBST(CAS, 'UNIFAC')
+        assignment = UNIFAC_group_assignment_DDBST(CAS, "UNIFAC")
         UNIFAC_groups.append(assignment)
-        assignment = UNIFAC_group_assignment_DDBST(CAS, 'MODIFIED_UNIFAC')
+        assignment = UNIFAC_group_assignment_DDBST(CAS, "MODIFIED_UNIFAC")
         UNIFAC_Dortmund_groups.append(assignment)
-        assignment = UNIFAC_group_assignment_DDBST(CAS, 'PSRK')
+        assignment = UNIFAC_group_assignment_DDBST(CAS, "PSRK")
         PSRK_groups.append(assignment)
 
     UNIFAC_Rs, UNIFAC_Qs = [None]*N, [None]*N
@@ -386,7 +386,7 @@ def _from_IDs(IDs, correlations=False):
 
     SurfaceTensions = [SurfaceTension(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i],
                         omega=omegas[i], StielPolar=StielPolars[i], Hvap_Tb=Hvap_Tbs[i], Vml=VolumeLiquids[i],
-                        Cpl=HeatCapacityLiquids[i], **user_chemical_property_lookup(CASs[i], 'SurfaceTension'))
+                        Cpl=HeatCapacityLiquids[i], **user_chemical_property_lookup(CASs[i], "SurfaceTension"))
                                             for i in range(N)]
 
     sigma_STPs = [SurfaceTensions[i].T_dependent_property(298.15) for i in range(N)]
@@ -456,28 +456,28 @@ def _from_IDs(IDs, correlations=False):
         return constants
 
     SublimationPressures = [SublimationPressure(CASRN=CASs[i], Tt=Tts[i], Pt=Pts[i], Hsub_t=Hsub_Tts[i],
-                                                **user_chemical_property_lookup(CASs[i], 'SublimationPressure'))
+                                                **user_chemical_property_lookup(CASs[i], "SublimationPressure"))
                                                 for i in range(N)]
 
-    PermittivityLiquids = [PermittivityLiquid(CASRN=CASs[i], **user_chemical_property_lookup(CASs[i], 'PermittivityLiquid')) for i in range(N)]
+    PermittivityLiquids = [PermittivityLiquid(CASRN=CASs[i], **user_chemical_property_lookup(CASs[i], "PermittivityLiquid")) for i in range(N)]
 
     ViscosityLiquids = [ViscosityLiquid(CASRN=CASs[i], MW=MWs[i], Tm=Tms[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], omega=omegas[i], Psat=VaporPressures[i],
-                                        Vml=VolumeLiquids[i], **user_chemical_property_lookup(CASs[i], 'ViscosityLiquid')) for i in range(N)]
+                                        Vml=VolumeLiquids[i], **user_chemical_property_lookup(CASs[i], "ViscosityLiquid")) for i in range(N)]
 
     ViscosityGases = [ViscosityGas(CASRN=CASs[i], MW=MWs[i], Tc=Tcs[i], Pc=Pcs[i], Zc=Zcs[i], dipole=dipoles[i],
-                                    Vmg=VolumeGases[i], **user_chemical_property_lookup(CASs[i], 'ViscosityGas')) for i in range(N)]
+                                    Vmg=VolumeGases[i], **user_chemical_property_lookup(CASs[i], "ViscosityGas")) for i in range(N)]
 
     ThermalConductivityLiquids = [ThermalConductivityLiquid(CASRN=CASs[i], MW=MWs[i], Tm=Tms[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i],
-                                                            omega=omegas[i], Hfus=Hfus_Tms[i], **user_chemical_property_lookup(CASs[i], 'ThermalConductivityLiquid'))
+                                                            omega=omegas[i], Hfus=Hfus_Tms[i], **user_chemical_property_lookup(CASs[i], "ThermalConductivityLiquid"))
                                 for i in range(N)]
 
-    ThermalConductivitySolids = [ThermalConductivitySolid(CASRN=CASs[i], **user_chemical_property_lookup(CASs[i], 'ThermalConductivitySolid'))
+    ThermalConductivitySolids = [ThermalConductivitySolid(CASRN=CASs[i], **user_chemical_property_lookup(CASs[i], "ThermalConductivitySolid"))
                                 for i in range(N)]
 
     ThermalConductivityGases =[ThermalConductivityGas(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i],
                                                         Zc=Zcs[i], omega=omegas[i], dipole=dipoles[i], Vmg=VolumeGases[i],
                                                         Cpgm=HeatCapacityGases[i], mug=ViscosityGases[i],
-                                                        **user_chemical_property_lookup(CASs[i], 'ThermalConductivityGas'))
+                                                        **user_chemical_property_lookup(CASs[i], "ThermalConductivityGas"))
                                                         for i in range(N)]
     properties = PropertyCorrelationsPackage(constants, VaporPressures=VaporPressures, SublimationPressures=SublimationPressures,
                                                 VolumeGases=VolumeGases, VolumeLiquids=VolumeLiquids, VolumeSolids=VolumeSolids,
@@ -507,46 +507,46 @@ warn_chemicals_msg ="""`chemicals <https://github.com/CalebBell/chemicals>`_ is 
 class ChemicalConstantsPackage:
     non_vector_properties = (
         # Basic Identifiers
-        'names', 'aliases', 'MWs', 'formulas', 'CASs', 'CASis', 'PubChems', 'smiless', 'InChIs', 'InChI_Keys',
+        "names", "aliases", "MWs", "formulas", "CASs", "CASis", "PubChems", "smiless", "InChIs", "InChI_Keys",
         # Physical State Properties  
-        'phase_STPs', 'atomss', 'charges', 'functional_groups',
+        "phase_STPs", "atomss", "charges", "functional_groups",
         # Critical Properties
-        'Tcs', 'Pcs', 'Vcs', 'Zcs', 'rhocs', 'rhocs_mass',
+        "Tcs", "Pcs", "Vcs", "Zcs", "rhocs", "rhocs_mass",
         # Phase Change Properties
-        'Tms', 'Tbs', 'Tts', 'Pts', 'Tflashs', 'Tautoignitions',
+        "Tms", "Tbs", "Tts", "Pts", "Tflashs", "Tautoignitions",
         # Thermodynamic Properties
-        'Hfus_Tms', 'Hfus_Tms_mass', 'Hvap_Tbs', 'Hvap_Tbs_mass', 'Hvap_298s', 'Hvap_298s_mass',
-        'Hsub_Tts', 'Hsub_Tts_mass', 'Hfgs', 'Hfgs_mass', 'Gfgs', 'Gfgs_mass', 'Sfgs', 'Sfgs_mass',
-        'S0gs', 'S0gs_mass', 'Hf_STPs', 'Hf_STPs_mass', 'Hcs', 'Hcs_mass', 'Hcs_lower', 'Hcs_lower_mass',
+        "Hfus_Tms", "Hfus_Tms_mass", "Hvap_Tbs", "Hvap_Tbs_mass", "Hvap_298s", "Hvap_298s_mass",
+        "Hsub_Tts", "Hsub_Tts_mass", "Hfgs", "Hfgs_mass", "Gfgs", "Gfgs_mass", "Sfgs", "Sfgs_mass",
+        "S0gs", "S0gs_mass", "Hf_STPs", "Hf_STPs_mass", "Hcs", "Hcs_mass", "Hcs_lower", "Hcs_lower_mass",
         # Volumetric Properties
-        'Vml_STPs', 'Vml_60Fs', 'Vml_Tms', 'Vms_Tms', 'Vmg_STPs',
+        "Vml_STPs", "Vml_60Fs", "Vml_Tms", "Vms_Tms", "Vmg_STPs",
         # Density Properties  
-        'rhol_STPs', 'rhol_STPs_mass', 'rhol_60Fs', 'rhol_60Fs_mass',
-        'rhog_STPs', 'rhog_STPs_mass', 'rhos_Tms', 'rhos_Tms_mass',
+        "rhol_STPs", "rhol_STPs_mass", "rhol_60Fs", "rhol_60Fs_mass",
+        "rhog_STPs", "rhog_STPs_mass", "rhos_Tms", "rhos_Tms_mass",
         # Surface and Interface Properties
-        'sigma_STPs', 'sigma_Tbs', 'sigma_Tms', 'Parachors',
+        "sigma_STPs", "sigma_Tbs", "sigma_Tms", "Parachors",
         # Transport Properties
-        'conductivities', 'conductivity_Ts', 'RIs', 'RI_Ts',
+        "conductivities", "conductivity_Ts", "RIs", "RI_Ts",
         # Safety Data
-        'LFLs', 'UFLs', 'TWAs', 'STELs', 'Ceilings', 'Skins', 'Carcinogens', 'legal_statuses',
+        "LFLs", "UFLs", "TWAs", "STELs", "Ceilings", "Skins", "Carcinogens", "legal_statuses",
         # Environmental Properties
-        'economic_statuses', 'GWPs', 'ODPs',
+        "economic_statuses", "GWPs", "ODPs",
         # Molecular Interaction Properties
-        'logPs', 'Psat_298s', 'dipoles', 'Stockmayers', 'molecular_diameters', 'omegas', 'StielPolars', 'solubility_parameters',
+        "logPs", "Psat_298s", "dipoles", "Stockmayers", "molecular_diameters", "omegas", "StielPolars", "solubility_parameters",
         # Van der Waals Properties
-        'Van_der_Waals_volumes', 'Van_der_Waals_areas',
+        "Van_der_Waals_volumes", "Van_der_Waals_areas",
         # UNIFAC and Group Contribution
-        'UNIFAC_groups', 'UNIFAC_Dortmund_groups', 'PSRK_groups', 'UNIFAC_Rs', 'UNIFAC_Qs',
+        "UNIFAC_groups", "UNIFAC_Dortmund_groups", "PSRK_groups", "UNIFAC_Rs", "UNIFAC_Qs",
         # Other Properties
-        'similarity_variables',
+        "similarity_variables",
     )
 
     __full_path__ = f"{__module__}.{__qualname__}"
-    properties = ('atom_fractions',) + non_vector_properties
+    properties = ("atom_fractions",) + non_vector_properties
     """Tuple of all properties that can be held by this object."""
 
-    __slots__ = properties + ('N', 'cmps', 'water_index', 'n_atoms') + ('_hash', '_CAS_to_index', '_unique_atoms')
-    non_vectors = ('atom_fractions',)
+    __slots__ = properties + ("N", "cmps", "water_index", "n_atoms") + ("_hash", "_CAS_to_index", "_unique_atoms")
+    non_vectors = ("atom_fractions",)
     non_vectors_set = set(non_vectors)
     json_version = 1
     non_json_attributes = []
@@ -571,14 +571,14 @@ class ChemicalConstantsPackage:
         return new
 
     def _custom_as_json(self, d, cache):
-        del d['cmps']
+        del d["cmps"]
         # economic_statuses
-        for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
+        for k in ("PSRK_groups", "UNIFAC_Dortmund_groups", "UNIFAC_groups"):
             # keys are stored as strings and not ints
             d[k] = [{str(k): v for k, v in r.items()} if r is not None else r for r in d[k]]
 
-        if 'functional_groups' in d:
-            d['functional_groups'] = [list(s) if s is not None else None for s in d['functional_groups']]
+        if "functional_groups" in d:
+            d["functional_groups"] = [list(s) if s is not None else None for s in d["functional_groups"]]
         # This is not so much a performance optimization as an improvement on file size
         # and readability. Do not remove it! Comparing against an empty list is the
         # fastest way to check as of 2023.
@@ -597,19 +597,19 @@ class ChemicalConstantsPackage:
         for k in self.non_vector_properties:
             if not hasattr(self, k):
                 setattr(self, k, empty_list)
-        for k in ('TWAs', 'STELs'):
+        for k in ("TWAs", "STELs"):
             # tuple gets converted to a json list
             l = getattr(self, k)
             setattr(self, k, [tuple(v) if v is not None else v for v in l])
-        for k in ('PSRK_groups', 'UNIFAC_Dortmund_groups', 'UNIFAC_groups'):
+        for k in ("PSRK_groups", "UNIFAC_Dortmund_groups", "UNIFAC_groups"):
             obj = getattr(self, k)
             obj = [{int(k): v for k, v in r.items()} if r is not None else r for r in obj]
             setattr(self, k, obj)
-        if hasattr(self, 'functional_groups'):
+        if hasattr(self, "functional_groups"):
             self.functional_groups = [set(lst) if lst is not None else None for lst in self.functional_groups]
 
     def as_json(self, cache=None, option=0):
-        r'''Method to create a JSON friendly serialization of the chemical constants
+        r"""Method to create a JSON friendly serialization of the chemical constants
         package which can be stored, and reloaded later.
 
         Returns
@@ -625,12 +625,12 @@ class ChemicalConstantsPackage:
         >>> import json
         >>> constants = ChemicalConstantsPackage(MWs=[18.01528, 106.165], names=['water', 'm-xylene'])
         >>> string = json.dumps(constants.as_json())
-        '''
+        """
         return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
     def from_json(cls, json_repr, cache=None):
-        r'''Method to create a ChemicalConstantsPackage from a JSON
+        r"""Method to create a ChemicalConstantsPackage from a JSON
         serialization of another ChemicalConstantsPackage.
 
         Parameters
@@ -655,7 +655,7 @@ class ChemicalConstantsPackage:
         >>> string = json.dumps(constants.as_json())
         >>> new_constants  = ChemicalConstantsPackage.from_json(json.loads(string))
         >>> assert hash(new_constants) == hash(constants)
-        '''
+        """
         return JsonOptEncodable.from_json(json_repr, cache)
 
     def __hash__(self):
@@ -673,7 +673,7 @@ class ChemicalConstantsPackage:
         return self.__hash__() == hash(other)
 
     def __add__(self, b):
-        r'''Method to create a new :obj:`ChemicalConstantsPackage` object
+        r"""Method to create a new :obj:`ChemicalConstantsPackage` object
         from two other :obj:`ChemicalConstantsPackage` objects.
 
 
@@ -690,10 +690,10 @@ class ChemicalConstantsPackage:
         >>> a = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane'])
         >>> b = ChemicalConstantsPackage.constants_from_IDs(IDs=['toluene'])
         >>> c = a + b
-        '''
+        """
         if not isinstance(b, ChemicalConstantsPackage):
-            raise TypeError('Adding to a ChemicalConstantsPackage requires that the other object '
-                            'also be a ChemicalConstantsPackage.')
+            raise TypeError("Adding to a ChemicalConstantsPackage requires that the other object "
+                            "also be a ChemicalConstantsPackage.")
         a = self
         a_dict = a.as_dict()
         b_dict = b.as_dict()
@@ -703,7 +703,7 @@ class ChemicalConstantsPackage:
         return ChemicalConstantsPackage(**kwargs)
 
     def with_new_constants(self, **kwargs):
-        r'''Method to construct a new ChemicalConstantsPackage that replaces or
+        r"""Method to construct a new ChemicalConstantsPackage that replaces or
         adds one or more properties for all components.
 
         Parameters
@@ -724,7 +724,7 @@ class ChemicalConstantsPackage:
         >>> base = ChemicalConstantsPackage(MWs=[18.01528, 106.165, 106.165, 106.165], names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], omegas=[0.344, 0.3118, 0.324, 0.331], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tcs=[647.14, 630.3, 616.2, 617.0])
         >>> base.with_new_constants(Tms=[40.0, 20.0, 10.0, 30.0], omegas=[0.0, 0.1, 0.2, 0.3])
         ChemicalConstantsPackage(names=['water', 'o-xylene', 'p-xylene', 'm-xylene'], MWs=[18.01528, 106.165, 106.165, 106.165], Tcs=[647.14, 630.3, 616.2, 617.0], Pcs=[22048320.0, 3732000.0, 3511000.0, 3541000.0], Tms=[40.0, 20.0, 10.0, 30.0], omegas=[0.0, 0.1, 0.2, 0.3])
-        '''
+        """
         new = {}
         properties = self.non_vector_properties
         for p in properties:
@@ -736,7 +736,7 @@ class ChemicalConstantsPackage:
 
 
     def subset(self, idxs=None, properties=None):
-        r'''Method to construct a new ChemicalConstantsPackage that removes
+        r"""Method to construct a new ChemicalConstantsPackage that removes
         all components not specified in the `idxs` argument. Although this
         class has a great many attributes, it is often sufficient to work with
         a subset of those properties; and if a list of properties is provided,
@@ -789,15 +789,15 @@ class ChemicalConstantsPackage:
         Reverse their order
 
         >>> reordered = base.subset([3, 2, 1, 0])
-        '''
+        """
         if idxs is None:
             idxs = self.cmps
         if properties is None:
             properties = self.non_vector_properties
         else:
             properties = list(properties)
-            if 'MWs' not in properties:
-                properties.append('MWs')
+            if "MWs" not in properties:
+                properties.append("MWs")
         is_slice = isinstance(idxs, slice)
         if not is_slice:
             is_one = len(idxs) == 1
@@ -825,24 +825,24 @@ class ChemicalConstantsPackage:
     def __repr__(self):
         return self._make_str()
 
-    def _make_str(self, delim=', ', properties=None):
-        '''Method to create a new string representing the
+    def _make_str(self, delim=", ", properties=None):
+        """Method to create a new string representing the
         object.
-        '''
+        """
         if properties is None:
             properties = self.properties
 
 
-        s = 'ChemicalConstantsPackage('
+        s = "ChemicalConstantsPackage("
         for k in properties:
             if any(i is not None for i in getattr(self, k)):
-                s += f'{k}={getattr(self, k)}{delim}'
-        s = s[:-2] + ')'
+                s += f"{k}={getattr(self, k)}{delim}"
+        s = s[:-2] + ")"
         return s
 
     def compound_index(self, CAS=None, name=None, smiles=None, InChI=None,
                        InChI_Key=None, PubChem=None):
-        r'''Method to retrieve the index of a compound given one of the
+        r"""Method to retrieve the index of a compound given one of the
         optional identifiers for the compound.
 
         Parameters
@@ -871,7 +871,7 @@ class ChemicalConstantsPackage:
             If no identifier is provided for any argument, this is raised
         IndexError
             If no match is found for the provided identifier, this is raised
-        '''
+        """
         if CAS is not None:
             CAS_to_index = self.CAS_to_index
             return CAS_to_index[CAS]
@@ -890,7 +890,7 @@ class ChemicalConstantsPackage:
 
     @property
     def CAS_to_index(self):
-        r'''Dictionary of CAS: index, used for efficiently
+        r"""Dictionary of CAS: index, used for efficiently
         looking up which index a specified CAS number is in.
         This can save a lot of time, but does take a little more memory.
 
@@ -898,7 +898,7 @@ class ChemicalConstantsPackage:
         -------
         CAS_to_index : dict[str: int]
             Dictionary for CAS to index lookups, [-]
-        '''
+        """
         try:
             return self._CAS_to_index
         except:
@@ -907,14 +907,14 @@ class ChemicalConstantsPackage:
 
     @property
     def unique_atoms(self):
-        r'''Tuple of all of the atoms in the package. Useful for iterating
+        r"""Tuple of all of the atoms in the package. Useful for iterating
         over all the atom dictionaries.
 
         Returns
         -------
         unique_atoms : tuple
             Unique atoms, [-]
-        '''
+        """
         try:
             return self._unique_atoms
         except:
@@ -926,7 +926,7 @@ class ChemicalConstantsPackage:
 
     @staticmethod
     def constants_from_IDs(IDs):
-        r'''Method to construct a new `ChemicalConstantsPackage` with loaded
+        r"""Method to construct a new `ChemicalConstantsPackage` with loaded
         parameters from the `chemicals library <https://github.com/CalebBell/chemicals>`_,
         using whatever default methods and values happen to be in that library.
         Expect values to change over time.
@@ -951,7 +951,7 @@ class ChemicalConstantsPackage:
         Examples
         --------
         >>> constants = ChemicalConstantsPackage.constants_from_IDs(IDs=['water', 'hexane'])
-        '''
+        """
         return ChemicalConstantsPackage._from_IDs(IDs, correlations=False)
 
     try:
@@ -961,7 +961,7 @@ class ChemicalConstantsPackage:
 
     @staticmethod
     def correlations_from_IDs(IDs):
-        r'''Method to construct a new `PropertyCorrelationsPackage` with loaded
+        r"""Method to construct a new `PropertyCorrelationsPackage` with loaded
         parameters from the `chemicals library <https://github.com/CalebBell/chemicals>`_,
         using whatever default methods and values happen to be in that library.
         Expect values to change over time.
@@ -986,7 +986,7 @@ class ChemicalConstantsPackage:
         Examples
         --------
         >>> correlations = ChemicalConstantsPackage.constants_from_IDs(IDs=['ethanol', 'methanol'])
-        '''
+        """
         return ChemicalConstantsPackage._from_IDs(IDs, correlations=True)[1]
     try:
         correlations_from_IDs.__func__.__doc__ = correlations_from_IDs.__func__.__doc__ %(warn_chemicals_msg)
@@ -995,7 +995,7 @@ class ChemicalConstantsPackage:
 
     @staticmethod
     def from_IDs(IDs):
-        r'''Method to construct a new `ChemicalConstantsPackage` and
+        r"""Method to construct a new `ChemicalConstantsPackage` and
         `PropertyCorrelationsPackage` with loaded
         parameters from the `chemicals library <https://github.com/CalebBell/chemicals>`_,
         using whatever default methods and values happen to be in that library.
@@ -1023,7 +1023,7 @@ class ChemicalConstantsPackage:
         Examples
         --------
         >>> constants, correlations = ChemicalConstantsPackage.from_IDs(IDs=['water', 'decane'])
-        '''
+        """
         return ChemicalConstantsPackage._from_IDs(IDs, correlations=True)
 
     try:
@@ -1298,107 +1298,107 @@ class ChemicalConstantsPackage:
 
 
 
-constants_docstrings = {'N': (int, "Number of components in the package", "[-]", None),
-'cmps': (range, "Iterator over all components", "[-]", None),
-'atom_fractions': ("list[dict]", "Breakdown of each component into its elemental fractions, as a dict", "[-]", None),
-'atomss': ("list[dict]", "Breakdown of each component into its elements and their counts, as a dict", "[-]", None),
-'Carcinogens': ("list[dict]", "Status of each component in cancer causing registries", "[-]", None),
-'CASs': ("list[str]", "CAS registration numbers for each component", "[-]", None),
-'CASis': ("list[int]", "CAS registration numbers as integeres for each component", "[-]", None),
-'Ceilings': ("list[tuple[(float, str)]]", "Ceiling exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
-'charges': ("list[float]", "Charge number (valence) for each component", "[-]", None),
-'conductivities': ("list[float]", "Electrical conductivities for each component", "[S/m]", None),
-'conductivity_Ts': ("list[float]", "Temperatures at which the electrical conductivities for each component were measured", "[K]", None),
-'dipoles': ("list[float]", "Dipole moments for each component", "[debye]", None),
-'economic_statuses': ("list[dict]", "Status of each component in in relation to import and export from various regions", "[-]", None),
-'formulas': ("list[str]", "Formulas of each component", "[-]", None),
-'Gfgs': ("list[float]", "Ideal gas standard molar Gibbs free energy of formation for each component", "[J/mol]", None),
-'Gfgs_mass': ("list[float]", "Ideal gas standard Gibbs free energy of formation for each component", "[J/kg]", None),
-'GWPs': ("list[float]", "Global Warming Potentials for each component (impact/mass chemical)/(impact/mass CO2)", "[-]", None),
-'Hcs': ("list[float]", "Higher standard molar heats of combustion for each component", "[J/mol]", None),
-'Hcs_mass': ("list[float]", "Higher standard heats of combustion for each component", "[J/kg]", None),
-'Hcs_lower': ("list[float]", "Lower standard molar heats of combustion for each component", "[J/mol]", None),
-'Hcs_lower_mass': ("list[float]", "Lower standard heats of combustion for each component", "[J/kg]", None),
-'Hfgs': ("list[float]", "Ideal gas standard molar enthalpies of formation for each component", "[J/mol]", None),
-'Hfgs_mass': ("list[float]", "Ideal gas standard enthalpies of formation for each component", "[J/kg]", None),
-'Hfus_Tms': ("list[float]", "Molar heats of fusion for each component at their respective melting points", "[J/mol]", None),
-'Hfus_Tms_mass': ("list[float]", "Heats of fusion for each component at their respective melting points", "[J/kg]", None),
-'Hsub_Tts': ("list[float]", "Heats of sublimation for each component at their respective triple points", "[J/mol]", None),
-'Hsub_Tts_mass': ("list[float]", "Heats of sublimation for each component at their respective triple points", "[J/kg]", None),
-'Hvap_298s': ("list[float]", "Molar heats of vaporization for each component at 298.15 K", "[J/mol]", None),
-'Hvap_298s_mass': ("list[float]", "Heats of vaporization for each component at 298.15 K", "[J/kg]", None),
-'Hvap_Tbs': ("list[float]", "Molar heats of vaporization for each component at their respective normal boiling points", "[J/mol]", None),
-'Hvap_Tbs_mass': ("list[float]", "Heats of vaporization for each component at their respective normal boiling points", "[J/kg]", None),
-'InChI_Keys': ("list[str]", "InChI Keys for each component", "[-]", None),
-'InChIs': ("list[str]", "InChI strings for each component", "[-]", None),
-'legal_statuses': ("list[dict]", "Status of each component in in relation to import and export rules from various regions", "[-]", None),
-'LFLs': ("list[float]", "Lower flammability limits for each component", "[-]", None),
-'logPs': ("list[float]", "Octanol-water partition coefficients for each component", "[-]", None),
-'molecular_diameters': ("list[float]", "Lennard-Jones molecular diameters for each component", "[angstrom]", None),
-'MWs': ("list[float]", "Molecular weights for each component", "[g/mol]", None),
-'names': ("list[str]", "Names for each component", "[-]", None),
-'aliases': ("list[str]", "Aliases for each component", "[-]", None),
-'ODPs': ("list[float]", "Ozone Depletion Potentials for each component (impact/mass chemical)/(impact/mass CFC-11)", "[-]", None),
-'omegas': ("list[float]", "Acentric factors for each component", "[-]", None),
-'Parachors': ("list[float]", "Parachors for each component", "[N^0.25*m^2.75/mol]", None),
-'Pcs': ("list[float]", "Critical pressures for each component", "[Pa]", None),
-'phase_STPs': ("list[str]", "Standard states ('g', 'l', or 's') for each component", "[-]", None),
-'Psat_298s': ("list[float]", "Vapor pressures for each component at 298.15 K", "[Pa]", None),
-'PSRK_groups': ("list[dict]", "PSRK subgroup: count groups for each component", "[-]", None),
-'Pts': ("list[float]", "Triple point pressures for each component", "[Pa]", None),
-'PubChems': ("list[int]", "Pubchem IDs for each component", "[-]", None),
-'rhocs': ("list[float]", "Molar densities at the critical point for each component", "[mol/m^3]", None),
-'rhocs_mass': ("list[float]", "Densities at the critical point for each component", "[kg/m^3]", None),
-'rhol_STPs': ("list[float]", "Molar liquid densities at STP for each component", "[mol/m^3]", None),
-'rhol_STPs_mass': ("list[float]", "Liquid densities at STP for each component", "[kg/m^3]", None),
-'RIs': ("list[float]", "Refractive indexes for each component", "[-]", None),
-'RI_Ts': ("list[float]", "Temperatures at which the refractive indexes were reported for each component", "[K]", None),
-'S0gs': ("list[float]", "Ideal gas absolute molar entropies at 298.15 K at 1 atm for each component", "[J/(mol*K)]", None),
-'S0gs_mass': ("list[float]", "Ideal gas absolute entropies at 298.15 K at 1 atm for each component", "[J/(kg*K)]", None),
-'Sfgs': ("list[float]", "Ideal gas standard molar entropies of formation for each component", "[J/(mol*K)]", None),
-'Sfgs_mass': ("list[float]", "Ideal gas standard entropies of formation for each component", "[J/(kg*K)]", None),
-'solubility_parameters': ("list[float]", "Solubility parameters for each component at 298.15 K", "[Pa^0.5]", None),
-'similarity_variables': ("list[float]", "Similarity variables for each component", "[mol/g]", None),
-'Skins': ("list[bool]", "Whether each compound can be absorbed through the skin or not", "[-]", None),
-'smiless': ("list[str]", "SMILES identifiers for each component", "[-]", None),
-'STELs': ("list[tuple[(float, str)]]", "Short term exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
-'StielPolars': ("list[float]", "Stiel polar factors for each component", "[-]", None),
-'Stockmayers': ("list[float]", "Lennard-Jones Stockmayer parameters (depth of potential-energy minimum over k) for each component", "[K]", None),
-'Tautoignitions': ("list[float]", "Autoignition temperatures for each component", "[K]", None),
-'Tbs': ("list[float]", "Boiling temperatures for each component", "[K]", None),
-'Tcs': ("list[float]", "Critical temperatures for each component", "[K]", None),
-'Tms': ("list[float]", "Melting temperatures for each component", "[K]", None),
-'Tflashs': ("list[float]", "Flash point temperatures for each component", "[K]", None),
-'Tts': ("list[float]", "Triple point temperatures for each component", "[K]", None),
-'TWAs': ("list[tuple[(float, str)]]", "Time-weighted average exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
-'UFLs': ("list[float]", "Upper flammability limits for each component", "[-]", None),
-'UNIFAC_Dortmund_groups': ("list[dict]", "UNIFAC_Dortmund_group: count groups for each component", "[-]", None),
-'UNIFAC_groups': ("list[dict]", "UNIFAC_group: count groups for each component", "[-]", None),
-'UNIFAC_Rs': ("list[float]", "UNIFAC `R` parameters for each component", "[-]", None),
-'UNIFAC_Qs': ("list[float]", "UNIFAC `Q` parameters for each component", "[-]", None),
-'Van_der_Waals_areas': ("list[float]", "Unnormalized Van der Waals areas for each component", "[m^2/mol]", None),
-'Van_der_Waals_volumes': ("list[float]", "Unnormalized Van der Waals volumes for each component", "[m^3/mol]", None),
-'Vcs': ("list[float]", "Critical molar volumes for each component", "[m^3/mol]", None),
-'Vml_STPs': ("list[float]", "Liquid molar volumes for each component at STP", "[m^3/mol]", None),
-'Vml_Tms': ("list[float]", "Liquid molar volumes for each component at their respective melting points", "[m^3/mol]", None),
-'Vms_Tms': ("list[float]", "Solid molar volumes for each component at their respective melting points", "[m^3/mol]", None),
-'Vml_60Fs': ("list[float]", "Liquid molar volumes for each component at 60 °F", "[m^3/mol]", None),
-'rhos_Tms': ("list[float]", "Solid molar densities for each component at their respective melting points", "[mol/m^3]", None),
-'rhol_60Fs': ("list[float]", "Liquid molar densities for each component at 60 °F", "[mol/m^3]", None),
-'rhol_60Fs_mass': ("list[float]", "Liquid mass densities for each component at 60 °F", "[kg/m^3]", None),
-'rhos_Tms_mass': ("list[float]", "Solid mass densities for each component at their melting point", "[kg/m^3]", None),
-'Zcs': ("list[float]", "Critical compressibilities for each component", "[-]", None),
-'n_atoms': ("int", "Number of total atoms in a collection of 1 molecule of each species", "[-]", None),
-'water_index': ("int", "Index of water in the package", "[-]", None),
-'Vmg_STPs': ("list[float]", "Gas molar volumes for each component at STP; metastable if normally another state", "[m^3/mol]", None),
-'rhog_STPs': ("list[float]", "Molar gas densities at STP for each component; metastable if normally another state", "[mol/m^3]", None),
-'rhog_STPs_mass': ("list[float]", "Gas densities at STP for each component; metastable if normally another state", "[kg/m^3]", None),
-'sigma_STPs': ("list[float]", "Liquid-air surface tensions at 298.15 K and the higher of 101325 Pa or the saturation pressure", "[N/m]", None),
-'sigma_Tms': ("list[float]", "Liquid-air surface tensions at the melting point and 101325 Pa", "[N/m]", None),
-'sigma_Tbs': ("list[float]", "Liquid-air surface tensions at the normal boiling point and 101325 Pa", "[N/m]", None),
-'Hf_STPs': ("list[float]", "Standard state molar enthalpies of formation for each component", "[J/mol]", None),
-'Hf_STPs_mass': ("list[float]", "Standard state mass enthalpies of formation for each component", "[J/kg]", None),
-'functional_groups': ("list[set[str]]", "Set of functional group constants present in each component", "[-]", None),
+constants_docstrings = {"N": (int, "Number of components in the package", "[-]", None),
+"cmps": (range, "Iterator over all components", "[-]", None),
+"atom_fractions": ("list[dict]", "Breakdown of each component into its elemental fractions, as a dict", "[-]", None),
+"atomss": ("list[dict]", "Breakdown of each component into its elements and their counts, as a dict", "[-]", None),
+"Carcinogens": ("list[dict]", "Status of each component in cancer causing registries", "[-]", None),
+"CASs": ("list[str]", "CAS registration numbers for each component", "[-]", None),
+"CASis": ("list[int]", "CAS registration numbers as integeres for each component", "[-]", None),
+"Ceilings": ("list[tuple[(float, str)]]", "Ceiling exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
+"charges": ("list[float]", "Charge number (valence) for each component", "[-]", None),
+"conductivities": ("list[float]", "Electrical conductivities for each component", "[S/m]", None),
+"conductivity_Ts": ("list[float]", "Temperatures at which the electrical conductivities for each component were measured", "[K]", None),
+"dipoles": ("list[float]", "Dipole moments for each component", "[debye]", None),
+"economic_statuses": ("list[dict]", "Status of each component in in relation to import and export from various regions", "[-]", None),
+"formulas": ("list[str]", "Formulas of each component", "[-]", None),
+"Gfgs": ("list[float]", "Ideal gas standard molar Gibbs free energy of formation for each component", "[J/mol]", None),
+"Gfgs_mass": ("list[float]", "Ideal gas standard Gibbs free energy of formation for each component", "[J/kg]", None),
+"GWPs": ("list[float]", "Global Warming Potentials for each component (impact/mass chemical)/(impact/mass CO2)", "[-]", None),
+"Hcs": ("list[float]", "Higher standard molar heats of combustion for each component", "[J/mol]", None),
+"Hcs_mass": ("list[float]", "Higher standard heats of combustion for each component", "[J/kg]", None),
+"Hcs_lower": ("list[float]", "Lower standard molar heats of combustion for each component", "[J/mol]", None),
+"Hcs_lower_mass": ("list[float]", "Lower standard heats of combustion for each component", "[J/kg]", None),
+"Hfgs": ("list[float]", "Ideal gas standard molar enthalpies of formation for each component", "[J/mol]", None),
+"Hfgs_mass": ("list[float]", "Ideal gas standard enthalpies of formation for each component", "[J/kg]", None),
+"Hfus_Tms": ("list[float]", "Molar heats of fusion for each component at their respective melting points", "[J/mol]", None),
+"Hfus_Tms_mass": ("list[float]", "Heats of fusion for each component at their respective melting points", "[J/kg]", None),
+"Hsub_Tts": ("list[float]", "Heats of sublimation for each component at their respective triple points", "[J/mol]", None),
+"Hsub_Tts_mass": ("list[float]", "Heats of sublimation for each component at their respective triple points", "[J/kg]", None),
+"Hvap_298s": ("list[float]", "Molar heats of vaporization for each component at 298.15 K", "[J/mol]", None),
+"Hvap_298s_mass": ("list[float]", "Heats of vaporization for each component at 298.15 K", "[J/kg]", None),
+"Hvap_Tbs": ("list[float]", "Molar heats of vaporization for each component at their respective normal boiling points", "[J/mol]", None),
+"Hvap_Tbs_mass": ("list[float]", "Heats of vaporization for each component at their respective normal boiling points", "[J/kg]", None),
+"InChI_Keys": ("list[str]", "InChI Keys for each component", "[-]", None),
+"InChIs": ("list[str]", "InChI strings for each component", "[-]", None),
+"legal_statuses": ("list[dict]", "Status of each component in in relation to import and export rules from various regions", "[-]", None),
+"LFLs": ("list[float]", "Lower flammability limits for each component", "[-]", None),
+"logPs": ("list[float]", "Octanol-water partition coefficients for each component", "[-]", None),
+"molecular_diameters": ("list[float]", "Lennard-Jones molecular diameters for each component", "[angstrom]", None),
+"MWs": ("list[float]", "Molecular weights for each component", "[g/mol]", None),
+"names": ("list[str]", "Names for each component", "[-]", None),
+"aliases": ("list[str]", "Aliases for each component", "[-]", None),
+"ODPs": ("list[float]", "Ozone Depletion Potentials for each component (impact/mass chemical)/(impact/mass CFC-11)", "[-]", None),
+"omegas": ("list[float]", "Acentric factors for each component", "[-]", None),
+"Parachors": ("list[float]", "Parachors for each component", "[N^0.25*m^2.75/mol]", None),
+"Pcs": ("list[float]", "Critical pressures for each component", "[Pa]", None),
+"phase_STPs": ("list[str]", "Standard states ('g', 'l', or 's') for each component", "[-]", None),
+"Psat_298s": ("list[float]", "Vapor pressures for each component at 298.15 K", "[Pa]", None),
+"PSRK_groups": ("list[dict]", "PSRK subgroup: count groups for each component", "[-]", None),
+"Pts": ("list[float]", "Triple point pressures for each component", "[Pa]", None),
+"PubChems": ("list[int]", "Pubchem IDs for each component", "[-]", None),
+"rhocs": ("list[float]", "Molar densities at the critical point for each component", "[mol/m^3]", None),
+"rhocs_mass": ("list[float]", "Densities at the critical point for each component", "[kg/m^3]", None),
+"rhol_STPs": ("list[float]", "Molar liquid densities at STP for each component", "[mol/m^3]", None),
+"rhol_STPs_mass": ("list[float]", "Liquid densities at STP for each component", "[kg/m^3]", None),
+"RIs": ("list[float]", "Refractive indexes for each component", "[-]", None),
+"RI_Ts": ("list[float]", "Temperatures at which the refractive indexes were reported for each component", "[K]", None),
+"S0gs": ("list[float]", "Ideal gas absolute molar entropies at 298.15 K at 1 atm for each component", "[J/(mol*K)]", None),
+"S0gs_mass": ("list[float]", "Ideal gas absolute entropies at 298.15 K at 1 atm for each component", "[J/(kg*K)]", None),
+"Sfgs": ("list[float]", "Ideal gas standard molar entropies of formation for each component", "[J/(mol*K)]", None),
+"Sfgs_mass": ("list[float]", "Ideal gas standard entropies of formation for each component", "[J/(kg*K)]", None),
+"solubility_parameters": ("list[float]", "Solubility parameters for each component at 298.15 K", "[Pa^0.5]", None),
+"similarity_variables": ("list[float]", "Similarity variables for each component", "[mol/g]", None),
+"Skins": ("list[bool]", "Whether each compound can be absorbed through the skin or not", "[-]", None),
+"smiless": ("list[str]", "SMILES identifiers for each component", "[-]", None),
+"STELs": ("list[tuple[(float, str)]]", "Short term exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
+"StielPolars": ("list[float]", "Stiel polar factors for each component", "[-]", None),
+"Stockmayers": ("list[float]", "Lennard-Jones Stockmayer parameters (depth of potential-energy minimum over k) for each component", "[K]", None),
+"Tautoignitions": ("list[float]", "Autoignition temperatures for each component", "[K]", None),
+"Tbs": ("list[float]", "Boiling temperatures for each component", "[K]", None),
+"Tcs": ("list[float]", "Critical temperatures for each component", "[K]", None),
+"Tms": ("list[float]", "Melting temperatures for each component", "[K]", None),
+"Tflashs": ("list[float]", "Flash point temperatures for each component", "[K]", None),
+"Tts": ("list[float]", "Triple point temperatures for each component", "[K]", None),
+"TWAs": ("list[tuple[(float, str)]]", "Time-weighted average exposure limits to chemicals (and their units; ppm or mg/m^3)", "[various]", None),
+"UFLs": ("list[float]", "Upper flammability limits for each component", "[-]", None),
+"UNIFAC_Dortmund_groups": ("list[dict]", "UNIFAC_Dortmund_group: count groups for each component", "[-]", None),
+"UNIFAC_groups": ("list[dict]", "UNIFAC_group: count groups for each component", "[-]", None),
+"UNIFAC_Rs": ("list[float]", "UNIFAC `R` parameters for each component", "[-]", None),
+"UNIFAC_Qs": ("list[float]", "UNIFAC `Q` parameters for each component", "[-]", None),
+"Van_der_Waals_areas": ("list[float]", "Unnormalized Van der Waals areas for each component", "[m^2/mol]", None),
+"Van_der_Waals_volumes": ("list[float]", "Unnormalized Van der Waals volumes for each component", "[m^3/mol]", None),
+"Vcs": ("list[float]", "Critical molar volumes for each component", "[m^3/mol]", None),
+"Vml_STPs": ("list[float]", "Liquid molar volumes for each component at STP", "[m^3/mol]", None),
+"Vml_Tms": ("list[float]", "Liquid molar volumes for each component at their respective melting points", "[m^3/mol]", None),
+"Vms_Tms": ("list[float]", "Solid molar volumes for each component at their respective melting points", "[m^3/mol]", None),
+"Vml_60Fs": ("list[float]", "Liquid molar volumes for each component at 60 °F", "[m^3/mol]", None),
+"rhos_Tms": ("list[float]", "Solid molar densities for each component at their respective melting points", "[mol/m^3]", None),
+"rhol_60Fs": ("list[float]", "Liquid molar densities for each component at 60 °F", "[mol/m^3]", None),
+"rhol_60Fs_mass": ("list[float]", "Liquid mass densities for each component at 60 °F", "[kg/m^3]", None),
+"rhos_Tms_mass": ("list[float]", "Solid mass densities for each component at their melting point", "[kg/m^3]", None),
+"Zcs": ("list[float]", "Critical compressibilities for each component", "[-]", None),
+"n_atoms": ("int", "Number of total atoms in a collection of 1 molecule of each species", "[-]", None),
+"water_index": ("int", "Index of water in the package", "[-]", None),
+"Vmg_STPs": ("list[float]", "Gas molar volumes for each component at STP; metastable if normally another state", "[m^3/mol]", None),
+"rhog_STPs": ("list[float]", "Molar gas densities at STP for each component; metastable if normally another state", "[mol/m^3]", None),
+"rhog_STPs_mass": ("list[float]", "Gas densities at STP for each component; metastable if normally another state", "[kg/m^3]", None),
+"sigma_STPs": ("list[float]", "Liquid-air surface tensions at 298.15 K and the higher of 101325 Pa or the saturation pressure", "[N/m]", None),
+"sigma_Tms": ("list[float]", "Liquid-air surface tensions at the melting point and 101325 Pa", "[N/m]", None),
+"sigma_Tbs": ("list[float]", "Liquid-air surface tensions at the normal boiling point and 101325 Pa", "[N/m]", None),
+"Hf_STPs": ("list[float]", "Standard state molar enthalpies of formation for each component", "[J/mol]", None),
+"Hf_STPs_mass": ("list[float]", "Standard state mass enthalpies of formation for each component", "[J/kg]", None),
+"functional_groups": ("list[set[str]]", "Set of functional group constants present in each component", "[-]", None),
 }
 
 constants_doc = r"""Class for storing efficiently chemical constants for a
@@ -1434,40 +1434,40 @@ except:
     pass # py2
 #print(constants_doc)
 
-properties_to_classes = {'VaporPressures': VaporPressure,
-'VolumeLiquids': VolumeLiquid,
-'VolumeGases': VolumeGas,
-'VolumeSolids': VolumeSolid,
-'HeatCapacityGases': HeatCapacityGas,
-'HeatCapacitySolids': HeatCapacitySolid,
-'HeatCapacityLiquids': HeatCapacityLiquid,
-'EnthalpyVaporizations': EnthalpyVaporization,
-'EnthalpySublimations': EnthalpySublimation,
-'SublimationPressures': SublimationPressure,
-'PermittivityLiquids': PermittivityLiquid,
-'ViscosityLiquids': ViscosityLiquid,
-'ViscosityGases': ViscosityGas,
-'ThermalConductivityLiquids': ThermalConductivityLiquid,
-'ThermalConductivitySolids': ThermalConductivitySolid,
-'ThermalConductivityGases': ThermalConductivityGas,
-'SurfaceTensions': SurfaceTension}
+properties_to_classes = {"VaporPressures": VaporPressure,
+"VolumeLiquids": VolumeLiquid,
+"VolumeGases": VolumeGas,
+"VolumeSolids": VolumeSolid,
+"HeatCapacityGases": HeatCapacityGas,
+"HeatCapacitySolids": HeatCapacitySolid,
+"HeatCapacityLiquids": HeatCapacityLiquid,
+"EnthalpyVaporizations": EnthalpyVaporization,
+"EnthalpySublimations": EnthalpySublimation,
+"SublimationPressures": SublimationPressure,
+"PermittivityLiquids": PermittivityLiquid,
+"ViscosityLiquids": ViscosityLiquid,
+"ViscosityGases": ViscosityGas,
+"ThermalConductivityLiquids": ThermalConductivityLiquid,
+"ThermalConductivitySolids": ThermalConductivitySolid,
+"ThermalConductivityGases": ThermalConductivityGas,
+"SurfaceTensions": SurfaceTension}
 
 classes_to_properties = {v:k for k, v in properties_to_classes.items()}
 
-mix_properties_to_classes = {'VolumeGasMixture': VolumeGasMixture,
-                            'VolumeLiquidMixture': VolumeLiquidMixture,
-                            'VolumeSolidMixture': VolumeSolidMixture,
-                            'HeatCapacityGasMixture': HeatCapacityGasMixture,
-                            'HeatCapacityLiquidMixture': HeatCapacityLiquidMixture,
-                            'HeatCapacitySolidMixture': HeatCapacitySolidMixture,
-                            'ViscosityGasMixture': ViscosityGasMixture,
-                            'ViscosityLiquidMixture': ViscosityLiquidMixture,
-                            'ThermalConductivityGasMixture': ThermalConductivityGasMixture,
-                            'ThermalConductivityLiquidMixture': ThermalConductivityLiquidMixture,
-                            'SurfaceTensionMixture': SurfaceTensionMixture}
+mix_properties_to_classes = {"VolumeGasMixture": VolumeGasMixture,
+                            "VolumeLiquidMixture": VolumeLiquidMixture,
+                            "VolumeSolidMixture": VolumeSolidMixture,
+                            "HeatCapacityGasMixture": HeatCapacityGasMixture,
+                            "HeatCapacityLiquidMixture": HeatCapacityLiquidMixture,
+                            "HeatCapacitySolidMixture": HeatCapacitySolidMixture,
+                            "ViscosityGasMixture": ViscosityGasMixture,
+                            "ViscosityLiquidMixture": ViscosityLiquidMixture,
+                            "ThermalConductivityGasMixture": ThermalConductivityGasMixture,
+                            "ThermalConductivityLiquidMixture": ThermalConductivityLiquidMixture,
+                            "SurfaceTensionMixture": SurfaceTensionMixture}
 
 class PropertyCorrelationsPackage:
-    r'''Class for creating and storing `T` and `P` and `zs` dependent chemical
+    r"""Class for creating and storing `T` and `P` and `zs` dependent chemical
     property objects. All parameters are also attributes.
 
     This object can be used either to hold already-created property objects;
@@ -1554,27 +1554,27 @@ class PropertyCorrelationsPackage:
 
     >>> correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=False)
 
-    '''
+    """
 
-    pure_correlations = ('VaporPressures', 'VolumeLiquids', 'VolumeGases',
-                         'VolumeSolids', 'HeatCapacityGases', 'HeatCapacitySolids',
-                         'HeatCapacityLiquids', 'EnthalpyVaporizations',
-                         'EnthalpySublimations', 'SublimationPressures',
-                         'PermittivityLiquids', 'ViscosityLiquids', 'ViscosityGases',
-                         'ThermalConductivityLiquids', 'ThermalConductivityGases',
-                         'ThermalConductivitySolids',
-                         'SurfaceTensions')
-    mixture_correlations = ('VolumeGasMixture', 'VolumeLiquidMixture', 'VolumeSolidMixture',
-               'HeatCapacityGasMixture', 'HeatCapacityLiquidMixture',
-               'HeatCapacitySolidMixture', 'ViscosityGasMixture',
-               'ViscosityLiquidMixture', 'ThermalConductivityGasMixture',
-               'ThermalConductivityLiquidMixture', 'SurfaceTensionMixture')
+    pure_correlations = ("VaporPressures", "VolumeLiquids", "VolumeGases",
+                         "VolumeSolids", "HeatCapacityGases", "HeatCapacitySolids",
+                         "HeatCapacityLiquids", "EnthalpyVaporizations",
+                         "EnthalpySublimations", "SublimationPressures",
+                         "PermittivityLiquids", "ViscosityLiquids", "ViscosityGases",
+                         "ThermalConductivityLiquids", "ThermalConductivityGases",
+                         "ThermalConductivitySolids",
+                         "SurfaceTensions")
+    mixture_correlations = ("VolumeGasMixture", "VolumeLiquidMixture", "VolumeSolidMixture",
+               "HeatCapacityGasMixture", "HeatCapacityLiquidMixture",
+               "HeatCapacitySolidMixture", "ViscosityGasMixture",
+               "ViscosityLiquidMixture", "ThermalConductivityGasMixture",
+               "ThermalConductivityLiquidMixture", "SurfaceTensionMixture")
 
     correlations = pure_correlations + mixture_correlations
 #    __slots__ = correlations + ('constants', 'skip_missing')
     json_version = 1
     non_json_attributes = []
-    obj_references = correlations + ('constants',)
+    obj_references = correlations + ("constants",)
     vectorized = False
 
     __full_path__ = f"{__module__}.{__qualname__}"
@@ -1593,29 +1593,29 @@ class PropertyCorrelationsPackage:
     def __repr__(self):
         return self._make_str()
 
-    def _make_str(self, delim=', ', correlations=None):
-        '''Method to create a new string representing the
+    def _make_str(self, delim=", ", correlations=None):
+        """Method to create a new string representing the
         object.
-        '''
+        """
         if correlations is None:
             correlations = self.correlations
 
-        s = 'PropertyCorrelationsPackage('
+        s = "PropertyCorrelationsPackage("
         for k in correlations:
             obj = getattr(self, k)
             if obj is None:
                 continue
             if isinstance(obj, MixtureProperty):
-                s += f'{k}Obj={obj}{delim}\n'
+                s += f"{k}Obj={obj}{delim}\n"
             elif any(i is not None for i in obj):
-                s += f'{k}={obj}{delim}\n'
-        s += f'constants={self.constants}{delim}\n'
-        s += f'skip_missing={self.skip_missing}{delim}'
-        s = s[:-2] + ')'
+                s += f"{k}={obj}{delim}\n"
+        s += f"constants={self.constants}{delim}\n"
+        s += f"skip_missing={self.skip_missing}{delim}"
+        s = s[:-2] + ")"
         return s
 
     def as_json(self, cache=None, option=0):
-        r'''Method to create a JSON friendly serialization of the chemical
+        r"""Method to create a JSON friendly serialization of the chemical
         properties package which can be stored, and reloaded later.
 
         Returns
@@ -1628,12 +1628,12 @@ class PropertyCorrelationsPackage:
 
         Examples
         --------
-        '''
+        """
         return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
     def from_json(cls, json_repr, cache=None):
-        r'''Method to create a :obj:`PropertyCorrelationsPackage` from a JSON
+        r"""Method to create a :obj:`PropertyCorrelationsPackage` from a JSON
         serialization of another :obj:`PropertyCorrelationsPackage`.
 
         Parameters
@@ -1653,11 +1653,11 @@ class PropertyCorrelationsPackage:
 
         Examples
         --------
-        '''
+        """
         return JsonOptEncodable.from_json(json_repr, cache)
 
     def __add__(self, b):
-        r'''Method to create a new :obj:`PropertyCorrelationsPackage` object
+        r"""Method to create a new :obj:`PropertyCorrelationsPackage` object
         from two other :obj:`PropertyCorrelationsPackage` objects.
 
 
@@ -1674,10 +1674,10 @@ class PropertyCorrelationsPackage:
         >>> a = ChemicalConstantsPackage.correlations_from_IDs(IDs=['water', 'hexane'])
         >>> b = ChemicalConstantsPackage.correlations_from_IDs(IDs=['toluene'])
         >>> c = a + b
-        '''
+        """
         if not isinstance(b, PropertyCorrelationsPackage):
-            raise TypeError('Adding to a PropertyCorrelationsPackage requires that the other object '
-                            'also be a PropertyCorrelationsPackage.')
+            raise TypeError("Adding to a PropertyCorrelationsPackage requires that the other object "
+                            "also be a PropertyCorrelationsPackage.")
         a = self
         mixture_correlations = self.mixture_correlations
         a_dict = a.__dict__
@@ -1689,7 +1689,7 @@ class PropertyCorrelationsPackage:
         return PropertyCorrelationsPackage(**kwargs)
 
     def subset(self, idxs):
-        r'''Method to construct a new PropertyCorrelationsPackage that removes
+        r"""Method to construct a new PropertyCorrelationsPackage that removes
         all components not specified in the `idxs` argument.
 
         Parameters
@@ -1707,7 +1707,7 @@ class PropertyCorrelationsPackage:
         -----
         This function is a general one that also be used for reordering, 
         moving, swapping, and removing components simultaneously.
-        '''
+        """
         is_slice = isinstance(idxs, slice)
 
         def atindexes(values):
@@ -1715,7 +1715,7 @@ class PropertyCorrelationsPackage:
                 return values[idxs]
             return [values[i] for i in idxs]
 
-        new = {'constants': self.constants.subset(idxs)}
+        new = {"constants": self.constants.subset(idxs)}
         for p in self.pure_correlations:
             if hasattr(self, p):
                 v = getattr(self, p)
@@ -1746,7 +1746,7 @@ class PropertyCorrelationsPackage:
         if VaporPressures is None and not skip_missing:
             VaporPressures = [VaporPressure(Tb=constants.Tbs[i], Tc=constants.Tcs[i], Pc=constants.Pcs[i],
                                             omega=constants.omegas[i], CASRN=constants.CASs[i],
-                                            **user_chemical_property_lookup(constants.CASs[i], 'VaporPressure'))
+                                            **user_chemical_property_lookup(constants.CASs[i], "VaporPressure"))
                               for i in cmps]
 
         if VolumeLiquids is None and not skip_missing:
@@ -1754,7 +1754,7 @@ class PropertyCorrelationsPackage:
                               Pc=constants.Pcs[i], Vc=constants.Vcs[i], Zc=constants.Zcs[i], omega=constants.omegas[i],
                               dipole=constants.dipoles[i],
                               Psat=VaporPressures[i],
-                              **user_chemical_property_lookup(constants.CASs[i], 'VolumeLiquid'),
+                              **user_chemical_property_lookup(constants.CASs[i], "VolumeLiquid"),
                               eos=None, CASRN=constants.CASs[i])
                               for i in cmps]
 
@@ -1772,26 +1772,26 @@ class PropertyCorrelationsPackage:
         if HeatCapacityGases is None and not skip_missing:
             HeatCapacityGases = [HeatCapacityGas(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                                  similarity_variable=constants.similarity_variables[i],
-                                                 **user_chemical_property_lookup(constants.CASs[i], 'HeatCapacityGas'))
+                                                 **user_chemical_property_lookup(constants.CASs[i], "HeatCapacityGas"))
                               for i in cmps]
 
         if HeatCapacitySolids is None and not skip_missing:
             HeatCapacitySolids = [HeatCapacitySolid(MW=constants.MWs[i], similarity_variable=constants.similarity_variables[i],
-                                                    CASRN=constants.CASs[i], **user_chemical_property_lookup(constants.CASs[i], 'HeatCapacitySolid'))
+                                                    CASRN=constants.CASs[i], **user_chemical_property_lookup(constants.CASs[i], "HeatCapacitySolid"))
                               for i in cmps]
 
         if HeatCapacityLiquids is None and not skip_missing:
             HeatCapacityLiquids = [HeatCapacityLiquid(CASRN=constants.CASs[i], MW=constants.MWs[i],
                                                       similarity_variable=constants.similarity_variables[i],
                                                       Tc=constants.Tcs[i], omega=constants.omegas[i],
-                                                      Cpgm=HeatCapacityGases[i], **user_chemical_property_lookup(constants.CASs[i], 'HeatCapacityLiquid'))
+                                                      Cpgm=HeatCapacityGases[i], **user_chemical_property_lookup(constants.CASs[i], "HeatCapacityLiquid"))
                               for i in cmps]
 
         if EnthalpyVaporizations is None and not skip_missing:
             EnthalpyVaporizations = [EnthalpyVaporization(CASRN=constants.CASs[i], Tb=constants.Tbs[i],
                                                           Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i],
                                                           similarity_variable=constants.similarity_variables[i],
-                                                          **user_chemical_property_lookup(constants.CASs[i], 'EnthalpyVaporization'))
+                                                          **user_chemical_property_lookup(constants.CASs[i], "EnthalpyVaporization"))
                               for i in cmps]
 
         if EnthalpySublimations is None and not skip_missing:
@@ -1919,28 +1919,28 @@ class PropertyCorrelationsPackage:
             else:
                 iter_props = self.pure_correlations
 
-            s = f'{self.__class__.__name__}('
-            s += 'constants=constants, skip_missing=True,\n'
+            s = f"{self.__class__.__name__}("
+            s += "constants=constants, skip_missing=True,\n"
             for prop in iter_props:
                 prop_attr = getattr(self, prop)
                 if prop_attr is not None:
                     try:
-                        s += f'{prop}={self.as_poly_fit(prop_attr)},\n'
+                        s += f"{prop}={self.as_poly_fit(prop_attr)},\n"
                     except Exception as e:
                         print(e, prop)
 
-            s += ')'
+            s += ")"
             return s
 
-        s = '['
+        s = "["
         for obj in props:
-            s += (obj.as_poly_fit() + ',\n')
-        s += ']'
+            s += (obj.as_poly_fit() + ",\n")
+        s += "]"
         return s
 
 
 # Values except for omega from IAPWS; heat capacity isn't official.
-iapws_constants = ChemicalConstantsPackage(CASs=['7732-18-5'], MWs=[18.015268], omegas=[0.344],atomss=[{'H': 2, 'O': 1}], names=['water'],
+iapws_constants = ChemicalConstantsPackage(CASs=["7732-18-5"], MWs=[18.015268], omegas=[0.344],atomss=[{"H": 2, "O": 1}], names=["water"],
                                            Pcs=[22064000.0], Tcs=[647.096], Tts=[273.16], Pts=[611.654771008], Hfgs=[-241822.0], Sfgs=[-44.5], Gfgs=[-228554.325])
 """:obj:`ChemicalConstantsPackage` : Object intended to hold the IAPWS-95 water constants
 for use with the :obj:`thermo.phases.IAPWS95` phase object.
@@ -1956,7 +1956,7 @@ iapws_correlations = PropertyCorrelationsPackage(constants=iapws_constants, skip
                                                                             4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759]))])
 """:obj:`PropertyCorrelationsPackage`: IAPWS correlations and properties, [-]"""
 
-lemmon2000_constants = ChemicalConstantsPackage(CASs=['132259-10-0'], MWs=[28.9586], omegas=[0.0335],
+lemmon2000_constants = ChemicalConstantsPackage(CASs=["132259-10-0"], MWs=[28.9586], omegas=[0.0335],
                                            Pcs=[3.78502E6], Tcs=[132.6312])
 """:obj:`ChemicalConstantsPackage` : Object intended to hold the Lemmon (2000) air constants
 for use with the :obj:`thermo.phases.DryAirLemmon` phase object.

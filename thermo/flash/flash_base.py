@@ -27,7 +27,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
 
 '''
 
-__all__ = ['Flash']
+__all__ = ["Flash"]
 
 from math import floor, log10, nan
 
@@ -60,51 +60,51 @@ except:
 
 
 spec_to_iter_vars = {
-     (True, False, False, True, False, False) : ('T', 'H', 'P'), # Iterating on P is slow, derivatives look OK
+     (True, False, False, True, False, False) : ("T", "H", "P"), # Iterating on P is slow, derivatives look OK
      # (True, False, False, True, False, False) : ('T', 'H', 'V'), # Iterating on P is slow, derivatives look OK
-     (True, False, False, False, True, False) : ('T', 'S', 'P'),
-     (True, False, False, False, False, True) : ('T', 'U', 'V'),
+     (True, False, False, False, True, False) : ("T", "S", "P"),
+     (True, False, False, False, False, True) : ("T", "U", "V"),
 
-     (False, True, False, True, False, False) : ('P', 'H', 'T'),
-     (False, True, False, False, True, False) : ('P', 'S', 'T'),
-     (False, True, False, False, False, True) : ('P', 'U', 'T'),
+     (False, True, False, True, False, False) : ("P", "H", "T"),
+     (False, True, False, False, True, False) : ("P", "S", "T"),
+     (False, True, False, False, False, True) : ("P", "U", "T"),
 
-     (False, False, True, True, False, False) : ('V', 'H', 'P'), # TODO: change these ones to iterate on T?
-     (False, False, True, False, True, False) : ('V', 'S', 'P'),
-     (False, False, True, False, False, True) : ('V', 'U', 'P'),
+     (False, False, True, True, False, False) : ("V", "H", "P"), # TODO: change these ones to iterate on T?
+     (False, False, True, False, True, False) : ("V", "S", "P"),
+     (False, False, True, False, False, True) : ("V", "U", "P"),
 }
 
 spec_to_iter_vars_backup =  {
-    (True, False, False, True, False, False) : ('T', 'H', 'V'),
-    (True, False, False, False, True, False) : ('T', 'S', 'V'),
-    (True, False, False, False, False, True) : ('T', 'U', 'P'),
+    (True, False, False, True, False, False) : ("T", "H", "V"),
+    (True, False, False, False, True, False) : ("T", "S", "V"),
+    (True, False, False, False, False, True) : ("T", "U", "P"),
 
-    (False, True, False, True, False, False) : ('P', 'H', 'V'),
-    (False, True, False, False, True, False) : ('P', 'S', 'V'),
-    (False, True, False, False, False, True) : ('P', 'U', 'V'),
+    (False, True, False, True, False, False) : ("P", "H", "V"),
+    (False, True, False, False, True, False) : ("P", "S", "V"),
+    (False, True, False, False, False, True) : ("P", "U", "V"),
 
-    (False, False, True, True, False, False) : ('V', 'H', 'T'),
-    (False, False, True, False, True, False) : ('V', 'S', 'T'),
-    (False, False, True, False, False, True) : ('V', 'U', 'T'),
+    (False, False, True, True, False, False) : ("V", "H", "T"),
+    (False, False, True, False, True, False) : ("V", "S", "T"),
+    (False, False, True, False, False, True) : ("V", "U", "T"),
 }
 
-empty_flash_conv = {'iterations': 0, 'err': 0.0, 'stab_guess_name': None}
+empty_flash_conv = {"iterations": 0, "err": 0.0, "stab_guess_name": None}
 one_in_list = [1.0]
 empty_list = []
 
-NAIVE_BISECTION_PHASE_MIXING_BOUNDARY = 'NAIVE_BISECTION_PHASE_MIXING_BOUNDARY'
-SATURATION_SECANT_PHASE_MIXING_BOUNDARY = 'SATURATION_SECANT_PHASE_MIXING_BOUNDARY'
-PT_SECANT_PHASE_MIXING_BOUNDARY = 'SATURATION_SECANT_PHASE_MIXING_BOUNDARY'
+NAIVE_BISECTION_PHASE_MIXING_BOUNDARY = "NAIVE_BISECTION_PHASE_MIXING_BOUNDARY"
+SATURATION_SECANT_PHASE_MIXING_BOUNDARY = "SATURATION_SECANT_PHASE_MIXING_BOUNDARY"
+PT_SECANT_PHASE_MIXING_BOUNDARY = "SATURATION_SECANT_PHASE_MIXING_BOUNDARY"
 
-SECANT_PHASE_BOUNDARY = 'SECANT_PHASE_BOUNDARY'
+SECANT_PHASE_BOUNDARY = "SECANT_PHASE_BOUNDARY"
 
-CAS_H2O = '7732-18-5'
+CAS_H2O = "7732-18-5"
 
 
 class Flash:
-    r'''Base class for performing flash calculations. All Flash objects need
+    r"""Base class for performing flash calculations. All Flash objects need
     to inherit from this, and common methods can be added to it.
-    '''
+    """
 
     def __init_subclass__(cls):
         cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
@@ -112,12 +112,12 @@ class Flash:
     def __eq__(self, other):
         return self.__hash__() == hash(other)
 
-    obj_references = ('correlations', 'constants', 'settings', 'gas', 'liquids', 'liquid', 'solids', 'stab', 'unique_liquids', 'liquid0', 'phases', 'unique_phases', 'eos_pure_STP')
+    obj_references = ("correlations", "constants", "settings", "gas", "liquids", "liquid", "solids", "stab", "unique_liquids", "liquid0", "phases", "unique_phases", "eos_pure_STP")
     json_version = 1
     non_json_attributes = []
     vectorized = False
 
-    hash_references = ('correlations', 'constants', 'settings', 'gas', 'liquids', 'liquid', 'solids')
+    hash_references = ("correlations", "constants", "settings", "gas", "liquids", "liquid", "solids")
 
     def __hash__(self):
         to_hash = [self.__class__.__name__]
@@ -134,7 +134,7 @@ class Flash:
         return ans
 
     def as_json(self, cache=None, option=0):
-        r'''Method to create a JSON-friendly serialization of the
+        r"""Method to create a JSON-friendly serialization of the
         Flasher which can be stored, and reloaded later.
 
         Returns
@@ -148,7 +148,7 @@ class Flash:
         Examples
         --------
         >>> import json
-        '''
+        """
         return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
@@ -160,7 +160,7 @@ class Flash:
               retry=False, dest=None, rho=None, rho_mass=None, H_mass=None,
               S_mass=None, G_mass=None, U_mass=None, A_mass=None,
               spec_fun=None, H_reactive=None):
-        r'''Method to perform a flash calculation and return the result as an
+        r"""Method to perform a flash calculation and return the result as an
         :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object.
         This generic interface allows flashes with any combination of valid
         specifications; if a flash is unimplemented and error will be raised.
@@ -267,7 +267,7 @@ class Flash:
 
         Examples
         --------
-        '''
+        """
         # print('flashing',T, P, H, S, VF)
         if zs is None:
             if self.N == 1:
@@ -321,10 +321,10 @@ class Flash:
         VF_spec = VF is not None
         SF_spec = SF is not None
 
-        flash_specs = {'zs': zs}
+        flash_specs = {"zs": zs}
         if T_spec:
             T = float(T)
-            flash_specs['T'] = T
+            flash_specs["T"] = T
             if T < self.T_MIN_FLASH_ANY:
                 raise ValueError(f"Specified temperature ({T} K) is below the minimum temperature ({self.T_MIN_FLASH_ANY} K) "
                                  "supported by any of the provided phases")
@@ -332,41 +332,41 @@ class Flash:
             #     raise ValueError("Specified temperature (%s K) is unphysical" %(T,))
         if P_spec:
             P = float(P)
-            flash_specs['P'] = P
+            flash_specs["P"] = P
             if P <= 0.0:
                 raise ValueError(f"Specified pressure ({P} Pa) is unphysical")
         if V_spec:
             # high-precision volumes are needed in some cases
             # V = float(V)
-            flash_specs['V'] = V
+            flash_specs["V"] = V
             if V <= 0.0:
                 raise ValueError(f"Specified molar volume ({V} m^3/mol) is unphysical")
         if H_spec:
             H = float(H)
-            flash_specs['H'] = H
+            flash_specs["H"] = H
         if S_spec:
             S = float(S)
-            flash_specs['S'] = S
+            flash_specs["S"] = S
         if U_spec:
             U = float(U)
-            flash_specs['U'] = U
+            flash_specs["U"] = U
         if G_spec:
             G = float(G)
-            flash_specs['G'] = G
+            flash_specs["G"] = G
         if A_spec:
             A = float(A)
-            flash_specs['A'] = A
+            flash_specs["A"] = A
 
         if VF_spec:
             VF_spec = float(VF_spec)
-            flash_specs['VF'] = VF
+            flash_specs["VF"] = VF
             if VF < 0.0 or VF > 1.0:
                 raise ValueError(f"Specified vapor fraction ({VF}) is not between 0 and 1")
             elif not self.supports_VF_flash:
                 raise ValueError("Cannot flash with a vapor fraction spec without at least one gas and liquid phase defined")
         if SF_spec:
             SF_spec = float(SF_spec)
-            flash_specs['SF'] = SF
+            flash_specs["SF"] = SF
             if SF < 0.0 or SF > 1.0:
                 raise ValueError(f"Specified solid fraction ({VF}) is not between 0 and 1")
             elif not self.supports_SF_flash:
@@ -396,7 +396,7 @@ class Flash:
             Psat, ls, g, iterations, err = self.flash_TVF(T, VF=VF, zs=zs, hot_start=hot_start)
             if type(ls) is not list:
                 ls = [ls]
-            flash_convergence = {'iterations': iterations, 'err': err}
+            flash_convergence = {"iterations": iterations, "err": err}
 
             return dest(T, Psat, zs, gas=g, liquids=ls, solids=[],
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
@@ -409,7 +409,7 @@ class Flash:
             Tsat, ls, g, iterations, err = self.flash_PVF(P, VF=VF, zs=zs, hot_start=hot_start)
             if type(ls) is not list:
                 ls = [ls]
-            flash_convergence = {'iterations': iterations, 'err': err}
+            flash_convergence = {"iterations": iterations, "err": err}
 
             return dest(Tsat, P, zs, gas=g, liquids=ls, solids=[],
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
@@ -422,7 +422,7 @@ class Flash:
                 g, liquids = other_phase, []
             else:
                 g, liquids = None, [other_phase]
-            flash_convergence = {'iterations': iterations, 'err': err}
+            flash_convergence = {"iterations": iterations, "err": err}
             return dest(T, Psub, zs, gas=g, liquids=liquids, solids=[s],
                                     betas=[1-SF, SF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
@@ -434,16 +434,16 @@ class Flash:
                 g, liquids = other_phase, []
             else:
                 g, liquids = None, [other_phase]
-            flash_convergence = {'iterations': iterations, 'err': err}
+            flash_convergence = {"iterations": iterations, "err": err}
             return dest(Tsub, P, zs, gas=g, liquids=liquids, solids=[s],
                                     betas=[1-SF, SF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
                                     constants=constants, correlations=correlations,
                                     settings=settings, flasher=self)
         elif VF_spec and any([H_spec, S_spec, U_spec, G_spec, A_spec]):
-            spec_var, spec_val = next((k, v) for k, v in flash_specs.items() if k not in ('VF', 'zs'))
-            T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var='VF', spec_var=spec_var, zs=zs, solution=solution, hot_start=hot_start)
-            flash_convergence = {'iterations': iterations, 'err': err, 'inner_flash_convergence': {'iterations': iters_inner, 'err': err_inner}}
+            spec_var, spec_val = next((k, v) for k, v in flash_specs.items() if k not in ("VF", "zs"))
+            T, Psat, liquid, gas, iters_inner, err_inner, err, iterations = self.flash_VF_HSGUA(VF, spec_val, fixed_var="VF", spec_var=spec_var, zs=zs, solution=solution, hot_start=hot_start)
+            flash_convergence = {"iterations": iterations, "err": err, "inner_flash_convergence": {"iterations": iters_inner, "err": err_inner}}
             return dest(T, Psat, zs, gas=gas, liquids=[liquid], solids=[],
                                     betas=[VF, 1.0 - VF], flash_specs=flash_specs,
                                     flash_convergence=flash_convergence,
@@ -476,7 +476,7 @@ class Flash:
                 g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
             except Exception as e:
                 if retry:
-                    print('retrying HSGUA flash')
+                    print("retrying HSGUA flash")
                     g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
                 else:
                     raise e
@@ -501,7 +501,7 @@ class Flash:
                                     settings=settings, flasher=self)
 
         else:
-            raise Exception('Flash inputs unsupported')
+            raise Exception("Flash inputs unsupported")
 
     flash_phase_boundary_algos = [flash_phase_boundary_one_sided_secant]
     flash_phase_boundary_methods = [SECANT_PHASE_BOUNDARY]
@@ -523,23 +523,23 @@ class Flash:
         if spec_count != 1:
             raise ValueError("One specification must be provided")
         if T_spec:
-            iter_var, backup_iter_var = 'P', 'H'
-            spec_var, spec_val = 'T', T
+            iter_var, backup_iter_var = "P", "H"
+            spec_var, spec_val = "T", T
         if P_spec:
-            iter_var, backup_iter_var = 'T', 'H'
-            spec_var, spec_val = 'P', P
+            iter_var, backup_iter_var = "T", "H"
+            spec_var, spec_val = "P", P
         if V_spec:
-            iter_var, backup_iter_var = 'P', 'H'
-            spec_var, spec_val = 'V', V
+            iter_var, backup_iter_var = "P", "H"
+            spec_var, spec_val = "V", V
         if H_spec:
-            iter_var, backup_iter_var = 'P', 'T'
-            spec_var, spec_val = 'H', H
+            iter_var, backup_iter_var = "P", "T"
+            spec_var, spec_val = "H", H
         if S_spec:
-            iter_var, backup_iter_var = 'P', 'T'
-            spec_var, spec_val = 'S', S
+            iter_var, backup_iter_var = "P", "T"
+            spec_var, spec_val = "S", S
         if U_spec:
-            iter_var, backup_iter_var = 'P', 'T'
-            spec_var, spec_val = 'U', U
+            iter_var, backup_iter_var = "P", "T"
+            spec_var, spec_val = "U", U
 
 
         for method in self.flash_phase_boundary_algos:
@@ -549,9 +549,9 @@ class Flash:
                                                     ytol=self.FLASH_PHASE_BOUNDARY_MAXITER_YTOL,
                                                     maxiter=self.FLASH_PHASE_BOUNDARY_MAXITER)
 
-            res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,
-                                     'bounding_attempts': bounding_attempts,
-                                     'iterations': iterations}
+            res.flash_convergence = {"inner_flash_convergence": res.flash_convergence,
+                                     "bounding_attempts": bounding_attempts,
+                                     "iterations": iterations}
 
 
             return res
@@ -572,19 +572,19 @@ class Flash:
     FLASH_MIXING_PHASE_BOUNDARY_XTOL = 1e-6
     FLASH_MIXING_PHASE_BOUNDARY_YTOL = 1e-6
 
-    def flash_mixing_phase_boundary(self, specs, zs_existing, zs_added, boundary='VL'):
-        if boundary == 'VL':
+    def flash_mixing_phase_boundary(self, specs, zs_existing, zs_added, boundary="VL"):
+        if boundary == "VL":
             # if we start from a liquid, will converge to a gas with VF=0
             # if we start from a gas, will converge to a liquid with LF=0
             check = VL_boolean_check
-        elif boundary == 'LL':
+        elif boundary == "LL":
             check = LL_boolean_check
-        elif boundary == 'VLL':
+        elif boundary == "VLL":
             # Hard to say if this flash will converge to a VF=0 or a second liquid fraction of 0
             check = VLL_boolean_check
-        elif boundary == 'VLN/LN':
+        elif boundary == "VLN/LN":
             check = VLN_or_LN_boolean_check
-        elif boundary == 'VLL/LL':
+        elif boundary == "VLL/LL":
             check = VLL_or_LL_boolean_check
         else:
             raise ValueError("Unrecognized boundary")
@@ -594,22 +594,22 @@ class Flash:
             # try:
             if method is incipient_phase_one_sided_secant:
                 # can only solve two phase prolems
-                if boundary not in ('VL',):
+                if boundary not in ("VL",):
                     continue
                 res, bounding_attempts, iters, mixing_factor = incipient_phase_one_sided_secant(
                     flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check, ytol=self.FLASH_MIXING_PHASE_BOUNDARY_YTOL)
             elif method is incipient_phase_bounded_naive:
                 res, bounding_attempts, iters, mixing_factor = incipient_phase_bounded_naive(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check,
                                                                                     xtol=self.FLASH_MIXING_PHASE_BOUNDARY_XTOL)
-            elif method is incipient_liquid_bounded_PT_sat and boundary == 'VL':
+            elif method is incipient_liquid_bounded_PT_sat and boundary == "VL":
                 res, bounding_attempts, iters, mixing_factor = incipient_liquid_bounded_PT_sat(flasher=self, specs=specs, zs_existing=zs_existing, zs_added=zs_added, check=check,
                                                                                             xtol=self.FLASH_MIXING_PHASE_BOUNDARY_XTOL)
 
 
-            res.flash_convergence = {'inner_flash_convergence': res.flash_convergence,
-                                     'bounding_attempts': bounding_attempts,
-                                     'iterations': iters,
-                                     'mixing_factor': mixing_factor}
+            res.flash_convergence = {"inner_flash_convergence": res.flash_convergence,
+                                     "bounding_attempts": bounding_attempts,
+                                     "iterations": iters,
+                                     "mixing_factor": mixing_factor}
 
 
             return res
@@ -622,7 +622,7 @@ class Flash:
     def generate_Ts(self, Ts=None, Tmin=None, Tmax=None, pts=50, zs=None,
                     method=None):
         if method is None:
-            method = 'physical'
+            method = "physical"
 
         constants = self.constants
 
@@ -630,8 +630,8 @@ class Flash:
         if zs is None:
             zs = [1.0/N]*N
 
-        physical = method == 'physical'
-        realistic = method == 'realistic'
+        physical = method == "physical"
+        realistic = method == "realistic"
 
         Tcs = constants.Tcs
         Tc = sum([zs[i]*Tcs[i] for i in range(N)])
@@ -661,7 +661,7 @@ class Flash:
     def generate_Ps(self, Ps=None, Pmin=None, Pmax=None, pts=50, zs=None,
                     method=None):
         if method is None:
-            method = 'physical'
+            method = "physical"
 
         constants = self.constants
 
@@ -669,8 +669,8 @@ class Flash:
         if zs is None:
             zs = [1.0/N]*N
 
-        physical = method == 'physical'
-        realistic = method == 'realistic'
+        physical = method == "physical"
+        realistic = method == "realistic"
 
         Pcs = constants.Pcs
         Pc = sum([zs[i]*Pcs[i] for i in range(N)])
@@ -695,7 +695,7 @@ class Flash:
     def generate_Vs(self, Vs=None, Vmin=None, Vmax=None, pts=50, zs=None,
                     method=None):
         if method is None:
-            method = 'physical'
+            method = "physical"
 
         constants = self.constants
 
@@ -703,8 +703,8 @@ class Flash:
         if zs is None:
             zs = [1.0/N]*N
 
-        physical = method == 'physical'
-        realistic = method == 'realistic'
+        physical = method == "physical"
+        realistic = method == "realistic"
 
         Vcs = constants.Vcs
         Vc = sum([zs[i]*Vcs[i] for i in range(N)])
@@ -754,32 +754,32 @@ class Flash:
         VF_spec = VFs is not None
         SF_spec = SFs is not None
 
-        flash_specs = {'zs': zs}
+        flash_specs = {"zs": zs}
         spec_keys = []
         spec_iters = []
         if T_spec:
-            spec_keys.append('T')
+            spec_keys.append("T")
             spec_iters.append(Ts)
         if P_spec:
-            spec_keys.append('P')
+            spec_keys.append("P")
             spec_iters.append(Ps)
         if V_spec:
-            spec_keys.append('V')
+            spec_keys.append("V")
             spec_iters.append(Vs)
         if H_spec:
-            spec_keys.append('H')
+            spec_keys.append("H")
             spec_iters.append(Hs)
         if S_spec:
-            spec_keys.append('S')
+            spec_keys.append("S")
             spec_iters.append(Ss)
         if U_spec:
-            spec_keys.append('U')
+            spec_keys.append("U")
             spec_iters.append(Us)
         if VF_spec:
-            spec_keys.append('VF')
+            spec_keys.append("VF")
             spec_iters.append(VFs)
         if SF_spec:
-            spec_keys.append('SF')
+            spec_keys.append("SF")
             spec_iters.append(SFs)
 
         do_props = props is not None
@@ -792,12 +792,12 @@ class Flash:
             if store:
                 row_flashes = []
             for n1, spec1 in enumerate(spec_iters[1]):
-                flash_specs = {'zs': zs, spec_keys[0]: spec0, spec_keys[1]: spec1}
+                flash_specs = {"zs": zs, spec_keys[0]: spec0, spec_keys[1]: spec1}
                 try:
                     state = self.flash(**flash_specs)
                 except Exception as e:
                     state = None
-                    print(f'Failed trying to flash {flash_specs}, with exception {e}.')
+                    print(f"Failed trying to flash {flash_specs}, with exception {e}.")
 
                 if store:
                     row_flashes.append(state)
@@ -880,10 +880,10 @@ class Flash:
         constants = self.constants
         correlations = self.correlations
         for p in self.phases:
-            if hasattr(p, 'constants') and p.constants is not None and p.constants  is not constants and p.constants != constants:
+            if hasattr(p, "constants") and p.constants is not None and p.constants  is not constants and p.constants != constants:
                 raise ValueError("Provided phase is associated with a different constants object")
             p.constants = constants
-            if hasattr(p, 'correlations') and p.correlations is not None and p.correlations is not correlations and p.correlations != correlations:
+            if hasattr(p, "correlations") and p.correlations is not None and p.correlations is not correlations and p.correlations != correlations:
                 raise ValueError("Provided phase is associated with a different correlations object")
             p.correlations = correlations
 
@@ -894,7 +894,7 @@ class Flash:
 
         matrix_spec_flashes = []
         matrix_flashes = []
-        nearest_check_prop = 'T' if 'T' not in (check0, check1) else 'P'
+        nearest_check_prop = "T" if "T" not in (check0, check1) else "P"
 
         T_spec = Ts is not None
         P_spec = Ps is not None
@@ -905,37 +905,37 @@ class Flash:
         VF_spec = VFs is not None
         SF_spec = SFs is not None
 
-        flash_specs = {'zs': zs}
+        flash_specs = {"zs": zs}
         spec_keys = []
         spec_iters = []
         if T_spec:
-            spec_keys.append('T')
+            spec_keys.append("T")
             spec_iters.append(Ts)
         if P_spec:
-            spec_keys.append('P')
+            spec_keys.append("P")
             spec_iters.append(Ps)
         if V_spec:
-            spec_keys.append('V')
+            spec_keys.append("V")
             spec_iters.append(Vs)
         if H_spec:
-            spec_keys.append('H')
+            spec_keys.append("H")
             spec_iters.append(Hs)
         if S_spec:
-            spec_keys.append('S')
+            spec_keys.append("S")
             spec_iters.append(Ss)
         if U_spec:
-            spec_keys.append('U')
+            spec_keys.append("U")
             spec_iters.append(Us)
         if VF_spec:
-            spec_keys.append('VF')
+            spec_keys.append("VF")
             spec_iters.append(VFs)
         if SF_spec:
-            spec_keys.append('SF')
+            spec_keys.append("SF")
             spec_iters.append(SFs)
 
         V_set = {check1, check0}
-        TV_iter = V_set == {'T', 'V'}
-        PV_iter = V_set == {'P', 'V'}
+        TV_iter = V_set == {"T", "V"}
+        PV_iter = V_set == {"P", "V"}
         high_prec_V = TV_iter or PV_iter
 
         for n0, spec0 in enumerate(spec_iters[0]):
@@ -944,7 +944,7 @@ class Flash:
             row_spec_flashes = []
             for n1, spec1 in enumerate(spec_iters[1]):
 
-                flash_specs = {'zs': zs, spec_keys[0]: spec0, spec_keys[1]: spec1}
+                flash_specs = {"zs": zs, spec_keys[0]: spec0, spec_keys[1]: spec1}
                 state = self.flash(**flash_specs)
 
                 check0_spec = getattr(state, check0)
@@ -964,31 +964,31 @@ class Flash:
 
                 # TV_iter is important to always do
                 if TV_iter:
-                    kwargs['V'] = state.V_iter(force=False)
-                kwargs['retry'] = retry
-                kwargs['solution'] = lambda new: abs(new.value(nearest_check_prop) - state.value(nearest_check_prop))
+                    kwargs["V"] = state.V_iter(force=False)
+                kwargs["retry"] = retry
+                kwargs["solution"] = lambda new: abs(new.value(nearest_check_prop) - state.value(nearest_check_prop))
                 try:
                     new = self.flash(**kwargs)
                     if PV_iter:
                         # Do a check here on tolerance
                         err = abs((new.value(nearest_check_prop) - state.value(nearest_check_prop))/state.value(nearest_check_prop))
                         if err > 1e-8:
-                            kwargs['V'] = state.V_iter(force=True)
+                            kwargs["V"] = state.V_iter(force=True)
                             new = self.flash(**kwargs)
                 except Exception as e:
                     # Was it a precision issue? Some flashes can be brutal
-                    if 'V' in kwargs:
+                    if "V" in kwargs:
                         try:
-                             kwargs['V'] = state.V_iter(True)
+                             kwargs["V"] = state.V_iter(True)
                              new = self.flash(**kwargs)
                         except Exception as e2:
                             new = None
                             if verbose:
-                                print(f'Failed trying to flash {kwargs}, from original point {flash_specs}, with exception {e}.')
+                                print(f"Failed trying to flash {kwargs}, from original point {flash_specs}, with exception {e}.")
                     else:
                         new = None
                         if verbose:
-                            print(f'Failed trying to flash {kwargs}, from original point {flash_specs}, with exception {e}.')
+                            print(f"Failed trying to flash {kwargs}, from original point {flash_specs}, with exception {e}.")
                 row_spec_flashes.append(state)
                 row_flashes.append(new)
 
@@ -997,7 +997,7 @@ class Flash:
         return matrix_spec_flashes, matrix_flashes
 
     def debug_err_flash_grid(self, matrix_spec_flashes, matrix_flashes,
-                             check, method='rtol', verbose=True):
+                             check, method="rtol", verbose=True):
         matrix = []
         N0 = len(matrix_spec_flashes)
         N1 = len(matrix_spec_flashes[0])
@@ -1021,7 +1021,7 @@ class Flash:
                         calc = calc()
                     except:
                         pass
-                    if method == 'rtol':
+                    if method == "rtol":
                         err = abs((act - calc)/act)
 
                 if err > 1e-6 and verbose:
@@ -1036,7 +1036,7 @@ class Flash:
         return matrix
 
 
-    def TPV_inputs(self, spec0='T', spec1='P', check0='P', check1='V', prop0='T',
+    def TPV_inputs(self, spec0="T", spec1="P", check0="P", check1="V", prop0="T",
                    Ts=None, Tmin=None, Tmax=None,
                    Ps=None, Pmin=None, Pmax=None,
                    Vs=None, Vmin=None, Vmax=None,
@@ -1047,23 +1047,23 @@ class Flash:
 
         specs = []
         for a_spec in (spec0, spec1):
-            if 'T' == a_spec:
+            if "T" == a_spec:
                 Ts = self.generate_Ts(Ts=Ts, Tmin=Tmin, Tmax=Tmax, pts=pts, zs=zs,
                                       method=auto_range)
                 specs.append(Ts)
-            elif 'P' == a_spec:
+            elif "P" == a_spec:
                 Ps = self.generate_Ps(Ps=Ps, Pmin=Pmin, Pmax=Pmax, pts=pts, zs=zs,
                                   method=auto_range)
                 specs.append(Ps)
-            elif 'V' == a_spec:
+            elif "V" == a_spec:
                 Vs = self.generate_Vs(Vs=Vs, Vmin=Vmin, Vmax=Vmax, pts=pts, zs=zs,
                                   method=auto_range)
                 specs.append(Vs)
-            elif 'VF' == a_spec:
+            elif "VF" == a_spec:
                 if VFs is None:
                     VFs = linspace(0, 1, pts)
                 specs.append(VFs)
-            elif 'SF' == a_spec:
+            elif "SF" == a_spec:
                 if SFs is None:
                     SFs = linspace(0, 1, pts)
                 specs.append(SFs)
@@ -1095,10 +1095,10 @@ class Flash:
             im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=LogNorm(vmin=trunc_err_low, vmax=trunc_err_high))
             # im = ax.pcolormesh(X, Y, z, cmap=cm.viridis, norm=LogNorm(vmin=1e-7, vmax=1))
             cbar = fig.colorbar(im, ax=ax)
-            cbar.set_label('Relative error')
+            cbar.set_label("Relative error")
 
-            ax.set_yscale('log')
-            ax.set_xscale('log')
+            ax.set_yscale("log")
+            ax.set_xscale("log")
             ax.set_xlabel(spec0)
             ax.set_ylabel(spec1)
 
@@ -1108,7 +1108,7 @@ class Flash:
             if trunc_err_high is not None and max_err > trunc_err_high:
                 max_err = trunc_err_high
 
-            ax.set_title(f'{check0} {check1} validation of {prop0}; Reference flash {spec0} {spec1}; max err {max_err:.1e}')
+            ax.set_title(f"{check0} {check1} validation of {prop0}; Reference flash {spec0} {spec1}; max err {max_err:.1e}")
 
 
             if show:
@@ -1117,7 +1117,7 @@ class Flash:
             return matrix_spec_flashes, matrix_flashes, errs, fig
         return matrix_spec_flashes, matrix_flashes, errs
 
-    def grid_props(self, spec0='T', spec1='P', prop='H',
+    def grid_props(self, spec0="T", spec1="P", prop="H",
                    Ts=None, Tmin=None, Tmax=None,
                    Ps=None, Pmin=None, Pmax=None,
                    Vs=None, Vmin=None, Vmax=None,
@@ -1127,23 +1127,23 @@ class Flash:
 
         specs = []
         for a_spec in (spec0, spec1):
-            if 'T' == a_spec:
+            if "T" == a_spec:
                 Ts = self.generate_Ts(Ts=Ts, Tmin=Tmin, Tmax=Tmax, pts=pts, zs=zs,
                                       method=auto_range)
                 specs.append(Ts)
-            if 'P' == a_spec:
+            if "P" == a_spec:
                 Ps = self.generate_Ps(Ps=Ps, Pmin=Pmin, Pmax=Pmax, pts=pts, zs=zs,
                                   method=auto_range)
                 specs.append(Ps)
-            if 'V' == a_spec:
+            if "V" == a_spec:
                 Vs = self.generate_Vs(Vs=Vs, Vmin=Vmin, Vmax=Vmax, pts=pts, zs=zs,
                                   method=auto_range)
                 specs.append(Vs)
-            if 'VF' == a_spec:
+            if "VF" == a_spec:
                 if VFs is None:
                     VFs = linspace(0, 1, pts)
                 specs.append(VFs)
-            if 'SF' == a_spec:
+            if "SF" == a_spec:
                 if SFs is None:
                     SFs = linspace(0, 1, pts)
                 specs.append(SFs)
@@ -1186,8 +1186,8 @@ class Flash:
             cbar = fig.colorbar(im, ax=ax)
             cbar.set_label(prop)
 
-            ax.set_yscale('log')
-            ax.set_xscale('log')
+            ax.set_yscale("log")
+            ax.set_xscale("log")
             ax.set_xlabel(spec0)
             ax.set_ylabel(spec1)
 
@@ -1201,9 +1201,9 @@ class Flash:
     def debug_mixing_phase_boundary_PT(self, zs, zs_mixing, Pmin=None, Pmax=None,
                                        Tmin=None, Tmax=None, pts=50,
                 ignore_errors=True, values=False, verbose=False, show=False,
-                T_pts=None, P_pts=None, Ts=None, Ps=None, boundary='VL'): # pragma: no cover
+                T_pts=None, P_pts=None, Ts=None, Ps=None, boundary="VL"): # pragma: no cover
         if not has_matplotlib() and not values:
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         if Pmin is None:
             Pmin = 1e2
         if Pmax is None:
@@ -1225,8 +1225,8 @@ class Flash:
             row = []
             for P in Ps:
                 try:
-                    state = self.flash_mixing_phase_boundary(specs={'T': T, 'P': P}, zs_existing=zs, zs_added=zs_mixing, boundary=boundary)
-                    row.append(state.flash_convergence['mixing_factor'])
+                    state = self.flash_mixing_phase_boundary(specs={"T": T, "P": P}, zs_existing=zs, zs_added=zs_mixing, boundary=boundary)
+                    row.append(state.flash_convergence["mixing_factor"])
                 except Exception as e:
                     if verbose:
                         print([T, P, e])
@@ -1243,14 +1243,14 @@ class Flash:
         fig, ax = plt.subplots()
 
         Ts, Ps = np.meshgrid(Ts, Ps)
-        im = ax.pcolormesh(Ts, Ps, matrix, cmap=plt.get_cmap('viridis'))
+        im = ax.pcolormesh(Ts, Ps, matrix, cmap=plt.get_cmap("viridis"))
         cbar = fig.colorbar(im, ax=ax)
-        cbar.set_label('Factor')
+        cbar.set_label("Factor")
 
-        ax.set_yscale('log')
-        ax.set_xlabel('Temperature [K]')
-        ax.set_ylabel('Pressure [Pa]')
-        plt.title(f'PT flash mixing {boundary} boundary flashes, zs={zs}, zs_mixing={zs_mixing}')
+        ax.set_yscale("log")
+        ax.set_xlabel("Temperature [K]")
+        ax.set_ylabel("Pressure [Pa]")
+        plt.title(f"PT flash mixing {boundary} boundary flashes, zs={zs}, zs_mixing={zs_mixing}")
         if show:
             plt.show()
         else:
@@ -1260,7 +1260,7 @@ class Flash:
                 ignore_errors=True, values=False, verbose=False, show=False,
                 T_pts=None, P_pts=None, Ts=None, Ps=None): # pragma: no cover
         if not has_matplotlib() and not values:
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         if Pmin is None:
             Pmin = 1e4
         if Pmax is None:
@@ -1291,7 +1291,7 @@ class Flash:
                     if verbose:
                         print([T, P, e])
                     if ignore_errors:
-                        row.append('F')
+                        row.append("F")
                     else:
                         raise e
             matrix.append(row)
@@ -1300,9 +1300,9 @@ class Flash:
             return Ts, Ps, matrix
 
 
-        regions = {'V': 1, 'L': 2, 'S': 3, 'VL': 4, 'LL': 5, 'VLL': 6,
-                       'VLS': 7, 'VLLS': 8, 'VLLSS': 9, 'LLL': 10, 'VLLL': 11,
-                       'VLLLL': 12, 'LLLL': 13, 'F': 0}
+        regions = {"V": 1, "L": 2, "S": 3, "VL": 4, "LL": 5, "VLL": 6,
+                       "VLS": 7, "VLLS": 8, "VLLSS": 9, "LLL": 10, "VLLL": 11,
+                       "VLLLL": 12, "LLLL": 13, "F": 0}
 
         used_regions = set()
         for row in matrix:
@@ -1326,7 +1326,7 @@ class Flash:
         Ts, Ps = np.meshgrid(Ts, Ps)
 
         # need 3 more
-        cmap = colors.ListedColormap(['y','b','r', 'g', 'c', 'm', 'k', 'fuchsia', 'gold', 'lime', 'indigo', 'cyan'][0:len(used_values)])
+        cmap = colors.ListedColormap(["y","b","r", "g", "c", "m", "k", "fuchsia", "gold", "lime", "indigo", "cyan"][0:len(used_values)])
 
         vmax = len(used_values) - 1
 
@@ -1334,7 +1334,7 @@ class Flash:
         print(np.array(Ts).shape, np.array(Ps).shape, np.array(dat).shape)
         im = ax.pcolormesh(Ts, Ps, dat, cmap=cmap, norm=colors.Normalize(vmin=0, vmax=vmax)) # , cmap=color_map, norm=LogNorm()
         cbar = fig.colorbar(im, ax=ax)
-        cbar.set_label('Phase')
+        cbar.set_label("Phase")
         cbar.ax.locator_params(nbins=len(used_values))
 #        cbar = plt.colorbar()
 
@@ -1347,16 +1347,16 @@ class Flash:
         # cbar.ax.set_yticklabels([n for _, n in sorted(zip(regions.values(), regions.keys()))])
 #        cbar.ax.set_yticklabels(regions_keys)
 #        ax.set_yscale('log')
-        plt.yscale('log')
-        plt.xlabel('System temperature, K')
-        plt.ylabel('System pressure, Pa')
+        plt.yscale("log")
+        plt.xlabel("System temperature, K")
+        plt.ylabel("System pressure, Pa")
 #        plt.imshow(dat, interpolation='nearest')
 #        plt.legend(loc='best', fancybox=True, framealpha=0.5)
 #        return fig, ax
 
         if len(zs) > 4:
-            zs = '...'
-        plt.title(f'PT system flashes, zs={zs}')
+            zs = "..."
+        plt.title(f"PT system flashes, zs={zs}")
         if show:
             plt.show()
         else:
@@ -1365,7 +1365,7 @@ class Flash:
 
     def plot_TP(self, zs, Tmin=None, Tmax=None, pts=50, branches=None,
                 ignore_errors=True, values=False, show=True, hot=False): # pragma: no cover
-        r'''Method to create a plot of the phase envelope as can be calculated
+        r"""Method to create a plot of the phase envelope as can be calculated
         from a series of temperature & vapor fraction spec flashes. By default
         vapor fractions of 0 and 1 are plotted; additional vapor fraction
         specifications can be specified in the `branches` argument as a list.
@@ -1410,9 +1410,9 @@ class Flash:
             Pressures which yield the equilibrium vapor fractions specified;
             formatted as [[P1_VFx, P2_VFx, ... Pn_VFx], ...,
             [P1_VFy, P2_VFy, ... Pn_VFy]], [Pa]
-        '''
+        """
         if not has_matplotlib() and not values:
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         if not Tmin:
             Tmin = min(self.constants.Tms)
         if not Tmax:
@@ -1464,15 +1464,15 @@ class Flash:
 
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
-        plt.semilogy(Ts, P_dews, label='TP dew point curve')
-        plt.semilogy(Ts, P_bubbles, label='TP bubble point curve')
-        plt.xlabel('System temperature, K')
-        plt.ylabel('System pressure, Pa')
-        plt.title(f'PT system curve, zs={zs}')
+        plt.semilogy(Ts, P_dews, label="TP dew point curve")
+        plt.semilogy(Ts, P_bubbles, label="TP bubble point curve")
+        plt.xlabel("System temperature, K")
+        plt.ylabel("System pressure, Pa")
+        plt.title(f"PT system curve, zs={zs}")
         if branch:
             for VF, Ps in zip(branches, branch_Ps):
-                plt.semilogy(Ts, Ps, label=f'TP curve for VF={VF}')
-        plt.legend(loc='best')
+                plt.semilogy(Ts, Ps, label=f"TP curve for VF={VF}")
+        plt.legend(loc="best")
         if show:
             plt.show()
         if values:
@@ -1483,7 +1483,7 @@ class Flash:
 
     def plot_PT(self, zs, Pmin=None, Pmax=None, pts=50, branches=[],
                 ignore_errors=True, values=False, show=True, hot=False): # pragma: no cover
-        r'''Method to create a plot of the phase envelope as can be calculated
+        r"""Method to create a plot of the phase envelope as can be calculated
         from a series of pressure & vapor fraction spec flashes. By default
         vapor fractions of 0 and 1 are plotted; additional vapor fraction
         specifications can be specified in the `branches` argument as a list.
@@ -1528,9 +1528,9 @@ class Flash:
             Temperatures which yield the equilibrium vapor fractions specified;
             formatted as [[T1_VFx, T2_VFx, ... Tn_VFx], ...,
             [T1_VFy, T2_VFy, ... Tn_VFy]], [k]
-        '''
+        """
         if not has_matplotlib() and not values:
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         if not Pmin:
             Pmin = 1e4
         if not Pmax:
@@ -1580,15 +1580,15 @@ class Flash:
             return Ps, T_dews, T_bubbles, branch_Ts
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
-        plt.plot(Ps, T_dews, label='PT dew point curve')
-        plt.plot(Ps, T_bubbles, label='PT bubble point curve')
-        plt.xlabel('System pressure, Pa')
-        plt.ylabel('System temperature, K')
-        plt.title(f'PT system curve, zs={zs}')
+        plt.plot(Ps, T_dews, label="PT dew point curve")
+        plt.plot(Ps, T_bubbles, label="PT bubble point curve")
+        plt.xlabel("System pressure, Pa")
+        plt.ylabel("System temperature, K")
+        plt.title(f"PT system curve, zs={zs}")
         if branch:
             for VF, Ts in zip(branches, branch_Ts):
-                plt.plot(Ps, Ts, label=f'PT curve for VF={VF}')
-        plt.legend(loc='best')
+                plt.plot(Ps, Ts, label=f"PT curve for VF={VF}")
+        plt.legend(loc="best")
 
         if show:
             plt.show()
@@ -1596,7 +1596,7 @@ class Flash:
             return fig
 
     def plot_ternary(self, T=None, P=None, scale=10): # pragma: no cover
-        r'''Method to create a ternary plot of the system at either a specified
+        r"""Method to create a ternary plot of the system at either a specified
         temperature or pressure.
 
         Parameters
@@ -1605,22 +1605,22 @@ class Flash:
             Temperature, [K]
         P : float, optional
             Pressure, [Pa]
-        '''
+        """
         if not has_matplotlib():
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         try:
             import ternary
         except:
-            raise Exception('Optional dependency python-ternary is required for ternary plotting')
+            raise Exception("Optional dependency python-ternary is required for ternary plotting")
         if self.N != 3:
-            raise Exception('Ternary plotting requires a mixture of exactly three components')
+            raise Exception("Ternary plotting requires a mixture of exactly three components")
 
         is_T_spec = T is not None
         if not is_T_spec and P is None:
             raise ValueError("Either T or P must be specified")
         values = []
 
-        cond = {'T': T} if is_T_spec else {'P': P}
+        cond = {"T": T} if is_T_spec else {"P": P}
 
         def dew_at_zs(zs):
             res = self.flash(zs=zs, VF=0, **cond)
@@ -1640,10 +1640,10 @@ class Flash:
 
         import matplotlib as mpl
         import matplotlib.pyplot as plt
-        axes_colors = {'b': 'g', 'l': 'r', 'r':'b'}
+        axes_colors = {"b": "g", "l": "r", "r":"b"}
         ticks = [round(i / float(10), 1) for i in range(10+1)]
 
-        fig, ax = plt.subplots(1, 3, gridspec_kw = {'width_ratios':[4, 4, 1]})
+        fig, ax = plt.subplots(1, 3, gridspec_kw = {"width_ratios":[4, 4, 1]})
         ax[0].axis("off")
         ax[1].axis("off")
         ax[2].axis("off")
@@ -1658,25 +1658,25 @@ class Flash:
                 tax.heatmapf(f, boundary=True, colorbar=False, vmin=0, vmax=max(values))
 
             tax.boundary(linewidth=2.0)
-            tax.left_axis_label(f"mole fraction {names[1]}", offset=0.16, color=axes_colors['l'])
-            tax.right_axis_label(f"mole fraction {names[0]}", offset=0.16, color=axes_colors['r'])
-            tax.bottom_axis_label(f"mole fraction {names[2]}", offset=0.16, color=axes_colors['b'])
+            tax.left_axis_label(f"mole fraction {names[1]}", offset=0.16, color=axes_colors["l"])
+            tax.right_axis_label(f"mole fraction {names[0]}", offset=0.16, color=axes_colors["r"])
+            tax.bottom_axis_label(f"mole fraction {names[2]}", offset=0.16, color=axes_colors["b"])
 
-            tax.ticks(ticks=ticks, axis='rlb', linewidth=1, clockwise=True,
+            tax.ticks(ticks=ticks, axis="rlb", linewidth=1, clockwise=True,
                       axes_colors=axes_colors, offset=0.03, tick_formats="%.1f")
 
             tax.gridlines(multiple=scale/10., linewidth=2,
-                          horizontal_kwargs={'color':axes_colors['b']},
-                          left_kwargs={'color':axes_colors['l']},
-                          right_kwargs={'color':axes_colors['r']},
+                          horizontal_kwargs={"color":axes_colors["b"]},
+                          left_kwargs={"color":axes_colors["l"]},
+                          right_kwargs={"color":axes_colors["r"]},
                           alpha=0.5)
 
         norm = plt.Normalize(vmin=0, vmax=max(values))
-        sm = plt.cm.ScalarMappable(cmap=plt.get_cmap('viridis'), norm=norm)
+        sm = plt.cm.ScalarMappable(cmap=plt.get_cmap("viridis"), norm=norm)
         sm._A = []
         cb = plt.colorbar(sm, ax=ax[2])
-        text = 'Pressure, [Pa]' if is_T_spec else 'Temperature, [K]'
-        cb.set_label(text, rotation=270, ha='center', va='center')
+        text = "Pressure, [Pa]" if is_T_spec else "Temperature, [K]"
+        cb.set_label(text, rotation=270, ha="center", va="center")
         cb.locator = mpl.ticker.LinearLocator(numticks=7)
         cb.formatter = mpl.ticker.ScalarFormatter()
         cb.formatter.set_powerlimits((0, 0))
@@ -1692,7 +1692,7 @@ class Flash:
 
 
     def plot_Txy(self, P, pts=30, ignore_errors=True, values=False, show=True): # pragma: no cover
-        r'''Method to create a Txy plot for a binary system (holding pressure
+        r"""Method to create a Txy plot for a binary system (holding pressure
         constant); the mole fraction of the first species is varied.
 
         Parameters
@@ -1726,11 +1726,11 @@ class Flash:
             Bubble point temperatures at the evaluated points, [K]
         T_bubbles : list[float]
             Dew point temperatures at the evaluated points, [K]
-        '''
+        """
         if not has_matplotlib() and values is not False:
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         if self.N != 2:
-            raise Exception('Txy plotting requires a mixture of exactly two components')
+            raise Exception("Txy plotting requires a mixture of exactly two components")
         z1 = linspace(0, 1, pts)
         z2 = [1.0 - zi for zi in z1]
         Ts_dew = []
@@ -1758,19 +1758,19 @@ class Flash:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
         names = self.constants.aliases
-        plt.title(f'Txy diagram at P={P} Pa')
-        plt.plot(z1, Ts_dew, label='Dew temperature, K')
-        plt.plot(z1, Ts_bubble, label='Bubble temperature, K')
-        plt.xlabel(f'Mole fraction {names[0]}')
-        plt.ylabel('System temperature, K')
-        plt.legend(loc='best')
+        plt.title(f"Txy diagram at P={P} Pa")
+        plt.plot(z1, Ts_dew, label="Dew temperature, K")
+        plt.plot(z1, Ts_bubble, label="Bubble temperature, K")
+        plt.xlabel(f"Mole fraction {names[0]}")
+        plt.ylabel("System temperature, K")
+        plt.legend(loc="best")
         if show:
             plt.show()
         else:
             return fig
 
     def plot_Pxy(self, T, pts=30, ignore_errors=True, values=False, show=True): # pragma: no cover
-        r'''Method to create a Pxy plot for a binary system (holding temperature
+        r"""Method to create a Pxy plot for a binary system (holding temperature
         constant); the mole fraction of the first species is varied.
 
         Parameters
@@ -1804,11 +1804,11 @@ class Flash:
             Bubble point pressures at the evaluated points, [Pa]
         P_bubbles : list[float]
             Dew point pressures at the evaluated points, [Pa]
-        '''
+        """
         if not has_matplotlib() and values is not False:
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         if self.N != 2:
-            raise Exception('Pxy plotting requires a mixture of exactly two components')
+            raise Exception("Pxy plotting requires a mixture of exactly two components")
         z1 = linspace(0, 1, pts)
         z2 = [1.0 - zi for zi in z1]
         Ps_dew = []
@@ -1837,12 +1837,12 @@ class Flash:
 
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
-        plt.title(f'Pxy diagram at T={T} K')
-        plt.plot(z1, Ps_dew, label='Dew pressure')
-        plt.plot(z1, Ps_bubble, label='Bubble pressure')
-        plt.xlabel(f'Mole fraction {names[0]}')
-        plt.ylabel('System pressure, Pa')
-        plt.legend(loc='best')
+        plt.title(f"Pxy diagram at T={T} K")
+        plt.plot(z1, Ps_dew, label="Dew pressure")
+        plt.plot(z1, Ps_bubble, label="Bubble pressure")
+        plt.xlabel(f"Mole fraction {names[0]}")
+        plt.ylabel("System pressure, Pa")
+        plt.legend(loc="best")
         if show:
             plt.show()
         else:
@@ -1850,7 +1850,7 @@ class Flash:
 
     def plot_xy(self, P=None, T=None, pts=30, ignore_errors=True, values=False,
                 show=True, VF=0.0): # pragma: no cover
-        r'''Method to create a xy diagram for a binary system. Either a
+        r"""Method to create a xy diagram for a binary system. Either a
         temperature or pressure can be specified. By default, bubble point
         flashes are performed; this can be varied by changing `VF`.
 
@@ -1886,11 +1886,11 @@ class Flash:
             Liquid mole fractions of component 1 at each point, [-]
         y1 : list[float]
             Vapor mole fractions of component 1 at each point, [-]
-        '''
+        """
         if not has_matplotlib():
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         if self.N != 2:
-            raise Exception('xy plotting requires a mixture of exactly two components')
+            raise Exception("xy plotting requires a mixture of exactly two components")
         z1 = linspace(0.0, 1.0, pts)
         z2 = [1.0 - zi for zi in z1]
         y1_bubble = []
@@ -1905,7 +1905,7 @@ class Flash:
                 y1_bubble.append(res.gas.zs[0])
             except Exception as e:
                 if ignore_errors:
-                    print('Failed on pt %d' %(i), e)
+                    print("Failed on pt %d" %(i), e)
                 else:
                     raise e
         if values:
@@ -1913,15 +1913,15 @@ class Flash:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
         if T is not None:
-            plt.title(f'xy diagram at T={T} K (varying P)')
+            plt.title(f"xy diagram at T={T} K (varying P)")
         else:
-            plt.title(f'xy diagram at P={P} Pa (varying T)')
+            plt.title(f"xy diagram at P={P} Pa (varying T)")
         names = self.constants.aliases
-        plt.xlabel(f'Liquid mole fraction {names[0]}')
-        plt.ylabel(f'Vapor mole fraction {names[0]}')
-        plt.plot(x1_bubble, y1_bubble, '-', label='liquid vs vapor composition')
-        plt.legend(loc='best')
-        plt.plot([0, 1], [0, 1], '--')
+        plt.xlabel(f"Liquid mole fraction {names[0]}")
+        plt.ylabel(f"Vapor mole fraction {names[0]}")
+        plt.plot(x1_bubble, y1_bubble, "-", label="liquid vs vapor composition")
+        plt.legend(loc="best")
+        plt.plot([0, 1], [0, 1], "--")
         plt.axis((0,1,0,1))
         if show:
             plt.show()
@@ -1929,7 +1929,7 @@ class Flash:
             return fig
 
     def V_liquids_ref(self):
-        r'''Method to calculate and return the liquid reference molar volumes
+        r"""Method to calculate and return the liquid reference molar volumes
         according to the temperature variable `T_liquid_volume_ref` of
         :obj:`thermo.bulk.BulkSettings`.
 
@@ -1940,7 +1940,7 @@ class Flash:
 
         Notes
         -----
-        '''
+        """
         T_liquid_volume_ref = self.settings.T_liquid_volume_ref
         if T_liquid_volume_ref == 298.15:
             Vls = self.constants.Vml_STPs
@@ -1953,7 +1953,7 @@ class Flash:
 
     @property
     def water_index(self):
-        r'''The index of the component water in the components. None if water
+        r"""The index of the component water in the components. None if water
         is not present. Water is recognized by its CAS number.
 
         Returns
@@ -1963,7 +1963,7 @@ class Flash:
 
         Notes
         -----
-        '''
+        """
         try:
             return self._water_index
         except AttributeError:

@@ -27,10 +27,10 @@ from thermo.utils.functional import has_matplotlib
 from thermo.utils.names import NEGLECT_P
 from thermo.utils.t_dependent_property import TDependentProperty
 
-__all__ = ['TPDependentProperty']
+__all__ = ["TPDependentProperty"]
 
 class TPDependentProperty(TDependentProperty):
-    '''Class for calculating temperature and pressure dependent chemical
+    """Class for calculating temperature and pressure dependent chemical
     properties.
 
     On creation, a :obj:`TPDependentProperty` examines all the possible methods
@@ -76,17 +76,17 @@ class TPDependentProperty(TDependentProperty):
     all_methods_P : set
         All pressure-dependent methods available, [-]
 
-    '''
+    """
 
     P_dependent = True
     interpolation_P = None
 
     P_correlation_models = {
-        'Tait': {'custom': True},
+        "Tait": {"custom": True},
     }
     available_P_correlations = frozenset(P_correlation_models.keys())
 
-    P_correlation_parameters = {k: k + '_parameters' for k in P_correlation_models.keys()}
+    P_correlation_parameters = {k: k + "_parameters" for k in P_correlation_models.keys()}
     P_correlation_keys_to_parameters = {v: k for k, v in P_correlation_parameters.items()}
 
     def __init__(self, extrapolation, **kwargs):
@@ -121,13 +121,13 @@ class TPDependentProperty(TDependentProperty):
                         self.add_P_correlation(name=corr_i, model=P_correlation_name,
                                              **corr_kwargs)
 
-        self.tabular_extrapolation_permitted = kwargs.get('tabular_extrapolation_permitted', True)
+        self.tabular_extrapolation_permitted = kwargs.get("tabular_extrapolation_permitted", True)
 
-        if kwargs.get('tabular_data_P', None):
-            for name, (Ts, Ps, properties) in kwargs['tabular_data_P'].items():
+        if kwargs.get("tabular_data_P", None):
+            for name, (Ts, Ps, properties) in kwargs["tabular_data_P"].items():
                 self.add_tabular_data_P(Ts, Ps, properties, name=name, check_properties=False)
 
-        method_P = kwargs.get('method_P', getattr(self, '_method_P', None))
+        method_P = kwargs.get("method_P", getattr(self, "_method_P", None))
         if method_P is None:
             all_methods_P = self.all_methods_P
             for i in self.ranked_methods_P:
@@ -146,23 +146,23 @@ class TPDependentProperty(TDependentProperty):
         filled by :obj:`load_all_methods`."""
 
     def add_P_correlation(self, name, model, **kwargs):
-        d = getattr(self, model + '_parameters', None)
+        d = getattr(self, model + "_parameters", None)
         if d is None:
             d = {}
-            setattr(self, model + '_parameters', d)
+            setattr(self, model + "_parameters", d)
 
         full_kwargs = kwargs.copy()
         d[name] = full_kwargs
         self.all_methods.add(name)
         self.method = name
 
-        args = (kwargs['coeffs'], kwargs['N_terms'], kwargs['N_T'])
+        args = (kwargs["coeffs"], kwargs["N_terms"], kwargs["N_T"])
 
         self.P_correlations[name] = args
 
     @property
     def method_P(self):
-        r'''Method used to set or get a specific property method.
+        r"""Method used to set or get a specific property method.
 
         An exception is raised if the method specified isnt't available
         for the chemical with the provided information.
@@ -171,7 +171,7 @@ class TPDependentProperty(TDependentProperty):
         ----------
         method : str or list
             Methods by name to be considered or preferred
-        '''
+        """
         return self._method_P
 
     @method_P.setter
@@ -182,7 +182,7 @@ class TPDependentProperty(TDependentProperty):
         self._method_P = method_P
 
     def __call__(self, T, P):
-        r'''Convenience method to calculate the property; calls
+        r"""Convenience method to calculate the property; calls
         :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`. Caches previously calculated value,
         which is an overhead when calculating many different values of
         a property. See :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>` for more details as to the
@@ -199,7 +199,7 @@ class TPDependentProperty(TDependentProperty):
         -------
         prop : float
             Calculated property, [`units`]
-        '''
+        """
         if (T, P) == self.TP_cached:
             return self.prop_cached
         else:
@@ -211,7 +211,7 @@ class TPDependentProperty(TDependentProperty):
             return self.prop_cached
 
     def valid_methods_P(self, T=None, P=None):
-        r'''Method to obtain a sorted list of high-pressure methods that have
+        r"""Method to obtain a sorted list of high-pressure methods that have
         data available to be used. The methods are ranked in the following
         order:
 
@@ -234,7 +234,7 @@ class TPDependentProperty(TDependentProperty):
         sorted_valid_methods_P : list
             Sorted lists of methods valid at T and P according to
             :obj:`test_method_validity_P`
-        '''
+        """
         all_methods = self.all_methods_P
         sorted_methods = [i for i in self.ranked_methods_P if i in all_methods]
         current_method = self._method_P
@@ -248,7 +248,7 @@ class TPDependentProperty(TDependentProperty):
         return sorted_methods
 
     def TP_dependent_property(self, T, P):
-        r'''Method to calculate the property given a temperature and pressure
+        r"""Method to calculate the property given a temperature and pressure
         according to the selected :obj:`method_P` and :obj:`method`.
         The pressure-dependent method is always used and required to succeed.
         The result is checked with :obj:`test_property_validity`.
@@ -266,7 +266,7 @@ class TPDependentProperty(TDependentProperty):
         -------
         prop : float
             Calculated property, [`units`]
-        '''
+        """
         method_P = self._method_P
         if method_P is None:
             if self.RAISE_PROPERTY_CALCULATION_ERROR:
@@ -288,7 +288,7 @@ class TPDependentProperty(TDependentProperty):
             raise RuntimeError(f"{self.name} method '{method_P}' is not valid at T={T} K and P={P} Pa for component with CASRN '{self.CASRN}'")
 
     def TP_or_T_dependent_property(self, T, P):
-        r'''Method to calculate the property given a temperature and pressure
+        r"""Method to calculate the property given a temperature and pressure
         according to the selected :obj:`method_P` and :obj:`method`.
         The pressure-dependent method is always tried.
         The result is checked with :obj:`test_property_validity`.
@@ -313,7 +313,7 @@ class TPDependentProperty(TDependentProperty):
         -------
         prop : float
             Calculated property, [`units`]
-        '''
+        """
         if P is not None:
             prop = self.TP_dependent_property(T, P)
         if P is None or prop is None:
@@ -321,7 +321,7 @@ class TPDependentProperty(TDependentProperty):
         return prop
 
     def T_atmospheric_dependent_property(self, T, P_atm=101325.0):
-        r'''Method to calculate the property given a temperature at the standard
+        r"""Method to calculate the property given a temperature at the standard
         atmospheric pressure to the selected :obj:`method_P` and :obj:`method`.
         This is a wrapper around :obj:`TP_dependent_property`.
 
@@ -336,11 +336,11 @@ class TPDependentProperty(TDependentProperty):
         -------
         prop : float
             Calculated property, [`units`]
-        '''
+        """
         return self.TP_dependent_property(T, P_atm)
 
     def add_tabular_data_P(self, Ts, Ps, properties, name=None, check_properties=True):
-        r'''Method to set tabular data to be used for interpolation.
+        r"""Method to set tabular data to be used for interpolation.
         Ts and Ps must be in increasing order. If no name is given, data will be
         assigned the name 'Tabular data series #x', where x is the number of
         previously added tabular data series.
@@ -364,25 +364,25 @@ class TPDependentProperty(TDependentProperty):
             If True, the properties will be checked for validity with
             :obj:`test_property_validity` and raise an exception if any are not
             valid
-        '''
+        """
         # Ts must be in increasing order.
         if check_properties:
             for p in np.array(properties).ravel():
                 if not self.test_property_validity(p):
-                    raise ValueError('One of the properties specified are not feasible')
+                    raise ValueError("One of the properties specified are not feasible")
         if not all(b > a for a, b in zip(Ts, Ts[1:])):
-            raise ValueError('Temperatures are not sorted in increasing order')
+            raise ValueError("Temperatures are not sorted in increasing order")
         if not all(b > a for a, b in zip(Ps, Ps[1:])):
-            raise ValueError('Pressures are not sorted in increasing order')
+            raise ValueError("Pressures are not sorted in increasing order")
 
         if name is None:
-            name = 'Tabular data series #' + str(len(self.tabular_data))  # Will overwrite a poorly named series
+            name = "Tabular data series #" + str(len(self.tabular_data))  # Will overwrite a poorly named series
         self.tabular_data_P[name] = [Ts, Ps, properties]
         self.all_methods_P.add(name)
         self.method_P = name
 
     def test_method_validity_P(self, T, P, method):
-        r'''Method to test the validity of a specified method for a given
+        r"""Method to test the validity of a specified method for a given
         temperature. Demo function for testing only;
         must be implemented according to the methods available for each
         individual method. Include the interpolation check here.
@@ -400,7 +400,7 @@ class TPDependentProperty(TDependentProperty):
         -------
         validity : bool
             Whether or not a specifid method is valid
-        '''
+        """
         if method in self.tabular_data_P:
             if self.tabular_extrapolation_permitted:
                 validity = True
@@ -417,7 +417,7 @@ class TPDependentProperty(TDependentProperty):
         return validity
 
     def interpolate_P(self, T, P, name):
-        r'''Method to perform interpolation on a given tabular data set
+        r"""Method to perform interpolation on a given tabular data set
         previously added via :obj:`add_tabular_data_P`. This method will create the
         interpolators the first time it is used on a property set, and store
         them for quick future use.
@@ -444,7 +444,7 @@ class TPDependentProperty(TDependentProperty):
         -------
         prop : float
             Calculated property, [`units`]
-        '''
+        """
         key = (name, self.interpolation_T, id(self.interpolation_P), id(self.interpolation_property), id(self.interpolation_property_inv))
         Ts, Ps, properties = self.tabular_data_P[name]
         if not self.tabular_extrapolation_permitted:
@@ -485,7 +485,7 @@ class TPDependentProperty(TDependentProperty):
 
             # Only allow linear extrapolation, but with whatever transforms are specified
             # extrapolator = RectBivariateSpline(Ts2_sorted, Ps2_sorted, properties2_sorted.T, kx=1, ky=1, s=0)  # interpolation if fill value is missing
-            extrapolator = RegularGridInterpolator((Ts2_sorted, Ps2_sorted), properties2_sorted.T, method='linear', fill_value=None, bounds_error=False)  # interpolation if fill value is missing
+            extrapolator = RegularGridInterpolator((Ts2_sorted, Ps2_sorted), properties2_sorted.T, method="linear", fill_value=None, bounds_error=False)  # interpolation if fill value is missing
             # If more than 5 property points, create a spline interpolation
             if len(properties) >= 5:
                 spline = RectBivariateSpline(Ts2_sorted, Ps2_sorted, properties2_sorted.T, kx=3, ky=3, s=0)
@@ -515,7 +515,7 @@ class TPDependentProperty(TDependentProperty):
 
     def plot_isotherm(self, T, Pmin=None, Pmax=None, methods_P=[], pts=50,
                       only_valid=True, show=True):  # pragma: no cover
-        r'''Method to create a plot of the property vs pressure at a specified
+        r"""Method to create a plot of the property vs pressure at a specified
         temperature according to either a specified list of methods, or the
         user methods (if set), or all methods. User-selectable number of
         points, and pressure range. If only_valid is set,
@@ -545,21 +545,21 @@ class TPDependentProperty(TDependentProperty):
             checking and use methods outside their bounds
         show : bool
             If True, displays the plot; otherwise, returns it
-        '''
+        """
         # This function cannot be tested
         if not has_matplotlib():
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         import matplotlib.pyplot as plt
         if Pmin is None:
             if self.Pmin is not None:
                 Pmin = self.Pmin
             else:
-                raise Exception('Minimum pressure could not be auto-detected; please provide it')
+                raise Exception("Minimum pressure could not be auto-detected; please provide it")
         if Pmax is None:
             if self.Pmax is not None:
                 Pmax = self.Pmax
             else:
-                raise Exception('Maximum pressure could not be auto-detected; please provide it')
+                raise Exception("Maximum pressure could not be auto-detected; please provide it")
         fig = plt.figure()
 
         if not methods_P:
@@ -581,10 +581,10 @@ class TPDependentProperty(TDependentProperty):
             else:
                 properties = [self.calculate_P(T, P, method_P) for P in Ps]
                 plt.plot(Ps, properties, label=method_P)
-        plt.legend(loc='best')
-        plt.ylabel(self.name + ', ' + self.units)
-        plt.xlabel('Pressure, Pa')
-        plt.title(self.name + ' of ' + self.CASRN)
+        plt.legend(loc="best")
+        plt.ylabel(self.name + ", " + self.units)
+        plt.xlabel("Pressure, Pa")
+        plt.title(self.name + " of " + self.CASRN)
         if show:
             plt.show()
         else:
@@ -592,7 +592,7 @@ class TPDependentProperty(TDependentProperty):
 
     def plot_isobar(self, P, Tmin=None, Tmax=None, methods_P=[], pts=50,
                     only_valid=True, show=True):  # pragma: no cover
-        r'''Method to create a plot of the property vs temperature at a
+        r"""Method to create a plot of the property vs temperature at a
         specific pressure according to
         either a specified list of methods, or user methods (if set), or all
         methods. User-selectable number of points, and temperature range. If
@@ -621,21 +621,21 @@ class TPDependentProperty(TDependentProperty):
             If True, only plot successful methods and calculated properties,
             and handle errors; if False, attempt calculation without any
             checking and use methods outside their bounds
-        '''
+        """
         if not has_matplotlib():
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         import matplotlib.pyplot as plt
         if Tmin is None:
             if self._T_min_any is not None:
                 Tmin = self._T_min_any
             else:
-                raise Exception('Minimum temperature could not be auto-detected; please provide it')
+                raise Exception("Minimum temperature could not be auto-detected; please provide it")
         if Tmax is None:
             if self._T_max_any is not None:
                 Tmax = self._T_max_any
             else:
-                raise Exception('Maximum temperature could not be auto-detected; please provide it')
-        if hasattr(P, '__call__'):
+                raise Exception("Maximum temperature could not be auto-detected; please provide it")
+        if hasattr(P, "__call__"):
             P_changes = True
             P_func = P
         else:
@@ -667,10 +667,10 @@ class TPDependentProperty(TDependentProperty):
                 properties.append(self.calculate_P(T, P, method_P))
 
                 plt.plot(Ts, properties, label=method_P)
-        plt.legend(loc='best')
-        plt.ylabel(self.name + ', ' + self.units)
-        plt.xlabel('Temperature, K')
-        plt.title(self.name + ' of ' + self.CASRN)
+        plt.legend(loc="best")
+        plt.ylabel(self.name + ", " + self.units)
+        plt.xlabel("Temperature, K")
+        plt.title(self.name + " of " + self.CASRN)
         if show:
             plt.show()
         else:
@@ -680,7 +680,7 @@ class TPDependentProperty(TDependentProperty):
     def plot_TP_dependent_property(self, Tmin=None, Tmax=None, Pmin=None,
                                    Pmax=None,  methods_P=[], pts=15,
                                    only_valid=True):  # pragma: no cover
-        r'''Method to create a plot of the property vs temperature and pressure
+        r"""Method to create a plot of the property vs temperature and pressure
         according to either a specified list of methods, or user methods (if
         set), or all methods. User-selectable number of points for each
         variable. If only_valid is set,:obj:`test_method_validity_P` will be used to
@@ -709,9 +709,9 @@ class TPDependentProperty(TDependentProperty):
             If True, only plot successful methods and calculated properties,
             and handle errors; if False, attempt calculation without any
             checking and use methods outside their bounds
-        '''
+        """
         if not has_matplotlib():
-            raise Exception('Optional dependency matplotlib is required for plotting')
+            raise Exception("Optional dependency matplotlib is required for plotting")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma
@@ -720,22 +720,22 @@ class TPDependentProperty(TDependentProperty):
             if self.Pmin is not None:
                 Pmin = self.Pmin
             else:
-                raise ValueError('Minimum pressure could not be auto-detected; please provide it')
+                raise ValueError("Minimum pressure could not be auto-detected; please provide it")
         if Pmax is None:
             if self.Pmax is not None:
                 Pmax = self.Pmax
             else:
-                raise ValueError('Maximum pressure could not be auto-detected; please provide it')
+                raise ValueError("Maximum pressure could not be auto-detected; please provide it")
         if Tmin is None:
             if self._T_min_any is not None:
                 Tmin = self._T_min_any
             else:
-                raise ValueError('Minimum temperature could not be auto-detected; please provide it')
+                raise ValueError("Minimum temperature could not be auto-detected; please provide it")
         if Tmax is None:
             if self._T_max_any is not None:
                 Tmax = self._T_max_any
             else:
-                raise ValueError('Maximum temperature could not be auto-detected; please provide it')
+                raise ValueError("Maximum temperature could not be auto-detected; please provide it")
 
         if not methods_P:
             methods_P = self.all_methods_P
@@ -770,17 +770,17 @@ class TPDependentProperty(TDependentProperty):
                 properties = np.array([[self.calculate_P(T, P, method_P) for T in Ts] for P in Ps])
                 handles.append(ax.plot_surface(Ts_mesh, Ps_mesh, properties, cstride=1, rstride=1, alpha=0.5))
 
-        ax.yaxis.set_major_formatter(FormatStrFormatter('%.4g'))
-        ax.zaxis.set_major_formatter(FormatStrFormatter('%.4g'))
-        ax.xaxis.set_major_formatter(FormatStrFormatter('%.4g'))
-        ax.set_xlabel('Temperature, K')
-        ax.set_ylabel('Pressure, Pa')
-        ax.set_zlabel(self.name + ', ' + self.units)
-        plt.title(self.name + ' of ' + self.CASRN)
+        ax.yaxis.set_major_formatter(FormatStrFormatter("%.4g"))
+        ax.zaxis.set_major_formatter(FormatStrFormatter("%.4g"))
+        ax.xaxis.set_major_formatter(FormatStrFormatter("%.4g"))
+        ax.set_xlabel("Temperature, K")
+        ax.set_ylabel("Pressure, Pa")
+        ax.set_zlabel(self.name + ", " + self.units)
+        plt.title(self.name + " of " + self.CASRN)
         plt.show(block=False)
 
     def calculate_derivative_T(self, T, P, method, order=1):
-        r'''Method to calculate a derivative of a temperature and pressure
+        r"""Method to calculate a derivative of a temperature and pressure
         dependent property with respect to  temperature at constant pressure,
         of a given order using a specified  method. Uses SciPy's  derivative
         function, with a delta of 1E-6 K and a number of points equal to
@@ -808,11 +808,11 @@ class TPDependentProperty(TDependentProperty):
         dprop_dT_P : float
             Calculated derivative property at constant pressure,
             [`units/K^order`]
-        '''
+        """
         return derivative(self.calculate_P, T, dx=1e-6, args=[P, method], n=order, order=1+order*2)
 
     def calculate_derivative_P(self, P, T, method, order=1):
-        r'''Method to calculate a derivative of a temperature and pressure
+        r"""Method to calculate a derivative of a temperature and pressure
         dependent property with respect to pressure at constant temperature,
         of a given order using a specified method. Uses SciPy's derivative
         function, with a delta of 0.01 Pa and a number of points equal to
@@ -840,12 +840,12 @@ class TPDependentProperty(TDependentProperty):
         dprop_dP_T : float
             Calculated derivative property at constant temperature,
             [`units/Pa^order`]
-        '''
+        """
         f = lambda P: self.calculate_P(T, P, method)
         return derivative(f, P, dx=1e-2, n=order, order=1+order*2)
 
     def TP_dependent_property_derivative_T(self, T, P, order=1):
-        r'''Method to calculate a derivative of a temperature and pressure
+        r"""Method to calculate a derivative of a temperature and pressure
         dependent property with respect to temperature at constant pressure,
         of a given order, according to the selected :obj:`method_P`.
 
@@ -868,7 +868,7 @@ class TPDependentProperty(TDependentProperty):
         -------
         dprop_dT_P : float
             Calculated derivative property, [`units/K^order`]
-        '''
+        """
         try:
             return self.calculate_derivative_T(T, P, self._method_P, order)
         except:
@@ -876,7 +876,7 @@ class TPDependentProperty(TDependentProperty):
         return None
 
     def TP_dependent_property_derivative_P(self, T, P, order=1):
-        r'''Method to calculate a derivative of a temperature and pressure
+        r"""Method to calculate a derivative of a temperature and pressure
         dependent property with respect to pressure at constant temperature,
         of a given order, according to the selected :obj:`method_P`.
 
@@ -899,7 +899,7 @@ class TPDependentProperty(TDependentProperty):
         -------
         dprop_dP_T : float
             Calculated derivative property, [`units/Pa^order`]
-        '''
+        """
         try:
             return self.calculate_derivative_P(P, T, self._method_P, order)
         except:
