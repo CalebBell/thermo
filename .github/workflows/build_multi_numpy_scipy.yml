@@ -4,7 +4,11 @@ on:
     branches: [release]
   pull_request:
     branches: [master, release]
-    
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -98,7 +102,7 @@ jobs:
         pip install -r requirements_test.txt
         pip install numpy==${{ matrix.numpy }} scipy==${{ matrix.scipy }}
     - name: Add numba
-      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10' || matrix.python-version == '3.11' || matrix.python-version == '3.12'  }}
+      if: ${{ !contains(fromJSON('["pypy3.9", "3.13t"]'), matrix.python-version) }}
       run: |
         pip install numba
     - name: Install thermo
@@ -118,3 +122,10 @@ jobs:
         COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
         COVERALLS_PARALLEL: true
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload coverage HTML artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-html-numpy-${{ matrix.numpy }}-scipy-${{ matrix.scipy }}-py-${{ matrix.python-version }}
+        path: htmlcov/

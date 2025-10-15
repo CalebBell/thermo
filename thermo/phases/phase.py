@@ -50,7 +50,6 @@ from chemicals.virial import B_from_Z
 from fluids.constants import R, R_inv
 from fluids.core import c_ideal_gas, thermal_diffusivity
 from fluids.numerics import (
-    is_micropython,
     jacobian,
     log,
     newton_system,
@@ -173,11 +172,8 @@ class Phase:
 
     bulk_phase_type = False
 
-    if not is_micropython:
-        def __init_subclass__(cls):
-            cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
-    else:
-        __full_path__ = None
+    def __init_subclass__(cls):
+        cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
 
     def __str__(self):
         s =  f"<{self.__class__.__name__}, "

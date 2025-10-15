@@ -32,7 +32,4 @@ try:  # pragma: no cover
 except:  # pragma: no cover
     data_dir = os.path.dirname(__file__)
 
-try:
-    source_path = os.path.dirname(__file__) # micropython
-except:
-    source_path = ""
+source_path = os.path.dirname(__file__)

@@ -298,7 +298,6 @@ from fluids.numerics import (
     exp,
     horner,
     inf,
-    is_micropython,
     isclose,
     linspace,
     log,
@@ -947,11 +946,8 @@ class GCEOS:
     nonstate_constants = ("Tc", "Pc", "omega", "kwargs", "a", "b", "delta", "epsilon")
     kwargs_keys = tuple()
 
-    if not is_micropython:
-        def __init_subclass__(cls):
-            cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
-    else:
-        __full_path__ = None
+    def __init_subclass__(cls):
+        cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
 
     def state_hash(self):
         r"""Basic method to calculate a hash of the state of the model and its
