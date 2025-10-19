@@ -1204,11 +1204,11 @@ class GCEOS:
         """
         if self.phase == "l/g":
             try:
-                self.V_l
+                self.V_l  # noqa: B018
             except:
                 self.set_from_PT(self.raw_volumes, only_l=True, only_g=False)
             try:
-                self.V_g
+                self.V_g  # noqa: B018
             except:
                 self.set_from_PT(self.raw_volumes, only_l=False, only_g=True)
 
@@ -3881,7 +3881,7 @@ class GCEOS:
                 return "g"
         except:
             try:
-                self.Z_g
+                self.Z_g  # noqa: B018
                 return "g"
             except:
                 return "l"
@@ -4096,7 +4096,7 @@ class GCEOS:
         return GCEOS.P_discriminant_zeros_analytical(self.T, self.b, self.delta, self.epsilon, self.a_alpha, valid=True)
 
     @staticmethod
-    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
+    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):  # noqa: ARG004
         r"""Method to calculate the pressures which zero the discriminant
         function of the general cubic eos. This is a quartic function
         solved analytically.
@@ -9325,7 +9325,7 @@ class VDW(GCEOS):
 
 
     @staticmethod
-    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
+    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):  # noqa: ARG004
         r"""Method to calculate the pressures which zero the discriminant
         function of the :obj:`VDW` eos. This is an cubic function solved
         analytically.
