@@ -428,9 +428,6 @@ class ViscosityLiquid(TPDependentProperty):
     """Maximum valid value of liquid viscosity. Generous limit, as
     the value is that of bitumen in a Pitch drop experiment."""
 
-    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
-    extra_correlations_internal.add(JOBACK)
-
     ranked_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                       VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                       VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
