@@ -68,11 +68,13 @@ jobs:
           install: |
             if [[ "${{ matrix.distro }}" == "alpine_latest" ]]; then
               apk update
-              apk add python3 py3-pip py3-scipy py3-matplotlib py3-numpy py3-pandas
+              # py3-sqlalchemy is required for dev/dump_UNIFAC_assignments_to_sqlite.py
+              apk add python3 py3-pip py3-scipy py3-matplotlib py3-numpy py3-pandas py3-sqlalchemy
             elif [[ "${{ matrix.distro }}" == "ubuntu_latest" || "${{ matrix.distro }}" == "ubuntu_rolling" || "${{ matrix.distro }}" == "ubuntu_devel" || "${{ matrix.distro }}" == "ubuntu20.04" ||  "${{ matrix.distro }}" == "ubuntu22.04" || "${{ matrix.distro }}" == "bookworm" ]]; then
               apt-get update
               # Install libatlas-base-dev if available (not available on some architectures like riscv64)
-              apt-get install -y liblapack-dev gfortran libgmp-dev libmpfr-dev libsuitesparse-dev ccache libmpc-dev python3 python3-pip python3-scipy python3-matplotlib python3-numpy python3-pandas
+              # python3-sqlalchemy is required for dev/dump_UNIFAC_assignments_to_sqlite.py
+              apt-get install -y liblapack-dev gfortran libgmp-dev libmpfr-dev libsuitesparse-dev ccache libmpc-dev python3 python3-pip python3-scipy python3-matplotlib python3-numpy python3-pandas python3-sqlalchemy
               apt-get install -y libatlas-base-dev || true
             fi
           run: |
@@ -83,6 +85,7 @@ jobs:
                 pip3 install .
                 python3 dev/dump_UNIFAC_assignments_to_sqlite.py
                 pip3 uninstall -y thermo
+                rm -rf build/
               else
                 # If the exit status is 1 (False), this means the option is supported
                 python3 -m pip install wheel --break-system-packages
@@ -90,5 +93,6 @@ jobs:
                 pip3 install .  --break-system-packages
                 python3 dev/dump_UNIFAC_assignments_to_sqlite.py
                 pip3 uninstall -y thermo  --break-system-packages
+                rm -rf build/
               fi
               python3 -m pytest . -v -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
