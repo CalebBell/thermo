@@ -111,7 +111,7 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     else:
         conv_fun = numba.njit
 
-    chemicals.numba.iapws # Force the transform to occur
+    chemicals.numba.iapws  # noqa: B018 - Force the transform to occur
     for name in dir(chemicals.numba):
         obj = getattr(chemicals.numba, name)
         if isinstance(obj, (CPUDispatcher, ModuleType)):
