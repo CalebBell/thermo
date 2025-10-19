@@ -3168,7 +3168,7 @@ def is_radionuclide(mol):
 
     Notes
     -----
-    The lsit of radionuclide in this function is not complete
+    The list of radionuclide in this function is not complete
     and only contains ~25 common ones. A complete data source is in [1]_.
 
     Examples

@@ -36,6 +36,7 @@ Regular Solution Class
     :show-inheritance:
     :exclude-members:
 
+
 Flory Huggins Class
 ===================
 

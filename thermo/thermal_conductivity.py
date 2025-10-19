@@ -99,7 +99,7 @@ Mixture Gas Thermal Conductivity
 .. autodata:: thermal_conductivity_gas_mixture_methods
 
 Pure Solid Thermal Conductivity
-=============================
+===============================
 .. autoclass:: ThermalConductivitySolid
     :members: calculate
               name, property_max, property_min,

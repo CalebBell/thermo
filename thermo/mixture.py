@@ -1740,7 +1740,7 @@ class Mixture:
     def isentropic_exponents(self):
         r"""Gas-phase pure component ideal-gas isentropic exponent of the
         chemicals in the  mixture at its current temperature, [dimensionless].
-         Does not include pressure-compensation from an equation of state.
+        Does not include pressure-compensation from an equation of state.
 
         Examples
         --------
@@ -3316,7 +3316,7 @@ class Mixture:
 
     @property
     def constants(self):
-        r"""Returns a :obj:`thermo.chemical_package.ChemicalConstantsPackage
+        r"""Returns a :obj:`thermo.chemical_package.ChemicalConstantsPackage`
         instance with constants from the mixture, [-].
 
         """

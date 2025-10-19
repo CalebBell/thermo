@@ -66,7 +66,7 @@ class StreamArgs:
     heat and material balances. Unlike :obj:`EquilibriumStream`, this
     object is mutable and doesn't require any specifications. Specifications
     can be set as they become available, and then a :obj:`EquilibriumStream`
-    can be generated from the method :obj:`StreamArgs.flash`.
+    can be generated from the method :obj:`StreamArgs.stream`.
 
     The specification tracking is the key purpose of this object. Once a
     `T` and `P` have been set, `V` **can't** be set because there are no
@@ -1770,7 +1770,7 @@ class StreamArgs:
         r"""Create and return an EquilibriumStream object using the set specifications.
         If `existing_flash` is provided, that :obj:`EquilibriumState` object will be used
         as the state specifications without checking that it contains the same specs as set
-         to this object. If insufficient information is available, return None.
+        to this object. If insufficient information is available, return None.
 
         Parameters
         ----------
