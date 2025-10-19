@@ -62,7 +62,6 @@ from chemicals.solubility import *  # noqa: F403
 from chemicals.temperature import *  # noqa: F403
 from chemicals.triple import *  # noqa: F403
 from chemicals.virial import *  # noqa: F403
-from fluids import numerics
 
 from . import (
     activity,
@@ -303,7 +302,7 @@ def complete_lazy_loading():
     import chemicals
     chemicals.complete_lazy_loading()
     electrochem._load_electrochem_data()
-    interaction_parameters.IPDB
+    interaction_parameters.IPDB  # noqa: B018
     law.load_law_data()
     law.load_economic_data()
     unifac.load_unifac_ip()
@@ -329,10 +328,6 @@ def __getattr__(name):
         import thermo.units
         globals()[name] = thermo.units
         return thermo.units
-    if name == "numba_vectorized":
-        import thermo.numba_vectorized
-        globals()[name] = thermo.numba_vectorized
-        return thermo.numba_vectorized
     raise AttributeError(f"module {__name__} has no attribute {name}")
 
 try:

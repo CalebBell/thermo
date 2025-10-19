@@ -199,5 +199,5 @@ if not skip:
             pass
 
     if not from_json:
-        marshal_rows = marshal.load(open(binary_path, "rb"))
+        marshal_rows = marshal.load(open(binary_path, "rb"))  # nosec B302
         loaded_chemicals = loadChemicalConstants(marshal_rows, rows=True)

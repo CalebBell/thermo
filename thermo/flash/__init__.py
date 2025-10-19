@@ -83,7 +83,7 @@ object_lookups[FlashVL.__full_path__] = FlashVL
 object_lookups[FlashVLN.__full_path__] = FlashVLN
 
 
-from thermo.property_package import StabilityTester
+from thermo.property_package import StabilityTester  # noqa: E402
 
 object_lookups[StabilityTester.__full_path__] = StabilityTester
 
