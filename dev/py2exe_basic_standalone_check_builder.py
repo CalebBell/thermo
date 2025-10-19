@@ -18,7 +18,7 @@ for data_dir in thermo_data_dirs:
         files = glob.glob(os.path.join(dir_path, '*'))
         files = [f for f in files if os.path.isfile(f)]
         if files:
-            thermo_data.append((f'thermo/{data_dir}', files))
+            thermo_data.append((f'thermo\\{data_dir}', files))
 
 # Handle Interaction Parameters/ChemSep subdirectory for thermo
 chemsep_dir = os.path.join('..', 'thermo', 'Interaction Parameters', 'ChemSep')
@@ -26,7 +26,7 @@ if os.path.exists(chemsep_dir):
     files = glob.glob(os.path.join(chemsep_dir, '*'))
     files = [f for f in files if os.path.isfile(f)]
     if files:
-        thermo_data.append((f'thermo/Interaction Parameters/ChemSep', files))
+        thermo_data.append((r'thermo\Interaction Parameters\ChemSep', files))
 
 # Get all data files from installed chemicals package
 chemicals_data = []
@@ -44,7 +44,7 @@ try:
             files = glob.glob(os.path.join(dir_path, '*'))
             files = [f for f in files if os.path.isfile(f)]
             if files:
-                chemicals_data.append((f'chemicals/{data_dir}', files))
+                chemicals_data.append((f'chemicals\\{data_dir}', files))
                 print(f"Adding {len(files)} files from chemicals/{data_dir}")
 except ImportError:
     print("Warning: chemicals package not found, data files may be missing")
