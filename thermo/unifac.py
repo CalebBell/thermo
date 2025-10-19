@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
  Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -141,7 +141,7 @@ Data for UNIFAC 2.0
     Chemical Engineering Journal 504 (January 15, 2025): 158667. https://doi.org/10.1016/j.cej.2024.158667.
 
     :type: dict[int: dict[int: float]]
-'''
+"""
 
 
 __all__ = [
@@ -3679,7 +3679,7 @@ def Van_der_Waals_area(Q):
 
 def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
                modified=False):
-    r'''Calculates the interaction parameter psi(m, n) for two UNIFAC
+    r"""Calculates the interaction parameter psi(m, n) for two UNIFAC
     subgroups, given the system temperature, the UNIFAC subgroups considered
     for the variant of UNIFAC used, the interaction parameters for the
     variant of UNIFAC used, and whether or not the temperature dependence is
@@ -3739,7 +3739,7 @@ def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
        Contribution Estimation of Activity Coefficients in Nonideal Liquid
        Mixtures." AIChE Journal 21, no. 6 (November 1, 1975): 1086-99.
        doi:10.1002/aic.690210607.
-    '''
+    """
     main1 = subgroup_data[subgroup1].main_group_id
     main2 = subgroup_data[subgroup2].main_group_id
     if modified:
@@ -3757,7 +3757,7 @@ def UNIFAC_psi(T, subgroup1, subgroup2, subgroup_data, interaction_data,
 
 def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
                   interaction_data=None, modified=False):
-    r'''Calculates activity coefficients using the UNIFAC model (optionally
+    r"""Calculates activity coefficients using the UNIFAC model (optionally
     modified), given a mixture's temperature, liquid mole fractions,
     and optionally the subgroup data and interaction parameter data of your
     choice. The default is to use the original UNIFAC model, with the latest
@@ -3903,7 +3903,7 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
        Theoretically Based Departure Function for Multi-Fluid Mixture Models."
        Fluid Phase Equilibria 469 (August 15, 2018): 56-69.
        https://doi.org/10.1016/j.fluid.2018.04.015.
-    '''
+    """
     cmps = range(len(xs))
     if subgroup_data is None:
         subgroups = UFSG
@@ -5452,7 +5452,7 @@ class UNIFAC(GibbsExcess):
                     group_counts[subgroup] = count
 
         # Convert group counts into a list, sorted by index (lowest subgroup index is first element, highest subgroup index is the last)
-        subgroup_list = list(sorted(group_counts.keys()))
+        subgroup_list = sorted(group_counts.keys())
 
         Qs = [subgroups[group].Q for group in subgroup_list]
         vs = chemgroups_to_matrix(chemgroups)

@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +18,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 __all__ = [
     "IdealGasDeparturePhase",
@@ -4419,7 +4419,7 @@ class Phase:
 
     def _derivs_jacobian(self, a, b, c, x=_derivs_jacobian_x,
                          y=_derivs_jacobian_y):
-        r'''Calculates and returns a first-order derivative of one property
+        r"""Calculates and returns a first-order derivative of one property
         with respect to another property at constant another property.
 
         This is particularly useful to obtain derivatives with respect to
@@ -4445,7 +4445,7 @@ class Phase:
            Thermodynamic State Properties for Dynamic Simulation."
            Environmental Earth Sciences 70, no. 8 (April 10, 2013): 3497-3503.
            https://doi.org/10.1007/s12665-013-2394-z.
-        '''
+        """
         n0 = getattr(self, f"d{a}_d{x}_{y}")()
         n1 = getattr(self, f"d{c}_d{y}_{x}")()
 

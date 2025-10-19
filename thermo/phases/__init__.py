@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -153,7 +153,7 @@ CoolProp Wrapper
    :members: __init__
    :exclude-members: __init__
 
-'''
+"""
 
 # # Not ready to be documented or exposed
 # Petroleum Specific Phases

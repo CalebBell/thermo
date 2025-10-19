@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,7 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-'''
+"""
 __all__ = [
     "VIRIAL_B_ABBOTT",
     "VIRIAL_B_MENG",
@@ -132,7 +132,7 @@ VIRIAL_CROSS_B_MODELS_SET = frozenset([VIRIAL_CROSS_B_TARAKAD_DANNER, VIRIAL_CRO
 VIRIAL_CROSS_C_MODELS_SET = frozenset([VIRIAL_CROSS_C_TARAKAD_DANNER, VIRIAL_CROSS_C_ZEROS])
 
 class VirialCSP:
-    r'''Class for calculating the `B` virial coefficients of pure components
+    r"""Class for calculating the `B` virial coefficients of pure components
     and their B interaction matrix, and the `C` virial coefficients of pure
     components and their mixtures. It is configurable which corresponding
     states model is used. Either the `B` or `C` model can be disabled;
@@ -256,7 +256,7 @@ class VirialCSP:
        Prediction of Third Virial Coefficients for a Wide Range of Substances."
        International Journal of Thermophysics 24, no. 6 (November 1, 2003):
        1667-80. https://doi.org/10.1023/B:IJOT.0000004098.98614.38.
-    '''
+    """
 
     __full_path__ = f"{__module__}.{__qualname__}"
     json_version = 1
@@ -896,7 +896,7 @@ class VirialCSP:
 
 
 class VirialGas(IdealGasDeparturePhase):
-    r'''Class for representing a real gas defined by the virial equation of
+    r"""Class for representing a real gas defined by the virial equation of
     state (density form), as a phase object. The equation includes the `B`
     and `C` coefficients but not further coefficients as they cannot be
     accurately estimated. Only limited experimental data for third virial
@@ -959,7 +959,7 @@ class VirialGas(IdealGasDeparturePhase):
     (0.02493687, 1.00025907e-05, 59.062)
     >>> phase
     VirialGas(model=VirialCSP(T=300.0, Tcs=[126.2, 154.58, 150.8], Pcs=[3394387.5, 5042945.25, 4873732.5], Vcs=[8.95e-05, 7.34e-05, 7.49e-05], omegas=[0.04, 0.021, -0.004], B_model='VIRIAL_B_PITZER_CURL', cross_B_model='Tarakad-Danner', cross_B_model_kijs=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], B_model_Meng_as=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], B_model_Tsonopoulos_extended_as=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], B_model_Tsonopoulos_extended_bs=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], C_model='VIRIAL_C_ORBEY_VERA', cross_C_model='Tarakad-Danner'), HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [1.48828880864943e-11, -4.9886775708919434e-08, 5.4709164027448316e-05, -0.014916145936966912, 30.18149930389626])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-8.231317991971707e-12, 1.3053706310500586e-08, 5.820123832707268e-07, -0.0021700747433379955, 29.424883205644317])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [0, 0, 0, 0, 20.7861565453831]))], B_mixing_rule='theory', C_mixing_rule='Orentlicher-Prausnitz', T=300.0, P=100000.0, zs=[0.78, 0.21, 0.01])
-    '''
+    """
 
     phase = "g"
     force_phase = "g"

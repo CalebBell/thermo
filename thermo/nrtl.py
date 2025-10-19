@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -46,7 +46,7 @@ NRTL Regression Calculations
 ============================
 .. autofunction:: NRTL_gammas_binaries
 
-'''
+"""
 
 from math import exp, log
 
@@ -2026,7 +2026,7 @@ def NRTL_gammas_binaries_jac(xs, tau12, tau21, alpha12, alpha21, calc=None):
     return calc
 
 def NRTL_gammas(xs, taus, alphas):
-    r'''Calculates the activity coefficients of each species in a mixture
+    r"""Calculates the activity coefficients of each species in a mixture
     using the Non-Random Two-Liquid (NRTL) method, given their mole fractions,
     dimensionless interaction parameters, and nonrandomness constants. Those
     are normally correlated with temperature in some form, and need to be
@@ -2100,7 +2100,7 @@ def NRTL_gammas(xs, taus, alphas):
     .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
        Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
        Wiley-VCH, 2012.
-    '''
+    """
     gammas = []
     cmps = range(len(xs))
     # Gs does not depend on composition

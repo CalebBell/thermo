@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -104,7 +104,7 @@ Mixture Solid Heat Capacity
 
 .. autodata:: heat_capacity_solid_mixture_methods
 
-'''
+"""
 
 
 __all__ = [
@@ -167,7 +167,7 @@ iterating over them."""
 WEBBOOK_SHOMATE_INTERVALS = [WEBBOOK_SHOMATE+f"_{i}" for i in range(6)]
 
 class HeatCapacityGas(TDependentProperty):
-    r'''Class for dealing with gas heat capacity as a function of temperature.
+    r"""Class for dealing with gas heat capacity as a function of temperature.
     Consists of three coefficient-based methods, two constant methods,
     one tabular source, one simple estimator, one group-contribution estimator,
     one component specific method, and the external library CoolProp.
@@ -268,7 +268,7 @@ class HeatCapacityGas(TDependentProperty):
        Properties from Group-Contributions." Chemical Engineering
        Communications 57, no. 1-6 (July 1, 1987): 233-43.
        doi:10.1080/00986448708960487.
-    '''
+    """
 
     name = "gas heat capacity"
     units = "J/mol/K"
@@ -586,7 +586,7 @@ iterating over them."""
 
 
 class HeatCapacityLiquid(TDependentProperty):
-    r'''Class for dealing with liquid heat capacity as a function of temperature.
+    r"""Class for dealing with liquid heat capacity as a function of temperature.
     Consists of seven coefficient-based methods, two constant methods,
     one tabular source, two CSP methods based on gas heat capacity, one simple
     estimator, and the external library CoolProp.
@@ -722,7 +722,7 @@ class HeatCapacityLiquid(TDependentProperty):
        Berlin; New York:: Springer, 2010.
     .. [6] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
-    '''
+    """
 
     name = "Liquid heat capacity"
     units = "J/mol/K"

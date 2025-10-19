@@ -1,4 +1,4 @@
-r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+r"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -48,7 +48,7 @@ Faster implementations which do not store N^2 matrices:
 
 .. autofunction:: a_alpha_quadratic_terms
 .. autofunction:: a_alpha_and_derivatives_quadratic_terms
-'''
+"""
 
 # Direct fugacity calls
 # ---------------------

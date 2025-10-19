@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -63,7 +63,7 @@ References
 .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process
    Simulation. Weinheim, Germany: Wiley-VCH, 2012.
 
-'''
+"""
 
 
 __all__ = ["GibbsExcess", "IdealSolution"]

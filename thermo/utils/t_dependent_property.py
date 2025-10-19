@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +18,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 
 __all__ = [
@@ -3621,7 +3621,7 @@ class TDependentProperty:
             raise ValueError("Method already exists")
         if not len(method_names) + 1 == len(T_ranges):
             raise ValueError("Method name and temperature ranges are inconsistent")
-        if not T_ranges == list(sorted(T_ranges)):
+        if not T_ranges == sorted(T_ranges):
             raise ValueError("Temperature ranges should be sorted assending")
         Tmin = T_ranges[0]
         Tmax = T_ranges[-1]

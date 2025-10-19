@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021, 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,7 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-'''
+"""
 __all__ = ["CEOSGas", "CEOSLiquid"]
 from fluids.numerics import numpy as np
 from fluids.numerics import trunc_exp, trunc_exp_numpy
@@ -177,7 +177,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         self.eos_mix = self.eos_class(T=T, P=P, zs=zs, **self.eos_kwargs)
 
     def to_TP_zs(self, T, P, zs, other_eos=None):
-        r'''Method to create a new Phase object with the same constants as the
+        r"""Method to create a new Phase object with the same constants as the
         existing Phase but at a different `T` and `P`. This method has a
         special parameter `other_eos`.
 
@@ -219,7 +219,7 @@ class CEOSPhase(IdealGasDeparturePhase):
         CEOSLiquid(eos_class=PRMIX, eos_kwargs={"Tcs": [305.32, 369.83], "Pcs": [4872000.0, 4248000.0], "omegas": [0.098, 0.152]}, HeatCapacityGases=[], T=300.0, P=1000000.0, zs=[0.2, 0.8])
         >>> new_liq.eos_mix is gas.eos_mix
         True
-        '''
+        """
         # Why so slow
         new = self.__class__.__new__(self.__class__)
         new.vectorized = self.vectorized

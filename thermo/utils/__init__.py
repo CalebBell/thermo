@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -70,7 +70,7 @@ Temperature, Pressure, and Composition Dependent
     :undoc-members:
     :show-inheritance:
 
-'''
+"""
 
 from . import functional, mixture_property, t_dependent_property, tp_dependent_property
 from .functional import *

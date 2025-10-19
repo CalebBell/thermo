@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,7 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-'''
+"""
 
 __all__ = ["IdealGas"]
 
@@ -122,7 +122,7 @@ class IdealGas(Phase):
             self.P = P
 
     def __repr__(self):
-        r'''Method to create a string representation of the phase object, with
+        r"""Method to create a string representation of the phase object, with
         the goal of making it easy to obtain standalone code which reproduces
         the current state of the phase. This is extremely helpful in creating
         new test cases.
@@ -143,7 +143,7 @@ class IdealGas(Phase):
         >>> phase
         IdealGas(HeatCapacityGases=[HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [-8.23131799e-12, 1.30537063e-08, 5.82012383e-07, -0.0021700747, 29.42488320])), HeatCapacityGas(extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [1.48828880e-11, -4.988677570e-08, 5.470916402e-05, -0.01491614593, 30.1814993]))], T=300, P=100000.0, zs=[0.79, 0.21])
 
-        '''
+        """
         Cpgs = ", ".join(str(o) for o in self.HeatCapacityGases)
         base = f"IdealGas(HeatCapacityGases=[{Cpgs}], "
         for s in ("Hfs", "Gfs", "Sfs", "T", "P", "zs"):

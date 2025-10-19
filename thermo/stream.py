@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022, 2023
 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -19,7 +19,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 
 __all__ = [
@@ -1888,10 +1888,10 @@ class StreamArgs:
             return m
 
     def value(self, name):
-        r'''Wrapper around getattr that obtains a property specified. This method
+        r"""Wrapper around getattr that obtains a property specified. This method
         exists to unify e.g. H() on a EquilibriumState with H here which is a property.
         Either object can simply be called obj.value("H"). [various]
-        '''
+        """
         v = getattr(self, name)
         try:
             v = v()

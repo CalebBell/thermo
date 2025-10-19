@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -69,7 +69,7 @@ Bulk Settings Class
 .. autodata:: KAPPA_METHODS
 .. autodata:: JT_METHODS
 
-'''
+"""
 
 __all__ = ["Bulk", "BulkSettings", "default_settings"]
 
@@ -223,7 +223,7 @@ log_prop_methods = {LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOL
 prop_power_methods = {POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED}
 
 class BulkSettings:
-    r'''Class containing configuration methods for determining how properties of
+    r"""Class containing configuration methods for determining how properties of
     a `Bulk` phase made of different phases are handled. All parameters are also
     attributes.
 
@@ -380,7 +380,7 @@ class BulkSettings:
        https://www.iso.org/cms/render/live/en/sites/isoorg/contents/data/standard/01/88/18855.html.
     .. [2] 14:00-17:00. "ISO 13443:1996." ISO. Accessed March 29, 2021.
        https://www.iso.org/cms/render/live/en/sites/isoorg/contents/data/standard/02/04/20461.html.
-    '''
+    """
 
     __full_path__ = f"{__module__}.{__qualname__}"
     json_version = 1
@@ -601,7 +601,7 @@ class BulkSettings:
 default_settings = BulkSettings()
 
 class Bulk(Phase):
-    r'''Class to encapsulate multiple :obj:`Phase <thermo.phases.Phase>` objects and provide a
+    r"""Class to encapsulate multiple :obj:`Phase <thermo.phases.Phase>` objects and provide a
     unified interface for obtaining properties from a group of phases.
 
     This class exists for three purposes:
@@ -639,7 +639,7 @@ class Bulk(Phase):
 
 
 
-    '''
+    """
 
     bulk_phase_type = True
 

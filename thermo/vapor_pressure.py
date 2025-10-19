@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -54,7 +54,7 @@ Sublimation Pressure
     :exclude-members:
 
 .. autodata:: sublimation_pressure_methods
-'''
+"""
 
 
 __all__ = [
@@ -93,12 +93,12 @@ Psat_extra_correlations = {}
 
 
 def Psat_mercury_Huber_Laesecke_Friend_2006(T):
-    '''Equation 4 in
+    """Equation 4 in
 
     Huber, Marcia L., Arno Laesecke, and Daniel G. Friend. "Correlation for the Vapor
     Pressure of Mercury."" Industrial & Engineering Chemistry Research 45, no. 21
     (October 1, 2006): 7351-61. https://doi.org/10.1021/ie060560s.
-    '''
+    """
     Tc = 1764
     Pc = 167e6
     ais = [-4.57618368, -1.40726277, 2.36263541, -31.0889985, 58.0183959, -27.6304546]
@@ -162,7 +162,7 @@ iterating over them."""
 
 
 class VaporPressure(TDependentProperty):
-    '''Class for dealing with vapor pressure as a function of temperature.
+    """Class for dealing with vapor pressure as a function of temperature.
     Consists of six coefficient-based methods and five data sources, one
     source of tabular information, four corresponding-states estimators,
     any provided equation of state, the external library CoolProp,
@@ -299,7 +299,7 @@ class VaporPressure(TDependentProperty):
        Oxygen Containing Organic Compounds". 2000.
     .. [10] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen
        Containing Organic Compounds. Springer, 2001.
-    '''
+    """
 
     name = "Vapor pressure"
     units = "Pa"
@@ -548,7 +548,7 @@ iterating over them."""
 
 
 class SublimationPressure(TDependentProperty):
-    '''Class for dealing with sublimation pressure as a function of temperature.
+    """Class for dealing with sublimation pressure as a function of temperature.
     Consists of one estimation method, IAPWS for ice, metallic element data,
     and some data for organic species.
 
@@ -614,7 +614,7 @@ class SublimationPressure(TDependentProperty):
        Oxygen Containing Organic Compounds". 2000.
     .. [5] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen
        Containing Organic Compounds. Springer, 2001.
-    '''
+    """
 
     name = "Sublimation pressure"
     units = "Pa"

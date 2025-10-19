@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +18,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 
 __all__ = [
@@ -280,7 +280,7 @@ def load_coolprop_fluids(depth=0):
 
 @mark_numba_incompatible
 def CoolProp_T_dependent_property(T, CASRN, prop, phase, Tc=None):
-    r'''Calculates a property of a chemical in either the liquid or gas phase
+    r"""Calculates a property of a chemical in either the liquid or gas phase
     as a function of temperature only. This means that the property is
     either at 1 atm or along the saturation curve.
 
@@ -334,7 +334,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase, Tc=None):
        Open-Source Thermophysical Property Library CoolProp." Industrial &
        Engineering Chemistry Research 53, no. 6 (February 12, 2014):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
-    '''
+    """
     if not has_CoolProp:  # pragma: no cover
         raise Exception("CoolProp library is not installed")
     if CASRN not in coolprop_dict and "REFPROP" not in CASRN:

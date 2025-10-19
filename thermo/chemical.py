@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +18,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 
 __all__ = ["Chemical", "reference_states"]
@@ -1770,13 +1770,13 @@ class Chemical: # pragma: no cover
 
     @property
     def economic_status(self):
-        r'''Dictionary of economic status indicators for the chemical.
+        r"""Dictionary of economic status indicators for the chemical.
 
         Examples
         --------
         >>> Chemical('benzene').economic_status
         ["US public: {'Manufactured': 6165232.1, 'Imported': 463146.474, 'Exported': 271908.252}", '1,000,000 - 10,000,000 tonnes per annum', 'Intermediate Use Only', 'OECD HPV Chemicals']
-        '''
+        """
         if self.__economic_status:
             return self.__economic_status
         else:

@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +18,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 __all__ = [
     "TPD",
@@ -267,7 +267,7 @@ def d2ns_to_dn2_partials(d2ns, dns):
 #    return hess
 
 def TPD(T, zs, lnphis, ys, lnphis_test):
-    r'''Function for calculating the Tangent Plane Distance function
+    r"""Function for calculating the Tangent Plane Distance function
     according to the original Michelsen definition. More advanced
     transformations of the TPD function are available in the literature for
     performing calculations.
@@ -334,7 +334,7 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
        "Development of a Thermodynamically Consistent, Robust and Efficient
        Phase Equilibrium Solver and Its Validations." Fuel 115 (January 1,
        2014): 1-16. https://doi.org/10.1016/j.fuel.2013.06.039.
-    '''
+    """
     tot = 0.0
     for yi, phi_yi, zi, phi_zi in zip(ys, lnphis_test, zs, lnphis):
         if yi == 0 and zi == 0:
@@ -344,7 +344,7 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
     return tot*R*T
 
 def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
-    r'''Modified Tangent Plane Distance function according to [1]_ and
+    r"""Modified Tangent Plane Distance function according to [1]_ and
     [2]_. The stationary points of a system are all zeros of this function;
     so once all zeroes have been located, the stability can be evaluated
     at the stationary points only. It may be required to use multiple
@@ -395,7 +395,7 @@ def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
        Approach for the Solution of the Isothermal Multiphase Flash
        Problem. Application to Vapor-Liquid-Liquid Systems." The Canadian
        Journal of Chemical Engineering 72, no. 4 (August 1, 1994): 722-34.
-    '''
+    """
     kis = []
     for yi, log_phi_yi, zi, log_phi_zi in zip(ys, lnphis_trial, zs, lnphis):
         di = log_phi_zi + (log(zi) if zi > 0.0 else -690.0)

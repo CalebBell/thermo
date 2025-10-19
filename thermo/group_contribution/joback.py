@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -46,7 +46,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/thermo/>`_.
     :show-inheritance:
 
 
-'''
+"""
 
 
 __all__ = ["DikyJoback", "Joback"]
@@ -285,7 +285,7 @@ for j in JOBACK_GROUPS.values():
 JOBACK_GROUPS_LIST = list(JOBACK_GROUPS.values())
 
 class Joback:
-    r'''Class for performing chemical property estimations with the Joback
+    r"""Class for performing chemical property estimations with the Joback
     group contribution method as described in [1]_ and [2]_. This is a very
     common method with low accuracy but wide applicability. This routine can be
     used with either its own automatic fragmentation routine, or user specified
@@ -386,7 +386,7 @@ class Joback:
     .. [3] Elliott, J. Richard, Vladimir Diky, Thomas A. Knotts IV, and
        W. Vincent Wilding. The Properties of Gases and Liquids, Sixth
        Edition. 6th edition. New York: McGraw Hill, 2023.
-    '''
+    """
 
     calculated_Cpig_coeffs = None
     calculated_mul_coeffs = None
@@ -875,7 +875,7 @@ class Joback:
 
     @staticmethod
     def mul_coeffs(counts):
-        r'''Computes the liquid phase viscosity Joback coefficients
+        r"""Computes the liquid phase viscosity Joback coefficients
         of an organic compound using the Joback method as a function of
         chemical structure only.
 
@@ -911,7 +911,7 @@ class Joback:
         >>> mul = lambda T : MW*exp(mu_ab[0]/T + mu_ab[1])
         >>> mul(300)
         0.0002940378347162687
-        '''
+        """
         try:
             a, b = 0.0, 0.0
             for group, count in counts.items():
@@ -1178,7 +1178,7 @@ for group in DIKY_JOBACK_GROUPS.values():
         DIKY_JOBACK_GROUPS_FOR_FRAGMENTATION[group.group_id] = group.smarts
 
 class DikyJoback:
-    r'''Class to estimate ideal-gas heat capacity using the a variant of the Joback
+    r"""Class to estimate ideal-gas heat capacity using the a variant of the Joback
     method with contributions refit and extended by NIST's Vladimir Diky,
     as shown in [1]_.
 
@@ -1225,7 +1225,7 @@ class DikyJoback:
     .. [1] Elliott, J. Richard, Vladimir Diky, Thomas A. Knotts IV, and
        W. Vincent Wilding. The Properties of Gases and Liquids, Sixth
        Edition. 6th edition. New York: McGraw Hill, 2023.
-    '''
+    """
 
     def __init__(self, mol):
         load_rdkit_modules()

@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 207, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -56,7 +56,7 @@ Mixture Surface Tension
 .. autodata:: surface_tension_mixture_methods
 
 
-'''
+"""
 
 
 __all__ = [
@@ -110,7 +110,7 @@ iterating over them."""
 
 
 class SurfaceTension(TDependentProperty):
-    '''Class for dealing with surface tension as a function of temperature.
+    """Class for dealing with surface tension as a function of temperature.
     Consists of three coefficient-based methods and four data sources, one
     source of tabular information, five corresponding-states estimators,
     and one substance-specific method.
@@ -229,7 +229,7 @@ class SurfaceTension(TDependentProperty):
        043105. doi:10.1063/1.4768782.
     .. [6] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
-    '''
+    """
 
     name = "Surface tension"
     units = "N/m"

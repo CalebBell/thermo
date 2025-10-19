@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -42,7 +42,7 @@ UNIQUAC Class
 UNIQUAC Functional Calculations
 ===============================
 .. autofunction:: UNIQUAC_gammas
-'''
+"""
 
 from math import exp, log
 
@@ -446,7 +446,7 @@ def uniquac_gammas_from_args(xs, N, T, z, rs, qs, taus, gammas=None):
     return gammas
 
 class UNIQUAC(GibbsExcess):
-    r'''Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing an a liquid with excess gibbs energy represented
     by the UNIQUAC equation. This model is capable of representing VL and LL
     behavior.
 
@@ -630,7 +630,7 @@ class UNIQUAC(GibbsExcess):
        Professional, 2000.
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    '''
+    """
 
     z = 10.0
     _x_infinite_dilution = 1e-12
@@ -1650,7 +1650,7 @@ class UNIQUAC(GibbsExcess):
         return d2GE_dxixjs
 
     def missing_interaction_parameters(self):
-        r'''
+        r"""
         Return an empty list as UNIQUAC does not have a concept of "missing parameters".
         All parameter values, including zeros, will impact the phase equilibria
         calculations through their effect on the tau terms. Parameter values cannot be
@@ -1661,7 +1661,7 @@ class UNIQUAC(GibbsExcess):
         -------
         missing_params : list[tuple[int, int]]
             Empty list, as UNIQUAC parameters cannot be considered missing, [-].
-        '''
+        """
         return []
 
 
@@ -1884,7 +1884,7 @@ def UNIQUAC_gammas_binary(x1, r1, r2, q1, q2, tau12, tau21):
 
 
 def UNIQUAC_gammas(xs, rs, qs, taus):
-    r'''Calculates the activity coefficients of each species in a mixture
+    r"""Calculates the activity coefficients of each species in a mixture
     using the Universal quasi-chemical (UNIQUAC) equation, given their mole
     fractions, `rs`, `qs`, and dimensionless interaction parameters. The
     interaction parameters are normally correlated with temperature, and need
@@ -1983,7 +1983,7 @@ def UNIQUAC_gammas(xs, rs, qs, taus):
     .. [3] Maurer, G., and J. M. Prausnitz. "On the Derivation and Extension of
        the Uniquac Equation." Fluid Phase Equilibria 2, no. 2 (January 1,
        1978): 91-99. doi:10.1016/0378-3812(78)85002-X.
-    '''
+    """
     cmps = range(len(xs))
 
     rsxs = [rs[i]*xs[i] for i in cmps]

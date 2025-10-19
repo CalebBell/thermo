@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -45,7 +45,7 @@ Wilson Regression Calculations
 ==============================
 .. autofunction:: wilson_gammas_binaries
 
-'''
+"""
 
 from math import exp, log
 
@@ -369,7 +369,7 @@ def wilson_gammas_binaries_jac(xs, lambda12, lambda21, calc=None):
 
 
 class Wilson(GibbsExcess):
-    r'''Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing an a liquid with excess gibbs energy represented
     by the Wilson equation. This model is capable of representing most
     nonideal liquids for vapor-liquid equilibria, but is not recommended for
     liquid-liquid equilibria.
@@ -573,7 +573,7 @@ class Wilson(GibbsExcess):
        Demand Norderstedt, Germany, 2000.
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    '''
+    """
 
     model_id = 200
 
@@ -1724,7 +1724,7 @@ class Wilson(GibbsExcess):
     del i, r
 
 def Wilson_gammas(xs, params):
-    r'''Calculates the activity coefficients of each species in a mixture
+    r"""Calculates the activity coefficients of each species in a mixture
     using the Wilson method, given their mole fractions, and
     dimensionless interaction parameters. Those are normally correlated with
     temperature, and need to be calculated separately.
@@ -1794,7 +1794,7 @@ def Wilson_gammas(xs, params):
     .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
        Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
        Wiley-VCH, 2012.
-    '''
+    """
     gammas = []
     cmps = range(len(xs))
 

@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2024 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -31,7 +31,7 @@ This functionality requires the RDKit library to work.
 .. autofunction:: thermo.group_contribution.bondi.Q_from_Van_der_Waals_area
 
 
-'''
+"""
 __all__ = ["BONDI_GROUPS", "BONDI_SUBGROUPS", "BondiGroupContribution", "Q_from_Van_der_Waals_area", "R_from_Van_der_Waals_volume", "bondi_van_der_waals_surface_area_volume"]
 from thermo.functional_groups import FG_AMIDE, FG_CARBOXYLIC_ACID, count_rings_by_atom_counts, identify_conjugated_bonds, identify_functional_group_atoms
 from thermo.group_contribution.group_contribution_base import (

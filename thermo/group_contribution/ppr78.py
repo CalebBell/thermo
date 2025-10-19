@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2024 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,7 +29,7 @@ This functionality requires the RDKit library to work.
 .. autofunction:: thermo.group_contribution.PPR78_kijs
 .. autofunction:: thermo.group_contribution.fragment_PPR78
 
-'''
+"""
 __all__ = ["PPR78_GROUPS", "PPR78_GROUP_IDS", "PPR78_INTERACTIONS", "PPR78_kij", "PPR78_kijs", "fragment_PPR78"]
 
 from math import sqrt
@@ -778,7 +778,7 @@ EPPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value
                             for (group1, group2), value in EPPR78_INTERACTIONS.items()}
 
 def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2, omega2, version="original", string=True):
-    r'''Calculate binary interaction parameter kij(T) between two molecules using the PPR78 method.
+    r"""Calculate binary interaction parameter kij(T) between two molecules using the PPR78 method.
 
     This function implements the PPR78 (Predictive Peng-Robinson 1978) method to calculate
     the binary interaction parameter kij between two molecules, including the calculation
@@ -842,7 +842,7 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
     >>> # Same system using extended PPR78
     >>> PPR78_kij(298.15, {"CH3": 1}, {"CH3": 2}, Tc1=190.564, Pc1=4599200, omega1=0.01142, Tc2=305.322, Pc2=4872200, omega2=0.0995, version='extended')
     -0.009617659
-    '''
+    """
     if version not in ("original", "extended"):
         raise ValueError("version must be either 'original' or 'extended'")
 

@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021
 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
@@ -185,7 +185,7 @@ Lists of Equations of State
 .. autodata:: thermo.eos_mix.eos_mix_list
 .. autodata:: thermo.eos_mix.eos_mix_no_coeffs_list
 
-'''
+"""
 
 
 __all__ = [
@@ -1373,7 +1373,7 @@ class GCEOSMIX(GCEOS):
 
 
     def mechanical_critical_point(self):
-        r'''Method to calculate the mechanical critical point of a mixture
+        r"""Method to calculate the mechanical critical point of a mixture
         of defined composition.
 
         The mechanical critical point is where:
@@ -1422,7 +1422,7 @@ class GCEOSMIX(GCEOS):
            Utilization of Equations of State for Thermodynamic Properties in
            Process Simulation." AIChE Journal 30, no. 2 (June 17, 2004):
            182-86. https://doi.org/10.1002/aic.690300203.
-        '''
+        """
         zs, Tcs, Pcs, N = self.zs, self.Tcs, self.Pcs, self.N
         Pmc = sum([Pcs[i]*zs[i] for i in range(N)])
         Tmc = sum([sqrt(Tcs[i]*Tcs[j])*zs[j]*zs[i] for i in range(N)
@@ -1435,7 +1435,7 @@ class GCEOSMIX(GCEOS):
         return T, P
 
     def fugacities(self, only_l=False, only_g=False):
-        r'''Helper method for calculating fugacity coefficients for any
+        r"""Helper method for calculating fugacity coefficients for any
         phases present, using either the overall mole fractions for both phases
         or using specified mole fractions for each phase.
 
@@ -1492,7 +1492,7 @@ class GCEOSMIX(GCEOS):
            7-13. doi:10.1016/j.fluid.2008.03.007.
         .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
-        '''
+        """
         P, zs, vectorized = self.P, self.zs, self.vectorized
         if not only_g and hasattr(self, "V_l"):
             self.lnphis_l = lnphis_l = self.fugacity_coefficients(self.Z_l)
@@ -1601,7 +1601,7 @@ class GCEOSMIX(GCEOS):
         return tot
 
     def _d_TPD_Michelson_modified(self, Zz, Zy, zs, alphas):
-        r'''Modified objective function for locating the minima of the
+        r"""Modified objective function for locating the minima of the
         Tangent Plane Distance function according to [1]_, also shown in [2]_
         [2]_. The stationary points of a system are all zeros of this function;
         so once all zeroes have been located, the stability can be evaluated
@@ -1655,7 +1655,7 @@ class GCEOSMIX(GCEOS):
            "Development of a Thermodynamically Consistent, Robust and Efficient
            Phase Equilibrium Solver and Its Validations." Fuel 115 (January 1,
            2014): 1-16
-        '''
+        """
         # TODO: delete
         Ys = [(alpha/2.)**2 for alpha in alphas]
         ys = normalize(Ys)
@@ -6622,7 +6622,7 @@ class RKMIX(EpsilonZeroMixingRules, GCEOSMIX, RK):
 
 
 class PRMIX(GCEOSMIX, PR):
-    r'''Class for solving the Peng-Robinson [1]_ [2]_ cubic equation of state
+    r"""Class for solving the Peng-Robinson [1]_ [2]_ cubic equation of state
     for a mixture of any number of compounds. Subclasses `PR`. Solves the EOS
     on initialization and calculates fugacities for all components in all
     phases.
@@ -6705,7 +6705,7 @@ class PRMIX(GCEOSMIX, PR):
        Development of the Peng - Robinson Equation and Its Application to Phase
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
-    '''
+    """
 
     eos_pure = PR
 
@@ -7228,7 +7228,7 @@ class PRMIX(GCEOSMIX, PR):
         return Jfun_partial(zs)
 
     def dlnphis_dzs(self, Z):
-        r'''Calculate and return the mole fraction derivaitves of
+        r"""Calculate and return the mole fraction derivaitves of
         log fugacity coefficients for each species in a mixture. This formula
         is specific to the Peng-Robinson equation of state.
 
@@ -7264,7 +7264,7 @@ class PRMIX(GCEOSMIX, PR):
         .. [1] Chang, Yih-Bor. "Development and Application of an Equation of
            State Compositional Simulator" 1990.
            https://repositories.lib.utexas.edu/handle/2152/80585.
-        '''
+        """
         T, P, zs = self.T, self.P, self.zs
         T2 = T*T
         T_inv = 1.0/T
@@ -7625,7 +7625,7 @@ class PRMIX(GCEOSMIX, PR):
             return super(type(self).__mro__[-3], self).solve_T(P=P, V=V, solution=solution)
 
 class PRMIXTranslated(PRMIX):
-    r'''Class for solving the Peng-Robinson [1]_ [2]_ translated cubic equation
+    r"""Class for solving the Peng-Robinson [1]_ [2]_ translated cubic equation
     of state for a mixture of any number of compounds. Solves the EOS
     on initialization and calculates fugacities for all components in all
     phases.
@@ -7712,7 +7712,7 @@ class PRMIXTranslated(PRMIX):
        Development of the Peng - Robinson Equation and Its Application to Phase
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
-    '''
+    """
 
     translated = True
     eos_pure = PRTranslated
@@ -8043,7 +8043,7 @@ class PRMIXTranslated(PRMIX):
 
 
 class PRMIXTranslatedPPJP(PRMIXTranslated):
-    r'''Class for solving the Pina-Martinez, Privat, Jaubert,
+    r"""Class for solving the Pina-Martinez, Privat, Jaubert,
     and Peng revision of the Peng-Robinson equation of state.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
@@ -8125,7 +8125,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
        Suitable for the Redlich-Kwong and Peng-Robinson Equations of State."
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
-    '''
+    """
 
     eos_pure = PRTranslatedPPJP
     mix_kwargs_to_pure = {"cs": "c"}
@@ -8196,7 +8196,7 @@ class PRMIXTranslatedPPJP(PRMIXTranslated):
             self.fugacities()
 
 class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
-    r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
+    r"""Class for solving the volume translated Le Guennec, Privat, and Jaubert
     revision of the Peng-Robinson equation of state according to [1]_.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
@@ -8294,7 +8294,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
        Energetic and Saturation Properties of Pure Compounds in the Sub- and
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
-    '''
+    """
 
     eos_pure = PRTranslatedConsistent
     kwargs_linear = ("cs", "alpha_coeffs")
@@ -8395,7 +8395,7 @@ class PRMIXTranslatedConsistent(Twu91_a_alpha, PRMIXTranslated):
 
 
 class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
-    r'''Class for solving the Soave-Redlich-Kwong cubic equation of state for a
+    r"""Class for solving the Soave-Redlich-Kwong cubic equation of state for a
     mixture of any number of compounds. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
@@ -8479,7 +8479,7 @@ class SRKMIX(EpsilonZeroMixingRules, GCEOSMIX, SRK):
        edition. New York: McGraw-Hill Professional, 2000.
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
-    '''
+    """
 
     eos_pure = SRK
     nonstate_constants_specific = ("ms",)
@@ -9168,7 +9168,7 @@ class SRKMIXTranslated(SRKMIX):
 
 
 class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
-    r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
+    r"""Class for solving the volume translated Le Guennec, Privat, and Jaubert
     revision of the SRK equation of state according to [1]_.
 
     Two of `T`, `P`, and `V` are needed to solve the EOS.
@@ -9268,7 +9268,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
 
-    '''
+    """
 
     eos_pure = SRKTranslatedConsistent
     mix_kwargs_to_pure = {"cs": "c", "alpha_coeffs": "alpha_coeffs"}
@@ -9367,7 +9367,7 @@ class SRKMIXTranslatedConsistent(Twu91_a_alpha, SRKMIXTranslated):
 
 
 class MSRKMIXTranslated(Soave_1979_a_alpha, SRKMIXTranslatedConsistent):
-    r'''Class for solving the volume translated Soave (1980) alpha function,
+    r"""Class for solving the volume translated Soave (1980) alpha function,
     revision of the Soave-Redlich-Kwong equation of state
     for a pure compound according to [1]_. Uses two fitting parameters `N` and
     `M` to more accurately fit the vapor pressure of pure species.
@@ -9480,7 +9480,7 @@ class MSRKMIXTranslated(Soave_1979_a_alpha, SRKMIXTranslatedConsistent):
        "Generalization of a Polar-Fluid Soave-Redlich-Kwong Equation of State."
        Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
        https://doi.org/10.1016/0378-3812(94)87021-7.
-    '''
+    """
 
     kwargs_keys = ("kijs", "alpha_coeffs", "cs")
     eos_pure = MSRKTranslated
@@ -9535,7 +9535,7 @@ class MSRKMIXTranslated(Soave_1979_a_alpha, SRKMIXTranslatedConsistent):
             self.fugacities()
 
 class PSRK(Mathias_Copeman_poly_a_alpha, PSRKMixingRules, SRKMIXTranslated):
-    r'''Class for solving the Predictive Soave-Redlich-Kwong [1]_ equation of
+    r"""Class for solving the Predictive Soave-Redlich-Kwong [1]_ equation of
     state for a mixture of any number of compounds.
     Solves the EOS on initialization.
 
@@ -9626,7 +9626,7 @@ class PSRK(Mathias_Copeman_poly_a_alpha, PSRKMixingRules, SRKMIXTranslated):
        Equation of State Based on UNIFAC.” Fluid Phase Equilibria 70, no. 2-3
        (December 30, 1991): 251-65.
        https://doi.org/10.1016/0378-3812(91)85038-V.
-    '''
+    """
 
     eos_pure = SRKTranslated
     mix_kwargs_to_pure = {"cs": "c", "alpha_coeffs": "alpha_coeffs"}
@@ -9705,7 +9705,7 @@ class PSRK(Mathias_Copeman_poly_a_alpha, PSRKMixingRules, SRKMIXTranslated):
 
 
 class PR78MIX(PRMIX):
-    r'''Class for solving the Peng-Robinson cubic equation of state for a
+    r"""Class for solving the Peng-Robinson cubic equation of state for a
     mixture of any number of compounds according to the 1978 variant.
     Subclasses `PR`. Solves the EOS on initialization and calculates fugacities
     for all components in all phases.
@@ -9794,7 +9794,7 @@ class PR78MIX(PRMIX):
        Development of the Peng - Robinson Equation and Its Application to Phase
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
-    '''
+    """
 
     eos_pure = PR78
     model_id = 10201
@@ -10235,7 +10235,7 @@ class VDWMIX(EpsilonZeroMixingRules, GCEOSMIX, VDW):
 
 
 class PRSVMIX(PRMIX, PRSV):
-    r'''Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
+    r"""Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
     a mixture as given in [1]_.  Subclasses :obj:`PRMIX` and :obj:`PRSV <thermo.eos.PRSV>`.
     Solves the EOS on initialization and calculates fugacities for all
     components in all phases.
@@ -10343,7 +10343,7 @@ class PRSVMIX(PRMIX, PRSV):
        the Peng-Robinson Equation of State. Parameters for Other Pure Compounds
        of Industrial Interest." The Canadian Journal of Chemical Engineering
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
-    '''
+    """
 
     eos_pure = PRSV
     nonstate_constants_specific = ("kappa0s", "kappa1s", "kappas")
@@ -10493,7 +10493,7 @@ class PRSVMIX(PRMIX, PRSV):
 
 
 class PRSV2MIX(PRMIX, PRSV2):
-    r'''Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state
+    r"""Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state
     for a Mixture as given in [1]_.  Subclasses :obj:`PRMIX` and `PRSV2 <thermo.eos.PRSV2>`.
     Solves the EOS on initialization and calculates fugacities for all
     components in all phases.
@@ -10589,7 +10589,7 @@ class PRSV2MIX(PRMIX, PRSV2):
        Accurate Vapor-liquid Equilibria Calculations." The Canadian Journal of
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26.
        doi:10.1002/cjce.5450640516.
-    '''
+    """
 
     eos_pure = PRSV2
     nonstate_constants_specific = ("kappa1s", "kappa2s", "kappa3s", "kappa0s", "kappas")
@@ -10753,7 +10753,7 @@ class PRSV2MIX(PRMIX, PRSV2):
 
 
 class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
-    r'''Class for solving the Twu [1]_ variant of the Peng-Robinson cubic
+    r"""Class for solving the Twu [1]_ variant of the Peng-Robinson cubic
     equation of state for a mixture. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
@@ -10845,7 +10845,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
        Generalized Alpha Function for a Cubic Equation of State Part 1.
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
-    '''
+    """
 
     eos_pure = TWUPR
     P_max_at_V = GCEOS.P_max_at_V
@@ -10907,7 +10907,7 @@ class TWUPRMIX(TwuPR95_a_alpha, PRMIX):
         self.epsilon = -b*b
 
 class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
-    r'''Class for solving the Twu variant of the Soave-Redlich-Kwong cubic
+    r"""Class for solving the Twu variant of the Soave-Redlich-Kwong cubic
     equation of state for a mixture. Solves the EOS on
     initialization and calculates fugacities for all components in all phases.
 
@@ -11001,7 +11001,7 @@ class TWUSRKMIX(TwuSRK95_a_alpha, SRKMIX):
        Generalized Alpha Function for a Cubic Equation of State Part 2.
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
-    '''
+    """
 
 #    a_alpha_mro = -5
     kwargs_keys = ("kijs", )

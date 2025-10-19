@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,7 +27,7 @@ This functionality requires the RDKit library to work.
 
 
 .. autofunction:: thermo.group_contribution.Wilson_Jasperson
-'''
+"""
 __all__ = [
     "Wilson_Jasperson",
     "Wilson_Jasperson_Pc_groups",
@@ -159,7 +159,7 @@ Wilson_Jasperson_Pc_groups = {"OH_large": 0, "OH_small": 0, "-O-": 0, "amine": 0
                             "siloxane": -0.5}
 
 def Wilson_Jasperson(mol, Tb, second_order=True):
-    r'''Estimate the critical temperature and pressure of a molecule using
+    r"""Estimate the critical temperature and pressure of a molecule using
     the molecule itself, and a known or estimated boiling point
     using the Wilson-Jasperson method.
 
@@ -215,7 +215,7 @@ def Wilson_Jasperson(mol, Tb, second_order=True):
        of Group-Contribution Methods in Predicting Critical Temperatures of
        Organic Compounds." Journal of Chemical & Engineering Data 48, no. 2
        (March 1, 2003): 374-80. https://doi.org/10.1021/je025596f.
-    '''
+    """
     from rdkit import Chem
     from rdkit.Chem import rdMolDescriptors
     if type(mol) is Chem.rdchem.Mol:

@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +18,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 
 __all__ = [#'DSL_data', 'TSCA_data',
@@ -121,7 +121,7 @@ legal_status_methods = [COMBINED, DSL, TSCA, EINECS, SPIN, NLP]
 
 
 def legal_status(CASRN, method=None, get_methods=False, CASi=None):
-    r'''Looks up the legal status of a chemical according to either a specifc
+    r"""Looks up the legal status of a chemical according to either a specifc
     method or with all methods.
 
     Returns either the status as a string for a specified method, or the
@@ -209,7 +209,7 @@ def legal_status(CASRN, method=None, get_methods=False, CASi=None):
        http://echa.europa.eu/information-on-chemicals/ec-inventory.
     .. [4] SPIN. "SPIN Substances in Products In Nordic Countries." Accessed
        March 2015. http://195.215.202.233/DotNetNuke/default.aspx.
-    '''
+    """
     load_law_data()
     if not CASi:
         CASi = CAS_to_int(CASRN)
@@ -274,18 +274,17 @@ def load_economic_data():
     # 13061-29-2 not valid and removed
 
     _ECHATonnageDict = {}
-    with zipfile.ZipFile(os.path.join(folder, "ECHA Tonnage Bands.csv.zip")) as z:
-        with z.open(z.namelist()[0]) as f:
-            for line in f.readlines():
-                # for some reason, the file must be decoded to UTF8 first
-                CAS, band = line.decode("utf-8").strip("\n").split("\t")
-                if CAS in _ECHATonnageDict:
-                    if band in _ECHATonnageDict[CAS]:
-                        pass
-                    else:
-                        _ECHATonnageDict[CAS].append(band)
+    with zipfile.ZipFile(os.path.join(folder, "ECHA Tonnage Bands.csv.zip")) as z, z.open(z.namelist()[0]) as f:
+        for line in f.readlines():
+            # for some reason, the file must be decoded to UTF8 first
+            CAS, band = line.decode("utf-8").strip("\n").split("\t")
+            if CAS in _ECHATonnageDict:
+                if band in _ECHATonnageDict[CAS]:
+                    pass
                 else:
-                    _ECHATonnageDict[CAS] = [band]
+                    _ECHATonnageDict[CAS].append(band)
+            else:
+                _ECHATonnageDict[CAS] = [band]
 
 
     _EPACDRDict = {}
@@ -311,7 +310,7 @@ economic_status_methods = [EPACDR, ECHA, OECD]
 
 
 def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
-    '''Look up the economic status of a chemical.
+    """Look up the economic status of a chemical.
 
     This API is considered experimental, and is expected to be removed in a
     future release in favor of a more complete object-oriented interface.
@@ -325,7 +324,7 @@ def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
     'OECD HPV Chemicals'
     >>> economic_status(CASRN='98-01-1', method='European Chemicals Agency Total Tonnage Bands')
     ['10,000 - 100,000 tonnes per annum']
-    '''
+    """
     load_economic_data()
     CASi = CAS_to_int(CASRN)
 

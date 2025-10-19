@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -64,7 +64,7 @@ It is recommended to use the Flash classes, which are designed to have generic
 interfaces. The implemented specific flash algorithms may be changed in the
 future, but reading their source code may be helpful for instructive purposes.
 
-'''
+"""
 from thermo.flash.flash_base import Flash
 from thermo.flash.flash_pure_vls import FlashPureVLS
 

@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,7 +29,7 @@ SOFTWARE.
     which seeks to be more modular, easier to maintain and extend,
     higher-performance, and easier to modify.
 
-'''
+"""
 
 
 __all__ = [
@@ -1190,7 +1190,7 @@ class IdealCaloric(Ideal):
 
 
     def enthalpy_Cpg_Hvap(self):
-        r'''Method to calculate the enthalpy of an ideal mixture. This routine
+        r"""Method to calculate the enthalpy of an ideal mixture. This routine
         is based on "route A", where the gas heat
         capacity and enthalpy of vaporization are used.
 
@@ -1229,7 +1229,7 @@ class IdealCaloric(Ideal):
         The object must be flashed before this routine can be used. It
         depends on the properties T, zs, xs, V_over_F, HeatCapacityGases,
         EnthalpyVaporizations, and.
-        '''
+        """
         H = 0
         T = self.T
         P = self.P
@@ -1299,7 +1299,7 @@ class IdealCaloric(Ideal):
 
 
     def entropy_Cpg_Hvap(self):
-        r'''Method to calculate the entropy of an ideal mixture. This routine
+        r"""Method to calculate the entropy of an ideal mixture. This routine
         is based on "route A", where only the gas heat capacity and enthalpy of
         vaporization are used.
 
@@ -1364,7 +1364,7 @@ class IdealCaloric(Ideal):
         ----------
         .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
            New York: McGraw-Hill Professional, 2000.
-        '''
+        """
         S = 0.0
         T = self.T
         P = self.P

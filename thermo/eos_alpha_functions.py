@@ -1,5 +1,5 @@
 # pylint: disable=E1101
-r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+r"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -190,7 +190,7 @@ Pure Alpha Functions
 .. autofunction:: thermo.eos_alpha_functions.Saffari_alpha_pure
 .. autofunction:: thermo.eos_alpha_functions.Chen_Yang_alpha_pure
 
-'''
+"""
 
 
 __all__ = [
@@ -1435,7 +1435,7 @@ class Poly_a_alpha:
 
 class Soave_1972_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1972) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
         documentation. Same as `SRK.a_alpha_and_derivatives` but slower and
@@ -1455,7 +1455,7 @@ class Soave_1972_a_alpha(a_alpha_base):
            Equation of State for Vapor Pressure Estimation." Industrial &
            Engineering Chemistry Research 55, no. 22 (June 8, 2016): 6506-16.
            doi:10.1021/acs.iecr.6b00721.
-        '''
+        """
         c0 = self.alpha_coeffs[0]
         Tc, a = self.Tc, self.a
         a_alpha = a*(c0*(-sqrt(T/Tc) + 1) + 1)**2
@@ -1470,7 +1470,7 @@ class Soave_1972_a_alpha(a_alpha_base):
 
 class Heyen_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Heyen (1980) [1]_. Returns `a_alpha`, `da_alpha_dT`,
         and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
         documentation. Two coefficients needed.
@@ -1485,7 +1485,7 @@ class Heyen_a_alpha(a_alpha_base):
            State. In "Proceedings of the 2nd International Conference on Phase
            Equilibria and Fluid Properties in the Chemical Industry". DECHEMA:
            Frankfurt, 1980; p 9-13.
-        '''
+        """
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*exp(c1*(1 -(T/Tc)**c2))
@@ -1500,7 +1500,7 @@ class Heyen_a_alpha(a_alpha_base):
 
 class Harmens_Knapp_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Harmens and Knapp (1980) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Two coefficients needed.
@@ -1515,7 +1515,7 @@ class Harmens_Knapp_a_alpha(a_alpha_base):
            State for Normal Substances." Industrial & Engineering Chemistry
            Fundamentals 19, no. 3 (August 1, 1980): 291-94.
            doi:10.1021/i160075a010.
-        '''
+        """
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-sqrt(T/Tc) + 1) - c2*(1 - Tc/T) + 1)**2
@@ -1530,7 +1530,7 @@ class Harmens_Knapp_a_alpha(a_alpha_base):
 
 class Mathias_1983_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Mathias (1983) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Two coefficients needed.
@@ -1546,7 +1546,7 @@ class Mathias_1983_a_alpha(a_alpha_base):
            State." Industrial & Engineering Chemistry Process Design and
            Development 22, no. 3 (July 1, 1983): 385-91.
            doi:10.1021/i200022a008.
-        '''
+        """
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         Tr = T/Tc
@@ -1563,7 +1563,7 @@ class Mathias_1983_a_alpha(a_alpha_base):
 
 class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Mathias and Copeman (1983) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Three coefficients needed.
@@ -1580,7 +1580,7 @@ class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
            the Various Forms of the Local Composition Concept." Fluid Phase
            Equilibria 13 (January 1, 1983): 91-108.
            doi:10.1016/0378-3812(83)80084-3.
-        '''
+        """
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-sqrt(T/Tc) + 1) + c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2
@@ -1595,7 +1595,7 @@ class Mathias_Copeman_untruncated_a_alpha(a_alpha_base):
 
 class Mathias_Copeman_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Mathias and Copeman (1983) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Three coefficients needed.
@@ -1612,7 +1612,7 @@ class Mathias_Copeman_a_alpha(a_alpha_base):
            the Various Forms of the Local Composition Concept." Fluid Phase
            Equilibria 13 (January 1, 1983): 91-108.
            doi:10.1016/0378-3812(83)80084-3.
-        '''
+        """
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         Tr = T/Tc
@@ -1736,7 +1736,7 @@ class Mathias_Copeman_poly_a_alpha(a_alpha_base):
 
 class Gibbons_Laughton_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Gibbons and Laughton (1984) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Two coefficients needed.
@@ -1750,7 +1750,7 @@ class Gibbons_Laughton_a_alpha(a_alpha_base):
         .. [1] Gibbons, Richard M., and Andrew P. Laughton. "An Equation of
            State for Polar and Non-Polar Substances and Mixtures" 80, no. 9
            (January 1, 1984): 1019-38. doi:10.1039/F29848001019.
-        '''
+        """
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(T/Tc - 1) + c2*(sqrt(T/Tc) - 1) + 1)
@@ -1766,7 +1766,7 @@ class Gibbons_Laughton_a_alpha(a_alpha_base):
 
 class Soave_1984_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1984) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
         documentation. Two coefficients needed.
@@ -1780,7 +1780,7 @@ class Soave_1984_a_alpha(a_alpha_base):
         .. [1] Soave, G. "Improvement of the Van Der Waals Equation of State."
            Chemical Engineering Science 39, no. 2 (January 1, 1984): 357-69.
            doi:10.1016/0009-2509(84)80034-2.
-        '''
+        """
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-T/Tc + 1) + c2*(-1 + Tc/T) + 1)
@@ -1796,7 +1796,7 @@ class Soave_1984_a_alpha(a_alpha_base):
 
 class Yu_Lu_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Yu and Lu (1987) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Four coefficients needed.
@@ -1811,7 +1811,7 @@ class Yu_Lu_a_alpha(a_alpha_base):
            Equation of State for Asymmetric Mixture Density Calculations."
            Fluid Phase Equilibria 34, no. 1 (January 1, 1987): 1-19.
            doi:10.1016/0378-3812(87)85047-1.
-        '''
+        """
         c1, c2, c3, c4 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*10**(c4*(-T/Tc + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1))
@@ -1825,7 +1825,7 @@ class Yu_Lu_a_alpha(a_alpha_base):
 
 class Trebble_Bishnoi_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Trebble and Bishnoi (1987) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. One coefficient needed.
@@ -1838,7 +1838,7 @@ class Trebble_Bishnoi_a_alpha(a_alpha_base):
         .. [1] Trebble, M. A., and P. R. Bishnoi. "Development of a New Four-
            Parameter Cubic Equation of State." Fluid Phase Equilibria 35, no. 1
            (September 1, 1987): 1-18. doi:10.1016/0378-3812(87)80001-8.
-        '''
+        """
         c1 = self.alpha_coeffs[0]
         Tc, a = self.Tc, self.a
         a_alpha = a*exp(c1*(-T/Tc + 1))
@@ -1851,7 +1851,7 @@ class Trebble_Bishnoi_a_alpha(a_alpha_base):
 
 class Melhem_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Melhem et al. (1989) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Two coefficients needed.
@@ -1866,7 +1866,7 @@ class Melhem_a_alpha(a_alpha_base):
            Modified Peng-Robinson Equation of State." Fluid Phase Equilibria
            47, no. 2 (August 1, 1989): 189-237.
            doi:10.1016/0378-3812(89)80176-1.
-        '''
+        """
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*exp(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2)
@@ -1879,7 +1879,7 @@ class Melhem_a_alpha(a_alpha_base):
 
 class Androulakis_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Androulakis et al. (1989) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Three coefficients needed.
@@ -1896,7 +1896,7 @@ class Androulakis_a_alpha(a_alpha_base):
            "Thermophysical Properties of Pure Polar and Nonpolar Compounds with
            a Modified VdW-711 Equation of State." Fluid Phase Equilibria 45,
            no. 2 (April 1, 1989): 135-63. doi:10.1016/0378-3812(89)80254-7.
-        '''
+        """
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-(T/Tc)**(2/3) + 1) + c2*(-(T/Tc)**(2/3) + 1)**2 + c3*(-(T/Tc)**(2/3) + 1)**3 + 1)
@@ -1910,7 +1910,7 @@ class Androulakis_a_alpha(a_alpha_base):
 
 class Schwartzentruber_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Schwartzentruber et al. (1990) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Three coefficients needed.
@@ -1924,7 +1924,7 @@ class Schwartzentruber_a_alpha(a_alpha_base):
         ----------
         .. [1] J. Schwartzentruber, H. Renon, and S. Watanasiri, "K-values for
            Non-Ideal Systems:An Easier Way," Chem. Eng., March 1990, 118-124.
-        '''
+        """
         c1, c2, c3, c4 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*((c4*(-sqrt(T/Tc) + 1) - (-sqrt(T/Tc) + 1)*(T**2*c3/Tc**2 + T*c2/Tc + c1) + 1)**2)
@@ -1938,7 +1938,7 @@ class Schwartzentruber_a_alpha(a_alpha_base):
 
 class Almeida_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Almeida et al. (1991) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Three coefficients needed.
@@ -1953,7 +1953,7 @@ class Almeida_a_alpha(a_alpha_base):
         .. [1] Almeida, G. S., M. Aznar, and A. S. Telles. "Uma Nova Forma de
            Dependência Com a Temperatura Do Termo Atrativo de Equações de
            Estado Cúbicas." RBE, Rev. Bras. Eng., Cad. Eng. Quim 8 (1991): 95.
-        '''
+        """
         # Note: Sympy didn't handle the derivative of the absolute value for
         # the second derivative, requires the use a CAS which can
         # handle the assumption that Tr-1 != 0.
@@ -1997,7 +1997,7 @@ class Almeida_a_alpha(a_alpha_base):
 
 class Twu91_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Twu et al. (1991) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Three coefficients needed.
@@ -2013,7 +2013,7 @@ class Twu91_a_alpha(a_alpha_base):
            Coon. "A Cubic Equation of State with a New Alpha Function and a
            New Mixing Rule." Fluid Phase Equilibria 69 (December 10, 1991):
            33-50. doi:10.1016/0378-3812(91)90024-2.
-        '''
+        """
         c0, c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         Tr = T/Tc
@@ -2109,7 +2109,7 @@ class Twu91_a_alpha(a_alpha_base):
 
 class Soave_1993_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1983) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
         documentation. Two coefficient needed.
@@ -2123,7 +2123,7 @@ class Soave_1993_a_alpha(a_alpha_base):
         .. [1] Soave, G. "Improving the Treatment of Heavy Hydrocarbons by the
            SRK EOS." Fluid Phase Equilibria 84 (April 1, 1993): 339-42.
            doi:10.1016/0378-3812(93)85131-5.
-        '''
+        """
         c1, c2 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(c1*(-T/Tc + 1) + c2*(-sqrt(T/Tc) + 1)**2 + 1)
@@ -2137,7 +2137,7 @@ class Soave_1993_a_alpha(a_alpha_base):
 
 class Gasem_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Gasem (2001) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
         documentation. Three coefficients needed.
@@ -2152,7 +2152,7 @@ class Gasem_a_alpha(a_alpha_base):
            Temperature Dependence for the Peng-Robinson Equation of State."
            Fluid Phase Equilibria 181, no. 1-2 (May 25, 2001): 113-25.
            doi:10.1016/S0378-3812(01)00488-5.
-        '''
+        """
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(exp((-(T/Tc)**c3 + 1)*(T*c2/Tc + c1)))
@@ -2166,7 +2166,7 @@ class Gasem_a_alpha(a_alpha_base):
 
 class Coquelet_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Coquelet et al. (2004) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
         documentation. Three coefficients needed.
@@ -2184,7 +2184,7 @@ class Coquelet_a_alpha(a_alpha_base):
            Components) and Water-Gas Systems." International Journal of
            Thermophysics 25, no. 1 (January 1, 2004): 133-58.
            doi:10.1023/B:IJOT.0000022331.46865.2f.
-        '''
+        """
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(exp(c1*(-T/Tc + 1)*(c2*(-sqrt(T/Tc) + 1)**2 + c3*(-sqrt(T/Tc) + 1)**3 + 1)**2))
@@ -2198,7 +2198,7 @@ class Coquelet_a_alpha(a_alpha_base):
 
 class Haghtalab_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Haghtalab et al. (2010) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
         documentation. Three coefficients needed.
@@ -2214,7 +2214,7 @@ class Haghtalab_a_alpha(a_alpha_base):
            Physical Properties and Vapor-liquid Equilibria." Fluid Phase
            Equilibria 293, no. 2 (June 25, 2010): 209-18.
            doi:10.1016/j.fluid.2010.03.029.
-        '''
+        """
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*exp((-c3**log(T/Tc) + 1)*(-T*c2/Tc + c1))
@@ -2228,7 +2228,7 @@ class Haghtalab_a_alpha(a_alpha_base):
 
 class Saffari_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Saffari and Zahedi (2013) [1]_. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
         documentation. Three coefficients needed.
@@ -2243,7 +2243,7 @@ class Saffari_a_alpha(a_alpha_base):
            the Peng-Robinson Equation of State: Application to Natural Gas."
            Chinese Journal of Chemical Engineering 21, no. 10 (October 1,
            2013): 1155-61. doi:10.1016/S1004-9541(13)60581-9.
-        '''
+        """
         c1, c2, c3 = self.alpha_coeffs
         Tc, a = self.Tc, self.a
         a_alpha = a*(exp(T*c1/Tc + c2*log(T/Tc) + c3*(-sqrt(T/Tc) + 1)))
@@ -2257,7 +2257,7 @@ class Saffari_a_alpha(a_alpha_base):
 
 class Chen_Yang_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Hamid and Yang (2017) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives`
         for more documentation. Seven coefficients needed.
@@ -2273,7 +2273,7 @@ class Chen_Yang_a_alpha(a_alpha_base):
            Soave-Redlich-Kwong Equation of State To Improve Vapor Pressure
            Prediction for Heavy Hydrocarbon Compounds." Journal of Chemical &
            Engineering Data, August 31, 2017. doi:10.1021/acs.jced.7b00496.
-        '''
+        """
         c1, c2, c3, c4, c5, c6, c7 = self.alpha_coeffs
         Tc, a, omega = self.Tc, self.a, self.omega
         a_alpha = a*exp(c4*log((-sqrt(T/Tc) + 1)*(c5 + c6*omega + c7*omega**2) + 1)**2 + (-T/Tc + 1)*(c1 + c2*omega + c3*omega**2))
@@ -2530,7 +2530,7 @@ class TwuPR95_a_alpha(a_alpha_base):
 
 class Soave_1979_a_alpha(a_alpha_base):
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate `a_alpha` and its first and second
+        r"""Method to calculate `a_alpha` and its first and second
         derivatives according to Soave (1979) [1]_. Returns `a_alpha`,
         `da_alpha_dT`, and `d2a_alpha_dT2`. Three coefficients are needed.
 
@@ -2543,7 +2543,7 @@ class Soave_1979_a_alpha(a_alpha_base):
            the Pure-Component Parameters in the Redlich—Kwong—Soave Equation of
            State." Chemical Engineering Science 35, no. 8 (January 1, 1980):
            1725-30. https://doi.org/10.1016/0009-2509(80)85007-X.
-        '''
+        """
         M, N = self.alpha_coeffs#self.M, self.N
         Tc, a = self.Tc, self.a
         T_inv = 1.0/T

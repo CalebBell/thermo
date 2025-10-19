@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -59,7 +59,7 @@ Regular Solution Regression Calculations
 ========================================
 .. autofunction:: regular_solution_gammas_binaries
 
-'''
+"""
 
 from fluids.constants import R, R_inv
 from fluids.numerics import exp, log, trunc_exp
@@ -1746,7 +1746,7 @@ class Hansen(GibbsExcess):
     # d3GE_dxixjxks = GibbsExcess.d3GE_dxixjxks_numerical # don't have this one
 
     def missing_interaction_parameters(self):
-        r'''
+        r"""
         Return an empty list as Hansen parameters cannot be considered "missing" -
         zero values for delta_d, delta_p, and delta_h are physically meaningful
         and represent absence of that type of molecular interaction.
@@ -1755,5 +1755,5 @@ class Hansen(GibbsExcess):
         -------
         missing_params : list[tuple[int, int]]
             Empty list, as Hansen parameters cannot be considered missing, [-].
-        '''
+        """
         return []

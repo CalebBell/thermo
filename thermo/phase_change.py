@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -53,7 +53,7 @@ Enthalpy of Sublimation
     :exclude-members:
 
 .. autodata:: enthalpy_sublimation_methods
-'''
+"""
 
 
 __all__ = [
@@ -100,7 +100,7 @@ iterating over them."""
 
 
 class EnthalpyVaporization(TDependentProperty):
-    '''Class for dealing with heat of vaporization as a function of temperature.
+    """Class for dealing with heat of vaporization as a function of temperature.
     Consists of three constant value data sources, one source of tabular
     information, three coefficient-based methods, nine corresponding-states
     estimators, and the external library CoolProp.
@@ -242,7 +242,7 @@ class EnthalpyVaporization(TDependentProperty):
        Dependence and Correlation with Surface Tension: A Theoretical
        Approach." Fluid Phase Equilibria 432 (January 25, 2017): 62-69.
        doi:10.1016/j.fluid.2016.10.013.
-    '''
+    """
 
     name = "Enthalpy of vaporization"
     units = "J/mol"
@@ -525,7 +525,7 @@ iterating over them."""
 
 
 class EnthalpySublimation(TDependentProperty):
-    '''Class for dealing with heat of sublimation as a function of temperature.
+    """Class for dealing with heat of sublimation as a function of temperature.
     Consists of one temperature-dependent method based on the heat of
     sublimation at 298.15 K.
 
@@ -594,7 +594,7 @@ class EnthalpySublimation(TDependentProperty):
        Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
     .. [3] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
-    '''
+    """
 
     name = "Enthalpy of sublimation"
     units = "J/mol"

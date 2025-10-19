@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -110,7 +110,7 @@ Pure Solid Thermal Conductivity
 
 .. autodata:: thermal_conductivity_solid_methods
 
-'''
+"""
 
 
 __all__ = [
@@ -211,7 +211,7 @@ thermal_conductivity_liquid_methods_P = [COOLPROP, DIPPR_9G, MISSENARD, NEGLECT_
 class, for use in iterating over them."""
 
 class ThermalConductivityLiquid(TPDependentProperty):
-    r'''Class for dealing with liquid thermal conductivity as a function of
+    r"""Class for dealing with liquid thermal conductivity as a function of
     temperature and pressure.
 
     For low-pressure (at 1 atm while under the vapor pressure; along the
@@ -331,7 +331,7 @@ class ThermalConductivityLiquid(TPDependentProperty):
        Berlin; New York:: Springer, 2010.
     .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
-    '''
+    """
 
     name = "liquid thermal conductivity"
     units = "W/m/K"
@@ -819,7 +819,7 @@ thermal_conductivity_gas_methods_P = [COOLPROP, ELI_HANLEY_DENSE, CHUNG_DENSE,
 class, for use in iterating over them."""
 
 class ThermalConductivityGas(TPDependentProperty):
-    r'''Class for dealing with gas thermal conductivity as a function of
+    r"""Class for dealing with gas thermal conductivity as a function of
     temperature and pressure.
 
     For gases at atmospheric pressure, there are 7 corresponding-states
@@ -954,7 +954,7 @@ class ThermalConductivityGas(TPDependentProperty):
        Berlin; New York:: Springer, 2010.
     .. [3] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
-    '''
+    """
 
     name = "gas thermal conductivity"
     units = "W/m/K"

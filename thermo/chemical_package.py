@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -52,7 +52,7 @@ Sample Constants and Correlations
 .. autodata:: lemmon2000_constants
 .. autodata:: lemmon2000_correlations
 
-'''
+"""
 
 
 __all__ = ["ChemicalConstantsPackage", "PropertyCorrelationsPackage",

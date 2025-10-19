@@ -1,4 +1,4 @@
-r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+r"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -248,7 +248,7 @@ at all.
 
 .. plot:: plots/SRK_Psat_error.py
 
-'''
+"""
 
 
 __all__ = [
@@ -1314,7 +1314,7 @@ class GCEOS:
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha,
                                      da_alpha_dT, d2a_alpha_dT2,
                                      force_l=False, force_g=False):
-        r'''Sets all interesting properties which can be calculated from an
+        r"""Sets all interesting properties which can be calculated from an
         EOS alone. Determines which phase the fluid is on its own; for details,
         see `phase_identification_parameter`.
 
@@ -1461,7 +1461,7 @@ class GCEOS:
            edition. New York: McGraw-Hill Professional, 2000.
         .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
-        '''
+        """
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
         main_derivatives_and_departures(T, P, V, b, delta, epsilon,
                                              a_alpha, da_alpha_dT,
@@ -2576,7 +2576,7 @@ class GCEOS:
         Ts_mid = linspace(Tmin, Tmax, int(pts/3))
 
         Ts_high = linspace(Tmax*.99, Tmax, int(pts/3))
-        Ts = list(sorted(Ts_high + Ts + Ts_mid))
+        Ts = sorted(Ts_high + Ts + Ts_mid)
 
 
 
@@ -2902,7 +2902,7 @@ class GCEOS:
         return Tsat
 
     def Psat(self, T, polish=False, guess=None):
-        r'''Generic method to calculate vapor pressure for a specified `T`.
+        r"""Generic method to calculate vapor pressure for a specified `T`.
 
         From Tc to 0.32Tc, uses a 10th order polynomial of the following form:
 
@@ -2947,7 +2947,7 @@ class GCEOS:
         .. [1] Soave, G. "Direct Calculation of Pure-Compound Vapour Pressures
            through Cubic Equations of State." Fluid Phase Equilibria 31, no. 2
            (January 1, 1986): 203-7. doi:10.1016/0378-3812(86)90013-0.
-        '''
+        """
         Tc, Pc = self.Tc, self.Pc
         if T == Tc:
             return Pc
@@ -7365,7 +7365,7 @@ class IG(GCEOS):
 
 
 class PR(GCEOS):
-    r'''Class for solving the Peng-Robinson [1]_ [2]_ cubic
+    r"""Class for solving the Peng-Robinson [1]_ [2]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -7475,7 +7475,7 @@ class PR(GCEOS):
     .. [3] Privat, R., and J.-N. Jaubert. "PPR78, a Thermodynamic Model for the
        Prediction of Petroleum Fluid-Phase Behaviour," 11. EDP Sciences, 2011.
        doi:10.1051/jeep/201100011.
-    '''
+    """
 
     # constant part of `a`,
     # X = (-1 + (6*sqrt(2)+8)**Rational(1,3) - (6*sqrt(2)-8)**Rational(1,3))/3
@@ -8051,7 +8051,7 @@ class PR(GCEOS):
 
 
 class PR78(PR):
-    r'''Class for solving the Peng-Robinson cubic
+    r"""Class for solving the Peng-Robinson cubic
     equation of state for a pure compound according to the 1978 variant [1]_ [2]_.
     Subclasses :obj:`PR`, which provides everything except the variable `kappa`.
     Solves the EOS on initialization. See :obj:`PR` for further documentation.
@@ -8112,7 +8112,7 @@ class PR78(PR):
        Development of the Peng - Robinson Equation and Its Application to Phase
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
-    '''
+    """
 
     low_omega_constants = (0.37464, 1.54226, -0.26992)
     """Constants for the `kappa` formula for the low-omega region."""
@@ -8236,7 +8236,7 @@ class PRTranslated(PR):
 
 
 class PRTranslatedPPJP(PRTranslated):
-    r'''Class for solving the volume translated Pina-Martinez, Privat, Jaubert,
+    r"""Class for solving the volume translated Pina-Martinez, Privat, Jaubert,
     and Peng revision of the Peng-Robinson equation of state
     for a pure compound according to [1]_.
     Subclasses :obj:`PRTranslated`, which provides everything except the variable `kappa`.
@@ -8295,7 +8295,7 @@ class PRTranslatedPPJP(PRTranslated):
        Suitable for the Redlich-Kwong and Peng-Robinson Equations of State."
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
-    '''
+    """
 
     # Direct solver for T could be implemented but cannot use the PR one
     kwargs_keys = ("c",)
@@ -8326,7 +8326,7 @@ class PRTranslatedPPJP(PRTranslated):
         return None
 
 class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
-    r'''Class for solving the volume translated Peng-Robinson equation of state
+    r"""Class for solving the volume translated Peng-Robinson equation of state
     with a polynomial alpha function. With the right coefficients, this model
     can reproduce any property incredibly well.
     Subclasses :obj:`PRTranslated`. Solves the EOS on initialization.
@@ -8383,7 +8383,7 @@ class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
     Notes
     -----
 
-    '''
+    """
 
 class PRTranslatedMathiasCopeman(Mathias_Copeman_poly_a_alpha, PRTranslated):
     pass
@@ -8421,7 +8421,7 @@ class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):
 
 
 class PRTranslatedTwu(Twu91_a_alpha, PRTranslated):
-    r'''Class for solving the volume translated Peng-Robinson equation of state
+    r"""Class for solving the volume translated Peng-Robinson equation of state
     with the Twu (1991) [1]_ alpha function.
     Subclasses :obj:`thermo.eos_alpha_functions.Twu91_a_alpha` and :obj:`PRTranslated`.
     Solves the EOS on initialization.
@@ -8481,10 +8481,10 @@ class PRTranslatedTwu(Twu91_a_alpha, PRTranslated):
        Coon. "A Cubic Equation of State with a New Alpha Function and a
        New Mixing Rule." Fluid Phase Equilibria 69 (December 10, 1991):
        33-50. doi:10.1016/0378-3812(91)90024-2.
-    '''
+    """
 
 class PRTranslatedConsistent(PRTranslatedTwu):
-    r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
+    r"""Class for solving the volume translated Le Guennec, Privat, and Jaubert
     revision of the Peng-Robinson equation of state
     for a pure compound according to [1]_.
     Subclasses :obj:`PRTranslatedTwu`, which provides everything except the
@@ -8561,7 +8561,7 @@ class PRTranslatedConsistent(PRTranslatedTwu):
        Energetic and Saturation Properties of Pure Compounds in the Sub- and
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
-    '''
+    """
 
     kwargs_keys = ("c", "alpha_coeffs")
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
@@ -8600,7 +8600,7 @@ class PRTranslatedConsistent(PRTranslatedTwu):
         self.solve()
 
 class PRSV(PR):
-    r'''Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
+    r"""Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
     a pure compound as given in [1]_. The same as the Peng-Robinson EOS,
     except with a different `kappa` formula and with an optional fit parameter.
     Subclasses :obj:`PR`, which provides only several constants. See :obj:`PR` for
@@ -8684,7 +8684,7 @@ class PRSV(PR):
        the Peng-Robinson Equation of State. Parameters for Other Pure Compounds
        of Industrial Interest." The Canadian Journal of Chemical Engineering
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
-    '''
+    """
 
     kappa1_Tr_limit = False
     kwargs_keys = ("kappa1",)
@@ -8877,7 +8877,7 @@ class PRSV(PR):
 
 
 class PRSV2(PR):
-    r'''Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state
+    r"""Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state
     for a pure compound as given in [1]_. The same as the Peng-Robinson EOS,
     except with a different `kappa` formula and with three fit parameters.
     Subclasses :obj:`PR`, which provides only several constants. See :obj:`PR` for
@@ -8944,7 +8944,7 @@ class PRSV2(PR):
        Accurate Vapor-liquid Equilibria Calculations." The Canadian Journal of
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26.
        doi:10.1002/cjce.5450640516.
-    '''
+    """
 
     kwargs_keys = ("kappa1", "kappa2", "kappa3")
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0, kappa2=0, kappa3=0):
@@ -9399,7 +9399,7 @@ class VDW(GCEOS):
         return roots
 
 class RK(GCEOS):
-    r'''Class for solving the Redlich-Kwong [1]_ [2]_ [3]_ cubic
+    r"""Class for solving the Redlich-Kwong [1]_ [2]_ [3]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -9451,7 +9451,7 @@ class RK(GCEOS):
        edition. New York: McGraw-Hill Professional, 2000.
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
-    '''
+    """
 
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     """Full value of the constant in the `a` parameter"""
@@ -9646,7 +9646,7 @@ def SRK_P_max_at_V(Tc, a, b, m, V):
     return P_max
 
 class SRK(GCEOS):
-    r'''Class for solving the Soave-Redlich-Kwong [1]_ [2]_ [3]_ cubic
+    r"""Class for solving the Soave-Redlich-Kwong [1]_ [2]_ [3]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -9700,7 +9700,7 @@ class SRK(GCEOS):
        edition. New York: McGraw-Hill Professional, 2000.
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
-    '''
+    """
 
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     """Full value of the constant in the `a` parameter"""
@@ -10075,7 +10075,7 @@ class SRKTranslated(SRK):
 
 
 class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
-    r'''Class for solving the volume translated Soave (1980) alpha function,
+    r"""Class for solving the volume translated Soave (1980) alpha function,
     revision of the Soave-Redlich-Kwong equation of state
     for a pure compound according to [1]_. Uses two fitting parameters `N` and
     `M` to more accurately fit the vapor pressure of pure species.
@@ -10163,7 +10163,7 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
        "Generalization of a Polar-Fluid Soave-Redlich-Kwong Equation of State."
        Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
        https://doi.org/10.1016/0378-3812(94)87021-7.
-    '''
+    """
 
     kwargs_keys = ("c", "alpha_coeffs")
     def __init__(self, Tc, Pc, omega, M=None, N=None, alpha_coeffs=None, c=0.0,
@@ -10251,7 +10251,7 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
 
 
 class SRKTranslatedPPJP(SRK):
-    r'''Class for solving the volume translated Pina-Martinez, Privat, Jaubert,
+    r"""Class for solving the volume translated Pina-Martinez, Privat, Jaubert,
     and Peng revision of the Soave-Redlich-Kwong equation of state
     for a pure compound according to [1]_.
     Subclasses `SRK`, which provides everything except the variable `kappa`.
@@ -10311,7 +10311,7 @@ class SRKTranslatedPPJP(SRK):
        Suitable for the Redlich-Kwong and Peng-Robinson Equations of State."
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
-    '''
+    """
 
     kwargs_keys = ("c",)
     # No point in subclassing SRKTranslated - just disables direct solver for T
@@ -10339,7 +10339,7 @@ class SRKTranslatedPPJP(SRK):
 class SRKTranslatedTwu(Twu91_a_alpha, SRKTranslated): pass
 
 class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
-    r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
+    r"""Class for solving the volume translated Le Guennec, Privat, and Jaubert
     revision of the SRK equation of state
     for a pure compound according to [1]_.
 
@@ -10418,7 +10418,7 @@ class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
        Energetic and Saturation Properties of Pure Compounds in the Sub- and
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
-    '''
+    """
 
     kwargs_keys = ("c", "alpha_coeffs")
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
@@ -10660,7 +10660,7 @@ class APISRK(SRK):
 
 
 class TWUPR(TwuPR95_a_alpha, PR):
-    r'''Class for solving the Twu (1995) [1]_ variant of the Peng-Robinson cubic
+    r"""Class for solving the Twu (1995) [1]_ variant of the Peng-Robinson cubic
     equation of state for a pure compound. Subclasses :obj:`PR`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -10732,7 +10732,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
        Generalized Alpha Function for a Cubic Equation of State Part 1.
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
-    '''
+    """
 
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
@@ -10754,7 +10754,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
 
 
 class TWUSRK(TwuSRK95_a_alpha, SRK):
-    r'''Class for solving the Soave-Redlich-Kwong cubic
+    r"""Class for solving the Soave-Redlich-Kwong cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -10826,7 +10826,7 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
        Generalized Alpha Function for a Cubic Equation of State Part 2.
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
-    '''
+    """
 
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T

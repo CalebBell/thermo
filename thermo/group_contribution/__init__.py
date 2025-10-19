@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,7 +29,7 @@ please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_
 .. contents:: :local:
 
 
-'''
+"""
 from thermo.group_contribution.bondi import R_Q_from_bondi, bondi_van_der_waals_surface_area_volume
 from thermo.group_contribution.fedors import Fedors
 from thermo.group_contribution.joback import J_BIGGS_JOBACK_SMARTS, JOBACK_GROUPS, Joback

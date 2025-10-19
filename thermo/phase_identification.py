@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -71,7 +71,7 @@ Sorting Phases
 ==============
 .. autofunction:: sort_phases
 
-'''
+"""
 
 __all__ = [
     "KEY_COMPONENTS_SORT",
@@ -212,7 +212,7 @@ def vapor_score_Vpc(V, Vcs, zs):
     return V - Vpc
 
 def vapor_score_Tpc_weighted(T, Tcs, Vcs, zs, r1=1.0):
-    r'''Compute a vapor score representing how vapor-like a phase is
+    r"""Compute a vapor score representing how vapor-like a phase is
     (higher, above zero = more vapor like) using the following criteria, said
     to be implemented in ECLIPSE [1]_:
 
@@ -266,7 +266,7 @@ def vapor_score_Tpc_weighted(T, Tcs, Vcs, zs, r1=1.0):
        Identification Methods Used in Oil Industry Flow Simulations." Energy &
        Fuels 31, no. 4 (April 20, 2017): 3370-79.
        https://doi.org/10.1021/acs.energyfuels.6b02316.
-    '''
+    """
     weight_sum = 0.0
     for i in range(len(zs)):
         weight_sum += zs[i]*Vcs[i]
@@ -279,7 +279,7 @@ def vapor_score_Tpc_weighted(T, Tcs, Vcs, zs, r1=1.0):
     return T - Tpc
 
 def vapor_score_Tpc_Vpc(T, V, Tcs, Vcs, zs):
-    r'''Compute a vapor score representing how vapor-like a phase is
+    r"""Compute a vapor score representing how vapor-like a phase is
     (higher, above zero = more vapor like) using the following criteria, said
     to be implemented in Multiflash [1]_:
 
@@ -328,7 +328,7 @@ def vapor_score_Tpc_Vpc(T, V, Tcs, Vcs, zs):
        Identification Methods Used in Oil Industry Flow Simulations." Energy &
        Fuels 31, no. 4 (April 20, 2017): 3370-79.
        https://doi.org/10.1021/acs.energyfuels.6b02316.
-    '''
+    """
     # Basic. Different mixing rules could be used to tune the system.
     Tpc =  0.0
     for i in range(len(zs)):
@@ -340,7 +340,7 @@ def vapor_score_Tpc_Vpc(T, V, Tcs, Vcs, zs):
 
 
 def vapor_score_Wilson(T, P, zs, Tcs, Pcs, omegas):
-    r'''Compute a vapor score representing how vapor-like a phase is
+    r"""Compute a vapor score representing how vapor-like a phase is
     (higher, above zero = more vapor like) using the Rachford-Rice Wilson
     method of Perschke [1]_.
 
@@ -407,7 +407,7 @@ def vapor_score_Wilson(T, P, zs, Tcs, Pcs, omegas):
     .. [1] Chang, Yih-Bor. "Development and Application of an Equation of State
        Compositional Simulator," 1990.
        https://repositories.lib.utexas.edu/handle/2152/80585.
-    '''
+    """
     N = len(zs)
     if N == 1:
         Psat = Wilson_K_value(T, P, Tcs[0], Pcs[0], omegas[0])*P
@@ -423,7 +423,7 @@ def vapor_score_Wilson(T, P, zs, Tcs, Pcs, omegas):
 
 
 def vapor_score_Poling(kappa):
-    r'''Compute a vapor score representing how vapor-like a phase is
+    r"""Compute a vapor score representing how vapor-like a phase is
     (higher, above zero = more vapor like) using the isothermal compressibility
     `kappa` concept by Poling [1]_.
 
@@ -467,11 +467,11 @@ def vapor_score_Poling(kappa):
        Trivial Roots and Spurious Derivatives." Industrial & Engineering
        Chemistry Process Design and Development 20, no. 1 (January 1, 1981):
        127-30. https://doi.org/10.1021/i200012a019.
-    '''
+    """
     return kappa*101325 - .005
 
 def vapor_score_PIP(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
-    r'''Compute a vapor score representing how vapor-like a phase is
+    r"""Compute a vapor score representing how vapor-like a phase is
     (higher, above zero = more vapor like) using the PIP concept.
 
     .. math::
@@ -519,11 +519,11 @@ def vapor_score_PIP(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
        Temperature without Reference to Saturation Properties: Applications in
        Phase Equilibria Calculations." Fluid Phase Equilibria 301, no. 2
        (February 25, 2011): 225-33. doi:10.1016/j.fluid.2010.12.001.
-    '''
+    """
     return -(phase_identification_parameter(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT) - 1.0)
 
 def vapor_score_Bennett_Schmidt(dbeta_dT):
-    r'''Compute a vapor score representing how vapor-like a phase is
+    r"""Compute a vapor score representing how vapor-like a phase is
     (higher, above zero = more vapor like) using the Bennet-Schmidt
     temperature derivative of isobaric expansion suggestion.
 
@@ -559,7 +559,7 @@ def vapor_score_Bennett_Schmidt(dbeta_dT):
        Identification Methods Used in Oil Industry Flow Simulations." Energy &
        Fuels 31, no. 4 (April 20, 2017): 3370-79.
        https://doi.org/10.1021/acs.energyfuels.6b02316.
-    '''
+    """
     return -dbeta_dT
 
 def vapor_score_traces(zs, CASs, Tcs, trace_CASs=["74-82-8", "7727-37-9"],

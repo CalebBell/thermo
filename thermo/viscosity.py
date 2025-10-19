@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -82,7 +82,7 @@ Mixture Gas Viscosity
 .. autodata:: viscosity_gas_mixture_methods
 
 
-'''
+"""
 
 
 __all__ = [
@@ -244,7 +244,7 @@ use in iterating over them."""
 
 
 class ViscosityLiquid(TPDependentProperty):
-    r'''Class for dealing with liquid viscosity as a function of
+    r"""Class for dealing with liquid viscosity as a function of
     temperature and pressure.
 
     For low-pressure (at 1 atm while under the vapor pressure; along the
@@ -389,7 +389,7 @@ class ViscosityLiquid(TPDependentProperty):
     .. [6] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from
        Fundamental Physical Constants." Science Advances, April 2020.
        https://doi.org/10.1126/sciadv.aba3747.
-    '''
+    """
 
     name = "liquid viscosity"
     units = "Pa*s"
@@ -738,7 +738,7 @@ class, for use in iterating over them."""
 
 
 class ViscosityGas(TPDependentProperty):
-    r'''Class for dealing with gas viscosity as a function of
+    r"""Class for dealing with gas viscosity as a function of
     temperature and pressure.
 
     For gases at atmospheric pressure, there are 4 corresponding-states
@@ -849,7 +849,7 @@ class ViscosityGas(TPDependentProperty):
     .. [4] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from
        Fundamental Physical Constants." Science Advances, April 2020.
        https://doi.org/10.1126/sciadv.aba3747.
-    '''
+    """
 
     name = "Gas viscosity"
     units = "Pa*s"

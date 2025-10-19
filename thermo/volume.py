@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -105,7 +105,7 @@ Mixture Solid Volume
     :exclude-members:
 
 .. autodata:: volume_solid_mixture_methods
-'''
+"""
 
 
 __all__ = [
@@ -222,7 +222,7 @@ use in iterating over them."""
 
 
 class VolumeLiquid(TPDependentProperty):
-    r'''Class for dealing with liquid molar volume as a function of
+    r"""Class for dealing with liquid molar volume as a function of
     temperature and pressure.
 
     For low-pressure (at 1 atm while under the vapor pressure; along the
@@ -383,7 +383,7 @@ class VolumeLiquid(TPDependentProperty):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
     .. [6] Gesellschaft, V. D. I., ed. VDI Heat Atlas. 2nd edition.
        Berlin; New York:: Springer, 2010.
-    '''
+    """
 
     name = "Liquid molar volume"
     units = "m^3/mol"
@@ -794,7 +794,7 @@ use in iterating over them."""
 
 
 class VolumeSupercriticalLiquid(VolumeLiquid):
-    r'''Class for dealing with a supercritical liquid-like fluid's  molar
+    r"""Class for dealing with a supercritical liquid-like fluid's  molar
     volume as a function of temperature and pressure.
 
     Only EOSs and CoolProp are supported here.
@@ -845,7 +845,7 @@ class VolumeSupercriticalLiquid(VolumeLiquid):
        Open-Source Thermophysical Property Library CoolProp." Industrial &
        Engineering Chemistry Research 53, no. 6 (February 12, 2014):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
-    '''
+    """
 
     def __init__(self, MW=None, Tc=None, Pc=None,
                  omega=None,  Psat=None, CASRN="",
@@ -1253,7 +1253,7 @@ iterating over them."""
 
 
 class VolumeGas(TPDependentProperty):
-    r'''Class for dealing with gas molar volume as a function of
+    r"""Class for dealing with gas molar volume as a function of
     temperature and pressure.
 
     All considered methods are both temperature and pressure dependent. Included
@@ -1338,7 +1338,7 @@ class VolumeGas(TPDependentProperty):
        Open-Source Thermophysical Property Library CoolProp." Industrial &
        Engineering Chemistry Research 53, no. 6 (February 12, 2014):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
-    '''
+    """
 
     name = "Gas molar volume"
     units = "m^3/mol"

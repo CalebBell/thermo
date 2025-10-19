@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -192,7 +192,7 @@ Functions using group identification
 
 
 
-'''
+"""
 
 from chemicals.elements import simple_formula_parser
 
@@ -652,7 +652,7 @@ def is_imine(mol):
 
 mercaptan_smarts = "[#16X2H]"
 def is_mercaptan(mol):
-    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    r"""Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule has a mercaptan R-SH group. This is also called a thiol.
 
     Parameters
@@ -670,7 +670,7 @@ def is_mercaptan(mol):
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_mercaptan(MolFromSmiles("CS")) # doctest:+SKIP
     True
-    '''
+    """
     # https://smarts.plus/smartsview/a9b45f9cc6f17d3b5649b77a81f535dfe0729a84fc3ac453c9aaa60286e6
     hits = mol.GetSubstructMatches(smarts_mol_cache(mercaptan_smarts))
     return len(hits) > 0
@@ -1123,7 +1123,7 @@ def is_siloxane(mol):
     return bool(matches)
 
 def is_hydrocarbon(mol):
-    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    r"""Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an hydrocarbon (molecule containing hydrogen and carbon only)
 
     Parameters
@@ -1141,7 +1141,7 @@ def is_hydrocarbon(mol):
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_hydrocarbon(MolFromSmiles("CCC")) # doctest:+SKIP
     True
-    '''
+    """
     if not loaded_rdkit:
         load_rdkit_modules()
     # Check the hardcoded list first
@@ -1151,7 +1151,7 @@ def is_hydrocarbon(mol):
 
 alkane_smarts = "[CX4]"
 def is_alkane(mol):
-    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    r"""Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is an alkane, also refered to as a paraffin. All bonds in the
     molecule must be single carbon-carbon or carbon-hydrogen.
 
@@ -1170,7 +1170,7 @@ def is_alkane(mol):
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_alkane(MolFromSmiles("CCC")) # doctest:+SKIP
     True
-    '''
+    """
     # Also parafins
     # Is all single carbon bonds and hydrogens
     # https://smarts.plus/smartsview/66ef20801e42ff2c04658f07ee3c5858864478fe570cfb1813c739c8f15e
@@ -2718,7 +2718,7 @@ def is_silyl_ether(mol):
 
 branched_alkane_smarts = "CC(C)C"
 def is_branched_alkane(mol):
-    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    r"""Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is a branched alkane, also refered to as an isoparaffin. All bonds
     in the molecule must be single carbon-carbon or carbon-hydrogen.
 
@@ -2737,7 +2737,7 @@ def is_branched_alkane(mol):
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_branched_alkane(MolFromSmiles("CC(C)C(C)C(C)C")) # doctest:+SKIP
     True
-    '''
+    """
     ri = mol.GetRingInfo()
     if len(ri.AtomRings()):
         return False
@@ -2786,7 +2786,7 @@ organic_smarts_groups = [alkane_smarts, alkene_smarts, alkyne_smarts,
 def is_organic(mol, restrict_atoms=None,
                organic_smiles=default_organic_smiles,
                inorganic_smiles=default_inorganic_smiles):
-    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    r"""Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is organic. The definition of organic vs. inorganic compounds is
     arabitrary. The rules implemented here are fairly complex.
 
@@ -2823,7 +2823,7 @@ def is_organic(mol, restrict_atoms=None,
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_organic(MolFromSmiles("CC(C)C(C)C(C)C")) # doctest:+SKIP
     True
-    '''
+    """
     if not loaded_rdkit:
         load_rdkit_modules()
     # Check the hardcoded list first
@@ -2853,7 +2853,7 @@ def is_organic(mol, restrict_atoms=None,
     return False
 
 def is_inorganic(mol):
-    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    r"""Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule is inorganic.
 
     Parameters
@@ -2871,7 +2871,7 @@ def is_inorganic(mol):
     >>> from rdkit.Chem import MolFromSmiles # doctest:+SKIP
     >>> is_inorganic(MolFromSmiles("O=[Zr].Cl.Cl")) # doctest:+SKIP
     True
-    '''
+    """
     return not is_organic(mol)
 
 
@@ -3153,7 +3153,7 @@ radionuclides = {
 # https://www.anl.gov/phy/atomic-mass-data-resources
 
 def is_radionuclide(mol):
-    r'''Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
+    r"""Given a `rdkit.Chem.rdchem.Mol` object, returns whether or not the
     molecule contains an unstable isotope (radionuclide).
 
     Parameters
@@ -3183,7 +3183,7 @@ def is_radionuclide(mol):
        "The NUBASE2020 Evaluation of Nuclear Physics Properties *."
        Chinese Physics C 45, no. 3 (March 2021): 030001.
        https://doi.org/10.1088/1674-1137/abddae.
-    '''
+    """
     for atom in mol.GetAtoms():
         element = atom.GetSymbol()
         isotope = atom.GetIsotope()
@@ -3195,7 +3195,7 @@ def is_radionuclide(mol):
 ### Calculate things using functional groups - basic
 
 def BVirial_Tsonopoulos_extended_ab(Tc, Pc, dipole, smiles):
-    r'''Calculates the  of `a` and `b` parameters of the Tsonopoulos (extended)
+    r"""Calculates the  of `a` and `b` parameters of the Tsonopoulos (extended)
     second virial coefficient prediction method. These parameters account for
     polarity. This function uses `rdkit` to identify the component type of the
     molecule.
@@ -3288,7 +3288,7 @@ def BVirial_Tsonopoulos_extended_ab(Tc, Pc, dipole, smiles):
        and Ternary Mixtures of Ethers, Alkanes and Alkanols, 133, no. 1-2
        (June 1997): 11-34. doi:10.1016/S0378-3812(97)00058-7.
 
-    '''
+    """
     if smiles == "CO":
         # methanol
         a, b = 0.0878, 0.0525

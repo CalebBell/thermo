@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -44,7 +44,7 @@ SPDB
 
     Example scalar parameters for models. This is lazy-loaded,
     access it as `thermo.interaction_parameters.SPDB`.
-'''
+"""
 
 
 __all__ = ["InteractionParameterDB", "ScalarParameterDB"]

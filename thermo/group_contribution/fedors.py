@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,7 +27,7 @@ This functionality requires the RDKit library to work.
 
 
 .. autofunction:: thermo.group_contribution.Fedors
-'''
+"""
 __all__ = ["Fedors"]
 
 from chemicals.elements import simple_formula_parser
@@ -45,7 +45,7 @@ fedors_contributions = {"C": 34.426, "H": 9.172, "O": 20.291,
 
 
 def Fedors(mol):
-    r'''Estimate the critical volume of a molecule
+    r"""Estimate the critical volume of a molecule
     using the Fedors [1]_ method, which is a basic
     group contribution method that also uses certain
     bond count features and the number of different
@@ -92,7 +92,7 @@ def Fedors(mol):
        Journal 25, no. 1 (1979): 202-202. https://doi.org/10.1002/aic.690250129.
     .. [2] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
-    '''
+    """
     from rdkit import Chem
     if type(mol) is Chem.rdchem.Mol:
         rdkitmol = Chem.Mol(mol)

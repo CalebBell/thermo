@@ -1,4 +1,4 @@
-r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+r"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -71,7 +71,7 @@ Higher-Precision Solvers
 .. autofunction:: volume_solutions_mpmath_float
 .. autofunction:: volume_solutions_sympy
 
-'''
+"""
 
 __all__ = [
     "volume_solution_polish",
@@ -113,7 +113,7 @@ from fluids.numerics.doubledouble import (
 
 
 def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
-    r'''Solution of this form of the cubic EOS in terms of volumes, using the
+    r"""Solution of this form of the cubic EOS in terms of volumes, using the
     `sympy` mathematical library with real numbers.
 
     This function is generally slow, and somehow still has more than desired
@@ -241,7 +241,7 @@ def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
        Čertík, Sergey B. Kirpichev, Matthew Rocklin, AMiT Kumar, Sergiu Ivanov,
        Jason K. Moore, and Sartaj Singh. "SymPy: Symbolic Computing in Python."
        PeerJ Computer Science 3 (2017): e103.
-    '''
+    """
     if P == 0.0 or T == 0.0:
         raise ValueError("Bad P or T; issue is not the algorithm")
     from sympy import I, Rational, sqrt
@@ -927,7 +927,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             break
         if V_new <= low_V or V_new >= high_V:
             V_new = 0.5*(low_V + high_V)
-            if V_new == low_V or V_new == high_V: # noqa: SIM109
+            if V_new == low_V or V_new == high_V:
                 # If the bisection has finished (interval cannot be further divided)
                 # the solver is finished
                 break
@@ -1005,7 +1005,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     return (0.0, 0.0, 0.0)
 
 def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
-    r'''Solution of this form of the cubic EOS in terms of volumes. Returns
+    r"""Solution of this form of the cubic EOS in terms of volumes. Returns
     three values, all with some complex part. This is believed to be the
     fastest analytical formula, and while it does not suffer from the same
     errors as Cardano's formula, it has plenty of its own numerical issues.
@@ -1055,7 +1055,7 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
        Equations of State in Low Temperature Region." Fluid Phase
        Equilibria 201, no. 2 (September 30, 2002): 287-94.
        https://doi.org/10.1016/S0378-3812(02)00072-9.
-    '''
+    """
     x24 = 1.73205080756887729352744634151j + 1.
     x24_inv = 0.25 - 0.433012701892219323381861585376j
     x26 = -1.73205080756887729352744634151j + 1.
