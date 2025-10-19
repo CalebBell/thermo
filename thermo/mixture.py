@@ -115,7 +115,7 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
                     zs = [1.0]
             else:
                 if not ignore_exceptions:
-                    raise Exception("Could not recognize the mixture IDs")
+                    raise ValueError("Could not recognize the mixture IDs")
                 else:
                     return IDs, zs, ws, Vfls, Vfgs
 
@@ -162,16 +162,16 @@ def preprocess_mixture_composition(IDs=None, zs=None, ws=None, Vfls=None,
         length_matching = len(Vfgs) == len(IDs)
     else:
         if not ignore_exceptions:
-            raise Exception("One of 'zs', 'ws', 'Vfls', or 'Vfgs' is required to define the mixture")
+            raise ValueError("One of 'zs', 'ws', 'Vfls', or 'Vfgs' is required to define the mixture")
     # Do not to a test on multiple composition inputs in case the user specified
     # a composition, plus one was set (it will be zero anyway)
     if not ignore_exceptions:
         if len(IDs) > 1 and ((zs is not None) + (ws is not None) + (Vfgs is not None) + (Vfls is not None)) > 1:
-            raise Exception("Multiple different composition arguments were "
+            raise ValueError("Multiple different composition arguments were "
                             "specified; specify only one of the arguments "
                             "'zs', 'ws', 'Vfls', or 'Vfgs'.")
         if not length_matching:
-            raise Exception("Composition is not the same length as the component identifiers")
+            raise ValueError("Composition is not the same length as the component identifiers")
     return IDs, zs, ws, Vfls, Vfgs
 
 
@@ -622,7 +622,7 @@ class Mixture:
             self.zs = Vfs_to_zs(Vfs, Vms_TP)
             self.ws = zs_to_ws(self.zs, self.MWs)
         else:
-            raise Exception("One of mole fractions `zs`, weight fractions `ws`,"
+            raise ValueError("One of mole fractions `zs`, weight fractions `ws`,"
                             " pure component liquid volume fractions `Vfls`, or"
                             " pure component gas volume fractions `Vfgs` must "
                             "be provided.")

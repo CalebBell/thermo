@@ -1572,7 +1572,7 @@ def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions,
         multiplier = -cation_balance_error/anion_balance_error
         anion_zs = [i*multiplier for i in anion_zs]
     else:
-        raise Exception(f"Allowable methods are {charge_balance_methods}")
+        raise ValueError(f"Allowable methods are {charge_balance_methods}")
     z_water = 1. - sum(anion_zs) - sum(cation_zs)
     return anion_zs, cation_zs, z_water
 

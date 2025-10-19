@@ -82,7 +82,7 @@ def allclose_variable(a, b, limits, rtols=None, atols=None):
     """
     l = float(len(a))
     if rtols is None and atols is None:
-        raise Exception("Either absolute errors or relative errors must be supplied.")
+        raise ValueError("Either absolute errors or relative errors must be supplied.")
     elif rtols is None:
         rtols = [0 for i in atols]
     elif atols is None:
@@ -150,7 +150,7 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None,
     elif phase is None or phase == "two-phase":
         return None
     else:
-        raise Exception("Property not recognized")
+        raise ValueError("Property not recognized")
 
 def identify_phase(T, P=101325.0, Tm=None, Tb=None, Tc=None, Psat=None):
     r"""Determines the phase of a one-species chemical system according to
@@ -479,7 +479,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
         # Check the component set is right
         if set(feed_cmps) != set(product_cmps):
-            raise Exception("Product and feeds have different components in them")
+            raise ValueError("Product and feeds have different components in them")
 
         # element balance
         feed_cmps, feed_element_flows = mix_multiple_component_flows(
@@ -505,7 +505,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
             assert_close(flow, product_element_flows[ele], rtol=rtol, atol=atol)
 
         if set(feed_cmps) != set(product_cmps):
-            raise Exception("Product and feeds have different elements in them")
+            raise ValueError("Product and feeds have different elements in them")
         return True
 
     feed_ns = [i.n for i in inlets]

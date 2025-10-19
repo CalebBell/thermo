@@ -2111,11 +2111,11 @@ class Stream(Mixture):
         if hasattr(IDs, "strip") or (type(IDs) == list and len(IDs) == 1):
             pass # one component only - do not raise an exception
         elif composition_option_count < 1:
-            raise Exception("No composition information is provided; one of "
+            raise ValueError("No composition information is provided; one of "
                             "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
                             "'Qgs' must be specified")
         elif composition_option_count > 1:
-            raise Exception("More than one source of composition information "
+            raise ValueError("More than one source of composition information "
                             "is provided; only one of "
                             "'ws', 'zs', 'Vfls', 'Vfgs', 'ns', 'ms', 'Qls' or "
                             "'Qgs' can be specified")
@@ -2138,11 +2138,11 @@ class Stream(Mixture):
                 flow_option_count -= 1
 
         if flow_option_count < 1:
-            raise Exception("No flow rate information is provided; one of "
+            raise ValueError("No flow rate information is provided; one of "
                             "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' or "
                             "'energy' must be specified")
         elif flow_option_count > 1:
-            raise Exception("More than one source of flow rate information is "
+            raise ValueError("More than one source of flow rate information is "
                             "provided; only one of "
                             "'m', 'n', 'Q', 'ms', 'ns', 'Qls', 'Qgs' or "
                             "'energy' can be specified")
@@ -2191,7 +2191,7 @@ class Stream(Mixture):
                     Vm = self.Vm
                 self.n = Q/Vm
             except:
-                raise Exception("Molar volume could not be calculated to determine the flow rate of the stream.")
+                raise ValueError("Molar volume could not be calculated to determine the flow rate of the stream.")
         elif ns is not None:
             if isinstance(ns, (OrderedDict, dict)):
                 ns = ns.values()
@@ -2207,14 +2207,14 @@ class Stream(Mixture):
                     Qls = Qls.values()
                 self.n = sum([Q/Vml for Q, Vml in zip(Qls, self.Vmls)])
             except:
-                raise Exception("Liquid molar volume could not be calculated to determine the flow rate of the stream.")
+                raise ValueError("Liquid molar volume could not be calculated to determine the flow rate of the stream.")
         elif Qgs is not None:
             try:
                 if isinstance(Qgs, (OrderedDict, dict)):
                     Qgs = Qgs.values()
                 self.n = sum([Q/Vmg for Q, Vmg in zip(Qgs, [ideal_gas(T, P)]*self.N)])
             except:
-                raise Exception("Gas molar volume could not be calculated to determine the flow rate of the stream.")
+                raise ValueError("Gas molar volume could not be calculated to determine the flow rate of the stream.")
         elif energy is not None:
             if H is not None:
                 self.m = energy/H # Watt/(J/kg) = kg/s
@@ -2373,7 +2373,7 @@ class Stream(Mixture):
 
     def __add__(self, other):
         if not isinstance(other, Stream):
-            raise Exception("Adding to a stream requires that the other object "
+            raise TypeError("Adding to a stream requires that the other object "
                             "also be a stream.")
 
         if (set(self.CASs) == set(other.CASs)) and (len(self.CASs) == len(other.CASs)):
@@ -2405,7 +2405,7 @@ class Stream(Mixture):
         if not all(components_in_self):
             for i, in_self in enumerate(components_in_self):
                 if not in_self and other.zs[i] > 0:
-                    raise Exception(f"Not all components to be removed are \
+                    raise ValueError(f"Not all components to be removed are \
 present in the first stream; {other.IDs[i]} is not present.")
 
         # Calculate the mole flows of each species
@@ -2421,7 +2421,7 @@ present in the first stream; {other.IDs[i]} is not present.")
                 relative_difference_product = abs(ns_self[i] - nj)/n_product
                 relative_difference_self = abs(ns_self[i] - nj)/ns_self[i]
                 if ns_self[i] - nj < 0 and (relative_difference_product > 1E-12 or relative_difference_self > 1E-9):
-                    raise Exception(f"Attempting to remove more {self.IDs[i]} than is in the \
+                    raise ValueError(f"Attempting to remove more {self.IDs[i]} than is in the \
 first stream.")
                 if ns_self[i] - nj < 0.:
                     ns_self[i] = 0.

@@ -1443,7 +1443,7 @@ class Chemical: # pragma: no cover
             elif self.phase_ref == "g" and self.phase == "s":
                 H += -self.H_int_Tb_to_T_ref_g - self.Hvap_Tbm - self.H_int_l_Tm_to_Tb - self.Hfusm + integrators["s"](self.Tm, T)
             else:
-                raise Exception("Unknown error")
+                raise ValueError("Unknown error")
         except:
             return None
         return H
@@ -1519,7 +1519,7 @@ class Chemical: # pragma: no cover
             elif self.phase_ref == "g" and self.phase == "s":
                 S += - self.S_int_Tb_to_T_ref_g - self.Hvap_Tbm/self.Tb - self.S_int_l_Tm_to_Tb - self.Hfusm/self.Tm + integrators_T["s"](self.Tm, T)
             else:
-                raise Exception("Unknown error")
+                raise ValueError("Unknown error")
         except:
             return None
         return S

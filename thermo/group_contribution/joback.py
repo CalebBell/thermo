@@ -69,7 +69,7 @@ def load_rdkit_modules():
         loaded_rdkit = True
     except:
         if not loaded_rdkit: # pragma: no cover
-            raise Exception(rdkit_missing)
+            raise ImportError(rdkit_missing)
 # Another reference source, keep for debugging
 # # Shi Chenyang's JRGUI code indicates he left the following list of smarts in
 # # favor of those above by J Biggs

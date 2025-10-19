@@ -252,7 +252,7 @@ def legal_status(CASRN, method=None, get_methods=False, CASi=None):
         for method in methods[1:]:
             status[method] = legal_status(CASRN, method=method, CASi=CASi)
     else:
-        raise Exception("Failure in in function")
+        raise ValueError("Failure in in function")
     return status
 
 HPV_data, _EPACDRDict, _ECHATonnageDict = [None]*3
@@ -358,6 +358,6 @@ def economic_status(CASRN, method=None, get_methods=False):  # pragma: no cover
         if CASi in HPV_data.index:
             status += ["OECD HPV Chemicals"]
     else:
-        raise Exception("Failure in in function")
+        raise ValueError("Failure in in function")
     return status
 

@@ -336,9 +336,9 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase, Tc=None):
        2498-2508. doi:10.1021/ie4033999. http://www.coolprop.org/
     """
     if not has_CoolProp:  # pragma: no cover
-        raise Exception("CoolProp library is not installed")
+        raise ImportError("CoolProp library is not installed")
     if CASRN not in coolprop_dict and "REFPROP" not in CASRN:
-        raise Exception("CASRN not in list of supported fluids")
+        raise ValueError("CASRN not in list of supported fluids")
     if prop in ("CP0MOLAR", "Cp0molar"):
       try:
         # Some cases due to melting point need a high pressure
@@ -352,7 +352,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase, Tc=None):
     T = float(T) # Do not allow custom objects here
     if phase == "l":
         if T > Tc:
-            raise Exception("For liquid properties, must be under the critical temperature.")
+            raise ValueError("For liquid properties, must be under the critical temperature.")
         if PhaseSI("T", T, "P", 101325, CASRN) in ["liquid", "supercritical_liquid"]:
           # If under the vapor pressure curve e.g. water at STP, use 1 atm
           # at the normal boiling point this switches to the saturation curve
@@ -369,7 +369,7 @@ def CoolProp_T_dependent_property(T, CASRN, prop, phase, Tc=None):
                 # catch supercritical_gas and friends
                 return PropsSI(prop, "T", T, "P", 101325, CASRN)
     else:
-        raise Exception("Error in CoolProp property function")
+        raise ValueError("Error in CoolProp property function")
 
 
 def CoolProp_json_alpha0_to_kwargs(json_data, as_np=False):

@@ -501,7 +501,7 @@ class Flash:
                                     settings=settings, flasher=self)
 
         else:
-            raise Exception("Flash inputs unsupported")
+            raise ValueError("Flash inputs unsupported")
 
     flash_phase_boundary_algos = [flash_phase_boundary_one_sided_secant]
     flash_phase_boundary_methods = [SECANT_PHASE_BOUNDARY]
@@ -1203,7 +1203,7 @@ class Flash:
                 ignore_errors=True, values=False, verbose=False, show=False,
                 T_pts=None, P_pts=None, Ts=None, Ps=None, boundary="VL"): # pragma: no cover
         if not has_matplotlib() and not values:
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if Pmin is None:
             Pmin = 1e2
         if Pmax is None:
@@ -1260,7 +1260,7 @@ class Flash:
                 ignore_errors=True, values=False, verbose=False, show=False,
                 T_pts=None, P_pts=None, Ts=None, Ps=None): # pragma: no cover
         if not has_matplotlib() and not values:
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if Pmin is None:
             Pmin = 1e4
         if Pmax is None:
@@ -1412,7 +1412,7 @@ class Flash:
             [P1_VFy, P2_VFy, ... Pn_VFy]], [Pa]
         """
         if not has_matplotlib() and not values:
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if not Tmin:
             Tmin = min(self.constants.Tms)
         if not Tmax:
@@ -1530,7 +1530,7 @@ class Flash:
             [T1_VFy, T2_VFy, ... Tn_VFy]], [k]
         """
         if not has_matplotlib() and not values:
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if not Pmin:
             Pmin = 1e4
         if not Pmax:
@@ -1607,13 +1607,13 @@ class Flash:
             Pressure, [Pa]
         """
         if not has_matplotlib():
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         try:
             import ternary
         except:
-            raise Exception("Optional dependency python-ternary is required for ternary plotting")
+            raise ImportError("Optional dependency python-ternary is required for ternary plotting")
         if self.N != 3:
-            raise Exception("Ternary plotting requires a mixture of exactly three components")
+            raise ValueError("Ternary plotting requires a mixture of exactly three components")
 
         is_T_spec = T is not None
         if not is_T_spec and P is None:
@@ -1728,9 +1728,9 @@ class Flash:
             Dew point temperatures at the evaluated points, [K]
         """
         if not has_matplotlib() and values is not False:
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if self.N != 2:
-            raise Exception("Txy plotting requires a mixture of exactly two components")
+            raise ValueError("Txy plotting requires a mixture of exactly two components")
         z1 = linspace(0, 1, pts)
         z2 = [1.0 - zi for zi in z1]
         Ts_dew = []
@@ -1806,9 +1806,9 @@ class Flash:
             Dew point pressures at the evaluated points, [Pa]
         """
         if not has_matplotlib() and values is not False:
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if self.N != 2:
-            raise Exception("Pxy plotting requires a mixture of exactly two components")
+            raise ValueError("Pxy plotting requires a mixture of exactly two components")
         z1 = linspace(0, 1, pts)
         z2 = [1.0 - zi for zi in z1]
         Ps_dew = []
@@ -1888,9 +1888,9 @@ class Flash:
             Vapor mole fractions of component 1 at each point, [-]
         """
         if not has_matplotlib():
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if self.N != 2:
-            raise Exception("xy plotting requires a mixture of exactly two components")
+            raise ValueError("xy plotting requires a mixture of exactly two components")
         z1 = linspace(0.0, 1.0, pts)
         z2 = [1.0 - zi for zi in z1]
         y1_bubble = []

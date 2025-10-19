@@ -10537,7 +10537,7 @@ class APISRK(SRK):
         self.check_sufficient_inputs()
 
         if S1 is None and omega is None:
-            raise Exception("Either acentric factor of S1 is required")
+            raise ValueError("Either acentric factor of S1 is required")
 
         if S1 is None:
             self.S1 = S1 = 0.48508 + 1.55171*omega - 0.15613*omega*omega

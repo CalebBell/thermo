@@ -433,7 +433,7 @@ def load_rdkit_modules():
         from rdkit.Chem import AllChem, CanonSmiles, Descriptors, MolFromSmarts, MolToSmiles, rdMolDescriptors
         loaded_rdkit = True
     except:
-        raise Exception(rdkit_missing) # pragma: no cover
+        raise ImportError(rdkit_missing) # pragma: no cover
 
 
 

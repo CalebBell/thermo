@@ -86,7 +86,7 @@ def load_rdkit_modules():
         from itertools import combinations
     except:
         if not loaded_rdkit: # pragma: no cover
-            raise Exception(rdkit_missing)
+            raise ImportError(rdkit_missing)
 
 class BaseGroupContribution:
     __slots__ = (
@@ -276,7 +276,7 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     if not loaded_rdkit:
         load_rdkit_modules()
     if rdkitmol is None and smi is None:
-        raise Exception("Either an rdkit mol or a smiles string is required")
+        raise ValueError("Either an rdkit mol or a smiles string is required")
     if type(rdkitmol) is str and smi is None:
         # swap for convinience
         rdkitmol, smi = smi, rdkitmol
@@ -584,7 +584,7 @@ def smarts_fragment(catalog, rdkitmol=None, smi=None, deduplicate=True):
     if not loaded_rdkit:
         load_rdkit_modules()
     if rdkitmol is None and smi is None:
-        raise Exception("Either an rdkit mol or a smiles string is required")
+        raise ValueError("Either an rdkit mol or a smiles string is required")
     if smi is not None:
         rdkitmol = Chem.MolFromSmiles(smi)
         if rdkitmol is None:

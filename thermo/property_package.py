@@ -604,7 +604,7 @@ class PropertyPackage:
         elif P is not None and VF is not None:
             phase, xs, ys, V_over_F, T = self.flash_PVF_zs(P=P, VF=VF, zs=zs)
         else:
-            raise Exception("Unsupported flash requested")
+            raise ValueError("Unsupported flash requested")
 
         if VF is not None:
             # Handle the case that a non-zero VF was specified, but the flash's
@@ -652,7 +652,7 @@ class PropertyPackage:
                 kwargs["T"] = T
                 kwargs["VF"] = VF
             else:
-                raise Exception("Flash inputs unsupported")
+                raise ValueError("Flash inputs unsupported")
 
 
 #            ''' The routine needs to be upgraded to set these properties
@@ -1174,7 +1174,7 @@ class IdealCaloric(Ideal):
             Calculated partial property, [`units`]
         """
         if prop not in ("Sm", "Gm", "Hm"):
-            raise Exception("The only supported property plots are enthalpy "
+            raise ValueError("The only supported property plots are enthalpy "
                             "('Hm'), entropy ('Sm'), and Gibbe energy ('Gm')")
 
         def prop_extensive(ni, ns, i):

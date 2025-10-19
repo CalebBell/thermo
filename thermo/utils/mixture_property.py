@@ -377,7 +377,7 @@ class MixtureProperty:
 
     def _complete_zs_ws(self, zs, ws):
         if zs is None and ws is None:
-            raise Exception("No Composition Specified")
+            raise ValueError("No Composition Specified")
         elif zs is None:
             return ws_to_zs(ws, self.MWs), ws
         elif ws is None:
@@ -764,17 +764,17 @@ class MixtureProperty:
         if has_matplotlib():
             import matplotlib.pyplot as plt
         else:
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if Pmin is None:
             if self.Pmin is not None:
                 Pmin = self.Pmin
             else:
-                raise Exception("Minimum pressure could not be auto-detected; please provide it")
+                raise ValueError("Minimum pressure could not be auto-detected; please provide it")
         if Pmax is None:
             if self.Pmax is not None:
                 Pmax = self.Pmax
             else:
-                raise Exception("Maximum pressure could not be auto-detected; please provide it")
+                raise ValueError("Maximum pressure could not be auto-detected; please provide it")
 
         if not methods:
             methods = [self._method]
