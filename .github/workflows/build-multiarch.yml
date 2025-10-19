@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/release' }}
 
 jobs:
   multi-arch-test:
@@ -33,35 +33,11 @@ jobs:
           - arch: aarch64
             distro: ubuntu_latest
           - arch: riscv64
-            distro: ubuntu_latest
-          - arch: s390x
-            distro: ubuntu_latest
-          - arch: ppc64le
-            distro: ubuntu_latest
-
-          - arch: armv7
-            distro: ubuntu22.04
-          - arch: aarch64
-            distro: ubuntu22.04
-#          - arch: riscv64
-#            distro: ubuntu22.04
-          - arch: s390x
-            distro: ubuntu22.04
-          - arch: ppc64le
-            distro: ubuntu22.04
-          # ubuntu20.04 is too old, thermo dropped support with numpy 2.0 compat
-
-          - arch: armv7
-            distro: ubuntu_rolling
-          - arch: aarch64
-            distro: ubuntu_rolling
-          - arch: s390x
-            distro: ubuntu_rolling
-          - arch: ppc64le
-            distro: ubuntu_rolling
-
-          - arch: aarch64
             distro: ubuntu_devel
+          - arch: s390x
+            distro: ubuntu_latest
+          - arch: ppc64le
+            distro: ubuntu_latest
 
           - arch: armv6
             distro: alpine_latest
@@ -92,11 +68,12 @@ jobs:
           install: |
             if [[ "${{ matrix.distro }}" == "alpine_latest" ]]; then
               apk update
-              apk add python3 py3-pip py3-scipy py3-matplotlib py3-numpy py3-pandas py3-sqlalchemy
-            elif [[ "${{ matrix.distro }}" == "ubuntu_latest" || "${{ matrix.distro }}" == "ubuntu20.04" ||  "${{ matrix.distro }}" == "ubuntu22.04" || "${{ matrix.distro }}" == "ubuntu_rolling" || "${{ matrix.distro }}" == "ubuntu_devel" || "${{ matrix.distro }}" == "bookworm" ]]; then
+              apk add python3 py3-pip py3-scipy py3-matplotlib py3-numpy py3-pandas
+            elif [[ "${{ matrix.distro }}" == "ubuntu_latest" || "${{ matrix.distro }}" == "ubuntu_rolling" || "${{ matrix.distro }}" == "ubuntu_devel" || "${{ matrix.distro }}" == "ubuntu20.04" ||  "${{ matrix.distro }}" == "ubuntu22.04" || "${{ matrix.distro }}" == "bookworm" ]]; then
               apt-get update
+              # Install libatlas-base-dev if available (not available on some architectures like riscv64)
+              apt-get install -y liblapack-dev gfortran libgmp-dev libmpfr-dev libsuitesparse-dev ccache libmpc-dev python3 python3-pip python3-scipy python3-matplotlib python3-numpy python3-pandas
               apt-get install -y libatlas-base-dev || true
-              apt-get install -y liblapack-dev gfortran libgmp-dev libmpfr-dev libsuitesparse-dev ccache libmpc-dev python3 python3-pip python3-scipy python3-matplotlib python3-numpy python3-pandas python3-sqlalchemy
             fi
           run: |
               if python3 -c "import subprocess; exit('no such option' not in subprocess.getoutput('pip3 install --break-system-packages'))"; then

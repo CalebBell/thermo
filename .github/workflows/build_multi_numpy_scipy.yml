@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/release' }}
 
 jobs:
   build:
@@ -123,9 +123,19 @@ jobs:
         COVERALLS_PARALLEL: true
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload coverage HTML artifact
+    - name: Upload coverage HTML report
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-html-numpy-${{ matrix.numpy }}-scipy-${{ matrix.scipy }}-py-${{ matrix.python-version }}
+        name: coverage-html-numpy-${{ matrix.numpy }}-scipy-${{ matrix.scipy }}-py${{ matrix.python-version }}
         path: htmlcov/
+  finish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        curl https://coveralls.io/webhook?repo_token=${{ secrets.coveralls }} -d "payload[build_num]=${{ github.sha }}&payload[status]=done"

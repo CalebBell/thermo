@@ -49,7 +49,7 @@ jobs:
 
     - name: Run bandit security scan
       run: |
-        bandit -r fluids -ll
+        bandit -r thermo -ll
 
   security-complete:
     runs-on: ubuntu-latest

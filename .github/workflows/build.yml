@@ -8,7 +8,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/release' }}
 
 jobs:
   build:
@@ -67,12 +67,18 @@ jobs:
           - os: macos-latest
             python-version: 3.10
 
-          # Free-threaded builds only on Linux and macOS ARM for now
+          # pandas doesn't have wheels for 3.13t on Windows x64
           - os: windows-latest
+            architecture: x64
             python-version: 3.13t
-          - os: macos-15-intel
-            python-version: 3.13t
-    
+
+          # These are arm - old versions of Python are not supported
+          - os: macos-latest
+            python-version: 3.8
+          - os: macos-latest
+            python-version: 3.9
+          - os: macos-latest
+            python-version: 3.10
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}
@@ -136,15 +142,26 @@ jobs:
     - name: Test with pytest
       run: |
         pytest . -v --cov-report html --cov=thermo --cov-report term-missing -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
+        coveralls || true
       env:
-        PYTHON_GIL: ${{ matrix.python-version == '3.13t' && '0' || '' }}
         COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
         COVERALLS_PARALLEL: true
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PYTHON_GIL: ${{ matrix.python-version == '3.13t' && '0' || '' }}
 
-    - name: Upload coverage HTML artifact
+    - name: Upload coverage HTML report
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: coverage-html-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.architecture }}
         path: htmlcov/
+  finish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        curl https://coveralls.io/webhook?repo_token=${{ secrets.coveralls }} -d "payload[build_num]=${{ github.sha }}&payload[status]=done"
