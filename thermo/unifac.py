@@ -3468,7 +3468,7 @@ DDBST_MODIFIED_UNIFAC_assignments = {}
 DDBST_PSRK_assignments = {}
 
 def load_group_assignments_DDBST():
-    """Data is stored in the format
+    r"""Data is stored in the format
     InChI key\tbool bool bool \tsubgroup count ...\tsubgroup count \tsubgroup count...
     where the bools refer to whether or not the original UNIFAC, modified
     UNIFAC, and PSRK group assignments were completed correctly.
@@ -4033,7 +4033,7 @@ def chemgroups_to_matrix(chemgroups):
     keys = []
     all_keys = set()
     [all_keys.update(i.keys()) for i in chemgroups]
-    for k in sorted(list(all_keys)):
+    for k in sorted(all_keys):
         matrix.append([l.get(k, 0) for l in chemgroups])
 #        matrix.append([float(l[k]) if k in l else 0.0 for l in chemgroups]) # Cannot notice performance improvement
     return matrix

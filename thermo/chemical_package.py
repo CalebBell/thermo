@@ -358,8 +358,6 @@ def _from_IDs(IDs, correlations=False):
     molecular_diameters = [molecular_diameter(Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i], omega=omegas[i],
                                                 Vm=Vml_Tms[i], Vb=Vml_Tbs[i], CASRN=CASs[i]) for i in range(N)]
 
-    UNIFAC_group_assignment_DDBST
-
     UNIFAC_groups = []
     UNIFAC_Dortmund_groups = []
     PSRK_groups = []

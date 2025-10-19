@@ -388,7 +388,6 @@ class EquilibriumState:
 
     json_version = 1
     non_json_attributes = []
-    vectorized = False
 
     @property
     def phase(self):

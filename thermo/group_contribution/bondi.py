@@ -556,7 +556,7 @@ def count_cis_condensed_naphthenes(mol):
             shared = set(ring1) & set(ring2)
             if len(shared) == 2:  # Standard fusion point
                 # Get the two fusion atoms
-                fusion_atoms = sorted(list(shared))
+                fusion_atoms = sorted(shared)
                 # Check their stereochemistry
                 atom1 = mol.GetAtomWithIdx(fusion_atoms[0])
                 atom2 = mol.GetAtomWithIdx(fusion_atoms[1])
@@ -611,7 +611,7 @@ def count_transcondensed_and_free_cycloalkyl(mol):
         all_trans = True
         for other_ring, shared in fused_to:
             # Get the fusion atoms
-            fusion_atoms = sorted(list(shared))
+            fusion_atoms = sorted(shared)
             # Check stereochemistry
             atom1 = mol.GetAtomWithIdx(fusion_atoms[0])
             atom2 = mol.GetAtomWithIdx(fusion_atoms[1])
@@ -723,7 +723,7 @@ def find_methylene_rings_condensed_to_aromatic_rings(mol):
             methylene_rings.append(tuple(sorted(ring)))
 
     # Remove any duplicates and return
-    return sorted(list(set(methylene_rings)))
+    return sorted(set(methylene_rings))
 
 def bondi_fragmentation(rdkitmol):
     """

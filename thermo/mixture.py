@@ -558,8 +558,6 @@ class Mixture:
     conductivity = None
     Hm = None
     H = None
-    isobaric_expansion_g = None
-    isobaric_expansion_l = None
     T_default = 298.15
     P_default = 101325.
     autoflash = True # Whether or not to flash on init

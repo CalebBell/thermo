@@ -860,7 +860,6 @@ class GibbsExcessLiquid(Phase):
         Hs = zeros(N) if vectorized else [0.0]*N
         Henry_constants(lnHenry_matrix, zs, henry_components, solvents_with_parameters, Hs)
         return Hs
-        dHenry_constants_dT
 
     def dHenry_constants_dT(self):
         zs, vectorized, N, henry_components, henry_mode = self.zs, self.vectorized, self.N, self.henry_components, self.henry_mode

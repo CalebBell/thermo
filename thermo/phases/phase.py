@@ -5351,8 +5351,6 @@ class Phase:
         except:
             return None
 
-    n_calc = n
-
     @property
     def m(self):
         r"""Method to return the mass flow rate of this phase.
@@ -5375,8 +5373,6 @@ class Phase:
                 return self._m
         except:
             return None
-
-    m_calc = m
 
     @property
     def Q(self):

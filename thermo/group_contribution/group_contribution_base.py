@@ -445,8 +445,8 @@ def smarts_fragment_priority(catalog, rdkitmol=None, smi=None):
     success = heavy_atom_matched and hydrogens_matched
     if not success:
         things_to_ignore = []
-        for k in all_matches:
-            for v in all_matches[k]:
+        for k, v_list in all_matches.items():
+            for v in v_list:
                 things_to_ignore.append((k, v))
 
         # if len(things_to_ignore) < 25:

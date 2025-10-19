@@ -1723,7 +1723,7 @@ class TDependentProperty:
 
             # Add parameters for each sub-method
             sub_methods = methods_dict[0]
-            for param_name, correlation_name in self.correlation_parameters.items():
+            for correlation_name in self.correlation_parameters.values():
                 correlation_dict = getattr(self, correlation_name, None)
                 if correlation_dict:
                     # Check each sub-method
@@ -1744,7 +1744,7 @@ class TDependentProperty:
             return result
 
         # Handle correlation parameters
-        for param_name, correlation_name in self.correlation_parameters.items():
+        for correlation_name in self.correlation_parameters.values():
             correlation_dict = getattr(self, correlation_name, None)
             if correlation_dict and self.method in correlation_dict:
                 # Return only the specific method's parameters
@@ -1813,7 +1813,6 @@ class TDependentProperty:
 
     json_version = 1
     non_json_attributes = ["correlations", "extrapolation_coeffs", "tabular_data_interpolators", "tabular_data_interpolators_P", "T_cached", "local_methods"]
-    obj_references = ["eos"]
 
     def _custom_as_json(self, d, cache):
         d["all_methods"] = list(d["all_methods"])

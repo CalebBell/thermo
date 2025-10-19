@@ -81,7 +81,7 @@ TSCA_flags = {
 def load_law_data():
     global DSL_data, TSCA_data, EINECS_data, SPIN_data, NLP_data
     try:
-        TSCA_data
+        TSCA_data  # noqa: B018
         return
     except:
         pass

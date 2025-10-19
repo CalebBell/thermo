@@ -2379,7 +2379,7 @@ class Stream(Mixture):
         if (set(self.CASs) == set(other.CASs)) and (len(self.CASs) == len(other.CASs)):
             cmps = self.CASs
         else:
-            cmps = sorted(list(set(self.CASs + other.CASs)))
+            cmps = sorted(set(self.CASs + other.CASs))
         mole = self.n + other.n
         moles = []
         for cmp in cmps:
@@ -3015,7 +3015,7 @@ class EnergyStream:
     def __init__(self, Q):
         self.Q = Q
         if not isinstance(Q, ok_energy_types):
-            raise ValueError("Energy stream flow rate is not a flow rate")
+            raise TypeError("Energy stream flow rate is not a flow rate")
 
     @property
     def energy(self):

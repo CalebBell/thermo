@@ -3111,10 +3111,10 @@ def identify_conjugated_bonds(mol):
     # Stage 4: Remove duplicates while preserving order
     # Convert to set of ((C=C, C=C), C-C) for deduplication
     # The two double bonds can be in either order, but the single bond must stay separate
-   unique_systems = set(
+   unique_systems = {
        (tuple(sorted([system[0], system[1]])), system[2])
        for system in conjugated_systems
-   )
+   }
    # Convert back to list of tuples
    return [
        (double_bonds[0], double_bonds[1], single_bond)
@@ -3822,4 +3822,4 @@ def identify_functional_group_atoms(mol, functional_group):
     unique_matches = {tuple(sorted(match)) for match in all_matches}
 
     # Return as sorted list for consistent ordering
-    return sorted(list(unique_matches))
+    return sorted(unique_matches)
