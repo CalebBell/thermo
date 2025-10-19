@@ -182,6 +182,7 @@ from fluids.numerics import exp, log
 from fluids.numerics import numpy as np
 
 from thermo.activity import GibbsExcess
+from thermo.base import os_path_join, source_path
 from thermo.group_contribution.group_contribution_base import (
     AROMATIC_BOND,
     DOUBLE_BOND,
@@ -3377,7 +3378,7 @@ the dict-in-dict structure is found emperically to take 111608 bytes vs.
 _unifac_ip_loaded = False
 def load_unifac_ip():
     global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP, UF2IP
-    folder = os.path.join(os.path.dirname(__file__), "Phase Change")
+    folder = os_path_join(source_path, "Phase Change")
 
     UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
     with open(os.path.join(folder, "UNIFAC original interaction parameters.tsv")) as f:
@@ -3477,7 +3478,7 @@ def load_group_assignments_DDBST():
     # Do not allow running multiple times
     if DDBST_UNIFAC_assignments:
         return None
-    folder = os.path.join(os.path.dirname(__file__), "Phase Change")
+    folder = os_path_join(source_path, "Phase Change")
     with open(os.path.join(folder, "DDBST UNIFAC assignments.tsv")) as f:
         _group_assignments = [DDBST_UNIFAC_assignments, DDBST_MODIFIED_UNIFAC_assignments, DDBST_PSRK_assignments]
         for line in f:
@@ -3502,7 +3503,7 @@ def init_ddbst_UNIFAC_db():
         # Create a new connection and cursor for the thread
         import sqlite3
         thread_local_storage.conn = sqlite3.connect(
-            os.path.join(os.path.dirname(__file__), "Phase Change", "DDBST_UNIFAC_assignments.sqlite"),
+            os_path_join(source_path, "Phase Change", "DDBST_UNIFAC_assignments.sqlite"),
             check_same_thread=False,
         )
         thread_local_storage.cursor = thread_local_storage.conn.cursor()

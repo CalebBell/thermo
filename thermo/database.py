@@ -26,9 +26,10 @@ __all__ = []
 import marshal
 import os
 
+from thermo.base import os_path_join, source_path
 from thermo.chemical import ChemicalConstants
 
-folder = os.path.join(os.path.dirname(__file__), "Misc")
+folder = os_path_join(source_path, "Misc")
 
 
 

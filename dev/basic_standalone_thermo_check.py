@@ -6,6 +6,7 @@ import scipy.interpolate
 import scipy.spatial
 import scipy.special
 import scipy.optimize
+import sys
 
 def check_close(a, b, rtol=1e-2, atol=0):
     """Loose tolerance check - just verify calculations complete"""
@@ -108,4 +109,4 @@ if run_checks():
     print("thermo basic checks passed - NumPy and SciPy used successfully")
 else:
     print('Library not OK')
-    exit(1)
+    sys.exit(1)

@@ -54,6 +54,8 @@ from math import isnan
 
 from chemicals.identifiers import check_CAS, sorted_CAS_key
 
+from thermo.base import os_path_join, source_path
+
 
 class InteractionParameterDB:
     """Basic database framework for interaction parameters.
@@ -549,8 +551,8 @@ _loaded_interactions = False
 def load_all_interaction_parameters():
     global IPDB, _loaded_interactions
 
-    folder = os.path.join(os.path.dirname(__file__), "Interaction Parameters")
-    chemsep_db_path = os.path.join(folder, "ChemSep")
+    folder = os_path_join(source_path, "Interaction Parameters")
+    chemsep_db_path = os_path_join(folder, "ChemSep")
     ip_files = {"ChemSep PR": os.path.join(chemsep_db_path, "pr.json"),
                 "ChemSep NRTL": os.path.join(chemsep_db_path, "nrtl.json"),
                 "ChemSep UNIQUAC": os.path.join(chemsep_db_path, "uniquac.json"),
@@ -573,7 +575,7 @@ _loaded_scalars = False
 def load_all_scalar_parameters():
     global SPDB, _loaded_scalars
 
-    folder = os.path.join(os.path.dirname(__file__), "Scalar Parameters")
+    folder = os_path_join(source_path, "Scalar Parameters")
     sp_files = {"PRTwu_PinaMartinez": os.path.join(folder, "PRTwu_PinaMartinez.json"),
                 "SRKTwu_PinaMartinez": os.path.join(folder, "SRKTwu_PinaMartinez.json"),
                 "PRVolumeTranslation_PinaMartinez": os.path.join(folder, "PRVolumeTranslation_PinaMartinez.json"),

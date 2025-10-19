@@ -39,7 +39,9 @@ __all__ = [#'DSL_data', 'TSCA_data',
 import os
 
 from chemicals.identifiers import CAS_to_int
-from chemicals.utils import os_path_join, to_num
+from chemicals.utils import to_num
+
+from thermo.base import os_path_join, source_path
 
 DSL = "DSL"
 TSCA = "TSCA"
@@ -86,7 +88,7 @@ def load_law_data():
     except:
         pass
     import pandas as pd
-    folder = os_path_join(os.path.dirname(__file__), "Law")
+    folder = os_path_join(source_path, "Law")
 
 
 # Data is stored as integers to reduce memory usage
@@ -265,7 +267,7 @@ def load_economic_data():
     import zipfile
 
     import pandas as pd
-    folder = os_path_join(os.path.dirname(__file__), "Law")
+    folder = os_path_join(source_path, "Law")
 
 
     """OECD are chemicals produced by and OECD members in > 1000 tonnes/year."""

@@ -1,11 +1,57 @@
 from setuptools import setup
 import py2exe
 import sys
+import os
+import glob
+
+# Get all data files from thermo package (local)
+thermo_data = []
+thermo_data_dirs = ["Critical Properties", "Density", "Electrolytes", "Environment",
+                    "Heat Capacity", "Identifiers", "Law", "Misc", "Phase Change",
+                    "Reactions", "Safety", "Solubility", "Interface", "Triple Properties",
+                    "Thermal Conductivity", "Interaction Parameters", "Scalar Parameters",
+                    "Vapor Pressure", "Viscosity"]
+
+for data_dir in thermo_data_dirs:
+    dir_path = os.path.join('..', 'thermo', data_dir)
+    if os.path.exists(dir_path):
+        files = glob.glob(os.path.join(dir_path, '*'))
+        files = [f for f in files if os.path.isfile(f)]
+        if files:
+            thermo_data.append((f'thermo/{data_dir}', files))
+
+# Handle Interaction Parameters/ChemSep subdirectory for thermo
+chemsep_dir = os.path.join('..', 'thermo', 'Interaction Parameters', 'ChemSep')
+if os.path.exists(chemsep_dir):
+    files = glob.glob(os.path.join(chemsep_dir, '*'))
+    files = [f for f in files if os.path.isfile(f)]
+    if files:
+        thermo_data.append((f'thermo/Interaction Parameters/ChemSep', files))
+
+# Get all data files from installed chemicals package
+try:
+    import chemicals
+    chemicals_path = os.path.dirname(chemicals.__file__)
+    chemicals_data_dirs = ["Critical Properties", "Density", "Electrolytes", "Environment",
+                           "Heat Capacity", "Identifiers", "Law", "Misc", "Phase Change",
+                           "Reactions", "Safety", "Solubility", "Interface", "Triple Properties",
+                           "Thermal Conductivity", "Vapor Pressure", "Viscosity"]
+
+    for data_dir in chemicals_data_dirs:
+        dir_path = os.path.join(chemicals_path, data_dir)
+        if os.path.exists(dir_path):
+            files = glob.glob(os.path.join(dir_path, '*'))
+            files = [f for f in files if os.path.isfile(f)]
+            if files:
+                thermo_data.append((f'chemicals/{data_dir}', files))
+except ImportError:
+    print("Warning: chemicals package not found, data files may be missing")
 
 setup(
     console=['basic_standalone_thermo_check.py'],
     packages=[],
     py_modules=[],
+    data_files=thermo_data,
     options={
         'py2exe': {
             'packages': ['thermo', 'fluids', 'chemicals', 'numpy', 'scipy'],
