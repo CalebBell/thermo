@@ -1277,8 +1277,8 @@ class GCEOS:
                     or (not self.multicomponent and self.Tc == self.T and self.Pc == self.P)):
                 # Do not have any tests for this - not good!
 
-                force_l = not self.phase == "l"
-                force_g = not self.phase == "g"
+                force_l = self.phase != "l"
+                force_g = self.phase != "g"
                 V = Vmin if Vmin != 1e100 else Vmax
                 self.set_properties_from_solution(self.T, self.P,
                                                   V, b,
@@ -2881,7 +2881,8 @@ class GCEOS:
                 except:
                     Tsat = newton(to_solve_newton, guess, fprime=True, maxiter=250, # the wider range can take more iterations
                                   xtol=4e-13, require_eval=False, damping=1.0, low=low, high=high*2)
-                    assert Tsat != low and Tsat != high*2
+                    assert Tsat != low
+                    assert Tsat != high*2
         except:
             # high = self.Tc
             # try:
@@ -4389,7 +4390,8 @@ class GCEOS:
                         low_bound = None
                 P_disc = newton(discriminant_fun, P, fprime=True, xtol=4e-12, low=low_bound,
                                 maxiter=80, bisection=False, damping=1)
-                assert P_disc > 0 and not P_disc == 1
+                assert P_disc > 0
+                assert P_disc != 1
                 if not low:
                     assert P_disc > low_bound
                 break
@@ -4504,7 +4506,8 @@ class GCEOS:
                 global_iter += niter
                 niter = 0
                 T_disc = secant(lambda T: self.discriminant(T=T), T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
-                assert T_disc > 0 and not T_disc == 1
+                assert T_disc > 0
+                assert T_disc != 1
                 break
             except:
                 pass
@@ -4559,7 +4562,8 @@ class GCEOS:
                 global_iter += niter
                 niter = 0
                 T_disc = secant(lambda T: self.discriminant(T=T), T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
-                assert T_disc > 0 and not T_disc == 1
+                assert T_disc > 0
+                assert T_disc != 1
                 break
             except:
                 pass

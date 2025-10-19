@@ -2426,7 +2426,7 @@ class TDependentProperty:
                 best_fit_aic, stats_aic, aic_aic, _, parameters_aic, _ = min(all_fits, key=sel)
                 sel = lambda x: x[3]
                 best_fit_bic, stats_bic, _, bic_bic, parameters_bic, _ = min(all_fits, key=sel)
-                if parameters_aic <= parameters_bic and 1e200 not in [v[2] for v in all_fits] and not parameters_aic == 1:
+                if parameters_aic <= parameters_bic and 1e200 not in [v[2] for v in all_fits] and parameters_aic != 1:
                     # aic score is unreliable for points = parameters + 1
                     best_fit, stats  = best_fit_aic, stats_aic
                 else:

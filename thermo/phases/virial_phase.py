@@ -2521,7 +2521,7 @@ class VirialGas(IdealGasDeparturePhase):
             dC_dzs = [0.0]*N
         self._dC_dzs = dC_dzs
 
-        if not self.model.C_model == VIRIAL_C_ZERO:
+        if self.model.C_model != VIRIAL_C_ZERO:
             C_interactions = self.model.C_interactions()
             dCVirial_mixture_Orentlicher_Prausnitz_dzs(zs, C_interactions, dC_dzs)
         return dC_dzs
@@ -2552,7 +2552,7 @@ class VirialGas(IdealGasDeparturePhase):
             d2C_dTdzs = [0.0]*N
 
         self._d2C_dTdzs = d2C_dTdzs
-        if not self.model.C_model == VIRIAL_C_ZERO:
+        if self.model.C_model != VIRIAL_C_ZERO:
             C_interactions = self.model.C_interactions()
             dC_dT_interactions = self.model.dC_dT_interactions()
             d2CVirial_mixture_Orentlicher_Prausnitz_dTdzs(zs, C_interactions, dC_dT_interactions, d2C_dTdzs)
@@ -2591,7 +2591,7 @@ class VirialGas(IdealGasDeparturePhase):
             return d2C_dzizjs
 
         self._d2C_dzizjs = d2C_dzizjs
-        if not self.model.C_model == VIRIAL_C_ZERO:
+        if self.model.C_model != VIRIAL_C_ZERO:
             C_interactions = self.model.C_interactions()
             d2CVirial_mixture_Orentlicher_Prausnitz_dzizjs(zs, C_interactions, d2C_dzizjs)
         return d2C_dzizjs
@@ -2625,7 +2625,7 @@ class VirialGas(IdealGasDeparturePhase):
 
         self._d3C_dzizjzks = d3C_dzizjzks
 
-        if not self.model.C_model == VIRIAL_C_ZERO:
+        if self.model.C_model != VIRIAL_C_ZERO:
             C_interactions = self.model.C_interactions()
             d3CVirial_mixture_Orentlicher_Prausnitz_dzizjzks(zs, C_interactions, d3C_dzizjzks)
         return d3C_dzizjzks
