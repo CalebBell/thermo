@@ -140,7 +140,7 @@ Do a volume and internal energy flash:
 
 As you can see, the interface is convenient and supports most types of flashes. In fact, the algorithms are generic; any of `H`, `S`, `U`, and can be combined with any combination of `T`, `P`, and `V`. Although most of the flashes shown above except TS and TH are usually well behaved, depending on the EOS combination there may be multiple solutions. No real guarantees can be made about which solution will be returned in those cases.
 
-Flashes with two of  `H`, `S`, and `U` are not implemented at present.
+Flashes with two of the `H`, `S`, and `U` are not implemented at present.
 
 It is not necessary to use the same phase model for liquid and gas phases; the below example shows a flash switching the gas phase model to SRK.
 

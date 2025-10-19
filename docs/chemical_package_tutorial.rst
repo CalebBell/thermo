@@ -98,7 +98,7 @@ Once the object is printed, the generated text can be copy/pasted as valid Pytho
     if you want different values. If you believe there is a value
     which has a typographical error please report it to the
     `chemicals <https://github.com/CalebBell/chemicals>`_
-    project. If data is missing or not as accuracte
+    project. If data is missing or not as accurate
     as you would like, and you know of a better method or source,
     new methods and sources can be added to
     `chemicals <https://github.com/CalebBell/chemicals>`_

@@ -101,7 +101,7 @@ Continuing with the same state and example as before, there were two solutions a
 >>> eos.G_dep_l, eos.G_dep_g
 (-2872.498434, -973.5198207)
 
-It is easy to see the liquid phase is more stable. This shortcut of using departure Gibbs free energy is valid only for pure components with all phases using the ideal-gas reference state. The full criterial is whichever state minimizes the actual Gibbs free energy.
+It is easy to see the liquid phase is more stable. This shortcut of using departure Gibbs free energy is valid only for pure components with all phases using the ideal-gas reference state. The full criterion is whichever state minimizes the actual Gibbs free energy.
 
 The method :obj:`more_stable_phase <thermo.eos.GCEOS.more_stable_phase>` does this check and returns either 'l' or 'g':
 

@@ -51,7 +51,7 @@ This modularity allows new Gibbs excess models to be written and used anywhere -
 UNIFAC Example
 --------------
 
-The UNIFAC model is a group contribution based predictive model that is works using "fragmentations" of each molecule into a number of different "groups" and their "counts", 
+The UNIFAC model is a group contribution based predictive model that works using "fragmentations" of each molecule into a number of different "groups" and their "counts", 
 
 The DDBST has published numerous sample problems using UNIFAC; a simple
 binary system from example P05.22a in [2]_ with n-hexane and butanone-2
