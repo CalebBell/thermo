@@ -3169,7 +3169,8 @@ def is_radionuclide(mol):
     Notes
     -----
     The list of radionuclide in this function is not complete
-    and only contains ~25 common ones. A complete data source is in [1]_.
+    and only contains approximately 25 common ones. A complete data source is in
+    [1]_.
 
     Examples
     --------
@@ -3180,7 +3181,7 @@ def is_radionuclide(mol):
     References
     ----------
     .. [1] Kondev, F. G., M. Wang, W. J. Huang, S. Naimi, and G. Audi.
-       "The NUBASE2020 Evaluation of Nuclear Physics Properties *."
+       "The NUBASE2020 Evaluation of Nuclear Physics Properties"
        Chinese Physics C 45, no. 3 (March 2021): 030001.
        https://doi.org/10.1088/1674-1137/abddae.
     """

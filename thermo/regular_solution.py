@@ -45,6 +45,8 @@ Flory Huggins Class
     :undoc-members:
     :show-inheritance:
     :exclude-members:
+
+
 Hansen Class
 ============
 
