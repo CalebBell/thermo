@@ -3315,7 +3315,7 @@ class TDependentProperty:
         """
         # This function cannot be tested
         if not has_matplotlib():
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if not methods:
             methods = self.all_methods
         if Tmin is None:
@@ -3844,7 +3844,7 @@ class TDependentProperty:
             try:
                 return brenth(error, T_limits[0], T_limits[1])
             except ValueError:
-                raise Exception("To within the implemented temperature range, it is not possible to calculate the desired value.")
+                raise ValueError("To within the implemented temperature range, it is not possible to calculate the desired value.")
         else:
             high = self.Tc if self.critical_zero and self.Tc is not None else None
             x0 = T_limits[0]

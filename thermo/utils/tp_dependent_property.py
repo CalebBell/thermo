@@ -548,18 +548,18 @@ class TPDependentProperty(TDependentProperty):
         """
         # This function cannot be tested
         if not has_matplotlib():
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         import matplotlib.pyplot as plt
         if Pmin is None:
             if self.Pmin is not None:
                 Pmin = self.Pmin
             else:
-                raise Exception("Minimum pressure could not be auto-detected; please provide it")
+                raise ValueError("Minimum pressure could not be auto-detected; please provide it")
         if Pmax is None:
             if self.Pmax is not None:
                 Pmax = self.Pmax
             else:
-                raise Exception("Maximum pressure could not be auto-detected; please provide it")
+                raise ValueError("Maximum pressure could not be auto-detected; please provide it")
         fig = plt.figure()
 
         if not methods_P:
@@ -623,18 +623,18 @@ class TPDependentProperty(TDependentProperty):
             checking and use methods outside their bounds
         """
         if not has_matplotlib():
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         import matplotlib.pyplot as plt
         if Tmin is None:
             if self._T_min_any is not None:
                 Tmin = self._T_min_any
             else:
-                raise Exception("Minimum temperature could not be auto-detected; please provide it")
+                raise ValueError("Minimum temperature could not be auto-detected; please provide it")
         if Tmax is None:
             if self._T_max_any is not None:
                 Tmax = self._T_max_any
             else:
-                raise Exception("Maximum temperature could not be auto-detected; please provide it")
+                raise ValueError("Maximum temperature could not be auto-detected; please provide it")
         if hasattr(P, "__call__"):
             P_changes = True
             P_func = P
@@ -711,7 +711,7 @@ class TPDependentProperty(TDependentProperty):
             checking and use methods outside their bounds
         """
         if not has_matplotlib():
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         import matplotlib.pyplot as plt
         from matplotlib.ticker import FormatStrFormatter
         from numpy import ma

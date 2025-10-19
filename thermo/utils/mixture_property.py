@@ -844,17 +844,17 @@ class MixtureProperty:
         if has_matplotlib():
             import matplotlib.pyplot as plt
         else:
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if Tmin is None:
             if self.Tmin is not None:
                 Tmin = self.Tmin
             else:
-                raise Exception("Minimum temperature could not be auto-detected; please provide it")
+                raise ValueError("Minimum temperature could not be auto-detected; please provide it")
         if Tmax is None:
             if self.Tmax is not None:
                 Tmax = self.Tmax
             else:
-                raise Exception("Maximum temperature could not be auto-detected; please provide it")
+                raise ValueError("Maximum temperature could not be auto-detected; please provide it")
 
         if not methods:
             methods = [self._method]
@@ -887,7 +887,7 @@ class MixtureProperty:
         if has_matplotlib():
             import matplotlib.pyplot as plt
         else:
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         if not methods:
             methods = [self._method]
         if self.N != 2:
@@ -979,7 +979,7 @@ class MixtureProperty:
             checking and use methods outside their bounds
         """
         if not has_matplotlib():
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         else:
             import matplotlib.pyplot as plt
         from matplotlib.ticker import FormatStrFormatter
@@ -990,22 +990,22 @@ class MixtureProperty:
             if self.Pmin is not None:
                 Pmin = self.Pmin
             else:
-                raise Exception("Minimum pressure could not be auto-detected; please provide it")
+                raise ValueError("Minimum pressure could not be auto-detected; please provide it")
         if Pmax is None:
             if self.Pmax is not None:
                 Pmax = self.Pmax
             else:
-                raise Exception("Maximum pressure could not be auto-detected; please provide it")
+                raise ValueError("Maximum pressure could not be auto-detected; please provide it")
         if Tmin is None:
             if self.Tmin is not None:
                 Tmin = self.Tmin
             else:
-                raise Exception("Minimum temperature could not be auto-detected; please provide it")
+                raise ValueError("Minimum temperature could not be auto-detected; please provide it")
         if Tmax is None:
             if self.Tmax is not None:
                 Tmax = self.Tmax
             else:
-                raise Exception("Maximum temperature could not be auto-detected; please provide it")
+                raise ValueError("Maximum temperature could not be auto-detected; please provide it")
 
         if not methods:
             methods = [self._method]
@@ -1054,7 +1054,7 @@ class MixtureProperty:
     def plot_binary(self, P=None, T=None, pts=30, Tmin=None, Tmax=None, Pmin=1E5,
                     Pmax=1E6, methods=[], only_valid=True): # pragma: no cover
         if not has_matplotlib():
-            raise Exception("Optional dependency matplotlib is required for plotting")
+            raise ImportError("Optional dependency matplotlib is required for plotting")
         else:
             import matplotlib.pyplot as plt
         from matplotlib.ticker import FormatStrFormatter
@@ -1068,24 +1068,24 @@ class MixtureProperty:
                 if self.Tmin is not None:
                     Tmin = self.Tmin
                 else:
-                    raise Exception("Minimum temperature could not be auto-detected; please provide it")
+                    raise ValueError("Minimum temperature could not be auto-detected; please provide it")
             if Tmax is None:
                 if self.Tmax is not None:
                     Tmax = self.Tmax
                 else:
-                    raise Exception("Maximum temperature could not be auto-detected; please provide it")
+                    raise ValueError("Maximum temperature could not be auto-detected; please provide it")
             vary = Ts = linspace(Tmin, Tmax, pts)
         if P is None:
             if Pmin is None:
                 if self.Pmin is not None:
                     Pmin = self.Pmin
                 else:
-                    raise Exception("Minimum pressure could not be auto-detected; please provide it")
+                    raise ValueError("Minimum pressure could not be auto-detected; please provide it")
             if Pmax is None:
                 if self.Pmax is not None:
                     Pmax = self.Pmax
                 else:
-                    raise Exception("Maximum pressure could not be auto-detected; please provide it")
+                    raise ValueError("Maximum pressure could not be auto-detected; please provide it")
             vary = Ps = linspace(Pmin, Pmax, pts)
         if not methods:
             methods = [self._method]
