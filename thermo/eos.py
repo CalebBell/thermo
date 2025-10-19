@@ -4096,7 +4096,7 @@ class GCEOS:
         return GCEOS.P_discriminant_zeros_analytical(self.T, self.b, self.delta, self.epsilon, self.a_alpha, valid=True)
 
     @staticmethod
-    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):  # noqa: ARG004
+    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
         r"""Method to calculate the pressures which zero the discriminant
         function of the general cubic eos. This is a quartic function
         solved analytically.

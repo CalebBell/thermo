@@ -3696,7 +3696,7 @@ object_lookups[EquilibriumState.__full_path__] = EquilibriumState
 object_lookups[ChemicalConstantsPackage.__full_path__] = ChemicalConstantsPackage
 object_lookups[PropertyCorrelationsPackage.__full_path__] = PropertyCorrelationsPackage
 
-from thermo.chemical_package import mix_properties_to_classes, properties_to_classes
+from thermo.chemical_package import mix_properties_to_classes, properties_to_classes  # noqa: E402
 
 for o in mix_properties_to_classes.values():
     object_lookups[o.__full_path__] = o
