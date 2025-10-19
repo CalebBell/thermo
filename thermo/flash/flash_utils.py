@@ -4666,14 +4666,14 @@ def generate_phase_boundaries_naive(flasher, zs, spec_var, spec_val, iter_var, c
                 phase_res = res
                 check_phase_val = check_val
                 res_pert = None
-            else:
-                # Keep the phase value with the lowest phase fraction only
-                # we are always seeking to go in the direction the phase almost disappears
-                if check_phase_val < check_phase_val:
-                    phase_val = iter_val
-                    phase_res = res
+            # else:
+            #     # Keep the phase value with the lowest phase fraction only
+            #     # we are always seeking to go in the direction the phase almost disappears
+            #     if check_phase_val < check_phase_val:
+            #         phase_val = iter_val
+            #         phase_res = res
 
-                    res_pert = None # clear any perturbation calculation we did
+            #         res_pert = None # clear any perturbation calculation we did
 
         if non_phase_vals and phase_val is not None:
             # go through the solutions and see if any are right

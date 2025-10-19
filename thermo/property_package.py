@@ -287,8 +287,8 @@ class StabilityTester:
             guesses = self.guesses(T=self.T, P=self.P, zs=self.zs, random=random)
         results = []
         results2 = []
-        for guesses, convert in zip((raw_guesses, guesses), (False, True)):
-            for guess in guesses:
+        for guesses_iter, convert in zip((raw_guesses, guesses), (False, True)):
+            for guess in guesses_iter:
                 if convert:
                 # Convert the guess to a basis squared
                     guess = [i**0.5*2.0 for i in guess]

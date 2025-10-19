@@ -127,7 +127,7 @@ def build_numpy_decoder():
 
     class BasicNumpyDecoder(json.JSONDecoder):
         def __init__(self, *args, **kwargs):
-            json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+            json.JSONDecoder.__init__(self, *args, object_hook=self.object_hook, **kwargs)
 
         def object_hook(self, obj):
             return naive_lists_to_arrays(obj)

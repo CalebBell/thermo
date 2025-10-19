@@ -966,7 +966,7 @@ class Flash:
                 if TV_iter:
                     kwargs["V"] = state.V_iter(force=False)
                 kwargs["retry"] = retry
-                kwargs["solution"] = lambda new: abs(new.value(nearest_check_prop) - state.value(nearest_check_prop))
+                kwargs["solution"] = lambda new, _state=state: abs(new.value(nearest_check_prop) - _state.value(nearest_check_prop))
                 try:
                     new = self.flash(**kwargs)
                     if PV_iter:
