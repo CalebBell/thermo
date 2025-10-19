@@ -758,13 +758,12 @@ def eos_mix_dV_dzs(T, P, Z, b, delta, epsilon, a_alpha, db_dzs, ddelta_dzs,
                    depsilon_dzs, da_alpha_dzs, N, out=None):
     if out is None:
         out = [0.0]*N
-    T = T
     RT = R*T
     V = Z*RT/P
 
     x0 = delta
-    x1 = a_alpha = a_alpha
-    x2 = epsilon = epsilon
+    x1 = a_alpha
+    x2 = epsilon
 
     x0V = x0*V
     Vmb = V - b

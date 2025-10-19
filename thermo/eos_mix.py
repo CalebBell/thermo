@@ -5228,21 +5228,21 @@ class GCEOSMIX(GCEOS):
             phases = ["l", "g"]
 
 
-        for n in ns:
+        for n_type in ns:
             for phase in phases:
                 if phase == "g":
                     Z, V = self.Z_g, self.V_g
                 else:
                     Z, V = self.Z_l, self.V_l
 
-                if n:
+                if n_type:
                     V_fun, G_fun, H_fun = self.dV_dns, self.dG_dep_dns, self.dH_dep_dns
                 else:
                     V_fun, G_fun, H_fun = self.dV_dzs, self.dG_dep_dzs, self.dH_dep_dzs
 
                 (d2P_dTdns, d2P_dVdns, d2V_dTdns, d2V_dPdns, d2T_dVdns, d2T_dPdns,
                  d3P_dT2dns, d3P_dV2dns, d3V_dT2dns, d3V_dP2dns, d3T_dV2dns, d3T_dP2dns,
-                 d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns) = self._dnz_derivatives_and_departures(V, n=n)
+                 d3V_dPdTdns, d3P_dTdVdns, d3T_dPdVdns) = self._dnz_derivatives_and_departures(V, n=n_type)
 
                 # V
                 dV_dep_dns = V_fun(Z)
@@ -5257,7 +5257,7 @@ class GCEOSMIX(GCEOS):
                 # A
                 dA_dep_dns = [dU_dep_dns[i] - T*dS_dep_dns[i] for i in range(N)]
 
-                if n and phase == "l":
+                if n_type and phase == "l":
                     self.d2P_dTdns_l, self.d2P_dVdns_l, self.d2V_dTdns_l = d2P_dTdns, d2P_dVdns, d2V_dTdns
                     self.d2V_dPdns_l, self.d2T_dVdns_l, self.d2T_dPdns_l = d2V_dPdns, d2T_dVdns, d2T_dPdns
                     self.d3P_dT2dns_l, self.d3P_dV2dns_l, self.d3V_dT2dns_l = d3P_dT2dns, d3P_dV2dns, d3V_dT2dns
@@ -5266,7 +5266,7 @@ class GCEOSMIX(GCEOS):
 
                     self.dV_dep_dns_l, self.dG_dep_dns_l, self.dH_dep_dns_l = dV_dep_dns, dG_dep_dns, dH_dep_dns
                     self.dU_dep_dns_l, self.dS_dep_dns_l, self.dA_dep_dns_l = dU_dep_dns, dS_dep_dns, dA_dep_dns
-                if n and phase == "g":
+                if n_type and phase == "g":
                     self.d2P_dTdns_g, self.d2P_dVdns_g, self.d2V_dTdns_g = d2P_dTdns, d2P_dVdns, d2V_dTdns
                     self.d2V_dPdns_g, self.d2T_dVdns_g, self.d2T_dPdns_g = d2V_dPdns, d2T_dVdns, d2T_dPdns
                     self.d3P_dT2dns_g, self.d3P_dV2dns_g, self.d3V_dT2dns_g = d3P_dT2dns, d3P_dV2dns, d3V_dT2dns
@@ -5275,7 +5275,7 @@ class GCEOSMIX(GCEOS):
 
                     self.dV_dep_dns_g, self.dG_dep_dns_g, self.dH_dep_dns_g = dV_dep_dns, dG_dep_dns, dH_dep_dns
                     self.dU_dep_dns_g, self.dS_dep_dns_g, self.dA_dep_dns_g = dU_dep_dns, dS_dep_dns, dA_dep_dns
-                if not n and phase == "g":
+                if not n_type and phase == "g":
                     self.d2P_dTdzs_g, self.d2P_dVdzs_g, self.d2V_dTdzs_g = d2P_dTdns, d2P_dVdns, d2V_dTdns
                     self.d2V_dPdzs_g, self.d2T_dVdzs_g, self.d2T_dPdzs_g = d2V_dPdns, d2T_dVdns, d2T_dPdns
                     self.d3P_dT2dzs_g, self.d3P_dV2dzs_g, self.d3V_dT2dzs_g = d3P_dT2dns, d3P_dV2dns, d3V_dT2dns
@@ -5284,7 +5284,7 @@ class GCEOSMIX(GCEOS):
 
                     self.dV_dep_dzs_g, self.dG_dep_dzs_g, self.dH_dep_dzs_g = dV_dep_dns, dG_dep_dns, dH_dep_dns
                     self.dU_dep_dzs_g, self.dS_dep_dzs_g, self.dA_dep_dzs_g = dU_dep_dns, dS_dep_dns, dA_dep_dns
-                if not n and phase == "l":
+                if not n_type and phase == "l":
                     self.d2P_dTdzs_l, self.d2P_dVdzs_l, self.d2V_dTdzs_l = d2P_dTdns, d2P_dVdns, d2V_dTdns
                     self.d2V_dPdzs_l, self.d2T_dVdzs_l, self.d2T_dPdzs_l = d2V_dPdns, d2T_dVdns, d2T_dPdns
                     self.d3P_dT2dzs_l, self.d3P_dV2dzs_l, self.d3V_dT2dzs_l = d3P_dT2dns, d3P_dV2dns, d3V_dT2dns

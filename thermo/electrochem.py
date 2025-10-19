@@ -169,8 +169,7 @@ _loaded_electrochem_data = False
 def _load_electrochem_data():
     global cond_data_Lange, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond
     global CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions
-    global rho_dict_Laliberte
-    global mu_dict_Laliberte, Cp_dict_Laliberte, Laliberte_data, cond_data_McCleskey
+    global Laliberte_data, cond_data_McCleskey
     global _loaded_electrochem_data
     import pandas as pd
 

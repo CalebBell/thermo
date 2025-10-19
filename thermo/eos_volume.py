@@ -1610,8 +1610,8 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
     c = (thetas + epsilons - deltas*(B + 1.0))
     d = -(epsilons*(B + 1.0) + thetas*etas)
 
-    a, b, c, d = 1.0, b, c, d
-    coeffs = (1.0, b, c, d)
+    a = 1.0
+    coeffs = (a, b, c, d)
 
     a_inv = 1.0/a
     a_inv2 = a_inv*a_inv

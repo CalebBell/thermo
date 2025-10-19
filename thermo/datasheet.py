@@ -184,8 +184,8 @@ def tabulate_constants(chemical, full=False, vertical=False):
     else:
         cs = chemical
 
-    for chemical in cs:
-        chem = Chemical(chemical)
+    for chem_name in cs:
+        chem = Chemical(chem_name)
         data = OrderedDict()
         data["CAS"] = chem.CAS
         data["Formula"] = chem.formula

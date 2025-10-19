@@ -58,7 +58,7 @@ def build_numpy_encoder():
     lists-of-lists of floats, ints, bools, or complexes according to Python's
     rules.
     """
-    global BasicNumpyEncoder, json, int_types, float_types
+    global BasicNumpyEncoder, json
 
     import json
     JSONEncoder = json.JSONEncoder

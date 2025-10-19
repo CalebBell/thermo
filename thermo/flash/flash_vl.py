@@ -611,7 +611,7 @@ class FlashVL(Flash):
                         if highest_comp_diff:
                             if min_diff > comp_diff_max:
                                 if min_comp_diff is not None and min_diff > min_comp_diff and not all_solutions:
-                                    highest_comp_diff = highest_comp_diff = False
+                                    highest_comp_diff = False
                                     break
                                 comp_diff_solution = (trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot, dG_RT)
                                 comp_diff_max = min_diff
@@ -770,7 +770,7 @@ class FlashVL(Flash):
                                                                     "stab_info": stab_info}
 
         if min_phase is liquid:
-            ls, g, V_over_F = [l], g, V_over_F
+            ls = [l]
         else:
             ls, g, V_over_F = [g], l, 1.0 - V_over_F
 

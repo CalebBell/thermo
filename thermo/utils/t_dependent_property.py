@@ -2022,26 +2022,26 @@ class TDependentProperty:
         else:
             methods = [method]
             indexes = [sources[method]]
-        for method, index in zip(methods, indexes):
+        for method_name, index in zip(methods, indexes):
             method_dat = {}
-            n = cls._fit_force_n.get(method, None)
-            max_n_method = fit_max_n.get(method, max_n)
+            n = cls._fit_force_n.get(method_name, None)
+            max_n_method = fit_max_n.get(method_name, max_n)
             for CAS in index:
                 print(CAS)
                 obj = cls(CASRN=CAS)
-                coeffs, (low, high), stats = obj.polynomial_from_method(method, n=n, start_n=start_n, max_n=max_n_method, eval_pts=eval_pts,
+                coeffs, (low, high), stats = obj.polynomial_from_method(method_name, n=n, start_n=start_n, max_n=max_n_method, eval_pts=eval_pts,
                                                                         fit_form=fit_form, fit_method=fit_method)
                 max_error = max(abs(1.0 - stats[2]), abs(1.0 - stats[3]))
                 method_dat[CAS] = {"Tmax": high, "Tmin": low, "error_average": stats[0],
-                   "error_std": stats[1], "max_error": max_error , "method": method,
+                   "error_std": stats[1], "max_error": max_error , "method": method_name,
                    "coefficients": coeffs}
 
             if save:
-                f = open(os.path.join(folder, method + "_polyfits.json"), "w")
+                f = open(os.path.join(folder, method_name + "_polyfits.json"), "w")
                 out_str = json.dumps(method_dat, sort_keys=True, indent=4, separators=(", ", ": "))
                 f.write(out_str)
                 f.close()
-                dat[method] = method_dat
+                dat[method_name] = method_dat
 
         return dat
 

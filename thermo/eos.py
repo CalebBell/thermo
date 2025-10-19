@@ -2787,20 +2787,13 @@ class GCEOS:
         calculation much slower.
         """
         fprime = False
-        global curr_err
 
         def to_solve_newton(T):
             global curr_err
             assert T > 0.0
             e = self.to_TP(T, P)
-            try:
-                fugacity_l = e.fugacity_l
-            except AttributeError as err:
-                raise
-            try:
-                fugacity_g = e.fugacity_g
-            except AttributeError as err:
-                raise
+            fugacity_l = e.fugacity_l
+            fugacity_g = e.fugacity_g
 
             curr_err = fugacity_l - fugacity_g
             if fprime:
@@ -3008,17 +3001,8 @@ class GCEOS:
                 assert P > 0.0
                 e = self.to_TP(T, P)
                 # print(e.volume_error(), e)
-                try:
-                    fugacity_l = e.fugacity_l
-                except AttributeError as err:
-                    # return 1000, 1000
-                    raise
-
-                try:
-                    fugacity_g = e.fugacity_g
-                except AttributeError:
-                    # return 1000, 1000
-                    raise
+                fugacity_l = e.fugacity_l
+                fugacity_g = e.fugacity_g
 
                 err = fugacity_l - fugacity_g
 

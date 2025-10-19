@@ -714,7 +714,7 @@ def nonlin_equilibrium_NP(T, P, zs, compositions_guesses, betas_guesses,
     iterations = 0
     info = []
     def to_solve(flows, jac=jac):
-        global iterations, info
+        global iterations
         try:
             flows = flows.tolist()
         except:
@@ -864,7 +864,7 @@ def nonlin_spec_NP(guess, fixed_val, spec_val, zs, compositions_guesses, betas_g
     iterations = 0
     info = []
     def to_solve(flows, jac=jac, skip_err=False):
-        global iterations, info
+        global iterations
         try:
             flows = flows.tolist()
         except:
@@ -3534,7 +3534,7 @@ def solve_P_VF_IG_K_composition_independent(VF, P, zs, gas, liq, xtol=1e-10):
     # gas phis are all one in IG model
 #     gas.to(T=T, P=P, zs=zs)
     cmps = range(liq.N)
-    global Ks, iterations, err
+    global iterations
     iterations = 0
     def to_solve(T):
         # print(T)
@@ -3971,7 +3971,8 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
     for i in range(N):
         if isinf(fugacities_trial[i]):
             # Stable
-            V_over_F, xs, ys = V_over_F, trial_zs, appearing_zs = 0.0, zs, zs
+            V_over_F, xs, ys = 0.0, zs, zs
+            trial_zs, appearing_zs = zs, zs
             return 1e100, Ks, zs_test, V_over_F, trial_zs, appearing_zs, 0.0
 
 

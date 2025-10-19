@@ -916,25 +916,25 @@ class MixtureProperty:
 
 
         xs = linspace(0, 1, pts)
-        for T, P in zip(iter_Ts, iter_Ps):
+        for T_val, P_val in zip(iter_Ts, iter_Ps):
             for method in methods:
                 if only_valid:
                     properties = []
                     xs_plot = []
                     for x0 in xs:
                         comp = [x0, 1.0 - x0]
-                        if self.test_method_validity(T, P, comp, None, method):
+                        if self.test_method_validity(T_val, P_val, comp, None, method):
                             try:
-                                p = func(T, P, comp, None, method)
+                                p = func(T_val, P_val, comp, None, method)
                                 if self.test_property_validity(p):
                                     properties.append(p)
                                     xs_plot.append(x0)
                             except:
                                 pass
-                    plt.plot(xs_plot, properties, label=method + f" at {T:g} K and {P:g} Pa" )
+                    plt.plot(xs_plot, properties, label=method + f" at {T_val:g} K and {P_val:g} Pa" )
                 else:
-                    properties = [func(T, P, [x0, 1.0 - x0], None, method) for x0 in xs]
-                    plt.plot(xs, properties, label=method + f" at {T:g} K and {P:g} Pa")
+                    properties = [func(T_val, P_val, [x0, 1.0 - x0], None, method) for x0 in xs]
+                    plt.plot(xs, properties, label=method + f" at {T_val:g} K and {P_val:g} Pa")
         plt.legend(loc="best")
         plt.ylabel(prop_name + ", " + self.units)
         plt.xlabel("Mole fraction x0")
