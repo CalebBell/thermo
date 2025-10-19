@@ -111,6 +111,7 @@ extend-ignore = [
     "RET",
     "RSE102",
     "RUF001",
+    "RUF003",  # greek characters are used in this project e.g. for allotropes
     "RUF005",  # this one is not micropython compatible
     "S101",
     "S110",
