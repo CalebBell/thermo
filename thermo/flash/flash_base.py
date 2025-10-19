@@ -479,7 +479,7 @@ class Flash:
                     print("retrying HSGUA flash")
                     g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
                 else:
-                    raise e
+                    raise
 #            except UnconvergedError as e:
 #                 if fixed_var == 'T' and iter_var in ('S', 'H', 'U'):
 #                     g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, solution=solution)
@@ -1233,7 +1233,7 @@ class Flash:
                     if ignore_errors:
                         row.append(nan)
                     else:
-                        raise e
+                        raise
             matrix.append(row)
 
         if values:
@@ -1293,7 +1293,7 @@ class Flash:
                     if ignore_errors:
                         row.append("F")
                     else:
-                        raise e
+                        raise
             matrix.append(row)
 
         if values:
@@ -1438,7 +1438,7 @@ class Flash:
                 if ignore_errors:
                     P_bubbles.append(None)
                 else:
-                    raise e
+                    raise
             try:
                 state_TVF1 = self.flash(T=T, VF=1.0, zs=zs, hot_start=state_TVF1)
                 assert state_TVF1 is not None
@@ -1447,7 +1447,7 @@ class Flash:
                 if ignore_errors:
                     P_dews.append(None)
                 else:
-                    raise e
+                    raise
 
             if branch:
                 for VF, Ps in zip(branches, branch_Ps):
@@ -1458,7 +1458,7 @@ class Flash:
                         if ignore_errors:
                             Ps.append(None)
                         else:
-                            raise e
+                            raise
         if values and not show:
             return Ts, P_dews, P_bubbles, branch_Ps
 
@@ -1555,7 +1555,7 @@ class Flash:
                 if ignore_errors:
                     T_bubbles.append(None)
                 else:
-                    raise e
+                    raise
             try:
                 state_PVF1 = self.flash(P=P, VF=1, zs=zs, hot_start=state_PVF1)
                 assert state_PVF1 is not None
@@ -1564,7 +1564,7 @@ class Flash:
                 if ignore_errors:
                     T_dews.append(None)
                 else:
-                    raise e
+                    raise
 
             if branch:
                 for VF, Ts in zip(branches, branch_Ts):
@@ -1575,7 +1575,7 @@ class Flash:
                         if ignore_errors:
                             Ts.append(None)
                         else:
-                            raise e
+                            raise
         if values:
             return Ps, T_dews, T_bubbles, branch_Ts
         import matplotlib.pyplot as plt
@@ -1744,7 +1744,7 @@ class Flash:
                 if ignore_errors:
                     Ts_bubble.append(None)
                 else:
-                    raise e
+                    raise
             try:
                 res = self.flash(P=P, VF=1, zs=[z1[i], z2[i]])
                 Ts_dew.append(res.T)
@@ -1752,7 +1752,7 @@ class Flash:
                 if ignore_errors:
                     Ts_dew.append(None)
                 else:
-                    raise e
+                    raise
         if values:
             return z1, z2, Ts_dew, Ts_bubble
         import matplotlib.pyplot as plt
@@ -1823,7 +1823,7 @@ class Flash:
                 if ignore_errors:
                     Ps_bubble.append(None)
                 else:
-                    raise e
+                    raise
             try:
                 res = self.flash(T=T, VF=1, zs=[z1[i], z2[i]])
                 Ps_dew.append(res.P)
@@ -1831,7 +1831,7 @@ class Flash:
                 if ignore_errors:
                     Ps_dew.append(None)
                 else:
-                    raise e
+                    raise
         if values:
             return z1, z2, Ps_dew, Ps_bubble
 
@@ -1907,7 +1907,7 @@ class Flash:
                 if ignore_errors:
                     print(f"Failed on pt {i}", e)
                 else:
-                    raise e
+                    raise
         if values:
             return z1, z2, x1_bubble, y1_bubble
         import matplotlib.pyplot as plt

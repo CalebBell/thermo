@@ -276,7 +276,7 @@ def load_coolprop_fluids(depth=0):
         store_coolprop_fluids()
         load_coolprop_fluids(depth=1)
       else:
-        raise e
+        raise
 
 @mark_numba_incompatible
 def CoolProp_T_dependent_property(T, CASRN, prop, phase, Tc=None):

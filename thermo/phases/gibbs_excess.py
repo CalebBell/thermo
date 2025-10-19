@@ -1774,7 +1774,7 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     phis_sat.append(1.0)
                 else:
-                    raise e
+                    raise
         return phis_sat
 
     def phis_sat(self):
@@ -1815,7 +1815,7 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     phis_sat.append(1.0)
                 else:
-                    raise e
+                    raise
         return phis_sat
 
 
@@ -1832,7 +1832,7 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     dphis_sat_dT.append(0.0)
                 else:
-                    raise e
+                    raise
         return dphis_sat_dT
 
     def dphis_sat_dT(self):
@@ -1854,7 +1854,7 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     dphis_sat_dT.append(0.0)
                 else:
-                    raise e
+                    raise
         return dphis_sat_dT
 
     def d2phis_sat_dT2(self):
@@ -1877,7 +1877,7 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     d2phis_sat_dT2.append(0.0)
                 else:
-                    raise e
+                    raise
         return d2phis_sat_dT2
 
 

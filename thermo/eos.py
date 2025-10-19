@@ -2796,11 +2796,11 @@ class GCEOS:
             try:
                 fugacity_l = e.fugacity_l
             except AttributeError as err:
-                raise err
+                raise
             try:
                 fugacity_g = e.fugacity_g
             except AttributeError as err:
-                raise err
+                raise
 
             curr_err = fugacity_l - fugacity_g
             if fprime:
@@ -3012,13 +3012,13 @@ class GCEOS:
                     fugacity_l = e.fugacity_l
                 except AttributeError as err:
                     # return 1000, 1000
-                    raise err
+                    raise
 
                 try:
                     fugacity_g = e.fugacity_g
-                except AttributeError as err:
+                except AttributeError:
                     # return 1000, 1000
-                    raise err
+                    raise
 
                 err = fugacity_l - fugacity_g
 
@@ -6710,7 +6710,7 @@ class GCEOS:
                 # Applies to gas phase only!
                 return 1.0
             else:
-                raise e
+                raise
 
     @property
     def dphi_dT_l(self):

@@ -396,7 +396,7 @@ def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
 #                        print(e, extraprec)
                     if i == 7:
 #                            print(e, 'failed')
-                        raise e
+                        raise
 
             if all(i == 0 or i == 1 for i in roots):
                 return volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=dps*2)
@@ -741,7 +741,7 @@ def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha):
                     if a_alpha < 1e-5:
                         V = brenth(err_fun, b*1.5, b*5.0, xtol=1e-14)
                     else:
-                        raise e
+                        raise
 
                 denom1 = 1.0/(V*(V + delta) + epsilon)
                 denom0 = 1.0/(V-b)

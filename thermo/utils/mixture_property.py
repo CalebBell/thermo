@@ -480,8 +480,8 @@ class MixtureProperty:
         if not self.skip_method_validity_check or self.test_method_validity(T, P, zs, ws, method):
             try:
                 prop = self.calculate(T, P, zs, ws, self._method)
-            except Exception as e:
-                if self.RAISE_PROPERTY_CALCULATION_ERROR: raise e
+            except Exception:
+                if self.RAISE_PROPERTY_CALCULATION_ERROR: raise
             else:
                 if self.skip_prop_validity_check or self.test_property_validity(prop):
                     return prop

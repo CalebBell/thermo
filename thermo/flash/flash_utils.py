@@ -2823,8 +2823,8 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
 
 
 
-        except NotBoundedError as e:
-            raise e
+        except NotBoundedError:
+            raise
         except Exception:
             pass
 
