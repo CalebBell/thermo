@@ -29,6 +29,7 @@ if os.path.exists(chemsep_dir):
         thermo_data.append((f'thermo/Interaction Parameters/ChemSep', files))
 
 # Get all data files from installed chemicals package
+chemicals_data = []
 try:
     import chemicals
     chemicals_path = os.path.dirname(chemicals.__file__)
@@ -43,15 +44,19 @@ try:
             files = glob.glob(os.path.join(dir_path, '*'))
             files = [f for f in files if os.path.isfile(f)]
             if files:
-                thermo_data.append((f'chemicals/{data_dir}', files))
+                chemicals_data.append((f'chemicals/{data_dir}', files))
+                print(f"Adding {len(files)} files from chemicals/{data_dir}")
 except ImportError:
     print("Warning: chemicals package not found, data files may be missing")
+
+# Combine all data files
+all_data_files = thermo_data + chemicals_data
 
 setup(
     console=['basic_standalone_thermo_check.py'],
     packages=[],
     py_modules=[],
-    data_files=thermo_data,
+    data_files=all_data_files,
     options={
         'py2exe': {
             'packages': ['thermo', 'fluids', 'chemicals', 'numpy', 'scipy'],

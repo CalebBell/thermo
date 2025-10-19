@@ -50,7 +50,7 @@ jobs:
     - name: Build PyInstaller executable
       run: |
         cd dev
-        pyinstaller --onefile --name basic_standalone_thermo_check basic_standalone_thermo_check.py
+        pyinstaller pyinstaller_basic_standalone_check.spec
 
     - name: Test build
       run: |
