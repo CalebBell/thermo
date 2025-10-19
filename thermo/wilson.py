@@ -1120,8 +1120,6 @@ class Wilson(GibbsExcess):
         return d3lambdas_dT3s
 
     def xj_Lambda_ijs(self):
-        """
-        """
         try:
             return self._xj_Lambda_ijs
         except AttributeError:
@@ -1140,8 +1138,6 @@ class Wilson(GibbsExcess):
         return xj_Lambda_ijs
 
     def xj_Lambda_ijs_inv(self):
-        """
-        """
         try:
             return self._xj_Lambda_ijs_inv
         except AttributeError:
@@ -1158,8 +1154,6 @@ class Wilson(GibbsExcess):
         return self._xj_Lambda_ijs_inv
 
     def log_xj_Lambda_ijs(self):
-        """
-        """
         try:
             return self._log_xj_Lambda_ijs
         except AttributeError:
@@ -1176,8 +1170,6 @@ class Wilson(GibbsExcess):
 
 
     def xj_dLambda_dTijs(self):
-        """
-        """
         try:
             return self._xj_dLambda_dTijs
         except AttributeError:
@@ -1197,8 +1189,6 @@ class Wilson(GibbsExcess):
 
 
     def xj_d2Lambda_dT2ijs(self):
-        """
-        """
         try:
             return self._xj_d2Lambda_dT2ijs
         except AttributeError:
@@ -1217,8 +1207,6 @@ class Wilson(GibbsExcess):
         return xj_d2Lambda_dT2ijs
 
     def xj_d3Lambda_dT3ijs(self):
-        """
-        """
         try:
             return self._xj_d3Lambda_dT3ijs
         except AttributeError:
