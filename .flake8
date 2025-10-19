@@ -1,5 +1,0 @@
-[flake8]
-ignore = 
-max-line-length = 160
-exclude = tests/*
-max-complexity = 10

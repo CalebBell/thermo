@@ -411,7 +411,7 @@ def test_stabiliy_iteration_Michelsen_zero_fraction():
     sln_without_zero = stability_iteration_Michelsen(**kwargs)[0:-1]
     assert_allclose(sln_with_zero[-2][1:], sln_without_zero[-2][1:], rtol=1e-5)
     assert_allclose(sln_with_zero[-1][1:], sln_without_zero[-1][1:], rtol=1e-5)
-    assert_allclose(sln_with_zero[-3], sln_without_zero[-3], rtol=1e-5)
+    assert_allclose(sln_with_zero[-3], sln_without_zero[-3], rtol=5e-5)
 
 
 

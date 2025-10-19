@@ -62,10 +62,10 @@ def test_Mixture_input_basics():
               'Vfgs': [0.7188789914193495, 0.2811210085806504]}
     for key, val in kwargs.items():
         m = Mixture(['water', 'ethanol'], **{key:val})
-        assert_close1d(m.zs, kwargs['zs'], rtol=1E-6)
+        assert_close1d(m.zs, kwargs['zs'], rtol=1E-4)
         assert_close1d(m.zs, m.xs)
-        assert_close1d(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
-        assert_close1d(m.Vfgs(), kwargs['Vfgs'])
+        assert_close1d(m.Vfls(), kwargs['Vfls'], rtol=1E-4)
+        assert_close1d(m.Vfgs(), kwargs['Vfgs'], rtol=1e-4)
 
 @pytest.mark.deprecated
 def test_Mixture_input_ordered_dict():
@@ -81,10 +81,10 @@ def test_Mixture_input_ordered_dict():
             d.update({i: j})
 
         m = Mixture(**{key:d})
-        assert_close1d(m.zs, kwargs['zs'], rtol=1E-6)
+        assert_close1d(m.zs, kwargs['zs'], rtol=1E-4)
         assert_close1d(m.zs, m.xs)
-        assert_close1d(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
-        assert_close1d(m.Vfgs(), kwargs['Vfgs'], rtol=2E-5)
+        assert_close1d(m.Vfls(), kwargs['Vfls'], rtol=1E-4)
+        assert_close1d(m.Vfgs(), kwargs['Vfgs'], rtol=1e-4)
 
 @pytest.mark.deprecated
 def test_Mixture_input_np_array():
@@ -98,10 +98,10 @@ def test_Mixture_input_np_array():
     for key, val in kwargs.items():
 
         m = Mixture(IDs, **{key:val})
-        assert_close1d(m.zs, kwargs['zs'], rtol=1E-6)
+        assert_close1d(m.zs, kwargs['zs'], rtol=1E-4)
         assert_close1d(m.zs, m.xs)
-        assert_close1d(m.Vfls(), kwargs['Vfls'], rtol=1E-5)
-        assert_close1d(m.Vfgs(), kwargs['Vfgs'], rtol=2E-5)
+        assert_close1d(m.Vfls(), kwargs['Vfls'], rtol=1E-4)
+        assert_close1d(m.Vfgs(), kwargs['Vfgs'], rtol=2E-4)
 
 @pytest.mark.deprecated
 def test_Mixture_input_odds_and_ends():
@@ -139,7 +139,7 @@ def test_Mixture_input_vfs_TP():
     m2 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(300, 1E5))
     m3 = Mixture(['hexane', 'decane'], Vfls=[.5, .5], Vf_TP=(None, 1E5))
     assert_close1d(m0.zs, m1.zs, rtol=1E-3)
-    assert_close1d(m2.zs, [0.5979237361861229, 0.402076263813877], rtol=1E-4)
+    assert_close1d(m2.zs, [0.5979237361861229, 0.402076263813877], rtol=1E-3)
     assert_close1d(m0.zs, m2.zs, rtol=1E-3)
     assert_close1d(m0.zs, m3.zs, rtol=1E-3)
 

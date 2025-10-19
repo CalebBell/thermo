@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -44,28 +44,29 @@ SPDB
 
     Example scalar parameters for models. This is lazy-loaded,
     access it as `thermo.interaction_parameters.SPDB`.
-'''
+"""
 
 
-__all__ = ['InteractionParameterDB', 'ScalarParameterDB']
+__all__ = ["InteractionParameterDB", "ScalarParameterDB"]
 
 import os
 from math import isnan
 
 from chemicals.identifiers import check_CAS, sorted_CAS_key
-from chemicals.utils import PY37, can_load_data
+
+from thermo.base import os_path_join, source_path
 
 
 class InteractionParameterDB:
-    '''Basic database framework for interaction parameters.
-    '''
+    """Basic database framework for interaction parameters.
+    """
 
     def __init__(self):
         self.tables = {}
         self.metadata = {}
 
     def load_json(self, file, name):
-        '''Load a json file from disk containing interaction
+        """Load a json file from disk containing interaction
         coefficients.
 
         The format for the file is as follows:
@@ -109,25 +110,25 @@ class InteractionParameterDB:
             Path to json file on disk which contains interaction coefficients, [-]
         name : str
             Name that the data read should be referred to by, [-]
-        '''
+        """
         import json
         f = open(file).read()
         dat = json.loads(f)
-        self.tables[name] = dat['data']
-        self.metadata[name] = dat['metadata']
+        self.tables[name] = dat["data"]
+        self.metadata[name] = dat["metadata"]
 
     def validate_table(self, name):
-        '''Basic method which checks that all CAS numbers are valid, and that
+        """Basic method which checks that all CAS numbers are valid, and that
         all elements of the data have non-nan values.
         Raises an exception if any of the data is missing or is a nan value.
-        '''
+        """
         table = self.tables[name]
         meta = self.metadata[name]
-        components = meta['components']
-        necessary_keys = meta['necessary keys']
+        components = meta["components"]
+        necessary_keys = meta["necessary keys"]
         # Check the CASs
         for key in table:
-            CASs = key.split(' ')
+            CASs = key.split(" ")
             # Check the key is the right length
             assert len(CASs) == components
             # Check all CAS number keys are valid
@@ -145,7 +146,7 @@ class InteractionParameterDB:
 
 
     def has_ip_specific(self, name, CASs, ip):
-        '''Check if a bip exists in a table.
+        """Check if a bip exists in a table.
 
         Parameters
         ----------
@@ -168,18 +169,18 @@ class InteractionParameterDB:
         >>> from thermo.interaction_parameters import IPDB
         >>> IPDB.has_ip_specific('ChemSep PR', ['7727-37-9', '74-84-0'], 'kij')
         True
-        '''
-        if self.metadata[name]['symmetric']:
-            key = ' '.join(sorted_CAS_key(CASs))
+        """
+        if self.metadata[name]["symmetric"]:
+            key = " ".join(sorted_CAS_key(CASs))
         else:
-            key = ' '.join(CASs)
+            key = " ".join(CASs)
         table = self.tables[name]
         if key not in table:
             return False
         return ip in table[key]
 
     def get_ip_specific(self, name, CASs, ip):
-        '''Get an interaction parameter from a table. If the specified
+        """Get an interaction parameter from a table. If the specified
         parameter is missing, the default `missing` value as defined in
         the data file is returned instead.
 
@@ -204,18 +205,18 @@ class InteractionParameterDB:
         >>> from thermo.interaction_parameters import IPDB
         >>> IPDB.get_ip_specific('ChemSep PR', ['7727-37-9', '74-84-0'], 'kij')
         0.0533
-        '''
-        if self.metadata[name]['symmetric']:
-            key = ' '.join(sorted_CAS_key(CASs))
+        """
+        if self.metadata[name]["symmetric"]:
+            key = " ".join(sorted_CAS_key(CASs))
         else:
-            key = ' '.join(CASs)
+            key = " ".join(CASs)
         try:
             return self.tables[name][key][ip]
         except KeyError:
-            return self.metadata[name]['missing'][ip]
+            return self.metadata[name]["missing"][ip]
 
     def get_tables_with_type(self, ip_type):
-        '''Get a list of tables which have a type of a parameter.
+        """Get a list of tables which have a type of a parameter.
 
         Parameters
         ----------
@@ -232,15 +233,15 @@ class InteractionParameterDB:
         >>> from thermo.interaction_parameters import IPDB
         >>> IPDB.get_tables_with_type('PR kij')
         ['ChemSep PR']
-        '''
+        """
         tables = []
         for key, d in self.metadata.items():
-            if d['type'] == ip_type:
+            if d["type"] == ip_type:
                 tables.append(key)
         return tables
 
     def get_ip_automatic(self, CASs, ip_type, ip):
-        '''Get an interaction parameter for the first table containing the
+        """Get an interaction parameter for the first table containing the
         value.
 
         Parameters
@@ -262,12 +263,12 @@ class InteractionParameterDB:
         >>> from thermo.interaction_parameters import IPDB
         >>> IPDB.get_ip_automatic(CASs=['7727-37-9', '74-84-0'], ip_type='PR kij', ip='kij')
         0.0533
-        '''
+        """
         table = self.get_tables_with_type(ip_type)[0]
         return self.get_ip_specific(table, CASs, ip)
 
     def get_ip_symmetric_matrix(self, name, CASs, ip, T=298.15):
-        '''Get a table of interaction parameters from a specified source
+        """Get a table of interaction parameters from a specified source
         for the specified parameters. This method assumes symmetric
         parameters for speed.
 
@@ -292,7 +293,7 @@ class InteractionParameterDB:
         >>> from thermo.interaction_parameters import IPDB
         >>> IPDB.get_ip_symmetric_matrix(name='ChemSep PR', CASs=['7727-37-9', '74-84-0', '74-98-6'], ip='kij')
         [[0.0, 0.0533, 0.0878], [0.0533, 0.0, 0.0011], [0.0878, 0.0011, 0.0]]
-        '''
+        """
         table = self.tables[name]
         N = len(CASs)
         values = [[None for i in range(N)] for j in range(N)]
@@ -308,7 +309,7 @@ class InteractionParameterDB:
         return values
 
     def get_ip_asymmetric_matrix(self, name, CASs, ip, T=298.15):
-        '''Get a table of interaction parameters from a specified source
+        """Get a table of interaction parameters from a specified source
         for the specified parameters.
 
         Parameters
@@ -332,7 +333,7 @@ class InteractionParameterDB:
         >>> from thermo.interaction_parameters import IPDB
         >>> IPDB.get_ip_symmetric_matrix(name='ChemSep NRTL', CASs=['64-17-5', '7732-18-5', '67-56-1'], ip='alphaij')
         [[0.0, 0.2937, 0.3009], [0.2937, 0.0, 0.2999], [0.3009, 0.2999, 0.0]]
-        '''
+        """
         table = self.tables[name]
         N = len(CASs)
         values = [[None for i in range(N)] for j in range(N)]
@@ -346,7 +347,7 @@ class InteractionParameterDB:
         return values
 
 class ScalarParameterDB:
-    '''Basic database framework for scalar parameters of various thermodynamic
+    """Basic database framework for scalar parameters of various thermodynamic
     models. The following keys are used:
 
     **Peng-Robinson**
@@ -387,7 +388,7 @@ class ScalarParameterDB:
     `RegularSolutionV`, `RegularSolutionSP`
 
 
-    '''
+    """
 
     def __init__(self):
         self.tables = {}
@@ -397,11 +398,11 @@ class ScalarParameterDB:
         import json
         f = open(file).read()
         dat = json.loads(f)
-        self.tables[name] = dat['data']
-        self.metadata[name] = dat['metadata']
+        self.tables[name] = dat["data"]
+        self.metadata[name] = dat["metadata"]
 
     def get_parameter_specific(self, name, CAS, parameter):
-        '''Get a parameter from a table. If the specified
+        """Get a parameter from a table. If the specified
         parameter is missing, the default `missing` value as defined in
         the data file is returned instead.
 
@@ -426,14 +427,14 @@ class ScalarParameterDB:
         >>> from thermo.interaction_parameters import SPDB
         >>> SPDB.get_parameter_specific('PRTwu_PinaMartinez', '7727-37-9', 'TwuPRL')
         0.1243
-        '''
+        """
         try:
             return self.tables[name][CAS][parameter]
         except KeyError:
-            return self.metadata[name]['missing'][parameter]
+            return self.metadata[name]["missing"][parameter]
 
     def has_parameter_specific(self, name, CAS, parameter):
-        '''Check if a parameter exists in a table.
+        """Check if a parameter exists in a table.
 
         Parameters
         ----------
@@ -456,14 +457,14 @@ class ScalarParameterDB:
         True
         >>> SPDB.has_parameter_specific('PRTwu_PinaMartinez', '7439-89-6', 'TwuPRL')
         False
-        '''
+        """
         table = self.tables[name]
         if CAS not in table:
             return False
         return parameter in table[CAS]
 
     def get_tables_with_type(self, parameter):
-        '''Get a list of tables which have a parameter.
+        """Get a list of tables which have a parameter.
 
         Parameters
         ----------
@@ -480,15 +481,15 @@ class ScalarParameterDB:
         >>> from thermo.interaction_parameters import SPDB
         >>> SPDB.get_tables_with_type('TwuPRL')
         ['PRTwu_PinaMartinez', 'PRTwu_ibell_2018']
-        '''
+        """
         tables = []
         for key, d in self.metadata.items():
-            if parameter in d['missing']:
+            if parameter in d["missing"]:
                 tables.append(key)
         return tables
 
     def get_parameter_automatic(self, CAS, parameter):
-        '''Get an interaction parameter for the first table containing the
+        """Get an interaction parameter for the first table containing the
         value.
 
         Parameters
@@ -508,12 +509,12 @@ class ScalarParameterDB:
         >>> from thermo.interaction_parameters import SPDB
         >>> SPDB.get_parameter_automatic('7727-37-9', parameter='TwuPRL')
         0.1243
-        '''
+        """
         table = self.get_tables_with_type(parameter)[0]
         return self.get_parameter_specific(table, CAS, parameter)
 
     def get_parameter_vector(self, name, CASs, parameter):
-        '''Get a list of parameters from a specified source
+        """Get a list of parameters from a specified source
         for the specified parameter.
 
         Parameters
@@ -537,7 +538,7 @@ class ScalarParameterDB:
         [0.1243, 0.3053, 0.7455]
         >>> SPDB.get_parameter_vector(name='PRVolumeTranslation_PinaMartinez', CASs=['7727-37-9', '74-84-0', '74-98-6'], parameter='PRc')
         [-3.643e-06, -3.675e-06, -3.735e-06]
-        '''
+        """
         table = self.tables[name]
         N = len(CASs)
         values = [None]*N
@@ -550,17 +551,17 @@ _loaded_interactions = False
 def load_all_interaction_parameters():
     global IPDB, _loaded_interactions
 
-    folder = os.path.join(os.path.dirname(__file__), 'Interaction Parameters')
-    chemsep_db_path = os.path.join(folder, 'ChemSep')
-    ip_files = {'ChemSep PR': os.path.join(chemsep_db_path, 'pr.json'),
-                'ChemSep NRTL': os.path.join(chemsep_db_path, 'nrtl.json'),
-                'ChemSep UNIQUAC': os.path.join(chemsep_db_path, 'uniquac.json'),
-                'ChemSep Wilson': os.path.join(chemsep_db_path, 'wilson.json'),
+    folder = os_path_join(source_path, "Interaction Parameters")
+    chemsep_db_path = os_path_join(folder, "ChemSep")
+    ip_files = {"ChemSep PR": os.path.join(chemsep_db_path, "pr.json"),
+                "ChemSep NRTL": os.path.join(chemsep_db_path, "nrtl.json"),
+                "ChemSep UNIQUAC": os.path.join(chemsep_db_path, "uniquac.json"),
+                "ChemSep Wilson": os.path.join(chemsep_db_path, "wilson.json"),
 
-                'ChemSep Henry': os.path.join(chemsep_db_path, 'henry.json'),
-                'Sander Const': os.path.join(folder, 'Sander_henry_const.json'),
-                'Sander T dep': os.path.join(folder, 'Sander_henry_T_dep.json'),
-                'PRTranslated Henry Best': os.path.join(folder, 'PRTranslated_best_henry_T_dep.json'),
+                "ChemSep Henry": os.path.join(chemsep_db_path, "henry.json"),
+                "Sander Const": os.path.join(folder, "Sander_henry_const.json"),
+                "Sander T dep": os.path.join(folder, "Sander_henry_T_dep.json"),
+                "PRTranslated Henry Best": os.path.join(folder, "PRTranslated_best_henry_T_dep.json"),
                 }
 
 
@@ -574,16 +575,16 @@ _loaded_scalars = False
 def load_all_scalar_parameters():
     global SPDB, _loaded_scalars
 
-    folder = os.path.join(os.path.dirname(__file__), 'Scalar Parameters')
-    sp_files = {'PRTwu_PinaMartinez': os.path.join(folder, 'PRTwu_PinaMartinez.json'),
-                'SRKTwu_PinaMartinez': os.path.join(folder, 'SRKTwu_PinaMartinez.json'),
-                'PRVolumeTranslation_PinaMartinez': os.path.join(folder, 'PRVolumeTranslation_PinaMartinez.json'),
-                'SRKVolumeTranslation_PinaMartinez': os.path.join(folder, 'SRKVolumeTranslation_PinaMartinez.json'),
-                'PRTwu_ibell_2018': os.path.join(folder, 'PRTwu_ibell_2018.json'),
+    folder = os_path_join(source_path, "Scalar Parameters")
+    sp_files = {"PRTwu_PinaMartinez": os.path.join(folder, "PRTwu_PinaMartinez.json"),
+                "SRKTwu_PinaMartinez": os.path.join(folder, "SRKTwu_PinaMartinez.json"),
+                "PRVolumeTranslation_PinaMartinez": os.path.join(folder, "PRVolumeTranslation_PinaMartinez.json"),
+                "SRKVolumeTranslation_PinaMartinez": os.path.join(folder, "SRKVolumeTranslation_PinaMartinez.json"),
+                "PRTwu_ibell_2018": os.path.join(folder, "PRTwu_ibell_2018.json"),
 
-                'chemsep_regular_solution': os.path.join(folder, 'chemsep_regular_solution.json'),
-                'chemsep_PSRK_matthias_copeman': os.path.join(folder, 'chemsep_PSRK_matthias_copeman.json'),
-                'chemsep_APISRK': os.path.join(folder, 'chemsep_APISRK.json'),
+                "chemsep_regular_solution": os.path.join(folder, "chemsep_regular_solution.json"),
+                "chemsep_PSRK_matthias_copeman": os.path.join(folder, "chemsep_PSRK_matthias_copeman.json"),
+                "chemsep_APISRK": os.path.join(folder, "chemsep_APISRK.json"),
                 }
 
 
@@ -593,16 +594,11 @@ def load_all_scalar_parameters():
 
     _loaded_scalars = True
 
-if PY37:
-    def __getattr__(name):
-        if name in ('IPDB',):
-            load_all_interaction_parameters()
-            return globals()[name]
-        if name in ('SPDB',):
-            load_all_scalar_parameters()
-            return globals()[name]
-        raise AttributeError(f"module {__name__} has no attribute {name}")
-else:
-    if can_load_data:
+def __getattr__(name):
+    if name in ("IPDB",):
         load_all_interaction_parameters()
+        return globals()[name]
+    if name in ("SPDB",):
         load_all_scalar_parameters()
+        return globals()[name]
+    raise AttributeError(f"module {__name__} has no attribute {name}")

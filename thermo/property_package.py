@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,12 +29,15 @@ SOFTWARE.
     which seeks to be more modular, easier to maintain and extend,
     higher-performance, and easier to modify.
 
-'''
+"""
 
 
-__all__ = ['PropertyPackage', 'Ideal',
-           'IdealCaloric',
-           'StabilityTester']
+__all__ = [
+    "Ideal",
+    "IdealCaloric",
+    "PropertyPackage",
+    "StabilityTester",
+]
 
 try:
     from random import seed, uniform
@@ -50,10 +53,10 @@ from fluids.numerics import numpy as np
 
 from thermo.serialize import JsonOptEncodable
 
-DIRECT_1P = 'Direct 1 Phase'
-DIRECT_2P = 'Direct 2 Phase'
-RIGOROUS_BISECTION = 'Bisection'
-CAS_H2O = '7732-18-5'
+DIRECT_1P = "Direct 1 Phase"
+DIRECT_2P = "Direct 2 Phase"
+RIGOROUS_BISECTION = "Bisection"
+CAS_H2O = "7732-18-5"
 
 def Rachford_Rice_solution_negative(zs, Ks):
     try:
@@ -277,31 +280,31 @@ class StabilityTester:
         self.zs = zs
 
     def stationary_points_unconstrained(self, random=True, guesses=None, raw_guesses=None,
-                                        fmin=1e-7, tol=1e-12, method='Nelder-Mead'):
+                                        fmin=1e-7, tol=1e-12, method="Nelder-Mead"):
         if not raw_guesses:
             raw_guesses = []
         if not guesses:
             guesses = self.guesses(T=self.T, P=self.P, zs=self.zs, random=random)
         results = []
         results2 = []
-        for guesses, convert in zip((raw_guesses, guesses), (False, True)):
-            for guess in guesses:
+        for guesses_iter, convert in zip((raw_guesses, guesses), (False, True)):
+            for guess in guesses_iter:
                 if convert:
                 # Convert the guess to a basis squared
                     guess = [i**0.5*2.0 for i in guess]
                 from scipy.optimize import minimize
                 ans = minimize(self.f_unconstrained, guess, method=method, tol=tol)
                 # Convert the answer to a normal basis
-                Ys = [(alpha/2.)**2 for alpha in ans['x']]
+                Ys = [(alpha/2.)**2 for alpha in ans["x"]]
                 ys = normalize(Ys)
-                if ans['fun'] <= fmin:
+                if ans["fun"] <= fmin:
                     results.append(ys)
                 results2.append(ans)
         return results, results2
 
 
     def stationary_points_constrained(self, random=True, guesses=None,
-                                      fmin=1e-7, iter=1000, tol=1e-12, method='fmin_slsqp'):
+                                      fmin=1e-7, iter=1000, tol=1e-12, method="fmin_slsqp"):
         from scipy.optimize import fmin_slsqp
         if not guesses:
             guesses = self.guesses(T=self.T, P=self.P, zs=self.zs, random=random)
@@ -357,39 +360,39 @@ class StabilityTester:
                              expect_aqueous=False, existing_phases=0):
         if idx < 4:
             if not expect_liquid:
-                return ('Wilson gas', 'Wilson liquid', 'Wilson gas third', 'Wilson liquid third')[idx]
+                return ("Wilson gas", "Wilson liquid", "Wilson gas third", "Wilson liquid third")[idx]
             else:
                 if expect_aqueous:
                     if idx == 0:
-                        return 'pure%d' %(self.water_index)
-                    return ('Wilson liquid',  'Wilson liquid third', 'Wilson gas third', 'Wilson gas')[idx-1]
+                        return f"pure{self.water_index}"
+                    return ("Wilson liquid",  "Wilson liquid third", "Wilson gas third", "Wilson gas")[idx-1]
                 else:
-                    return ('Wilson liquid',  'Wilson liquid third', 'Wilson gas third', 'Wilson gas')[idx]
+                    return ("Wilson liquid",  "Wilson liquid third", "Wilson gas third", "Wilson gas")[idx]
         if expect_aqueous:
             idx -= 1
         elif idx > 3 and idx <= 3 + self.N:
-            return 'pure%d' %(idx-3)
+            return f"pure{idx-3}"
         elif idx > 3+self.N:
-            return 'random%d' %(idx-(3+self.N))
+            return f"random{idx-(3+self.N)}"
 
     def incipient_guess_named(self, T, P, zs, name, zero_fraction=1E-6):
         N = self.N
         cmps = range(N)
         Ks_Wilson = [Wilson_K_value(T=T, P=P, Tc=self.Tcs[i], Pc=self.Pcs[i], omega=self.omegas[i]) for i in cmps]
-        if name == 'Wilson gas':
+        if name == "Wilson gas":
             # Where the wilson guess leads to an incipient gas
             Ys_Wilson = [Ki*zi for Ki, zi in zip(Ks_Wilson, zs)]
             return normalize(Ys_Wilson)
-        elif name == 'Wilson liquid':
+        elif name == "Wilson liquid":
             Ys_Wilson = [zi/Ki for Ki, zi in zip(Ks_Wilson, zs)]
             return normalize(Ys_Wilson)
-        elif name == 'Wilson gas third':
+        elif name == "Wilson gas third":
             Ys_Wilson = [Ki**(1.0/3.0)*zi for Ki, zi in zip(Ks_Wilson, zs)]
             return normalize(Ys_Wilson)
-        elif name == 'Wilson liquid third':
+        elif name == "Wilson liquid third":
             Ys_Wilson = [Ki**(-1.0/3.0)*zi for Ki, zi in zip(Ks_Wilson, zs)]
             return normalize(Ys_Wilson)
-        elif name[0:4] == 'pure':
+        elif name[0:4] == "pure":
             k = int(name[4:])
             main_frac = 1.0 - zero_fraction
             remaining = zero_fraction/(N-1.0)
@@ -525,8 +528,8 @@ class StabilityTester:
 
     def guesses(self, T, P, zs, pure=True, Wilson=True, random=True,
                 zero_fraction=1E-6):
-        '''Returns mole fractions, not Ks.
-        '''
+        """Returns mole fractions, not Ks.
+        """
         guesses = []
         if Wilson:
             guesses.extend(self.Wilson_guesses(T, P, zs))
@@ -590,8 +593,8 @@ class PropertyPackage:
         pass
 
     def flash(self, zs, T=None, P=None, VF=None):
-        '''Note: There is no caching at this layer
-        '''
+        """Note: There is no caching at this layer
+        """
         if not self.SUPPORTS_ZERO_FRACTIONS:
             zs = remove_zeros(zs, 1e-11)
         if T is not None and P is not None:
@@ -601,7 +604,7 @@ class PropertyPackage:
         elif P is not None and VF is not None:
             phase, xs, ys, V_over_F, T = self.flash_PVF_zs(P=P, VF=VF, zs=zs)
         else:
-            raise Exception('Unsupported flash requested')
+            raise ValueError("Unsupported flash requested")
 
         if VF is not None:
             # Handle the case that a non-zero VF was specified, but the flash's
@@ -611,11 +614,11 @@ class PropertyPackage:
             elif V_over_F > 1. - self.PHASE_ROUNDING_TOL and VF < 1. - self.PHASE_ROUNDING_TOL:
                 V_over_F = VF
         # Truncate
-        if phase  == 'l/g':
+        if phase  == "l/g":
             if V_over_F < self.PHASE_ROUNDING_TOL: # liquid
-                phase, xs, ys, V_over_F = 'l', zs, None, 0.
+                phase, xs, ys, V_over_F = "l", zs, None, 0.
             elif V_over_F > 1. - self.PHASE_ROUNDING_TOL:
-                phase, xs, ys, V_over_F = 'g', None, zs, 1.
+                phase, xs, ys, V_over_F = "g", None, zs, 1.
 
         self.T = T
         self.P = P
@@ -631,25 +634,25 @@ class PropertyPackage:
         if not self.SUPPORTS_ZERO_FRACTIONS:
             zs = remove_zeros(zs, self.zero_fraction)
 
-        kwargs = {'zs': zs}
+        kwargs = {"zs": zs}
         try:
             if T is not None and Sm is not None:
-                kwargs['T'] = T
+                kwargs["T"] = T
                 kwargs.update(self.flash_TS_zs_bounded(T=T, Sm=Sm, zs=zs))
             elif P is not None and Sm is not None:
-                kwargs['P'] = P
+                kwargs["P"] = P
                 kwargs.update(self.flash_PS_zs_bounded(P=P, Sm=Sm, zs=zs))
             elif P is not None and Hm is not None:
-                kwargs['P'] = P
+                kwargs["P"] = P
                 kwargs.update(self.flash_PH_zs_bounded(P=P, Hm=Hm, zs=zs))
             elif ((T is not None and P is not None) or
                 (T is not None and VF is not None) or
                 (P is not None and VF is not None)):
-                kwargs['P'] = P
-                kwargs['T'] = T
-                kwargs['VF'] = VF
+                kwargs["P"] = P
+                kwargs["T"] = T
+                kwargs["VF"] = VF
             else:
-                raise Exception('Flash inputs unsupported')
+                raise ValueError("Flash inputs unsupported")
 
 
 #            ''' The routine needs to be upgraded to set these properties
@@ -688,8 +691,8 @@ class PropertyPackage:
 
     def flash_PH_zs_bounded(self, P, Hm, zs, T_low=None, T_high=None,
                             Hm_low=None, Hm_high=None):
-        '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
-        '''
+        """THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
+        """
         # Begin the search at half the lowest chemical's melting point
         if T_low is None:
             T_low = min(self.Tms)/2
@@ -734,8 +737,8 @@ class PropertyPackage:
             except UnconvergedError:
                 if self.N == 1:
                     VF_goal = brenth(PH_VF_error, 0, 1, args=(P, zs, Hm))
-                    return {'VF': VF_goal}
-            return {'T': T_goal}
+                    return {"VF": VF_goal}
+            return {"T": T_goal}
 
         except ValueError:
             if Hm_low is None:
@@ -743,25 +746,25 @@ class PropertyPackage:
                 pkg_low._post_flash()
                 Hm_low = pkg_low.Hm
             if Hm < Hm_low:
-                raise ValueError('The requested molar enthalpy cannot be found'
-                                 ' with this bounded solver because the lower '
-                                 f'temperature bound {T_low:g} K has an enthalpy ({Hm_low:g} '
-                                 f'J/mol) higher than that requested ({Hm:g} J/mol)')
+                raise ValueError("The requested molar enthalpy cannot be found"
+                                 " with this bounded solver because the lower "
+                                 f"temperature bound {T_low:g} K has an enthalpy ({Hm_low:g} "
+                                 f"J/mol) higher than that requested ({Hm:g} J/mol)")
             if Hm_high is None:
                 pkg_high = self.to(T=T_high, P=P, zs=zs)
                 pkg_high._post_flash()
                 Hm_high = pkg_high.Hm
             if Hm > Hm_high:
-                raise ValueError('The requested molar enthalpy cannot be found'
-                                 ' with this bounded solver because the upper '
-                                 f'temperature bound {T_high:g} K has an enthalpy ({Hm_high:g} '
-                                 f'J/mol) lower than that requested ({Hm:g} J/mol)')
+                raise ValueError("The requested molar enthalpy cannot be found"
+                                 " with this bounded solver because the upper "
+                                 f"temperature bound {T_high:g} K has an enthalpy ({Hm_high:g} "
+                                 f"J/mol) lower than that requested ({Hm:g} J/mol)")
 
 
     def flash_PS_zs_bounded(self, P, Sm, zs, T_low=None, T_high=None,
                             Sm_low=None, Sm_high=None):
-        '''THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
-        '''
+        """THIS DOES NOT WORK FOR PURE COMPOUNDS!!!!!!!!!!!!!
+        """
         # Begin the search at half the lowest chemical's melting point
         if T_low is None:
             T_low = min(self.Tms)/2
@@ -801,10 +804,10 @@ class PropertyPackage:
                 err = abs(PS_error(T_goal, P, zs, Sm))
                 if err > 1E-3:
                     VF_goal = brenth(PS_VF_error, 0, 1, args=(P, zs, Sm))
-                    return {'VF': VF_goal}
+                    return {"VF": VF_goal}
 
 
-            return {'T': T_goal}
+            return {"T": T_goal}
 
         except ValueError:
             if Sm_low is None:
@@ -812,19 +815,19 @@ class PropertyPackage:
                 pkg_low._post_flash()
                 Sm_low = pkg_low.Sm
             if Sm < Sm_low:
-                raise ValueError('The requested molar entropy cannot be found'
-                                 ' with this bounded solver because the lower '
-                                 f'temperature bound {T_low:g} K has an entropy ({Sm_low:g} '
-                                 f'J/mol/K) higher than that requested ({Sm:g} J/mol/K)')
+                raise ValueError("The requested molar entropy cannot be found"
+                                 " with this bounded solver because the lower "
+                                 f"temperature bound {T_low:g} K has an entropy ({Sm_low:g} "
+                                 f"J/mol/K) higher than that requested ({Sm:g} J/mol/K)")
             if Sm_high is None:
                 pkg_high = self.to(T=T_high, P=P, zs=zs)
                 pkg_high._post_flash()
                 Sm_high = pkg_high.Sm
             if Sm > Sm_high:
-                raise ValueError('The requested molar entropy cannot be found'
-                                 ' with this bounded solver because the upper '
-                                 f'temperature bound {T_high:g} K has an entropy ({Sm_high:g} '
-                                 f'J/mol/K) lower than that requested ({Sm:g} J/mol/K)')
+                raise ValueError("The requested molar entropy cannot be found"
+                                 " with this bounded solver because the upper "
+                                 f"temperature bound {T_high:g} K has an entropy ({Sm_high:g} "
+                                 f"J/mol/K) lower than that requested ({Sm:g} J/mol/K)")
 
     def flash_TS_zs_bounded(self, T, Sm, zs, P_low=None, P_high=None,
                             Sm_low=None, Sm_high=None):
@@ -862,8 +865,8 @@ class PropertyPackage:
                 err = abs(TS_error(P_goal, T, zs, Sm))
                 if err > 1E-3:
                     VF_goal = brenth(TS_VF_error, 0, 1, args=(T, zs, Sm))
-                    return {'VF': VF_goal}
-            return {'P': P_goal}
+                    return {"VF": VF_goal}
+            return {"P": P_goal}
 
         except ValueError:
             if Sm_low is None:
@@ -871,19 +874,19 @@ class PropertyPackage:
                 pkg_low._post_flash()
                 Sm_low = pkg_low.Sm
             if Sm > Sm_low:
-                raise ValueError('The requested molar entropy cannot be found'
-                                 ' with this bounded solver because the lower '
-                                 f'pressure bound {P_low:g} Pa has an entropy ({Sm_low:g} '
-                                 f'J/mol/K) lower than that requested ({Sm:g} J/mol/K)')
+                raise ValueError("The requested molar entropy cannot be found"
+                                 " with this bounded solver because the lower "
+                                 f"pressure bound {P_low:g} Pa has an entropy ({Sm_low:g} "
+                                 f"J/mol/K) lower than that requested ({Sm:g} J/mol/K)")
             if Sm_high is None:
                 pkg_high = self.to(T=T, P=P_high, zs=zs)
                 pkg_high._post_flash()
                 Sm_high = pkg_high.Sm
             if Sm < Sm_high:
-                raise ValueError('The requested molar entropy cannot be found'
-                                 ' with this bounded solver because the upper '
-                                 f'pressure bound {P_high:g} Pa has an entropy ({Sm_high:g} '
-                                 f'J/mol/K) upper than that requested ({Sm:g} J/mol/K)')
+                raise ValueError("The requested molar entropy cannot be found"
+                                 " with this bounded solver because the upper "
+                                 f"pressure bound {P_high:g} Pa has an entropy ({Sm_high:g} "
+                                 f"J/mol/K) upper than that requested ({Sm:g} J/mol/K)")
     @property
     def Hm_reactive(self):
         Hm = self.Hm
@@ -965,8 +968,8 @@ class Ideal(PropertyPackage):
         self.N = len(VaporPressures)
         self.cmps = range(self.N)
 
-        self.kwargs = {'VaporPressures': VaporPressures,
-                       'Tms': Tms, 'Tcs': Tcs, 'Pcs': Pcs}
+        self.kwargs = {"VaporPressures": VaporPressures,
+                       "Tms": Tms, "Tcs": Tcs, "Pcs": Pcs}
 
     def Ks_and_dKs_dT(self, T, P, zs=None):
         Psats = self._Psats(T)
@@ -1000,13 +1003,13 @@ class Ideal(PropertyPackage):
             Pbubble = sum([zs[i]*Psats[i] for i in range(self.N)])
         if P <= Pdew:
             # phase, ys, xs, quality - works for 1 comps too
-            return 'g', None, zs, 1
+            return "g", None, zs, 1
         elif P >= Pbubble:
-            return 'l', zs, None, 0
+            return "l", zs, None, 0
         else:
             Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
             V_over_F, xs, ys = Rachford_Rice_solution_negative(zs=zs, Ks=Ks)
-            return 'l/g', xs, ys, V_over_F
+            return "l/g", xs, ys, V_over_F
 
 
     def flash_TVF_zs(self, T, VF, zs):
@@ -1017,9 +1020,9 @@ class Ideal(PropertyPackage):
         Psats = self._Psats(T)
         # handle one component
         if self.N == 1:
-            return 'l/g', [1.0], [1.0], VF, Psats[0]
+            return "l/g", [1.0], [1.0], VF, Psats[0]
         elif 1.0 in zs:
-            return 'l/g', list(zs), list(zs), VF, Psats[zs.index(1.0)]
+            return "l/g", list(zs), list(zs), VF, Psats[zs.index(1.0)]
 
         if VF == 0:
             P = sum([zs[i]*Psats[i] for i in range(self.N)])
@@ -1029,7 +1032,7 @@ class Ideal(PropertyPackage):
             P = brenth(self._T_VF_err_ideal, min(Psats)*(1+1E-7), max(Psats)*(1-1E-7), args=(VF, zs, Psats))
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         V_over_F, xs, ys = Rachford_Rice_solution_negative(zs=zs, Ks=Ks)
-        return 'l/g', xs, ys, V_over_F, P
+        return "l/g", xs, ys, V_over_F, P
 
     def flash_PVF_zs(self, P, VF, zs):
         return self.flash_PVF_zs_ideal(P, VF, zs)
@@ -1038,15 +1041,15 @@ class Ideal(PropertyPackage):
         assert 0 <= VF <= 1
         Tsats = self._Tsats(P)
         if self.N == 1:
-            return 'l/g', [1.0], [1.0], VF, Tsats[0]
+            return "l/g", [1.0], [1.0], VF, Tsats[0]
         elif 1.0 in zs:
-            return 'l/g', list(zs), list(zs), VF, Tsats[zs.index(1.0)]
+            return "l/g", list(zs), list(zs), VF, Tsats[zs.index(1.0)]
 
         T = brenth(self._P_VF_err_ideal, min(Tsats)*(1+1E-7), max(Tsats)*(1-1E-7), args=(P, VF, zs))
         Psats = self._Psats(T)
         Ks = [K_value(P=P, Psat=Psat) for Psat in Psats]
         V_over_F, xs, ys = Rachford_Rice_solution_negative(zs=zs, Ks=Ks)
-        return 'l/g', xs, ys, V_over_F, T
+        return "l/g", xs, ys, V_over_F, T
 
 
 class IdealCaloric(Ideal):
@@ -1130,12 +1133,12 @@ class IdealCaloric(Ideal):
         if Hfs is not None and Gfs is not None and None not in Hfs and None not in Gfs:
             self.Sfs = [(Hfi - Gfi)/298.15 for Hfi, Gfi in zip(Hfs, Gfs)]
 
-        self.kwargs = {'VaporPressures': VaporPressures,
-                       'Tms': Tms, 'Tbs': Tbs, 'Tcs': Tcs, 'Pcs': Pcs,
-                       'HeatCapacityLiquids': HeatCapacityLiquids,
-                       'HeatCapacityGases': HeatCapacityGases,
-                       'EnthalpyVaporizations': EnthalpyVaporizations,
-                       'VolumeLiquids': VolumeLiquids}
+        self.kwargs = {"VaporPressures": VaporPressures,
+                       "Tms": Tms, "Tbs": Tbs, "Tcs": Tcs, "Pcs": Pcs,
+                       "HeatCapacityLiquids": HeatCapacityLiquids,
+                       "HeatCapacityGases": HeatCapacityGases,
+                       "EnthalpyVaporizations": EnthalpyVaporizations,
+                       "VolumeLiquids": VolumeLiquids}
 
 
 
@@ -1145,8 +1148,8 @@ class IdealCaloric(Ideal):
         self.Sm = self.entropy_Cpg_Hvap()
         self.Gm = self.Hm - self.T*self.Sm if (self.Hm is not None and self.Sm is not None) else None
 
-    def partial_property(self, T, P, i, zs, prop='Hm'):
-        r'''Method to calculate the partial molar property for entropy,
+    def partial_property(self, T, P, i, zs, prop="Hm"):
+        r"""Method to calculate the partial molar property for entropy,
         enthalpy, or gibbs energy. Note the partial gibbs energy is known
         as chemical potential as well.
 
@@ -1169,9 +1172,9 @@ class IdealCaloric(Ideal):
         -------
         partial_prop : float
             Calculated partial property, [`units`]
-        '''
-        if prop not in ('Sm', 'Gm', 'Hm'):
-            raise Exception("The only supported property plots are enthalpy "
+        """
+        if prop not in ("Sm", "Gm", "Hm"):
+            raise ValueError("The only supported property plots are enthalpy "
                             "('Hm'), entropy ('Sm'), and Gibbe energy ('Gm')")
 
         def prop_extensive(ni, ns, i):
@@ -1187,7 +1190,7 @@ class IdealCaloric(Ideal):
 
 
     def enthalpy_Cpg_Hvap(self):
-        r'''Method to calculate the enthalpy of an ideal mixture. This routine
+        r"""Method to calculate the enthalpy of an ideal mixture. This routine
         is based on "route A", where the gas heat
         capacity and enthalpy of vaporization are used.
 
@@ -1226,14 +1229,14 @@ class IdealCaloric(Ideal):
         The object must be flashed before this routine can be used. It
         depends on the properties T, zs, xs, V_over_F, HeatCapacityGases,
         EnthalpyVaporizations, and.
-        '''
+        """
         H = 0
         T = self.T
         P = self.P
-        if self.phase == 'g':
+        if self.phase == "g":
             for i in self.cmps:
                 H += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
-        elif self.phase == 'l':
+        elif self.phase == "l":
             Psats = self._Psats(T=T)
             for i in self.cmps:
                 # No further contribution needed
@@ -1250,7 +1253,7 @@ class IdealCaloric(Ideal):
                         Vl = self.VolumeLiquids[i].TP_or_T_dependent_property(self.Tbs[i], P)
                     H_i += (P - Psats[i])*Vl
                 H += self.zs[i]*(H_i)
-        elif self.phase == 'l/g':
+        elif self.phase == "l/g":
             for i in self.cmps:
                 Hg298_to_T_zi = self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral(self.T_REF_IG, T)
                 Hvap = self.EnthalpyVaporizations[i](T)
@@ -1261,9 +1264,9 @@ class IdealCaloric(Ideal):
         return H
 
     def set_T_transitions(self, Ts):
-        if Ts == 'Tb':
+        if Ts == "Tb":
             self.T_trans = self.Tbs
-        elif Ts == 'Tc':
+        elif Ts == "Tc":
             self.T_trans = self.Tcs
         elif isinstance(Ts, float):
             self.T_trans = [Ts]*self.N
@@ -1275,16 +1278,16 @@ class IdealCaloric(Ideal):
         T = self.T
         T_trans = self.T_trans
 
-        if self.phase == 'l':
+        if self.phase == "l":
             for i in self.cmps:
                 H += self.zs[i]*self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, T)
-        elif self.phase == 'g':
+        elif self.phase == "g":
             for i in self.cmps:
                 H_to_trans = self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, self.T_trans[i])
                 H_trans = self.EnthalpyVaporizations[i](self.T_trans[i])
                 H_to_T_gas = self.HeatCapacityGases[i].T_dependent_property_integral(self.T_trans[i], T)
                 H += self.zs[i]*(H_to_trans + H_trans + H_to_T_gas)
-        elif self.phase == 'l/g':
+        elif self.phase == "l/g":
             for i in self.cmps:
                 H_to_T_liq = self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, T)
                 H_to_trans = self.HeatCapacityLiquids[i].T_dependent_property_integral(self.T_REF_IG, self.T_trans[i])
@@ -1296,7 +1299,7 @@ class IdealCaloric(Ideal):
 
 
     def entropy_Cpg_Hvap(self):
-        r'''Method to calculate the entropy of an ideal mixture. This routine
+        r"""Method to calculate the entropy of an ideal mixture. This routine
         is based on "route A", where only the gas heat capacity and enthalpy of
         vaporization are used.
 
@@ -1361,7 +1364,7 @@ class IdealCaloric(Ideal):
         ----------
         .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
            New York: McGraw-Hill Professional, 2000.
-        '''
+        """
         S = 0.0
         T = self.T
         P = self.P
@@ -1369,11 +1372,11 @@ class IdealCaloric(Ideal):
         # Both of the mixing and vapor pressure terms have negative signs
         # Equation 6-4.4b in Poling for the vapor pressure component
         # For liquids above their critical temperatures, Psat is equal to the system P (COCO).
-        if self.phase == 'g':
+        if self.phase == "g":
             S -= R*log(P/101325.) # Gas-phase ideal pressure contribution (checked repeatedly)
             for i in self.cmps:
                 S += self.zs[i]*self.HeatCapacityGases[i].T_dependent_property_integral_over_T(298.15, T)
-        elif self.phase == 'l':
+        elif self.phase == "l":
             Psats = self._Psats(T=T)
             T_inv = 1.0/T
             for i in self.cmps:
@@ -1384,7 +1387,7 @@ class IdealCaloric(Ideal):
                 Svap = -Hvap*T_inv # Do the transition at the temperature of the liquid
                 S_P = -R*log(Psats[i]/101325.)
                 S += self.zs[i]*(Sg298_to_T + Svap + S_P)
-        elif self.phase == 'l/g':
+        elif self.phase == "l/g":
             Psats = self._Psats(T=T)
             S_P_vapor = -R*log(P/101325.) # Gas-phase ideal pressure contribution (checked repeatedly)
             for i in self.cmps:

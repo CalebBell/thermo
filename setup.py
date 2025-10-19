@@ -1,5 +1,5 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
-Copyright (C) 2016, 2017, 2020, 2021, 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+Copyright (C) 2016-2025, Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,15 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
+
+import os
+import shutil
+import tempfile
+from pathlib import Path
 
 from setuptools import setup
 from wheel.bdist_wheel import bdist_wheel
-import os
-import shutil
-from pathlib import Path
-import tempfile
 
 class bdist_wheel_light(bdist_wheel):
     description = "Build a light wheel package with minified Python files and without type stubs"
@@ -196,14 +197,13 @@ classifiers=[
     'Operating System :: Unix',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.6',
-    'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14',
     'Programming Language :: Python :: Implementation :: CPython',
     'Programming Language :: Python :: Implementation :: PyPy',
     'Topic :: Education',
@@ -217,10 +217,10 @@ setup(
   name = 'thermo',
   packages = ['thermo'],
   license='MIT',
-  version = '0.4.2',
+  version = '0.5.0',
   description = 'Chemical properties component of Chemical Engineering Design Library (ChEDL)',
   author = 'Caleb Bell',
-  install_requires=['fluids>=1.1.0', "scipy>=1.6.0", 'pandas', 'chemicals>=1.3.3'],
+  install_requires=['fluids>=1.2.0', "scipy>=1.6.0", 'pandas', 'chemicals>=1.4.0'],
   extras_require = {
       'Coverage documentation':  ['wsgiref>=0.1.2', 'coverage>=4.0.3']
   },
@@ -228,7 +228,7 @@ setup(
   platforms=["Windows", "Linux", "Mac OS", "Unix"],
   author_email = 'Caleb.Andrew.Bell@gmail.com',
   url = 'https://github.com/CalebBell/thermo',
-  download_url = 'https://github.com/CalebBell/thermo/tarball/0.4.2',
+  download_url = 'https://github.com/CalebBell/thermo/tarball/0.5.0',
   keywords = ['chemical engineering', 'chemistry', 'mechanical engineering',
   'thermodynamics', 'databases', 'cheminformatics', 'engineering','viscosity',
   'density', 'heat capacity', 'thermal conductivity', 'surface tension',

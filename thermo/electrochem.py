@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -101,21 +101,36 @@ attribute of this module.
 
     In [6]: Laliberte_data
 
-'''
+"""
 
 
-__all__ = ['Laliberte_density', 'Laliberte_heat_capacity',
-           'Laliberte_viscosity','Laliberte_viscosity_mix',
-           'Laliberte_viscosity_w',
-           'Laliberte_viscosity_i', 'Laliberte_density_w',
-           'Laliberte_density_i', 'Laliberte_density_mix', 'Laliberte_heat_capacity_w',
-           'Laliberte_heat_capacity_i','Laliberte_heat_capacity_mix',
-           'dilute_ionic_conductivity', 'conductivity_McCleskey',
-           'conductivity', 'conductivity_methods', 'conductivity_all_methods',
-           'thermal_conductivity_Magomedov', 'Magomedov_mix', 'ionic_strength', 'Kweq_1981',
-           'Kweq_IAPWS_gas', 'Kweq_IAPWS', 'Kweq_Arcis_Tremaine_Bandura_Lvov',
-           'balance_ions',
-           ]
+__all__ = [
+    "Kweq_1981",
+    "Kweq_Arcis_Tremaine_Bandura_Lvov",
+    "Kweq_IAPWS",
+    "Kweq_IAPWS_gas",
+    "Laliberte_density",
+    "Laliberte_density_i",
+    "Laliberte_density_mix",
+    "Laliberte_density_w",
+    "Laliberte_heat_capacity",
+    "Laliberte_heat_capacity_i",
+    "Laliberte_heat_capacity_mix",
+    "Laliberte_heat_capacity_w",
+    "Laliberte_viscosity",
+    "Laliberte_viscosity_i",
+    "Laliberte_viscosity_mix",
+    "Laliberte_viscosity_w",
+    "Magomedov_mix",
+    "balance_ions",
+    "conductivity",
+    "conductivity_McCleskey",
+    "conductivity_all_methods",
+    "conductivity_methods",
+    "dilute_ionic_conductivity",
+    "ionic_strength",
+    "thermal_conductivity_Magomedov",
+]
 
 import os
 from math import log10
@@ -135,67 +150,62 @@ from chemicals.iapws import (
     iapws95_rhol_sat,
     iapws95_Tc,
 )
-from chemicals.utils import PY37, can_load_data, mixing_simple, os_path_join, source_path, ws_to_zs
+from chemicals.utils import mixing_simple, os_path_join, source_path, ws_to_zs
 from fluids.constants import N_A, e
 from fluids.numerics import chebval, exp, horner, isnan
 
 F = e*N_A
 
 
-folder = os_path_join(source_path, 'Electrolytes')
+folder = os_path_join(source_path, "Electrolytes")
 
-register_df_source(folder, 'Lange Pure Species Conductivity.tsv')
-register_df_source(folder, 'Marcus Ion Conductivities.tsv')
-register_df_source(folder, 'CRC conductivity infinite dilution.tsv')
-register_df_source(folder, 'Magomedov Thermal Conductivity.tsv')
-register_df_source(folder, 'CRC Thermodynamic Properties of Aqueous Ions.tsv')
+register_df_source(folder, "Lange Pure Species Conductivity.tsv")
+register_df_source(folder, "Marcus Ion Conductivities.tsv")
+register_df_source(folder, "CRC conductivity infinite dilution.tsv")
+register_df_source(folder, "Magomedov Thermal Conductivity.tsv")
+register_df_source(folder, "CRC Thermodynamic Properties of Aqueous Ions.tsv")
 
 _loaded_electrochem_data = False
 def _load_electrochem_data():
     global cond_data_Lange, Marcus_ion_conductivities, CRC_ion_conductivities, Magomedovk_thermal_cond
     global CRC_aqueous_thermodynamics, electrolyte_dissociation_reactions
-    global rho_dict_Laliberte
-    global mu_dict_Laliberte, Cp_dict_Laliberte, Laliberte_data, cond_data_McCleskey
+    global Laliberte_data, cond_data_McCleskey
     global _loaded_electrochem_data
     import pandas as pd
 
-    cond_data_Lange = data_source('Lange Pure Species Conductivity.tsv')
-    Marcus_ion_conductivities = data_source('Marcus Ion Conductivities.tsv')
-    CRC_ion_conductivities = data_source('CRC conductivity infinite dilution.tsv')
+    cond_data_Lange = data_source("Lange Pure Species Conductivity.tsv")
+    Marcus_ion_conductivities = data_source("Marcus Ion Conductivities.tsv")
+    CRC_ion_conductivities = data_source("CRC conductivity infinite dilution.tsv")
 
-    Magomedovk_thermal_cond = data_source('Magomedov Thermal Conductivity.tsv')
-    CRC_aqueous_thermodynamics = data_source('CRC Thermodynamic Properties of Aqueous Ions.tsv')
+    Magomedovk_thermal_cond = data_source("Magomedov Thermal Conductivity.tsv")
+    CRC_aqueous_thermodynamics = data_source("CRC Thermodynamic Properties of Aqueous Ions.tsv")
 
-    Laliberte_data = pd.read_csv(os.path.join(folder, 'Laliberte2009.tsv'),
-                              sep='\t', index_col=1)
+    Laliberte_data = pd.read_csv(os.path.join(folder, "Laliberte2009.tsv"),
+                              sep="\t", index_col=1)
 
-    cond_data_McCleskey = pd.read_csv(os.path.join(folder, 'McCleskey Electrical Conductivity.tsv'),
-                                      sep='\t', index_col=1)
+    cond_data_McCleskey = pd.read_csv(os.path.join(folder, "McCleskey Electrical Conductivity.tsv"),
+                                      sep="\t", index_col=1)
 
-    electrolyte_dissociation_reactions = pd.read_csv(os_path_join(folder, 'Electrolyte dissociations.tsv'), sep='\t')
+    electrolyte_dissociation_reactions = pd.read_csv(os_path_join(folder, "Electrolyte dissociations.tsv"), sep="\t")
     _loaded_electrochem_data = True
 
 
-if PY37:
-    def __getattr__(name):
-        if name in ('cond_data_Lange', 'Marcus_ion_conductivities', 'CRC_ion_conductivities',
-                    'Magomedovk_thermal_cond', 'CRC_aqueous_thermodynamics',
-                    'electrolyte_dissociation_reactions',
-                    'cond_data_Lange', 'cond_data_McCleskey',
-                    'Laliberte_data'):
-            if not _loaded_electrochem_data:
-                _load_electrochem_data()
-            return globals()[name]
-        raise AttributeError(f"module {__name__} has no attribute {name}")
-else:
-    if can_load_data:
-        _load_electrochem_data()
+def __getattr__(name):
+    if name in ("cond_data_Lange", "Marcus_ion_conductivities", "CRC_ion_conductivities",
+                "Magomedovk_thermal_cond", "CRC_aqueous_thermodynamics",
+                "electrolyte_dissociation_reactions",
+                "cond_data_Lange", "cond_data_McCleskey",
+                "Laliberte_data"):
+        if not _loaded_electrochem_data:
+            _load_electrochem_data()
+        return globals()[name]
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 ### Laliberty Viscosity Functions
 
 
 def Laliberte_viscosity_w(T):
-    r'''Calculate the viscosity of a water using the form proposed by [1]_.
+    r"""Calculate the viscosity of a water using the form proposed by [1]_.
     No parameters are needed, just a temperature. Units are Kelvin and Pa*s.
     t is temperature in degrees Celcius.
 
@@ -228,14 +238,14 @@ def Laliberte_viscosity_w(T):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     t = T-273.15
     mu_w = (t + 246.0)/((0.05594*t+5.2842)*t + 137.37)
     return mu_w*1e-3
 
 
 def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
-    r'''Calculate the viscosity of a solute using the form proposed by [1]_
+    r"""Calculate the viscosity of a solute using the form proposed by [1]_
     Parameters are needed, and a temperature. Units are Kelvin and Pa*s.
 
     .. math::
@@ -283,13 +293,13 @@ def Laliberte_viscosity_i(T, w_w, v1, v2, v3, v4, v5, v6):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     t = T - 273.15 # convert to C
     mu_i = exp((v1*(1.0 - w_w)**v2 + v3)/(v4*t + 1.0))/(v5*(1.0 - w_w)**v6 + 1.0)
     return mu_i*1e-3
 
 def Laliberte_viscosity_mix(T, ws, v1s, v2s, v3s, v4s, v5s, v6s):
-    r'''Calculate the viscosity of an aqueous mixture using the form proposed
+    r"""Calculate the viscosity of an aqueous mixture using the form proposed
     by [1]_. All parameters must be provided in this implementation.
 
     .. math::
@@ -333,7 +343,7 @@ def Laliberte_viscosity_mix(T, ws, v1s, v2s, v3s, v4s, v5s, v6s):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     mu_w = Laliberte_viscosity_w(T)*1000.
     w_w = 1.0 - sum(ws)
     mu = mu_w**(w_w)
@@ -345,7 +355,7 @@ def Laliberte_viscosity_mix(T, ws, v1s, v2s, v3s, v4s, v5s, v6s):
     return mu*1e-3
 
 def Laliberte_viscosity(T, ws, CASRNs):
-    r'''Calculate the viscosity of an aqueous mixture using the form proposed
+    r"""Calculate the viscosity of an aqueous mixture using the form proposed
     by [1]_. Parameters are loaded by the function as needed. Units are Kelvin
     and Pa*s.
 
@@ -383,7 +393,7 @@ def Laliberte_viscosity(T, ws, CASRNs):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     if not _loaded_electrochem_data: _load_electrochem_data()
     v1s, v2s, v3s, v4s, v5s, v6s = [], [], [], [], [], []
     for CAS in CASRNs:
@@ -400,7 +410,7 @@ def Laliberte_viscosity(T, ws, CASRNs):
 ### Laliberty Density Functions
 
 def Laliberte_density_w(T):
-    r'''Calculate the density of water using the form proposed by [1]_.
+    r"""Calculate the density of water using the form proposed by [1]_.
     No parameters are needed, just a temperature. Units are Kelvin and kg/m^3.
 
     .. math::
@@ -437,7 +447,7 @@ def Laliberte_density_w(T):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     t = T - 273.15
     rho_w = ((((((-2.8054253E-10*t + 1.0556302E-7)*t - 4.6170461E-5)*t
                - 0.0079870401)*t + 16.945176)*t + 999.83952)
@@ -446,7 +456,7 @@ def Laliberte_density_w(T):
 
 
 def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
-    r'''Calculate the density of a solute using the form proposed by Laliberte [1]_.
+    r"""Calculate the density of a solute using the form proposed by Laliberte [1]_.
     Parameters are needed, and a temperature, and water fraction. Units are
     Kelvin and Pa*s.
 
@@ -492,13 +502,13 @@ def Laliberte_density_i(T, w_w, c0, c1, c2, c3, c4):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     t = T - 273.15
     tc4 = t + c4
     return ((c0*(1.0 - w_w)+c1)*exp(1E-6*tc4*tc4))/((1.0 - w_w) + c2 + c3*t)
 
 def Laliberte_density_mix(T, ws, c0s, c1s, c2s, c3s, c4s):
-    r'''Calculate the density of an aqueous electrolyte mixture using the form proposed by [1]_.
+    r"""Calculate the density of an aqueous electrolyte mixture using the form proposed by [1]_.
     All parameters must be provided to the function. Units are Kelvin and Pa*s.
 
     .. math::
@@ -540,7 +550,7 @@ def Laliberte_density_mix(T, ws, c0s, c1s, c2s, c3s, c4s):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     rho_w = Laliberte_density_w(T)
     w_w = 1.0 - sum(ws)
     rho = w_w/rho_w
@@ -550,7 +560,7 @@ def Laliberte_density_mix(T, ws, c0s, c1s, c2s, c3s, c4s):
     return 1./rho
 
 def Laliberte_density(T, ws, CASRNs):
-    r'''Calculate the density of an aqueous electrolyte mixture using the form proposed by [1]_.
+    r"""Calculate the density of an aqueous electrolyte mixture using the form proposed by [1]_.
     Parameters are loaded by the function as needed. Units are Kelvin and Pa*s.
 
     .. math::
@@ -585,7 +595,7 @@ def Laliberte_density(T, ws, CASRNs):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     if not _loaded_electrochem_data: _load_electrochem_data()
     c0s, c1s, c2s, c3s, c4s = [], [], [], [], []
     for CAS in CASRNs:
@@ -638,7 +648,7 @@ def iapws95_Cpl_mass_sat(T):
     return Cp
 
 def Laliberte_heat_capacity_w(T):
-    r'''Calculate the heat capacity of pure water in a fast but similar way as
+    r"""Calculate the heat capacity of pure water in a fast but similar way as
     in [1]_. [1]_ suggested the following interpolatative scheme, using points
     calculated from IAPWS-97 at a pressure of 0.1 MPa up to 95 °C and then at
     saturation pressure. The maximum temperature of [1]_ is 140 °C.
@@ -678,7 +688,7 @@ def Laliberte_heat_capacity_w(T):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     if T > 365.1800756083714: # 92, when the fits crossover
         return iapws95_Cpl_mass_sat(T)
     elif T < 273.15 - 15:
@@ -688,7 +698,7 @@ def Laliberte_heat_capacity_w(T):
 
 
 def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
-    r'''Calculate the heat capacity of a solute using the form proposed by [1]_
+    r"""Calculate the heat capacity of a solute using the form proposed by [1]_
     Parameters are needed, and a temperature, and water fraction.
 
     .. math::
@@ -728,7 +738,7 @@ def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     if T < 273.15-15:
         T = 273.15-15
     t = T - 273.15
@@ -737,7 +747,7 @@ def Laliberte_heat_capacity_i(T, w_w, a1, a2, a3, a4, a5, a6):
     return Cp_i*1000.
 
 def Laliberte_heat_capacity_mix(T, ws, a1s, a2s, a3s, a4s, a5s, a6s):
-    r'''Calculate the heat capacity of an aqueous electrolyte mixture using the
+    r"""Calculate the heat capacity of an aqueous electrolyte mixture using the
     form proposed by [1]_. All parameters must be provided to this function.
 
     .. math::
@@ -771,7 +781,7 @@ def Laliberte_heat_capacity_mix(T, ws, a1s, a2s, a3s, a4s, a5s, a6s):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     Cp_w = Laliberte_heat_capacity_w(T)
     w_w = 1.0 - sum(ws)
     Cp = w_w*Cp_w
@@ -783,7 +793,7 @@ def Laliberte_heat_capacity_mix(T, ws, a1s, a2s, a3s, a4s, a5s, a6s):
     return Cp
 
 def Laliberte_heat_capacity(T, ws, CASRNs):
-    r'''Calculate the heat capacity of an aqueous electrolyte mixture using the
+    r"""Calculate the heat capacity of an aqueous electrolyte mixture using the
     form proposed by [1]_.
     Parameters are loaded by the function as needed.
 
@@ -820,7 +830,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
        Aqueous Solutions, with Updated Density and Viscosity Data." Journal of
        Chemical & Engineering Data 54, no. 6 (June 11, 2009): 1725-60.
        doi:10.1021/je8008123
-    '''
+    """
     if not _loaded_electrochem_data: _load_electrochem_data()
     a1s, a2s, a3s, a4s, a5s, a6s = [], [], [], [], [], []
     for CAS in CASRNs:
@@ -837,7 +847,7 @@ def Laliberte_heat_capacity(T, ws, CASRNs):
 
 
 def dilute_ionic_conductivity(ionic_conductivities, zs, rhom):
-    r'''This function handles the calculation of the electrical conductivity of
+    r"""This function handles the calculation of the electrical conductivity of
     a dilute electrolytic aqueous solution. Requires the mole fractions of
     each ion, the molar density of the whole mixture, and ionic conductivity
     coefficients for each ion.
@@ -886,13 +896,13 @@ def dilute_ionic_conductivity(ionic_conductivities, zs, rhom):
     ----------
     .. [1] Haynes, W.M., Thomas J. Bruno, and David R. Lide. CRC Handbook of
        Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
-    '''
+    """
     return rhom*mixing_simple(zs, ionic_conductivities)
 
 
 
 def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=1000.):
-    r'''This function handles the calculation of the electrical conductivity of
+    r"""This function handles the calculation of the electrical conductivity of
     an electrolytic aqueous solution with one electrolyte in solution. It
     handles temperature dependency and concentrated solutions. Requires the
     temperature of the solution; its molality, and four sets of coefficients
@@ -956,7 +966,7 @@ def conductivity_McCleskey(T, M, lambda_coeffs, A_coeffs, B, multiplier, rho=100
     .. [1] McCleskey, R. Blaine. "Electrical Conductivity of Electrolytes Found
        In Natural Waters from (5 to 90) °C." Journal of Chemical & Engineering
        Data 56, no. 2 (February 10, 2011): 317-27. doi:10.1021/je101012n.
-    '''
+    """
     t = T - 273.15
     lambda_coeff = horner(lambda_coeffs, t)
     A = horner(A_coeffs, t)
@@ -998,7 +1008,7 @@ def conductivity_methods(CASRN):
     return methods
 
 def conductivity(CASRN, method=None):
-    r'''This function handles the retrieval of a chemical's conductivity.
+    r"""This function handles the retrieval of a chemical's conductivity.
     Lookup is based on CASRNs. Will automatically select a data source to use
     if no method is provided; returns None if the data is not available.
 
@@ -1040,21 +1050,21 @@ def conductivity(CASRN, method=None):
     ----------
     .. [1] Speight, James. Lange's Handbook of Chemistry. 16 edition.
        McGraw-Hill Professional, 2005.
-    '''
+    """
     if not _loaded_electrochem_data: _load_electrochem_data()
     if method == LANGE_COND or (method is None and CASRN in cond_data_Lange.index):
-        kappa = float(cond_data_Lange.at[CASRN, 'Conductivity'])
-        T = float(cond_data_Lange.at[CASRN, 'T'])
+        kappa = float(cond_data_Lange.at[CASRN, "Conductivity"])
+        T = float(cond_data_Lange.at[CASRN, "T"])
         if isnan(T):
             T = None
         return (kappa, T)
     elif method is None:
         return (None, None)
     else:
-        raise ValueError('Unrecognized method')
+        raise ValueError("Unrecognized method")
 
 def Magomedov_mix(T, P, ws, Ais, k_w):
-    r'''Calculate the thermal conductivity of an aqueous mixture of
+    r"""Calculate the thermal conductivity of an aqueous mixture of
     electrolytes using the correlation proposed by Magomedov [1]_.
     All coefficients and the thermal conductivity of pure water must be
     provided.
@@ -1097,7 +1107,7 @@ def Magomedov_mix(T, P, ws, Ais, k_w):
        Multicomponent Aqueous Solutions of Inorganic Substances at High
        Parameters of State." High Temperature 39, no. 2 (March 1, 2001):
        221-26. doi:10.1023/A:1017518731726.
-    '''
+    """
     P = P*1e-6 # Convert to MPa
     sum1 = 0.0
     for i in range(len(ws)):
@@ -1105,7 +1115,7 @@ def Magomedov_mix(T, P, ws, Ais, k_w):
     return k_w*(1.0 - sum1*100.0) - 2E-6*P*T*sum(ws)
 
 def thermal_conductivity_Magomedov(T, P, ws, CASRNs, k_w):
-    r'''Calculate the thermal conductivity of an aqueous mixture of
+    r"""Calculate the thermal conductivity of an aqueous mixture of
     electrolytes using the form proposed by Magomedov [1]_.
     Parameters are loaded by the function as needed. Function will fail if an
     electrolyte is not in the database.
@@ -1151,13 +1161,13 @@ def thermal_conductivity_Magomedov(T, P, ws, CASRNs, k_w):
        Multicomponent Aqueous Solutions of Inorganic Substances at High
        Parameters of State." High Temperature 39, no. 2 (March 1, 2001):
        221-26. doi:10.1023/A:1017518731726.
-    '''
-    Ais = [float(Magomedovk_thermal_cond.at[CASRN, 'Ai']) for CASRN in CASRNs]
+    """
+    Ais = [float(Magomedovk_thermal_cond.at[CASRN, "Ai"]) for CASRN in CASRNs]
     return Magomedov_mix(T, P, ws, Ais, k_w)
 
 
 def ionic_strength(mis, zis):
-    r'''Calculate the ionic strength of a solution in one of two ways,
+    r"""Calculate the ionic strength of a solution in one of two ways,
     depending on the inputs only. For Pitzer and Bromley models,
     `mis` should be molalities of each component. For eNRTL models,
     `mis` should be mole fractions of each electrolyte in the solution.
@@ -1194,7 +1204,7 @@ def ionic_strength(mis, zis):
        doi:10.1002/aic.690280410
     .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process Simulation.
        Weinheim, Germany: Wiley-VCH, 2012.
-    '''
+    """
     tot = 0.0
     for i in range(len(mis)):
         tot += mis[i]*zis[i]*zis[i]
@@ -1202,7 +1212,7 @@ def ionic_strength(mis, zis):
 
 
 def Kweq_1981(T, rho_w):
-    r'''Calculates equilibrium constant for OH- and H+ in water, according to
+    r"""Calculates equilibrium constant for OH- and H+ in water, according to
     [1]_. Second most recent formulation.
 
     .. math::
@@ -1243,7 +1253,7 @@ def Kweq_1981(T, rho_w):
        Substance, 0-1000  degree C, 1010,000 Bars New International Formulation
        and Its Background." Journal of Physical and Chemical Reference Data 10,
        no. 2 (April 1, 1981): 295-304. doi:10.1063/1.555643.
-    '''
+    """
     rho_w = rho_w*1e-3
     A = -4.098
     B = -3245.2
@@ -1259,7 +1269,7 @@ def Kweq_1981(T, rho_w):
 
 
 def Kweq_IAPWS_gas(T):
-    r'''Calculates equilibrium constant for OH- and H+ in water vapor,
+    r"""Calculates equilibrium constant for OH- and H+ in water vapor,
     according to [1]_.
     This is the most recent formulation available.
 
@@ -1293,7 +1303,7 @@ def Kweq_IAPWS_gas(T):
        of Water over Wide Ranges of Temperature and Density." Journal of Physical
        and Chemical Reference Data 35, no. 1 (March 1, 2006): 15-30.
        doi:10.1063/1.1928231
-    '''
+    """
     gamma0 = 6.141500E-1
     gamma1 = 4.825133E4
     gamma2 = -6.770793E4
@@ -1305,7 +1315,7 @@ def Kweq_IAPWS_gas(T):
 
 
 def Kweq_IAPWS(T, rho_w):
-    r'''Calculates equilibrium constant for OH- and H+ in water, according to
+    r"""Calculates equilibrium constant for OH- and H+ in water, according to
     [1]_.
     This is the most recent formulation available.
 
@@ -1355,7 +1365,7 @@ def Kweq_IAPWS(T, rho_w):
        of Water over Wide Ranges of Temperature and Density." Journal of Physical
        and Chemical Reference Data 35, no. 1 (March 1, 2006): 15-30.
        doi:10.1063/1.1928231
-    '''
+    """
     K_w_G = Kweq_IAPWS_gas(T)
     rho_w = rho_w*1e-3
     n = 6
@@ -1374,7 +1384,7 @@ def Kweq_IAPWS(T, rho_w):
     return K_w
 
 def Kweq_Arcis_Tremaine_Bandura_Lvov(T, rho_w):
-    r'''Calculates equilibrium constant for OH- and H+ in water, according to
+    r"""Calculates equilibrium constant for OH- and H+ in water, according to
     [1]_.
 
     .. math::
@@ -1423,7 +1433,7 @@ def Kweq_Arcis_Tremaine_Bandura_Lvov(T, rho_w):
        from T = 273 K to 674 K and p = 0.1 MPa to 31 MPa." Journal of Physical
        and Chemical Reference Data 49, no. 3 (July 23, 2020): 033103.
        https://doi.org/10.1063/1.5127662.
-    '''
+    """
     K_w_G = Kweq_IAPWS_gas(T)
     rho_w = rho_w*1e-3
     n = 6
@@ -1441,20 +1451,20 @@ def Kweq_Arcis_Tremaine_Bandura_Lvov(T, rho_w):
     return K_w
 
 
-charge_balance_methods = ['dominant', 'decrease dominant', 'increase dominant',
-                          'proportional insufficient ions increase',
-                          'proportional excess ions decrease',
-                          'proportional cation adjustment',
-                          'proportional anion adjustment', 'Na or Cl increase',
-                          'Na or Cl decrease', 'adjust', 'increase',
-                          'decrease', 'makeup']
+charge_balance_methods = ["dominant", "decrease dominant", "increase dominant",
+                          "proportional insufficient ions increase",
+                          "proportional excess ions decrease",
+                          "proportional cation adjustment",
+                          "proportional anion adjustment", "Na or Cl increase",
+                          "Na or Cl decrease", "adjust", "increase",
+                          "decrease", "makeup"]
 
 def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
                                anions, cations, selected_ion, increase=None):
     charge = selected_ion.charge
     positive = charge > 0
     if charge == 0:  # pragma: no cover
-        raise ValueError('Cannot adjust selected compound as it has no charge!')
+        raise ValueError("Cannot adjust selected compound as it has no charge!")
 
 
     if selected_ion not in anions and selected_ion not in cations:
@@ -1485,9 +1495,9 @@ def ion_balance_adjust_wrapper(charges, zs, n_anions, n_cations,
     anion_zs, cation_zs, z_water = ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust=adjust)
     new_zi = cation_zs[cation_index] if positive else anion_zs[anion_index]
     if increase is True and new_zi < old_zi:
-        raise ValueError(f'Adjusting specified ion {selected_ion.formula} resulted in a decrease of its quantity but an increase was specified')
+        raise ValueError(f"Adjusting specified ion {selected_ion.formula} resulted in a decrease of its quantity but an increase was specified")
     elif increase is False and new_zi > old_zi:
-        raise ValueError(f'Adjusting specified ion {selected_ion.formula} resulted in a increase of its quantity but an decrease was specified')
+        raise ValueError(f"Adjusting specified ion {selected_ion.formula} resulted in a increase of its quantity but an decrease was specified")
     return anion_zs, cation_zs, z_water
 
 
@@ -1495,7 +1505,7 @@ def ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust):
     main_tot = sum([zs[i]*charges[i] for i in range(len(charges)) if i != adjust])
     zs[adjust] = -main_tot/charges[adjust]
     if zs[adjust] < 0:
-        raise ValueError(f'A negative value of {zs[adjust]:f} ion mole fraction was required to balance the charge')
+        raise ValueError(f"A negative value of {zs[adjust]:f} ion mole fraction was required to balance the charge")
 
     z_water = 1. - sum(zs[0:-1])
     anion_zs = zs[0:n_anions]
@@ -1505,7 +1515,7 @@ def ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust):
 
 def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions,
                          n_cations, method):
-    if method == 'dominant':
+    if method == "dominant":
         # Highest concentration species in the inferior type always gets adjusted, up or down regardless
         low = min(impacts)
         high = max(impacts)
@@ -1513,63 +1523,63 @@ def ion_balance_dominant(impacts, balance_error, charges, zs, n_anions,
             adjust = impacts.index(low)
         else:
             adjust = impacts.index(high)
-    elif method == 'decrease dominant':
+    elif method == "decrease dominant":
         if balance_error < 0:
             # Decrease the dominant anion
             adjust = impacts.index(min(impacts))
         else:
              # Decrease the dominant cation
             adjust = impacts.index(max(impacts))
-    elif method == 'increase dominant':
+    elif method == "increase dominant":
         if balance_error < 0:
             adjust = impacts.index(max(impacts))
         else:
             adjust = impacts.index(min(impacts))
     else:
-        raise ValueError(f'Allowable methods are {charge_balance_methods}')
+        raise ValueError(f"Allowable methods are {charge_balance_methods}")
     return ion_balance_adjust_one(charges, zs, n_anions, n_cations, adjust)
 
 
 def ion_balance_proportional(anion_charges, cation_charges, zs, n_anions,
                              n_cations, balance_error, method):
-    '''Helper method for balance_ions for the proportional family of methods.
+    """Helper method for balance_ions for the proportional family of methods.
     See balance_ions for a description of the methods; parameters are fairly
     obvious.
-    '''
+    """
     anion_zs = zs[0:n_anions]
     cation_zs = zs[n_anions:n_cations+n_anions]
     anion_balance_error = sum([zi*ci for zi, ci in zip(anion_zs, anion_charges)])
     cation_balance_error = sum([zi*ci for zi, ci in zip(cation_zs, cation_charges)])
-    if method == 'proportional insufficient ions increase':
+    if method == "proportional insufficient ions increase":
         if balance_error < 0:
             multiplier = -anion_balance_error/cation_balance_error
             cation_zs = [i*multiplier for i in cation_zs]
         else:
             multiplier = -cation_balance_error/anion_balance_error
             anion_zs = [i*multiplier for i in anion_zs]
-    elif method == 'proportional excess ions decrease':
+    elif method == "proportional excess ions decrease":
         if balance_error < 0:
             multiplier = -cation_balance_error/anion_balance_error
             anion_zs = [i*multiplier for i in anion_zs]
         else:
             multiplier = -anion_balance_error/cation_balance_error
             cation_zs = [i*multiplier for i in cation_zs]
-    elif method == 'proportional cation adjustment':
+    elif method == "proportional cation adjustment":
         multiplier = -anion_balance_error/cation_balance_error
         cation_zs = [i*multiplier for i in cation_zs]
-    elif method == 'proportional anion adjustment':
+    elif method == "proportional anion adjustment":
         multiplier = -cation_balance_error/anion_balance_error
         anion_zs = [i*multiplier for i in anion_zs]
     else:
-        raise Exception(f'Allowable methods are {charge_balance_methods}')
+        raise ValueError(f"Allowable methods are {charge_balance_methods}")
     z_water = 1. - sum(anion_zs) - sum(cation_zs)
     return anion_zs, cation_zs, z_water
 
 
 def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
                  anion_concs=None, cation_concs=None, rho_w=997.1,
-                 method='increase dominant', selected_ion=None):
-    r'''Performs an ion balance to adjust measured experimental ion
+                 method="increase dominant", selected_ion=None):
+    r"""Performs an ion balance to adjust measured experimental ion
     compositions to electroneutrality. Can accept either the actual mole
     fractions of the ions, or their concentrations in units of [mg/L] as well
     for convinience.
@@ -1699,7 +1709,7 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
 
     References
     ----------
-    '''
+    """
     # TODO: refactor to include anion, cation charge, MW, name as arguments
     # OK to hardcode some things for Na, CL
     # Then make it work with numba
@@ -1726,8 +1736,8 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         zs = ws_to_zs(anion_ws + cation_ws + [w_water], MWs)
     else:
         if anion_zs is None or cation_zs is None:
-            raise ValueError('Either both of anion_concs and cation_concs or '
-                            'anion_zs and cation_zs must be specified.')
+            raise ValueError("Either both of anion_concs and cation_concs or "
+                            "anion_zs and cation_zs must be specified.")
         else:
             zs = anion_zs + cation_zs
             zs = zs + [1 - sum(zs)]
@@ -1741,38 +1751,38 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         cation_zs = zs[n_anions:n_cations+n_anions]
         z_water = zs[-1]
         return anions, cations, anion_zs, cation_zs, z_water
-    if 'dominant' in method:
+    if "dominant" in method:
         anion_zs, cation_zs, z_water = ion_balance_dominant(impacts,
             balance_error, charges, zs, n_anions, n_cations, method)
         return anions, cations, anion_zs, cation_zs, z_water
-    elif 'proportional' in method:
+    elif "proportional" in method:
         anion_zs, cation_zs, z_water = ion_balance_proportional(
             anion_charges, cation_charges, zs, n_anions, n_cations,
             balance_error, method)
         return anions, cations, anion_zs, cation_zs, z_water
-    elif method == 'Na or Cl increase':
+    elif method == "Na or Cl increase":
         increase = True
         if balance_error < 0:
-            selected_ion = identifiers.pubchem_db.search_name('Na+')
+            selected_ion = identifiers.pubchem_db.search_name("Na+")
         else:
-            selected_ion = identifiers.pubchem_db.search_name('Cl-')
-    elif method == 'Na or Cl decrease':
+            selected_ion = identifiers.pubchem_db.search_name("Cl-")
+    elif method == "Na or Cl decrease":
         increase = False
         if balance_error > 0:
-            selected_ion = identifiers.pubchem_db.search_name('Na+')
+            selected_ion = identifiers.pubchem_db.search_name("Na+")
         else:
-            selected_ion = identifiers.pubchem_db.search_name('Cl-')
+            selected_ion = identifiers.pubchem_db.search_name("Cl-")
     # All of the below work with the variable selected_ion
-    elif method == 'adjust':
+    elif method == "adjust":
         # A single ion will be increase or decreased to fix the balance automatically
         increase = None
-    elif method == 'increase':
+    elif method == "increase":
         increase = True
         # Raise exception if approach doesn't work
-    elif method == 'decrease':
+    elif method == "decrease":
         increase = False
         # Raise exception if approach doesn't work
-    elif method == 'makeup':
+    elif method == "makeup":
         # selected ion starts out as a tuple in this case; always adding the compound
         increase = True
         if balance_error < 0:
@@ -1780,7 +1790,7 @@ def balance_ions(anions, cations, anion_zs=None, cation_zs=None,
         else:
             selected_ion = selected_ion[0]
     else:
-        raise ValueError('method not recognized')
+        raise ValueError("method not recognized")
     if selected_ion is None:
         raise ValueError("For methods 'adjust', 'increase', 'decrease', and "
                         "'makeup', an ion must be specified with the "

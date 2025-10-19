@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -53,39 +53,42 @@ Enthalpy of Sublimation
     :exclude-members:
 
 .. autodata:: enthalpy_sublimation_methods
-'''
+"""
 
 
-__all__ = ['enthalpy_vaporization_methods', 'EnthalpyVaporization',
-           'enthalpy_sublimation_methods', 'EnthalpySublimation']
+__all__ = [
+    "EnthalpySublimation",
+    "EnthalpyVaporization",
+    "enthalpy_sublimation_methods",
+    "enthalpy_vaporization_methods",
+]
 
 
 
 from chemicals import miscdata, phase_change
-from chemicals.dippr import EQ106
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import lookup_VDI_tabular_data
-from chemicals.phase_change import MK, PPDS12, SMK, Alibakhshi, Chen, Clapeyron, Liu, Pitzer, Riedel, Velasco, Vetere, Watson
+from chemicals.phase_change import MK, SMK, Chen, Clapeyron, Liu, Pitzer, Riedel, Velasco, Vetere, Watson
 from fluids.numerics import isnan
 
 from thermo.coolprop import CoolProp_failing_PT_flashes, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacitySolid
 from thermo.utils import COOLPROP, DIPPR_PERRY_8E, HEOS_FIT, VDI_PPDS, VDI_TABULAR, TDependentProperty
 
-CRC_HVAP_TB = 'CRC_HVAP_TB'
-CRC_HVAP_298 = 'CRC_HVAP_298'
-GHARAGHEIZI_HVAP_298 = 'GHARAGHEIZI_HVAP_298'
-MORGAN_KOBAYASHI = 'MORGAN_KOBAYASHI'
-SIVARAMAN_MAGEE_KOBAYASHI = 'SIVARAMAN_MAGEE_KOBAYASHI'
-VELASCO = 'VELASCO'
-PITZER = 'PITZER'
-CLAPEYRON = 'CLAPEYRON'
-ALIBAKHSHI = 'ALIBAKHSHI'
+CRC_HVAP_TB = "CRC_HVAP_TB"
+CRC_HVAP_298 = "CRC_HVAP_298"
+GHARAGHEIZI_HVAP_298 = "GHARAGHEIZI_HVAP_298"
+MORGAN_KOBAYASHI = "MORGAN_KOBAYASHI"
+SIVARAMAN_MAGEE_KOBAYASHI = "SIVARAMAN_MAGEE_KOBAYASHI"
+VELASCO = "VELASCO"
+PITZER = "PITZER"
+CLAPEYRON = "CLAPEYRON"
+ALIBAKHSHI = "ALIBAKHSHI"
 
-RIEDEL = 'RIEDEL'
-CHEN = 'CHEN'
-LIU = 'LIU'
-VETERE = 'VETERE'
+RIEDEL = "RIEDEL"
+CHEN = "CHEN"
+LIU = "LIU"
+VETERE = "VETERE"
 
 enthalpy_vaporization_methods = [HEOS_FIT, DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, VDI_TABULAR,
                                  MORGAN_KOBAYASHI,
@@ -97,7 +100,7 @@ iterating over them."""
 
 
 class EnthalpyVaporization(TDependentProperty):
-    '''Class for dealing with heat of vaporization as a function of temperature.
+    """Class for dealing with heat of vaporization as a function of temperature.
     Consists of three constant value data sources, one source of tabular
     information, three coefficient-based methods, nine corresponding-states
     estimators, and the external library CoolProp.
@@ -239,10 +242,10 @@ class EnthalpyVaporization(TDependentProperty):
        Dependence and Correlation with Surface Tension: A Theoretical
        Approach." Fluid Phase Equilibria 432 (January 25, 2017): 62-69.
        doi:10.1016/j.fluid.2016.10.013.
-    '''
+    """
 
-    name = 'Enthalpy of vaporization'
-    units = 'J/mol'
+    name = "Enthalpy of vaporization"
+    units = "J/mol"
     interpolation_T = None
     """No interpolation transformation by default."""
     interpolation_property = None
@@ -279,12 +282,12 @@ class EnthalpyVaporization(TDependentProperty):
     Watson_exponent = 0.38
     """Exponent used in the Watson equation"""
 
-    custom_args = ('Tb', 'Tc', 'Pc', 'omega', 'similarity_variable', 'Psat',
-                   'Zl', 'Zg',)
+    custom_args = ("Tb", "Tc", "Pc", "omega", "similarity_variable", "Psat",
+                   "Zl", "Zg",)
 
-    def __init__(self, CASRN='', Tb=None, Tc=None, Pc=None, omega=None,
+    def __init__(self, CASRN="", Tb=None, Tc=None, Pc=None, omega=None,
                  similarity_variable=None, Psat=None, Zl=None, Zg=None,
-                 extrapolation='Watson', **kwargs):
+                 extrapolation="Watson", **kwargs):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -298,7 +301,7 @@ class EnthalpyVaporization(TDependentProperty):
 
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         and :obj:`all_methods` as a set of methods for which the data exists for.
@@ -307,7 +310,7 @@ class EnthalpyVaporization(TDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = []
         self.T_limits = T_limits = {}
         self.all_methods = set()
@@ -318,39 +321,39 @@ class EnthalpyVaporization(TDependentProperty):
                 self.CP_f = coolprop_fluids[CASRN]
                 T_limits[COOLPROP] = (self.CP_f.Tt, self.CP_f.Tc*.9999)
             if CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(CASRN, 'Hvap')
+                Ts, props = lookup_VDI_tabular_data(CASRN, "Hvap")
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if CASRN in phase_change.phase_change_data_Alibakhshi_Cs.index and self.Tc is not None:
-                self.add_correlation(name=ALIBAKHSHI, model='Alibakhshi', Tmin=self.Tc * 0.3, Tmax=max(self.Tc - 100.0, 0),
-                                    Tc=self.Tc, C=float(phase_change.phase_change_data_Alibakhshi_Cs.at[CASRN, 'C']), select=False)
+                self.add_correlation(name=ALIBAKHSHI, model="Alibakhshi", Tmin=self.Tc * 0.3, Tmax=max(self.Tc - 100.0, 0),
+                                    Tc=self.Tc, C=float(phase_change.phase_change_data_Alibakhshi_Cs.at[CASRN, "C"]), select=False)
             if CASRN in phase_change.phase_change_data_Perrys2_150.index:
                 Tc, C1, C2, C3, C4, Tmin, Tmax = phase_change.phase_change_values_Perrys2_150[
                     phase_change.phase_change_data_Perrys2_150.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=DIPPR_PERRY_8E, model='DIPPR106', Tmin=Tmin, Tmax=Tmax,
+                self.add_correlation(name=DIPPR_PERRY_8E, model="DIPPR106", Tmin=Tmin, Tmax=Tmax,
                                     Tc=Tc, A=C1, B=C2, C=C3, D=C4, select=False)
             if CASRN in phase_change.phase_change_data_VDI_PPDS_4.index:
                 Tc, A, B, C, D, E = phase_change.phase_change_values_VDI_PPDS_4[
                     phase_change.phase_change_data_VDI_PPDS_4.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=VDI_PPDS, model='PPDS12', Tmin=0.1 * Tc, Tmax=Tc,
+                self.add_correlation(name=VDI_PPDS, model="PPDS12", Tmin=0.1 * Tc, Tmax=Tc,
                                     Tc=Tc, A=A, B=B, C=C, D=D, E=E, select=False)
-            if CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[CASRN, 'HvapTb']):
+            if CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[CASRN, "HvapTb"]):
                 methods.append(CRC_HVAP_TB)
-                self.CRC_HVAP_TB_Tb = float(phase_change.Hvap_data_CRC.at[CASRN, 'Tb'])
-                self.CRC_HVAP_TB_Hvap = float(phase_change.Hvap_data_CRC.at[CASRN, 'HvapTb'])
+                self.CRC_HVAP_TB_Tb = float(phase_change.Hvap_data_CRC.at[CASRN, "Tb"])
+                self.CRC_HVAP_TB_Hvap = float(phase_change.Hvap_data_CRC.at[CASRN, "HvapTb"])
                 if self.Tc is not None:
                     T_limits[CRC_HVAP_TB] = (self.Tc*.001, self.Tc)
                 else:
                     T_limits[CRC_HVAP_TB] = (self.CRC_HVAP_TB_Tb, self.CRC_HVAP_TB_Tb)
-            if CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[CASRN, 'Hvap298']):
+            if CASRN in phase_change.Hvap_data_CRC.index and not isnan(phase_change.Hvap_data_CRC.at[CASRN, "Hvap298"]):
                 methods.append(CRC_HVAP_298)
-                self.CRC_HVAP_298 = float(phase_change.Hvap_data_CRC.at[CASRN, 'Hvap298'])
+                self.CRC_HVAP_298 = float(phase_change.Hvap_data_CRC.at[CASRN, "Hvap298"])
                 if self.Tc is not None:
                     T_limits[CRC_HVAP_298] = (self.Tc*.001, self.Tc)
                 else:
                     T_limits[CRC_HVAP_298] =  (298.15, 298.15)
             if CASRN in phase_change.Hvap_data_Gharagheizi.index:
                 methods.append(GHARAGHEIZI_HVAP_298)
-                self.GHARAGHEIZI_HVAP_298_Hvap = float(phase_change.Hvap_data_Gharagheizi.at[CASRN, 'Hvap298'])
+                self.GHARAGHEIZI_HVAP_298_Hvap = float(phase_change.Hvap_data_Gharagheizi.at[CASRN, "Hvap298"])
                 if self.Tc is not None:
                     T_limits[GHARAGHEIZI_HVAP_298] = (self.Tc*.001, self.Tc)
                 else:
@@ -370,10 +373,10 @@ class EnthalpyVaporization(TDependentProperty):
 
     @staticmethod
     def _method_indexes():
-        '''Returns a dictionary of method: index for all methods
+        """Returns a dictionary of method: index for all methods
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
-        '''
+        """
         return {COOLPROP : [CAS for CAS in coolprop_dict if (CAS not in CoolProp_failing_PT_flashes)],
                 VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
                 DIPPR_PERRY_8E: phase_change.phase_change_data_Perrys2_150.index,
@@ -382,7 +385,7 @@ class EnthalpyVaporization(TDependentProperty):
 
 
     def calculate(self, T, method):
-        r'''Method to calculate heat of vaporization of a liquid at
+        r"""Method to calculate heat of vaporization of a liquid at
         temperature `T` with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -399,9 +402,9 @@ class EnthalpyVaporization(TDependentProperty):
         -------
         Hvap : float
             Heat of vaporization of the liquid at T, [J/mol]
-        '''
+        """
         if method == COOLPROP:
-            Hvap = PropsSI('HMOLAR', 'T', T, 'Q', 1, self.CASRN) - PropsSI('HMOLAR', 'T', T, 'Q', 0, self.CASRN)
+            Hvap = PropsSI("HMOLAR", "T", T, "Q", 1, self.CASRN) - PropsSI("HMOLAR", "T", T, "Q", 0, self.CASRN)
         # CSP methods
         elif method == MORGAN_KOBAYASHI:
             Hvap = MK(T, self.Tc, self.omega)
@@ -451,7 +454,7 @@ class EnthalpyVaporization(TDependentProperty):
         return Hvap
 
     def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. For CSP methods, the
+        r"""Method to check the validity of a method. For CSP methods, the
         models are considered valid from 0 K to the critical point. For
         tabular data, extrapolation outside of the range is used if
         :obj:`tabular_extrapolation_permitted` is set; if it is, the
@@ -479,7 +482,7 @@ class EnthalpyVaporization(TDependentProperty):
         -------
         validity : bool
             Whether or not a method is valid
-        '''
+        """
         validity = True
         if method == COOLPROP:
             if T <= self.CP_f.Tmin or T > self.CP_f.Tc:
@@ -510,10 +513,10 @@ class EnthalpyVaporization(TDependentProperty):
 ### Heat of Sublimation
 
 
-GHARAGHEIZI_HSUB_298 = 'GHARAGHEIZI_HSUB_298'
-GHARAGHEIZI_HSUB = 'GHARAGHEIZI_HSUB'
-CRC_HFUS_HVAP_TM = 'CRC_HFUS_HVAP_TM' # Gets Tm
-WEBBOOK_HSUB = 'WEBBOOK_HSUB'
+GHARAGHEIZI_HSUB_298 = "GHARAGHEIZI_HSUB_298"
+GHARAGHEIZI_HSUB = "GHARAGHEIZI_HSUB"
+CRC_HFUS_HVAP_TM = "CRC_HFUS_HVAP_TM" # Gets Tm
+WEBBOOK_HSUB = "WEBBOOK_HSUB"
 
 enthalpy_sublimation_methods = [WEBBOOK_HSUB, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM,
                                 GHARAGHEIZI_HSUB_298]
@@ -522,7 +525,7 @@ iterating over them."""
 
 
 class EnthalpySublimation(TDependentProperty):
-    '''Class for dealing with heat of sublimation as a function of temperature.
+    """Class for dealing with heat of sublimation as a function of temperature.
     Consists of one temperature-dependent method based on the heat of
     sublimation at 298.15 K.
 
@@ -591,10 +594,10 @@ class EnthalpySublimation(TDependentProperty):
        Chemistry and Physics, 95E. Boca Raton, FL: CRC press, 2014.
     .. [3] Shen, V.K., Siderius, D.W., Krekelberg, W.P., and Hatch, H.W., Eds.,
        NIST WebBook, NIST, http://doi.org/10.18434/T4M88Q
-    '''
+    """
 
-    name = 'Enthalpy of sublimation'
-    units = 'J/mol'
+    name = "Enthalpy of sublimation"
+    units = "J/mol"
     interpolation_T = None
     """No interpolation transformation by default."""
     interpolation_property = None
@@ -616,13 +619,13 @@ class EnthalpySublimation(TDependentProperty):
     extra_correlations_internal.add(WEBBOOK_HSUB)
     extra_correlations_internal.add(GHARAGHEIZI_HSUB_298)
 
-    obj_references = pure_references = ('Cpg', 'Cps', 'Hvap')
+    obj_references = pure_references = ("Cpg", "Cps", "Hvap")
     obj_references_types = pure_reference_types = (HeatCapacityGas, HeatCapacitySolid, EnthalpyVaporization)
 
 
-    custom_args = ('Tm', 'Tt', 'Cpg', 'Cps', 'Hvap')
-    def __init__(self, CASRN='', Tm=None, Tt=None, Cpg=None, Cps=None,
-                 Hvap=None, extrapolation='linear', **kwargs):
+    custom_args = ("Tm", "Tt", "Cpg", "Cps", "Hvap")
+    def __init__(self, CASRN="", Tm=None, Tt=None, Cpg=None, Cps=None,
+                 Hvap=None, extrapolation="linear", **kwargs):
         self.CASRN = CASRN
         self.Tm = Tm
         self.Tt = Tt
@@ -633,7 +636,7 @@ class EnthalpySublimation(TDependentProperty):
 
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         and :obj:`all_methods` as a set of methods for which the data exists for.
@@ -642,28 +645,28 @@ class EnthalpySublimation(TDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = []
         self.all_methods = set()
         self.T_limits = T_limits = {}
         CASRN = self.CASRN
         CASRN_int = None if not CASRN else CAS_to_int(CASRN)
         if load_data and CASRN:
-            if CASRN_int in miscdata.webbook_data.index and not isnan(float(miscdata.webbook_data.at[CASRN_int, 'Hsub'])):
+            if CASRN_int in miscdata.webbook_data.index and not isnan(float(miscdata.webbook_data.at[CASRN_int, "Hsub"])):
                 T_lim = self.Tm if self.Tm is not None else 298.15
                 self.add_correlation(
                     name=WEBBOOK_HSUB,
-                    model='constant',
+                    model="constant",
                     Tmin=T_lim,
                     Tmax=T_lim,
-                    value=float(miscdata.webbook_data.at[CASRN_int, 'Hsub']),
+                    value=float(miscdata.webbook_data.at[CASRN_int, "Hsub"]),
                     select=False
                 )
             if CASRN in phase_change.Hsub_data_Gharagheizi.index:
-                self.GHARAGHEIZI_Hsub = float(phase_change.Hsub_data_Gharagheizi.at[CASRN, 'Hsub'])
+                self.GHARAGHEIZI_Hsub = float(phase_change.Hsub_data_Gharagheizi.at[CASRN, "Hsub"])
                 self.add_correlation(
                     name=GHARAGHEIZI_HSUB_298,
-                    model='constant',
+                    model="constant",
                     Tmin=298.15,
                     Tmax=298.15,
                     value=self.GHARAGHEIZI_Hsub,
@@ -674,7 +677,7 @@ class EnthalpySublimation(TDependentProperty):
                 T_limits[GHARAGHEIZI_HSUB_298] = (298.15, 298.15)
             if CASRN in phase_change.Hfus_data_CRC.index:
                 methods.append(CRC_HFUS_HVAP_TM)
-                self.CRC_Hfus = float(phase_change.Hfus_data_CRC.at[CASRN, 'Hfus'])
+                self.CRC_Hfus = float(phase_change.Hfus_data_CRC.at[CASRN, "Hfus"])
                 if self.Tm is not None:
                     T_limits[CRC_HFUS_HVAP_TM] = (self.Tm, self.Tm)
                 else:
@@ -683,14 +686,14 @@ class EnthalpySublimation(TDependentProperty):
 
     @staticmethod
     def _method_indexes():
-        '''Returns a dictionary of method: index for all methods
+        """Returns a dictionary of method: index for all methods
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
-        '''
+        """
         return {}
 
     def calculate(self, T, method):
-        r'''Method to calculate heat of sublimation of a solid at
+        r"""Method to calculate heat of sublimation of a solid at
         temperature `T` with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -707,7 +710,7 @@ class EnthalpySublimation(TDependentProperty):
         -------
         Hsub : float
             Heat of sublimation of the solid at T, [J/mol]
-        '''
+        """
         if method == GHARAGHEIZI_HSUB:
             T_base = 298.15
             Hsub = self.GHARAGHEIZI_Hsub
@@ -731,7 +734,7 @@ class EnthalpySublimation(TDependentProperty):
         return Hsub
 
     def test_method_validity(self, T, method):
-        r'''Method to check the validity of a method. For
+        r"""Method to check the validity of a method. For
         tabular data, extrapolation outside of the range is used if
         :obj:`tabular_extrapolation_permitted` is set; if it is, the
         extrapolation is considered valid for all temperatures.
@@ -750,7 +753,7 @@ class EnthalpySublimation(TDependentProperty):
         -------
         validity : bool
             Whether or not a method is valid
-        '''
+        """
         validity = True
         if method in (GHARAGHEIZI_HSUB_298, GHARAGHEIZI_HSUB, CRC_HFUS_HVAP_TM, WEBBOOK_HSUB):
             validity = True

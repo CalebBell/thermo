@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -64,7 +64,7 @@ It is recommended to use the Flash classes, which are designed to have generic
 interfaces. The implemented specific flash algorithms may be changed in the
 future, but reading their source code may be helpful for instructive purposes.
 
-'''
+"""
 from thermo.flash.flash_base import Flash
 from thermo.flash.flash_pure_vls import FlashPureVLS
 
@@ -74,7 +74,7 @@ from thermo.flash.flash_vln import FlashVLN
 
 # __all__ = flash_utils.__all__ + flash_base.__all__ + flash_vl.__all__ + flash_vln.__all__ + flash_pure_vls.__all__
 
-__all__ = ('Flash', 'FlashPureVLS', 'FlashVL', 'FlashVLN')
+__all__ = ("Flash", "FlashPureVLS", "FlashVL", "FlashVLN")
 
 from thermo.serialize import object_lookups
 
@@ -83,7 +83,7 @@ object_lookups[FlashVL.__full_path__] = FlashVL
 object_lookups[FlashVLN.__full_path__] = FlashVLN
 
 
-from thermo.property_package import StabilityTester
+from thermo.property_package import StabilityTester  # noqa: E402
 
 object_lookups[StabilityTester.__full_path__] = StabilityTester
 
