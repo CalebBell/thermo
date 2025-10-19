@@ -141,6 +141,16 @@ Data for UNIFAC 2.0
     Chemical Engineering Journal 504 (January 15, 2025): 158667. https://doi.org/10.1016/j.cej.2024.158667.
 
     :type: dict[int: dict[int: float]]
+
+.. py:data:: DOUF2IP
+
+    Interaction parameters for the modified UNIFAC 2.0 model. All groups and subgroups are the same as the modified UNIFAC model.
+    These are not used by default in this module. The citation is
+
+    Hayer, Nicolas, Hans Hasse, and Fabian Jirasek. "Modified UNIFAC 2.0-A Group-Contribution Method Completed with Machine Learning."
+    Industrial & Engineering Chemistry Research 64, no. 20 (2025): 10304-13. https://doi.org/10.1021/acs.iecr.5c00077.
+
+    :type: dict[int: dict[int: float]]
 """
 
 
@@ -3377,7 +3387,7 @@ the dict-in-dict structure is found emperically to take 111608 bytes vs.
 
 _unifac_ip_loaded = False
 def load_unifac_ip():
-    global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP, UF2IP
+    global _unifac_ip_loaded, UFIP, LLEUFIP, LUFIP, DOUFIP2006, DOUFIP2016, NISTUFIP, NISTKTUFIP, PSRKIP, VTPRIP, UF2IP, DOUF2IP
     folder = os_path_join(source_path, "Phase Change")
 
     UFIP = {i: {} for i in list(range(1, 52)) + [55, 84, 85]}
@@ -3420,6 +3430,11 @@ def load_unifac_ip():
             maingroup1, maingroup2, a, b, c = line.strip("\n").split("\t")
             DOUFIP2016[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
+    DOUF2IP = {i: {} for i in DOUFMG.keys()}
+    with open(os.path.join(folder, "UNIFAC 2.0 Dortmund interaction parameters.tsv")) as f:
+        for line in f:
+            maingroup1, maingroup2, a, b, c = line.strip("\n").split("\t")
+            DOUF2IP[int(maingroup1)][int(maingroup2)] = (float(a), float(b), float(c))
 
     #NISTUFIP = {i: {} for i in list(NISTUFMG.keys())}
     NISTUFIP = {i: {} for i in list(range(87)) + [92, 94, 95, 96] }
@@ -3457,7 +3472,7 @@ def load_unifac_ip():
 
 def __getattr__(name):
     if name in ("UFIP", "LLEUFIP", "LUFIP", "DOUFIP2006", "DOUFIP2016",
-                "NISTUFIP", "NISTKTUFIP", "PSRKIP", "VTPRIP", "UF2IP"):
+                "NISTUFIP", "NISTKTUFIP", "PSRKIP", "VTPRIP", "UF2IP", "DOUF2IP"):
         load_unifac_ip()
         return globals()[name]
     raise AttributeError(f"module {__name__} has no attribute {name}")
@@ -3781,7 +3796,8 @@ def UNIFAC_gammas(T, xs, chemgroups, cached=None, subgroup_data=None,
         UNIFAC interaction parameter data; available dictionaries in this
         module are UFIP (original), DOUFIP2006 (Dortmund parameters as
         published by 2006), DOUFIP2016 (Dortmund parameters as published by
-        2016), and NISTUFIP ([4]_).
+        2016), NISTUFIP ([4]_), UF2IP (UNIFAC 2.0 with matrix completion),
+        and DOUF2IP (modified UNIFAC 2.0 with matrix completion).
     modified : bool
         True if using the modified form and temperature dependence, otherwise
         False.
@@ -5355,7 +5371,8 @@ class UNIFAC(GibbsExcess):
             UNIFAC interaction parameter data; available dictionaries in this
             module include UFIP (original), DOUFIP2006 (Dortmund parameters
             published in 2006), DOUFIP2016 (Dortmund parameters published in
-            2016), NISTUFIP, and UF2IP (matrix completion - all interactions are present).
+            2016), NISTUFIP, UF2IP (matrix completion - all interactions are present),
+            and DOUF2IP (modified UNIFAC 2.0 with matrix completion - all interactions are present).
             The default depends on the given `version`, [-]
         version : int, optional
             Which version of the model to use. Defaults to 0, [-]

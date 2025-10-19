@@ -2,5 +2,5 @@ numpy
 scipy>=1.6.0
 pandas
 coolprop
-fluids>=1.1.0
-chemicals>=1.3.3
+fluids>=1.2.0
+chemicals>=1.4.0

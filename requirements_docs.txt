@@ -27,3 +27,4 @@ mpmath
 pandas
 fluids>=1.1.0
 chemicals>=1.3.3
+sympy
