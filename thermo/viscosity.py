@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -82,27 +82,43 @@ Mixture Gas Viscosity
 .. autodata:: viscosity_gas_mixture_methods
 
 
-'''
+"""
 
 
-__all__ = ['viscosity_liquid_methods', 'viscosity_liquid_methods_P',
-           'ViscosityLiquid', 'ViscosityGas', 'viscosity_gas_methods',
-           'viscosity_gas_methods_P', 'ViscosityLiquidMixture',
-           'ViscosityGasMixture', 'viscosity_liquid_mixture_methods',
-           'viscosity_gas_mixture_methods',
-           'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS',
-           'BROKAW', 'HERNING_ZIPPERER', 'WILKE',
-           'DUTT_PRASAD', 'VISWANATH_NATARAJAN_3', 'VISWANATH_NATARAJAN_2',
-           'VISWANATH_NATARAJAN_2E', 'LETSOU_STIEL', 'PRZEDZIECKI_SRIDHAR',
-           'LUCAS', 'GHARAGHEIZI', 'YOON_THODOS', 'STIEL_THODOS', 'LUCAS_GAS']
+__all__ = [
+    "BROKAW",
+    "DUTT_PRASAD",
+    "GHARAGHEIZI",
+    "HERNING_ZIPPERER",
+    "LETSOU_STIEL",
+    "LUCAS",
+    "LUCAS_GAS",
+    "MIXING_LOG_MASS",
+    "MIXING_LOG_MOLAR",
+    "PRZEDZIECKI_SRIDHAR",
+    "STIEL_THODOS",
+    "VISWANATH_NATARAJAN_2",
+    "VISWANATH_NATARAJAN_2E",
+    "VISWANATH_NATARAJAN_3",
+    "WILKE",
+    "YOON_THODOS",
+    "ViscosityGas",
+    "ViscosityGasMixture",
+    "ViscosityLiquid",
+    "ViscosityLiquidMixture",
+    "viscosity_gas_methods",
+    "viscosity_gas_methods_P",
+    "viscosity_gas_mixture_methods",
+    "viscosity_liquid_methods",
+    "viscosity_liquid_methods_P",
+    "viscosity_liquid_mixture_methods",
+]
 
 from chemicals import miscdata, viscosity
-from chemicals.dippr import EQ101, EQ102
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import JOBACK, lookup_VDI_tabular_data
 from chemicals.utils import none_and_length_check
 from chemicals.viscosity import (
-    PPDS9,
     Brokaw,
     Herning_Zipperer,
     Letsou_Stiel,
@@ -110,16 +126,13 @@ from chemicals.viscosity import (
     Lucas_gas,
     Przedziecki_Sridhar,
     Stiel_Thodos,
-    Viswanath_Natarajan_2,
-    Viswanath_Natarajan_2_exponential,
-    Viswanath_Natarajan_3,
     Wilke_prefactored,
     Wilke_prefactors,
     Yoon_Thodos,
     dPPDS9_dT,
     viscosity_gas_Gharagheizi,
 )
-from fluids.numerics import brenth, exp, horner, isinf, isnan, log, sqrt
+from fluids.numerics import brenth, exp, isinf, isnan, log, sqrt
 
 from thermo import electrochem
 from thermo.coolprop import CoolProp_failing_PT_flashes, CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
@@ -141,10 +154,11 @@ from thermo.utils import (
 from thermo.vapor_pressure import VaporPressure
 from thermo.volume import VolumeGas, VolumeLiquid
 
+
 def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
     """Determines valid temperature limits for the PPDS9 viscosity equation by analyzing
     its behavior at various points and its derivatives.
-    
+
     Parameters
     ----------
     coeffs : list[float]
@@ -153,7 +167,7 @@ def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
         Melting temperature [K]
     Tc : float, optional
         Critical temperature [K]
-        
+
     Returns
     -------
     tuple[float, float]
@@ -161,42 +175,42 @@ def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
     """
     low = low_orig = min(coeffs[2], coeffs[3])
     high = high_orig = max(coeffs[2], coeffs[3])
-    
+
     # Check derivative behavior near boundaries
     if low > 0.0:
         dmu_low_under, _ = dPPDS9_dT(low*0.9995, *coeffs)
         dmu_low_above, _ = dPPDS9_dT(low*1.0005, *coeffs)
-    
+
     if high > 0.0:
         dmu_high_under, _ = dPPDS9_dT(high*0.9995, *coeffs)
         dmu_high_above, _ = dPPDS9_dT(high*1.0005, *coeffs)
-    
+
     # Check at phase transition points if available
     if Tm is not None:
         dmu_Tm, _ = dPPDS9_dT(Tm, *coeffs)
     if Tc is not None:
         dmu_Tc_under, _ = dPPDS9_dT(Tc, *coeffs)
-    
+
     # Adjust limits based on derivative behavior
-    if high > 0.0 and low < 0.0 or isinf(dmu_low_under) or isinf(dmu_low_above):
+    if (high > 0.0 and low < 0.0) or isinf(dmu_low_under) or isinf(dmu_low_above):
         low = 0.1*high
         high = high-1.0
     else:
         low, high = low + 5.0, high + 5.0
-    
+
     # Override with phase transition points if available
     if Tm is not None:
         low = Tm
     if Tc is not None and dmu_Tc_under < 0.0:
         high = Tc
-        
+
     # Special case handling
     if Tm is not None and Tc is not None and low_orig < 0 and Tm < high_orig < Tc and dmu_Tc_under < 0.0:
         low = high_orig + 1.0
-    
+
     if high == high_orig:
         high -= 1.0
-    
+
     # Check for derivative sign change in range
     dmu_low, _ = dPPDS9_dT(low, *coeffs)
     dmu_high, _ = dPPDS9_dT(high, *coeffs)
@@ -208,16 +222,16 @@ def determine_PPDS9_limits(coeffs, Tm=None, Tc=None):
             high = T_switch
         else:
             low = T_switch
-            
+
     return low, high
 
-DUTT_PRASAD = 'DUTT_PRASAD'
-VISWANATH_NATARAJAN_3 = 'VISWANATH_NATARAJAN_3'
-VISWANATH_NATARAJAN_2 = 'VISWANATH_NATARAJAN_2'
-VISWANATH_NATARAJAN_2E = 'VISWANATH_NATARAJAN_2E'
-LETSOU_STIEL = 'LETSOU_STIEL'
-PRZEDZIECKI_SRIDHAR = 'PRZEDZIECKI_SRIDHAR'
-LUCAS = 'LUCAS'
+DUTT_PRASAD = "DUTT_PRASAD"
+VISWANATH_NATARAJAN_3 = "VISWANATH_NATARAJAN_3"
+VISWANATH_NATARAJAN_2 = "VISWANATH_NATARAJAN_2"
+VISWANATH_NATARAJAN_2E = "VISWANATH_NATARAJAN_2E"
+LETSOU_STIEL = "LETSOU_STIEL"
+PRZEDZIECKI_SRIDHAR = "PRZEDZIECKI_SRIDHAR"
+LUCAS = "LUCAS"
 
 viscosity_liquid_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                          VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
@@ -230,7 +244,7 @@ use in iterating over them."""
 
 
 class ViscosityLiquid(TPDependentProperty):
-    r'''Class for dealing with liquid viscosity as a function of
+    r"""Class for dealing with liquid viscosity as a function of
     temperature and pressure.
 
     For low-pressure (at 1 atm while under the vapor pressure; along the
@@ -375,35 +389,35 @@ class ViscosityLiquid(TPDependentProperty):
     .. [6] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from
        Fundamental Physical Constants." Science Advances, April 2020.
        https://doi.org/10.1126/sciadv.aba3747.
-    '''
+    """
 
-    name = 'liquid viscosity'
-    units = 'Pa*s'
+    name = "liquid viscosity"
+    units = "Pa*s"
 
     @staticmethod
     def interpolation_P(P):
-        '''log(P) interpolation transformation by default.
-        '''
+        """log(P) interpolation transformation by default.
+        """
         return log(P)
 
     @staticmethod
     def interpolation_T(T):
-        '''Function to make the data-based interpolation as linear as possible.
+        """Function to make the data-based interpolation as linear as possible.
         This transforms the input `T` into the `1/T` domain.
-        '''
+        """
         return 1./T
 
     @staticmethod
     def interpolation_property(P):
-        '''log(P) interpolation transformation by default.
-        '''
+        """log(P) interpolation transformation by default.
+        """
         return log(P)
 
     @staticmethod
     def interpolation_property_inv(P):
-        '''exp(P) interpolation transformation by default; reverses
+        """exp(P) interpolation transformation by default; reverses
         :obj:`interpolation_property_inv`.
-        '''
+        """
         return exp(P)
 
     tabular_extrapolation_permitted = True
@@ -414,9 +428,6 @@ class ViscosityLiquid(TPDependentProperty):
     """Maximum valid value of liquid viscosity. Generous limit, as
     the value is that of bitumen in a Pitch drop experiment."""
 
-    extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
-    extra_correlations_internal.add(JOBACK)
-
     ranked_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, DUTT_PRASAD, VISWANATH_NATARAJAN_3,
                       VISWANATH_NATARAJAN_2, VISWANATH_NATARAJAN_2E,
                       VDI_TABULAR, LETSOU_STIEL, JOBACK, PRZEDZIECKI_SRIDHAR]
@@ -424,10 +435,10 @@ class ViscosityLiquid(TPDependentProperty):
     ranked_methods_P = [COOLPROP, LUCAS, NEGLECT_P]
     """Default rankings of the high-pressure methods."""
 
-    obj_references = pure_references = ('Psat', 'Vml')
+    obj_references = pure_references = ("Psat", "Vml")
     obj_references_types = pure_reference_types = (VaporPressure, VolumeLiquid)
 
-    custom_args = ('MW', 'Tm', 'Tc', 'Pc', 'Vc', 'omega', 'Psat', 'Vml')
+    custom_args = ("MW", "Tm", "Tc", "Pc", "Vc", "omega", "Psat", "Vml")
 
     extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
     extra_correlations_internal.add(DIPPR_PERRY_8E)
@@ -439,8 +450,8 @@ class ViscosityLiquid(TPDependentProperty):
     extra_correlations_internal.add(JOBACK)
 
     DEFAULT_EXTRAPOLATION_MIN = 1e-5
-    def __init__(self, CASRN='', MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
-                 omega=None, Psat=None, Vml=None, extrapolation='Arrhenius',
+    def __init__(self, CASRN="", MW=None, Tm=None, Tc=None, Pc=None, Vc=None,
+                 omega=None, Psat=None, Vml=None, extrapolation="Arrhenius",
                  extrapolation_min=DEFAULT_EXTRAPOLATION_MIN,
                  **kwargs):
         self.CASRN = CASRN
@@ -452,12 +463,12 @@ class ViscosityLiquid(TPDependentProperty):
         self.omega = omega
         self.Psat = Psat
         self.Vml = Vml
-        if 'extrapolation_min' not in kwargs:
-            kwargs['extrapolation_min'] = extrapolation_min
+        if "extrapolation_min" not in kwargs:
+            kwargs["extrapolation_min"] = extrapolation_min
         super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         :obj:`all_methods` and obj:`all_methods_P` as a set of methods for
@@ -467,7 +478,7 @@ class ViscosityLiquid(TPDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods, methods_P = [], [NEGLECT_P]
         self.T_limits = T_limits = {}
         self.all_methods = set()
@@ -476,14 +487,14 @@ class ViscosityLiquid(TPDependentProperty):
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
             jb_df = miscdata.joback_predictions
             if self.MW is not None and CASRN_int in jb_df.index:
-                mul0 = float(jb_df.at[CASRN_int, 'mul0'])
+                mul0 = float(jb_df.at[CASRN_int, "mul0"])
                 if not isnan(mul0):
                     self.add_correlation(
                         name=JOBACK,
-                        model='DIPPR101',
-                        Tmin=float(jb_df.at[CASRN_int, 'Tm']),
-                        Tmax=float(jb_df.at[CASRN_int, 'Tc'])*2.5,
-                        A=float(jb_df.at[CASRN_int, 'mul1']) + log(self.MW),
+                        model="DIPPR101",
+                        Tmin=float(jb_df.at[CASRN_int, "Tm"]),
+                        Tmax=float(jb_df.at[CASRN_int, "Tc"])*2.5,
+                        A=float(jb_df.at[CASRN_int, "mul1"]) + log(self.MW),
                         B=mul0,
                         C=0,
                         D=0,
@@ -498,14 +509,14 @@ class ViscosityLiquid(TPDependentProperty):
                     methods_P.append(COOLPROP)
                     T_limits[COOLPROP] = (max(CP_f.Tmin, CP_f.Tt), self.CP_f.Tc)
             if CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (l)')
+                Ts, props = lookup_VDI_tabular_data(CASRN, "Mu (l)")
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if CASRN in viscosity.mu_data_Dutt_Prasad.index:
                 A, B, C, Tmin, Tmax = viscosity.mu_values_Dutt_Prasad[
                     viscosity.mu_data_Dutt_Prasad.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=DUTT_PRASAD,
-                    model='Viswanath_Natarajan_3',
+                    model="Viswanath_Natarajan_3",
                     Tmin=Tmin,
                     Tmax=Tmax,
                     A=A - 3.0,
@@ -518,7 +529,7 @@ class ViscosityLiquid(TPDependentProperty):
                     viscosity.mu_data_VN3.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=VISWANATH_NATARAJAN_3,
-                    model='Viswanath_Natarajan_3',
+                    model="Viswanath_Natarajan_3",
                     Tmin=Tmin,
                     Tmax=Tmax,
                     A=A - 3.0,
@@ -531,7 +542,7 @@ class ViscosityLiquid(TPDependentProperty):
                     viscosity.mu_data_VN2.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=VISWANATH_NATARAJAN_2,
-                    model='Viswanath_Natarajan_2',
+                    model="Viswanath_Natarajan_2",
                     Tmin=Tmin,
                     Tmax=Tmax,
                     A=A - 4.605170185988092,  # log(100)
@@ -543,7 +554,7 @@ class ViscosityLiquid(TPDependentProperty):
                     viscosity.mu_data_VN2E.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=VISWANATH_NATARAJAN_2E,
-                    model='Viswanath_Natarajan_2_exponential',
+                    model="Viswanath_Natarajan_2_exponential",
                     Tmin=Tmin,
                     Tmax=Tmax,
                     C=C,
@@ -555,7 +566,7 @@ class ViscosityLiquid(TPDependentProperty):
                     viscosity.mu_data_Perrys_8E_2_313.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=DIPPR_PERRY_8E,
-                    model='DIPPR101',
+                    model="DIPPR101",
                     Tmin=Tmin,
                     Tmax=Tmax,
                     A=C1,
@@ -565,22 +576,22 @@ class ViscosityLiquid(TPDependentProperty):
                     E=C5,
                     select=False
                 )
-        if CASRN in viscosity.mu_data_VDI_PPDS_7.index and CASRN not in ("78-83-1",):
-            coeffs = viscosity.mu_values_PPDS_7[
-                viscosity.mu_data_VDI_PPDS_7.index.get_loc(CASRN)].tolist()
-            Tmin, Tmax = determine_PPDS9_limits(coeffs, self.Tm, self.Tc)
-            self.add_correlation(
-                name=VDI_PPDS,
-                model='PPDS9',
-                Tmin=Tmin,
-                Tmax=Tmax,
-                A=coeffs[0],
-                B=coeffs[1],
-                C=coeffs[2],
-                D=coeffs[3],
-                E=coeffs[4],
-                select=False
-            )
+            if CASRN in viscosity.mu_data_VDI_PPDS_7.index and CASRN not in ("78-83-1",):
+                coeffs = viscosity.mu_values_PPDS_7[
+                    viscosity.mu_data_VDI_PPDS_7.index.get_loc(CASRN)].tolist()
+                Tmin, Tmax = determine_PPDS9_limits(coeffs, self.Tm, self.Tc)
+                self.add_correlation(
+                    name=VDI_PPDS,
+                    model="PPDS9",
+                    Tmin=Tmin,
+                    Tmax=Tmax,
+                    A=coeffs[0],
+                    B=coeffs[1],
+                    C=coeffs[2],
+                    D=coeffs[3],
+                    E=coeffs[4],
+                    select=False
+                )
         if all((self.MW, self.Tc, self.Pc, self.omega)):
             methods.append(LETSOU_STIEL)
             T_limits[LETSOU_STIEL] = (0.25*self.Tc, self.Tc)
@@ -594,10 +605,10 @@ class ViscosityLiquid(TPDependentProperty):
 
     @staticmethod
     def _method_indexes():
-        '''Returns a dictionary of method: index for all methods
+        """Returns a dictionary of method: index for all methods
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
-        '''
+        """
         return {COOLPROP : [CAS for CAS in coolprop_dict if (coolprop_fluids[CAS].has_mu and CAS not in CoolProp_failing_PT_flashes)],
                 VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
                 DUTT_PRASAD: viscosity.mu_data_Dutt_Prasad.index,
@@ -610,7 +621,7 @@ class ViscosityLiquid(TPDependentProperty):
 
 
     def calculate(self, T, method):
-        r'''Method to calculate low-pressure liquid viscosity at tempearture
+        r"""Method to calculate low-pressure liquid viscosity at tempearture
         `T` with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -627,11 +638,11 @@ class ViscosityLiquid(TPDependentProperty):
         -------
         mu : float
             Viscosity of the liquid at T and a low pressure, [Pa*s]
-        '''
+        """
         if method == LETSOU_STIEL:
             mu = Letsou_Stiel(T, self.MW, self.Tc, self.Pc, self.omega)
         elif method == COOLPROP:
-            mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'l')
+            mu = CoolProp_T_dependent_property(T, self.CASRN, "V", "l")
         elif method == PRZEDZIECKI_SRIDHAR:
             if type(self.Vml) is float:
                 Vml = self.Vml
@@ -646,7 +657,7 @@ class ViscosityLiquid(TPDependentProperty):
 
 
     def calculate_P(self, T, P, method):
-        r'''Method to calculate pressure-dependent liquid viscosity at
+        r"""Method to calculate pressure-dependent liquid viscosity at
         temperature `T` and pressure `P` with a given method.
 
         This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
@@ -665,19 +676,19 @@ class ViscosityLiquid(TPDependentProperty):
         -------
         mu : float
             Viscosity of the liquid at T and P, [Pa*s]
-        '''
+        """
         if method == LUCAS:
             mu = self.T_dependent_property(T)
-            Psat = self.Psat(T) if hasattr(self.Psat, '__call__') else self.Psat
+            Psat = self.Psat(T) if hasattr(self.Psat, "__call__") else self.Psat
             mu = Lucas(T, P, self.Tc, self.Pc, self.omega, Psat, mu)
         elif method == COOLPROP:
-            mu = PropsSI('V', 'T', T, 'P', P, self.CASRN)
+            mu = PropsSI("V", "T", T, "P", P, self.CASRN)
         else:
             return self._base_calculate_P(T, P, method)
         return mu
 
     def test_method_validity_P(self, T, P, method):
-        r'''Method to check the validity of a high-pressure method. For
+        r"""Method to check the validity of a high-pressure method. For
         **COOLPROP**, the fluid must be both a liquid and under the maximum
         pressure of the fluid's EOS. **LUCAS** doesn't work on some occasions,
         due to something related to Tr and negative powers - but is otherwise
@@ -700,19 +711,19 @@ class ViscosityLiquid(TPDependentProperty):
         -------
         validity : bool
             Whether or not a method is valid
-        '''
+        """
         if method == LUCAS:
             validity = True
         elif method == COOLPROP:
-            validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['liquid', 'supercritical_liquid']
+            validity = PhaseSI("T", T, "P", P, self.CASRN) in ["liquid", "supercritical_liquid"]
         else:
             validity = super().test_method_validity_P(T, P, method)
         return validity
 
-GHARAGHEIZI = 'GHARAGHEIZI'
-YOON_THODOS = 'YOON_THODOS'
-STIEL_THODOS = 'STIEL_THODOS'
-LUCAS_GAS = 'LUCAS_GAS'
+GHARAGHEIZI = "GHARAGHEIZI"
+YOON_THODOS = "YOON_THODOS"
+STIEL_THODOS = "STIEL_THODOS"
+LUCAS_GAS = "LUCAS_GAS"
 
 viscosity_gas_methods = [REFPROP_FIT, COOLPROP, DIPPR_PERRY_8E, VDI_PPDS, VDI_TABULAR, GHARAGHEIZI, YOON_THODOS,
                          STIEL_THODOS, LUCAS_GAS]
@@ -724,7 +735,7 @@ class, for use in iterating over them."""
 
 
 class ViscosityGas(TPDependentProperty):
-    r'''Class for dealing with gas viscosity as a function of
+    r"""Class for dealing with gas viscosity as a function of
     temperature and pressure.
 
     For gases at atmospheric pressure, there are 4 corresponding-states
@@ -835,10 +846,10 @@ class ViscosityGas(TPDependentProperty):
     .. [4] Trachenko, K., and V. V. Brazhkin. "Minimal Quantum Viscosity from
        Fundamental Physical Constants." Science Advances, April 2020.
        https://doi.org/10.1126/sciadv.aba3747.
-    '''
+    """
 
-    name = 'Gas viscosity'
-    units = 'Pa*s'
+    name = "Gas viscosity"
+    units = "Pa*s"
     interpolation_T = None
     """No interpolation transformation by default."""
     interpolation_P = None
@@ -861,7 +872,7 @@ class ViscosityGas(TPDependentProperty):
     ranked_methods_P = [NEGLECT_P, COOLPROP]
     """Default rankings of the high-pressure methods."""
 
-    obj_references = pure_references = ('Vmg',)
+    obj_references = pure_references = ("Vmg",)
     obj_references_types = pure_reference_types = (VolumeGas,)
 
 
@@ -869,10 +880,10 @@ class ViscosityGas(TPDependentProperty):
     extra_correlations_internal.add(DIPPR_PERRY_8E)
     extra_correlations_internal.add(VDI_PPDS)
 
-    custom_args = ('MW', 'Tc', 'Pc', 'Zc', 'dipole', 'Vmg')
+    custom_args = ("MW", "Tc", "Pc", "Zc", "dipole", "Vmg")
     DEFAULT_EXTRAPOLATION_MIN = 1e-5
-    def __init__(self, CASRN='', MW=None, Tc=None, Pc=None, Zc=None,
-                 dipole=None, Vmg=None, extrapolation='linear', extrapolation_min=DEFAULT_EXTRAPOLATION_MIN,
+    def __init__(self, CASRN="", MW=None, Tc=None, Pc=None, Zc=None,
+                 dipole=None, Vmg=None, extrapolation="linear", extrapolation_min=DEFAULT_EXTRAPOLATION_MIN,
                  **kwargs):
         self.CASRN = CASRN
         self.MW = MW
@@ -881,12 +892,12 @@ class ViscosityGas(TPDependentProperty):
         self.Zc = Zc
         self.dipole = dipole
         self.Vmg = Vmg
-        if 'extrapolation_min' not in kwargs:
-            kwargs['extrapolation_min'] = extrapolation_min
+        if "extrapolation_min" not in kwargs:
+            kwargs["extrapolation_min"] = extrapolation_min
         super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         :obj:`all_methods` and obj:`all_methods_P` as a set of methods for
@@ -896,14 +907,14 @@ class ViscosityGas(TPDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods, methods_P = [], [NEGLECT_P]
         self.T_limits = T_limits = {}
         self.all_methods = set()
         CASRN = self.CASRN
         if load_data and CASRN:
             if CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(CASRN, 'Mu (g)')
+                Ts, props = lookup_VDI_tabular_data(CASRN, "Mu (g)")
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 CP_f = coolprop_fluids[CASRN]
@@ -918,7 +929,7 @@ class ViscosityGas(TPDependentProperty):
                     viscosity.mu_data_Perrys_8E_2_312.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=DIPPR_PERRY_8E,
-                    model='DIPPR102',
+                    model="DIPPR102",
                     Tmin=Tmin,
                     Tmax=Tmax,
                     A=C1,
@@ -932,7 +943,7 @@ class ViscosityGas(TPDependentProperty):
                     viscosity.mu_data_VDI_PPDS_8.index.get_loc(CASRN)].tolist()
                 self.add_correlation(
                     name=VDI_PPDS,
-                    model='DIPPR100',
+                    model="DIPPR100",
                     Tmin=1e-3,
                     Tmax=10000,
                     A=coeffs[0],
@@ -958,10 +969,10 @@ class ViscosityGas(TPDependentProperty):
 
     @staticmethod
     def _method_indexes():
-        '''Returns a dictionary of method: index for all methods
+        """Returns a dictionary of method: index for all methods
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
-        '''
+        """
         return {COOLPROP : [CAS for CAS in coolprop_dict if (coolprop_fluids[CAS].has_mu and CAS not in CoolProp_failing_PT_flashes)],
                 VDI_TABULAR: list(miscdata.VDI_saturation_dict.keys()),
                 DIPPR_PERRY_8E: viscosity.mu_data_Perrys_8E_2_312.index,
@@ -970,7 +981,7 @@ class ViscosityGas(TPDependentProperty):
 
 
     def calculate(self, T, method):
-        r'''Method to calculate low-pressure gas viscosity at
+        r"""Method to calculate low-pressure gas viscosity at
         tempearture `T` with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -987,7 +998,7 @@ class ViscosityGas(TPDependentProperty):
         -------
         mu : float
             Viscosity of the gas at T and a low pressure, [Pa*s]
-        '''
+        """
         if method == GHARAGHEIZI:
             mu = viscosity_gas_Gharagheizi(T, self.Tc, self.Pc, self.MW)
         elif method == YOON_THODOS:
@@ -997,14 +1008,14 @@ class ViscosityGas(TPDependentProperty):
         elif method == LUCAS_GAS:
             mu = Lucas_gas(T, self.Tc, self.Pc, self.Zc, self.MW, self.dipole, CASRN=self.CASRN)
         elif method == COOLPROP:
-            mu = CoolProp_T_dependent_property(T, self.CASRN, 'V', 'g')
+            mu = CoolProp_T_dependent_property(T, self.CASRN, "V", "g")
         else:
             return self._base_calculate(T, method)
 
         return mu
 
     def calculate_P(self, T, P, method):
-        r'''Method to calculate pressure-dependent gas viscosity
+        r"""Method to calculate pressure-dependent gas viscosity
         at temperature `T` and pressure `P` with a given method.
 
         This method has no exception handling; see :obj:`TP_dependent_property <thermo.utils.TPDependentProperty.TP_dependent_property>`
@@ -1023,15 +1034,15 @@ class ViscosityGas(TPDependentProperty):
         -------
         mu : float
             Viscosity of the gas at T and P, [Pa*]
-        '''
+        """
         if method == COOLPROP:
-            mu = PropsSI('V', 'T', T, 'P', P, self.CASRN)
+            mu = PropsSI("V", "T", T, "P", P, self.CASRN)
         else:
             return self._base_calculate_P(T, P, method)
         return mu
 
     def test_method_validity_P(self, T, P, method):
-        r'''Method to check the validity of a high-pressure method. For
+        r"""Method to check the validity of a high-pressure method. For
         **COOLPROP**, the fluid must be both a gas and under the maximum
         pressure of the fluid's EOS. No other methods are implemented.
 
@@ -1055,16 +1066,16 @@ class ViscosityGas(TPDependentProperty):
         -------
         validity : bool
             Whether or not a method is valid
-        '''
+        """
         validity = True
         if method == COOLPROP:
-            validity = PhaseSI('T', T, 'P', P, self.CASRN) in ['gas', 'supercritical_gas', 'supercritical', 'supercritical_liquid']
+            validity = PhaseSI("T", T, "P", P, self.CASRN) in ["gas", "supercritical_gas", "supercritical", "supercritical_liquid"]
         else:
             validity = super().test_method_validity_P(T, P, method)
         return validity
 
 
-LALIBERTE_MU = 'Laliberte'
+LALIBERTE_MU = "Laliberte"
 
 viscosity_liquid_mixture_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, LINEAR]
 """Holds all mixing rules available for the :obj:`ViscosityLiquidMixture`
@@ -1072,7 +1083,7 @@ class, for use in iterating over them."""
 
 
 class ViscosityLiquidMixture(MixtureProperty):
-    '''Class for dealing with the viscosity of a liquid mixture as a
+    """Class for dealing with the viscosity of a liquid mixture as a
     function of temperature, pressure, and composition.
     Consists of one electrolyte-specific method, and logarithmic rules based
     on either mole fractions of mass fractions.
@@ -1121,10 +1132,10 @@ class ViscosityLiquidMixture(MixtureProperty):
     ----------
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
-    '''
+    """
 
-    name = 'liquid viscosity'
-    units = 'Pa*s'
+    name = "liquid viscosity"
+    units = "Pa*s"
     property_min = 0
     """Mimimum valid value of liquid viscosity."""
     property_max = 2E8
@@ -1133,11 +1144,11 @@ class ViscosityLiquidMixture(MixtureProperty):
 
     ranked_methods = [LALIBERTE_MU, MIXING_LOG_MOLAR, MIXING_LOG_MASS, LINEAR]
 
-    pure_references = ('ViscosityLiquids',)
+    pure_references = ("ViscosityLiquids",)
     pure_reference_types = (ViscosityLiquid, )
-    obj_references = ('ViscosityLiquids',)
+    obj_references = ("ViscosityLiquids",)
 
-    pure_constants = ('MWs', )
+    pure_constants = ("MWs", )
     custom_args = pure_constants
 
     def __init__(self, CASs=[], ViscosityLiquids=[], MWs=[], load_data=True, **kwargs):
@@ -1147,7 +1158,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         super().__init__(load_data=load_data, **kwargs)
 
     def load_all_methods(self, load_data=True):
-        r'''Method to initialize the object by precomputing any values which
+        r"""Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
         :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
@@ -1157,10 +1168,10 @@ class ViscosityLiquidMixture(MixtureProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = [MIXING_LOG_MOLAR, MIXING_LOG_MASS, LINEAR]
-        if load_data and len(self.CASs) > 1 and '7732-18-5' in self.CASs:
-            wCASs = [i for i in self.CASs if i != '7732-18-5']
+        if load_data and len(self.CASs) > 1 and "7732-18-5" in self.CASs:
+            wCASs = [i for i in self.CASs if i != "7732-18-5"]
             Laliberte_data = electrochem.Laliberte_data
             laliberte_incomplete = False
 
@@ -1183,7 +1194,7 @@ class ViscosityLiquidMixture(MixtureProperty):
             if not laliberte_incomplete:
                 methods.append(LALIBERTE_MU)
                 self.wCASs = wCASs
-                self.index_w = self.CASs.index('7732-18-5')
+                self.index_w = self.CASs.index("7732-18-5")
                 self.Laliberte_v1s = v1s
                 self.Laliberte_v2s = v2s
                 self.Laliberte_v3s = v3s
@@ -1202,7 +1213,7 @@ class ViscosityLiquidMixture(MixtureProperty):
             self.Tmax = max(Tmaxs)
 
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate viscosity of a liquid mixture at
+        r"""Method to calculate viscosity of a liquid mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -1226,7 +1237,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         -------
         mu : float
             Viscosity of the liquid mixture, [Pa*s]
-        '''
+        """
         if method == LALIBERTE_MU:
             ws = list(ws)
             ws.pop(self.index_w)
@@ -1234,7 +1245,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         return super().calculate(T, P, zs, ws, method)
 
     def test_method_validity(self, T, P, zs, ws, method):
-        r'''Method to test the validity of a specified method for the given
+        r"""Method to test the validity of a specified method for the given
         conditions. If **Laliberte** is applicable, all other methods are
         returned as inapplicable. Otherwise, there are no checks or strict
         ranges of validity.
@@ -1256,7 +1267,7 @@ class ViscosityLiquidMixture(MixtureProperty):
         -------
         validity : bool
             Whether or not a specifid method is valid
-        '''
+        """
         if LALIBERTE_MU in self.all_methods:
             # If everything is an electrolyte, accept only it as a method
             if method in self.all_methods:
@@ -1265,16 +1276,16 @@ class ViscosityLiquidMixture(MixtureProperty):
             return True
         return super().test_method_validity(T, P, zs, ws, method)
 
-BROKAW = 'BROKAW'
-HERNING_ZIPPERER = 'HERNING_ZIPPERER'
-WILKE = 'WILKE'
+BROKAW = "BROKAW"
+HERNING_ZIPPERER = "HERNING_ZIPPERER"
+WILKE = "WILKE"
 viscosity_gas_mixture_methods = [BROKAW, HERNING_ZIPPERER, WILKE, LINEAR]
 """Holds all mixing rules available for the :obj:`ViscosityGasMixture`
 class, for use in iterating over them."""
 
 
 class ViscosityGasMixture(MixtureProperty):
-    '''Class for dealing with the viscosity of a gas mixture as a
+    """Class for dealing with the viscosity of a gas mixture as a
     function of temperature, pressure, and composition.
     Consists of three gas viscosity specific mixing rules and a mole-weighted
     simple mixing rule.
@@ -1322,10 +1333,10 @@ class ViscosityGasMixture(MixtureProperty):
     ----------
     .. [1] Poling, Bruce E. The Properties of Gases and Liquids. 5th edition.
        New York: McGraw-Hill Professional, 2000.
-    '''
+    """
 
-    name = 'gas viscosity'
-    units = 'Pa*s'
+    name = "gas viscosity"
+    units = "Pa*s"
     property_min = 0
     """Mimimum valid value of gas viscosity; limiting condition at low pressure
     is 0."""
@@ -1334,14 +1345,14 @@ class ViscosityGasMixture(MixtureProperty):
 
     ranked_methods = [BROKAW, HERNING_ZIPPERER, LINEAR, WILKE]
 
-    pure_references = ('ViscosityGases',)
-    obj_references = ('ViscosityGases',)
+    pure_references = ("ViscosityGases",)
+    obj_references = ("ViscosityGases",)
     pure_reference_types = (ViscosityGas, )
 
-    pure_constants = ('MWs', 'molecular_diameters', 'Stockmayers')
+    pure_constants = ("MWs", "molecular_diameters", "Stockmayers")
     custom_args = pure_constants
 
-    non_json_attributes = TPDependentProperty.non_json_attributes + ['MW_roots', 'Wilke_t0s', 'Wilke_t1s', 'Wilke_t2s']
+    non_json_attributes = TPDependentProperty.non_json_attributes + ["MW_roots", "Wilke_t0s", "Wilke_t1s", "Wilke_t2s"]
 
     def __init__(self, MWs=[], molecular_diameters=[], Stockmayers=[], CASs=[],
                  ViscosityGases=[], **kwargs):
@@ -1367,7 +1378,7 @@ class ViscosityGasMixture(MixtureProperty):
 
 
     def load_all_methods(self, load_data=True):
-        r'''Method to initialize the object by precomputing any values which
+        r"""Method to initialize the object by precomputing any values which
         may be used repeatedly and by retrieving mixture-specific variables.
         All data are stored as attributes. This method also sets :obj:`Tmin`,
         :obj:`Tmax`, and :obj:`all_methods` as a set of methods which should
@@ -1377,7 +1388,7 @@ class ViscosityGasMixture(MixtureProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         methods = [LINEAR]
         if none_and_length_check((self.MWs, self.molecular_diameters, self.Stockmayers)):
             methods.append(BROKAW)
@@ -1393,7 +1404,7 @@ class ViscosityGasMixture(MixtureProperty):
             self.Tmax = max(Tmaxs)
 
     def calculate(self, T, P, zs, ws, method):
-        r'''Method to calculate viscosity of a gas mixture at
+        r"""Method to calculate viscosity of a gas mixture at
         temperature `T`, pressure `P`, mole fractions `zs` and weight fractions
         `ws` with a given method.
 
@@ -1417,7 +1428,7 @@ class ViscosityGasMixture(MixtureProperty):
         -------
         mu : float
             Viscosity of gas mixture, [Pa*s]
-        '''
+        """
         if method == HERNING_ZIPPERER:
             mus = self.calculate_pures_corrected(T, P, fallback=True)
             return Herning_Zipperer(zs, mus, None, self.MW_roots)

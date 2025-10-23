@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2024 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -29,16 +29,26 @@ This functionality requires the RDKit library to work.
 .. autofunction:: thermo.group_contribution.PPR78_kijs
 .. autofunction:: thermo.group_contribution.fragment_PPR78
 
-'''
-__all__ = ['PPR78_kij', 'PPR78_kijs', 'PPR78_GROUP_IDS', 'PPR78_INTERACTIONS', 'PPR78_GROUPS', 'fragment_PPR78']
+"""
+__all__ = ["PPR78_GROUPS", "PPR78_GROUP_IDS", "PPR78_INTERACTIONS", "PPR78_kij", "PPR78_kijs", "fragment_PPR78"]
 
 from math import sqrt
+
 from fluids.constants import R
-from thermo.group_contribution.group_contribution_base import smarts_fragment_priority, BaseGroupContribution
-from thermo.group_contribution.group_contribution_base import priority_from_atoms, SINGLE_BOND, DOUBLE_BOND, TRIPLE_BOND, AROMATIC_BOND
+
+from thermo.group_contribution.group_contribution_base import (
+    AROMATIC_BOND,
+    DOUBLE_BOND,
+    SINGLE_BOND,
+    TRIPLE_BOND,
+    BaseGroupContribution,
+    priority_from_atoms,
+    smarts_fragment_priority,
+)
+
 
 class PPR78GroupContribution(BaseGroupContribution):
-    __slots__ = ('group', 'group_id', 'atoms', 'bonds', 'smarts', 'priority', 'hydrogen_from_smarts', 'smart_rdkit')
+    __slots__ = ("atoms", "bonds", "group", "group_id", "hydrogen_from_smarts", "priority", "smart_rdkit", "smarts")
     def __init__(self, group, atoms=None, bonds=None, smarts=None, priority=None, hydrogen_from_smarts=False, group_id=None):
         self.group = group
         self.atoms = atoms
@@ -55,685 +65,685 @@ class PPR78GroupContribution(BaseGroupContribution):
         return f"GroupContribution(group={self.group!r}, atoms={self.atoms!r}, bonds={self.bonds!r})"
 
 PPR78_GROUPS = {}
-PPR78_GROUPS['CH3'] = PPR78GroupContribution('CH3',  smarts='[CX4;H3]', atoms={'C': 1, 'H': 3}, bonds={}, group_id=1)
-PPR78_GROUPS['CH2'] = PPR78GroupContribution('CH2', smarts='[CX4;H2]', atoms={'C': 1, 'H': 2}, bonds={}, group_id=2)
-PPR78_GROUPS['CH'] = PPR78GroupContribution('CH', smarts='[CX4;H1]', atoms={'C': 1, 'H': 1}, bonds={}, group_id=3)
-PPR78_GROUPS['C'] = PPR78GroupContribution('C', smarts='[CX4;H0]', atoms={'C': 1, 'H': 0}, bonds={}, group_id=4)
+PPR78_GROUPS["CH3"] = PPR78GroupContribution("CH3",  smarts="[CX4;H3]", atoms={"C": 1, "H": 3}, bonds={}, group_id=1)
+PPR78_GROUPS["CH2"] = PPR78GroupContribution("CH2", smarts="[CX4;H2]", atoms={"C": 1, "H": 2}, bonds={}, group_id=2)
+PPR78_GROUPS["CH"] = PPR78GroupContribution("CH", smarts="[CX4;H1]", atoms={"C": 1, "H": 1}, bonds={}, group_id=3)
+PPR78_GROUPS["C"] = PPR78GroupContribution("C", smarts="[CX4;H0]", atoms={"C": 1, "H": 0}, bonds={}, group_id=4)
 # Specifically methane
-PPR78_GROUPS['CH4'] = PPR78GroupContribution('CH4', atoms={'C': 1, 'H': 4}, bonds={}, smarts='[CX4H4]', group_id=5)
+PPR78_GROUPS["CH4"] = PPR78GroupContribution("CH4", atoms={"C": 1, "H": 4}, bonds={}, smarts="[CX4H4]", group_id=5)
 # Specifically ethane
-PPR78_GROUPS['C2H6'] = PPR78GroupContribution('C2H6', atoms={'C': 2, 'H': 6}, bonds={}, smarts='[CH3X4]-[CH3X4]', group_id=6)
+PPR78_GROUPS["C2H6"] = PPR78GroupContribution("C2H6", atoms={"C": 2, "H": 6}, bonds={}, smarts="[CH3X4]-[CH3X4]", group_id=6)
 # messy ones, did some examples with all of these and they did make sense to me
-PPR78_GROUPS['CHaro'] = PPR78GroupContribution('CHaro', atoms={'C': 1, 'H': 1}, bonds={AROMATIC_BOND: 2}, smarts='[cH]', group_id=7)
-PPR78_GROUPS['Caro'] = PPR78GroupContribution('Caro', atoms={'C': 1}, bonds={AROMATIC_BOND: 2}, smarts='[c]', group_id=8)
-PPR78_GROUPS['Cfused_aromatic'] = PPR78GroupContribution('Cfused_aromatic', atoms={'C': 1}, bonds={AROMATIC_BOND: 3}, smarts='[cR2]', priority=10000, group_id=9)
-PPR78_GROUPS['CH2cyclic'] = PPR78GroupContribution('CH2cyclic', atoms={'C': 1, 'H': 2}, bonds={}, smarts='[CH2R]', group_id=10)
-PPR78_GROUPS['CHcyclic'] = PPR78GroupContribution('CHcyclic', atoms={'C': 1, 'H': 1}, bonds={}, smarts='[CHR]', group_id=11)
+PPR78_GROUPS["CHaro"] = PPR78GroupContribution("CHaro", atoms={"C": 1, "H": 1}, bonds={AROMATIC_BOND: 2}, smarts="[cH]", group_id=7)
+PPR78_GROUPS["Caro"] = PPR78GroupContribution("Caro", atoms={"C": 1}, bonds={AROMATIC_BOND: 2}, smarts="[c]", group_id=8)
+PPR78_GROUPS["Cfused_aromatic"] = PPR78GroupContribution("Cfused_aromatic", atoms={"C": 1}, bonds={AROMATIC_BOND: 3}, smarts="[cR2]", priority=10000, group_id=9)
+PPR78_GROUPS["CH2cyclic"] = PPR78GroupContribution("CH2cyclic", atoms={"C": 1, "H": 2}, bonds={}, smarts="[CH2R]", group_id=10)
+PPR78_GROUPS["CHcyclic"] = PPR78GroupContribution("CHcyclic", atoms={"C": 1, "H": 1}, bonds={}, smarts="[CHR]", group_id=11)
 # CO2, N2, H2S from PSRK
-PPR78_GROUPS['CO2'] = PPR78GroupContribution('CO2', atoms={'C': 1, 'O': 2}, bonds={DOUBLE_BOND: 2}, smarts='[CX2H0](=[OX1H0])=[OX1H0]', group_id=12)
-PPR78_GROUPS['N2'] = PPR78GroupContribution('N2', atoms={'N': 2}, bonds={TRIPLE_BOND: 1}, smarts='N#N', group_id=13)
-PPR78_GROUPS['H2S'] = PPR78GroupContribution('H2S', atoms={'S': 1, 'H': 2}, bonds={}, smarts='[SH2]', group_id=14)
-PPR78_GROUPS['SH'] = PPR78GroupContribution('SH', atoms={'S': 1, 'H': 1}, bonds={}, smarts='[S;H1]', group_id=15)
+PPR78_GROUPS["CO2"] = PPR78GroupContribution("CO2", atoms={"C": 1, "O": 2}, bonds={DOUBLE_BOND: 2}, smarts="[CX2H0](=[OX1H0])=[OX1H0]", group_id=12)
+PPR78_GROUPS["N2"] = PPR78GroupContribution("N2", atoms={"N": 2}, bonds={TRIPLE_BOND: 1}, smarts="N#N", group_id=13)
+PPR78_GROUPS["H2S"] = PPR78GroupContribution("H2S", atoms={"S": 1, "H": 2}, bonds={}, smarts="[SH2]", group_id=14)
+PPR78_GROUPS["SH"] = PPR78GroupContribution("SH", atoms={"S": 1, "H": 1}, bonds={}, smarts="[S;H1]", group_id=15)
 
 EPPR78_GROUPS = {}
 # The order of these statements is sensitive
-EPPR78_GROUPS['CH3'] = PPR78GroupContribution('CH3',  smarts='[CX4;H3]', atoms={'C': 1, 'H': 3}, bonds={}, group_id=1)
-EPPR78_GROUPS['CH2'] = PPR78GroupContribution('CH2', smarts='[CX4;H2]', atoms={'C': 1, 'H': 2}, bonds={}, group_id=2)
-EPPR78_GROUPS['CH'] = PPR78GroupContribution('CH', smarts='[CX4;H1]', atoms={'C': 1, 'H': 1}, bonds={}, group_id=3)
-EPPR78_GROUPS['C'] = PPR78GroupContribution('C', smarts='[CX4;H0]', atoms={'C': 1, 'H': 0}, bonds={}, group_id=4)
-EPPR78_GROUPS['CH4'] = PPR78GroupContribution('CH4', atoms={'C': 1, 'H': 4}, bonds={}, smarts='[CX4H4]', group_id=5)
-EPPR78_GROUPS['C2H6'] = PPR78GroupContribution('C2H6', atoms={'C': 2, 'H': 6}, bonds={}, smarts='[CH3X4]-[CH3X4]', group_id=6)
-EPPR78_GROUPS['CHaro'] = PPR78GroupContribution('CHaro', atoms={'C': 1, 'H': 1}, bonds={AROMATIC_BOND: 2}, smarts='[cH]', group_id=7)
-EPPR78_GROUPS['Caro'] = PPR78GroupContribution('Caro', atoms={'C': 1}, bonds={AROMATIC_BOND: 2}, smarts='[c]', group_id=8)
-EPPR78_GROUPS['Cfused_aromatic'] = PPR78GroupContribution('Cfused_aromatic', atoms={'C': 1}, bonds={AROMATIC_BOND: 3}, 
+EPPR78_GROUPS["CH3"] = PPR78GroupContribution("CH3",  smarts="[CX4;H3]", atoms={"C": 1, "H": 3}, bonds={}, group_id=1)
+EPPR78_GROUPS["CH2"] = PPR78GroupContribution("CH2", smarts="[CX4;H2]", atoms={"C": 1, "H": 2}, bonds={}, group_id=2)
+EPPR78_GROUPS["CH"] = PPR78GroupContribution("CH", smarts="[CX4;H1]", atoms={"C": 1, "H": 1}, bonds={}, group_id=3)
+EPPR78_GROUPS["C"] = PPR78GroupContribution("C", smarts="[CX4;H0]", atoms={"C": 1, "H": 0}, bonds={}, group_id=4)
+EPPR78_GROUPS["CH4"] = PPR78GroupContribution("CH4", atoms={"C": 1, "H": 4}, bonds={}, smarts="[CX4H4]", group_id=5)
+EPPR78_GROUPS["C2H6"] = PPR78GroupContribution("C2H6", atoms={"C": 2, "H": 6}, bonds={}, smarts="[CH3X4]-[CH3X4]", group_id=6)
+EPPR78_GROUPS["CHaro"] = PPR78GroupContribution("CHaro", atoms={"C": 1, "H": 1}, bonds={AROMATIC_BOND: 2}, smarts="[cH]", group_id=7)
+EPPR78_GROUPS["Caro"] = PPR78GroupContribution("Caro", atoms={"C": 1}, bonds={AROMATIC_BOND: 2}, smarts="[c]", group_id=8)
+EPPR78_GROUPS["Cfused_aromatic"] = PPR78GroupContribution("Cfused_aromatic", atoms={"C": 1}, bonds={AROMATIC_BOND: 3},
     smarts=[ #ACENAPHTHENE has 2 fused groups, FLUORANTHENE has 6, NAPHTHACENE, 6, and INDENE 0. FLUORENE is supposed to have 0, this finds 2
-        '[c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a;$([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a]([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a]))]',
+        "[c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a;$([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a]([c;r4,r5,r6,r7,r8;H0;R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a])([c;r4,r5,r6,r7,r8;R1,R2,R3,R4,R5,R6;a]))]",
     ], priority=10000, group_id=9)
-EPPR78_GROUPS['CH2cyclic'] = PPR78GroupContribution('CH2cyclic', atoms={'C': 1, 'H': 2}, bonds={}, smarts='[CH2R]', group_id=10)
-EPPR78_GROUPS['CHcyclic'] = PPR78GroupContribution('CHcyclic', atoms={'C': 1, 'H': 1}, bonds={}, smarts='[C;H1,H0;R]', hydrogen_from_smarts=True, group_id=11)
-EPPR78_GROUPS['CO2'] = PPR78GroupContribution('CO2', atoms={'C': 1, 'O': 2}, bonds={DOUBLE_BOND: 2}, smarts='[CX2H0](=[OX1H0])=[OX1H0]', group_id=12)
-EPPR78_GROUPS['N2'] = PPR78GroupContribution('N2', atoms={'N': 2}, bonds={TRIPLE_BOND: 1}, smarts='N#N', group_id=13)
-EPPR78_GROUPS['H2S'] = PPR78GroupContribution('H2S', atoms={'S': 1, 'H': 2}, bonds={}, smarts='[SH2]', group_id=14)
-EPPR78_GROUPS['SH'] = PPR78GroupContribution('SH', atoms={'S': 1, 'H': 1}, bonds={}, smarts='[S;H1]', group_id=15)
+EPPR78_GROUPS["CH2cyclic"] = PPR78GroupContribution("CH2cyclic", atoms={"C": 1, "H": 2}, bonds={}, smarts="[CH2R]", group_id=10)
+EPPR78_GROUPS["CHcyclic"] = PPR78GroupContribution("CHcyclic", atoms={"C": 1, "H": 1}, bonds={}, smarts="[C;H1,H0;R]", hydrogen_from_smarts=True, group_id=11)
+EPPR78_GROUPS["CO2"] = PPR78GroupContribution("CO2", atoms={"C": 1, "O": 2}, bonds={DOUBLE_BOND: 2}, smarts="[CX2H0](=[OX1H0])=[OX1H0]", group_id=12)
+EPPR78_GROUPS["N2"] = PPR78GroupContribution("N2", atoms={"N": 2}, bonds={TRIPLE_BOND: 1}, smarts="N#N", group_id=13)
+EPPR78_GROUPS["H2S"] = PPR78GroupContribution("H2S", atoms={"S": 1, "H": 2}, bonds={}, smarts="[SH2]", group_id=14)
+EPPR78_GROUPS["SH"] = PPR78GroupContribution("SH", atoms={"S": 1, "H": 1}, bonds={}, smarts="[S;H1]", group_id=15)
 
 # Water
-EPPR78_GROUPS['H2O'] = PPR78GroupContribution('H2O', 
-    atoms={'O': 1, 'H': 2}, 
-    bonds={}, 
-    smarts='[OH2]', group_id=16)
+EPPR78_GROUPS["H2O"] = PPR78GroupContribution("H2O",
+    atoms={"O": 1, "H": 2},
+    bonds={},
+    smarts="[OH2]", group_id=16)
 
 # Ethylene
-EPPR78_GROUPS['C2H4'] = PPR78GroupContribution('C2H4',
-    atoms={'C': 2, 'H': 4}, 
+EPPR78_GROUPS["C2H4"] = PPR78GroupContribution("C2H4",
+    atoms={"C": 2, "H": 4},
     bonds={DOUBLE_BOND: 1}, priority=10000,
-    smarts='[CH2]=[CH2]', group_id=17)
+    smarts="[CH2]=[CH2]", group_id=17)
 
 # Combined alkenic CH2/CH group
-EPPR78_GROUPS['CH2CHalkenic'] = PPR78GroupContribution('CH2CHalkenic',
-    atoms={'C': 1, 'H': 1},  # Average values
+EPPR78_GROUPS["CH2CHalkenic"] = PPR78GroupContribution("CH2CHalkenic",
+    atoms={"C": 1, "H": 1},  # Average values
     bonds={DOUBLE_BOND: 1},  hydrogen_from_smarts=True,
-    smarts=['[C;!R;H1,H2;$(C=[C])]'],
+    smarts=["[C;!R;H1,H2;$(C=[C])]"],
     priority=1000, group_id=18)
 
 # Alkenic carbon without hydrogen
-EPPR78_GROUPS['Calkenic'] = PPR78GroupContribution('Calkenic',
-    atoms={'C': 1},
+EPPR78_GROUPS["Calkenic"] = PPR78GroupContribution("Calkenic",
+    atoms={"C": 1},
     bonds={DOUBLE_BOND: 1},
-    smarts='[C;!R;H0;$(C=[C])]', group_id=19)
+    smarts="[C;!R;H0;$(C=[C])]", group_id=19)
 
 # Combined cycloalkenic CH/C group
-EPPR78_GROUPS['CHCcycloalkenic'] = PPR78GroupContribution('CHCcycloalkenic',
-    atoms={'C': 1, 'H': 0.5},  # Average values
+EPPR78_GROUPS["CHCcycloalkenic"] = PPR78GroupContribution("CHCcycloalkenic",
+    atoms={"C": 1, "H": 0.5},  # Average values
     bonds={DOUBLE_BOND: 1}, hydrogen_from_smarts=True,
-    smarts=['[C;R;H1,H0;$(C=[C])]'],
+    smarts=["[C;R;H1,H0;$(C=[C])]"],
     priority=5000, group_id=20)
 
 # Hydrogen molecule
-EPPR78_GROUPS['H2'] = PPR78GroupContribution('H2',
-    atoms={'H': 2},
+EPPR78_GROUPS["H2"] = PPR78GroupContribution("H2",
+    atoms={"H": 2},
     bonds={SINGLE_BOND: 1},
-    smarts='[H][H]', hydrogen_from_smarts=True, group_id=21)
+    smarts="[H][H]", hydrogen_from_smarts=True, group_id=21)
 
 # Fluorinated compounds
-EPPR78_GROUPS['C2F6'] = PPR78GroupContribution('C2F6',
-    atoms={'C': 2, 'F': 6},
+EPPR78_GROUPS["C2F6"] = PPR78GroupContribution("C2F6",
+    atoms={"C": 2, "F": 6},
     bonds={SINGLE_BOND: 7},  # 1 C-C + 6 C-F
-    smarts='[C;X4;H0;F3]-[C;X4;H0;F3]', group_id=22)
+    smarts="[C;X4;H0;F3]-[C;X4;H0;F3]", group_id=22)
 
-EPPR78_GROUPS['CF3'] = PPR78GroupContribution('CF3',
-    atoms={'C': 1, 'F': 3},
+EPPR78_GROUPS["CF3"] = PPR78GroupContribution("CF3",
+    atoms={"C": 1, "F": 3},
     bonds={},
-    smarts='[C;X4;H0;F3]', group_id=23)
+    smarts="[C;X4;H0;F3]", group_id=23)
 
-EPPR78_GROUPS['CF2'] = PPR78GroupContribution('CF2',
-    atoms={'C': 1, 'F': 2},
+EPPR78_GROUPS["CF2"] = PPR78GroupContribution("CF2",
+    atoms={"C": 1, "F": 2},
     bonds={},
-    smarts='[C;X4;H0;F2]', group_id=24)
+    smarts="[C;X4;H0;F2]", group_id=24)
 
 # Combined fluorinated alkenic CF2/CF group
-EPPR78_GROUPS['CF2CFdouble'] = PPR78GroupContribution('CF2CFdouble',
-    atoms={'C': 1, 'F': 1.5},  # Average values
+EPPR78_GROUPS["CF2CFdouble"] = PPR78GroupContribution("CF2CFdouble",
+    atoms={"C": 1, "F": 1.5},  # Average values
     bonds={DOUBLE_BOND: 1},
-    smarts=['[C;H0;F2]=[C]', '[C;H0;F1]=[C]'],
+    smarts=["[C;H0;F2]=[C]", "[C;H0;F1]=[C]"],
     priority=1000, group_id=25)
 
 # Partially fluorinated ethanes
-EPPR78_GROUPS['C2H4F2'] = PPR78GroupContribution('C2H4F2',
-    atoms={'C': 2, 'H': 4, 'F': 2},
+EPPR78_GROUPS["C2H4F2"] = PPR78GroupContribution("C2H4F2",
+    atoms={"C": 2, "H": 4, "F": 2},
     bonds={SINGLE_BOND: 7},  # 1 C-C + 4 C-H + 2 C-F
-    smarts='[C;X4;H2;F1]-[C;X4;H2;F1]', group_id=26)
+    smarts="[C;X4;H2;F1]-[C;X4;H2;F1]", group_id=26)
 
-EPPR78_GROUPS['C2H2F4'] = PPR78GroupContribution('C2H2F4',
-    atoms={'C': 2, 'H': 2, 'F': 4},
+EPPR78_GROUPS["C2H2F4"] = PPR78GroupContribution("C2H2F4",
+    atoms={"C": 2, "H": 2, "F": 4},
     bonds={SINGLE_BOND: 7},  # 1 C-C + 2 C-H + 4 C-F
-    smarts='[C;X4;H1;F2]-[C;X4;H1;F2]', group_id=27)
+    smarts="[C;X4;H1;F2]-[C;X4;H1;F2]", group_id=27)
 
 # Carbon monoxide
-EPPR78_GROUPS['CO'] = PPR78GroupContribution('CO',
-    atoms={'C': 1, 'O': 1},
+EPPR78_GROUPS["CO"] = PPR78GroupContribution("CO",
+    atoms={"C": 1, "O": 1},
     bonds={TRIPLE_BOND: 1},
-    smarts='[C]#[O]', group_id=28)
+    smarts="[C]#[O]", group_id=28)
 
 # Noble gases
-EPPR78_GROUPS['He'] = PPR78GroupContribution('He',
-    atoms={'He': 1},
+EPPR78_GROUPS["He"] = PPR78GroupContribution("He",
+    atoms={"He": 1},
     bonds={},
-    smarts='[He]', group_id=29)
+    smarts="[He]", group_id=29)
 
-EPPR78_GROUPS['Ar'] = PPR78GroupContribution('Ar',
-    atoms={'Ar': 1},
+EPPR78_GROUPS["Ar"] = PPR78GroupContribution("Ar",
+    atoms={"Ar": 1},
     bonds={},
-    smarts='[Ar]', group_id=30)
+    smarts="[Ar]", group_id=30)
 
 # Sulfur dioxide
-EPPR78_GROUPS['SO2'] = PPR78GroupContribution('SO2',
-    atoms={'S': 1, 'O': 2},
+EPPR78_GROUPS["SO2"] = PPR78GroupContribution("SO2",
+    atoms={"S": 1, "O": 2},
     bonds={DOUBLE_BOND: 2},
-    smarts='[SX4](=[OX1])(=[OX1])', group_id=31)
+    smarts="[SX4](=[OX1])(=[OX1])", group_id=31)
 
 # Oxygen molecule
-EPPR78_GROUPS['O2'] = PPR78GroupContribution('O2',
-    atoms={'O': 2},
+EPPR78_GROUPS["O2"] = PPR78GroupContribution("O2",
+    atoms={"O": 2},
     bonds={DOUBLE_BOND: 1},
-    smarts='[O]=[O]', group_id=32)
+    smarts="[O]=[O]", group_id=32)
 
 # Nitric oxide
-EPPR78_GROUPS['NO'] = PPR78GroupContribution('NO',
-    atoms={'N': 1, 'O': 1},
+EPPR78_GROUPS["NO"] = PPR78GroupContribution("NO",
+    atoms={"N": 1, "O": 1},
     bonds={DOUBLE_BOND: 1},
-    smarts='[N]=[O]', group_id=33)
+    smarts="[N]=[O]", group_id=33)
 
 # Carbonyl sulfide
-EPPR78_GROUPS['COS'] = PPR78GroupContribution('COS',
-    atoms={'C': 1, 'O': 1, 'S': 1},
+EPPR78_GROUPS["COS"] = PPR78GroupContribution("COS",
+    atoms={"C": 1, "O": 1, "S": 1},
     bonds={DOUBLE_BOND: 2},
-    smarts='[O]=[C]=[S]', group_id=34)
+    smarts="[O]=[C]=[S]", group_id=34)
 
 # Ammonia
-EPPR78_GROUPS['NH3'] = PPR78GroupContribution('NH3',
-    atoms={'N': 1, 'H': 3},
+EPPR78_GROUPS["NH3"] = PPR78GroupContribution("NH3",
+    atoms={"N": 1, "H": 3},
     bonds={},
-    smarts='[NH3]', group_id=35)
+    smarts="[NH3]", group_id=35)
 
 # Combined NO2/N2O4 group
-EPPR78_GROUPS['NO2N2O4'] = PPR78GroupContribution('NO2N2O4',
-    atoms={'N': 1.5, 'O': 2},  # Average values
+EPPR78_GROUPS["NO2N2O4"] = PPR78GroupContribution("NO2N2O4",
+    atoms={"N": 1.5, "O": 2},  # Average values
     bonds={DOUBLE_BOND: 1, SINGLE_BOND: 1},
-    smarts=['[N](=[O])[O]', '[N]([O])[O]-[N]([O])[O]'],
+    smarts=["[N](=[O])[O]", "[N]([O])[O]-[N]([O])[O]"],
     priority=1000, group_id=36)
 
 # Nitrous oxide
-EPPR78_GROUPS['N2O'] = PPR78GroupContribution('N2O',
-    atoms={'N': 2, 'O': 1},
+EPPR78_GROUPS["N2O"] = PPR78GroupContribution("N2O",
+    atoms={"N": 2, "O": 1},
     bonds={DOUBLE_BOND: 2},
-    smarts='[N]=[N]=[O]', group_id=37)
+    smarts="[N]=[N]=[O]", group_id=37)
 
 # Acetylene
-EPPR78_GROUPS['C2H2'] = PPR78GroupContribution('C2H2',
-    atoms={'C': 2, 'H': 2},
+EPPR78_GROUPS["C2H2"] = PPR78GroupContribution("C2H2",
+    atoms={"C": 2, "H": 2},
     bonds={TRIPLE_BOND: 1},
-    smarts='[CH]#[CH]', group_id=38)
+    smarts="[CH]#[CH]", group_id=38)
 
 # Terminal acetylenic group
-EPPR78_GROUPS['HC≡C'] = PPR78GroupContribution('HC≡C',
-    atoms={'C': 1, 'H': 1},
+EPPR78_GROUPS["HC≡C"] = PPR78GroupContribution("HC≡C",
+    atoms={"C": 1, "H": 1},
     bonds={TRIPLE_BOND: 1},
-    smarts='[CH]#[C]', group_id=39)
+    smarts="[CH]#[C]", group_id=39)
 
 # Internal acetylenic group
-EPPR78_GROUPS['C≡C'] = PPR78GroupContribution('C≡C',
-    atoms={'C': 1},
+EPPR78_GROUPS["C≡C"] = PPR78GroupContribution("C≡C",
+    atoms={"C": 1},
     bonds={TRIPLE_BOND: 1},
-    smarts='[C]#[C]', group_id=40)
+    smarts="[C]#[C]", group_id=40)
 
 
 # format A, B value indexed by tuple of groups
 PPR78_INTERACTIONS = {}
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['CH3'])] = (0.0, 0.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['CH2'])] = (74.81, 165.7)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['CH'])] = (261.5, 388.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['C'])] = (396.7, 804.3)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['CH4'])] = (32.94, -35.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['C2H6'])] = (8.579, -29.51)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['CHaro'])] = (90.25, 146.1)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['Caro'])] = (62.80, 41.86)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['Cfused_aromatic'])] = (62.80, 41.86)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['CH2cyclic'])] = (40.38, 95.90)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['CHcyclic'])] = (98.48, 231.6)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['CO2'])] = (164.0, 269.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['N2'])] = (52.74, 87.19)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['H2S'])] = (158.4, 241.2)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH3'], PPR78_GROUPS['SH'])] = (799.9, 2109.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["CH3"])] = (0.0, 0.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["CH2"])] = (74.81, 165.7)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["CH"])] = (261.5, 388.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["C"])] = (396.7, 804.3)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["CH4"])] = (32.94, -35.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["C2H6"])] = (8.579, -29.51)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["CHaro"])] = (90.25, 146.1)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["Caro"])] = (62.80, 41.86)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["Cfused_aromatic"])] = (62.80, 41.86)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["CH2cyclic"])] = (40.38, 95.90)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["CHcyclic"])] = (98.48, 231.6)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["CO2"])] = (164.0, 269.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["N2"])] = (52.74, 87.19)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["H2S"])] = (158.4, 241.2)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH3"], PPR78_GROUPS["SH"])] = (799.9, 2109.0)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['CH2'])] = (0.0, 0.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['CH'])] = (51.47, 79.61)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['C'])] = (88.53, 315.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['CH4'])] = (36.72, 108.4)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['C2H6'])] = (31.23, 84.76)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['CHaro'])] = (29.78, 58.17)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['Caro'])] = (3.775, 144.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['Cfused_aromatic'])] = (3.775, 144.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['CH2cyclic'])] = (12.78, 28.37)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['CHcyclic'])] = (-54.90, -319.5)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['CO2'])] = (136.9, 254.6)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['N2'])] = (82.28, 202.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['H2S'])] = (134.6, 138.3)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2'], PPR78_GROUPS['SH'])] = (459.5, 627.3)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["CH2"])] = (0.0, 0.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["CH"])] = (51.47, 79.61)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["C"])] = (88.53, 315.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["CH4"])] = (36.72, 108.4)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["C2H6"])] = (31.23, 84.76)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["CHaro"])] = (29.78, 58.17)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["Caro"])] = (3.775, 144.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["Cfused_aromatic"])] = (3.775, 144.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["CH2cyclic"])] = (12.78, 28.37)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["CHcyclic"])] = (-54.90, -319.5)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["CO2"])] = (136.9, 254.6)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["N2"])] = (82.28, 202.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["H2S"])] = (134.6, 138.3)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2"], PPR78_GROUPS["SH"])] = (459.5, 627.3)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['CH'])] = (0.0, 0.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['C'])] = (-305.7, -250.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['CH4'])] = (145.2, 301.6)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['C2H6'])] = (174.3, 352.1)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['CHaro'])] = (103.3, 191.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['Caro'])] = (6.177, -33.97)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['Cfused_aromatic'])] = (6.177, -33.97)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['CH2cyclic'])] = (101.9, -90.93)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['CHcyclic'])] = (-226.5, -51.47)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['CO2'])] = (184.3, 762.1)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['N2'])] = (365.4, 521.9)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['H2S'])] = (193.9, 307.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH'], PPR78_GROUPS['SH'])] = (425.5, 514.7)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["CH"])] = (0.0, 0.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["C"])] = (-305.7, -250.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["CH4"])] = (145.2, 301.6)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["C2H6"])] = (174.3, 352.1)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["CHaro"])] = (103.3, 191.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["Caro"])] = (6.177, -33.97)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["Cfused_aromatic"])] = (6.177, -33.97)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["CH2cyclic"])] = (101.9, -90.93)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["CHcyclic"])] = (-226.5, -51.47)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["CO2"])] = (184.3, 762.1)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["N2"])] = (365.4, 521.9)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["H2S"])] = (193.9, 307.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH"], PPR78_GROUPS["SH"])] = (425.5, 514.7)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['C'])] = (0.0, 0.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['CH4'])] = (263.9, 531.5)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['C2H6'])] = (333.2, 203.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['CHaro'])] = (158.9, 613.2)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['Caro'])] = (79.61, -326.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['Cfused_aromatic'])] = (79.61, -326.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['CH2cyclic'])] = (177.1, 601.9)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['CHcyclic'])] = (17.84, -109.5)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['CO2'])] = (287.9, 346.2)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['N2'])] = (263.9, 772.6)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['H2S'])] = (305.1, -143.1)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C'], PPR78_GROUPS['SH'])] = (682.9, 1544.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["C"])] = (0.0, 0.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["CH4"])] = (263.9, 531.5)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["C2H6"])] = (333.2, 203.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["CHaro"])] = (158.9, 613.2)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["Caro"])] = (79.61, -326.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["Cfused_aromatic"])] = (79.61, -326.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["CH2cyclic"])] = (177.1, 601.9)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["CHcyclic"])] = (17.84, -109.5)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["CO2"])] = (287.9, 346.2)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["N2"])] = (263.9, 772.6)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["H2S"])] = (305.1, -143.1)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C"], PPR78_GROUPS["SH"])] = (682.9, 1544.0)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['CH4'])] = (0.0, 0.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['C2H6'])] = (13.04, 6.863)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['CHaro'])] = (67.26, 167.5)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['Caro'])] = (139.3, 464.3)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['Cfused_aromatic'])] = (139.3, 464.3)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['CH2cyclic'])] = (36.37, 26.42)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['CHcyclic'])] = (40.15, 255.3)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['CO2'])] = (137.3, 194.2)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['N2'])] = (37.90, 37.2)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['H2S'])] = (181.2, 288.9)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH4'], PPR78_GROUPS['SH'])] = (706.0, 1483.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["CH4"])] = (0.0, 0.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["C2H6"])] = (13.04, 6.863)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["CHaro"])] = (67.26, 167.5)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["Caro"])] = (139.3, 464.3)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["Cfused_aromatic"])] = (139.3, 464.3)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["CH2cyclic"])] = (36.37, 26.42)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["CHcyclic"])] = (40.15, 255.3)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["CO2"])] = (137.3, 194.2)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["N2"])] = (37.90, 37.2)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["H2S"])] = (181.2, 288.9)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH4"], PPR78_GROUPS["SH"])] = (706.0, 1483.0)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['C2H6'], PPR78_GROUPS['C2H6'])] = (0.0, 0.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C2H6'], PPR78_GROUPS['CHaro'])] = (41.18, 50.79)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C2H6'], PPR78_GROUPS['Caro'])] = (-3.088, 13.04)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C2H6'], PPR78_GROUPS['Cfused_aromatic'])] = (-3.088, 13.04)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C2H6'], PPR78_GROUPS['CH2cyclic'])] = (8.579, 76.86)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C2H6'], PPR78_GROUPS['CHcyclic'])] = (10.29, -52.84)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C2H6'], PPR78_GROUPS['CO2'])] = (135.5, 239.5)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C2H6'], PPR78_GROUPS['N2'])] = (61.59, 84.92)
-PPR78_INTERACTIONS[(PPR78_GROUPS['C2H6'], PPR78_GROUPS['H2S'])] = (157.2, 217.1)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C2H6"], PPR78_GROUPS["C2H6"])] = (0.0, 0.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C2H6"], PPR78_GROUPS["CHaro"])] = (41.18, 50.79)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C2H6"], PPR78_GROUPS["Caro"])] = (-3.088, 13.04)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C2H6"], PPR78_GROUPS["Cfused_aromatic"])] = (-3.088, 13.04)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C2H6"], PPR78_GROUPS["CH2cyclic"])] = (8.579, 76.86)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C2H6"], PPR78_GROUPS["CHcyclic"])] = (10.29, -52.84)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C2H6"], PPR78_GROUPS["CO2"])] = (135.5, 239.5)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C2H6"], PPR78_GROUPS["N2"])] = (61.59, 84.92)
+PPR78_INTERACTIONS[(PPR78_GROUPS["C2H6"], PPR78_GROUPS["H2S"])] = (157.2, 217.1)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHaro'], PPR78_GROUPS['CHaro'])] = (0.0, 0.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHaro'], PPR78_GROUPS['Caro'])] = (-13.38, 20.25)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHaro'], PPR78_GROUPS['Cfused_aromatic'])] = (-13.38, 20.25)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHaro'], PPR78_GROUPS['CH2cyclic'])] = (29.17, 69.32)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHaro'], PPR78_GROUPS['CHcyclic'])] = (-26.42, -789.2)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHaro'], PPR78_GROUPS['CO2'])] = (102.6, 161.3)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHaro'], PPR78_GROUPS['N2'])] = (185.2, 490.6)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHaro'], PPR78_GROUPS['H2S'])] = (21.96, 13.04)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHaro'], PPR78_GROUPS['SH'])] = (285.5, 392.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHaro"], PPR78_GROUPS["CHaro"])] = (0.0, 0.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHaro"], PPR78_GROUPS["Caro"])] = (-13.38, 20.25)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHaro"], PPR78_GROUPS["Cfused_aromatic"])] = (-13.38, 20.25)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHaro"], PPR78_GROUPS["CH2cyclic"])] = (29.17, 69.32)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHaro"], PPR78_GROUPS["CHcyclic"])] = (-26.42, -789.2)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHaro"], PPR78_GROUPS["CO2"])] = (102.6, 161.3)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHaro"], PPR78_GROUPS["N2"])] = (185.2, 490.6)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHaro"], PPR78_GROUPS["H2S"])] = (21.96, 13.04)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHaro"], PPR78_GROUPS["SH"])] = (285.5, 392.0)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['Caro'], PPR78_GROUPS['Caro'])] = (0.0, 0.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Caro'], PPR78_GROUPS['Cfused_aromatic'])] = (0.0, 0.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Caro'], PPR78_GROUPS['CH2cyclic'])] = (34.31, 95.39)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Caro'], PPR78_GROUPS['CHcyclic'])] = (-105.7, -286.5)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Caro'], PPR78_GROUPS['CO2'])] = (110.1, 637.6)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Caro'], PPR78_GROUPS['N2'])] = (284.0, 1892.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Caro'], PPR78_GROUPS['H2S'])] = (1.029, -8.579)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Caro'], PPR78_GROUPS['SH'])] = (1072.0, 1094.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Caro"], PPR78_GROUPS["Caro"])] = (0.0, 0.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Caro"], PPR78_GROUPS["Cfused_aromatic"])] = (0.0, 0.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Caro"], PPR78_GROUPS["CH2cyclic"])] = (34.31, 95.39)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Caro"], PPR78_GROUPS["CHcyclic"])] = (-105.7, -286.5)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Caro"], PPR78_GROUPS["CO2"])] = (110.1, 637.6)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Caro"], PPR78_GROUPS["N2"])] = (284.0, 1892.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Caro"], PPR78_GROUPS["H2S"])] = (1.029, -8.579)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Caro"], PPR78_GROUPS["SH"])] = (1072.0, 1094.0)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['Cfused_aromatic'], PPR78_GROUPS['CH2cyclic'])] = (34.31, 95.39)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Cfused_aromatic'], PPR78_GROUPS['CHcyclic'])] = (-105.7, -286.5)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Cfused_aromatic'], PPR78_GROUPS['CO2'])] = (267.3, 444.4)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Cfused_aromatic'], PPR78_GROUPS['N2'])] = (718.1, 1892.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Cfused_aromatic'], PPR78_GROUPS['H2S'])] = (1.029, -8.579)
-PPR78_INTERACTIONS[(PPR78_GROUPS['Cfused_aromatic'], PPR78_GROUPS['SH'])] = (1072.0, 1094.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Cfused_aromatic"], PPR78_GROUPS["CH2cyclic"])] = (34.31, 95.39)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Cfused_aromatic"], PPR78_GROUPS["CHcyclic"])] = (-105.7, -286.5)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Cfused_aromatic"], PPR78_GROUPS["CO2"])] = (267.3, 444.4)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Cfused_aromatic"], PPR78_GROUPS["N2"])] = (718.1, 1892.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Cfused_aromatic"], PPR78_GROUPS["H2S"])] = (1.029, -8.579)
+PPR78_INTERACTIONS[(PPR78_GROUPS["Cfused_aromatic"], PPR78_GROUPS["SH"])] = (1072.0, 1094.0)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2cyclic'], PPR78_GROUPS['CHcyclic'])] = (-50.10, -891.1)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2cyclic'], PPR78_GROUPS['CO2'])] = (130.1, 225.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2cyclic'], PPR78_GROUPS['N2'])] = (179.5, 546.6)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2cyclic'], PPR78_GROUPS['H2S'])] = (120.8, 163.0)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CH2cyclic'], PPR78_GROUPS['SH'])] = (446.1, 549.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2cyclic"], PPR78_GROUPS["CHcyclic"])] = (-50.10, -891.1)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2cyclic"], PPR78_GROUPS["CO2"])] = (130.1, 225.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2cyclic"], PPR78_GROUPS["N2"])] = (179.5, 546.6)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2cyclic"], PPR78_GROUPS["H2S"])] = (120.8, 163.0)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CH2cyclic"], PPR78_GROUPS["SH"])] = (446.1, 549.0)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHcyclic'], PPR78_GROUPS['CO2'])] = (91.28, 82.01)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHcyclic'], PPR78_GROUPS['N2'])] = (100.9, 249.8)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHcyclic'], PPR78_GROUPS['H2S'])] = (-16.13, -147.6)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CHcyclic'], PPR78_GROUPS['SH'])] = (411.8, -308.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHcyclic"], PPR78_GROUPS["CO2"])] = (91.28, 82.01)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHcyclic"], PPR78_GROUPS["N2"])] = (100.9, 249.8)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHcyclic"], PPR78_GROUPS["H2S"])] = (-16.13, -147.6)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CHcyclic"], PPR78_GROUPS["SH"])] = (411.8, -308.8)
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['CO2'], PPR78_GROUPS['N2'])] = (98.42, 221.4)
-PPR78_INTERACTIONS[(PPR78_GROUPS['CO2'], PPR78_GROUPS['H2S'])] = (134.9, 201.4)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CO2"], PPR78_GROUPS["N2"])] = (98.42, 221.4)
+PPR78_INTERACTIONS[(PPR78_GROUPS["CO2"], PPR78_GROUPS["H2S"])] = (134.9, 201.4)
 # PPR78_INTERACTIONS[(PPR78_GROUPS['CO2'], PPR78_GROUPS['SH'])] = (None, None)  # N.A.
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['N2'], PPR78_GROUPS['H2S'])] = (319.5, 550.1)
+PPR78_INTERACTIONS[(PPR78_GROUPS["N2"], PPR78_GROUPS["H2S"])] = (319.5, 550.1)
 # PPR78_INTERACTIONS[(PPR78_GROUPS['N2'], PPR78_GROUPS['SH'])] = (None, None)  # N.A.
 
-PPR78_INTERACTIONS[(PPR78_GROUPS['H2S'], PPR78_GROUPS['SH'])] = (-77.21, 156.1)
+PPR78_INTERACTIONS[(PPR78_GROUPS["H2S"], PPR78_GROUPS["SH"])] = (-77.21, 156.1)
 
 EPPR78_INTERACTIONS = {}
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CH2'])] = (65.5, 105.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CH'])] = (214.9, 294.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CH'])] = (39.0, 41.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['C'])] = (431.6, 575.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['C'])] = (134.5, 183.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['C'])] = (-86.1, 85.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CH4'])] = (28.5, 20.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CH4'])] = (37.7, 74.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['CH4'])] = (131.4, 157.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['CH4'])] = (309.5, 35.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['C2H6'])] = (3.8, 8.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['C2H6'])] = (29.9, 65.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['C2H6'])] = (156.1, 96.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['C2H6'])] = (388.1, -224.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['C2H6'])] = (10.0, 13.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CHaro'])] = (98.8, 136.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CHaro'])] = (25.0, 64.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['CHaro'])] = (56.6, 129.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['CHaro'])] = (170.5, 284.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['CHaro'])] = (67.3, 167.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['CHaro'])] = (41.2, 50.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['Caro'])] = (103.6, 103.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['Caro'])] = (5.1, -7.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['Caro'])] = (48.7, -89.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['Caro'])] = (128.3, 189.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['Caro'])] = (106.7, 190.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['Caro'])] = (67.9, 210.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['Caro'])] = (-16.5, 16.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['Cfused_aromatic'])] = (624.9, 774.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['Cfused_aromatic'])] = (-17.8, -4.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['Cfused_aromatic'])] = (249.1, 408.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['Cfused_aromatic'])] = (52.5, 251.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['Cfused_aromatic'])] = (-328.0, -569.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CH2cyclic'])] = (43.6, 60.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CH2cyclic'])] = (8.6, 27.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['CH2cyclic'])] = (73.1, 71.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['CH2cyclic'])] = (208.6, 294.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['CH2cyclic'])] = (34.0, 5.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['CH2cyclic'])] = (12.7, 73.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['CH2cyclic'])] = (28.8, 65.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['CH2cyclic'])] = (37.4, 53.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['CH2cyclic'])] = (140.7, 277.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CHcyclic'])] = (293.4, 170.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CHcyclic'])] = (63.5, -74.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['CHcyclic'])] = (-120.8, 18.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['CHcyclic'])] = (25.0, 81.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['CHcyclic'])] = (188.0, 473.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['CHcyclic'])] = (118.0, -212.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['CHcyclic'])] = (129.0, 36.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['CHcyclic'])] = (-99.2, -193.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['CHcyclic'])] = (-99.2, -193.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['CHcyclic'])] = (139.0, 35.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CO2'])] = (144.8, 401.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CO2'])] = (141.4, 237.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['CO2'])] = (191.8, 380.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['CO2'])] = (377.5, 162.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['CO2'])] = (136.6, 214.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['CO2'])] = (136.2, 235.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['CO2'])] = (98.5, 253.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['CO2'])] = (154.4, 374.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['CO2'])] = (331.1, 276.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['CO2'])] = (144.1, 354.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['CO2'])] = (216.2, -132.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['N2'])] = (38.1, 88.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['N2'])] = (83.7, 188.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['N2'])] = (383.6, 375.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['N2'])] = (341.8, 635.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['N2'])] = (30.9, 37.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['N2'])] = (61.6, 84.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['N2'])] = (185.3, 490.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['N2'])] = (343.8, 1712.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['N2'])] = (702.4, 1888.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['N2'])] = (179.5, 546.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['N2'])] = (331.5, 389.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['N2'])] = (113.9, 212.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['H2S'])] = (159.6, 227.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['H2S'])] = (136.6, 124.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['H2S'])] = (192.5, 562.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['H2S'])] = (330.8, -297.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['H2S'])] = (190.1, 307.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['H2S'])] = (157.2, 217.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['H2S'])] = (21.3, 6.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['H2S'])] = (9.6, -36.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['H2S'])] = (9.6, -36.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['H2S'])] = (117.4, 166.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['H2S'])] = (71.4, -127.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['H2S'])] = (135.2, 199.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['H2S'])] = (319.5, 550.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['SH'])] = (789.6, 1829.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['SH'])] = (439.9, 504.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['SH'])] = (374.0, 520.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['SH'])] = (685.9, 1546.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['SH'])] = (701.7, 1318.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['SH'])] = (277.6, 449.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['SH'])] = (1002.0, -736.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['SH'])] = (1002.0, -736.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['SH'])] = (493.1, 832.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['SH'])] = (463.2, -337.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2S'], EPPR78_GROUPS['SH'])] = (-157.8, 153.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['H2O'])] = (3557.4, 11194.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['H2O'])] = (4324.3, 12126.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['H2O'])] = (971.4, 567.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['H2O'])] = (2277.1, 4719.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['H2O'])] = (2333.4, 5147.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['H2O'])] = (2267.5, 6218.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['H2O'])] = (543.5, 411.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['H2O'])] = (1340.3, -65.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['H2O'])] = (4210.7, 13031.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['H2O'])] = (244.0, -60.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['H2O'])] = (559.3, 277.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['H2O'])] = (2573.6, 5490.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2S'], EPPR78_GROUPS['H2O'])] = (603.9, 599.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['SH'], EPPR78_GROUPS['H2O'])] = (30.9, -113.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['C2H4'])] = (7.9, 35.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['C2H4'])] = (59.7, 82.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['C2H4'])] = (147.9, -55.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['C2H4'])] = (366.8, -219.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['C2H4'])] = (19.2, 33.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['C2H4'])] = (7.5, 20.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['C2H4'])] = (25.7, 78.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['C2H4'])] = (97.8, 67.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['C2H4'])] = (209.7, 3818.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['C2H4'])] = (35.3, 52.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['C2H4'])] = (297.2, -647.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['C2H4'])] = (73.1, 106.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['C2H4'])] = (45.3, 92.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['C2H4'])] = (1650.2, 1660.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CH2CHalkenic'])] = (48.7, 44.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CH2CHalkenic'])] = (9.6, 50.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['CH2CHalkenic'])] = (84.8, 193.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['CH2CHalkenic'])] = (181.2, 419.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['CH2CHalkenic'])] = (48.7, 68.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['CH2CHalkenic'])] = (26.8, -5.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['CH2CHalkenic'])] = (10.0, 19.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['CH2CHalkenic'])] = (-48.4, 27.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['CH2CHalkenic'])] = (669.8, 589.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['CH2CHalkenic'])] = (-15.4, 24.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['CH2CHalkenic'])] = (260.1, 134.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['CH2CHalkenic'])] = (60.7, 183.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['CH2CHalkenic'])] = (59.7, 227.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['CH2CHalkenic'])] = (2243.5, 5199.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4'], EPPR78_GROUPS['CH2CHalkenic'])] = (14.8, 11.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['Calkenic'])] = (102.6, 260.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['Calkenic'])] = (64.9, 51.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['Calkenic'])] = (91.6, 54.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['Calkenic'])] = (-16.5, 61.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['Calkenic'])] = (343.1, 880.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['Calkenic'])] = (159.6, 140.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['Calkenic'])] = (74.8, -266.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['Calkenic'])] = (541.5, 94.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4'], EPPR78_GROUPS['Calkenic'])] = (-518.2, 6814.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['Calkenic'])] = (24.7, 121.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CHCcycloalkenic'])] = (47.0, 169.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CHCcycloalkenic'])] = (34.3, 51.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['CHCcycloalkenic'])] = (3.8, 1.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['CHCcycloalkenic'])] = (242.9, -7.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['CHCcycloalkenic'])] = (31.9, 69.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['CHCcycloalkenic'])] = (151.3, 2.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['CHCcycloalkenic'])] = (87.8, 66.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4'], EPPR78_GROUPS['CHCcycloalkenic'])] = (-98.8, 1809.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['CHCcycloalkenic'])] = (14.1, -12.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Calkenic'], EPPR78_GROUPS['CHCcycloalkenic'])] = (23.7, 87.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['H2'])] = (174.0, 239.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['H2'])] = (155.4, 240.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['H2'])] = (326.0, 287.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['H2'])] = (548.3, 2343.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['H2'])] = (156.1, 93.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['H2'])] = (137.6, 150.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['H2'])] = (288.9, 189.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['H2'])] = (400.1, 1201.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['H2'])] = (602.9, 1463.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['H2'])] = (236.1, 192.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['H2'])] = (-51.8, 34.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['H2'])] = (261.1, 300.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['H2'])] = (65.2, 70.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2S'], EPPR78_GROUPS['H2'])] = (145.8, 823.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['H2'])] = (830.8, -137.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4'], EPPR78_GROUPS['H2'])] = (151.3, 165.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['H2'])] = (175.7, 373.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Calkenic'], EPPR78_GROUPS['H2'])] = (621.4, 873.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHCcycloalkenic'], EPPR78_GROUPS['H2'])] = (460.8, 2167.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['C2F6'])] = (119.1, 118.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['C2F6'])] = (105.0, 130.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['C2F6'])] = (96.1, 123.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['C2F6'])] = (126.6, 241.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['C2F6'])] = (124.9, 219.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CF3'])] = (123.2, 133.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CF3'])] = (195.6, 199.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['CF3'])] = (531.5, -1945.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['CF3'])] = (413.1, 975.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['CF3'])] = (87.2, 143.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['CF3'])] = (680.1, 421.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['CF3'])] = (733.0, 866.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['CF3'])] = (216.2, 343.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['CF3'])] = (156.5, -116.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4'], EPPR78_GROUPS['CF3'])] = (453.0, -611.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['CF3'])] = (155.4, 154.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHCcycloalkenic'], EPPR78_GROUPS['CF3'])] = (1231.9, -495.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2F6'], EPPR78_GROUPS['CF3'])] = (-14.5, -87.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CF2'])] = (58.3, 65.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CF2'])] = (58.3, 68.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['CF2'])] = (-122.8, 458.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['CF2'])] = (479.0, 1430.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['CF2'])] = (79.3, 15.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['CF2'])] = (-31.6, 43.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['CF2'])] = (-8.9, 5.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['CF2'])] = (42.6, -68.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['CF2'])] = (125.2, 340.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['CF2'])] = (155.4, 154.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CF2CFdouble'])] = (-12.3, 16.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['CF2CFdouble'])] = (95.5, -231.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['CF2CFdouble'])] = (-274.3, -411.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['CF2CFdouble'])] = (78.6, -108.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['CF2CFdouble'])] = (36.2, 63.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4'], EPPR78_GROUPS['CF2CFdouble'])] = (-132.7, 548.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['CF2CFdouble'])] = (88.2, 12.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2F6'], EPPR78_GROUPS['CF2CFdouble'])] = (55.9, -193.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CF3'], EPPR78_GROUPS['CF2CFdouble'])] = (17.5, -93.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['C2H4F2'])] = (128.3, 292.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['C2H4F2'])] = (107.1, 119.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['C2H4F2'])] = (143.8, 15.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['C2H4F2'])] = (48.7, 751.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['C2H4F2'])] = (76.9, -145.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CF3'], EPPR78_GROUPS['C2H4F2'])] = (113.2, 247.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CF2'], EPPR78_GROUPS['C2H4F2'])] = (120.1, 264.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['C2H2F4'])] = (158.5, 356.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['C2H2F4'])] = (86.5, -40.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['C2H2F4'])] = (121.5, -44.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['C2H2F4'])] = (72.4, -305.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['C2H2F4'])] = (29.5, 89.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['C2H2F4'])] = (64.5, -41.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2F6'], EPPR78_GROUPS['C2H2F4'])] = (60.7, 217.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CF3'], EPPR78_GROUPS['C2H2F4'])] = (28.1, 8.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CF2'], EPPR78_GROUPS['C2H2F4'])] = (229.9, 259.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4F2'], EPPR78_GROUPS['C2H2F4'])] = (-4.1, 4.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['CO'])] = (91.2, 94.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['CO'])] = (44.0, 45.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['CO'])] = (14.4, 20.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['CO'])] = (15.4, 33.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['CO'])] = (153.4, 153.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['CO'])] = (125.8, -231.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['CO'])] = (197.0, -238.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['CO'])] = (113.1, 143.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['CO'])] = (87.8, 190.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['CO'])] = (23.3, -25.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2S'], EPPR78_GROUPS['CO'])] = (278.6, 404.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['CO'])] = (715.1, -89.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4'], EPPR78_GROUPS['CO'])] = (84.6, -7.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2'], EPPR78_GROUPS['CO'])] = (75.8, 74.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['He'])] = (416.3, 513.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['He'])] = (520.5, 673.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['He'])] = (728.1, 750.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['He'])] = (394.5, 378.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['He'])] = (581.3, 517.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['He'])] = (753.6, 590.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['He'])] = (753.6, 590.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Cfused_aromatic'], EPPR78_GROUPS['He'])] = (753.6, 590.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['He'])] = (685.9, 559.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['He'])] = (204.7, 222.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4'], EPPR78_GROUPS['He'])] = (569.6, 536.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['He'])] = (644.3, 687.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2'], EPPR78_GROUPS['He'])] = (138.7, 95.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO'], EPPR78_GROUPS['He'])] = (260.1, 259.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['Ar'])] = (11.3, 55.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['Ar'])] = (113.6, 231.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['Ar'])] = (185.8, 634.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C'], EPPR78_GROUPS['Ar'])] = (899.0, 4654.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['Ar'])] = (16.0, 24.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['Ar'])] = (43.8, 53.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['Ar'])] = (195.6, 361.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['Ar'])] = (1268.7, 18665.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['Ar'])] = (177.7, 86.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['Ar'])] = (6.5, 8.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['Ar'])] = (1197.2, 1211.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['Ar'])] = (203.0, -11.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2'], EPPR78_GROUPS['Ar'])] = (128.2, 102.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO'], EPPR78_GROUPS['Ar'])] = (4.0, 8.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['He'], EPPR78_GROUPS['Ar'])] = (243.1, 305.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['SO2'])] = (322.2, 201.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['SO2'])] = (55.9, -28.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['SO2'])] = (-70.0, 233.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['SO2'])] = (205.9, 323.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['SO2'])] = (37.1, -23.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['SO2'])] = (-196.6, -397.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['SO2'])] = (54.9, 59.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['SO2'])] = (282.4, 362.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['SO2'])] = (374.4, 148.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['SO2'])] = (26.8, 26.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Calkenic'], EPPR78_GROUPS['SO2'])] = (-141.7, -151.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Ar'], EPPR78_GROUPS['SO2'])] = (299.9, 354.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['O2'])] = (86.1, 87.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['O2'])] = (107.4, 200.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['O2'])] = (233.3, 404.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['O2'])] = (216.2, 3826.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['O2'])] = (181.2, 281.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['O2'])] = (102.3, 987.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['O2'])] = (154.4, 109.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['O2'])] = (2.4, 4.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['O2'])] = (1376.0, 1609.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Ar'], EPPR78_GROUPS['O2'])] = (4.8, 7.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['SO2'], EPPR78_GROUPS['O2'])] = (339.9, 665.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['NO'])] = (-27.5, 50.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['NO'])] = (5.1, 48.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['NO'])] = (258.7, 100.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO'], EPPR78_GROUPS['NO'])] = (309.2, 28.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Ar'], EPPR78_GROUPS['NO'])] = (110.8, 155.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['SO2'], EPPR78_GROUPS['NO'])] = (172.3, 1343.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['COS'])] = (44.6, -95.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['COS'])] = (83.0, 165.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2S'], EPPR78_GROUPS['COS'])] = (101.9, 98.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['NH3'])] = (436.1, 958.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['NH3'])] = (585.7, 1011.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['NH3'])] = (-550.1, -1404.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2'], EPPR78_GROUPS['NH3'])] = (701.7, 931.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Ar'], EPPR78_GROUPS['NH3'])] = (630.0, 1794.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['NO2N2O4'])] = (124.9, 241.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['NO2N2O4'])] = (263.5, 256.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Ar'], EPPR78_GROUPS['NO2N2O4'])] = (278.6, 274.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['O2'], EPPR78_GROUPS['NO2N2O4'])] = (271.1, 362.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH4'], EPPR78_GROUPS['N2O'])] = (74.8, 107.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['N2O'])] = (3.8, 14.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['N2'], EPPR78_GROUPS['N2O'])] = (101.6, 230.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['N2O'])] = (568.9, -144.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['O2'], EPPR78_GROUPS['N2O'])] = (120.1, 105.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['C2H2'])] = (-6.9, 41.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['C2H2'])] = (421.0, 1193.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H6'], EPPR78_GROUPS['C2H2'])] = (137.9, 168.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['C2H2'])] = (29.2, 123.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['C2H2'])] = (436.8, -200.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['C2H2'])] = (165.4, 39.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H4F2'], EPPR78_GROUPS['C2H2'])] = (-58.7, 303.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['NH3'], EPPR78_GROUPS['C2H2'])] = (-56.3, -1.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['HC≡C'])] = (306.1, 1167.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['HC≡C'])] = (303.3, 316.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['HC≡C'])] = (206.9, 3975.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['HC≡C'])] = (96.1, 148.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['HC≡C'])] = (176.0, -459.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['HC≡C'])] = (496.2, 496.2)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHcyclic'], EPPR78_GROUPS['HC≡C'])] = (863.7, 863.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CO2'], EPPR78_GROUPS['HC≡C'])] = (60.1, -81.0)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['H2O'], EPPR78_GROUPS['HC≡C'])] = (-2395.5, -11671.4)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['HC≡C'])] = (134.5, 568.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Calkenic'], EPPR78_GROUPS['HC≡C'])] = (212.8, -2182.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['C2H2'], EPPR78_GROUPS['HC≡C'])] = (122.5, 247.8)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH3'], EPPR78_GROUPS['C≡C'])] = (72.1, 1219.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2'], EPPR78_GROUPS['C≡C'])] = (488.0, 826.6)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH'], EPPR78_GROUPS['C≡C'])] = (4.5, -245.3)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CHaro'], EPPR78_GROUPS['C≡C'])] = (403.9, 403.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Caro'], EPPR78_GROUPS['C≡C'])] = (518.5, 518.5)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2cyclic'], EPPR78_GROUPS['C≡C'])] = (845.9, 845.9)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['CH2CHalkenic'], EPPR78_GROUPS['C≡C'])] = (255.6, 676.7)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['Calkenic'], EPPR78_GROUPS['C≡C'])] = (-874.3, 1040.1)
-EPPR78_INTERACTIONS[(EPPR78_GROUPS['HC≡C'], EPPR78_GROUPS['C≡C'])] = (-497.6, -824.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CH2"])] = (65.5, 105.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CH"])] = (214.9, 294.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CH"])] = (39.0, 41.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["C"])] = (431.6, 575.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["C"])] = (134.5, 183.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["C"])] = (-86.1, 85.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CH4"])] = (28.5, 20.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CH4"])] = (37.7, 74.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["CH4"])] = (131.4, 157.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["CH4"])] = (309.5, 35.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["C2H6"])] = (3.8, 8.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["C2H6"])] = (29.9, 65.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["C2H6"])] = (156.1, 96.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["C2H6"])] = (388.1, -224.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["C2H6"])] = (10.0, 13.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CHaro"])] = (98.8, 136.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CHaro"])] = (25.0, 64.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["CHaro"])] = (56.6, 129.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["CHaro"])] = (170.5, 284.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["CHaro"])] = (67.3, 167.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["CHaro"])] = (41.2, 50.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["Caro"])] = (103.6, 103.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["Caro"])] = (5.1, -7.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["Caro"])] = (48.7, -89.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["Caro"])] = (128.3, 189.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["Caro"])] = (106.7, 190.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["Caro"])] = (67.9, 210.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["Caro"])] = (-16.5, 16.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["Cfused_aromatic"])] = (624.9, 774.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["Cfused_aromatic"])] = (-17.8, -4.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["Cfused_aromatic"])] = (249.1, 408.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["Cfused_aromatic"])] = (52.5, 251.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["Cfused_aromatic"])] = (-328.0, -569.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CH2cyclic"])] = (43.6, 60.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CH2cyclic"])] = (8.6, 27.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["CH2cyclic"])] = (73.1, 71.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["CH2cyclic"])] = (208.6, 294.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["CH2cyclic"])] = (34.0, 5.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["CH2cyclic"])] = (12.7, 73.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["CH2cyclic"])] = (28.8, 65.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["CH2cyclic"])] = (37.4, 53.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["CH2cyclic"])] = (140.7, 277.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CHcyclic"])] = (293.4, 170.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CHcyclic"])] = (63.5, -74.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["CHcyclic"])] = (-120.8, 18.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["CHcyclic"])] = (25.0, 81.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["CHcyclic"])] = (188.0, 473.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["CHcyclic"])] = (118.0, -212.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["CHcyclic"])] = (129.0, 36.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["CHcyclic"])] = (-99.2, -193.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["CHcyclic"])] = (-99.2, -193.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["CHcyclic"])] = (139.0, 35.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CO2"])] = (144.8, 401.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CO2"])] = (141.4, 237.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["CO2"])] = (191.8, 380.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["CO2"])] = (377.5, 162.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["CO2"])] = (136.6, 214.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["CO2"])] = (136.2, 235.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["CO2"])] = (98.5, 253.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["CO2"])] = (154.4, 374.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["CO2"])] = (331.1, 276.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["CO2"])] = (144.1, 354.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["CO2"])] = (216.2, -132.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["N2"])] = (38.1, 88.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["N2"])] = (83.7, 188.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["N2"])] = (383.6, 375.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["N2"])] = (341.8, 635.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["N2"])] = (30.9, 37.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["N2"])] = (61.6, 84.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["N2"])] = (185.3, 490.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["N2"])] = (343.8, 1712.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["N2"])] = (702.4, 1888.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["N2"])] = (179.5, 546.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["N2"])] = (331.5, 389.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["N2"])] = (113.9, 212.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["H2S"])] = (159.6, 227.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["H2S"])] = (136.6, 124.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["H2S"])] = (192.5, 562.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["H2S"])] = (330.8, -297.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["H2S"])] = (190.1, 307.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["H2S"])] = (157.2, 217.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["H2S"])] = (21.3, 6.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["H2S"])] = (9.6, -36.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["H2S"])] = (9.6, -36.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["H2S"])] = (117.4, 166.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["H2S"])] = (71.4, -127.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["H2S"])] = (135.2, 199.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["H2S"])] = (319.5, 550.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["SH"])] = (789.6, 1829.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["SH"])] = (439.9, 504.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["SH"])] = (374.0, 520.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["SH"])] = (685.9, 1546.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["SH"])] = (701.7, 1318.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["SH"])] = (277.6, 449.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["SH"])] = (1002.0, -736.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["SH"])] = (1002.0, -736.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["SH"])] = (493.1, 832.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["SH"])] = (463.2, -337.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2S"], EPPR78_GROUPS["SH"])] = (-157.8, 153.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["H2O"])] = (3557.4, 11194.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["H2O"])] = (4324.3, 12126.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["H2O"])] = (971.4, 567.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["H2O"])] = (2277.1, 4719.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["H2O"])] = (2333.4, 5147.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["H2O"])] = (2267.5, 6218.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["H2O"])] = (543.5, 411.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["H2O"])] = (1340.3, -65.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["H2O"])] = (4210.7, 13031.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["H2O"])] = (244.0, -60.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["H2O"])] = (559.3, 277.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["H2O"])] = (2573.6, 5490.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2S"], EPPR78_GROUPS["H2O"])] = (603.9, 599.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["SH"], EPPR78_GROUPS["H2O"])] = (30.9, -113.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["C2H4"])] = (7.9, 35.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["C2H4"])] = (59.7, 82.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["C2H4"])] = (147.9, -55.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["C2H4"])] = (366.8, -219.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["C2H4"])] = (19.2, 33.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["C2H4"])] = (7.5, 20.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["C2H4"])] = (25.7, 78.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["C2H4"])] = (97.8, 67.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["C2H4"])] = (209.7, 3818.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["C2H4"])] = (35.3, 52.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["C2H4"])] = (297.2, -647.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["C2H4"])] = (73.1, 106.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["C2H4"])] = (45.3, 92.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["C2H4"])] = (1650.2, 1660.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CH2CHalkenic"])] = (48.7, 44.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CH2CHalkenic"])] = (9.6, 50.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["CH2CHalkenic"])] = (84.8, 193.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["CH2CHalkenic"])] = (181.2, 419.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["CH2CHalkenic"])] = (48.7, 68.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["CH2CHalkenic"])] = (26.8, -5.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["CH2CHalkenic"])] = (10.0, 19.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["CH2CHalkenic"])] = (-48.4, 27.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["CH2CHalkenic"])] = (669.8, 589.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["CH2CHalkenic"])] = (-15.4, 24.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["CH2CHalkenic"])] = (260.1, 134.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["CH2CHalkenic"])] = (60.7, 183.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["CH2CHalkenic"])] = (59.7, 227.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["CH2CHalkenic"])] = (2243.5, 5199.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4"], EPPR78_GROUPS["CH2CHalkenic"])] = (14.8, 11.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["Calkenic"])] = (102.6, 260.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["Calkenic"])] = (64.9, 51.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["Calkenic"])] = (91.6, 54.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["Calkenic"])] = (-16.5, 61.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["Calkenic"])] = (343.1, 880.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["Calkenic"])] = (159.6, 140.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["Calkenic"])] = (74.8, -266.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["Calkenic"])] = (541.5, 94.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4"], EPPR78_GROUPS["Calkenic"])] = (-518.2, 6814.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["Calkenic"])] = (24.7, 121.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CHCcycloalkenic"])] = (47.0, 169.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CHCcycloalkenic"])] = (34.3, 51.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["CHCcycloalkenic"])] = (3.8, 1.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["CHCcycloalkenic"])] = (242.9, -7.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["CHCcycloalkenic"])] = (31.9, 69.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["CHCcycloalkenic"])] = (151.3, 2.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["CHCcycloalkenic"])] = (87.8, 66.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4"], EPPR78_GROUPS["CHCcycloalkenic"])] = (-98.8, 1809.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["CHCcycloalkenic"])] = (14.1, -12.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Calkenic"], EPPR78_GROUPS["CHCcycloalkenic"])] = (23.7, 87.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["H2"])] = (174.0, 239.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["H2"])] = (155.4, 240.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["H2"])] = (326.0, 287.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["H2"])] = (548.3, 2343.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["H2"])] = (156.1, 93.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["H2"])] = (137.6, 150.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["H2"])] = (288.9, 189.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["H2"])] = (400.1, 1201.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["H2"])] = (602.9, 1463.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["H2"])] = (236.1, 192.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["H2"])] = (-51.8, 34.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["H2"])] = (261.1, 300.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["H2"])] = (65.2, 70.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2S"], EPPR78_GROUPS["H2"])] = (145.8, 823.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["H2"])] = (830.8, -137.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4"], EPPR78_GROUPS["H2"])] = (151.3, 165.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["H2"])] = (175.7, 373.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Calkenic"], EPPR78_GROUPS["H2"])] = (621.4, 873.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHCcycloalkenic"], EPPR78_GROUPS["H2"])] = (460.8, 2167.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["C2F6"])] = (119.1, 118.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["C2F6"])] = (105.0, 130.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["C2F6"])] = (96.1, 123.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["C2F6"])] = (126.6, 241.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["C2F6"])] = (124.9, 219.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CF3"])] = (123.2, 133.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CF3"])] = (195.6, 199.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["CF3"])] = (531.5, -1945.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["CF3"])] = (413.1, 975.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["CF3"])] = (87.2, 143.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["CF3"])] = (680.1, 421.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["CF3"])] = (733.0, 866.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["CF3"])] = (216.2, 343.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["CF3"])] = (156.5, -116.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4"], EPPR78_GROUPS["CF3"])] = (453.0, -611.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["CF3"])] = (155.4, 154.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHCcycloalkenic"], EPPR78_GROUPS["CF3"])] = (1231.9, -495.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2F6"], EPPR78_GROUPS["CF3"])] = (-14.5, -87.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CF2"])] = (58.3, 65.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CF2"])] = (58.3, 68.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["CF2"])] = (-122.8, 458.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["CF2"])] = (479.0, 1430.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["CF2"])] = (79.3, 15.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["CF2"])] = (-31.6, 43.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["CF2"])] = (-8.9, 5.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["CF2"])] = (42.6, -68.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["CF2"])] = (125.2, 340.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["CF2"])] = (155.4, 154.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CF2CFdouble"])] = (-12.3, 16.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["CF2CFdouble"])] = (95.5, -231.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["CF2CFdouble"])] = (-274.3, -411.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["CF2CFdouble"])] = (78.6, -108.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["CF2CFdouble"])] = (36.2, 63.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4"], EPPR78_GROUPS["CF2CFdouble"])] = (-132.7, 548.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["CF2CFdouble"])] = (88.2, 12.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2F6"], EPPR78_GROUPS["CF2CFdouble"])] = (55.9, -193.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CF3"], EPPR78_GROUPS["CF2CFdouble"])] = (17.5, -93.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["C2H4F2"])] = (128.3, 292.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["C2H4F2"])] = (107.1, 119.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["C2H4F2"])] = (143.8, 15.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["C2H4F2"])] = (48.7, 751.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["C2H4F2"])] = (76.9, -145.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CF3"], EPPR78_GROUPS["C2H4F2"])] = (113.2, 247.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CF2"], EPPR78_GROUPS["C2H4F2"])] = (120.1, 264.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["C2H2F4"])] = (158.5, 356.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["C2H2F4"])] = (86.5, -40.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["C2H2F4"])] = (121.5, -44.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["C2H2F4"])] = (72.4, -305.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["C2H2F4"])] = (29.5, 89.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["C2H2F4"])] = (64.5, -41.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2F6"], EPPR78_GROUPS["C2H2F4"])] = (60.7, 217.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CF3"], EPPR78_GROUPS["C2H2F4"])] = (28.1, 8.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CF2"], EPPR78_GROUPS["C2H2F4"])] = (229.9, 259.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4F2"], EPPR78_GROUPS["C2H2F4"])] = (-4.1, 4.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["CO"])] = (91.2, 94.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["CO"])] = (44.0, 45.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["CO"])] = (14.4, 20.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["CO"])] = (15.4, 33.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["CO"])] = (153.4, 153.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["CO"])] = (125.8, -231.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["CO"])] = (197.0, -238.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["CO"])] = (113.1, 143.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["CO"])] = (87.8, 190.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["CO"])] = (23.3, -25.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2S"], EPPR78_GROUPS["CO"])] = (278.6, 404.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["CO"])] = (715.1, -89.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4"], EPPR78_GROUPS["CO"])] = (84.6, -7.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2"], EPPR78_GROUPS["CO"])] = (75.8, 74.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["He"])] = (416.3, 513.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["He"])] = (520.5, 673.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["He"])] = (728.1, 750.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["He"])] = (394.5, 378.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["He"])] = (581.3, 517.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["He"])] = (753.6, 590.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["He"])] = (753.6, 590.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Cfused_aromatic"], EPPR78_GROUPS["He"])] = (753.6, 590.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["He"])] = (685.9, 559.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["He"])] = (204.7, 222.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4"], EPPR78_GROUPS["He"])] = (569.6, 536.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["He"])] = (644.3, 687.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2"], EPPR78_GROUPS["He"])] = (138.7, 95.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO"], EPPR78_GROUPS["He"])] = (260.1, 259.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["Ar"])] = (11.3, 55.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["Ar"])] = (113.6, 231.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["Ar"])] = (185.8, 634.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C"], EPPR78_GROUPS["Ar"])] = (899.0, 4654.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["Ar"])] = (16.0, 24.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["Ar"])] = (43.8, 53.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["Ar"])] = (195.6, 361.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["Ar"])] = (1268.7, 18665.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["Ar"])] = (177.7, 86.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["Ar"])] = (6.5, 8.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["Ar"])] = (1197.2, 1211.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["Ar"])] = (203.0, -11.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2"], EPPR78_GROUPS["Ar"])] = (128.2, 102.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO"], EPPR78_GROUPS["Ar"])] = (4.0, 8.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["He"], EPPR78_GROUPS["Ar"])] = (243.1, 305.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["SO2"])] = (322.2, 201.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["SO2"])] = (55.9, -28.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["SO2"])] = (-70.0, 233.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["SO2"])] = (205.9, 323.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["SO2"])] = (37.1, -23.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["SO2"])] = (-196.6, -397.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["SO2"])] = (54.9, 59.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["SO2"])] = (282.4, 362.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["SO2"])] = (374.4, 148.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["SO2"])] = (26.8, 26.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Calkenic"], EPPR78_GROUPS["SO2"])] = (-141.7, -151.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Ar"], EPPR78_GROUPS["SO2"])] = (299.9, 354.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["O2"])] = (86.1, 87.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["O2"])] = (107.4, 200.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["O2"])] = (233.3, 404.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["O2"])] = (216.2, 3826.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["O2"])] = (181.2, 281.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["O2"])] = (102.3, 987.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["O2"])] = (154.4, 109.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["O2"])] = (2.4, 4.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["O2"])] = (1376.0, 1609.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Ar"], EPPR78_GROUPS["O2"])] = (4.8, 7.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["SO2"], EPPR78_GROUPS["O2"])] = (339.9, 665.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["NO"])] = (-27.5, 50.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["NO"])] = (5.1, 48.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["NO"])] = (258.7, 100.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO"], EPPR78_GROUPS["NO"])] = (309.2, 28.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Ar"], EPPR78_GROUPS["NO"])] = (110.8, 155.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["SO2"], EPPR78_GROUPS["NO"])] = (172.3, 1343.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["COS"])] = (44.6, -95.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["COS"])] = (83.0, 165.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2S"], EPPR78_GROUPS["COS"])] = (101.9, 98.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["NH3"])] = (436.1, 958.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["NH3"])] = (585.7, 1011.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["NH3"])] = (-550.1, -1404.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2"], EPPR78_GROUPS["NH3"])] = (701.7, 931.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Ar"], EPPR78_GROUPS["NH3"])] = (630.0, 1794.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["NO2N2O4"])] = (124.9, 241.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["NO2N2O4"])] = (263.5, 256.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Ar"], EPPR78_GROUPS["NO2N2O4"])] = (278.6, 274.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["O2"], EPPR78_GROUPS["NO2N2O4"])] = (271.1, 362.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH4"], EPPR78_GROUPS["N2O"])] = (74.8, 107.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["N2O"])] = (3.8, 14.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["N2"], EPPR78_GROUPS["N2O"])] = (101.6, 230.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["N2O"])] = (568.9, -144.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["O2"], EPPR78_GROUPS["N2O"])] = (120.1, 105.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["C2H2"])] = (-6.9, 41.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["C2H2"])] = (421.0, 1193.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H6"], EPPR78_GROUPS["C2H2"])] = (137.9, 168.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["C2H2"])] = (29.2, 123.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["C2H2"])] = (436.8, -200.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["C2H2"])] = (165.4, 39.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H4F2"], EPPR78_GROUPS["C2H2"])] = (-58.7, 303.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["NH3"], EPPR78_GROUPS["C2H2"])] = (-56.3, -1.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["HC≡C"])] = (306.1, 1167.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["HC≡C"])] = (303.3, 316.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["HC≡C"])] = (206.9, 3975.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["HC≡C"])] = (96.1, 148.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["HC≡C"])] = (176.0, -459.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["HC≡C"])] = (496.2, 496.2)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHcyclic"], EPPR78_GROUPS["HC≡C"])] = (863.7, 863.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CO2"], EPPR78_GROUPS["HC≡C"])] = (60.1, -81.0)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["H2O"], EPPR78_GROUPS["HC≡C"])] = (-2395.5, -11671.4)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["HC≡C"])] = (134.5, 568.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Calkenic"], EPPR78_GROUPS["HC≡C"])] = (212.8, -2182.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["C2H2"], EPPR78_GROUPS["HC≡C"])] = (122.5, 247.8)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH3"], EPPR78_GROUPS["C≡C"])] = (72.1, 1219.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2"], EPPR78_GROUPS["C≡C"])] = (488.0, 826.6)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH"], EPPR78_GROUPS["C≡C"])] = (4.5, -245.3)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CHaro"], EPPR78_GROUPS["C≡C"])] = (403.9, 403.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Caro"], EPPR78_GROUPS["C≡C"])] = (518.5, 518.5)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2cyclic"], EPPR78_GROUPS["C≡C"])] = (845.9, 845.9)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["CH2CHalkenic"], EPPR78_GROUPS["C≡C"])] = (255.6, 676.7)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["Calkenic"], EPPR78_GROUPS["C≡C"])] = (-874.3, 1040.1)
+EPPR78_INTERACTIONS[(EPPR78_GROUPS["HC≡C"], EPPR78_GROUPS["C≡C"])] = (-497.6, -824.2)
 
 
 ZERO_PARAMETER = (0.0, 0.0)
 
-for interactions_dict, groups_dict in [(PPR78_INTERACTIONS, PPR78_GROUPS), 
+for interactions_dict, groups_dict in [(PPR78_INTERACTIONS, PPR78_GROUPS),
                                      (EPPR78_INTERACTIONS, EPPR78_GROUPS)]:
     groups = list(groups_dict.values())
     for group1 in groups:
@@ -762,13 +772,13 @@ EPPR78_GROUPS_LIST = list(EPPR78_GROUPS.values())
 PPR78_INTERACTIONS_BY_STR = {(group1.group, group2.group): value for (group1, group2), value in PPR78_INTERACTIONS.items()}
 EPPR78_INTERACTIONS_BY_STR = {(group1.group, group2.group): value for (group1, group2), value in EPPR78_INTERACTIONS.items()}
 
-PPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value 
+PPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value
                            for (group1, group2), value in PPR78_INTERACTIONS.items()}
-EPPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value 
-                            for (group1, group2), value in EPPR78_INTERACTIONS.items()}                    
+EPPR78_INTERACTIONS_BY_ID = {(group1.group_id, group2.group_id): value
+                            for (group1, group2), value in EPPR78_INTERACTIONS.items()}
 
-def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2, omega2, version='original', string=True):
-    r'''Calculate binary interaction parameter kij(T) between two molecules using the PPR78 method.
+def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2, omega2, version="original", string=True):
+    r"""Calculate binary interaction parameter kij(T) between two molecules using the PPR78 method.
 
     This function implements the PPR78 (Predictive Peng-Robinson 1978) method to calculate
     the binary interaction parameter kij between two molecules, including the calculation
@@ -828,19 +838,19 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
     >>> # Example for methane-ethane system using original PPR78
     >>> PPR78_kij(298.15, {"CH3": 1}, {"CH3": 2}, Tc1=190.564, Pc1=4599200, omega1=0.01142, Tc2=305.322, Pc2=4872200, omega2=0.0995)
     -0.009617659
-    
+
     >>> # Same system using extended PPR78
     >>> PPR78_kij(298.15, {"CH3": 1}, {"CH3": 2}, Tc1=190.564, Pc1=4599200, omega1=0.01142, Tc2=305.322, Pc2=4872200, omega2=0.0995, version='extended')
     -0.009617659
-    '''
-    if version not in ('original', 'extended'):
+    """
+    if version not in ("original", "extended"):
         raise ValueError("version must be either 'original' or 'extended'")
-        
+
     # Select the appropriate interaction parameters based on version
     if string:
-        interactions = EPPR78_INTERACTIONS_BY_STR if version == 'extended' else PPR78_INTERACTIONS_BY_STR
+        interactions = EPPR78_INTERACTIONS_BY_STR if version == "extended" else PPR78_INTERACTIONS_BY_STR
     else:
-        interactions = EPPR78_INTERACTIONS_BY_ID if version == 'extended' else PPR78_INTERACTIONS_BY_ID
+        interactions = EPPR78_INTERACTIONS_BY_ID if version == "extended" else PPR78_INTERACTIONS_BY_ID
 
     OMEGA_A = 0.4572355289213821893834601962251837888504
     OMEGA_B = 0.0777960739038884559718447100373331839711
@@ -859,17 +869,17 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
     # Calculate a parameters
     m1 = calculate_m(omega1)
     m2 = calculate_m(omega2)
-    
+
     ai_T1 = (OMEGA_A * R**2 * Tc1**2 / Pc1) * (1 + m1 * (1 - sqrt(T/Tc1)))**2
     ai_T2 = (OMEGA_A * R**2 * Tc2**2 / Pc2) * (1 + m2 * (1 - sqrt(T/Tc2)))**2
 
     # Calculate group fractions
     total_groups1 = sum(molecule1_groups.values())
     total_groups2 = sum(molecule2_groups.values())
-    
+
     alpha_i = {group: count/total_groups1 for group, count in molecule1_groups.items()}
     alpha_j = {group: count/total_groups2 for group, count in molecule2_groups.items()}
-    
+
     # Calculate first term (group contribution)
     term1 = 0.0
     for group_k in set(alpha_i.keys()) | set(alpha_j.keys()):
@@ -878,32 +888,32 @@ def PPR78_kij(T, molecule1_groups, molecule2_groups, Tc1, Pc1, omega1, Tc2, Pc2,
             alpha_jk = alpha_j.get(group_k, 0.0)
             alpha_il = alpha_i.get(group_l, 0.0)
             alpha_jl = alpha_j.get(group_l, 0.0)
-            
+
             A_kl, B_kl = interactions[(group_k, group_l)]
-            
+
             if A_kl != 0:
                 delta_k = alpha_ik - alpha_jk
                 delta_l = alpha_il - alpha_jl
                 term1 += delta_k * delta_l * A_kl * (298.15/T)**(B_kl/A_kl - 1)
     term1 *= -0.5
     term1 *= 1e6
-    
+
     # Calculate second term (EOS parameters)
     sqrt_ai_T1 = sqrt(ai_T1)
     sqrt_ai_T2 = sqrt(ai_T2)
     term2 = ((sqrt_ai_T1/bi_1) - (sqrt_ai_T2/bi_2))**2
-    
+
     # Calculate denominator
     denominator = 2 * sqrt(ai_T1 * ai_T2)/(bi_1 * bi_2)
-    
+
     # Final calculation
     kij_value = (term1 - term2)/denominator
     return kij_value
 
-def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original', string=True):
-    r"""Calculate the binary interaction parameter (kij) matrix for a mixture of components 
+def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version="original", string=True):
+    r"""Calculate the binary interaction parameter (kij) matrix for a mixture of components
     at a specified temperature using the PPR78 method.
-    
+
     Parameters
     ----------
     T : float
@@ -921,32 +931,32 @@ def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original', string=True):
         Version of the method to use ('original' or 'extended'), defaults to 'original'
     string : bool
         Whether the group counts are in the format {'CH3': 2} etc or {5: 2}
-        
+
     Returns
     -------
     list[list[float]]
         Square matrix of kij values where matrix[i][j] gives the interaction
         parameter between components i and j
-        
+
     Examples
     --------
     >>> # Calculate kij matrix for methane-ethane-propane mixture using original PPR78
     >>> groups = [
     ...     {"CH3": 1},              # methane
-    ...     {"CH3": 2},              # ethane  
+    ...     {"CH3": 2},              # ethane
     ...     {"CH3": 2, "CH2": 1}     # propane
     ... ]
-    >>> Tc = [190.564, 305.322, 369.83]  
+    >>> Tc = [190.564, 305.322, 369.83]
     >>> Pc = [4599200, 4872200, 4248000]
     >>> omega = [0.01142, 0.0995, 0.1523]
     >>> matrix = PPR78_kijs(298.15, groups, Tc, Pc, omega)
     """
-    if version not in ('original', 'extended'):
+    if version not in ("original", "extended"):
         raise ValueError("version must be either 'original' or 'extended'")
-        
+
     n_components = len(groups)
     kij_matrix = [[0.0 for _ in range(n_components)] for _ in range(n_components)]
-    
+
     # Calculate upper triangle
     for i in range(n_components):
         for j in range(i+1, n_components):
@@ -966,7 +976,7 @@ def PPR78_kijs(T, groups, Tcs, Pcs, omegas, version='original', string=True):
             # Set both (i,j) and (j,i) due to symmetry
             kij_matrix[i][j] = kij
             kij_matrix[j][i] = kij
-            
+
     return kij_matrix
 
 def readable_assignment_PPR78(assignment):
@@ -975,28 +985,28 @@ def readable_assignment_PPR78(assignment):
 def readable_assignment_EPPR78(assignment):
     return {EPPR78_GROUPS_BY_ID[i].group : v for i, v in assignment.items()}
 
-def fragment_PPR78(rdkitmols, version='original'):
+def fragment_PPR78(rdkitmols, version="original"):
     """Fragment a list of RDKit molecules according to PPR78 or EPPR78 group contribution method.
     Failed fragmentations (not all atoms had a group in the method) return None.
-    
+
     Parameters
     ----------
     rdkitmols : list[rdkit.Chem.rdchem.Mol]
         List of RDKit molecule objects to fragment
     version : str, optional
         Version of the method to use ('original' or 'extended'), defaults to 'original'
-        
+
     Returns
     -------
     list[Union[dict, None]]
-        List of dictionaries containing group counts for each molecule, or None if 
+        List of dictionaries containing group counts for each molecule, or None if
         fragmentation failed. Dictionary format is {group_name: count}
-        
+
     Notes
     -----
-    Group contributions are calculated using the PPR78 (original) or EPPR78 (extended) 
+    Group contributions are calculated using the PPR78 (original) or EPPR78 (extended)
     method. Failed fragmentations return None instead of raising an exception.
-    
+
     Examples
     --------
     >>> from rdkit import Chem  # doctest:+SKIP
@@ -1005,12 +1015,12 @@ def fragment_PPR78(rdkitmols, version='original'):
     >>> # Fragment them using original PPR78
     >>> fragments = fragment_PPR78(mols)  # doctest:+SKIP
     """
-    if version not in ('original', 'extended'):
+    if version not in ("original", "extended"):
         raise ValueError("version must be either 'original' or 'extended'")
-    
+
     # Select appropriate group catalog
-    catalog = EPPR78_GROUPS_LIST if version == 'extended' else PPR78_GROUPS_LIST
-    
+    catalog = EPPR78_GROUPS_LIST if version == "extended" else PPR78_GROUPS_LIST
+
     results = []
     for mol in rdkitmols:
         try:
@@ -1018,25 +1028,25 @@ def fragment_PPR78(rdkitmols, version='original'):
             if mol is None:
                 results.append(None)
                 continue
-                
+
             # Attempt fragmentation
             assignment, _, _, success, _ = smarts_fragment_priority(
                 catalog=catalog,
                 rdkitmol=mol
             )
-            
+
             # Convert successful assignments to readable format
             if success:
-                if version == 'extended':
+                if version == "extended":
                     groups = readable_assignment_EPPR78(assignment)
                 else:
                     groups = readable_assignment_PPR78(assignment)
                 results.append(groups)
             else:
                 results.append(None)
-                
+
         except Exception:
             # Catch any exceptions and return None for failed molecules
             results.append(None)
-            
+
     return results

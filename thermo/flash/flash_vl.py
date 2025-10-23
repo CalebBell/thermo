@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,7 +18,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 from chemicals.exceptions import TrivialSolutionError
 from fluids.numerics import UnconvergedError, isinf, secant, trunc_log
@@ -56,10 +56,10 @@ from thermo.flash.flash_utils import (
 )
 from thermo.property_package import StabilityTester
 
-__all__ = ['FlashVL']
+__all__ = ["FlashVL"]
 
 class FlashVL(Flash):
-    r'''Class for performing flash calculations on one and
+    r"""Class for performing flash calculations on one and
     two phase vapor and liquid multicomponent systems. Use :obj:`FlashVLN` for
     systems which can have multiple liquid phases.
 
@@ -239,7 +239,7 @@ class FlashVL(Flash):
        Professional, 2000.
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    '''
+    """
 
     PT_SS_MAXITER = 5000
     PT_SS_TOL = 1e-13
@@ -304,7 +304,7 @@ class FlashVL(Flash):
 
     TPV_HSGUA_NEWTON_XTOL = 1e-9
     TPV_HSGUA_NEWTON_MAXITER = 1000
-    TPV_HSGUA_NEWTON_SOLVER = 'hybr'
+    TPV_HSGUA_NEWTON_SOLVER = "hybr"
     HSGUA_NEWTON_ANALYTICAL_JAC = True
     TPV_HSGUA_SECANT_MAXITER = 1000
 
@@ -414,12 +414,12 @@ class FlashVL(Flash):
                     if self.unique_liquid_count > 1:
                         # cannott force flash each liquid easily
                         continue
-                    sln = dew_bubble_bounded_naive(guess=P, fixed_val=T, zs=zs, flasher=self, iter_var='P', fixed_var='T', V_over_F=VF,
+                    sln = dew_bubble_bounded_naive(guess=P, fixed_val=T, zs=zs, flasher=self, iter_var="P", fixed_var="T", V_over_F=VF,
                                                    maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol)
                     return sln
                 else:
                     sln = algo(P, fixed_val=T, zs=zs, liquid_phase=liquid, gas_phase=gas,
-                                iter_var='P', fixed_var='T', V_over_F=VF,
+                                iter_var="P", fixed_var="T", V_over_F=VF,
                                 maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
                                 comp_guess=comp_guess)
                 break
@@ -490,7 +490,7 @@ class FlashVL(Flash):
                         # cannot force flash each liquid easily
                         continue
                     # This one doesn't like being low tolerance because the PT tolerance isn't there
-                    sln = dew_bubble_bounded_naive(guess=T, fixed_val=P, zs=zs, flasher=self, iter_var='T', fixed_var='P', V_over_F=VF,
+                    sln = dew_bubble_bounded_naive(guess=T, fixed_val=P, zs=zs, flasher=self, iter_var="T", fixed_var="P", V_over_F=VF,
                                                    maxiter=dew_bubble_maxiter, xtol=max(dew_bubble_xtol, 1e-6), hot_start=hot_start)
                     # This one should never need anything else
                     # as it has its own stability test
@@ -503,7 +503,7 @@ class FlashVL(Flash):
                 else:
 
                     sln = algo(T, fixed_val=P, zs=zs, liquid_phase=liquid, gas_phase=gas,
-                            iter_var='T', fixed_var='P', V_over_F=VF,
+                            iter_var="T", fixed_var="P", V_over_F=VF,
                             maxiter=dew_bubble_maxiter, xtol=dew_bubble_xtol,
                             comp_guess=comp_guess)
 
@@ -558,7 +558,7 @@ class FlashVL(Flash):
         fugacities_trial = min_phase.fugacities_lowest_Gibbs()
         zs_trial = min_phase.zs
 
-        if self.supports_lnphis_args and 1:
+        if self.supports_lnphis_args and 0:  # noqa: SIM223
             other_phase_arg = other_phase.lnphis_args()
             functional = True
         else:
@@ -611,7 +611,7 @@ class FlashVL(Flash):
                         if highest_comp_diff:
                             if min_diff > comp_diff_max:
                                 if min_comp_diff is not None and min_diff > min_comp_diff and not all_solutions:
-                                    highest_comp_diff = highest_comp_diff = False
+                                    highest_comp_diff = False
                                     break
                                 comp_diff_solution = (trial_zs, appearing_zs, V_over_F, i, sum_criteria, lnK_2_tot, dG_RT)
                                 comp_diff_max = min_diff
@@ -666,7 +666,11 @@ class FlashVL(Flash):
         if G_liq < G_gas: # How handle equal?
             min_phase, other_phase = liquid, gas
         elif G_liq == G_gas:
-            min_phase, other_phase = (liquid, gas) if liquid.phase == 'l' else (gas, liquid)
+            PIP = liquid.PIP()
+            if PIP <= 1.0:
+                min_phase, other_phase = gas, liquid
+            else:
+                min_phase, other_phase = liquid, gas
         else:
             min_phase, other_phase = gas, liquid
 
@@ -674,10 +678,10 @@ class FlashVL(Flash):
                 T, P, zs, min_phase, other_phase, highest_comp_diff=self.SS_2P_STAB_HIGHEST_COMP_DIFF, min_comp_diff=self.SS_2P_STAB_COMP_DIFF_MIN)
         if stable:
             ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
-            return g, ls, [], [1.0], {'iterations': 0, 'err': 0.0, 'stab_info': None}
+            return g, ls, [], [1.0], {"iterations": 0, "err": 0.0, "stab_info": None}
         else:
             return self.flash_2P(T, P, zs, trial_zs, appearing_zs, min_phase, other_phase, gas, liquid,
-                                 V_over_F_guess=None, stab_info={'stab_guess_name': stab_guess_name}, LL=LL)
+                                 V_over_F_guess=None, stab_info={"stab_guess_name": stab_guess_name}, LL=LL)
 
 #        stable = True
 #        for i, trial_comp in enumerate(gen):
@@ -704,7 +708,7 @@ class FlashVL(Flash):
 
 
     def sequential_substitution_2P(self, T, P, zs, xs_guess, ys_guess, liquid_phase, gas_phase, V_over_F_guess, maxiter, tol):
-        if self.supports_lnphis_args and 1:
+        if self.supports_lnphis_args and 0:  # noqa: SIM223
 
             if liquid_phase.T != T or liquid_phase.P != P:
                 liquid_phase = liquid_phase.to_TP_zs(T=T, P=P, zs=xs_guess)
@@ -748,7 +752,7 @@ class FlashVL(Flash):
 
         except TrivialSolutionError:
             ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
-            return g, ls, [], [1.0], {'iterations': 0, 'err': 0.0, 'stab_info': stab_info}
+            return g, ls, [], [1.0], {"iterations": 0, "err": 0.0, "stab_info": stab_info}
 
         if V_over_F < self.PT_SS_POLISH_VF or V_over_F > 1.0-self.PT_SS_POLISH_VF:
             # Continue the SS, with the previous values, to a much tighter tolerance - if specified/allowed
@@ -760,17 +764,17 @@ class FlashVL(Flash):
             if V_over_F < 0.0 or V_over_F > 1.0:
 
                 ls, g = ([liquid], None) if min_phase is liquid else ([], gas)
-                return g, ls, [], [1.0], {'iterations': iteration, 'err': err, 'stab_info': stab_info}
+                return g, ls, [], [1.0], {"iterations": iteration, "err": err, "stab_info": stab_info}
         if LL:
-            return None, [g, l], [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err,
-                                                                    'stab_info': stab_info}
+            return None, [g, l], [], [V_over_F, 1.0 - V_over_F], {"iterations": iteration, "err": err,
+                                                                    "stab_info": stab_info}
 
         if min_phase is liquid:
-            ls, g, V_over_F = [l], g, V_over_F
+            ls = [l]
         else:
             ls, g, V_over_F = [g], l, 1.0 - V_over_F
 
-        return g, ls, [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err, 'stab_info': stab_info}
+        return g, ls, [], [V_over_F, 1.0 - V_over_F], {"iterations": iteration, "err": err, "stab_info": stab_info}
 
     def PT_converge(self, T, P, zs, xs_guess, ys_guess, liquid_phase,
                     gas_phase, V_over_F_guess=0.5):
@@ -784,14 +788,14 @@ class FlashVL(Flash):
                 # a = 1
 
     def flash_PV(self, P, V, zs, solution=None, hot_start=None):
-        return self.flash_TPV_HSGUA(fixed_val=P, spec_val=V, fixed_var='P', spec='V',
-                            iter_var='T', zs=zs, solution=solution,
+        return self.flash_TPV_HSGUA(fixed_val=P, spec_val=V, fixed_var="P", spec="V",
+                            iter_var="T", zs=zs, solution=solution,
                             hot_start=hot_start)
 
 
     def flash_TV(self, T, V, zs, solution=None, hot_start=None):
-        return self.flash_TPV_HSGUA(fixed_val=T, spec_val=V, fixed_var='T', spec='V',
-                            iter_var='P', zs=zs, solution=solution,
+        return self.flash_TPV_HSGUA(fixed_val=T, spec_val=V, fixed_var="T", spec="V",
+                            iter_var="P", zs=zs, solution=solution,
                             hot_start=hot_start)
 
 
@@ -813,7 +817,7 @@ class FlashVL(Flash):
                     V_over_F_guess=VF_guess
                 )
                 assert 0.0 <= V_over_F <= 1.0
-                return g, [l], [], [V_over_F, 1.0 - V_over_F], {'iterations': iteration, 'err': err}
+                return g, [l], [], [V_over_F, 1.0 - V_over_F], {"iterations": iteration, "err": err}
             except Exception as e:
                 # print('FAILED from hot start TP')
                 pass
@@ -821,28 +825,28 @@ class FlashVL(Flash):
 
         return self.flash_TP_stability_test(T, P, zs, self.liquid, self.gas, solution=solution)
 
-    def flash_TPV_HSGUA(self, fixed_val, spec_val, fixed_var='P', spec='H',
-                        iter_var='T', zs=None, solution=None,
+    def flash_TPV_HSGUA(self, fixed_val, spec_val, fixed_var="P", spec="H",
+                        iter_var="T", zs=None, solution=None,
                         selection_fun_1P=None, hot_start=None, spec_fun=None):
 
         constants, correlations = self.constants, self.correlations
         if solution is None:
-            if fixed_var == 'P' and spec == 'H':
+            if fixed_var == "P" and spec == "H":
                 fun = lambda obj: -obj.S()
-            elif fixed_var == 'P' and spec == 'S':
+            elif fixed_var == "P" and spec == "S":
                 fun = lambda obj: obj.H() # Michaelson
-            elif fixed_var == 'V' and spec == 'U':
+            elif fixed_var == "V" and spec == "U":
                 fun = lambda obj: -obj.S()
-            elif fixed_var == 'V' and spec == 'S':
+            elif fixed_var == "V" and spec == "S":
                 fun = lambda obj: obj.U()
-            elif fixed_var == 'P' and spec == 'U':
+            elif fixed_var == "P" and spec == "U":
                 fun = lambda obj: -obj.S() # promising
             else:
                 fun = lambda obj: obj.G()
         else:
-            if solution == 'high':
+            if solution == "high":
                 fun = lambda obj: -obj.value(iter_var)
-            elif solution == 'low':
+            elif solution == "low":
                 fun = lambda obj: obj.value(iter_var)
             elif callable(solution):
                 fun = solution
@@ -900,15 +904,15 @@ class FlashVL(Flash):
 
 # Need to return g, ls, ss, betas, flash_convergence
 
-    def bounds_PT_HSGUA(self, iter_var='T'):
-        if iter_var == 'T':
+    def bounds_PT_HSGUA(self, iter_var="T"):
+        if iter_var == "T":
             min_bound = phases.Phase.T_MIN_FIXED
             max_bound = phases.Phase.T_MAX_FIXED
             for p in self.phases:
                 if isinstance(p, phases.CoolPropPhase):
                     min_bound = max(p.AS.Tmin(), min_bound)
                     max_bound = min(p.AS.Tmax(), max_bound)
-        elif iter_var == 'P':
+        elif iter_var == "P":
             min_bound = phases.Phase.P_MIN_FIXED*(1.0 - 1e-12)
             max_bound = phases.Phase.P_MAX_FIXED*(1.0 + 1e-12)
             for p in self.phases:
@@ -916,13 +920,13 @@ class FlashVL(Flash):
                     AS = p.AS
                     max_bound = min(AS.pmax()*(1.0 - 1e-7), max_bound)
                     min_bound = max(AS.trivial_keyed_output(CPiP_min)*(1.0 + 1e-7), min_bound)
-        elif iter_var == 'V':
+        elif iter_var == "V":
             min_bound = phases.Phase.V_MIN_FIXED
             max_bound = phases.Phase.V_MAX_FIXED
         return min_bound, max_bound
 
     def solve_PT_HSGUA_NP_guess_newton_2P(self, zs, fixed_val, spec_val,
-                                          fixed_var='P', spec='H', iter_var='T',):
+                                          fixed_var="P", spec="H", iter_var="T",):
         phases = self.phases
         constants = self.constants
         correlations = self.correlations
@@ -954,12 +958,12 @@ class FlashVL(Flash):
                              analytical_jac=self.HSGUA_NEWTON_ANALYTICAL_JAC)
         iter_val, betas, compositions, phases, errs, _, iterations = sln
 
-        return None, phases, [], betas, {'errs': errs, 'iterations': iterations}
+        return None, phases, [], betas, {"errs": errs, "iterations": iterations}
 
 
 
     def solve_PT_HSGUA_NP_guess_bisect(self, zs, fixed_val, spec_val,
-                                       fixed_var='P', spec='H', iter_var='T', hot_start=None, spec_fun=None):
+                                       fixed_var="P", spec="H", iter_var="T", hot_start=None, spec_fun=None):
         phases = self.phases
         constants = self.constants
         correlations = self.correlations
@@ -990,16 +994,16 @@ class FlashVL(Flash):
                     #print(e)
                     pass
         if guess is None:
-            if iter_var == 'T':
+            if iter_var == "T":
                 guess = 298.15
-            elif iter_var == 'P':
+            elif iter_var == "P":
                 guess = 101325.0
-            elif iter_var == 'V':
+            elif iter_var == "V":
                 guess = 0.024465403697038125
         sln = []
         global iterations
         iterations = 0
-        kwargs = {fixed_var: fixed_val, 'zs': zs}
+        kwargs = {fixed_var: fixed_val, "zs": zs}
         def to_solve(iter_val):
             global iterations
             iterations += 1
@@ -1017,6 +1021,6 @@ class FlashVL(Flash):
         sln_val = secant(to_solve, guess, xtol=self.TPV_HSGUA_BISECT_XTOL, ytol=ytol,
                          require_xtol=self.TPV_HSGUA_BISECT_YTOL_ONLY, require_eval=True, bisection=True,
                          low=min_bound, high=max_bound, maxiter=self.TPV_HSGUA_SECANT_MAXITER)
-        return sln[0], {'iterations': iterations, 'err': sln[1]}
+        return sln[0], {"iterations": iterations, "err": sln[1]}
 
 

@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,9 +18,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
-__all__ = ['FlashPureVLS']
+__all__ = ["FlashPureVLS"]
 
 from chemicals.exceptions import PhaseExistenceImpossible
 from chemicals.iapws import iapws95_MW, iapws95_Pc, iapws95_Psat, iapws95_rhog_sat, iapws95_rhol_sat, iapws95_T, iapws95_Tc, iapws95_Tsat
@@ -56,7 +56,7 @@ from thermo.phases.coolprop_phase import (
 
 
 class FlashPureVLS(Flash):
-    r'''Class for performing flash calculations on pure-component systems.
+    r"""Class for performing flash calculations on pure-component systems.
     This class is subtantially more robust than using multicomponent algorithms
     on pure species. It is also faster. All parameters are also attributes.
 
@@ -222,7 +222,7 @@ class FlashPureVLS(Flash):
        Professional, 2000.
     .. [2] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    '''
+    """
 
     VF_interpolators_built = False
     N = 1
@@ -288,9 +288,9 @@ class FlashPureVLS(Flash):
 
 
         for i, l in enumerate(self.liquids):
-            setattr(self, 'liquid' + str(i), l)
+            setattr(self, "liquid" + str(i), l)
         for i, s in enumerate(self.solids):
-            setattr(self, 'solid' + str(i), s)
+            setattr(self, "solid" + str(i), s)
 
         self.VL_only = self.phase_count == 2 and self.liquid_count == 1 and self.gas is not None
         self.VL_only_CEOSs = (self.VL_only
@@ -301,14 +301,14 @@ class FlashPureVLS(Flash):
 
         self.VL_only_IAPWS95 = (len(liquids) == 1
                                 and (isinstance(liquids[0], IAPWS95Liquid)
-                                     or liquids[0].__class__.__name__ == 'IAPWS95Liquid')
+                                     or liquids[0].__class__.__name__ == "IAPWS95Liquid")
                                  and (isinstance(gas, IAPWS95Gas)
-                                      or  gas.__class__.__name__ == 'IAPWS95Gas')
+                                      or  gas.__class__.__name__ == "IAPWS95Gas")
                                 and (not solids))
 
         self.V_only_lemmon2000 = (len(liquids) == 0
                                  and (isinstance(gas, DryAirLemmon)
-                                      or  gas.__class__.__name__ == 'DryAirLemmon')
+                                      or  gas.__class__.__name__ == "DryAirLemmon")
                                 and (not solids))
 
         # TODO implement as function of phases/or EOS
@@ -342,9 +342,9 @@ class FlashPureVLS(Flash):
 
         if solution is None:
             fun = lambda obj: obj.G()
-        elif solution == 'high':
+        elif solution == "high":
             fun = lambda obj: -obj.T
-        elif solution == 'low':
+        elif solution == "low":
             fun = lambda obj: obj.T
         elif callable(solution):
             fun = solution
@@ -361,13 +361,13 @@ class FlashPureVLS(Flash):
             return None, [], [sln], betas, None
         elif self.VL_only_CEOSs_same and V is None and solution is None:
             gas = self.gas.to(zs=zs, T=T, P=P, V=V)
-            if gas.eos_mix.phase == 'l/g':
+            if gas.eos_mix.phase == "l/g":
                 gas.eos_mix.solve_missing_volumes()
                 if gas.eos_mix.G_dep_l < gas.eos_mix.G_dep_g:
-                    l = self.liquid.to_TP_zs(T, P, zs, other_eos=gas.eos_mix)
+                    l = self.liquid.to_TP_zs(T, P, zs)
                     return None, [l], [], betas, None
                 return gas, [], [], betas, None
-            elif gas.eos_mix.phase == 'g':
+            elif gas.eos_mix.phase == "g":
                 return gas, [], [], betas, None
             else:
                 return None, [gas], [], betas, None
@@ -380,7 +380,7 @@ class FlashPureVLS(Flash):
                 return gas, [], [], betas, None
         elif self.VL_only_CEOSs_same and V is not None and (T is not None or P is not None) and solution is None:
             gas = self.gas.to(zs=zs, T=T, P=P, V=V)
-            if gas.eos_mix.phase == 'g':
+            if gas.eos_mix.phase == "g":
                 return gas, [], [], betas, None
             else:
                 return None, [gas], [], betas, None
@@ -498,8 +498,8 @@ class FlashPureVLS(Flash):
                 raise PhaseExistenceImpossible("Specified T is in the supercritical region", zs=zs, T=T)
 
             Psat = iapws95_Psat(T)
-            sat_gas = self.gas.to(T=T, V=rho_to_Vm(iapws95_rhog_sat(T), self.gas._MW), zs=zs)
-            sat_liq = self.liquid.to(T=T, V=rho_to_Vm(iapws95_rhol_sat(T), self.liquid._MW), zs=zs)
+            sat_gas = self.gas.to(T=T, V=rho_to_Vm(iapws95_rhog_sat(T), self.gas.MW()), zs=zs)
+            sat_liq = self.liquid.to(T=T, V=rho_to_Vm(iapws95_rhol_sat(T), self.liquid.MW()), zs=zs)
             return Psat, sat_liq, sat_gas, 0, 0.0
         Psat = self.Psat_guess(T)
         gas = self.gas.to_TP_zs(T, Psat, zs)
@@ -508,7 +508,7 @@ class FlashPureVLS(Flash):
             if T > self.constants.Tcs[0]:
                 raise PhaseExistenceImpossible("Specified T is in the supercritical region", zs=zs, T=T)
 
-            sat_liq = self.liquids[0].to_TP_zs(T, Psat, zs, other_eos=gas.eos_mix)
+            sat_liq = self.liquids[0].to_TP_zs(T, Psat, zs)
             return Psat, sat_liq, gas, 0, 0.0
 
         liquids = [l.to_TP_zs(T, Psat, zs) for l in self.liquids]
@@ -537,7 +537,7 @@ class FlashPureVLS(Flash):
             except:
                 raise PhaseExistenceImpossible("Failed to calculate VL equilibrium T; likely supercritical", zs=zs, P=P)
             sat_gas = self.gas.to_TP_zs(Tsat, P, zs)
-            sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs, other_eos=sat_gas.eos_mix)
+            sat_liq = self.liquids[0].to_TP_zs(Tsat, P, zs)
             return Tsat, sat_liq, sat_gas, 0, 0.0
         elif self.VL_IG_activity:
             Tsat = self.correlations.VaporPressures[0].solve_property(P)
@@ -595,8 +595,8 @@ class FlashPureVLS(Flash):
         pass
 
 
-    def flash_TPV_HSGUA_VL_bound_first(self, fixed_var_val, spec_val, fixed_var='P',
-                                 spec='H', iter_var='T', hot_start=None,
+    def flash_TPV_HSGUA_VL_bound_first(self, fixed_var_val, spec_val, fixed_var="P",
+                                 spec="H", iter_var="T", hot_start=None,
                                  selection_fun_1P=None, cubic=True, spec_fun=None):
         constants, correlations = self.constants, self.correlations
         zs = [1.0]
@@ -604,11 +604,11 @@ class FlashPureVLS(Flash):
         flash_convergence = {}
         has_VL = False
         need_both = True
-        if fixed_var == 'T':
+        if fixed_var == "T":
             if self.Psat_guess(fixed_var_val) > 1e-2:
                 Psat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_TVF(fixed_var_val, VF=.5, zs=zs)
                 has_VL = True
-        elif fixed_var == 'P':
+        elif fixed_var == "P":
             if fixed_var_val > 1e-2:
                 Tsat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_PVF(fixed_var_val, VF=.5, zs=zs)
                 has_VL = True
@@ -647,9 +647,9 @@ class FlashPureVLS(Flash):
         results_G_min_1P = None
         if hot_start is None:
             last_conv = None
-        elif iter_var == 'T':
+        elif iter_var == "T":
             last_conv = hot_start.T
-        elif iter_var == 'P':
+        elif iter_var == "P":
             last_conv = hot_start.P
         for phase in phases:
             try:
@@ -661,31 +661,31 @@ class FlashPureVLS(Flash):
                                                                   maxiter=self.TPV_HSGUA_maxiter, xtol=self.TPV_HSGUA_xtol, spec_fun=spec_fun)
                 if cubic:
                     phase.eos_mix.solve_missing_volumes()
-                    if phase.eos_mix.phase == 'l/g':
+                    if phase.eos_mix.phase == "l/g":
                         # Check we are not metastable
                         if min(phase.eos_mix.G_dep_l, phase.eos_mix.G_dep_g) == phase.G_dep(): # If we do not have a metastable phase
                             if isinstance(phase, CEOSGas):
                                 g, ls = phase, []
                             else:
                                 g, ls = None, [phase]
-                            flash_convergence['err'] = err
-                            flash_convergence['iterations'] = iterations
+                            flash_convergence["err"] = err
+                            flash_convergence["iterations"] = iterations
                             return g, ls, [], [1.0], flash_convergence
                     else:
                         if isinstance(phase, (CEOSGas, IdealGas)):
                             g, ls = phase, []
                         else:
                             g, ls = None, [phase]
-                        flash_convergence['err'] = err
-                        flash_convergence['iterations'] = iterations
+                        flash_convergence["err"] = err
+                        flash_convergence["iterations"] = iterations
                         return g, ls, [], [1.0], flash_convergence
                 else:
                     if isinstance(phase, (CEOSGas, IdealGas)):
                         g, ls = phase, []
                     else:
                         g, ls = None, [phase]
-                    flash_convergence['err'] = err
-                    flash_convergence['iterations'] = iterations
+                    flash_convergence["err"] = err
+                    flash_convergence["iterations"] = iterations
                     return g, ls, [], [1.0], flash_convergence
 
             except Exception as e:
@@ -694,24 +694,24 @@ class FlashPureVLS(Flash):
 
 
 
-    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var='P', spec='H',
-                        iter_var='T', zs=None, solution=None,
+    def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var="P", spec="H",
+                        iter_var="T", zs=None, solution=None,
                         selection_fun_1P=None, hot_start=None,
                         iter_var_backup=None, spec_fun=None):
         # Be prepared to have a flag here to handle zero flow
         zs = [1.0]
         constants, correlations = self.constants, self.correlations
         if solution is None:
-            if fixed_var == 'P' and spec == 'H':
+            if fixed_var == "P" and spec == "H":
                 fun = lambda obj: -obj.S()
-            elif fixed_var == 'P' and spec == 'S':
+            elif fixed_var == "P" and spec == "S":
                # fun = lambda obj: obj.G()
                 fun = lambda obj: obj.H() # Michaelson
-            elif fixed_var == 'V' and spec == 'U':
+            elif fixed_var == "V" and spec == "U":
                 fun = lambda obj: -obj.S()
-            elif fixed_var == 'V' and spec == 'S':
+            elif fixed_var == "V" and spec == "S":
                 fun = lambda obj: obj.U()
-            elif fixed_var == 'P' and spec == 'U':
+            elif fixed_var == "P" and spec == "U":
                 fun = lambda obj: -obj.S() # promising
                 # fun = lambda obj: -obj.H() # not bad not as good as A
                 # fun = lambda obj: obj.A() # Pretty good
@@ -719,9 +719,9 @@ class FlashPureVLS(Flash):
             else:
                 fun = lambda obj: obj.G()
         else:
-            if solution == 'high':
+            if solution == "high":
                 fun = lambda obj: -obj.value(iter_var)
-            elif solution == 'low':
+            elif solution == "low":
                 fun = lambda obj: obj.value(iter_var)
             elif callable(solution):
                 fun = solution
@@ -732,12 +732,9 @@ class FlashPureVLS(Flash):
         if selection_fun_1P is None:
             selection_fun_1P_specified = False
             def selection_fun_1P(new, prev):
-                if fixed_var == 'P' and spec == 'S':
+                if fixed_var == "P" and spec == "S":
                     if new[-1] < prev[-1]:
-                        if new[0] < 1.0 and prev[0] > 1.0:
-                            # Found a very low temperature solution do not take it
-                            return False
-                        return True
+                        return not (new[0] < 1.0 and prev[0] > 1.0)
                     elif (prev[0] < 1.0 and new[0] > 1.0):
                         return True
 
@@ -746,15 +743,15 @@ class FlashPureVLS(Flash):
                         return True
                 return False
 
-        if (self.VL_only_CEOSs_same or self.VL_IG_activity) and not selection_fun_1P_specified and solution is None and fixed_var != 'V':
+        if (self.VL_only_CEOSs_same or self.VL_IG_activity) and not selection_fun_1P_specified and solution is None and fixed_var != "V":
             try:
                 return self.flash_TPV_HSGUA_VL_bound_first(fixed_var_val=fixed_var_val, spec_val=spec_val, fixed_var=fixed_var,
                                      spec=spec, iter_var=iter_var, hot_start=hot_start, selection_fun_1P=selection_fun_1P, cubic=self.VL_only_CEOSs_same, spec_fun=spec_fun)
             except PhaseExistenceImpossible:
                 pass
-        elif self.V_only_lemmon2000 and not selection_fun_1P_specified and fixed_var == 'V' and iter_var == 'P':
+        elif self.V_only_lemmon2000 and not selection_fun_1P_specified and fixed_var == "V" and iter_var == "P":
             # Specifically allow the solution to be specified, equation goes wonky around 50000
-            iter_var = 'T'
+            iter_var = "T"
 #            if sln is not None:
 #                return sln
 
@@ -762,13 +759,13 @@ class FlashPureVLS(Flash):
             VL_liq, VL_gas = None, None
             G_VL = 1e100
             # BUG - P IS NOW KNOWN!
-            if self.gas_count and self.liquid_count:
-                if fixed_var == 'T' and self.Psat_guess(fixed_var_val) > 1e-2:
-                    Psat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_TVF(fixed_var_val, zs=zs, VF=.5)
-                elif fixed_var == 'P' and fixed_var_val > 1e-2:
-                    Tsat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_PVF(fixed_var_val, zs=zs, VF=.5)
-            elif fixed_var == 'V':
+            if fixed_var == "V":
                 raise NotImplementedError("Does not make sense here because there is no actual vapor frac spec")
+            if self.gas_count and self.liquid_count:
+                if fixed_var == "T" and self.Psat_guess(fixed_var_val) > 1e-2:
+                    Psat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_TVF(fixed_var_val, zs=zs, VF=.5)
+                elif fixed_var == "P" and fixed_var_val > 1e-2:
+                    Tsat, VL_liq, VL_gas, VL_iter, VL_err = self.flash_PVF(fixed_var_val, zs=zs, VF=.5)
 
 #                VL_flash = self.flash(P=P, VF=.4)
 #            print('hade it', VL_liq, VL_gas)
@@ -793,7 +790,7 @@ class FlashPureVLS(Flash):
             results_G_min_1P = None
             one_phase_solution_test_phases = self.phases
             if self.VL_only_IAPWS95:
-                if fixed_var == 'P' and spec == 'H':
+                if fixed_var == "P" and spec == "H":
                     if VL_liq is not None:
                         if spec_val_l > spec_val:
                             one_phase_solution_test_phases = self.liquids
@@ -874,7 +871,7 @@ class FlashPureVLS(Flash):
                 T = VL_liq.T
                 iterations = 0
                 err = 0.0
-                flash_convergence['VF flash convergence'] = {'iterations': VL_iter, 'err': VL_err}
+                flash_convergence["VF flash convergence"] = {"iterations": VL_iter, "err": VL_err}
 
         # TODO
         # if G_SF < G_min:
@@ -899,13 +896,13 @@ class FlashPureVLS(Flash):
             also have a self check to say whether or not the value should have
             had a converged value.
             """
-            if iter_var == 'T':
+            if iter_var == "T":
                 min_bound = Phase.T_MIN_FIXED*(1.0-1e-15)
                 max_bound = Phase.T_MAX_FIXED*(1.0+1e-15)
-            elif iter_var == 'P':
+            elif iter_var == "P":
                 min_bound = Phase.P_MIN_FIXED*(1.0-1e-15)
                 max_bound = Phase.P_MAX_FIXED*(1.0+1e-15)
-            elif iter_var == 'V':
+            elif iter_var == "V":
                 min_bound = Phase.V_MIN_FIXED*(1.0-1e-15)
                 max_bound = Phase.V_MAX_FIXED*(1.0+1e-15)
 
@@ -918,8 +915,8 @@ class FlashPureVLS(Flash):
             had_solution = False
             uncertain_solution = False
 
-            s = ''
-            phase_kwargs = {fixed_var: fixed_var_val, 'zs': zs}
+            s = ""
+            phase_kwargs = {fixed_var: fixed_var_val, "zs": zs}
             for phase in self.phases:
 
                 try:
@@ -933,20 +930,20 @@ class FlashPureVLS(Flash):
 
                     low, high = getattr(phases_at_min[-1], spec)(), getattr(phases_at_max[-1], spec)()
                     low, high = min(low, high), max(low, high)
-                    s += f'{p.__class__.__name__} 1 Phase solution: ({low:g}, {high:g}); '
+                    s += f"{p.__class__.__name__} 1 Phase solution: ({low:g}, {high:g}); "
                     if low <= spec_val <= high:
                         had_solution = True
                 except:
                     uncertain_solution = True
 
             if VL_liq is not None:
-                s += f'({VL_liq.__class__.__name__}, {VL_gas.__class__.__name__}) VL 2 Phase solution: ({spec_val_l:g}, {spec_val_g:g}); '
-                VL_min_spec, VL_max_spec = min(spec_val_l, spec_val_g), max(spec_val_l, spec_val_g),
+                s += f"({VL_liq.__class__.__name__}, {VL_gas.__class__.__name__}) VL 2 Phase solution: ({spec_val_l:g}, {spec_val_g:g}); "
+                VL_min_spec, VL_max_spec = min(spec_val_l, spec_val_g), max(spec_val_l, spec_val_g)
                 if VL_min_spec <= spec_val <= VL_max_spec:
                     had_solution = True
             if SF is not None:
-                s += f'({VS_flash.phases[0].__class__.__name__}, {VS_flash.solid0.__class__.__name__}) VL 2 Phase solution: ({spec_val_s:g}, {spec_other:g}); '
-                S_min_spec, S_max_spec = min(spec_val_s, spec_other), max(spec_val_s, spec_other),
+                s += f"({VS_flash.phases[0].__class__.__name__}, {VS_flash.solid0.__class__.__name__}) VL 2 Phase solution: ({spec_val_s:g}, {spec_other:g}); "
+                S_min_spec, S_max_spec = min(spec_val_s, spec_other), max(spec_val_s, spec_other)
                 if S_min_spec <= spec_val <= S_max_spec:
                     had_solution = True
             if had_solution:
@@ -956,8 +953,8 @@ class FlashPureVLS(Flash):
             else:
                 raise NoSolutionError(f"No physical solution in bounds for {spec}={spec_val} at {fixed_var}={fixed_var_val}: {s}")
 
-        flash_convergence['iterations'] = iterations
-        flash_convergence['err'] = err
+        flash_convergence["iterations"] = iterations
+        flash_convergence["err"] = err
 
         return gas_phase, ls, ss, betas, flash_convergence
 
@@ -966,21 +963,21 @@ class FlashPureVLS(Flash):
         PT = self.flash(T=state.T, P=state.P)
 
         if inputs is None:
-            inputs = [('T', 'P'),
-                                 ('T', 'V'),
-                                 ('P', 'V'),
+            inputs = [("T", "P"),
+                                 ("T", "V"),
+                                 ("P", "V"),
 
-                                 ('T', 'H'),
-                                 ('T', 'S'),
-                                 ('T', 'U'),
+                                 ("T", "H"),
+                                 ("T", "S"),
+                                 ("T", "U"),
 
-                                 ('P', 'H'),
-                                 ('P', 'S'),
-                                 ('P', 'U'),
+                                 ("P", "H"),
+                                 ("P", "S"),
+                                 ("P", "U"),
 
-                                 ('V', 'H'),
-                                 ('V', 'S'),
-                                 ('V', 'U')]
+                                 ("V", "H"),
+                                 ("V", "S"),
+                                 ("V", "U")]
 
         states = []
         for p0, p1 in inputs:
@@ -1003,7 +1000,7 @@ class FlashPureVLS(Flash):
             states.append(new)
         return states
 
-    def assert_flashes_same(self, reference, states, props=['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A'], rtol=1e-7):
+    def assert_flashes_same(self, reference, states, props=["T", "P", "V", "S", "H", "G", "U", "A"], rtol=1e-7):
         ref_props = [reference.value(k) for k in props]
         for i, k in enumerate(props):
             ref = ref_props[i]
@@ -1011,10 +1008,10 @@ class FlashPureVLS(Flash):
                 assert_close(s.value(k), ref, rtol=rtol)
 
     def generate_VF_data(self, Pmin=None, Pmax=None, pts=100,
-                         props=['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A']):
-        '''Could use some better algorithms for generating better data? Some of
+                         props=["T", "P", "V", "S", "H", "G", "U", "A"]):
+        """Could use some better algorithms for generating better data? Some of
         the solutions count on this.
-        '''
+        """
         Pc = self.constants.Pcs[0]
         if Pmax is None:
             Pmax = Pc
@@ -1048,10 +1045,10 @@ class FlashPureVLS(Flash):
     def build_VF_interpolators(self, T_base=True, P_base=True, pts=50):
         self.liq_VF_interpolators = liq_VF_interpolators = {}
         self.gas_VF_interpolators = gas_VF_interpolators = {}
-        props = ['T', 'P', 'V', 'S', 'H', 'G', 'U', 'A',
-                 'dS_dT', 'dH_dT', 'dG_dT', 'dU_dT', 'dA_dT',
-                 'dS_dP', 'dH_dP', 'dG_dP', 'dU_dP', 'dA_dP',
-                 'fugacity', 'dfugacity_dT', 'dfugacity_dP']
+        props = ["T", "P", "V", "S", "H", "G", "U", "A",
+                 "dS_dT", "dH_dT", "dG_dT", "dU_dT", "dA_dT",
+                 "dS_dP", "dH_dP", "dG_dP", "dU_dP", "dA_dP",
+                 "fugacity", "dfugacity_dT", "dfugacity_dP"]
 
         liq_props, gas_props = self.generate_VF_data(props=props, pts=pts)
         self.liq_VF_data = liq_props
@@ -1059,16 +1056,16 @@ class FlashPureVLS(Flash):
         self.props_VF_data = props
 
         if T_base and P_base:
-            base_props, base_idxs = ('T', 'P'), (0, 1)
+            base_props, base_idxs = ("T", "P"), (0, 1)
         elif T_base:
-            base_props, base_idxs = ('T',), (0,)
+            base_props, base_idxs = ("T",), (0,)
         elif P_base:
-            base_props, base_idxs = ('P',), (1,)
+            base_props, base_idxs = ("P",), (1,)
 
         self.VF_data_base_props = base_props
         self.VF_data_base_idxs = base_idxs
 
-        self.VF_data_spline_kwargs = spline_kwargs = dict(bc_type='natural', extrapolate=False)
+        self.VF_data_spline_kwargs = spline_kwargs = dict(bc_type="natural", extrapolate=False)
 
         try:
             self.build_VF_splines()
@@ -1083,7 +1080,6 @@ class FlashPureVLS(Flash):
         liq_VF_interpolators = self.liq_VF_interpolators
         gas_VF_interpolators = self.gas_VF_interpolators
         from scipy.interpolate import CubicSpline
-
         for base_prop, base_idx in zip(self.VF_data_base_props, self.VF_data_base_idxs):
             xs = liq_props[base_idx]
             for i, k in enumerate(props):
@@ -1103,12 +1099,12 @@ class FlashPureVLS(Flash):
 
 
 
-    def flash_VF_HSGUA(self, fixed_var_val, spec_val, fixed_var='VF', spec_var='H', zs=None,
-                       hot_start=None, solution='high'):
+    def flash_VF_HSGUA(self, fixed_var_val, spec_val, fixed_var="VF", spec_var="H", zs=None,
+                       hot_start=None, solution="high"):
         # solution at high T by default
         if not self.VF_interpolators_built:
             self.build_VF_interpolators()
-        iter_var = 'T' # hardcoded -
+        iter_var = "T" # hardcoded -
         # to make code generic try not to use eos stuff
 #        liq_obj = self.liq_VF_interpolators[(iter_var, spec_var)]
 #        gas_obj = self.liq_VF_interpolators[(iter_var, spec_var)]
@@ -1120,14 +1116,14 @@ class FlashPureVLS(Flash):
         iter_idx = props.index(iter_var)
         spec_idx = props.index(spec_var)
 
-        T_idx, P_idx = props.index('T'), props.index('P')
+        T_idx, P_idx = props.index("T"), props.index("P")
         Ts, Ps = liq_props[T_idx], liq_props[P_idx]
 
-        dfug_dT_idx = props.index('dfugacity_dT')
-        dfug_dP_idx = props.index('dfugacity_dP')
+        dfug_dT_idx = props.index("dfugacity_dT")
+        dfug_dP_idx = props.index("dfugacity_dP")
 
-        dspec_dT_var = f'd{spec_var}_dT'
-        dspec_dP_var = f'd{spec_var}_dP'
+        dspec_dT_var = f"d{spec_var}_dT"
+        dspec_dP_var = f"d{spec_var}_dP"
         dspec_dT_idx = props.index(dspec_dT_var)
         dspec_dP_idx = props.index(dspec_dP_var)
 
@@ -1192,7 +1188,7 @@ class FlashPureVLS(Flash):
             # dval_low, dval_high = dspec_values[idx_low], dspec_values[idx_high]
         elif len(bounding_idx) == 2:
             # pick range and go for it
-            if solution == 'high' or solution is None:
+            if solution == "high" or solution is None:
                 T_low, T_high = bounding_Ts[1][0], bounding_Ts[1][1]
                 idx_low, idx_high = bounding_idx[1][0], bounding_idx[1][1]
             else:
@@ -1222,7 +1218,7 @@ class FlashPureVLS(Flash):
 
                 val_low, val_high = spec_values[idx_low], spec_values[idx_high]
                 dval_low, dval_high = dspec_values[idx_low], dspec_values[idx_high]
-            elif (high and solution == 'high') or not low:
+            elif (high and solution == "high") or not low:
                 val_low, val_high = v_zero, spec_values[idx_high]
                 dval_low, dval_high = dspec_values[idx_high], dspec_values[idx_high]
                 T_low, T_high = T_der_zero, Ts[idx_high]
@@ -1235,7 +1231,7 @@ class FlashPureVLS(Flash):
             if isinstance(solution, int):
                 sln_idx = solution
             else:
-                sln_idx = {'high': -1, 'mid': -2, 'low': 0}[solution]
+                sln_idx = {"high": -1, "mid": -2, "low": 0}[solution]
             T_low, T_high = bounding_Ts[sln_idx][0], bounding_Ts[sln_idx][1]
             idx_low, idx_high = bounding_idx[sln_idx][0], bounding_idx[sln_idx][1]
 
@@ -1255,9 +1251,9 @@ class FlashPureVLS(Flash):
 
         return self.flash_VF_HSGUA_bounded(T_guess, T_low, T_high, fixed_var_val, spec_val, fixed_var=fixed_var, spec_var=spec_var)
 
-    def _VF_HSGUA_der_root(self, guess, low, high, fixed_var_val, spec_val, fixed_var='VF', spec_var='H'):
-        dspec_dT_var = f'd{spec_var}_dT'
-        dspec_dP_var = f'd{spec_var}_dP'
+    def _VF_HSGUA_der_root(self, guess, low, high, fixed_var_val, spec_val, fixed_var="VF", spec_var="H"):
+        dspec_dT_var = f"d{spec_var}_dT"
+        dspec_dP_var = f"d{spec_var}_dP"
         VF = fixed_var_val
 
         val_cache = [None, 0]
@@ -1290,9 +1286,9 @@ class FlashPureVLS(Flash):
             T_zero = brenth(to_solve, low, high, xtol=1e-12)
         return T_zero, val_cache[0]
 
-    def flash_VF_HSGUA_bounded(self, guess, low, high, fixed_var_val, spec_val, fixed_var='VF', spec_var='H'):
-        dspec_dT_var = f'd{spec_var}_dT'
-        dspec_dP_var = f'd{spec_var}_dP'
+    def flash_VF_HSGUA_bounded(self, guess, low, high, fixed_var_val, spec_val, fixed_var="VF", spec_var="H"):
+        dspec_dT_var = f"d{spec_var}_dT"
+        dspec_dP_var = f"d{spec_var}_dP"
         VF = fixed_var_val
 
         cache = [0]
@@ -1363,9 +1359,9 @@ class FlashPureVLS(Flash):
         values = np.array([to_solve_newton(P)[0] for P in Ps])
         values[values == 0] = 1e-10 # Make them show up on the plot
 
-        plt.loglog(Ps, values, 'x', label='Positive errors')
-        plt.loglog(Ps, -values, 'o', label='Negative errors')
-        plt.legend(loc='best', fancybox=True, framealpha=0.5)
+        plt.loglog(Ps, values, "x", label="Positive errors")
+        plt.loglog(Ps, -values, "o", label="Negative errors")
+        plt.legend(loc="best", fancybox=True, framealpha=0.5)
         plt.show()
 
     def debug_PVF(self, P, VF=None, pts=2000):
@@ -1405,8 +1401,8 @@ class FlashPureVLS(Flash):
 
         values = np.array([to_solve_newton(T)[0] for T in Ts])
 
-        plt.semilogy(Ts, values, 'x', label='Positive errors')
-        plt.semilogy(Ts, -values, 'o', label='Negative errors')
+        plt.semilogy(Ts, values, "x", label="Positive errors")
+        plt.semilogy(Ts, -values, "o", label="Negative errors")
 
 
         min_index = np.argmin(np.abs(values))
@@ -1414,10 +1410,10 @@ class FlashPureVLS(Flash):
         T = Ts[min_index]
         Ts2 = np.linspace(T*.999, T*1.001, int(pts/2))
         values2 = np.array([to_solve_newton(T)[0] for T in Ts2])
-        plt.semilogy(Ts2, values2, 'x', label='Positive Fine')
-        plt.semilogy(Ts2, -values2, 'o', label='Negative Fine')
+        plt.semilogy(Ts2, values2, "x", label="Positive Fine")
+        plt.semilogy(Ts2, -values2, "o", label="Negative Fine")
 
-        plt.legend(loc='best', fancybox=True, framealpha=0.5)
+        plt.legend(loc="best", fancybox=True, framealpha=0.5)
         plt.show()
 
 

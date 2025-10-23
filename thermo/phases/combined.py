@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,8 +19,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-'''
-__all__ = ['CombinedPhase']
+"""
+__all__ = ["CombinedPhase"]
 
 from thermo.phases.phase import Phase
 
@@ -49,15 +49,15 @@ class CombinedPhase(Phase):
 
     def lnphis(self):
         # This style will save the getattr call but takes more time to code
-        if 'lnphis' in self.other_props:
-            return self.phases[self.other_props['lnphis']].lnphis()
+        if "lnphis" in self.other_props:
+            return self.phases[self.other_props["lnphis"]].lnphis()
         if self.equilibrium is not None:
             return self.phases[self.equilibrium].lnphis()
         raise ValueError("No method specified")
 
     def lnphis_G_min(self):
-        if 'lnphis' in self.other_props:
-            return self.phases[self.other_props['lnphis']].lnphis_G_min()
+        if "lnphis" in self.other_props:
+            return self.phases[self.other_props["lnphis"]].lnphis_G_min()
         if self.equilibrium is not None:
             return self.phases[self.equilibrium].lnphis_G_min()
         raise ValueError("No method specified")

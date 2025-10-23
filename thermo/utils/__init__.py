@@ -1,4 +1,5 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+# ruff: noqa: F403
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -70,7 +71,7 @@ Temperature, Pressure, and Composition Dependent
     :undoc-members:
     :show-inheritance:
 
-'''
+"""
 
 from . import functional, mixture_property, t_dependent_property, tp_dependent_property
 from .functional import *
@@ -112,9 +113,9 @@ __all__ = (
     *t_dependent_property.__all__,
     *tp_dependent_property.__all__,
     *mixture_property.__all__,
-    'NEGLECT_P', 'LINEAR', 'POLY_FIT', 'EXP_POLY_FIT', 'POLY_FIT_LN_TAU', 'EXP_POLY_FIT_LN_TAU',
-    'STABLEPOLY_FIT', 'EXP_STABLEPOLY_FIT', 'STABLEPOLY_FIT_LN_TAU', 'EXP_STABLEPOLY_FIT_LN_TAU',
-    'CHEB_FIT', 'EXP_CHEB_FIT', 'CHEB_FIT_LN_TAU', 'EXP_CHEB_FIT_LN_TAU', 'IAPWS', 'DIPPR_PERRY_8E',
-    'VDI_TABULAR', 'VDI_PPDS', 'COOLPROP', 'EOS', 'HEOS_FIT', 'REFPROP_FIT', 'HO1972', 'UNARY',
-    'MIXING_LOG_MOLAR', 'MIXING_LOG_MASS', 'JANAF_FIT'
+    "NEGLECT_P", "LINEAR", "POLY_FIT", "EXP_POLY_FIT", "POLY_FIT_LN_TAU", "EXP_POLY_FIT_LN_TAU",
+    "STABLEPOLY_FIT", "EXP_STABLEPOLY_FIT", "STABLEPOLY_FIT_LN_TAU", "EXP_STABLEPOLY_FIT_LN_TAU",
+    "CHEB_FIT", "EXP_CHEB_FIT", "CHEB_FIT_LN_TAU", "EXP_CHEB_FIT_LN_TAU", "IAPWS", "DIPPR_PERRY_8E",
+    "VDI_TABULAR", "VDI_PPDS", "COOLPROP", "EOS", "HEOS_FIT", "REFPROP_FIT", "HO1972", "UNARY",
+    "MIXING_LOG_MOLAR", "MIXING_LOG_MASS", "JANAF_FIT"
 )

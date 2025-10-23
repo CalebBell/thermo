@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -45,7 +45,7 @@ Wilson Regression Calculations
 ==============================
 .. autofunction:: wilson_gammas_binaries
 
-'''
+"""
 
 from math import exp, log
 
@@ -60,7 +60,7 @@ try:
 except (ImportError, AttributeError):
     pass
 
-__all__ = ['Wilson', 'Wilson_gammas', 'wilson_gammas_binaries', 'wilson_gammas_binaries_jac']
+__all__ = ["Wilson", "Wilson_gammas", "wilson_gammas_binaries", "wilson_gammas_binaries_jac"]
 
 
 def wilson_xj_Lambda_ijs(xs, lambdas, N, xj_Lambda_ijs=None):
@@ -223,7 +223,7 @@ def wilson_gammas_from_args(xs, N, lambdas, xj_Lambda_ijs=None, vec0=None, gamma
 MIN_LAMBDA_WILSON = 1e-20
 
 def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
-    r'''Calculates activity coefficients at fixed `lambda` values for
+    r"""Calculates activity coefficients at fixed `lambda` values for
     a binary system at a series of mole fractions. This is used for
     regression of `lambda` parameters. This function is highly optimized,
     and operates on multiple points at a time.
@@ -272,7 +272,7 @@ def wilson_gammas_binaries(xs, lambda12, lambda21, calc=None):
     --------
     >>> wilson_gammas_binaries([.1, .9, 0.3, 0.7, .85, .15], 0.1759, 0.7991)
     [3.42989, 1.03432, 1.74338, 1.21234, 1.01766, 2.30656]
-    '''
+    """
     if lambda12 < MIN_LAMBDA_WILSON:
         lambda12 = MIN_LAMBDA_WILSON
     if lambda21 < MIN_LAMBDA_WILSON:
@@ -369,7 +369,7 @@ def wilson_gammas_binaries_jac(xs, lambda12, lambda21, calc=None):
 
 
 class Wilson(GibbsExcess):
-    r'''Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing an a liquid with excess gibbs energy represented
     by the Wilson equation. This model is capable of representing most
     nonideal liquids for vapor-liquid equilibria, but is not recommended for
     liquid-liquid equilibria.
@@ -573,17 +573,17 @@ class Wilson(GibbsExcess):
        Demand Norderstedt, Germany, 2000.
     .. [3] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    '''
+    """
 
     model_id = 200
 
-    _model_attributes = ('lambda_as', 'lambda_bs', 'lambda_cs',
-                        'lambda_ds', 'lambda_es', 'lambda_fs')
-    _cached_calculated_attributes = ('_d3GE_dxixjxks', '_xj_dLambda_dTijs', '_xj_Lambda_ijs', '_log_xj_Lambda_ijs',
-                                     '_dlambdas_dT', '_lambdas', '_d3GE_dT3', '_xj_d2Lambda_dT2ijs', '_xj_Lambda_ijs_inv',
-                                     '_d2lambdas_dT2', '_d3lambdas_dT3', '_xj_d3Lambda_dT3ijs')
+    _model_attributes = ("lambda_as", "lambda_bs", "lambda_cs",
+                        "lambda_ds", "lambda_es", "lambda_fs")
+    _cached_calculated_attributes = ("_d3GE_dxixjxks", "_xj_dLambda_dTijs", "_xj_Lambda_ijs", "_log_xj_Lambda_ijs",
+                                     "_dlambdas_dT", "_lambdas", "_d3GE_dT3", "_xj_d2Lambda_dT2ijs", "_xj_Lambda_ijs_inv",
+                                     "_d2lambdas_dT2", "_d3lambdas_dT3", "_xj_d3Lambda_dT3ijs")
 
-    __slots__ = GibbsExcess.__slots__ + _model_attributes + _cached_calculated_attributes + ('lambda_coeffs_nonzero',)
+    __slots__ = GibbsExcess.__slots__ + _model_attributes + _cached_calculated_attributes + ("lambda_coeffs_nonzero",)
     recalculable_attributes = _cached_calculated_attributes + GibbsExcess.recalculable_attributes
 
 
@@ -604,7 +604,7 @@ class Wilson(GibbsExcess):
 
     @staticmethod
     def from_DDBST(Vi, Vj, a, b, c, d=0.0, e=0.0, f=0.0, unit_conversion=True):
-        r'''Converts parameters for the wilson equation in the DDBST to the
+        r"""Converts parameters for the wilson equation in the DDBST to the
         basis used in this implementation.
 
         .. math::
@@ -663,7 +663,7 @@ class Wilson(GibbsExcess):
         --------
         >>> Wilson.from_DDBST(Vi=74.04, Vj=80.67, a=375.2835, b=-3.78434, c=0.00791073, d=0.0, e=0.0, f=0.0, unit_conversion=False)
         (3.8701012712, -375.2835, -0.0, -0.00791073, -0.0, -0.0)
-        '''
+        """
         if unit_conversion:
             Rg = 1.9872042586408316 # DDBST document suggests  1.9858775
         else:
@@ -678,7 +678,7 @@ class Wilson(GibbsExcess):
     def from_DDBST_as_matrix(Vs, ais=None, bis=None, cis=None, dis=None,
                              eis=None, fis=None,
                              unit_conversion=True):
-        r'''Converts parameters for the wilson equation in the DDBST to the
+        r"""Converts parameters for the wilson equation in the DDBST to the
         basis used in this implementation. Matrix wrapper around
         :obj:`Wilson.from_DDBST`.
 
@@ -718,7 +718,7 @@ class Wilson(GibbsExcess):
             `e` parameters in :obj:`Wilson` form, [K^2]
         f : list[list[float]]
             `f` parameters in :obj:`Wilson` form, [1/K^2]
-        '''
+        """
         N = len(Vs)
         cmps = range(N)
         if ais is None:
@@ -784,12 +784,12 @@ class Wilson(GibbsExcess):
 
         if lambda_coeffs is not None:
             if vectorized:
-                self.lambda_as = array(lambda_coeffs[:,:,0], order='C', copy=True)
-                self.lambda_bs = array(lambda_coeffs[:,:,1], order='C', copy=True)
-                self.lambda_cs = array(lambda_coeffs[:,:,2], order='C', copy=True)
-                self.lambda_ds = array(lambda_coeffs[:,:,3], order='C', copy=True)
-                self.lambda_es = array(lambda_coeffs[:,:,4], order='C', copy=True)
-                self.lambda_fs = array(lambda_coeffs[:,:,5], order='C', copy=True)
+                self.lambda_as = array(lambda_coeffs[:,:,0], order="C", copy=True)
+                self.lambda_bs = array(lambda_coeffs[:,:,1], order="C", copy=True)
+                self.lambda_cs = array(lambda_coeffs[:,:,2], order="C", copy=True)
+                self.lambda_ds = array(lambda_coeffs[:,:,3], order="C", copy=True)
+                self.lambda_es = array(lambda_coeffs[:,:,4], order="C", copy=True)
+                self.lambda_fs = array(lambda_coeffs[:,:,5], order="C", copy=True)
             else:
                 self.lambda_as = [[i[0] for i in l] for l in lambda_coeffs]
                 self.lambda_bs = [[i[1] for i in l] for l in lambda_coeffs]
@@ -846,15 +846,15 @@ class Wilson(GibbsExcess):
 
     def __repr__(self):
 
-        s = f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}'
+        s = f"{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r}"
         for i, attr in enumerate(self._model_attributes):
             if self.lambda_coeffs_nonzero[i]:
-                s += f', {attr}={getattr(self, attr)}'
-        s += ')'
+                s += f", {attr}={getattr(self, attr)}"
+        s += ")"
         return s
 
     def to_T_xs(self, T, xs):
-        r'''Method to construct a new :obj:`Wilson` instance at
+        r"""Method to construct a new :obj:`Wilson` instance at
         temperature `T`, and mole fractions `xs`
         with the same parameters as the existing object.
 
@@ -875,7 +875,7 @@ class Wilson(GibbsExcess):
         If the new temperature is the same temperature as the existing
         temperature, if the `lambda` terms or their derivatives have been
         calculated, they will be set to the new object as well.
-        '''
+        """
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
@@ -910,35 +910,35 @@ class Wilson(GibbsExcess):
         return new
 
     def missing_interaction_parameters(self):
-        r'''
+        r"""
         Return a list of tuples (index_i, index_j) for each (i, j) pair where
         all lambda parameters (a, b, c, d, e, f) are zero. In the Wilson model,
         parameters are asymmetric, so (i,j) does not imply (j,i).
-        
+
         Returns
         -------
         missing_params : list[tuple[int, int]]
             List of tuples of the component indices with missing interaction parameters, [-].
-        '''
+        """
         missing_params = []
-        
+
         # Extract lambda matrices
         lambda_matrices = [
             self.lambda_as, self.lambda_bs, self.lambda_cs,
             self.lambda_ds, self.lambda_es, self.lambda_fs
         ]
-        
+
         for i in range(self.N):
             for j in range(self.N):
                 if i != j:  # Skip diagonal elements
                     # Check if all lambda coefficients are zero for this interaction (i, j)
                     if all(lambda_matrix[i][j] == 0.0 for lambda_matrix in lambda_matrices):
                         missing_params.append((i, j))
-        
+
         return missing_params
 
     def lambdas(self):
-        r'''Calculate and return the `lambda` terms for the Wilson model for
+        r"""Calculate and return the `lambda` terms for the Wilson model for
         at system temperature.
 
         .. math::
@@ -953,7 +953,7 @@ class Wilson(GibbsExcess):
         Notes
         -----
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
-        '''
+        """
         try:
             return self._lambdas
         except AttributeError:
@@ -972,7 +972,7 @@ class Wilson(GibbsExcess):
         return lambdas
 
     def dlambdas_dT(self):
-        r'''Calculate and return the temperature derivative of the `lambda`
+        r"""Calculate and return the temperature derivative of the `lambda`
         terms for the Wilson model at the system temperature.
 
         .. math::
@@ -990,7 +990,7 @@ class Wilson(GibbsExcess):
         Notes
         -----
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
-        '''
+        """
         try:
             return self._dlambdas_dT
         except AttributeError:
@@ -1016,7 +1016,7 @@ class Wilson(GibbsExcess):
         return dlambdas_dT
 
     def d2lambdas_dT2(self):
-        r'''Calculate and return the second temperature derivative of the
+        r"""Calculate and return the second temperature derivative of the
         `lambda` termsfor the Wilson model at the system temperature.
 
         .. math::
@@ -1037,7 +1037,7 @@ class Wilson(GibbsExcess):
         Notes
         -----
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
-        '''
+        """
         try:
             return self._d2lambdas_dT2
         except AttributeError:
@@ -1066,7 +1066,7 @@ class Wilson(GibbsExcess):
         return d2lambdas_dT2
 
     def d3lambdas_dT3(self):
-        r'''Calculate and return the third temperature derivative of the
+        r"""Calculate and return the third temperature derivative of the
         `lambda` terms for the Wilson model at the system temperature.
 
         .. math::
@@ -1089,7 +1089,7 @@ class Wilson(GibbsExcess):
         Notes
         -----
         These `Lambda ij` values (and the coefficients) are NOT symmetric.
-        '''
+        """
         try:
             return self._d3lambdas_dT3
         except AttributeError:
@@ -1120,8 +1120,6 @@ class Wilson(GibbsExcess):
         return d3lambdas_dT3s
 
     def xj_Lambda_ijs(self):
-        '''
-        '''
         try:
             return self._xj_Lambda_ijs
         except AttributeError:
@@ -1140,8 +1138,6 @@ class Wilson(GibbsExcess):
         return xj_Lambda_ijs
 
     def xj_Lambda_ijs_inv(self):
-        '''
-        '''
         try:
             return self._xj_Lambda_ijs_inv
         except AttributeError:
@@ -1158,8 +1154,6 @@ class Wilson(GibbsExcess):
         return self._xj_Lambda_ijs_inv
 
     def log_xj_Lambda_ijs(self):
-        '''
-        '''
         try:
             return self._log_xj_Lambda_ijs
         except AttributeError:
@@ -1176,8 +1170,6 @@ class Wilson(GibbsExcess):
 
 
     def xj_dLambda_dTijs(self):
-        '''
-        '''
         try:
             return self._xj_dLambda_dTijs
         except AttributeError:
@@ -1197,8 +1189,6 @@ class Wilson(GibbsExcess):
 
 
     def xj_d2Lambda_dT2ijs(self):
-        '''
-        '''
         try:
             return self._xj_d2Lambda_dT2ijs
         except AttributeError:
@@ -1217,8 +1207,6 @@ class Wilson(GibbsExcess):
         return xj_d2Lambda_dT2ijs
 
     def xj_d3Lambda_dT3ijs(self):
-        '''
-        '''
         try:
             return self._xj_d3Lambda_dT3ijs
         except AttributeError:
@@ -1238,7 +1226,7 @@ class Wilson(GibbsExcess):
 
 
     def GE(self):
-        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        r"""Calculate and return the excess Gibbs energy of a liquid phase
         represented with the Wilson model.
 
         .. math::
@@ -1251,7 +1239,7 @@ class Wilson(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._GE
         except AttributeError:
@@ -1273,7 +1261,7 @@ class Wilson(GibbsExcess):
         return GE
 
     def dGE_dT(self):
-        r'''Calculate and return the temperature derivative of excess Gibbs
+        r"""Calculate and return the temperature derivative of excess Gibbs
         energy of a liquid phase represented by the Wilson model.
 
         .. math::
@@ -1288,7 +1276,7 @@ class Wilson(GibbsExcess):
 
         Notes
         -----
-        '''# Derived with:
+        """# Derived with:
         """from sympy import *
         N = 4
         R, T = symbols('R, T')
@@ -1333,7 +1321,7 @@ class Wilson(GibbsExcess):
         return dGE_dT
 
     def d2GE_dT2(self):
-        r'''Calculate and return the second temperature derivative of excess
+        r"""Calculate and return the second temperature derivative of excess
         Gibbs energy of a liquid phase using the Wilson activity coefficient model.
 
         .. math::
@@ -1351,7 +1339,7 @@ class Wilson(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2GE_dT2
         except AttributeError:
@@ -1375,7 +1363,7 @@ class Wilson(GibbsExcess):
         return self._d2GE_dT2
 
     def d3GE_dT3(self):
-        r'''Calculate and return the third temperature derivative of excess
+        r"""Calculate and return the third temperature derivative of excess
         Gibbs energy of a liquid phase using the Wilson activity coefficient
         model.
 
@@ -1396,7 +1384,7 @@ class Wilson(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d3GE_dT3
         except AttributeError:
@@ -1413,7 +1401,7 @@ class Wilson(GibbsExcess):
 
 
     def d2GE_dTdxs(self):
-        r'''Calculate and return the temperature derivative of mole fraction
+        r"""Calculate and return the temperature derivative of mole fraction
         derivatives of excess Gibbs energy of a liquid represented by the
         Wilson model.
 
@@ -1435,7 +1423,7 @@ class Wilson(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2GE_dTdxs
         except AttributeError:
@@ -1474,7 +1462,7 @@ class Wilson(GibbsExcess):
 
 
     def dGE_dxs(self):
-        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        r"""Calculate and return the mole fraction derivatives of excess Gibbs
         energy for the Wilson model.
 
         .. math::
@@ -1490,7 +1478,7 @@ class Wilson(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         """
         from sympy import *
         N = 4
@@ -1542,7 +1530,7 @@ class Wilson(GibbsExcess):
         return dGE_dxs
 
     def d2GE_dxixjs(self):
-        r'''Calculate and return the second mole fraction derivatives of excess
+        r"""Calculate and return the second mole fraction derivatives of excess
         Gibbs energy for the Wilson model.
 
         .. math::
@@ -1559,7 +1547,7 @@ class Wilson(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2GE_dxixjs
         except AttributeError:
@@ -1584,7 +1572,7 @@ class Wilson(GibbsExcess):
         return d2GE_dxixjs
 
     def d3GE_dxixjxks(self):
-        r'''Calculate and return the third mole fraction derivatives of excess
+        r"""Calculate and return the third mole fraction derivatives of excess
         Gibbs energy using the Wilson model.
 
         .. math::
@@ -1603,7 +1591,7 @@ class Wilson(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d3GE_dxixjxks
         except AttributeError:
@@ -1696,7 +1684,7 @@ class Wilson(GibbsExcess):
             return jac_func(xs_working, params[0], params[1], jac_iter)
 
 
-        fit_parameters = ['lambda12', 'lambda21']
+        fit_parameters = ["lambda12", "lambda21"]
         return GibbsExcess._regress_binary_parameters(gammas_working, xs_working, fitting_func=fitting_func,
                                                       fit_parameters=fit_parameters,
                                                       use_fit_parameters=fit_parameters,
@@ -1710,21 +1698,21 @@ class Wilson(GibbsExcess):
 
 
     # Larger value on the right always
-    _gamma_parameter_guesses = [{'lambda12': 1, 'lambda21': 1},
-                               {'lambda12': 2.2, 'lambda21': 3.0},
-                               {'lambda12': 0.015, 'lambda21': 37.0},
-                               {'lambda12': 0.5, 'lambda21': 40.0},
-                               {'lambda12': 1e-7, 'lambda21': .5},
-                               {'lambda12': 1e-12, 'lambda21': 1.9},
-                               {'lambda12': 1e-12, 'lambda21': 10.0},
+    _gamma_parameter_guesses = [{"lambda12": 1, "lambda21": 1},
+                               {"lambda12": 2.2, "lambda21": 3.0},
+                               {"lambda12": 0.015, "lambda21": 37.0},
+                               {"lambda12": 0.5, "lambda21": 40.0},
+                               {"lambda12": 1e-7, "lambda21": .5},
+                               {"lambda12": 1e-12, "lambda21": 1.9},
+                               {"lambda12": 1e-12, "lambda21": 10.0},
                                ]
     for i in range(len(_gamma_parameter_guesses)):
         r = _gamma_parameter_guesses[i]
-        _gamma_parameter_guesses.append({'lambda12': r['lambda21'], 'lambda21': r['lambda12']})
+        _gamma_parameter_guesses.append({"lambda12": r["lambda21"], "lambda21": r["lambda12"]})
     del i, r
 
 def Wilson_gammas(xs, params):
-    r'''Calculates the activity coefficients of each species in a mixture
+    r"""Calculates the activity coefficients of each species in a mixture
     using the Wilson method, given their mole fractions, and
     dimensionless interaction parameters. Those are normally correlated with
     temperature, and need to be calculated separately.
@@ -1794,7 +1782,7 @@ def Wilson_gammas(xs, params):
     .. [2] Gmehling, Jurgen, Barbel Kolbe, Michael Kleiber, and Jurgen Rarey.
        Chemical Thermodynamics for Process Simulation. 1st edition. Weinheim:
        Wiley-VCH, 2012.
-    '''
+    """
     gammas = []
     cmps = range(len(xs))
 

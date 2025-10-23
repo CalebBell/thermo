@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,11 +18,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 
-__all__ = ['tabulate_solid', 'tabulate_liq', 'tabulate_gas',
-           'tabulate_constants', 'tabulate_streams']
+__all__ = [
+    "tabulate_constants",
+    "tabulate_gas",
+    "tabulate_liq",
+    "tabulate_solid",
+    "tabulate_streams",
+]
 
 from collections import OrderedDict
 
@@ -59,11 +64,11 @@ def tabulate_solid(chemical, Tmin=None, Tmax=None, pts=10):
         Cps.append(chem.Cps)
 
     data = OrderedDict()
-    data['Density, kg/m^3'] = rhos
-    data['Constant-pressure heat capacity, J/kg/K'] = Cps
+    data["Density, kg/m^3"] = rhos
+    data["Constant-pressure heat capacity, J/kg/K"] = Cps
 
     df = pd.DataFrame(data, index=Ts)
-    df.index.name = 'T, K'
+    df.index.name = "T, K"
     return df
 
 
@@ -102,21 +107,21 @@ def tabulate_liq(chemical, Tmin=None, Tmax=None, pts=10):
         permittivities.append(chem.permittivity)
 
     data = OrderedDict()
-    data['Saturation pressure, Pa'] = Psats
-    data['Density, kg/m^3'] = rhos
-    data['Constant-pressure heat capacity, J/kg/K'] = Cps
-    data['Heat of vaporization, J/kg'] = Hvaps
-    data['Viscosity, Pa*s'] = mugs
-    data['Thermal conductivity, W/m/K'] = kgs
-    data['Surface tension, N/m'] = sigmas
-    data['Prandtl number'] = Prs
-    data['Thermal diffusivity, m^2/s'] = alphas
-    data['Isobaric expansion, 1/K'] = isobarics
-    data['Joule-Thompson expansion coefficient, K/Pa'] = JTs
-    data['PermittivityLiquid'] = permittivities
+    data["Saturation pressure, Pa"] = Psats
+    data["Density, kg/m^3"] = rhos
+    data["Constant-pressure heat capacity, J/kg/K"] = Cps
+    data["Heat of vaporization, J/kg"] = Hvaps
+    data["Viscosity, Pa*s"] = mugs
+    data["Thermal conductivity, W/m/K"] = kgs
+    data["Surface tension, N/m"] = sigmas
+    data["Prandtl number"] = Prs
+    data["Thermal diffusivity, m^2/s"] = alphas
+    data["Isobaric expansion, 1/K"] = isobarics
+    data["Joule-Thompson expansion coefficient, K/Pa"] = JTs
+    data["PermittivityLiquid"] = permittivities
 
     df = pd.DataFrame(data, index=Ts)
-    df.index.name = 'T, K'
+    df.index.name = "T, K"
     return df
 
 
@@ -151,26 +156,26 @@ def tabulate_gas(chemical, Tmin=None, Tmax=None, pts=10):
         isentropics.append(chem.isentropic_exponent)
         JTs.append(chem.JTg)
     data = OrderedDict()
-    data['Density, kg/m^3'] = rhos
-    data['Constant-pressure heat capacity, J/kg/K'] = Cps
-    data['Constant-volume heat capacity, J/kg/K'] = Cvs
-    data['Viscosity, Pa*s'] = mugs
-    data['Thermal conductivity, W/m/K'] = kgs
-    data['Prandtl number'] = Prs
-    data['Thermal diffusivity, m^2/s'] = alphas
-    data['Isobaric expansion, 1/K'] = isobarics
-    data['Isentropic exponent'] = isentropics
-    data['Joule-Thompson expansion coefficient, K/Pa'] = JTs
+    data["Density, kg/m^3"] = rhos
+    data["Constant-pressure heat capacity, J/kg/K"] = Cps
+    data["Constant-volume heat capacity, J/kg/K"] = Cvs
+    data["Viscosity, Pa*s"] = mugs
+    data["Thermal conductivity, W/m/K"] = kgs
+    data["Prandtl number"] = Prs
+    data["Thermal diffusivity, m^2/s"] = alphas
+    data["Isobaric expansion, 1/K"] = isobarics
+    data["Isentropic exponent"] = isentropics
+    data["Joule-Thompson expansion coefficient, K/Pa"] = JTs
 
     df = pd.DataFrame(data, index=Ts)  # add orient='index'
-    df.index.name = 'T, K'
+    df.index.name = "T, K"
     return df
 
 
 def tabulate_constants(chemical, full=False, vertical=False):
     pd = pandas()
-    pd.set_option('display.max_rows', 100000)
-    pd.set_option('display.max_columns', 100000)
+    pd.set_option("display.max_rows", 100000)
+    pd.set_option("display.max_columns", 100000)
 
     all_chemicals = OrderedDict()
 
@@ -179,55 +184,55 @@ def tabulate_constants(chemical, full=False, vertical=False):
     else:
         cs = chemical
 
-    for chemical in cs:
-        chem = Chemical(chemical)
+    for chem_name in cs:
+        chem = Chemical(chem_name)
         data = OrderedDict()
-        data['CAS'] = chem.CAS
-        data['Formula'] = chem.formula
-        data['MW, g/mol'] = chem.MW
-        data['Tm, K'] = chem.Tm
-        data['Tb, K'] = chem.Tb
-        data['Tc, K'] = chem.Tc
-        data['Pc, Pa'] = chem.Pc
-        data['Vc, m^3/mol'] = chem.Vc
-        data['Zc'] = chem.Zc
-        data['rhoc, kg/m^3'] = chem.rhoc
-        data['Acentric factor'] = chem.omega
-        data['Triple temperature, K'] = chem.Tt
-        data['Triple pressure, Pa'] = chem.Pt
-        data['Heat of vaporization at Tb, J/mol'] = chem.Hvap_Tbm
-        data['Heat of fusion, J/mol'] = chem.Hfusm
-        data['Heat of sublimation, J/mol'] = chem.Hsubm
-        data['Heat of formation, J/mol'] = chem.Hf
-        data['Dipole moment, debye'] = chem.dipole
-        data['Molecular Diameter, Angstrom'] = chem.molecular_diameter
-        data['Stockmayer parameter, K'] = chem.Stockmayer
-        data['Refractive index'] = chem.RI
-        data['Lower flammability limit, fraction'] = chem.LFL
-        data['Upper flammability limit, fraction'] = chem.UFL
-        data['Flash temperature, K'] = chem.Tflash
-        data['Autoignition temperature, K'] = chem.Tautoignition
-        data['Time-weighted average exposure limit'] = str(chem.TWA)
-        data['Short-term exposure limit'] = str(chem.STEL)
-        data['logP'] = chem.logP
+        data["CAS"] = chem.CAS
+        data["Formula"] = chem.formula
+        data["MW, g/mol"] = chem.MW
+        data["Tm, K"] = chem.Tm
+        data["Tb, K"] = chem.Tb
+        data["Tc, K"] = chem.Tc
+        data["Pc, Pa"] = chem.Pc
+        data["Vc, m^3/mol"] = chem.Vc
+        data["Zc"] = chem.Zc
+        data["rhoc, kg/m^3"] = chem.rhoc
+        data["Acentric factor"] = chem.omega
+        data["Triple temperature, K"] = chem.Tt
+        data["Triple pressure, Pa"] = chem.Pt
+        data["Heat of vaporization at Tb, J/mol"] = chem.Hvap_Tbm
+        data["Heat of fusion, J/mol"] = chem.Hfusm
+        data["Heat of sublimation, J/mol"] = chem.Hsubm
+        data["Heat of formation, J/mol"] = chem.Hf
+        data["Dipole moment, debye"] = chem.dipole
+        data["Molecular Diameter, Angstrom"] = chem.molecular_diameter
+        data["Stockmayer parameter, K"] = chem.Stockmayer
+        data["Refractive index"] = chem.RI
+        data["Lower flammability limit, fraction"] = chem.LFL
+        data["Upper flammability limit, fraction"] = chem.UFL
+        data["Flash temperature, K"] = chem.Tflash
+        data["Autoignition temperature, K"] = chem.Tautoignition
+        data["Time-weighted average exposure limit"] = str(chem.TWA)
+        data["Short-term exposure limit"] = str(chem.STEL)
+        data["logP"] = chem.logP
 
         if full:
-            data['smiles'] = chem.smiles
-            data['InChI'] = chem.InChI
-            data['InChI key'] = chem.InChI_Key
-            data['IUPAC name'] = chem.IUPAC_name
-            data['solubility parameter, Pa^0.5'] = chem.solubility_parameter
-            data['Parachor'] = chem.Parachor
-            data['Global warming potential'] = chem.GWP
-            data['Ozone depletion potential'] = chem.ODP
-            data['Electrical conductivity, S/m'] = chem.conductivity
+            data["smiles"] = chem.smiles
+            data["InChI"] = chem.InChI
+            data["InChI key"] = chem.InChI_Key
+            data["IUPAC name"] = chem.IUPAC_name
+            data["solubility parameter, Pa^0.5"] = chem.solubility_parameter
+            data["Parachor"] = chem.Parachor
+            data["Global warming potential"] = chem.GWP
+            data["Ozone depletion potential"] = chem.ODP
+            data["Electrical conductivity, S/m"] = chem.conductivity
 
         all_chemicals[chem.name] = data
 
     if vertical:
         df = pd.DataFrame.from_dict(all_chemicals)
     else:
-        df = pd.DataFrame.from_dict(all_chemicals, orient='index')
+        df = pd.DataFrame.from_dict(all_chemicals, orient="index")
     return df
 
 
@@ -277,35 +282,35 @@ def tabulate_streams(names=None, *args, **kwargs):
         mass_flows.append(mass_flows_i)
         mole_flows.append(mole_flows_i)
 
-    dat = OrderedDict([['Temperature, K', Ts],
-                      ['Pressure, Pa', Ps],
-                       ['Phase', phases],
-                      ['Vapor fraction', VFs],
-                      ['Enthalpy, J', Hs],
-                      ['Mass flows, kg/s', ms],
-                      ['Mole flows, mol/s', ns]])
+    dat = OrderedDict([["Temperature, K", Ts],
+                      ["Pressure, Pa", Ps],
+                       ["Phase", phases],
+                      ["Vapor fraction", VFs],
+                      ["Enthalpy, J", Hs],
+                      ["Mass flows, kg/s", ms],
+                      ["Mole flows, mol/s", ns]])
 
-    if kwargs.get('Mole flows', True):
+    if kwargs.get("Mole flows", True):
         for i, CAS in enumerate(CASs):
-            s = f'Mole flow, mol/s {IDs[CAS]}'
+            s = f"Mole flow, mol/s {IDs[CAS]}"
             vals = [j[i] for j in mole_flows]
             dat[s] = vals
 
-    if kwargs.get('Mass flows', True):
+    if kwargs.get("Mass flows", True):
         for i, CAS in enumerate(CASs):
-            s = f'Mass flow, kg/s {IDs[CAS]}'
+            s = f"Mass flow, kg/s {IDs[CAS]}"
             vals = [j[i] for j in mass_flows]
             dat[s] = vals
 
-    if kwargs.get('Mass fractions', True):
+    if kwargs.get("Mass fractions", True):
         for i, CAS in enumerate(CASs):
-            s = f'Mass fraction {IDs[CAS]}'
+            s = f"Mass fraction {IDs[CAS]}"
             vals = [j[i] for j in mass_fractions]
             dat[s] = vals
 
-    if kwargs.get('Mole fractions', True):
+    if kwargs.get("Mole fractions", True):
         for i, CAS in enumerate(CASs):
-            s = f'Mole fraction {IDs[CAS]}'
+            s = f"Mole fraction {IDs[CAS]}"
             vals = [j[i] for j in mole_fractions]
             dat[s] = vals
 

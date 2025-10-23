@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2022 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,25 +27,25 @@ This functionality requires the RDKit library to work.
 
 
 .. autofunction:: thermo.group_contribution.Fedors
-'''
-__all__ = ['Fedors']
+"""
+__all__ = ["Fedors"]
 
 from chemicals.elements import simple_formula_parser
 
 from thermo.functional_groups import alcohol_smarts, amine_smarts, count_rings_attatched_to_rings, smarts_mol_cache
 
-fedors_allowed_atoms = frozenset(['C', 'H', 'O', 'N', 'F', 'Cl', 'Br', 'I', 'S'])
-fedors_contributions = {'C': 34.426, 'H': 9.172, 'O': 20.291,
-                       'O_alcohol': 18, 'N': 48.855, 'N_amine': 47.422,
-                       'F': 22.242, 'Cl': 52.801, 'Br': 71.774, 'I': 96.402,
-                       'S': 50.866, '3_ring': -15.824, '4_ring': -17.247,
-                       '5_ring': -39.126, '6_ring': -39.508,
-                       'double_bond': 5.028, 'triple_bond': 0.7973,
-                       'ring_ring_bonds': 35.524}
+fedors_allowed_atoms = frozenset(["C", "H", "O", "N", "F", "Cl", "Br", "I", "S"])
+fedors_contributions = {"C": 34.426, "H": 9.172, "O": 20.291,
+                       "O_alcohol": 18, "N": 48.855, "N_amine": 47.422,
+                       "F": 22.242, "Cl": 52.801, "Br": 71.774, "I": 96.402,
+                       "S": 50.866, "3_ring": -15.824, "4_ring": -17.247,
+                       "5_ring": -39.126, "6_ring": -39.508,
+                       "double_bond": 5.028, "triple_bond": 0.7973,
+                       "ring_ring_bonds": 35.524}
 
 
 def Fedors(mol):
-    r'''Estimate the critical volume of a molecule
+    r"""Estimate the critical volume of a molecule
     using the Fedors [1]_ method, which is a basic
     group contribution method that also uses certain
     bond count features and the number of different
@@ -92,7 +92,7 @@ def Fedors(mol):
        Journal 25, no. 1 (1979): 202-202. https://doi.org/10.1002/aic.690250129.
     .. [2] Green, Don, and Robert Perry. Perry's Chemical Engineers' Handbook,
        Eighth Edition. McGraw-Hill Professional, 2007.
-    '''
+    """
     from rdkit import Chem
     if type(mol) is Chem.rdchem.Mol:
         rdkitmol = Chem.Mol(mol)
@@ -150,24 +150,24 @@ def Fedors(mol):
     # This was the fastest way to get the atom counts
     atoms = simple_formula_parser(Chem.rdMolDescriptors.CalcMolFormula(rdkitmol))
     # For the atoms with functional groups, they always have to be there
-    if 'N' not in atoms:
-        atoms['N'] = 0
-    if 'O' not in atoms:
-        atoms['O'] = 0
+    if "N" not in atoms:
+        atoms["N"] = 0
+    if "O" not in atoms:
+        atoms["O"] = 0
     found_atoms = set(atoms.keys())
     UNKNOWN_ATOMS = bool(not found_atoms.issubset(fedors_allowed_atoms))
 
-    atoms['O_alcohol'] = len(alcohol_matches)
-    atoms['O'] -= len(alcohol_matches)
-    atoms['N_amine'] = len(amine_matches)
-    atoms['N'] -= len(amine_matches)
-    atoms['3_ring'] = three_rings
-    atoms['4_ring'] = four_rings
-    atoms['5_ring'] = five_rings
-    atoms['6_ring'] = six_rings
-    atoms['double_bond'] = double_bond_count
-    atoms['triple_bond'] = triple_bond_count
-    atoms['ring_ring_bonds'] = rings_attatched_to_rings
+    atoms["O_alcohol"] = len(alcohol_matches)
+    atoms["O"] -= len(alcohol_matches)
+    atoms["N_amine"] = len(amine_matches)
+    atoms["N"] -= len(amine_matches)
+    atoms["3_ring"] = three_rings
+    atoms["4_ring"] = four_rings
+    atoms["5_ring"] = five_rings
+    atoms["6_ring"] = six_rings
+    atoms["double_bond"] = double_bond_count
+    atoms["triple_bond"] = triple_bond_count
+    atoms["ring_ring_bonds"] = rings_attatched_to_rings
 
 #     print(atoms)
     Vc = 26.6
@@ -179,7 +179,7 @@ def Fedors(mol):
 
     Vc *= 1e-6
 
-    status = 'errors found' if (UNKNOWN_ATOMS or UNRECOGNIZED_BOND_TYPE or UNRECOGNIZED_RING_SIZE) else 'OK'
+    status = "errors found" if (UNKNOWN_ATOMS or UNRECOGNIZED_BOND_TYPE or UNRECOGNIZED_RING_SIZE) else "OK"
 
     return Vc, status, UNKNOWN_ATOMS, UNRECOGNIZED_BOND_TYPE, UNRECOGNIZED_RING_SIZE
 

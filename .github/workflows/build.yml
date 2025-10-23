@@ -5,7 +5,11 @@ on:
     branches: [master, release]
   pull_request:
     branches: [master, release]
-    
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/release' }}
+
 jobs:
   build:
 
@@ -13,23 +17,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', 'pypy3.9']
-        os: [windows-latest, ubuntu-latest, macos-13, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.13t', 'pypy3.9']
+        os: [windows-latest, ubuntu-latest, macos-15-intel, macos-latest]
         architecture: ['x86', 'x64']
         exclude:
-          - os: ubuntu-latest
-            python-version: 3.7
           # Only test pypy on Linux
           - os: windows-latest
             python-version: pypy3.9
           - os: macos-latest
             python-version: pypy3.9
-          - os: macos-13
+          - os: macos-15-intel
             python-version: pypy3.9
           # no python builds available on macos 32 bit, arm or x64
           - os: macos-latest
             architecture: x86
-          - os: macos-13
+          - os: macos-15-intel
             architecture: x86
           # no python builds available on linux 32 bit
           - os: ubuntu-latest
@@ -53,6 +55,9 @@ jobs:
           - os: windows-latest
             architecture: x86
             python-version: 3.13
+          - os: windows-latest
+            architecture: x86
+            python-version: 3.13t
 
           # These are arm - old versions of Python are not supported
           - os: macos-latest
@@ -61,7 +66,19 @@ jobs:
             python-version: 3.9
           - os: macos-latest
             python-version: 3.10
-    
+
+          # pandas doesn't have wheels for 3.13t on Windows x64
+          - os: windows-latest
+            architecture: x64
+            python-version: 3.13t
+
+          # These are arm - old versions of Python are not supported
+          - os: macos-latest
+            python-version: 3.8
+          - os: macos-latest
+            python-version: 3.9
+          - os: macos-latest
+            python-version: 3.10
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}
@@ -109,23 +126,44 @@ jobs:
         python -m pip install wheel
         pip install -r requirements_test.txt
     - name: Add numba
-      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10' || matrix.python-version == '3.11' || matrix.python-version == '3.12'  }}
+      if: ${{ !contains(fromJSON('["pypy3.9", "3.13t"]'), matrix.python-version) }}
       run: |
         pip install numba
     - name: Install thermo
       run: |
         pip install .
     - name: Generate Files
-      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == '3.12' || matrix.python-version == 'pypy3.9' }}
+      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == '3.12'  || matrix.python-version == '3.13' || matrix.python-version == '3.13t' || matrix.python-version == 'pypy3.9' }}
       run: |
         python dev/dump_UNIFAC_assignments_to_sqlite.py
     - name: Uninstall thermo
+      shell: bash
       run: |
         pip uninstall -y thermo
+        rm -rf build/
     - name: Test with pytest
       run: |
         pytest . -v --cov-report html --cov=thermo --cov-report term-missing -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
+        coveralls || true
       env:
         COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
         COVERALLS_PARALLEL: true
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PYTHON_GIL: ${{ matrix.python-version == '3.13t' && '0' || '' }}
+
+    - name: Upload coverage HTML report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-html-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.architecture }}
+        path: htmlcov/
+  finish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        curl https://coveralls.io/webhook?repo_token=${{ secrets.coveralls }} -d "payload[build_num]=${{ github.sha }}&payload[status]=done"

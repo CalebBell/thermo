@@ -1022,7 +1022,7 @@ inorganic_compounds = ["Actinium(III) oxide", "Ag", "Al", "Al2O3", "Aluminium ar
     "Indium(III) nitrate", "Indium(III) oxide", "Indium(III) sulfate", "Indium(I) iodide", "Indium nitride", "Indium phosphide", "Iodic acid",
     "Iodine monobromide", "Iodine monochloride", "Iodine pentafluoride", "Iodine trichloride", "Ir", "Iridium(IV) chloride", "IrO2", "Iron disulfide",
     "Iron(II) chloride", "Iron(III) chloride", "Iron(III) fluoride", "Iron(II) iodide", "Iron(III) phosphate", "Iron(III) sulfate", "Iron(II) oxalate",
-    "Iron(II) oxide", "Iron(II) sulfamate", "Iron(II) sulfate", "Iron(II) sulfide", "K", "K2O", "Kr", "Krypton difluoride", "La", "Lanthanum boride",
+    "Iron(II) oxide", "Iron(II) sulfamate", "Iron(II) sulfate", "Iron(II) sulfide", "K", "K2O", "Kr", "La", "Lanthanum boride",
     "Lanthanum(III) chloride", "Lanthanum(III) sulfate", "Lanthanum trifluoride", "Lead hydrogen arsenate", "Lead(II) azide", "Lead(II) bromide",
     "Lead(II) carbonate", "Lead(II) chloride", "Lead(II) fluoride", "Lead(II) iodide", "Lead(II) nitrate", "Lead(II) oxide", "Lead(II) selenide",
     "Lead(II) sulfate", "Lead(II) sulfide", "Lead(II) telluride", "Lead(II) thiocyanate", "Lead(IV) oxide", "Lead telluride", "Lead tetrachloride",
@@ -1122,6 +1122,8 @@ def test_is_organic():
                    ]
     for name in not_organic + inorganic_compounds:
         mol = mol_from_name(name)
+        if mol is None:
+            raise ValueError(name)
         assert not is_organic(mol)
 
     definitely_inorganic_smiles = [

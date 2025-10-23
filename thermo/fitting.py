@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,14 +18,24 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 
-__all__ = ['alpha_Twu91_objf', 'alpha_Twu91_objfc', 'fit_function',
-           'Twu91_check_params', 'postproc_lmfit',
-           'alpha_poly_objf', 'alpha_poly_objfc', 'poly_check_params',
-           'fit_polynomial', 'poly_fit_statistics', 'fit_cheb_poly_auto',
-           'data_fit_statistics', 'fit_customized']
+__all__ = [
+    "Twu91_check_params",
+    "alpha_Twu91_objf",
+    "alpha_Twu91_objfc",
+    "alpha_poly_objf",
+    "alpha_poly_objfc",
+    "data_fit_statistics",
+    "fit_cheb_poly_auto",
+    "fit_customized",
+    "fit_function",
+    "fit_polynomial",
+    "poly_check_params",
+    "poly_fit_statistics",
+    "postproc_lmfit",
+]
 
 import fluids
 from fluids.numerics import (
@@ -61,7 +71,7 @@ try:
 except:
     pass
 
-from math import log, pi, isinf, isnan
+from math import log, pi
 
 
 def split_data(x, y, folds=5, seed=42):
@@ -127,30 +137,30 @@ def BIC(parameters, observations, SSE):
 
 def round_to_digits(number, n=7):
     # TODO move this to fluids numerics
-    return float(f'{number:.{n}g}')
+    return float(f"{number:.{n}g}")
 
 
 ChebTools = None
 
-FIT_CHEBTOOLS_CHEB = 'ChebTools'
-FIT_CHEBTOOLS_POLY = 'ChebTools polynomial'
-FIT_CHEBTOOLS_STABLEPOLY = 'ChebTools stable polynomial'
-FIT_NUMPY_POLY = 'NumPy polynomial'
-FIT_NUMPY_STABLEPOLY = 'NumPy stable polynomial'
+FIT_CHEBTOOLS_CHEB = "ChebTools"
+FIT_CHEBTOOLS_POLY = "ChebTools polynomial"
+FIT_CHEBTOOLS_STABLEPOLY = "ChebTools stable polynomial"
+FIT_NUMPY_POLY = "NumPy polynomial"
+FIT_NUMPY_STABLEPOLY = "NumPy stable polynomial"
 
 
-FIT_METHOD_MAP = {FIT_CHEBTOOLS_CHEB: 'chebyshev',
-                  FIT_CHEBTOOLS_POLY: 'polynomial',
-                  FIT_CHEBTOOLS_STABLEPOLY: 'stablepolynomial',
-                  FIT_NUMPY_POLY:'polynomial',
-                  FIT_NUMPY_STABLEPOLY: 'stablepolynomial',
+FIT_METHOD_MAP = {FIT_CHEBTOOLS_CHEB: "chebyshev",
+                  FIT_CHEBTOOLS_POLY: "polynomial",
+                  FIT_CHEBTOOLS_STABLEPOLY: "stablepolynomial",
+                  FIT_NUMPY_POLY:"polynomial",
+                  FIT_NUMPY_STABLEPOLY: "stablepolynomial",
                   }
 
 def fit_polynomial(func, low, high, n,
                    interpolation_property=None, interpolation_property_inv=None,
                    interpolation_x=lambda x: x, interpolation_x_inv=lambda x: x,
                    arg_func=None, method=FIT_CHEBTOOLS_POLY, data=None):
-    r'''Fit a function of one variable to a polynomial of degree `n` using the
+    r"""Fit a function of one variable to a polynomial of degree `n` using the
     Chebyshev approximation technique. Transformations of the base function
     are allowed as lambdas.
 
@@ -202,7 +212,7 @@ def fit_polynomial(func, low, high, n,
     -----
     This is powered by Ian Bell's ChebTools.
 
-    '''
+    """
     global ChebTools
 
     low_orig, high_orig = low, high
@@ -295,8 +305,8 @@ def data_fit_statistics(xs, actual_pts, calc_pts):
 def poly_fit_statistics(func, coeffs, low, high, pts=200,
                         interpolation_property_inv=None,
                         interpolation_x=lambda x: x,
-                        arg_func=None, method='polynomial', data=None):
-    r'''Function to check how accurate a fit function is to a polynomial.
+                        arg_func=None, method="polynomial", data=None):
+    r"""Function to check how accurate a fit function is to a polynomial.
 
     This function uses the asolute relative error definition.
 
@@ -344,7 +354,7 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
 
     Notes
     -----
-    '''
+    """
     low_orig, high_orig = low, high
     if data is not None:
         all_points_orig = data[0]
@@ -363,11 +373,11 @@ def poly_fit_statistics(func, coeffs, low, high, pts=200,
         method = FIT_METHOD_MAP[method]
 
     # Calculate the fit values
-    if method == 'polynomial':
+    if method == "polynomial":
         calc_pts = [horner(coeffs, x) for x in all_points]
-    elif method == 'stablepolynomial':
+    elif method == "stablepolynomial":
         calc_pts = [horner_stable(x, coeffs, offset, scale) for x in all_points]
-    elif method == 'chebyshev':
+    elif method == "chebyshev":
         calc_pts = [chebval(x, coeffs, offset, scale) for x in all_points]
     if interpolation_property_inv:
         for i in range(pts):
@@ -464,29 +474,29 @@ def fit_cheb_poly_auto(func, low, high, start_n=3, max_n=20, eval_pts=100,
 
 
 # Supported methods of lmfit
-methods_uncons = ['leastsq', 'least_squares', 'nelder', 'lbfgsb', 'powell',
-                  'cg', 'cobyla', 'bfgs', 'tnc', 'slsqp', 'ampgo']
-methods_cons = ['differential_evolution', 'brute', 'dual_annealing', 'shgo',
-                'basinhopping', 'trust-constr', 'emcee']
+methods_uncons = ["leastsq", "least_squares", "nelder", "lbfgsb", "powell",
+                  "cg", "cobyla", "bfgs", "tnc", "slsqp", "ampgo"]
+methods_cons = ["differential_evolution", "brute", "dual_annealing", "shgo",
+                "basinhopping", "trust-constr", "emcee"]
 
-methods_uncons_good = ['leastsq', 'least_squares', 'nelder', 'lbfgsb', 'powell',
-                       'cg',
+methods_uncons_good = ["leastsq", "least_squares", "nelder", "lbfgsb", "powell",
+                       "cg",
 #                        'cobyla', 'slsqp',
-                       'bfgs', 'tnc',]
-methods_cons_good = ['differential_evolution',
+                       "bfgs", "tnc",]
+methods_cons_good = ["differential_evolution",
 #                      'trust-constr'
                     ]
 
 
 def Twu91_check_params(params):
-    '''Returns True if all constraints are met and the values are OK; false if
+    """Returns True if all constraints are met and the values are OK; false if
     they are not OK.
-    '''
+    """
     # A consistency test for a-functions of cubic equations of state
     # From On the imperative need to use a consistent α-function for the
     # prediction of pure-compound supercritical properties with a cubic equation of state
     try:
-        c0, c1, c2 = params['c0'].value, params['c1'].value, params['c2'].value
+        c0, c1, c2 = params["c0"].value, params["c1"].value, params["c2"].value
     except:
         c0, c1, c2 = params
 
@@ -508,7 +518,7 @@ def Twu91_check_params(params):
 
 def alpha_Twu91_objf(params, Trs, alphas_over_a):
     try:
-        c0, c1, c2 = params['c0'].value, params['c1'].value, params['c2'].value
+        c0, c1, c2 = params["c0"].value, params["c1"].value, params["c2"].value
     except:
         c0, c1, c2 = params
 
@@ -518,7 +528,7 @@ def alpha_Twu91_objf(params, Trs, alphas_over_a):
 
 def alpha_Twu91_objfc(params, Trs, alphas_over_a, debug=False):
     try:
-        c0, c1, c2 = params['c0'].value, params['c1'].value, params['c2'].value
+        c0, c1, c2 = params["c0"].value, params["c1"].value, params["c2"].value
     except:
         c0, c1, c2 = params
 
@@ -642,7 +652,7 @@ def fit_function(fun, x0=None, args=None, check_fun=None, debug=False,
     for restart in (False, True):
         if restart:
             if debug:
-                print('-'*10 + 'RESTARTING WITH BEST SOLUTION' + '-'*10)
+                print("-"*10 + "RESTARTING WITH BEST SOLUTION" + "-"*10)
             best_coeffs_restart = best_coeffs
         for method_list, bounded in zip([uncons_meth, cons_meth], [False, True]):
             for method in method_list:
@@ -660,12 +670,12 @@ def fit_function(fun, x0=None, args=None, check_fun=None, debug=False,
                             l, h = -abs(best_coeffs_restart[i])*1e3, abs(best_coeffs_restart[i])*1e3
                         else:
                             l, h = -1e5, 1e5
-                        fit_params['c' + str(i)] = Parameter(value=v, min=l, max=h, vary=True)
+                        fit_params["c" + str(i)] = Parameter(value=v, min=l, max=h, vary=True)
                     else:
-                        fit_params['c' + str(i)] = Parameter(value=v, vary=True)
+                        fit_params["c" + str(i)] = Parameter(value=v, vary=True)
 
                 try:
-                    print('starting', [i.value for i in fit_params.values()])
+                    print("starting", [i.value for i in fit_params.values()])
                     result = minimize(fun, fit_params, args=args, method=method)
                 except Exception as e:
                     if debug:
@@ -704,7 +714,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
 
     err_func = fit_func_dict[objective]
     err_fun_multiple_guesses = fit_func_dict[multiple_tries_max_objective]
-    do_minimization = fit_method == 'differential_evolution'
+    do_minimization = fit_method == "differential_evolution"
 
     if do_minimization:
         def minimize_func(params):
@@ -729,7 +739,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         all_iter_guesses = hardcoded_guesses + extra_user_guess
         array_init_guesses = []
         array_init_guesses_dedup = set()
-        err_func_init = fit_func_dict['MeanRelErr']
+        err_func_init = fit_func_dict["MeanRelErr"]
         for hardcoded in all_iter_guesses:
             ph = [None]*len(fit_parameters)
             for i, k in enumerate(use_fit_parameters):
@@ -747,7 +757,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                 best_hardcoded_err = err
                 best_hardcoded_guess = ph
         p0 = best_hardcoded_guess
-        if best_hardcoded_err == 1e308 and fit_method != 'differential_evolution':
+        if best_hardcoded_err == 1e308 and fit_method != "differential_evolution":
             raise ValueError("No attemped fitting parameters yielded remotely reasonable errors. Check input data or provide guesses")
         array_init_guesses = [p0 for _, p0 in sorted(zip(hardcoded_errors, array_init_guesses))]
     else:
@@ -764,9 +774,9 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
             return analytical_jac(Ts, *params)
 
     pcov = None
-    if fit_method == 'differential_evolution':
-        if 'bounds' in solver_kwargs:
-            working_bounds = solver_kwargs.pop('bounds')
+    if fit_method == "differential_evolution":
+        if "bounds" in solver_kwargs:
+            working_bounds = solver_kwargs.pop("bounds")
         else:
             factor = 4.0
             if len(array_init_guesses) > 3:
@@ -776,7 +786,7 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                                     ) for i in range(len(use_fit_parameters))]
             else:
                 working_bounds = [(0, 1000) for k in use_fit_parameters]
-        popsize = solver_kwargs.get('popsize', 15)*len(fit_parameters)
+        popsize = solver_kwargs.get("popsize", 15)*len(fit_parameters)
         init = array_init_guesses
         for i in range(len(init), popsize):
             to_add = [uniform(ll, lh) for ll, lh in working_bounds]
@@ -784,18 +794,18 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
 
         res = differential_evolution(minimize_func,# init=np.array(init),
                                       bounds=working_bounds, **solver_kwargs)
-        popt = res['x']
+        popt = res["x"]
     else:
-        lm_direct = (fit_method == 'lm' and sigma is None)
+        lm_direct = (fit_method == "lm" and sigma is None)
         Dfun = jac_wrapped_for_leastsq if analytical_jac is not None else None
-        if 'maxfev' not in solver_kwargs and fit_method == 'lm':
+        if "maxfev" not in solver_kwargs and fit_method == "lm":
             # DO NOT INCREASE THIS! Make an analytical jacobian instead please.
             # Fought very hard to bring the analytical jacobian maxiters down to 500!
             # 250 seems too small.
             if analytical_jac is not None:
-                solver_kwargs['maxfev'] = 500
+                solver_kwargs["maxfev"] = 500
             else:
-                solver_kwargs['maxfev'] = 5000
+                solver_kwargs["maxfev"] = 5000
         if multiple_tries:
             multiple_tries_best_error = 1e300
             best_popt, best_pcov = None, None
@@ -807,12 +817,12 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
                     if lm_direct:
                         if Dfun is not None:
                             popt, info, status = lmder(func_wrapped_for_leastsq, Dfun, p0, tuple(), True,
-                                      0, 1.49012e-8, 1.49012e-8, 0.0, solver_kwargs['maxfev'],
+                                      0, 1.49012e-8, 1.49012e-8, 0.0, solver_kwargs["maxfev"],
                                       100, None)
                             # print(info, 'info', status, 'status')
                         else:
                             popt, status = leastsq(func_wrapped_for_leastsq, p0, Dfun=Dfun, **solver_kwargs)
-                        if Dfun is not None and (not np.all(np.isfinite(info['fjac'])) or not np.all(np.isfinite(info['fvec']))):
+                        if Dfun is not None and (not np.all(np.isfinite(info["fjac"])) or not np.all(np.isfinite(info["fvec"]))):
                             # Didn't go smoothly at all
                             popt, status = leastsq(func_wrapped_for_leastsq, p0, **solver_kwargs)
 
@@ -857,17 +867,17 @@ def fit_customized(Ts, data, fitting_func, fit_parameters, use_fit_parameters,
         calc = fitting_func(Ts, *popt)
         stats = stats_func(Ts, data, calc)
         statistics = {}
-        statistics['calc'] = calc
-        statistics['MAE'] = float(stats[0])
-        statistics['STDEV'] = float(stats[1])
-        statistics['min_ratio'] = float(stats[2])
-        statistics['max_ratio'] = float(stats[3])
+        statistics["calc"] = calc
+        statistics["MAE"] = float(stats[0])
+        statistics["STDEV"] = float(stats[1])
+        statistics["min_ratio"] = float(stats[2])
+        statistics["max_ratio"] = float(stats[3])
         try:
             pcov = float(pcov)
         except:
             # ndarray or None
             pass
-        statistics['pcov'] = pcov
+        statistics["pcov"] = pcov
         return out_kwargs, statistics
 
 

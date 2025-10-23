@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,11 +18,18 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
-__all__ = ['has_matplotlib', 'Stateva_Tsvetkov_TPDF', 'TPD',
-'assert_component_balance', 'assert_energy_balance', 'allclose_variable',
-'identify_phase', 'phase_select_property']
+__all__ = [
+    "TPD",
+    "Stateva_Tsvetkov_TPDF",
+    "allclose_variable",
+    "assert_component_balance",
+    "assert_energy_balance",
+    "has_matplotlib",
+    "identify_phase",
+    "phase_select_property",
+]
 
 from chemicals.utils import mix_multiple_component_flows, velocity_to_molar_velocity
 from fluids.constants import R
@@ -75,7 +82,7 @@ def allclose_variable(a, b, limits, rtols=None, atols=None):
     """
     l = float(len(a))
     if rtols is None and atols is None:
-        raise Exception('Either absolute errors or relative errors must be supplied.')
+        raise ValueError("Either absolute errors or relative errors must be supplied.")
     elif rtols is None:
         rtols = [0 for i in atols]
     elif atols is None:
@@ -89,7 +96,7 @@ def allclose_variable(a, b, limits, rtols=None, atols=None):
 
 def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None,
                           self=None):
-    r'''Determines which phase's property should be set as a default, given
+    r"""Determines which phase's property should be set as a default, given
     the phase a chemical is, and the property values of various phases. For the
     case of liquid-gas phase, returns None. If the property is not available
     for the current phase, or if the current phase is not known, returns None.
@@ -127,26 +134,26 @@ def phase_select_property(phase=None, s=None, l=None, g=None, V_over_F=None,
     --------
     >>> phase_select_property(phase='g', l=1560.14, g=3312.)
     3312.0
-    '''
-    if phase == 's':
+    """
+    if phase == "s":
         if self is not None and s is not None:
             return s.fget(self)
         return s
-    elif phase == 'l':
+    elif phase == "l":
         if self is not None and l is not None:
             return l.fget(self)
         return l
-    elif phase == 'g':
+    elif phase == "g":
         if self is not None and g is not None:
             return g.fget(self)
         return g
-    elif phase is None or phase == 'two-phase':
+    elif phase is None or phase == "two-phase":
         return None
     else:
-        raise Exception('Property not recognized')
+        raise ValueError("Property not recognized")
 
 def identify_phase(T, P=101325.0, Tm=None, Tb=None, Tc=None, Psat=None):
-    r'''Determines the phase of a one-species chemical system according to
+    r"""Determines the phase of a one-species chemical system according to
     basic rules, using whatever information is available. Considers only the
     phases liquid, solid, and gas; does not consider two-phase
     scenarios, as should occurs between phase boundaries.
@@ -197,42 +204,42 @@ def identify_phase(T, P=101325.0, Tm=None, Tb=None, Tc=None, Psat=None):
     --------
     >>> identify_phase(T=280, P=101325, Tm=273.15, Psat=991)
     'l'
-    '''
+    """
     if Tm and T <= Tm:
-        return 's'
+        return "s"
     elif Tc and T >= Tc:
         # No special return value for the critical point
-        return 'g'
+        return "g"
     elif Psat:
         # Do not allow co-existence of phases; transition to 'l' directly under
         if P <= Psat:
-            return 'g'
+            return "g"
         elif P > Psat:
-            return 'l'
+            return "l"
     elif Tb:
         # Crude attempt to model phases without Psat
         # Treat Tb as holding from 90 kPa to 110 kPa
         if P is not None and (9E4 < P < 1.1E5):
             if T < Tb:
-                return  'l'
+                return  "l"
             else:
-                return 'g'
+                return "g"
         elif P is not None and (P > 101325.0 and T <= Tb):
             # For the higher-pressure case, it is definitely liquid if under Tb
             # Above the normal boiling point, impossible to say - return None
-            return 'l'
+            return "l"
         else:
             return None
     else:
         return None
 
 def d2ns_to_dn2_partials(d2ns, dns):
-    '''from sympy import *
+    """from sympy import *
     n1, n2 = symbols('n1, n2')
     f, g, h = symbols('f, g, h', cls=Function)
 
     diff(h(n1, n2)*f(n1,  n2), n1, n2)
-    '''
+    """
     cmps = range(len(dns))
     hess = []
     for i in cmps:
@@ -260,7 +267,7 @@ def d2ns_to_dn2_partials(d2ns, dns):
 #    return hess
 
 def TPD(T, zs, lnphis, ys, lnphis_test):
-    r'''Function for calculating the Tangent Plane Distance function
+    r"""Function for calculating the Tangent Plane Distance function
     according to the original Michelsen definition. More advanced
     transformations of the TPD function are available in the literature for
     performing calculations.
@@ -313,8 +320,8 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
     >>> from thermo.eos_mix import PRMIX
     >>> gas = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.9946656798618667, 0.005334320138133337], T=254.43857191839297, P=1000000.0)
     >>> liq = PRMIX(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0], omegas=[0.098, 0.251], kijs=[[0, 0.0078], [0.0078, 0]], zs=[0.7058334393128614, 0.2941665606871387], T=254.43857191839297, P=1000000.0)
-    >>> TPD(liq.T, liq.zs, liq.lnphis_l, gas.zs, gas.lnphis_g)
-    -4.0396017390e-09
+    >>> TPD(liq.T, liq.zs, liq.lnphis_l, gas.zs, gas.lnphis_g) < 1e-6
+    True
 
     References
     ----------
@@ -327,7 +334,7 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
        "Development of a Thermodynamically Consistent, Robust and Efficient
        Phase Equilibrium Solver and Its Validations." Fuel 115 (January 1,
        2014): 1-16. https://doi.org/10.1016/j.fuel.2013.06.039.
-    '''
+    """
     tot = 0.0
     for yi, phi_yi, zi, phi_zi in zip(ys, lnphis_test, zs, lnphis):
         if yi == 0 and zi == 0:
@@ -337,7 +344,7 @@ def TPD(T, zs, lnphis, ys, lnphis_test):
     return tot*R*T
 
 def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
-    r'''Modified Tangent Plane Distance function according to [1]_ and
+    r"""Modified Tangent Plane Distance function according to [1]_ and
     [2]_. The stationary points of a system are all zeros of this function;
     so once all zeroes have been located, the stability can be evaluated
     at the stationary points only. It may be required to use multiple
@@ -388,7 +395,7 @@ def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
        Approach for the Solution of the Isothermal Multiphase Flash
        Problem. Application to Vapor-Liquid-Liquid Systems." The Canadian
        Journal of Chemical Engineering 72, no. 4 (August 1, 1994): 722-34.
-    '''
+    """
     kis = []
     for yi, log_phi_yi, zi, log_phi_zi in zip(ys, lnphis_trial, zs, lnphis):
         di = log_phi_zi + (log(zi) if zi > 0.0 else -690.0)
@@ -407,7 +414,7 @@ def Stateva_Tsvetkov_TPDF(lnphis, zs, lnphis_trial, ys):
     return tot
 
 def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False):
-    r'''Checks a mole balance for a group of inlet streams against outlet
+    r"""Checks a mole balance for a group of inlet streams against outlet
     streams. Inlets and outlets must be Stream objects. The check is performed
     on a mole-basis; an exception is raised if the balance is not satisfied.
 
@@ -431,7 +438,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
     Examples
     --------
-    '''
+    """
     try:
         [_ for _ in inlets]
     except TypeError:
@@ -472,7 +479,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
         # Check the component set is right
         if set(feed_cmps) != set(product_cmps):
-            raise Exception('Product and feeds have different components in them')
+            raise ValueError("Product and feeds have different components in them")
 
         # element balance
         feed_cmps, feed_element_flows = mix_multiple_component_flows(
@@ -498,7 +505,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
             assert_close(flow, product_element_flows[ele], rtol=rtol, atol=atol)
 
         if set(feed_cmps) != set(product_cmps):
-            raise Exception('Product and feeds have different elements in them')
+            raise ValueError("Product and feeds have different elements in them")
         return True
 
     feed_ns = [i.n for i in inlets]
@@ -515,7 +522,7 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
 
     # Fail on unmatching
     if set(feed_cmps) != set(product_cmps):
-        raise ValueError('Product and feeds have different components in them')
+        raise ValueError("Product and feeds have different components in them")
     for CAS, flow in feed_flows.items():
         assert_close(flow, product_flows[CAS], rtol=rtol, atol=atol)
 

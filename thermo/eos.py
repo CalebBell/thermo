@@ -1,4 +1,4 @@
-r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+r"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -163,13 +163,13 @@ Van der Waals Equations of State
 ================================
 .. autoclass:: VDW
    :show-inheritance:
-   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, T_discriminant_zeros_analytical, P_discriminant_zeros_analytical, delta, epsilon, omega, Zc
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, P_discriminant_zeros_analytical, delta, epsilon, omega, Zc
 
 Redlich-Kwong Equations of State
 ================================
 .. autoclass:: RK
    :show-inheritance:
-   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, T_discriminant_zeros_analytical, epsilon, omega, Zc, c1, c2
+   :members: a_alpha_and_derivatives_pure, a_alpha_pure, solve_T, epsilon, omega, Zc, c1, c2
 
 Ideal Gas Equation of State
 ===========================
@@ -248,25 +248,44 @@ at all.
 
 .. plot:: plots/SRK_Psat_error.py
 
-'''
+"""
 
 
-__all__ = ['GCEOS', 'PR', 'SRK', 'PR78', 'PRSV', 'PRSV2', 'VDW', 'RK',
-'APISRK', 'TWUPR', 'TWUSRK', 'eos_list', 'eos_2P_list',
-'IG', 'PRTranslatedPPJP', 'SRKTranslatedPPJP',
-'PRTranslatedConsistent', 'SRKTranslatedConsistent', 'MSRKTranslated',
-'SRKTranslated', 'PRTranslated', 'PRTranslatedCoqueletChapoyRichon',
-'PRTranslatedTwu', 'PRTranslatedPoly',
-'main_derivatives_and_departures',
-                'main_derivatives_and_departures_VDW',
-                'eos_lnphi'
+__all__ = [
+    "APISRK",
+    "GCEOS",
+    "IG",
+    "PR",
+    "PR78",
+    "PRSV",
+    "PRSV2",
+    "RK",
+    "SRK",
+    "TWUPR",
+    "TWUSRK",
+    "VDW",
+    "MSRKTranslated",
+    "PRTranslated",
+    "PRTranslatedConsistent",
+    "PRTranslatedCoqueletChapoyRichon",
+    "PRTranslatedPPJP",
+    "PRTranslatedPoly",
+    "PRTranslatedTwu",
+    "SRKTranslated",
+    "SRKTranslatedConsistent",
+    "SRKTranslatedPPJP",
+    "eos_2P_list",
+    "eos_list",
+    "eos_lnphi",
+    "main_derivatives_and_departures",
+    "main_derivatives_and_departures_VDW"
 ]
 
 from cmath import log as clog
 from math import isinf, isnan, log1p, log10
 
 from chemicals.flash_basic import Wilson_K_value
-from chemicals.utils import hash_any_primitive, object_data
+from chemicals.utils import hash_any_primitive
 from fluids.constants import R, mmHg
 from fluids.numerics import (
     NoSolutionError,
@@ -279,7 +298,6 @@ from fluids.numerics import (
     exp,
     horner,
     inf,
-    is_micropython,
     isclose,
     linspace,
     log,
@@ -305,6 +323,12 @@ R_inv2 = R_inv*R_inv
 
 def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
                                     da_alpha_dT, d2a_alpha_dT2):
+    if b == 0.0 and a_alpha == 0.0:
+        return main_derivatives_and_departures_ideal(T, P, V, b, delta, epsilon, a_alpha,
+                                                    da_alpha_dT, d2a_alpha_dT2)
+    if epsilon == 0.0 and delta == 0.0 and da_alpha_dT == 0.0 and d2a_alpha_dT2 == 0.0:
+        return main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
+                                    da_alpha_dT, d2a_alpha_dT2)
     epsilon2 = epsilon + epsilon
     x0 = 1.0/(V - b)
     x1 = 1.0/(V*(V + delta) + epsilon)
@@ -356,7 +380,7 @@ def main_derivatives_and_departures(T, P, V, b, delta, epsilon, a_alpha,
 
 def main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
                                     da_alpha_dT, d2a_alpha_dT2):
-    '''Re-implementation of derivatives and excess property calculations,
+    """Re-implementation of derivatives and excess property calculations,
     as ZeroDivisionError errors occur with the general solution. The
     following derivation is the source of these formulas.
 
@@ -378,7 +402,7 @@ def main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
     >>>
     >>> dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
     (R/(V - b), -R*T/(V - b)**2 + 2*a/V**3, 0, 2*(R*T/(V - b)**3 - 3*a/V**4), -R/(V - b)**2, P*V - R*T - a/V, R*(-log(V) + log(V - b)) + R*log(P*V/(R*T)), 0)
-    '''
+    """
     V_inv = 1.0/V
     V_inv2 = V_inv*V_inv
     Vmb = V - b
@@ -393,9 +417,34 @@ def main_derivatives_and_departures_VDW(T, P, V, b, delta, epsilon, a_alpha,
     Cv_dep = 0.0
     return (dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep)
 
+def main_derivatives_and_departures_ideal(T, P, V, b, delta, epsilon, a_alpha,
+                                          da_alpha_dT, d2a_alpha_dT2):
+    # First derivatives
+    # dP/dT = R/V = P/T
+    dP_dT = P / T
+
+    # dP/dV = -RT/V^2 = -P^2/(RT)
+    dP_dV = -P * P / (R * T)
+
+    # Second derivatives
+    # d2P/dT2 = 0
+    d2P_dT2 = 0.0
+
+    # d2P/dV2 = 2RT/V^3 = 2P^3/(R^2*T^2)
+    d2P_dV2 = 2.0 * P * P * P / (R * R * T * T)
+
+    # d2P/dTdV = -R/V^2 = -P^2/(R*T^2)
+    d2P_dTdV = -P * P / (R * T * T)
+
+    # All departure properties are zero for ideal gas
+    H_dep = 0.0
+    S_dep = 0.0
+    Cv_dep = 0.0
+
+    return dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep
 
 def eos_lnphi(T, P, V, b, delta, epsilon, a_alpha):
-    r'''Calculate the log fugacity coefficient of the general cubic equation
+    r"""Calculate the log fugacity coefficient of the general cubic equation
     of state form.
 
     .. math::
@@ -432,7 +481,7 @@ def eos_lnphi(T, P, V, b, delta, epsilon, a_alpha):
     >>> eos_lnphi(299.0, 100000.0, 0.00013128, 0.000109389, 0.00021537, -1.1964711e-08, 3.8056296)
     -1.560560970726
 
-    '''
+    """
     RT = R*T
     RT_inv = 1.0/RT
     x0 = 1.0/sqrt(delta*delta - 4.0*epsilon)
@@ -450,7 +499,7 @@ def eos_G_dep(T, P, V, b, delta, epsilon, a_alpha):
     return lnphi*R*T
 
 class GCEOS:
-    r'''Class for solving a generic Pressure-explicit three-parameter cubic
+    r"""Class for solving a generic Pressure-explicit three-parameter cubic
     equation of state. Does not implement any parameters itself; must be
     subclassed by an equation of state class which uses it. Works for mixtures
     or pure species for all properties except fugacity. All properties are
@@ -856,7 +905,7 @@ class GCEOS:
     V_dep_l
     V_g_mpmath
     V_l_mpmath
-    '''
+    """
 
     # Slots does not help performance in either implementation
     kwargs = {}
@@ -894,17 +943,14 @@ class GCEOS:
         """Parameter used in kij interconversion / calculation of Eij G_res^(E, inf)"""
         return (-(self.delta/2 + (self.delta**2 - 4*self.epsilon)**0.5/2)/self.b)
 
-    nonstate_constants = ('Tc', 'Pc', 'omega', 'kwargs', 'a', 'b', 'delta', 'epsilon')
+    nonstate_constants = ("Tc", "Pc", "omega", "kwargs", "a", "b", "delta", "epsilon")
     kwargs_keys = tuple()
 
-    if not is_micropython:
-        def __init_subclass__(cls):
-            cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
-    else:
-        __full_path__ = None
+    def __init_subclass__(cls):
+        cls.__full_path__ = f"{cls.__module__}.{cls.__qualname__}"
 
     def state_hash(self):
-        r'''Basic method to calculate a hash of the state of the model and its
+        r"""Basic method to calculate a hash of the state of the model and its
         model parameters.
 
         Note that the hashes should only be compared on the same system running
@@ -914,7 +960,7 @@ class GCEOS:
         -------
         state_hash : int
             Hash of the object's model parameters and state, [-]
-        '''
+        """
         if self.multicomponent:
             comp = self.zs
         else:
@@ -924,7 +970,7 @@ class GCEOS:
     __hash__ = state_hash
 
     def model_hash(self):
-        r'''Basic method to calculate a hash of the non-state parts of the model
+        r"""Basic method to calculate a hash of the non-state parts of the model
         This is useful for comparing to models to
         determine if they are the same, i.e. in a VLL flash it is important to
         know if both liquids have the same model.
@@ -936,7 +982,7 @@ class GCEOS:
         -------
         model_hash : int
             Hash of the object's model parameters, [-]
-        '''
+        """
         try:
             return self._model_hash
         except AttributeError:
@@ -950,47 +996,34 @@ class GCEOS:
         self._model_hash = h
         return h
 
-    def exact_hash(self):
-        r'''Method to calculate and return a hash representing the exact state
-        of the object.
-
-        Returns
-        -------
-        hash : int
-            Hash of the object, [-]
-        '''
-        d = object_data(self)
-        ans = hash_any_primitive((self.__class__.__name__, d))
-        return ans
-
     def __eq__(self, other):
         return self.__hash__() == hash(other)
 
 
     @property
     def state_specs(self):
-        '''Convenience method to return the two specified state specs (`T`,
+        """Convenience method to return the two specified state specs (`T`,
         `P`, or `V`) as a dictionary.
 
         Examples
         --------
         >>> PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=500.0, V=1.0).state_specs
         {'T': 500.0, 'V': 1.0}
-        '''
+        """
         d = {}
-        if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            d['P'] = self.P
-            d['V'] = self.V
+        if hasattr(self, "no_T_spec") and self.no_T_spec:
+            d["P"] = self.P
+            d["V"] = self.V
         elif self.V is not None:
-            d['T'] = self.T
-            d['V'] = self.V
+            d["T"] = self.T
+            d["V"] = self.V
         else:
-            d['T'] = self.T
-            d['P'] = self.P
+            d["T"] = self.T
+            d["P"] = self.P
         return d
 
     def __repr__(self):
-        '''Create a string representation of the EOS - by default, include
+        """Create a string representation of the EOS - by default, include
         all parameters so as to make it easy to construct new instances from
         states. Includes the two specified state variables, `Tc`, `Pc`, `omega`
         and any `kwargs`.
@@ -1006,22 +1039,22 @@ class GCEOS:
         >>> eos = PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1e6)
         >>> eos
         PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1000000.0)
-        '''
-        s = f'{self.__class__.__name__}(Tc={self.Tc!r}, Pc={self.Pc!r}, omega={self.omega!r}, '
+        """
+        s = f"{self.__class__.__name__}(Tc={self.Tc!r}, Pc={self.Pc!r}, omega={self.omega!r}, "
         for k, v in self.kwargs.items():
-            s += f'{k}={v}, '
+            s += f"{k}={v}, "
 
-        if hasattr(self, 'no_T_spec') and self.no_T_spec:
-            s += f'P={self.P!r}, V={self.V!r}'
+        if hasattr(self, "no_T_spec") and self.no_T_spec:
+            s += f"P={self.P!r}, V={self.V!r}"
         elif self.V is not None:
-            s += f'T={self.T!r}, V={self.V!r}'
+            s += f"T={self.T!r}, V={self.V!r}"
         else:
-            s += f'T={self.T!r}, P={self.P!r}'
-        s += ')'
+            s += f"T={self.T!r}, P={self.P!r}"
+        s += ")"
         return s
 
     def as_json(self, cache=None, option=0):
-        r'''Method to create a JSON-friendly serialization of the eos
+        r"""Method to create a JSON-friendly serialization of the eos
         which can be stored, and reloaded later.
 
         Returns
@@ -1037,16 +1070,16 @@ class GCEOS:
         >>> import json
         >>> eos = MSRKTranslated(Tc=507.6, Pc=3025000, omega=0.2975, c=22.0561E-6, M=0.7446, N=0.2476, T=250., P=1E6)
         >>> assert eos == MSRKTranslated.from_json(json.loads(json.dumps(eos.as_json())))
-        '''
+        """
         return JsonOptEncodable.as_json(self, cache, option)
 
     json_version = 1
     obj_references = []
-    non_json_attributes = ['kwargs', 'one_minus_kijs', '_model_hash']
+    non_json_attributes = ["kwargs", "one_minus_kijs", "_model_hash"]
 
     @classmethod
     def from_json(cls, json_repr, cache=None):
-        r'''Method to create a eos from a JSON
+        r"""Method to create a eos from a JSON
         serialization of another eos.
 
         Parameters
@@ -1070,7 +1103,7 @@ class GCEOS:
         >>> string = eos.as_json()
         >>> new_eos = GCEOS.from_json(string)
         >>> assert eos.__dict__ == new_eos.__dict__
-        '''
+        """
         return JsonOptEncodable.from_json(json_repr, cache)
 
     def _custom_from_json(self, *args):
@@ -1087,32 +1120,32 @@ class GCEOS:
         if eos.kwargs_keys:
             self.kwargs = {k: getattr(self, k) for k in eos.kwargs_keys}
             try:
-                self.kwargs['alpha_coeffs'] = tuple(self.kwargs['alpha_coeffs'])
+                self.kwargs["alpha_coeffs"] = tuple(self.kwargs["alpha_coeffs"])
             except:
                 pass
 
     def check_sufficient_inputs(self):
-        '''Method to an exception if none of the pairs (T, P), (T, V), or
+        """Method to an exception if none of the pairs (T, P), (T, V), or
         (P, V) are given.
-        '''
+        """
         if not ((self.T is not None and self.P is not None) or
                 (self.T is not None and self.V is not None) or
                 (self.P is not None and self.V is not None)):
-            raise ValueError('Either T and P, or T and V, or P and V are required')
+            raise ValueError("Either T and P, or T and V, or P and V are required")
 
 
     def solve(self, pure_a_alphas=True, only_l=False, only_g=False, full_alphas=True):
-        '''First EOS-generic method; should be called by all specific EOSs.
+        """First EOS-generic method; should be called by all specific EOSs.
         For solving for `T`, the EOS must provide the method `solve_T`.
         For all cases, the EOS must provide `a_alpha_and_derivatives`.
         Calls `set_from_PT` once done.
-        '''
+        """
 #        self.check_sufficient_inputs()
 
         if self.V is not None:
             V = self.V
             if self.P is not None:
-                solution = 'g' if (only_g and not only_l) else ('l' if only_l else None)
+                solution = "g" if (only_g and not only_l) else ("l" if only_l else None)
                 self.T = self.solve_T(self.P, V, solution=solution)
                 self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, pure_a_alphas=pure_a_alphas)
             elif self.T is not None:
@@ -1157,31 +1190,31 @@ class GCEOS:
         self.set_from_PT(Vs, only_l=only_l, only_g=only_g)
 
     def resolve_full_alphas(self):
-        '''Generic method to resolve the eos with fully calculated alpha
+        """Generic method to resolve the eos with fully calculated alpha
         derviatives. Re-calculates properties with the new alpha derivatives
         for any previously solved roots.
-        '''
+        """
         self.a_alpha, self.da_alpha_dT, self.d2a_alpha_dT2 = self.a_alpha_and_derivatives(self.T, full=True, pure_a_alphas=False)
-        self.set_from_PT(self.raw_volumes, only_l=hasattr(self, 'V_l'), only_g=hasattr(self, 'V_g'))
+        self.set_from_PT(self.raw_volumes, only_l=hasattr(self, "V_l"), only_g=hasattr(self, "V_g"))
 
     def solve_missing_volumes(self):
-        r'''Generic method to ensure both volumes, if solutions are physical,
+        r"""Generic method to ensure both volumes, if solutions are physical,
         have calculated properties. This effectively un-does the optimization
         of the `only_l` and `only_g` keywords.
-        '''
-        if self.phase == 'l/g':
+        """
+        if self.phase == "l/g":
             try:
-                self.V_l
+                self.V_l  # noqa: B018
             except:
                 self.set_from_PT(self.raw_volumes, only_l=True, only_g=False)
             try:
-                self.V_g
+                self.V_g  # noqa: B018
             except:
                 self.set_from_PT(self.raw_volumes, only_l=False, only_g=True)
 
 
     def set_from_PT(self, Vs, only_l=False, only_g=False):
-        r'''Counts the number of real volumes in `Vs`, and determines what to do.
+        r"""Counts the number of real volumes in `Vs`, and determines what to do.
         If there is only one real volume, the method
         `set_properties_from_solution` is called with it. If there are
         two real volumes, `set_properties_from_solution` is called once with
@@ -1204,7 +1237,7 @@ class GCEOS:
         An optimization attempt was made to remove min() and max() from this
         function; that is indeed possible, but the check for handling if there
         are two or three roots makes it not worth it.
-        '''
+        """
 #        good_roots = [i.real for i in Vs if i.imag == 0.0 and i.real > 0.0]
 #        good_root_count = len(good_roots)
             # All roots will have some imaginary component; ignore them if > 1E-9 (when using a solver that does not strip them)
@@ -1244,8 +1277,8 @@ class GCEOS:
                     or (not self.multicomponent and self.Tc == self.T and self.Pc == self.P)):
                 # Do not have any tests for this - not good!
 
-                force_l = not self.phase == 'l'
-                force_g = not self.phase == 'g'
+                force_l = self.phase != "l"
+                force_g = self.phase != "g"
                 V = Vmin if Vmin != 1e100 else Vmax
                 self.set_properties_from_solution(self.T, self.P,
                                                   V, b,
@@ -1254,7 +1287,7 @@ class GCEOS:
                                                   self.d2a_alpha_dT2,
                                                   force_l=force_l,
                                                   force_g=force_g)
-                self.phase = 'l/g'
+                self.phase = "l/g"
         elif good_root_count > 1:
             if not only_g:
                 self.set_properties_from_solution(self.T, self.P, Vmin, b,
@@ -1267,21 +1300,21 @@ class GCEOS:
                                                    self.delta, self.epsilon,
                                                    self.a_alpha, self.da_alpha_dT,
                                                    self.d2a_alpha_dT2, force_g=True)
-            self.phase = 'l/g'
+            self.phase = "l/g"
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
-            print([self.T, self.P, b, self.delta, self.epsilon, self.a_alpha, 'coordinates of failure'])
+            print([self.T, self.P, b, self.delta, self.epsilon, self.a_alpha, "coordinates of failure"])
             if self.multicomponent:
-                extra = f', zs is {self.zs}'
+                extra = f", zs is {self.zs}"
             else:
-                extra = ''
-            raise ValueError(f'No acceptable roots were found; the roots are {Vs!s}, T is {self.T!s} K, P is {self.P!s} Pa, a_alpha is {[self.a_alpha]!s}, b is {[self.b]!s}{extra}')
+                extra = ""
+            raise ValueError(f"No acceptable roots were found; the roots are {Vs!s}, T is {self.T!s} K, P is {self.P!s} Pa, a_alpha is {[self.a_alpha]!s}, b is {[self.b]!s}{extra}")
 
 
     def set_properties_from_solution(self, T, P, V, b, delta, epsilon, a_alpha,
                                      da_alpha_dT, d2a_alpha_dT2,
                                      force_l=False, force_g=False):
-        r'''Sets all interesting properties which can be calculated from an
+        r"""Sets all interesting properties which can be calculated from an
         EOS alone. Determines which phase the fluid is on its own; for details,
         see `phase_identification_parameter`.
 
@@ -1428,9 +1461,9 @@ class GCEOS:
            edition. New York: McGraw-Hill Professional, 2000.
         .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
-        '''
+        """
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
-        self.main_derivatives_and_departures(T, P, V, b, delta, epsilon,
+        main_derivatives_and_departures(T, P, V, b, delta, epsilon,
                                              a_alpha, da_alpha_dT,
                                              d2a_alpha_dT2))
         try:
@@ -1455,7 +1488,7 @@ class GCEOS:
                      V, Z, PIP, dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP,
                      d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, G_dep, Cp_dep,
                      Cv_dep)
-            return 'l'
+            return "l"
         else:
             (self.V_g, self.Z_g, self.PIP_g, self.dP_dT_g, self.dP_dV_g,
              self.dV_dT_g, self.dV_dP_g, self.dT_dV_g, self.dT_dP_g,
@@ -1464,13 +1497,13 @@ class GCEOS:
                      V, Z, PIP, dP_dT, dP_dV, dV_dT, dV_dP, dT_dV, dT_dP,
                      d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, G_dep, Cp_dep,
                      Cv_dep)
-            return 'g'
+            return "g"
 
 
 
     def a_alpha_and_derivatives(self, T, full=True, quick=True,
                                 pure_a_alphas=True):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives.
 
         Parameters
@@ -1497,13 +1530,13 @@ class GCEOS:
         d2a_alpha_dT2 : float
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K^2]
-        '''
+        """
         if full:
             return self.a_alpha_and_derivatives_pure(T=T)
         return self.a_alpha_pure(T)
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Dummy method to calculate :math:`a \alpha` and its first and second
+        r"""Dummy method to calculate :math:`a \alpha` and its first and second
         derivatives. Should be implemented with the same function signature in
         each EOS variant; this only raises a NotImplemented Exception.
         Should return 'a_alpha', 'da_alpha_dT', and 'd2a_alpha_dT2'.
@@ -1523,13 +1556,13 @@ class GCEOS:
         d2a_alpha_dT2 : float
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K^2]
-        '''
-        raise NotImplementedError('a_alpha and its first and second derivatives '
-                                  'should be calculated by this method, in a user subclass.')
+        """
+        raise NotImplementedError("a_alpha and its first and second derivatives "
+                                  "should be calculated by this method, in a user subclass.")
 
     @property
     def d3a_alpha_dT3(self):
-        r'''Method to calculate the third temperature derivative of
+        r"""Method to calculate the third temperature derivative of
         :math:`a \alpha`, [J^2/mol^2/Pa/K^3]. This parameter is needed for
         some higher derivatives that are needed in some flash calculations.
 
@@ -1538,7 +1571,7 @@ class GCEOS:
         d3a_alpha_dT3 : float
             Third temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K^3]
-        '''
+        """
         try:
             return self._d3a_alpha_dT3
         except AttributeError:
@@ -1549,7 +1582,7 @@ class GCEOS:
 
     def a_alpha_plot(self, Tmin=1e-4, Tmax=None, pts=1000, plot=True,
                      show=True):
-        r'''Method to create a plot of the :math:`a \alpha` parameter and its
+        r"""Method to create a plot of the :math:`a \alpha` parameter and its
         first two derivatives. This easily allows identification of EOSs which
         are displaying inconsistent behavior.
 
@@ -1583,7 +1616,7 @@ class GCEOS:
             EOS-specific method, [J^2/mol^2/Pa/K^2]
         fig : matplotlib.figure.Figure
             Plotted figure, only returned if `plot` is True, [-]
-        '''
+        """
         if Tmax is None:
             if self.multicomponent:
                 Tc = self.pseudo_Tc
@@ -1607,16 +1640,16 @@ class GCEOS:
             fig = plt.figure()
             ax1 = fig.add_subplot(111)
 
-            ax1.set_xlabel('Temperature [K]')
-            ln0 = ax1.plot(Ts, a_alphas, 'r', label=r'$a \alpha$ [J^2/mol^2/Pa]')
-            ln2 = ax1.plot(Ts, d2a_alphas, 'g', label='Second derivative [J^2/mol^2/Pa/K^2]')
-            ax1.set_yscale('log')
-            ax1.set_ylabel(r'$a \alpha$ and $\frac{\partial (a \alpha)^2}{\partial T^2}$')
+            ax1.set_xlabel("Temperature [K]")
+            ln0 = ax1.plot(Ts, a_alphas, "r", label=r"$a \alpha$ [J^2/mol^2/Pa]")
+            ln2 = ax1.plot(Ts, d2a_alphas, "g", label="Second derivative [J^2/mol^2/Pa/K^2]")
+            ax1.set_yscale("log")
+            ax1.set_ylabel(r"$a \alpha$ and $\frac{\partial (a \alpha)^2}{\partial T^2}$")
             ax2 = ax1.twinx()
-            ax2.set_yscale('symlog')
-            ln1 = ax2.plot(Ts, da_alphas, 'b', label='First derivative [J^2/mol^2/Pa/K]')
-            ax2.set_ylabel(r'$\frac{\partial a \alpha}{\partial T}$')
-            ax1.set_title(fr'$a \alpha$ vs temperature; range {max(a_alphas):.4g} to {min(a_alphas):.4g}')
+            ax2.set_yscale("symlog")
+            ln1 = ax2.plot(Ts, da_alphas, "b", label="First derivative [J^2/mol^2/Pa/K]")
+            ax2.set_ylabel(r"$\frac{\partial a \alpha}{\partial T}$")
+            ax1.set_title(fr"$a \alpha$ vs temperature; range {max(a_alphas):.4g} to {min(a_alphas):.4g}")
 
             lines = ln0 + ln1 + ln2
             labels = [l.get_label() for l in lines]
@@ -1628,7 +1661,7 @@ class GCEOS:
 
 
     def solve_T(self, P, V, solution=None):
-        '''Generic method to calculate `T` from a specified `P` and `V`.
+        """Generic method to calculate `T` from a specified `P` and `V`.
         Provides SciPy's `newton` solver, and iterates to solve the general
         equation for `P`, recalculating `a_alpha` as a function of temperature
         using `a_alpha_and_derivatives` each iteration.
@@ -1648,7 +1681,7 @@ class GCEOS:
         -------
         T : float
             Temperature, [K]
-        '''
+        """
         high_prec = type(V) is not float
         denominator_inv = 1.0/(V*V + self.delta*V + self.epsilon)
         V_minus_b_inv = 1.0/(V-self.b)
@@ -1699,7 +1732,7 @@ class GCEOS:
             #     return T_brenth
 
 
-        if abs(err_ig) < abs(err_liq) or T_guess_liq > 20000 or solution == 'g':
+        if abs(err_ig) < abs(err_liq) or T_guess_liq > 20000 or solution == "g":
             T_guess = T_guess_ig
             f0 = err_ig
         else:
@@ -1762,7 +1795,7 @@ class GCEOS:
 
         if solution is not None:
             if (T_secant is not None and T_brenth is not None):
-                if solution == 'g':
+                if solution == "g":
                     return max(T_brenth, T_secant)
                 else:
                     return min(T_brenth, T_secant)
@@ -1796,7 +1829,7 @@ class GCEOS:
 
     @property
     def mpmath_volumes(self):
-        r'''Method to calculate to a high precision the exact roots to the
+        r"""Method to calculate to a high precision the exact roots to the
         cubic equation, using `mpmath`.
 
         Returns
@@ -1812,12 +1845,12 @@ class GCEOS:
         >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
         >>> eos.mpmath_volumes
         (mpf('0.0000489261705320261435106226558966745'), mpf('0.000541508154451321441068958547812526'), mpf('0.0243149463942697410611501615357228'))
-        '''
+        """
         return volume_solutions_mpmath(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
 
     @property
     def mpmath_volumes_float(self):
-        r'''Method to calculate real roots of a cubic equation, using `mpmath`,
+        r"""Method to calculate real roots of a cubic equation, using `mpmath`,
         but returned as floats.
 
         Returns
@@ -1833,12 +1866,12 @@ class GCEOS:
         >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
         >>> eos.mpmath_volumes_float
         ((4.892617053202614e-05+0j), (0.0005415081544513214+0j), (0.024314946394269742+0j))
-        '''
+        """
         return volume_solutions_mpmath_float(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
 
     @property
     def mpmath_volume_ratios(self):
-        r'''Method to compare, as ratios, the volumes of the implemented
+        r"""Method to compare, as ratios, the volumes of the implemented
         cubic solver versus those calculated using `mpmath`.
 
         Returns
@@ -1854,11 +1887,11 @@ class GCEOS:
         >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
         >>> eos.mpmath_volume_ratios
         (mpc(real='0.99999999999999995', imag='0.0'), mpc(real='0.999999999999999965', imag='0.0'), mpc(real='1.00000000000000005', imag='0.0'))
-        '''
+        """
         return tuple(i/j for i, j in zip(self.sorted_volumes, self.mpmath_volumes))
 
     def Vs_mpmath(self):
-        r'''Method to calculate real roots of a cubic equation, using `mpmath`.
+        r"""Method to calculate real roots of a cubic equation, using `mpmath`.
 
         Returns
         -------
@@ -1873,7 +1906,7 @@ class GCEOS:
         >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
         >>> eos.Vs_mpmath()
         [mpf('0.0000489261705320261435106226558966745'), mpf('0.000541508154451321441068958547812526'), mpf('0.0243149463942697410611501615357228')]
-        '''
+        """
         Vs = self.mpmath_volumes
         good_roots = [i.real for i in Vs if (i.real > 0.0 and abs(i.imag/i.real) < 1E-12)]
         good_roots.sort()
@@ -1881,7 +1914,7 @@ class GCEOS:
 
 
     def volume_error(self):
-        r'''Method to calculate the relative absolute error in the calculated
+        r"""Method to calculate the relative absolute error in the calculated
         molar volumes. This is computed with `mpmath`. If the number of real
         roots is different between mpmath and the implemented solver, an
         error of 1 is returned.
@@ -1904,7 +1937,7 @@ class GCEOS:
         >>> eos = PRTranslatedTwu(T=300, P=1e5, Tc=512.5, Pc=8084000.0, omega=0.559, alpha_coeffs=(0.694911, 0.9199, 1.7), c=-1e-6)
         >>> eos.volume_error()
         5.2192e-17
-        '''
+        """
 #        Vs_good, Vs = self.mpmath_volumes, self.sorted_volumes
         # Compare the reals only if mpmath has the imaginary roots
         Vs_good = self.volume_solutions_mp(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
@@ -1913,18 +1946,18 @@ class GCEOS:
             two_roots_mpmath = True
             Vl_mpmath, Vg_mpmath = min(Vs_filtered), max(Vs_filtered)
         else:
-            if hasattr(self, 'V_l') and hasattr(self, 'V_g'):
+            if hasattr(self, "V_l") and hasattr(self, "V_g"):
                 # Wrong number of roots!
                 return 1
-            elif hasattr(self, 'V_l'):
+            elif hasattr(self, "V_l"):
                 Vl_mpmath = Vs_filtered[0]
-            elif hasattr(self, 'V_g'):
+            elif hasattr(self, "V_g"):
                 Vg_mpmath = Vs_filtered[0]
             two_roots_mpmath = False
         err = 0
 
         if two_roots_mpmath:
-            if (not hasattr(self, 'V_l') or not hasattr(self, 'V_g')):
+            if (not hasattr(self, "V_l") or not hasattr(self, "V_g")):
                 return 1.0
 
         # Important not to confuse the roots and also to not consider the third root
@@ -1945,9 +1978,9 @@ class GCEOS:
         return float(err)
 
     def _mpmath_volume_matching(self, V):
-        '''Helper method which, given one of the three molar volume solutions
+        """Helper method which, given one of the three molar volume solutions
         of the EOS, returns the mpmath molar volume which is nearest it.
-        '''
+        """
         Vs = self.mpmath_volumes
         rel_diffs = []
 
@@ -1958,7 +1991,7 @@ class GCEOS:
 
     @property
     def V_l_mpmath(self):
-        r'''The molar volume of the liquid phase calculated with `mpmath` to
+        r"""The molar volume of the liquid phase calculated with `mpmath` to
         a higher precision, [m^3/mol]. This is useful for validating the
         cubic root solver(s). It is not quite a true arbitrary solution to the
         EOS, because the constants `b`,`epsilon`, `delta` and `a_alpha` as well
@@ -1966,14 +1999,14 @@ class GCEOS:
         precision. This is a feature when comparing the volume solution
         algorithms however as they work with the same finite-precision
         variables.
-        '''
-        if not hasattr(self, 'V_l'):
+        """
+        if not hasattr(self, "V_l"):
             raise ValueError("Not solved for that volume")
         return self._mpmath_volume_matching(self.V_l)
 
     @property
     def V_g_mpmath(self):
-        r'''The molar volume of the gas phase calculated with `mpmath` to
+        r"""The molar volume of the gas phase calculated with `mpmath` to
         a higher precision, [m^3/mol]. This is useful for validating the
         cubic root solver(s). It is not quite a true arbitrary solution to the
         EOS, because the constants `b`,`epsilon`, `delta` and `a_alpha` as well
@@ -1981,8 +2014,8 @@ class GCEOS:
         precision. This is a feature when comparing the volume solution
         algorithms however as they work with the same finite-precision
         variables.
-        '''
-        if not hasattr(self, 'V_g'):
+        """
+        if not hasattr(self, "V_g"):
             raise ValueError("Not solved for that volume")
         return self._mpmath_volume_matching(self.V_g)
 
@@ -2022,7 +2055,7 @@ class GCEOS:
     def volume_errors(self, Tmin=1e-4, Tmax=1e4, Pmin=1e-2, Pmax=1e9,
                       pts=50, plot=False, show=False, trunc_err_low=1e-18,
                       trunc_err_high=1.0, color_map=None, timing=False):
-        r'''Method to create a plot of the relative absolute error in the
+        r"""Method to create a plot of the relative absolute error in the
         cubic volume solution as compared to a higher-precision calculation.
         This method is incredible valuable for the development of more reliable
         floating-point based cubic solutions.
@@ -2066,7 +2099,7 @@ class GCEOS:
             seconds if `timing` is True), [-]
         fig : matplotlib.figure.Figure
             Plotted figure, only returned if `plot` is True, [-]
-        '''
+        """
         if timing:
             try:
                 from time import perf_counter
@@ -2075,20 +2108,20 @@ class GCEOS:
         Ts = logspace(log10(Tmin), log10(Tmax), pts)
         Ps = logspace(log10(Pmin), log10(Pmax), pts)
         kwargs = {}
-        if hasattr(self, 'zs'):
-            kwargs['zs'] = self.zs
-            kwargs['fugacities'] = False
+        if hasattr(self, "zs"):
+            kwargs["zs"] = self.zs
+            kwargs["fugacities"] = False
 
         errs = []
         for T in Ts:
             err_row = []
             for P in Ps:
-                kwargs['T'] = T
-                kwargs['P'] = P
+                kwargs["T"] = T
+                kwargs["P"] = P
                 try:
                     obj = self.to(**kwargs)
                 except Exception as e:
-                    print(f'Failed to go to point, kwargs={kwargs} with exception {e}')
+                    print(f"Failed to go to point, kwargs={kwargs} with exception {e}")
                     # So bad we failed to calculate a real point
                     val = 1.0
                 if timing:
@@ -2098,7 +2131,7 @@ class GCEOS:
                 else:
                     val = float(obj.volume_error())
                     if val > 1e-7:
-                        print([obj.T, obj.P, obj.b, obj.delta, obj.epsilon, obj.a_alpha, 'coordinates of failure', obj])
+                        print([obj.T, obj.P, obj.b, obj.delta, obj.epsilon, obj.a_alpha, "coordinates of failure", obj])
                 err_row.append(val)
             errs.append(err_row)
 
@@ -2126,14 +2159,14 @@ class GCEOS:
             im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm)
             cbar = fig.colorbar(im, ax=ax)
             if timing:
-                cbar.set_label('Time [us]')
+                cbar.set_label("Time [us]")
             else:
-                cbar.set_label('Relative error')
+                cbar.set_label("Relative error")
 
-            ax.set_yscale('log')
-            ax.set_xscale('log')
-            ax.set_xlabel('T [K]')
-            ax.set_ylabel('P [Pa]')
+            ax.set_yscale("log")
+            ax.set_xscale("log")
+            ax.set_xlabel("T [K]")
+            ax.set_ylabel("P [Pa]")
 
             max_err = np.max(errs)
             if trunc_err_low is not None and max_err < trunc_err_low:
@@ -2142,9 +2175,9 @@ class GCEOS:
                 max_err = trunc_err_high
 
             if timing:
-                ax.set_title('Volume timings; max %.2e us' %(max_err*1e6))
+                ax.set_title("Volume timings; max %.2e us" %(max_err*1e6))
             else:
-                ax.set_title(f'Volume solution validation; max err {max_err:.4e}')
+                ax.set_title(f"Volume solution validation; max err {max_err:.4e}")
             if show:
                 plt.show()
 
@@ -2156,9 +2189,9 @@ class GCEOS:
                       pts=50, show=False, color_map=None,
                       mechanical=True, pseudo_critical=True, Psat=True,
                       determinant_zeros=True, phase_ID_transition=True,
-                      base_property='V', base_min=None, base_max=None,
-                      base_selection='Gmin'):
-        r'''Method to create a plot of the special curves of a pure fluid -
+                      base_property="V", base_min=None, base_max=None,
+                      base_selection="Gmin"):
+        r"""Method to create a plot of the special curves of a pure fluid -
         vapor pressure, determinant zeros, pseudo critical point,
         and mechanical critical point.
 
@@ -2225,15 +2258,15 @@ class GCEOS:
         -------
         fig : matplotlib.figure.Figure
             Plotted figure, only returned if `plot` is True, [-]
-        '''
+        """
         Ts = logspace(log10(Tmin), log10(Tmax), pts)
         Ps = logspace(log10(Pmin), log10(Pmax), pts)
         kwargs = {}
-        if hasattr(self, 'zs'):
-            kwargs['zs'] = self.zs
+        if hasattr(self, "zs"):
+            kwargs["zs"] = self.zs
 
-        l_prop = base_property + '_l'
-        g_prop = base_property + '_g'
+        l_prop = base_property + "_l"
+        g_prop = base_property + "_g"
         base_positive = True
 
         # Are we an ideal-gas or multicomponent?
@@ -2245,19 +2278,19 @@ class GCEOS:
         for T in Ts:
             V_row = []
             for P in Ps:
-                kwargs['T'] = T
-                kwargs['P'] = P
+                kwargs["T"] = T
+                kwargs["P"] = P
                 obj = self.to(**kwargs)
-                if obj.phase == 'l/g':
-                    if base_selection == 'Gmin':
+                if obj.phase == "l/g":
+                    if base_selection == "Gmin":
                         V = getattr(obj, l_prop) if obj.G_dep_l < obj.G_dep_g else getattr(obj, g_prop)
-                    elif base_selection == 'l':
+                    elif base_selection == "l":
                         V = getattr(obj, l_prop)
-                    elif base_selection == 'g':
+                    elif base_selection == "g":
                         V = getattr(obj, g_prop)
                     else:
                         raise ValueError("Unknown value for base_selection")
-                elif obj.phase == 'l':
+                elif obj.phase == "l":
                     V = getattr(obj, l_prop)
                 else:
                     V = getattr(obj, g_prop)
@@ -2307,6 +2340,7 @@ class GCEOS:
                 a_alpha = self.a_alpha_and_derivatives(T, full=False)
                 P_dets = self.P_discriminant_zeros_analytical(T=T, b=self.b, delta=self.delta,
                                                               epsilon=self.epsilon, a_alpha=a_alpha, valid=True)
+                P_dets = [v.real for v in P_dets]
                 if P_dets:
                     P_det_min = min(P_dets)
                     P_det_max = max(P_dets)
@@ -2332,33 +2366,33 @@ class GCEOS:
         norm = LogNorm() if base_positive else None
         im = ax.pcolormesh(X, Y, z, cmap=color_map, norm=norm)
         cbar = fig.colorbar(im, ax=ax)
-        cbar.set_label(f'{base_property}')
+        cbar.set_label(f"{base_property}")
 
         if Psat:
-            plt.plot(Ts_Psats, Psats, label='Psat')
+            plt.plot(Ts_Psats, Psats, label="Psat")
 
         if determinant_zeros:
-            plt.plot(Ts_dets_low, lows_det_Ps, label='Low trans')
-            plt.plot(Ts_dets_high, high_det_Ps, label='High trans')
+            plt.plot(Ts_dets_low, lows_det_Ps, label="Low trans")
+            plt.plot(Ts_dets_high, high_det_Ps, label="High trans")
 
         if pseudo_critical:
-            plt.plot([Tc], [Pc], 'x', label='Pseudo crit')
+            plt.plot([Tc], [Pc], "x", label="Pseudo crit")
         if mechanical:
-            plt.plot([TP_mechanical[0]], [TP_mechanical[1]], 'o', label='Mechanical')
+            plt.plot([TP_mechanical[0]], [TP_mechanical[1]], "o", label="Mechanical")
         if phase_ID_transition:
-            plt.plot(phase_ID_Ts, phase_ID_Ps, label='PIP=1')
+            plt.plot(phase_ID_Ts, phase_ID_Ps, label="PIP=1")
 
-        ax.set_yscale('log')
-        ax.set_xscale('log')
-        ax.set_xlabel('T [K]')
-        ax.set_ylabel('P [Pa]')
+        ax.set_yscale("log")
+        ax.set_xscale("log")
+        ax.set_xlabel("T [K]")
+        ax.set_ylabel("P [Pa]")
 
         if (Psat or determinant_zeros or pseudo_critical or mechanical
             or phase_ID_transition):
             plt.legend()
 
 
-        ax.set_title(f'{base_property} vs minimum Gibbs validation')
+        ax.set_title(f"{base_property} vs minimum Gibbs validation")
         if show:
             plt.show()
 
@@ -2366,7 +2400,7 @@ class GCEOS:
 
     def saturation_prop_plot(self, prop, Tmin=None, Tmax=None, pts=100,
                              plot=False, show=False, both=False):
-        r'''Method to create a plot of a specified property of the EOS along
+        r"""Method to create a plot of a specified property of the EOS along
         the (pure component) saturation line.
 
         Parameters
@@ -2404,7 +2438,7 @@ class GCEOS:
             The gas properties, only returned if `both` is True, [various]
         fig : matplotlib.figure.Figure
             Plotted figure, only returned if `plot` is True, [-]
-        '''
+        """
         if Tmax is None:
             if self.multicomponent:
                 Tmax = self.pseudo_Tc
@@ -2416,17 +2450,17 @@ class GCEOS:
 
         Ts = logspace(log10(Tmin), log10(Tmax), pts)
         kwargs = {}
-        if hasattr(self, 'zs'):
-            kwargs['zs'] = self.zs
+        if hasattr(self, "zs"):
+            kwargs["zs"] = self.zs
         props = []
         if both:
             props2 = []
-            prop_l = prop + '_l'
-            prop_g = prop + '_g'
+            prop_l = prop + "_l"
+            prop_g = prop + "_g"
 
         for T in Ts:
-            kwargs['T'] = T
-            kwargs['P'] = self.Psat(T)
+            kwargs["T"] = T
+            kwargs["P"] = self.Psat(T)
             obj = self.to(**kwargs)
             if both:
                 v = getattr(obj, prop_l)
@@ -2455,17 +2489,17 @@ class GCEOS:
             fig, ax = plt.subplots()
 
             if both:
-                plt.plot(Ts, props, label='Liquid')
-                plt.plot(Ts, props2, label='Gas')
+                plt.plot(Ts, props, label="Liquid")
+                plt.plot(Ts, props2, label="Gas")
                 plt.legend()
             else:
                 plt.plot(Ts, props)
 
-            ax.set_xlabel('Temperature [K]')
-            ax.set_ylabel(rf'{prop}')
+            ax.set_xlabel("Temperature [K]")
+            ax.set_ylabel(rf"{prop}")
 
 
-            ax.set_title(rf'Saturation {prop} curve')
+            ax.set_title(rf"Saturation {prop} curve")
             if show:
                 plt.show()
 
@@ -2478,7 +2512,7 @@ class GCEOS:
 
     def Psat_errors(self, Tmin=None, Tmax=None, pts=50, plot=False, show=False,
                     trunc_err_low=1e-18, trunc_err_high=1.0, Pmin=1e-100):
-        r'''Method to create a plot of vapor pressure and the relative error
+        r"""Method to create a plot of vapor pressure and the relative error
         of its calculation vs. the iterative `polish` approach.
 
         Parameters
@@ -2514,7 +2548,7 @@ class GCEOS:
             Vapor pressures calculated with the fast solution, [Pa]
         fig : matplotlib.figure.Figure
             Plotted figure, only returned if `plot` is True, [-]
-        '''
+        """
         try:
             Tc = self.Tc
         except:
@@ -2542,7 +2576,7 @@ class GCEOS:
         Ts_mid = linspace(Tmin, Tmax, int(pts/3))
 
         Ts_high = linspace(Tmax*.99, Tmax, int(pts/3))
-        Ts = list(sorted(Ts_high + Ts + Ts_mid))
+        Ts = sorted(Ts_high + Ts + Ts_mid)
 
 
 
@@ -2582,16 +2616,16 @@ class GCEOS:
 
             ax2.plot(Trs, Psats_num)
             ax2.plot(Trs, Psats_fit)
-            ax1.set_yscale('log')
-            ax1.set_xscale('log')
+            ax1.set_yscale("log")
+            ax1.set_xscale("log")
 
-            ax2.set_yscale('log')
-            ax2.set_xscale('log')
+            ax2.set_yscale("log")
+            ax2.set_xscale("log")
 
-            ax1.set_xlabel('Tr [-]')
-            ax1.set_ylabel('AARD [-]')
+            ax1.set_xlabel("Tr [-]")
+            ax1.set_ylabel("AARD [-]")
 
-            ax2.set_ylabel('Psat [Pa]')
+            ax2.set_ylabel("Psat [Pa]")
 
             max_err = np.max(errs)
             if trunc_err_low is not None and max_err < trunc_err_low:
@@ -2599,7 +2633,7 @@ class GCEOS:
             if trunc_err_high is not None and max_err > trunc_err_high:
                 max_err = trunc_err_high
 
-            ax1.set_title(f'Vapor pressure validation; max rel err {max_err:.4e}')
+            ax1.set_title(f"Vapor pressure validation; max rel err {max_err:.4e}")
             if show:
                 plt.show()
 
@@ -2671,7 +2705,7 @@ class GCEOS:
     def derivatives_and_departures(self, T, P, V, b, delta, epsilon, a_alpha, da_alpha_dT, d2a_alpha_dT2, quick=True):
 
         dP_dT, dP_dV, d2P_dT2, d2P_dV2, d2P_dTdV, H_dep, S_dep, Cv_dep = (
-        self.main_derivatives_and_departures(T, P, V, b, delta, epsilon,
+        main_derivatives_and_departures(T, P, V, b, delta, epsilon,
                                              a_alpha, da_alpha_dT,
                                              d2a_alpha_dT2))
         try:
@@ -2710,7 +2744,7 @@ class GCEOS:
 
     @property
     def sorted_volumes(self):
-        r'''List of lexicographically-sorted molar volumes available from the
+        r"""List of lexicographically-sorted molar volumes available from the
         root finding algorithm used to solve the PT point. The convention of
         sorting lexicographically comes from numpy's handling of complex
         numbers, which python does not define. This method was added to
@@ -2721,7 +2755,7 @@ class GCEOS:
         --------
         >>> PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6).sorted_volumes
         ((0.000130222125139+0j), (0.00112363131346-0.00129269672343j), (0.00112363131346+0.00129269672343j))
-        '''
+        """
         sort_fun = lambda x: (x.real, x.imag)
         full_volumes = self.volume_solutions_full(self.T, self.P, self.b, self.delta, self.epsilon, self.a_alpha)
         full_volumes = [i + 0.0j for i in full_volumes]
@@ -2729,7 +2763,7 @@ class GCEOS:
 
 
     def Tsat(self, P, polish=False):
-        r'''Generic method to calculate the temperature for a specified
+        r"""Generic method to calculate the temperature for a specified
         vapor pressure of the pure fluid.
         This is simply a bounded solver running between `0.2Tc` and `Tc` on the
         `Psat` method.
@@ -2751,22 +2785,15 @@ class GCEOS:
         -----
         It is recommended not to run with `polish=True`, as that will make the
         calculation much slower.
-        '''
+        """
         fprime = False
-        global curr_err
 
         def to_solve_newton(T):
             global curr_err
             assert T > 0.0
             e = self.to_TP(T, P)
-            try:
-                fugacity_l = e.fugacity_l
-            except AttributeError as err:
-                raise err
-            try:
-                fugacity_g = e.fugacity_g
-            except AttributeError as err:
-                raise err
+            fugacity_l = e.fugacity_l
+            fugacity_g = e.fugacity_g
 
             curr_err = fugacity_l - fugacity_g
             if fprime:
@@ -2847,7 +2874,8 @@ class GCEOS:
                 except:
                     Tsat = newton(to_solve_newton, guess, fprime=True, maxiter=250, # the wider range can take more iterations
                                   xtol=4e-13, require_eval=False, damping=1.0, low=low, high=high*2)
-                    assert Tsat != low and Tsat != high*2
+                    assert Tsat != low
+                    assert Tsat != high*2
         except:
             # high = self.Tc
             # try:
@@ -2868,7 +2896,7 @@ class GCEOS:
         return Tsat
 
     def Psat(self, T, polish=False, guess=None):
-        r'''Generic method to calculate vapor pressure for a specified `T`.
+        r"""Generic method to calculate vapor pressure for a specified `T`.
 
         From Tc to 0.32Tc, uses a 10th order polynomial of the following form:
 
@@ -2913,7 +2941,7 @@ class GCEOS:
         .. [1] Soave, G. "Direct Calculation of Pure-Compound Vapour Pressures
            through Cubic Equations of State." Fluid Phase Equilibria 31, no. 2
            (January 1, 1986): 203-7. doi:10.1016/0378-3812(86)90013-0.
-        '''
+        """
         Tc, Pc = self.Tc, self.Pc
         if T == Tc:
             return Pc
@@ -2973,17 +3001,8 @@ class GCEOS:
                 assert P > 0.0
                 e = self.to_TP(T, P)
                 # print(e.volume_error(), e)
-                try:
-                    fugacity_l = e.fugacity_l
-                except AttributeError as err:
-                    # return 1000, 1000
-                    raise err
-
-                try:
-                    fugacity_g = e.fugacity_g
-                except AttributeError as err:
-                    # return 1000, 1000
-                    raise err
+                fugacity_l = e.fugacity_l
+                fugacity_g = e.fugacity_g
 
                 err = fugacity_l - fugacity_g
 
@@ -3089,7 +3108,7 @@ class GCEOS:
 
 
     def dPsat_dT(self, T, polish=False, also_Psat=False):
-        r'''Generic method to calculate the temperature derivative of vapor
+        r"""Generic method to calculate the temperature derivative of vapor
         pressure for a specified `T`. Implements the analytical derivative
         of the three polynomials described in `Psat`.
 
@@ -3124,7 +3143,7 @@ class GCEOS:
 
         Useful for calculating enthalpy of vaporization with the Clausius
         Clapeyron Equation. Derived with SymPy's diff and cse.
-        '''
+        """
         if polish:
             # Calculate the derivative of saturation pressure analytically
             Psat = self.Psat(T, polish=polish)
@@ -3201,7 +3220,7 @@ class GCEOS:
 #            return Psat
 
     def phi_sat(self, T, polish=True):
-        r'''Method to calculate the saturation fugacity coefficient of the
+        r"""Method to calculate the saturation fugacity coefficient of the
         compound. This does not require solving the EOS itself.
 
         Parameters
@@ -3222,7 +3241,7 @@ class GCEOS:
         Accuracy is generally around 1e-7. If Tr is under 0.32, the rigorous
         method is always used, but a solution may not exist if both phases
         cannot coexist. If Tr is above 1, likewise a solution does not exist.
-        '''
+        """
         Tr = T/self.Tc
         if polish or not 0.32 <= Tr <= 1.0:
             e = self.to_TP(T=T, P=self.Psat(T, polish=True)) # True
@@ -3236,7 +3255,7 @@ class GCEOS:
         return horner(self.phi_sat_coeffs, x)
 
     def dphi_sat_dT(self, T, polish=True):
-        r'''Method to calculate the temperature derivative of saturation
+        r"""Method to calculate the temperature derivative of saturation
         fugacity coefficient of the
         compound. This does require solving the EOS itself.
 
@@ -3256,7 +3275,7 @@ class GCEOS:
 
         Notes
         -----
-        '''
+        """
         if T == self.Tc:
             T = (self.Tc*(1.0 - 1e-15))
         Psat = self.Psat(T, polish=polish)
@@ -3273,7 +3292,7 @@ class GCEOS:
         return (dfugacity_sat_dT - fugacity*dPsat_dT*Psat_inv)*Psat_inv
 
     def d2phi_sat_dT2(self, T, polish=True):
-        r'''Method to calculate the second temperature derivative of saturation
+        r"""Method to calculate the second temperature derivative of saturation
         fugacity coefficient of the
         compound. This does require solving the EOS itself.
 
@@ -3294,12 +3313,12 @@ class GCEOS:
         Notes
         -----
         This is presently a numerical calculation.
-        '''
+        """
         return derivative(lambda T: self.dphi_sat_dT(T, polish=polish), T,
                           dx=T*1e-7, upper_limit=self.Tc)
 
     def V_l_sat(self, T):
-        r'''Method to calculate molar volume of the liquid phase along the
+        r"""Method to calculate molar volume of the liquid phase along the
         saturation line.
 
         Parameters
@@ -3316,7 +3335,7 @@ class GCEOS:
         -----
         Computes `Psat`, and then uses `volume_solutions` to obtain the three
         possible molar volumes. The lowest value is returned.
-        '''
+        """
         Psat = self.Psat(T)
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
         Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
@@ -3324,7 +3343,7 @@ class GCEOS:
         return min([i.real for i in Vs if i.real > self.b])
 
     def V_g_sat(self, T):
-        r'''Method to calculate molar volume of the vapor phase along the
+        r"""Method to calculate molar volume of the vapor phase along the
         saturation line.
 
         Parameters
@@ -3341,7 +3360,7 @@ class GCEOS:
         -----
         Computes `Psat`, and then uses `volume_solutions` to obtain the three
         possible molar volumes. The highest value is returned.
-        '''
+        """
         Psat = self.Psat(T)
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
         Vs = self.volume_solutions(T, Psat, self.b, self.delta, self.epsilon, a_alpha)
@@ -3349,7 +3368,7 @@ class GCEOS:
         return max([i.real for i in Vs])
 
     def Hvap(self, T):
-        r'''Method to calculate enthalpy of vaporization for a pure fluid from
+        r"""Method to calculate enthalpy of vaporization for a pure fluid from
         an equation of state, without iteration.
 
         .. math::
@@ -3384,7 +3403,7 @@ class GCEOS:
         ----------
         .. [1] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
            Butterworth-Heinemann, 1985.
-        '''
+        """
         Psat = self.Psat(T)
         dPsat_dT = self.dPsat_dT(T)
         a_alpha = self.a_alpha_and_derivatives(T, full=False)
@@ -3395,7 +3414,7 @@ class GCEOS:
         return dPsat_dT*T*(V_g - V_l)
 
     def dH_dep_dT_sat_l(self, T, polish=False):
-        r'''Method to calculate and return the temperature derivative of
+        r"""Method to calculate and return the temperature derivative of
         saturation liquid excess enthalpy.
 
         Parameters
@@ -3414,7 +3433,7 @@ class GCEOS:
 
         Notes
         -----
-        '''
+        """
         sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
         dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
@@ -3422,7 +3441,7 @@ class GCEOS:
         return dPsat_dT*sat_eos.dH_dep_dP_l + sat_eos.dH_dep_dT_l
 
     def dH_dep_dT_sat_g(self, T, polish=False):
-        r'''Method to calculate and return the temperature derivative of
+        r"""Method to calculate and return the temperature derivative of
         saturation vapor excess enthalpy.
 
         Parameters
@@ -3441,7 +3460,7 @@ class GCEOS:
 
         Notes
         -----
-        '''
+        """
         sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
         dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
@@ -3449,7 +3468,7 @@ class GCEOS:
         return dPsat_dT*sat_eos.dH_dep_dP_g + sat_eos.dH_dep_dT_g
 
     def dS_dep_dT_sat_g(self, T, polish=False):
-        r'''Method to calculate and return the temperature derivative of
+        r"""Method to calculate and return the temperature derivative of
         saturation vapor excess entropy.
 
         Parameters
@@ -3468,7 +3487,7 @@ class GCEOS:
 
         Notes
         -----
-        '''
+        """
         sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
         dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
@@ -3476,7 +3495,7 @@ class GCEOS:
         return dPsat_dT*sat_eos.dS_dep_dP_g + sat_eos.dS_dep_dT_g
 
     def dS_dep_dT_sat_l(self, T, polish=False):
-        r'''Method to calculate and return the temperature derivative of
+        r"""Method to calculate and return the temperature derivative of
         saturation liquid excess entropy.
 
         Parameters
@@ -3495,7 +3514,7 @@ class GCEOS:
 
         Notes
         -----
-        '''
+        """
         sat_eos = self.to(T=T, P=self.Psat(T, polish=polish))
         dfg_T, dfl_T = sat_eos.dfugacity_dT_g, sat_eos.dfugacity_dT_l
         dfg_P, dfl_P = sat_eos.dfugacity_dP_g, sat_eos.dfugacity_dP_l
@@ -3504,7 +3523,7 @@ class GCEOS:
 
 
     def a_alpha_for_V(self, T, P, V):
-        r'''Method to calculate which value of :math:`a \alpha` is required for
+        r"""Method to calculate which value of :math:`a \alpha` is required for
         a given `T`, `P` pair to match a specified `V`. This is a
         straightforward analytical equation.
 
@@ -3534,7 +3553,7 @@ class GCEOS:
         >>> CUBIC = R*T/(V-b) - a_alpha/(V*V + delta*V + epsilon) # doctest:+SKIP
         >>> solve(Eq(CUBIC, P), a_alpha)# doctest:+SKIP
         [(-P*V**3 + P*V**2*b - P*V**2*delta + P*V*b*delta - P*V*epsilon + P*b*epsilon + R*T*V**2 + R*T*V*delta + R*T*epsilon)/(V - b)]
-        '''
+        """
         b, delta, epsilon = self.b, self.delta, self.epsilon
         x0 = P*b
         x1 = R*T
@@ -3546,7 +3565,7 @@ class GCEOS:
 
 
     def a_alpha_for_Psat(self, T, Psat, a_alpha_guess=None):
-        r'''Method to calculate which value of :math:`a \alpha` is required for
+        r"""Method to calculate which value of :math:`a \alpha` is required for
         a given `T`, `Psat` pair. This is a numerical solution, but not a very
         complicated one.
 
@@ -3575,7 +3594,7 @@ class GCEOS:
         >>> eos = PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
         >>> eos.a_alpha_for_Psat(T=400, Psat=5e5)
         3.1565798926
-        '''
+        """
         P = Psat
         b, delta, epsilon = self.b, self.delta, self.epsilon
         RT = R*T
@@ -3593,13 +3612,14 @@ class GCEOS:
         def err(a_alpha):
             # Needs some work right up to critical point
             Vs = self.volume_solutions(T, P, b, delta, epsilon, a_alpha)
-            good_roots = [i.real for i in Vs if i.imag == 0.0 and i.real > 0.0]
+            good_roots = [i.real for i in Vs if (i.imag == 0.0 and i.real > b)]
             good_root_count = len(good_roots)
-            if good_root_count == 1:
-                raise ValueError("Guess did not have two roots")
+            if good_root_count == 1 or good_root_count == 0:
+                raise ValueError("Cannot proceed with convergence")
             V_l, V_g = min(good_roots), max(good_roots)
-#            print(V_l, V_g, a_alpha)
-            return fug(V_l, a_alpha) - fug(V_g, a_alpha)
+            err = fug(V_l, a_alpha) - fug(V_g, a_alpha)
+            # print(V_l, V_g, a_alpha, err)
+            return err
 
         if a_alpha_guess is None:
             try:
@@ -3610,10 +3630,36 @@ class GCEOS:
         try:
             return secant(err, a_alpha_guess, xtol=1e-13)
         except:
-            return secant(err, self.to(T=T, P=Psat).a_alpha, xtol=1e-13)
+            base_guess = self.to(T=T, P=Psat).a_alpha
+            try:
+                return secant(err, base_guess, xtol=1e-13)
+            except:
+                Tc, Pc = self.Tc, self.Pc
+                def sub_to_solve(a_alpha):
+                    alpha = a_alpha/self.a
+                    Tr = T/Tc
+                    x = alpha/Tr - 1.
+                    if Tr > 0.999 and not isinstance(self, RK):
+                        y = horner(self.Psat_coeffs_critical, x)
+                        Psat_inner = y*Tr*Pc
+                    else:
+                        Psat_ranges_low = self.Psat_ranges_low
+                        if x > Psat_ranges_low[-1]:
+                            x = Psat_ranges_low[-1]
+
+                        for i in range(len(Psat_ranges_low)):
+                            if x < Psat_ranges_low[i]:
+                                break
+                        y = 0.0
+                        for c in self.Psat_coeffs_low[i]:
+                            y = y*x + c
+                        Psat_inner = exp(y)*Tr*Pc
+                    return Psat_inner - Psat
+                inner_a_alpha = secant(sub_to_solve, base_guess, xtol=1e-13,  additional_guesses=True)
+                return secant(err, inner_a_alpha, x1=inner_a_alpha*(1+1e-7), xtol=1e-11, additional_guesses=True)
 
     def to_TP(self, T, P):
-        r'''Method to construct a new EOS object at the spcified `T` and `P`.
+        r"""Method to construct a new EOS object at the spcified `T` and `P`.
         In the event the `T` and `P` match the current object's `T` and `P`,
         it will be returned unchanged.
 
@@ -3640,14 +3686,14 @@ class GCEOS:
         >>> new = base.to_TP(T=1.0, P=2.0)
         >>> base.state_specs, new.state_specs
         ({'T': 500.0, 'P': 1000000.0}, {'T': 1.0, 'P': 2.0})
-        '''
+        """
         if T != self.T or P != self.P:
             return self.__class__(T=T, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
         else:
             return self
 
     def to_TV(self, T, V):
-        r'''Method to construct a new EOS object at the spcified `T` and `V`.
+        r"""Method to construct a new EOS object at the spcified `T` and `V`.
         In the event the `T` and `V` match the current object's `T` and `V`,
         it will be returned unchanged.
 
@@ -3674,7 +3720,7 @@ class GCEOS:
         >>> new = base.to_TV(T=1000000.0, V=1.0)
         >>> base.state_specs, new.state_specs
         ({'T': 500.0, 'P': 1000000.0}, {'T': 1000000.0, 'V': 1.0})
-        '''
+        """
         if T != self.T or V != self.V:
             # Only allow creation of new class if volume actually specified
             # Ignores the posibility that V is V_l or V_g
@@ -3683,7 +3729,7 @@ class GCEOS:
             return self
 
     def to_PV(self, P, V):
-        r'''Method to construct a new EOS object at the spcified `P` and `V`.
+        r"""Method to construct a new EOS object at the spcified `P` and `V`.
         In the event the `P` and `V` match the current object's `P` and `V`,
         it will be returned unchanged.
 
@@ -3710,14 +3756,14 @@ class GCEOS:
         >>> new = base.to_PV(P=1000.0, V=1.0)
         >>> base.state_specs, new.state_specs
         ({'T': 500.0, 'P': 1000000.0}, {'P': 1000.0, 'V': 1.0})
-        '''
+        """
         if P != self.P or V != self.V:
             return self.__class__(V=V, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
         else:
             return self
 
     def to(self, T=None, P=None, V=None):
-        r'''Method to construct a new EOS object at two of `T`, `P` or `V`.
+        r"""Method to construct a new EOS object at two of `T`, `P` or `V`.
         In the event the specs match those of the current object, it will be
         returned unchanged.
 
@@ -3749,7 +3795,7 @@ class GCEOS:
         {'T': 300.0, 'V': 1.0}
         >>> base.to(P=1e5, V=1.0).state_specs
         {'P': 100000.0, 'V': 1.0}
-        '''
+        """
         if T is not None and P is not None:
             return self.to_TP(T, P)
         elif T is not None and V is not None:
@@ -3761,14 +3807,14 @@ class GCEOS:
             return self.__class__(T=T, V=V, P=P, Tc=self.Tc, Pc=self.Pc, omega=self.omega, **self.kwargs)
 
     def T_min_at_V(self, V, Pmin=1e-15):
-        '''Returns the minimum temperature for the EOS to have the
+        """Returns the minimum temperature for the EOS to have the
         volume as specified. Under this temperature, the pressure will go
         negative (and the EOS will not solve).
-        '''
+        """
         return self.solve_T(P=Pmin, V=V)
 
     def T_max_at_V(self, V, Pmax=None):
-        r'''Method to calculate the maximum temperature the EOS can create at a
+        r"""Method to calculate the maximum temperature the EOS can create at a
         constant volume, if one exists; returns None otherwise.
 
         Parameters
@@ -3792,7 +3838,7 @@ class GCEOS:
         >>> e = PR(P=1e5, V=0.0001437, Tc=512.5, Pc=8084000.0, omega=0.559)
         >>> e.T_max_at_V(e.V)
         431155.5
-        '''
+        """
         if Pmax is None:
             Pmax = self.P_max_at_V(V)
             if Pmax is None:
@@ -3800,7 +3846,7 @@ class GCEOS:
         return self.solve_T(P=Pmax, V=V)
 
     def P_max_at_V(self, V):
-        r'''Dummy method. The idea behind this method, which is implemented by some
+        r"""Dummy method. The idea behind this method, which is implemented by some
         subclasses, is to calculate the maximum pressure the EOS can create at a
         constant volume, if one exists; returns None otherwise. This method,
         as a dummy method, always returns None.
@@ -3814,12 +3860,12 @@ class GCEOS:
         -------
         P : float
             Maximum possible isochoric pressure, [Pa]
-        '''
+        """
         return None
 
     @property
     def more_stable_phase(self):
-        r'''Checks the Gibbs energy of each possible phase, and returns
+        r"""Checks the Gibbs energy of each possible phase, and returns
         'l' if the liquid-like phase is more stable, and 'g' if the vapor-like
         phase is more stable.
 
@@ -3827,21 +3873,21 @@ class GCEOS:
         --------
         >>> PR(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6).more_stable_phase
         'l'
-        '''
+        """
         try:
             if self.G_dep_l < self.G_dep_g:
-                return 'l'
+                return "l"
             else:
-                return 'g'
+                return "g"
         except:
             try:
-                self.Z_g
-                return 'g'
+                self.Z_g  # noqa: B018
+                return "g"
             except:
-                return 'l'
+                return "l"
 
     def discriminant(self, T=None, P=None):
-        r'''Method to compute the discriminant of the cubic volume solution
+        r"""Method to compute the discriminant of the cubic volume solution
         with the current EOS parameters, optionally at the same (assumed) `T`,
         and `P` or at different ones, if values are specified.
 
@@ -3919,7 +3965,7 @@ class GCEOS:
          0.0010458828
         >>> base.discriminant(T=400, P=1e9)
         12584660355.4
-        '''
+        """
         if P is None:
             P = self.P
         if T is None:
@@ -3968,7 +4014,7 @@ class GCEOS:
         return disc
 
     def P_discriminant_zero_l(self):
-        r'''Method to calculate the pressure which zero the discriminant
+        r"""Method to calculate the pressure which zero the discriminant
         function of the general cubic eos, and is likely to sit on a boundary
         between not having a liquid-like volume; and having a liquid-like volume.
 
@@ -3994,11 +4040,11 @@ class GCEOS:
         ((0.00013117994140177062+0j), (0.002479717165903531+0j), (0.002480236178570793+0j))
         >>> eos.to(T=eos.T, P=P_trans*1.0000001).mpmath_volumes_float
         ((0.0001311799413872173+0j), (0.002479976386402769-8.206310112063695e-07j), (0.002479976386402769+8.206310112063695e-07j))
-        '''
+        """
         return self._P_discriminant_zero(low=True)
 
     def P_discriminant_zero_g(self):
-        r'''Method to calculate the pressure which zero the discriminant
+        r"""Method to calculate the pressure which zero the discriminant
         function of the general cubic eos, and is likely to sit on a boundary
         between not having a vapor-like volume; and having a vapor-like volume.
 
@@ -4026,11 +4072,11 @@ class GCEOS:
         ((-0.0001037013146195082-1.5043987866732543e-08j), (-0.0001037013146195082+1.5043987866732543e-08j), (0.00011799201928619508+0j))
         >>> eos.to(T=eos.T, P=P_trans*1.0000001).mpmath_volumes_float
         ((-0.00010374888853182635+0j), (-0.00010365374200380354+0j), (0.00011799201875924273+0j))
-        '''
+        """
         return self._P_discriminant_zero(low=False)
 
     def P_discriminant_zeros(self):
-        r'''Method to calculate the pressures which zero the discriminant
+        r"""Method to calculate the pressures which zero the discriminant
         function of the general cubic eos, at the current temperature.
 
         Returns
@@ -4046,12 +4092,12 @@ class GCEOS:
         >>> eos = PRTranslatedConsistent(Tc=507.6, Pc=3025000, omega=0.2975, T=299., P=1E6)
         >>> eos.P_discriminant_zeros()
         [478346.3, 149960391.7]
-        '''
+        """
         return GCEOS.P_discriminant_zeros_analytical(self.T, self.b, self.delta, self.epsilon, self.a_alpha, valid=True)
 
     @staticmethod
     def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
-        r'''Method to calculate the pressures which zero the discriminant
+        r"""Method to calculate the pressures which zero the discriminant
         function of the general cubic eos. This is a quartic function
         solved analytically.
 
@@ -4074,7 +4120,7 @@ class GCEOS:
 
         Returns
         -------
-        P_discriminant_zeros : float
+        P_discriminant_zeros : list[float]
             Pressures which make the discriminants zero, [Pa]
 
         Notes
@@ -4096,7 +4142,7 @@ class GCEOS:
         >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d
         >>> base = -(expand(disc/P**2*R**3*T**3))
         >>> sln = collect(base, P)
-        '''
+        """
         # Can also have one at g
 #        T, a_alpha = self.T, self.a_alpha
         a = a_alpha
@@ -4175,7 +4221,8 @@ class GCEOS:
             # Do not know how to handle
             roots = [r.real for r in roots if (r.real >= 0.0)]
             roots.sort()
-        return roots
+            return roots
+        return list(roots)
 
 
     def _P_discriminant_zero(self, low):
@@ -4327,7 +4374,8 @@ class GCEOS:
                         low_bound = None
                 P_disc = newton(discriminant_fun, P, fprime=True, xtol=4e-12, low=low_bound,
                                 maxiter=80, bisection=False, damping=1)
-                assert P_disc > 0 and not P_disc == 1
+                assert P_disc > 0
+                assert P_disc != 1
                 if not low:
                     assert P_disc > low_bound
                 break
@@ -4389,12 +4437,12 @@ class GCEOS:
 #                 erri = log10(erri)
              errs.append(erri)
          import matplotlib.pyplot as plt
-         plt.semilogx(Ts, errs, 'x')
+         plt.semilogx(Ts, errs, "x")
 #         plt.ylim((-1e-3, 1e-3))
          plt.show()
 
     def T_discriminant_zero_l(self, T_guess=None):
-        r'''Method to calculate the temperature which zeros the discriminant
+        r"""Method to calculate the temperature which zeros the discriminant
         function of the general cubic eos, and is likely to sit on a boundary
         between not having a liquid-like volume; and having a liquid-like volume.
 
@@ -4426,7 +4474,7 @@ class GCEOS:
 
         >>> eos.to(P=eos.P, T=T_trans).mpmath_volumes_float
         ((9.309597822372529e-05-0.00015876248805149625j), (9.309597822372529e-05+0.00015876248805149625j), (0.005064847204219234+0j))
-        '''
+        """
         # Can also have one at g
         global niter
         niter = 0
@@ -4442,7 +4490,8 @@ class GCEOS:
                 global_iter += niter
                 niter = 0
                 T_disc = secant(lambda T: self.discriminant(T=T), T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
-                assert T_disc > 0 and not T_disc == 1
+                assert T_disc > 0
+                assert T_disc != 1
                 break
             except:
                 pass
@@ -4450,7 +4499,7 @@ class GCEOS:
         return T_disc
 
     def T_discriminant_zero_g(self, T_guess=None):
-        r'''Method to calculate the temperature which zeros the discriminant
+        r"""Method to calculate the temperature which zeros the discriminant
         function of the general cubic eos, and is likely to sit on a boundary
         between not having a vapor-like volume; and having a vapor-like volume.
 
@@ -4482,7 +4531,7 @@ class GCEOS:
 
         >>> eos.to(P=eos.P, T=T_trans).mpmath_volumes_float
         ((9.309597822372529e-05-0.00015876248805149625j), (9.309597822372529e-05+0.00015876248805149625j), (0.005064847204219234+0j))
-        '''
+        """
         global niter
         niter = 0
         guesses = [700, 600, 500, 400, 300, 200]
@@ -4497,7 +4546,8 @@ class GCEOS:
                 global_iter += niter
                 niter = 0
                 T_disc = secant(lambda T: self.discriminant(T=T), T, xtol=1e-10, low=1, maxiter=60, bisection=False, damping=1)
-                assert T_disc > 0 and not T_disc == 1
+                assert T_disc > 0
+                assert T_disc != 1
                 break
             except:
                 pass
@@ -4505,7 +4555,7 @@ class GCEOS:
         return T_disc
 
     def P_PIP_transition(self, T, low_P_limit=0.0):
-        r'''Method to calculate the pressure which makes the phase
+        r"""Method to calculate the pressure which makes the phase
         identification parameter exactly 1. There are three regions for this
         calculation:
 
@@ -4540,14 +4590,14 @@ class GCEOS:
         0.0
         >>> low_T = eos.to(T=100.0, P=eos.P_PIP_transition(100, low_P_limit=1e-5))
         >>> low_T.PIP_l, low_T.PIP_g
-        (45.778088191, 0.9999999997903)
+        (45.77, 0.99999)
         >>> initial_super = eos.to(T=600.0, P=eos.P_PIP_transition(600))
-        >>> initial_super.P, initial_super.PIP_g
-        (6456282.17132, 0.999999999999)
+        >>> initial_super.PIP_g
+        1.0
         >>> high_T = eos.to(T=900.0, P=eos.P_PIP_transition(900, low_P_limit=1e-5))
-        >>> high_T.P, high_T.PIP_g
-        (12536704.763, 0.9999999999)
-        '''
+        >>> high_T.PIP_l
+        1.0
+        """
         try:
             subcritical = T < self.Tc
         except:
@@ -4561,7 +4611,7 @@ class GCEOS:
                 # able to derive a direct expression for this from the EOS which
                 # only uses a volume solution
                 # TODO: should be able to get the derivative of PIP w.r.t. pressure
-                if hasattr(e, 'V_l'):
+                if hasattr(e, "V_l"):
                     return e.PIP_l-1.0
                 else:
                     return e.PIP_g-1.0
@@ -4573,7 +4623,7 @@ class GCEOS:
                 low, high = 10.0*Psat, Psat
             else:
                 low, high = 1e-3, 1e11
-            P = bisect(to_solve, low, high)
+            P = secant(to_solve, x0=low, x1=high, low=low, high=high, bisection=True, xtol=1e-12)
             return P
         except:
             err_low = to_solve(low_P_limit)
@@ -4616,11 +4666,11 @@ class GCEOS:
 
     @property
     def fugacity_l(self):
-        r'''Fugacity for the liquid phase, [Pa].
+        r"""Fugacity for the liquid phase, [Pa].
 
         .. math::
             \text{fugacity} = P\exp\left(\frac{G_{dep}}{RT}\right)
-        '''
+        """
         arg = self.G_dep_l*R_inv/self.T
         try:
             return self.P*exp(arg)
@@ -4629,11 +4679,11 @@ class GCEOS:
 
     @property
     def fugacity_g(self):
-        r'''Fugacity for the gas phase, [Pa].
+        r"""Fugacity for the gas phase, [Pa].
 
         .. math::
             \text{fugacity} = P\exp\left(\frac{G_{dep}}{RT}\right)
-        '''
+        """
         arg = self.G_dep_g*R_inv/self.T
         try:
             return self.P*exp(arg)
@@ -4642,11 +4692,11 @@ class GCEOS:
 
     @property
     def phi_l(self):
-        r'''Fugacity coefficient for the liquid phase, [Pa].
+        r"""Fugacity coefficient for the liquid phase, [Pa].
 
         .. math::
             \phi = \frac{\text{fugacity}}{P}
-        '''
+        """
         arg = self.G_dep_l*R_inv/self.T
         try:
             return exp(arg)
@@ -4655,11 +4705,11 @@ class GCEOS:
 
     @property
     def phi_g(self):
-        r'''Fugacity coefficient for the gas phase, [Pa].
+        r"""Fugacity coefficient for the gas phase, [Pa].
 
         .. math::
             \phi = \frac{\text{fugacity}}{P}
-        '''
+        """
         arg = self.G_dep_g*R_inv/self.T
         try:
             return exp(arg)
@@ -4668,127 +4718,130 @@ class GCEOS:
 
     @property
     def Cp_minus_Cv_l(self):
-        r'''Cp - Cv for the liquid phase, [J/mol/K].
+        r"""Cp - Cv for the liquid phase, [J/mol/K].
 
         .. math::
             C_p - C_v = -T\left(\frac{\partial P}{\partial T}\right)_V^2/
             \left(\frac{\partial P}{\partial V}\right)_T
-        '''
+        """
         return -self.T*self.dP_dT_l*self.dP_dT_l*self.dV_dP_l
 
     @property
     def Cp_minus_Cv_g(self):
-        r'''Cp - Cv for the gas phase, [J/mol/K].
+        r"""Cp - Cv for the gas phase, [J/mol/K].
 
         .. math::
             C_p - C_v = -T\left(\frac{\partial P}{\partial T}\right)_V^2/
             \left(\frac{\partial P}{\partial V}\right)_T
-        '''
+        """
         return -self.T*self.dP_dT_g*self.dP_dT_g*self.dV_dP_g
 
     @property
     def beta_l(self):
-        r'''Isobaric (constant-pressure) expansion coefficient for the liquid
+        r"""Isobaric (constant-pressure) expansion coefficient for the liquid
         phase, [1/K].
 
         .. math::
             \beta = \frac{1}{V}\frac{\partial V}{\partial T}
-        '''
+        """
         return self.dV_dT_l/self.V_l
 
     @property
     def beta_g(self):
-        r'''Isobaric (constant-pressure) expansion coefficient for the gas
+        r"""Isobaric (constant-pressure) expansion coefficient for the gas
         phase, [1/K].
 
         .. math::
             \beta = \frac{1}{V}\frac{\partial V}{\partial T}
-        '''
+        """
         return self.dV_dT_g/self.V_g
 
     @property
     def kappa_l(self):
-        r'''Isothermal (constant-temperature) expansion coefficient for the liquid
+        r"""Isothermal (constant-temperature) expansion coefficient for the liquid
         phase, [1/Pa].
 
         .. math::
             \kappa = \frac{-1}{V}\frac{\partial V}{\partial P}
-        '''
+        """
         return -self.dV_dP_l/self.V_l
+
+    isothermal_compressibility_l = kappa_l
 
     @property
     def kappa_g(self):
-        r'''Isothermal (constant-temperature) expansion coefficient for the gas
+        r"""Isothermal (constant-temperature) expansion coefficient for the gas
         phase, [1/Pa].
 
         .. math::
             \kappa = \frac{-1}{V}\frac{\partial V}{\partial P}
-        '''
+        """
         return -self.dV_dP_g/self.V_g
+    isothermal_compressibility_g = kappa_g
 
     @property
     def V_dep_l(self):
-        r'''Departure molar volume from ideal gas behavior for the liquid phase,
+        r"""Departure molar volume from ideal gas behavior for the liquid phase,
         [m^3/mol].
 
         .. math::
             V_{dep} = V - \frac{RT}{P}
-        '''
+        """
         return self.V_l - self.T*R/self.P
 
     @property
     def V_dep_g(self):
-        r'''Departure molar volume from ideal gas behavior for the gas phase,
+        r"""Departure molar volume from ideal gas behavior for the gas phase,
         [m^3/mol].
 
         .. math::
             V_{dep} = V - \frac{RT}{P}
-        '''
+        """
         return self.V_g - self.T*R/self.P
 
     @property
     def U_dep_l(self):
-        r'''Departure molar internal energy from ideal gas behavior for the
+        r"""Departure molar internal energy from ideal gas behavior for the
         liquid phase, [J/mol].
 
         .. math::
             U_{dep} = H_{dep} - P V_{dep}
-        '''
+        """
         return self.H_dep_l - self.P*(self.V_l - self.T*R/self.P)
 
     @property
     def U_dep_g(self):
-        r'''Departure molar internal energy from ideal gas behavior for the
+        r"""Departure molar internal energy from ideal gas behavior for the
         gas phase, [J/mol].
 
         .. math::
             U_{dep} = H_{dep} - P V_{dep}
-        '''
+        """
         return self.H_dep_g - self.P*(self.V_g - self.T*R/self.P)
 
     @property
     def A_dep_l(self):
-        r'''Departure molar Helmholtz energy from ideal gas behavior for the
+        r"""Departure molar Helmholtz energy from ideal gas behavior for the
         liquid phase, [J/mol].
 
         .. math::
             A_{dep} = U_{dep} - T S_{dep}
-        '''
+        """
         return self.H_dep_l - self.P*(self.V_l - self.T*R/self.P) - self.T*self.S_dep_l
 
     @property
     def A_dep_g(self):
-        r'''Departure molar Helmholtz energy from ideal gas behavior for the
+        r"""Departure molar Helmholtz energy from ideal gas behavior for the
         gas phase, [J/mol].
 
         .. math::
             A_{dep} = U_{dep} - T S_{dep}
-        '''
+        """
         return self.H_dep_g - self.P*(self.V_g - self.T*R/self.P) - self.T*self.S_dep_g
 
     @property
     def d2T_dPdV_l(self):
-        r'''Second partial derivative of temperature with respect to
+        r"""Second partial derivative of temperature with respect to
         pressure (constant volume) and then volume (constant pressure)
         for the liquid phase, [K*mol/(Pa*m^3)].
 
@@ -4800,7 +4853,7 @@ class GCEOS:
             \left(\frac{\partial^2 P}{\partial T^2}\right)_V
             \right]\left(\frac{\partial P}{\partial T}\right)_V^{-3}
 
-        '''
+        """
         inverse_dP_dT2 = self.dT_dP_l*self.dT_dP_l
         inverse_dP_dT3 = inverse_dP_dT2*self.dT_dP_l
         d2T_dPdV = -(self.d2P_dTdV_l*self.dP_dT_l - self.dP_dV_l*self.d2P_dT2_l)*inverse_dP_dT3
@@ -4808,7 +4861,7 @@ class GCEOS:
 
     @property
     def d2T_dPdV_g(self):
-        r'''Second partial derivative of temperature with respect to
+        r"""Second partial derivative of temperature with respect to
         pressure (constant volume) and then volume (constant pressure)
         for the gas phase, [K*mol/(Pa*m^3)].
 
@@ -4820,7 +4873,7 @@ class GCEOS:
             \left(\frac{\partial^2 P}{\partial T^2}\right)_V
             \right]\left(\frac{\partial P}{\partial T}\right)_V^{-3}
 
-        '''
+        """
         inverse_dP_dT2 = self.dT_dP_g*self.dT_dP_g
         inverse_dP_dT3 = inverse_dP_dT2*self.dT_dP_g
         d2T_dPdV = -(self.d2P_dTdV_g*self.dP_dT_g - self.dP_dV_g*self.d2P_dT2_g)*inverse_dP_dT3
@@ -4828,7 +4881,7 @@ class GCEOS:
 
     @property
     def d2V_dPdT_l(self):
-        r'''Second partial derivative of volume with respect to
+        r"""Second partial derivative of volume with respect to
         pressure (constant temperature) and then presssure (constant temperature)
         for the liquid phase, [m^3/(K*Pa*mol)].
 
@@ -4839,13 +4892,13 @@ class GCEOS:
             - \left(\frac{\partial P}{\partial T}\right)_V
             \left(\frac{\partial^2 P}{\partial V^2}\right)_T
             \right]\left(\frac{\partial P}{\partial V}\right)_T^{-3}
-        '''
+        """
         dV_dP = self.dV_dP_l
         return -(self.d2P_dTdV_l*self.dP_dV_l - self.dP_dT_l*self.d2P_dV2_l)*dV_dP*dV_dP*dV_dP
 
     @property
     def d2V_dPdT_g(self):
-        r'''Second partial derivative of volume with respect to
+        r"""Second partial derivative of volume with respect to
         pressure (constant temperature) and then presssure (constant temperature)
         for the gas phase, [m^3/(K*Pa*mol)].
 
@@ -4856,13 +4909,13 @@ class GCEOS:
             - \left(\frac{\partial P}{\partial T}\right)_V
             \left(\frac{\partial^2 P}{\partial V^2}\right)_T
             \right]\left(\frac{\partial P}{\partial V}\right)_T^{-3}
-        '''
+        """
         dV_dP = self.dV_dP_g
         return -(self.d2P_dTdV_g*self.dP_dV_g - self.dP_dT_g*self.d2P_dV2_g)*dV_dP*dV_dP*dV_dP
 
     @property
     def d2T_dP2_l(self):
-        r'''Second partial derivative of temperature with respect to
+        r"""Second partial derivative of temperature with respect to
         pressure (constant temperature) for the liquid phase, [K/Pa^2].
 
         .. math::
@@ -4870,13 +4923,13 @@ class GCEOS:
             \partial^2 P}{\partial T^2}\right)_V \left(\frac{\partial P}{
             \partial T}\right)^{-3}_V
 
-        '''
+        """
         dT_dP = self.dT_dP_l
         return -self.d2P_dT2_l*dT_dP*dT_dP*dT_dP # unused
 
     @property
     def d2T_dP2_g(self):
-        r'''Second partial derivative of temperature with respect to
+        r"""Second partial derivative of temperature with respect to
         pressure (constant volume) for the gas phase, [K/Pa^2].
 
         .. math::
@@ -4884,13 +4937,13 @@ class GCEOS:
             \partial^2 P}{\partial T^2}\right)_V \left(\frac{\partial P}{
             \partial T}\right)^{-3}_V
 
-        '''
+        """
         dT_dP = self.dT_dP_g
         return -self.d2P_dT2_g*dT_dP*dT_dP*dT_dP # unused
 
     @property
     def d2V_dP2_l(self):
-        r'''Second partial derivative of volume with respect to
+        r"""Second partial derivative of volume with respect to
         pressure (constant temperature) for the liquid phase, [m^3/(Pa^2*mol)].
 
         .. math::
@@ -4898,13 +4951,13 @@ class GCEOS:
             \partial^2 P}{\partial V^2}\right)_T \left(\frac{\partial P}{
             \partial V}\right)^{-3}_T
 
-        '''
+        """
         dV_dP = self.dV_dP_l
         return -self.d2P_dV2_l*dV_dP*dV_dP*dV_dP
 
     @property
     def d2V_dP2_g(self):
-        r'''Second partial derivative of volume with respect to
+        r"""Second partial derivative of volume with respect to
         pressure (constant temperature) for the gas phase, [m^3/(Pa^2*mol)].
 
         .. math::
@@ -4912,13 +4965,13 @@ class GCEOS:
             \partial^2 P}{\partial V^2}\right)_T \left(\frac{\partial P}{
             \partial V}\right)^{-3}_T
 
-        '''
+        """
         dV_dP = self.dV_dP_g
         return -self.d2P_dV2_g*dV_dP*dV_dP*dV_dP
 
     @property
     def d2T_dV2_l(self):
-        r'''Second partial derivative of temperature with respect to
+        r"""Second partial derivative of temperature with respect to
         volume (constant pressure) for the liquid phase, [K*mol^2/m^6].
 
         .. math::
@@ -4934,7 +4987,7 @@ class GCEOS:
             \left(\frac{\partial^2 P}{\partial T^2}\right)_V\right]
             \left(\frac{\partial P}{\partial T}\right)_V^{-3}
             \left(\frac{\partial P}{\partial V}\right)_T
-        '''
+        """
         dT_dP = self.dT_dP_l
         dT_dP2 = dT_dP*dT_dP
 
@@ -4944,7 +4997,7 @@ class GCEOS:
 
     @property
     def d2T_dV2_g(self):
-        r'''Second partial derivative of temperature with respect to
+        r"""Second partial derivative of temperature with respect to
         volume (constant pressure) for the gas phase, [K*mol^2/m^6].
 
         .. math::
@@ -4960,7 +5013,7 @@ class GCEOS:
             \left(\frac{\partial^2 P}{\partial T^2}\right)_V\right]
             \left(\frac{\partial P}{\partial T}\right)_V^{-3}
             \left(\frac{\partial P}{\partial V}\right)_T
-        '''
+        """
         dT_dP = self.dT_dP_g
         dT_dP2 = dT_dP*dT_dP
 
@@ -4971,7 +5024,7 @@ class GCEOS:
 
     @property
     def d2V_dT2_l(self):
-        r'''Second partial derivative of volume with respect to
+        r"""Second partial derivative of volume with respect to
         temperature (constant pressure) for the liquid phase, [m^3/(mol*K^2)].
 
         .. math::
@@ -4988,7 +5041,7 @@ class GCEOS:
             \left(\frac{\partial P}{\partial V}\right)_T^{-3}
             \left(\frac{\partial P}{\partial T}\right)_V
 
-        '''
+        """
         dV_dP = self.dV_dP_l
         dP_dV = self.dP_dV_l
         d2P_dTdV = self.d2P_dTdV_l
@@ -5000,7 +5053,7 @@ class GCEOS:
 
     @property
     def d2V_dT2_g(self):
-        r'''Second partial derivative of volume with respect to
+        r"""Second partial derivative of volume with respect to
         temperature (constant pressure) for the gas phase, [m^3/(mol*K^2)].
 
         .. math::
@@ -5017,7 +5070,7 @@ class GCEOS:
             \left(\frac{\partial P}{\partial V}\right)_T^{-3}
             \left(\frac{\partial P}{\partial T}\right)_V
 
-        '''
+        """
         dV_dP = self.dV_dP_g
         dP_dV = self.dP_dV_g
         d2P_dTdV = self.d2P_dTdV_g
@@ -5028,38 +5081,38 @@ class GCEOS:
 
     @property
     def Vc(self):
-        r'''Critical volume, [m^3/mol].
+        r"""Critical volume, [m^3/mol].
 
         .. math::
             V_c = \frac{Z_c R T_c}{P_c}
 
-        '''
+        """
         return self.Zc*R*self.Tc/self.Pc
 
     @property
     def rho_l(self):
-        r'''Liquid molar density, [mol/m^3].
+        r"""Liquid molar density, [mol/m^3].
 
         .. math::
             \rho_l = \frac{1}{V_l}
 
-        '''
+        """
         return 1.0/self.V_l
 
     @property
     def rho_g(self):
-        r'''Gas molar density, [mol/m^3].
+        r"""Gas molar density, [mol/m^3].
 
         .. math::
             \rho_g = \frac{1}{V_g}
 
-        '''
+        """
         return 1.0/self.V_g
 
 
     @property
     def dZ_dT_l(self):
-        r'''Derivative of compressibility factor with respect to temperature
+        r"""Derivative of compressibility factor with respect to temperature
         for the liquid phase, [1/K].
 
         .. math::
@@ -5067,13 +5120,13 @@ class GCEOS:
             \frac{\partial V}{\partial T} - \frac{V}{T}
             \right)
 
-        '''
+        """
         T_inv = 1.0/self.T
         return self.P*R_inv*T_inv*(self.dV_dT_l - self.V_l*T_inv)
 
     @property
     def dZ_dT_g(self):
-        r'''Derivative of compressibility factor with respect to temperature
+        r"""Derivative of compressibility factor with respect to temperature
         for the gas phase, [1/K].
 
         .. math::
@@ -5081,13 +5134,13 @@ class GCEOS:
             \frac{\partial V}{\partial T} - \frac{V}{T}
             \right)
 
-        '''
+        """
         T_inv = 1.0/self.T
         return self.P*R_inv*T_inv*(self.dV_dT_g - self.V_g*T_inv)
 
     @property
     def dZ_dP_l(self):
-        r'''Derivative of compressibility factor with respect to pressure
+        r"""Derivative of compressibility factor with respect to pressure
         for the liquid phase, [1/Pa].
 
         .. math::
@@ -5095,12 +5148,12 @@ class GCEOS:
             V - \frac{\partial V}{\partial P}
             \right)
 
-        '''
+        """
         return (self.V_l + self.P*self.dV_dP_l)/(self.T*R)
 
     @property
     def dZ_dP_g(self):
-        r'''Derivative of compressibility factor with respect to pressure
+        r"""Derivative of compressibility factor with respect to pressure
         for the gas phase, [1/Pa].
 
         .. math::
@@ -5108,7 +5161,7 @@ class GCEOS:
             V - \frac{\partial V}{\partial P}
             \right)
 
-        '''
+        """
         return (self.V_g + self.P*self.dV_dP_g)/(self.T*R)
 
     d2V_dTdP_l = d2V_dPdT_l
@@ -5118,239 +5171,239 @@ class GCEOS:
 
     @property
     def d2P_dVdT_l(self):
-        '''Alias of :obj:`GCEOS.d2P_dTdV_l`'''
+        """Alias of :obj:`GCEOS.d2P_dTdV_l`"""
         return self.d2P_dTdV_l
 
     @property
     def d2P_dVdT_g(self):
-        '''Alias of :obj:`GCEOS.d2P_dTdV_g`'''
+        """Alias of :obj:`GCEOS.d2P_dTdV_g`"""
         return self.d2P_dTdV_g
 
     @property
     def dP_drho_l(self):
-        r'''Derivative of pressure with respect to molar density for the liquid
+        r"""Derivative of pressure with respect to molar density for the liquid
         phase, [Pa/(mol/m^3)].
 
         .. math::
             \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}
-        '''
+        """
         return -self.V_l*self.V_l*self.dP_dV_l
 
     @property
     def dP_drho_g(self):
-        r'''Derivative of pressure with respect to molar density for the gas
+        r"""Derivative of pressure with respect to molar density for the gas
         phase, [Pa/(mol/m^3)].
 
         .. math::
             \frac{\partial P}{\partial \rho} = -V^2 \frac{\partial P}{\partial V}
-        '''
+        """
         return -self.V_g*self.V_g*self.dP_dV_g
 
     @property
     def drho_dP_l(self):
-        r'''Derivative of molar density with respect to pressure for the liquid
+        r"""Derivative of molar density with respect to pressure for the liquid
         phase, [(mol/m^3)/Pa].
 
         .. math::
             \frac{\partial \rho}{\partial P} = \frac{-1}{V^2} \frac{\partial V}{\partial P}
-        '''
+        """
         return -self.dV_dP_l/(self.V_l*self.V_l)
 
     @property
     def drho_dP_g(self):
-        r'''Derivative of molar density with respect to pressure for the gas
+        r"""Derivative of molar density with respect to pressure for the gas
         phase, [(mol/m^3)/Pa].
 
         .. math::
             \frac{\partial \rho}{\partial P} = \frac{-1}{V^2} \frac{\partial V}{\partial P}
-        '''
+        """
         return -self.dV_dP_g/(self.V_g*self.V_g)
 
     @property
     def d2P_drho2_l(self):
-        r'''Second derivative of pressure with respect to molar density for the
+        r"""Second derivative of pressure with respect to molar density for the
         liquid phase, [Pa/(mol/m^3)^2].
 
         .. math::
             \frac{\partial^2 P}{\partial \rho^2} = -V^2\left(
             -V^2\frac{\partial^2 P}{\partial V^2} - 2V \frac{\partial P}{\partial V}
             \right)
-        '''
+        """
         return -self.V_l**2*(-self.V_l**2*self.d2P_dV2_l - 2*self.V_l*self.dP_dV_l)
 
     @property
     def d2P_drho2_g(self):
-        r'''Second derivative of pressure with respect to molar density for the
+        r"""Second derivative of pressure with respect to molar density for the
         gas phase, [Pa/(mol/m^3)^2].
 
         .. math::
             \frac{\partial^2 P}{\partial \rho^2} = -V^2\left(
             -V^2\frac{\partial^2 P}{\partial V^2} - 2V \frac{\partial P}{\partial V}
             \right)
-        '''
+        """
         return -self.V_g**2*(-self.V_g**2*self.d2P_dV2_g - 2*self.V_g*self.dP_dV_g)
 
     @property
     def d2rho_dP2_l(self):
-        r'''Second derivative of molar density with respect to pressure for the
+        r"""Second derivative of molar density with respect to pressure for the
         liquid phase, [(mol/m^3)/Pa^2].
 
         .. math::
             \frac{\partial^2 \rho}{\partial P^2} =
             -\frac{\partial^2 V}{\partial P^2}\frac{1}{V^2}
             + 2 \left(\frac{\partial V}{\partial P}\right)^2\frac{1}{V^3}
-        '''
+        """
         return -self.d2V_dP2_l/self.V_l**2 + 2*self.dV_dP_l**2/self.V_l**3
 
     @property
     def d2rho_dP2_g(self):
-        r'''Second derivative of molar density with respect to pressure for the
+        r"""Second derivative of molar density with respect to pressure for the
         gas phase, [(mol/m^3)/Pa^2].
 
         .. math::
             \frac{\partial^2 \rho}{\partial P^2} =
             -\frac{\partial^2 V}{\partial P^2}\frac{1}{V^2}
             + 2 \left(\frac{\partial V}{\partial P}\right)^2\frac{1}{V^3}
-        '''
+        """
         return -self.d2V_dP2_g/self.V_g**2 + 2*self.dV_dP_g**2/self.V_g**3
 
 
     @property
     def dT_drho_l(self):
-        r'''Derivative of temperature with respect to molar density for the
+        r"""Derivative of temperature with respect to molar density for the
         liquid phase, [K/(mol/m^3)].
 
         .. math::
             \frac{\partial T}{\partial \rho} = V^2 \frac{\partial T}{\partial V}
-        '''
+        """
         return -self.V_l*self.V_l*self.dT_dV_l
 
     @property
     def dT_drho_g(self):
-        r'''Derivative of temperature with respect to molar density for the
+        r"""Derivative of temperature with respect to molar density for the
         gas phase, [K/(mol/m^3)].
 
         .. math::
             \frac{\partial T}{\partial \rho} = V^2 \frac{\partial T}{\partial V}
-        '''
+        """
         return -self.V_g*self.V_g*self.dT_dV_g
 
     @property
     def d2T_drho2_l(self):
-        r'''Second derivative of temperature with respect to molar density for
+        r"""Second derivative of temperature with respect to molar density for
         the liquid phase, [K/(mol/m^3)^2].
 
         .. math::
             \frac{\partial^2 T}{\partial \rho^2} =
             -V^2(-V^2 \frac{\partial^2 T}{\partial V^2} -2V \frac{\partial T}{\partial V}  )
-        '''
+        """
         return -self.V_l**2*(-self.V_l**2*self.d2T_dV2_l - 2*self.V_l*self.dT_dV_l)
 
     @property
     def d2T_drho2_g(self):
-        r'''Second derivative of temperature with respect to molar density for
+        r"""Second derivative of temperature with respect to molar density for
         the gas phase, [K/(mol/m^3)^2].
 
         .. math::
             \frac{\partial^2 T}{\partial \rho^2} =
             -V^2(-V^2 \frac{\partial^2 T}{\partial V^2} -2V \frac{\partial T}{\partial V}  )
-        '''
+        """
         return -self.V_g**2*(-self.V_g**2*self.d2T_dV2_g - 2*self.V_g*self.dT_dV_g)
 
 
     @property
     def drho_dT_l(self):
-        r'''Derivative of molar density with respect to temperature for the
+        r"""Derivative of molar density with respect to temperature for the
         liquid phase, [(mol/m^3)/K].
 
         .. math::
             \frac{\partial \rho}{\partial T} = - \frac{1}{V^2}
             \frac{\partial V}{\partial T}
-        '''
+        """
         return -self.dV_dT_l/(self.V_l*self.V_l)
 
     @property
     def drho_dT_g(self):
-        r'''Derivative of molar density with respect to temperature for the
+        r"""Derivative of molar density with respect to temperature for the
         gas phase, [(mol/m^3)/K].
 
         .. math::
             \frac{\partial \rho}{\partial T} = - \frac{1}{V^2}
             \frac{\partial V}{\partial T}
-        '''
+        """
         return -self.dV_dT_g/(self.V_g*self.V_g)
 
     @property
     def d2rho_dT2_l(self):
-        r'''Second derivative of molar density with respect to temperature for
+        r"""Second derivative of molar density with respect to temperature for
         the liquid phase, [(mol/m^3)/K^2].
 
         .. math::
             \frac{\partial^2 \rho}{\partial T^2} =
             -\frac{\partial^2 V}{\partial T^2}\frac{1}{V^2}
             + 2 \left(\frac{\partial V}{\partial T}\right)^2\frac{1}{V^3}
-        '''
+        """
         return -self.d2V_dT2_l/self.V_l**2 + 2*self.dV_dT_l**2/self.V_l**3
 
     @property
     def d2rho_dT2_g(self):
-        r'''Second derivative of molar density with respect to temperature for
+        r"""Second derivative of molar density with respect to temperature for
         the gas phase, [(mol/m^3)/K^2].
 
         .. math::
             \frac{\partial^2 \rho}{\partial T^2} =
             -\frac{\partial^2 V}{\partial T^2}\frac{1}{V^2}
             + 2 \left(\frac{\partial V}{\partial T}\right)^2\frac{1}{V^3}
-        '''
+        """
         return -self.d2V_dT2_g/self.V_g**2 + 2*self.dV_dT_g**2/self.V_g**3
 
     @property
     def d2P_dTdrho_l(self):
-        r'''Derivative of pressure with respect to molar density, and
+        r"""Derivative of pressure with respect to molar density, and
         temperature for the liquid phase, [Pa/(K*mol/m^3)].
 
         .. math::
             \frac{\partial^2 P}{\partial \rho\partial T}
             = -V^2 \frac{\partial^2 P}{\partial T \partial V}
-        '''
+        """
         return -(self.V_l*self.V_l)*self.d2P_dTdV_l
 
     @property
     def d2P_dTdrho_g(self):
-        r'''Derivative of pressure with respect to molar density, and
+        r"""Derivative of pressure with respect to molar density, and
         temperature for the gas phase, [Pa/(K*mol/m^3)].
 
         .. math::
             \frac{\partial^2 P}{\partial \rho\partial T}
             = -V^2 \frac{\partial^2 P}{\partial T \partial V}
-        '''
+        """
         return -(self.V_g*self.V_g)*self.d2P_dTdV_g
 
     @property
     def d2T_dPdrho_l(self):
-        r'''Derivative of temperature with respect to molar density, and
+        r"""Derivative of temperature with respect to molar density, and
         pressure for the liquid phase, [K/(Pa*mol/m^3)].
 
         .. math::
             \frac{\partial^2 T}{\partial \rho\partial P}
             = -V^2 \frac{\partial^2 T}{\partial P \partial V}
-        '''
+        """
         return -(self.V_l*self.V_l)*self.d2T_dPdV_l
 
     @property
     def d2T_dPdrho_g(self):
-        r'''Derivative of temperature with respect to molar density, and
+        r"""Derivative of temperature with respect to molar density, and
         pressure for the gas phase, [K/(Pa*mol/m^3)].
 
         .. math::
             \frac{\partial^2 T}{\partial \rho\partial P}
             = -V^2 \frac{\partial^2 T}{\partial P \partial V}
-        '''
+        """
         return -(self.V_g*self.V_g)*self.d2T_dPdV_g
 
     @property
     def d2rho_dPdT_l(self):
-        r'''Second derivative of molar density with respect to pressure
+        r"""Second derivative of molar density with respect to pressure
         and temperature for the liquid phase, [(mol/m^3)/(K*Pa)].
 
         .. math::
@@ -5359,12 +5412,12 @@ class GCEOS:
             + 2 \left(\frac{\partial V}{\partial T}\right)
             \left(\frac{\partial V}{\partial P}\right)
             \frac{1}{V^3}
-        '''
+        """
         return -self.d2V_dPdT_l/self.V_l**2 + 2*self.dV_dT_l*self.dV_dP_l/self.V_l**3
 
     @property
     def d2rho_dPdT_g(self):
-        r'''Second derivative of molar density with respect to pressure
+        r"""Second derivative of molar density with respect to pressure
         and temperature for the gas phase, [(mol/m^3)/(K*Pa)].
 
         .. math::
@@ -5373,12 +5426,12 @@ class GCEOS:
             + 2 \left(\frac{\partial V}{\partial T}\right)
             \left(\frac{\partial V}{\partial P}\right)
             \frac{1}{V^3}
-        '''
+        """
         return -self.d2V_dPdT_g/self.V_g**2 + 2*self.dV_dT_g*self.dV_dP_g/self.V_g**3
 
     @property
     def dH_dep_dT_l(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         temperature for the liquid phase, [(J/mol)/K].
 
         .. math::
@@ -5392,7 +5445,7 @@ class GCEOS:
                 {d T} V{\left (T \right )}}{\left(\delta^{2} - 4 \epsilon
                 \right) \left(- \frac{\left(\delta + 2 V{\left (T \right )}
                 \right)^{2}}{\delta^{2} - 4 \epsilon} + 1\right)}
-        '''
+        """
         x0 = self.V_l
         x1 = self.dV_dT_l
         x2 = self.a_alpha
@@ -5408,7 +5461,7 @@ class GCEOS:
 
     @property
     def dH_dep_dT_g(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         temperature for the gas phase, [(J/mol)/K].
 
         .. math::
@@ -5422,7 +5475,7 @@ class GCEOS:
                 {d T} V{\left (T \right )}}{\left(\delta^{2} - 4 \epsilon
                 \right) \left(- \frac{\left(\delta + 2 V{\left (T \right )}
                 \right)^{2}}{\delta^{2} - 4 \epsilon} + 1\right)}
-        '''
+        """
         x0 = self.V_g
         x1 = self.dV_dT_g
         if x0 > 1e50:
@@ -5440,7 +5493,7 @@ class GCEOS:
 
     @property
     def dH_dep_dT_l_V(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         temperature at constant volume for the liquid phase, [(J/mol)/K].
 
         .. math::
@@ -5450,7 +5503,7 @@ class GCEOS:
             - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}} \operatorname{
             a_{\alpha}}{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}}
             + V_l \frac{\partial}{\partial T} P{\left(T,V \right)}
-        '''
+        """
         T = self.T
         delta, epsilon = self.delta, self.epsilon
         V = self.V_l
@@ -5463,7 +5516,7 @@ class GCEOS:
 
     @property
     def dH_dep_dT_g_V(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         temperature at constant volume for the gas phase, [(J/mol)/K].
 
         .. math::
@@ -5473,7 +5526,7 @@ class GCEOS:
             - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}} \operatorname{
                 a_{\alpha}}{\left(T \right)}}{\sqrt{\delta^{2} - 4 \epsilon}}
                 + V_g \frac{\partial}{\partial T} P{\left(T,V \right)}
-        '''
+        """
         T = self.T
         delta, epsilon = self.delta, self.epsilon
         V = self.V_g
@@ -5486,7 +5539,7 @@ class GCEOS:
 
     @property
     def dH_dep_dP_l(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         pressure for the liquid phase, [(J/mol)/Pa].
 
         .. math::
@@ -5497,7 +5550,7 @@ class GCEOS:
             )}}{\left(\delta^{2} - 4 \epsilon\right) \left(- \frac{\left(\delta
             + 2 V{\left (P \right )}\right)^{2}}{\delta^{2} - 4 \epsilon}
             + 1\right)}
-        '''
+        """
         delta = self.delta
         x0 = self.V_l
         x2 = delta*delta - 4.0*self.epsilon
@@ -5507,7 +5560,7 @@ class GCEOS:
 
     @property
     def dH_dep_dP_g(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         pressure for the gas phase, [(J/mol)/Pa].
 
         .. math::
@@ -5518,7 +5571,7 @@ class GCEOS:
             )}}{\left(\delta^{2} - 4 \epsilon\right) \left(- \frac{\left(\delta
             + 2 V{\left (P \right )}\right)^{2}}{\delta^{2} - 4 \epsilon}
             + 1\right)}
-        '''
+        """
         delta = self.delta
         x0 = self.V_g
         x2 = delta*delta - 4.0*self.epsilon
@@ -5531,7 +5584,7 @@ class GCEOS:
 
     @property
     def dH_dep_dP_l_V(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         pressure at constant volume for the gas phase, [(J/mol)/Pa].
 
         .. math::
@@ -5545,7 +5598,7 @@ class GCEOS:
             \operatorname{atanh}{\left(\frac{2 V + \delta}
             {\sqrt{\delta^{2} - 4 \epsilon}} \right)}}{\sqrt{\delta^{2}
             - 4 \epsilon}}
-        '''
+        """
         T, V, delta, epsilon = self.T, self.V_l, self.delta, self.epsilon
         da_alpha_dT, d2a_alpha_dT2 = self.da_alpha_dT, self.d2a_alpha_dT2
         dT_dP = self.dT_dP_l
@@ -5563,7 +5616,7 @@ class GCEOS:
 
     @property
     def dH_dep_dP_g_V(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         pressure at constant volume for the liquid phase, [(J/mol)/Pa].
 
         .. math::
@@ -5577,7 +5630,7 @@ class GCEOS:
             \operatorname{atanh}{\left(\frac{2 V + \delta}
             {\sqrt{\delta^{2} - 4 \epsilon}} \right)}}{\sqrt{\delta^{2}
             - 4 \epsilon}}
-        '''
+        """
         T, V, delta, epsilon = self.T, self.V_g, self.delta, self.epsilon
         da_alpha_dT, d2a_alpha_dT2 = self.da_alpha_dT, self.d2a_alpha_dT2
         dT_dP = self.dT_dP_g
@@ -5595,55 +5648,55 @@ class GCEOS:
 
     @property
     def dH_dep_dV_g_T(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         volume at constant temperature for the gas phase, [J/m^3].
 
         .. math::
             \left(\frac{\partial H_{dep, g}}{\partial V}\right)_{T} =
             \left(\frac{\partial H_{dep, g}}{\partial P}\right)_{T} \cdot
             \left(\frac{\partial P}{\partial V}\right)_{T}
-        '''
+        """
         return self.dH_dep_dP_g*self.dP_dV_g
 
     @property
     def dH_dep_dV_l_T(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         volume at constant temperature for the gas phase, [J/m^3].
 
         .. math::
             \left(\frac{\partial H_{dep, l}}{\partial V}\right)_{T} =
             \left(\frac{\partial H_{dep, l}}{\partial P}\right)_{T} \cdot
             \left(\frac{\partial P}{\partial V}\right)_{T}
-        '''
+        """
         return self.dH_dep_dP_l*self.dP_dV_l
 
     @property
     def dH_dep_dV_g_P(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         volume at constant pressure for the gas phase, [J/m^3].
 
         .. math::
             \left(\frac{\partial H_{dep, g}}{\partial V}\right)_{P} =
             \left(\frac{\partial H_{dep, g}}{\partial T}\right)_{P} \cdot
             \left(\frac{\partial T}{\partial V}\right)_{P}
-        '''
+        """
         return self.dH_dep_dT_g*self.dT_dV_g
 
     @property
     def dH_dep_dV_l_P(self):
-        r'''Derivative of departure enthalpy with respect to
+        r"""Derivative of departure enthalpy with respect to
         volume at constant pressure for the liquid phase, [J/m^3].
 
         .. math::
             \left(\frac{\partial H_{dep, l}}{\partial V}\right)_{P} =
             \left(\frac{\partial H_{dep, l}}{\partial T}\right)_{P} \cdot
             \left(\frac{\partial T}{\partial V}\right)_{P}
-        '''
+        """
         return self.dH_dep_dT_l*self.dT_dV_l
 
     @property
     def dS_dep_dT_l(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         temperature for the liquid phase, [(J/mol)/K^2].
 
         .. math::
@@ -5660,7 +5713,7 @@ class GCEOS:
             \right )} + \frac{R^{2} T}{P V{\left (T \right )}} \left(\frac{P}
             {R T} \frac{d}{d T} V{\left (T \right )} - \frac{P}{R T^{2}}
             V{\left (T \right )}\right)
-        '''
+        """
         x0 = self.V_l
         x1 = 1./x0
         x2 = self.dV_dT_l
@@ -5678,7 +5731,7 @@ class GCEOS:
 
     @property
     def dS_dep_dT_g(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         temperature for the gas phase, [(J/mol)/K^2].
 
         .. math::
@@ -5695,7 +5748,7 @@ class GCEOS:
             \right )} + \frac{R^{2} T}{P V{\left (T \right )}} \left(\frac{P}
             {R T} \frac{d}{d T} V{\left (T \right )} - \frac{P}{R T^{2}}
             V{\left (T \right )}\right)
-        '''
+        """
         x0 = self.V_g
         if x0 > 1e50:
             if self.S_dep_g == 0.0:
@@ -5719,7 +5772,7 @@ class GCEOS:
 
     @property
     def dS_dep_dT_l_V(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         temperature at constant volume for the liquid phase, [(J/mol)/K^2].
 
         .. math::
@@ -5730,7 +5783,7 @@ class GCEOS:
             \frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right)}
             \frac{d^{2}}{d T^{2}} \operatorname{a \alpha}{\left(T \right)}}
             {\sqrt{\delta^{2} - 4 \epsilon}}
-        '''
+        """
         T, P = self.T, self.P
         delta, epsilon = self.delta, self.epsilon
         V = self.V_l
@@ -5743,7 +5796,7 @@ class GCEOS:
 
     @property
     def dS_dep_dT_g_V(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         temperature at constant volume for the gas phase, [(J/mol)/K^2].
 
         .. math::
@@ -5754,7 +5807,7 @@ class GCEOS:
             \frac{2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right)}
             \frac{d^{2}}{d T^{2}} \operatorname{a \alpha}{\left(T \right)}}
             {\sqrt{\delta^{2} - 4 \epsilon}}
-        '''
+        """
         T, P = self.T, self.P
         delta, epsilon = self.delta, self.epsilon
         V = self.V_g
@@ -5767,7 +5820,7 @@ class GCEOS:
 
     @property
     def dS_dep_dP_l(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         pressure for the liquid phase, [(J/mol)/K/Pa].
 
         .. math::
@@ -5780,7 +5833,7 @@ class GCEOS:
             \delta^{2} - 4 \epsilon} + 1\right)} + \frac{R^{2} T}{P V{\left (P
             \right )}} \left(\frac{P}{R T} \frac{d}{d P} V{\left (P \right )}
             + \frac{V{\left (P \right )}}{R T}\right)
-        '''
+        """
         x0 = self.V_l
         x1 = 1.0/x0
         x2 = self.dV_dP_l
@@ -5794,7 +5847,7 @@ class GCEOS:
 
     @property
     def dS_dep_dP_g(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         pressure for the gas phase, [(J/mol)/K/Pa].
 
         .. math::
@@ -5807,7 +5860,7 @@ class GCEOS:
             \delta^{2} - 4 \epsilon} + 1\right)} + \frac{R^{2} T}{P V{\left (P
             \right )}} \left(\frac{P}{R T} \frac{d}{d P} V{\left (P \right )}
             + \frac{V{\left (P \right )}}{R T}\right)
-        '''
+        """
         x0 = self.V_g
         x1 = 1.0/x0
         x2 = self.dV_dP_g
@@ -5822,7 +5875,7 @@ class GCEOS:
 
     @property
     def dS_dep_dP_g_V(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         pressure at constant volume for the gas phase, [(J/mol)/K/Pa].
 
         .. math::
@@ -5834,7 +5887,7 @@ class GCEOS:
             + \frac{R^{2} \left(- \frac{P V \frac{d}{d P} T{\left(P \right)}}
             {R T^{2}{\left(P \right)}}
              + \frac{V}{R T{\left(P \right)}}\right) T{\left(P \right)}}{P V}
-        '''
+        """
         T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
         d2a_alpha_dT2 = self.d2a_alpha_dT2
         V, dT_dP = self.V_g, self.dT_dP_g
@@ -5848,7 +5901,7 @@ class GCEOS:
 
     @property
     def dS_dep_dP_l_V(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         pressure at constant volume for the liquid phase, [(J/mol)/K/Pa].
 
         .. math::
@@ -5860,7 +5913,7 @@ class GCEOS:
             + \frac{R^{2} \left(- \frac{P V \frac{d}{d P} T{\left(P \right)}}
             {R T^{2}{\left(P \right)}}
              + \frac{V}{R T{\left(P \right)}}\right) T{\left(P \right)}}{P V}
-        '''
+        """
         T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
         d2a_alpha_dT2 = self.d2a_alpha_dT2
         V, dT_dP = self.V_l, self.dT_dP_l
@@ -5874,55 +5927,55 @@ class GCEOS:
 
     @property
     def dS_dep_dV_g_T(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         volume at constant temperature for the gas phase, [J/K/m^3].
 
         .. math::
             \left(\frac{\partial S_{dep, g}}{\partial V}\right)_{T} =
             \left(\frac{\partial S_{dep, g}}{\partial P}\right)_{T} \cdot
             \left(\frac{\partial P}{\partial V}\right)_{T}
-        '''
+        """
         return self.dS_dep_dP_g*self.dP_dV_g
 
     @property
     def dS_dep_dV_l_T(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         volume at constant temperature for the gas phase, [J/K/m^3].
 
         .. math::
             \left(\frac{\partial S_{dep, l}}{\partial V}\right)_{T} =
             \left(\frac{\partial S_{dep, l}}{\partial P}\right)_{T} \cdot
             \left(\frac{\partial P}{\partial V}\right)_{T}
-        '''
+        """
         return self.dS_dep_dP_l*self.dP_dV_l
 
     @property
     def dS_dep_dV_g_P(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         volume at constant pressure for the gas phase, [J/K/m^3].
 
         .. math::
             \left(\frac{\partial S_{dep, g}}{\partial V}\right)_{P} =
             \left(\frac{\partial S_{dep, g}}{\partial T}\right)_{P} \cdot
             \left(\frac{\partial T}{\partial V}\right)_{P}
-        '''
+        """
         return self.dS_dep_dT_g*self.dT_dV_g
 
     @property
     def dS_dep_dV_l_P(self):
-        r'''Derivative of departure entropy with respect to
+        r"""Derivative of departure entropy with respect to
         volume at constant pressure for the liquid phase, [J/K/m^3].
 
         .. math::
             \left(\frac{\partial S_{dep, l}}{\partial V}\right)_{P} =
             \left(\frac{\partial S_{dep, l}}{\partial T}\right)_{P} \cdot
             \left(\frac{\partial T}{\partial V}\right)_{P}
-        '''
+        """
         return self.dS_dep_dT_l*self.dT_dV_l
 
     @property
     def d2H_dep_dT2_g(self):
-        r'''Second temperature derivative of departure enthalpy with respect to
+        r"""Second temperature derivative of departure enthalpy with respect to
         temperature for the gas phase, [(J/mol)/K^2].
 
         .. math::
@@ -5950,7 +6003,7 @@ class GCEOS:
             {\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}}
             \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
             - 4 \epsilon}}
-        '''
+        """
         T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
         x0 = self.V_g
         x1 = self.d2V_dT2_g
@@ -5975,7 +6028,7 @@ class GCEOS:
 
     @property
     def d2H_dep_dT2_l(self):
-        r'''Second temperature derivative of departure enthalpy with respect to
+        r"""Second temperature derivative of departure enthalpy with respect to
         temperature for the liquid phase, [(J/mol)/K^2].
 
         .. math::
@@ -6003,7 +6056,7 @@ class GCEOS:
             {\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{2}}{d T^{2}}
             \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
             - 4 \epsilon}}
-        '''
+        """
         T, P, delta, epsilon = self.T, self.P, self.delta, self.epsilon
         x0 = self.V_l
         x1 = self.d2V_dT2_l
@@ -6028,7 +6081,7 @@ class GCEOS:
 
     @property
     def d2S_dep_dT2_g(self):
-        r'''Second temperature derivative of departure entropy with respect to
+        r"""Second temperature derivative of departure entropy with respect to
         temperature for the gas phase, [(J/mol)/K^3].
 
         .. math::
@@ -6062,7 +6115,7 @@ class GCEOS:
             \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}
             {d T^{3}} \operatorname{a\alpha}{\left(T \right)}}
             {\sqrt{\delta^{2} - 4 \epsilon}}
-        '''
+        """
         T, P, b, delta, epsilon = self.T, self.P, self.b, self.delta, self.epsilon
         V = x0 = self.V_g
         V_inv = 1.0/V
@@ -6099,7 +6152,7 @@ class GCEOS:
 
     @property
     def d2S_dep_dT2_l(self):
-        r'''Second temperature derivative of departure entropy with respect to
+        r"""Second temperature derivative of departure entropy with respect to
         temperature for the liquid phase, [(J/mol)/K^3].
 
         .. math::
@@ -6133,7 +6186,7 @@ class GCEOS:
             \right)}}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}
             {d T^{3}} \operatorname{a\alpha}{\left(T \right)}}
             {\sqrt{\delta^{2} - 4 \epsilon}}
-        '''
+        """
         T, P, b, delta, epsilon = self.T, self.P, self.b, self.delta, self.epsilon
         V = x0 = self.V_l
         V_inv = 1.0/V
@@ -6170,7 +6223,7 @@ class GCEOS:
 
     @property
     def d2H_dep_dT2_g_V(self):
-        r'''Second temperature derivative of departure enthalpy with respect to
+        r"""Second temperature derivative of departure enthalpy with respect to
         temperature at constant volume for the gas phase, [(J/mol)/K^2].
 
         .. math::
@@ -6183,7 +6236,7 @@ class GCEOS:
             2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{2}}
             {d T^{2}} \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
             - 4 \epsilon}}
-        '''
+        """
         V, T, delta, epsilon = self.V_g, self.T, self.delta, self.epsilon
         x51 = delta*delta - 4.0*epsilon
         d2a_alpha_dT2 = self.d2a_alpha_dT2
@@ -6198,7 +6251,7 @@ class GCEOS:
 
     @property
     def d2H_dep_dT2_l_V(self):
-        r'''Second temperature derivative of departure enthalpy with respect to
+        r"""Second temperature derivative of departure enthalpy with respect to
         temperature at constant volume for the liquid phase, [(J/mol)/K^2].
 
         .. math::
@@ -6211,7 +6264,7 @@ class GCEOS:
             2 V + \delta}{\sqrt{\delta^{2} - 4 \epsilon}} \right)} \frac{d^{2}}
             {d T^{2}} \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
             - 4 \epsilon}}
-        '''
+        """
         V, T, delta, epsilon = self.V_l, self.T, self.delta, self.epsilon
         x51 = delta*delta - 4.0*epsilon
         d2a_alpha_dT2 = self.d2a_alpha_dT2
@@ -6226,7 +6279,7 @@ class GCEOS:
 
     @property
     def d2S_dep_dT2_g_V(self):
-        r'''Second temperature derivative of departure entropy with respect to
+        r"""Second temperature derivative of departure entropy with respect to
         temperature at constant volume for the gas phase, [(J/mol)/K^3].
 
         .. math::
@@ -6243,7 +6296,7 @@ class GCEOS:
             \delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}{d T^{3}}
             \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
             - 4 \epsilon}}
-        '''
+        """
         V, T, delta, epsilon = self.V_g, self.T, self.delta, self.epsilon
         d2a_alpha_dT2 = self.d2a_alpha_dT2
         d3a_alpha_dT3 = self.d3a_alpha_dT3
@@ -6265,7 +6318,7 @@ class GCEOS:
 
     @property
     def d2S_dep_dT2_l_V(self):
-        r'''Second temperature derivative of departure entropy with respect to
+        r"""Second temperature derivative of departure entropy with respect to
         temperature at constant volume for the liquid phase, [(J/mol)/K^3].
 
         .. math::
@@ -6282,7 +6335,7 @@ class GCEOS:
             \delta^{2} - 4 \epsilon}} \right)} \frac{d^{3}}{d T^{3}}
             \operatorname{a\alpha}{\left(T \right)}}{\sqrt{\delta^{2}
             - 4 \epsilon}}
-        '''
+        """
         V, T, delta, epsilon = self.V_l, self.T, self.delta, self.epsilon
         d2a_alpha_dT2 = self.d2a_alpha_dT2
         d3a_alpha_dT3 = self.d3a_alpha_dT3
@@ -6303,7 +6356,7 @@ class GCEOS:
 
     @property
     def d2H_dep_dTdP_g(self):
-        r'''Temperature and pressure derivative of departure enthalpy
+        r"""Temperature and pressure derivative of departure enthalpy
         at constant pressure then temperature for the gas phase,
         [(J/mol)/K/Pa].
 
@@ -6327,7 +6380,7 @@ class GCEOS:
             V{\left(T,P \right)}}{\left(\delta^{2} - 4 \epsilon\right)
             \left(\frac{\left(\delta + 2 V{\left(T,P \right)}\right)^{2}}
             {\delta^{2} - 4 \epsilon} - 1\right)}
-        '''
+        """
         V, T, P, delta, epsilon = self.V_g, self.T, self.P, self.delta, self.epsilon
         dV_dT = self.dV_dT_g
         d2V_dTdP = self.d2V_dTdP_g
@@ -6350,7 +6403,7 @@ class GCEOS:
 
     @property
     def d2H_dep_dTdP_l(self):
-        r'''Temperature and pressure derivative of departure enthalpy
+        r"""Temperature and pressure derivative of departure enthalpy
         at constant pressure then temperature for the liquid phase,
         [(J/mol)/K/Pa].
 
@@ -6374,7 +6427,7 @@ class GCEOS:
             V{\left(T,P \right)}}{\left(\delta^{2} - 4 \epsilon\right)
             \left(\frac{\left(\delta + 2 V{\left(T,P \right)}\right)^{2}}
             {\delta^{2} - 4 \epsilon} - 1\right)}
-        '''
+        """
         V, T, P, delta, epsilon = self.V_l, self.T, self.P, self.delta, self.epsilon
         dV_dT = self.dV_dT_l
         d2V_dTdP = self.d2V_dTdP_l
@@ -6397,7 +6450,7 @@ class GCEOS:
 
     @property
     def d2S_dep_dTdP_g(self):
-        r'''Temperature and pressure derivative of departure entropy
+        r"""Temperature and pressure derivative of departure entropy
         at constant pressure then temperature for the gas phase,
         [(J/mol)/K^2/Pa].
 
@@ -6434,7 +6487,7 @@ class GCEOS:
             - \frac{V{\left(T,P \right)}}{T}\right)}{P V{\left(T,P \right)}}
             + \frac{R \left(P \frac{\partial}{\partial P} V{\left(T,P \right)}
             + V{\left(T,P \right)}\right)}{P T V{\left(T,P \right)}}
-        '''
+        """
         V, T, P, b, delta, epsilon = self.V_g, self.T, self.P, self.b, self.delta, self.epsilon
         dV_dT = self.dV_dT_g
         d2V_dTdP = self.d2V_dTdP_g
@@ -6473,7 +6526,7 @@ class GCEOS:
 
     @property
     def d2S_dep_dTdP_l(self):
-        r'''Temperature and pressure derivative of departure entropy
+        r"""Temperature and pressure derivative of departure entropy
         at constant pressure then temperature for the liquid phase,
         [(J/mol)/K^2/Pa].
 
@@ -6510,7 +6563,7 @@ class GCEOS:
             - \frac{V{\left(T,P \right)}}{T}\right)}{P V{\left(T,P \right)}}
             + \frac{R \left(P \frac{\partial}{\partial P} V{\left(T,P \right)}
             + V{\left(T,P \right)}\right)}{P T V{\left(T,P \right)}}
-        '''
+        """
         V, T, P, b, delta, epsilon = self.V_l, self.T, self.P, self.b, self.delta, self.epsilon
         dV_dT = self.dV_dT_l
         d2V_dTdP = self.d2V_dTdP_l
@@ -6549,7 +6602,7 @@ class GCEOS:
 
     @property
     def dfugacity_dT_l(self):
-        r'''Derivative of fugacity with respect to temperature for the liquid
+        r"""Derivative of fugacity with respect to temperature for the liquid
         phase, [Pa/K].
 
         .. math::
@@ -6562,7 +6615,7 @@ class GCEOS:
                 (T,P \right )}\right)\right) e^{\frac{1}{R T} \left(- T
                 \operatorname{S_{dep}}{\left (T,P \right )} + \operatorname
                 {H_{dep}}{\left (T,P \right )}\right)}
-        '''
+        """
         T, P = self.T, self.P
         T_inv = 1.0/T
         S_dep_l = self.S_dep_l
@@ -6572,7 +6625,7 @@ class GCEOS:
 
     @property
     def dfugacity_dT_g(self):
-        r'''Derivative of fugacity with respect to temperature for the gas
+        r"""Derivative of fugacity with respect to temperature for the gas
         phase, [Pa/K].
 
         .. math::
@@ -6585,7 +6638,7 @@ class GCEOS:
             (T,P \right )}\right)\right) e^{\frac{1}{R T} \left(- T
             \operatorname{S_{dep}}{\left (T,P \right )} + \operatorname
             {H_{dep}}{\left (T,P \right )}\right)}
-        '''
+        """
         T, P = self.T, self.P
         T_inv = 1.0/T
         S_dep_g = self.S_dep_g
@@ -6595,7 +6648,7 @@ class GCEOS:
 
     @property
     def dfugacity_dP_l(self):
-        r'''Derivative of fugacity with respect to pressure for the liquid
+        r"""Derivative of fugacity with respect to pressure for the liquid
         phase, [-].
 
         .. math::
@@ -6607,7 +6660,7 @@ class GCEOS:
             H_{dep}}{\left (T,P \right )}\right)} + e^{\frac{1}{R T}
             \left(- T \operatorname{S_{dep}}{\left (T,P \right )}
             + \operatorname{H_{dep}}{\left (T,P \right )}\right)}
-        '''
+        """
         T, P = self.T, self.P
         x0 = 1.0/(R*T)
         return (1.0 - P*x0*(T*self.dS_dep_dP_l - self.dH_dep_dP_l))*exp(
@@ -6615,7 +6668,7 @@ class GCEOS:
 
     @property
     def dfugacity_dP_g(self):
-        r'''Derivative of fugacity with respect to pressure for the gas
+        r"""Derivative of fugacity with respect to pressure for the gas
         phase, [-].
 
         .. math::
@@ -6627,7 +6680,7 @@ class GCEOS:
             H_{dep}}{\left (T,P \right )}\right)} + e^{\frac{1}{R T}
             \left(- T \operatorname{S_{dep}}{\left (T,P \right )}
             + \operatorname{H_{dep}}{\left (T,P \right )}\right)}
-        '''
+        """
         T, P = self.T, self.P
         x0 = 1.0/(R*T)
         try:
@@ -6641,11 +6694,11 @@ class GCEOS:
                 # Applies to gas phase only!
                 return 1.0
             else:
-                raise e
+                raise
 
     @property
     def dphi_dT_l(self):
-        r'''Derivative of fugacity coefficient with respect to temperature for
+        r"""Derivative of fugacity coefficient with respect to temperature for
         the liquid phase, [1/K].
 
         .. math::
@@ -6657,7 +6710,7 @@ class GCEOS:
             + \operatorname{H_{dep}}{\left(T,P \right)}}{R T^{2}}\right)
             e^{\frac{- T \operatorname{S_{dep}}{\left(T,P \right)}
             + \operatorname{H_{dep}}{\left(T,P \right)}}{R T}}
-        '''
+        """
         T, P = self.T, self.P
         T_inv = 1.0/T
         x4 = T_inv*(T*self.S_dep_l - self.H_dep_l)
@@ -6666,7 +6719,7 @@ class GCEOS:
 
     @property
     def dphi_dT_g(self):
-        r'''Derivative of fugacity coefficient with respect to temperature for
+        r"""Derivative of fugacity coefficient with respect to temperature for
         the gas phase, [1/K].
 
         .. math::
@@ -6678,7 +6731,7 @@ class GCEOS:
             + \operatorname{H_{dep}}{\left(T,P \right)}}{R T^{2}}\right)
             e^{\frac{- T \operatorname{S_{dep}}{\left(T,P \right)}
             + \operatorname{H_{dep}}{\left(T,P \right)}}{R T}}
-        '''
+        """
         T, P = self.T, self.P
         T_inv = 1.0/T
         x4 = T_inv*(T*self.S_dep_g - self.H_dep_g)
@@ -6687,7 +6740,7 @@ class GCEOS:
 
     @property
     def dphi_dP_l(self):
-        r'''Derivative of fugacity coefficient with respect to pressure for
+        r"""Derivative of fugacity coefficient with respect to pressure for
         the liquid phase, [1/Pa].
 
         .. math::
@@ -6696,7 +6749,7 @@ class GCEOS:
             + \frac{\partial}{\partial P} \operatorname{H_{dep}}{\left(T,P
             \right)}\right) e^{\frac{- T \operatorname{S_{dep}}{\left(T,P
             \right)} + \operatorname{H_{dep}}{\left(T,P \right)}}{R T}}}{R T}
-        '''
+        """
         T = self.T
         x0 = self.S_dep_l
         x1 = self.H_dep_l
@@ -6705,7 +6758,7 @@ class GCEOS:
 
     @property
     def dphi_dP_g(self):
-        r'''Derivative of fugacity coefficient with respect to pressure for
+        r"""Derivative of fugacity coefficient with respect to pressure for
         the gas phase, [1/Pa].
 
         .. math::
@@ -6714,7 +6767,7 @@ class GCEOS:
             + \frac{\partial}{\partial P} \operatorname{H_{dep}}{\left(T,P
             \right)}\right) e^{\frac{- T \operatorname{S_{dep}}{\left(T,P
             \right)} + \operatorname{H_{dep}}{\left(T,P \right)}}{R T}}}{R T}
-        '''
+        """
         T = self.T
         x0 = self.S_dep_g
         x1 = self.H_dep_g
@@ -6723,7 +6776,7 @@ class GCEOS:
 
     @property
     def dbeta_dT_g(self):
-        r'''Derivative of isobaric expansion coefficient with respect to
+        r"""Derivative of isobaric expansion coefficient with respect to
         temperature for the gas phase, [1/K^2].
 
         .. math::
@@ -6731,14 +6784,14 @@ class GCEOS:
             {\partial T^{2}} V{\left (T,P \right )_g}}{V{\left (T,P \right )_g}} -
             \frac{\left(\frac{\partial}{\partial T} V{\left (T,P \right )_g}
             \right)^{2}}{V^{2}{\left (T,P \right )_g}}
-        '''
+        """
         V_inv = 1.0/self.V_g
         dV_dT = self.dV_dT_g
         return V_inv*(self.d2V_dT2_g - dV_dT*dV_dT*V_inv)
 
     @property
     def dbeta_dT_l(self):
-        r'''Derivative of isobaric expansion coefficient with respect to
+        r"""Derivative of isobaric expansion coefficient with respect to
         temperature for the liquid phase, [1/K^2].
 
         .. math::
@@ -6746,14 +6799,14 @@ class GCEOS:
             {\partial T^{2}} V{\left (T,P \right )_l}}{V{\left (T,P \right )_l}} -
             \frac{\left(\frac{\partial}{\partial T} V{\left (T,P \right )_l}
             \right)^{2}}{V^{2}{\left (T,P \right )_l}}
-        '''
+        """
         V_inv = 1.0/self.V_l
         dV_dT = self.dV_dT_l
         return V_inv*(self.d2V_dT2_l - dV_dT*dV_dT*V_inv)
 
     @property
     def dbeta_dP_g(self):
-        r'''Derivative of isobaric expansion coefficient with respect to
+        r"""Derivative of isobaric expansion coefficient with respect to
         pressure for the gas phase, [1/(Pa*K)].
 
         .. math::
@@ -6762,7 +6815,7 @@ class GCEOS:
             P \right )_g}} - \frac{\frac{\partial}{\partial P} V{\left (T,P
             \right )_g} \frac{\partial}{\partial T} V{\left (T,P \right )_g}}
             {V^{2}{\left (T,P \right )_g}}
-        '''
+        """
         V_inv = 1.0/self.V_g
         dV_dT = self.dV_dT_g
         dV_dP = self.dV_dP_g
@@ -6770,7 +6823,7 @@ class GCEOS:
 
     @property
     def dbeta_dP_l(self):
-        r'''Derivative of isobaric expansion coefficient with respect to
+        r"""Derivative of isobaric expansion coefficient with respect to
         pressure for the liquid phase, [1/(Pa*K)].
 
         .. math::
@@ -6779,7 +6832,7 @@ class GCEOS:
             P \right )_l}} - \frac{\frac{\partial}{\partial P} V{\left (T,P
             \right )_l} \frac{\partial}{\partial T} V{\left (T,P \right )_l}}
             {V^{2}{\left (T,P \right )_l}}
-        '''
+        """
         V_inv = 1.0/self.V_l
         dV_dT = self.dV_dT_l
         dV_dP = self.dV_dP_l
@@ -6787,7 +6840,7 @@ class GCEOS:
 
     @property
     def da_alpha_dP_g_V(self):
-        r'''Derivative of the `a_alpha` with respect to
+        r"""Derivative of the `a_alpha` with respect to
         pressure at constant volume (varying T) for the gas phase,
         [J^2/mol^2/Pa^2].
 
@@ -6795,12 +6848,12 @@ class GCEOS:
             \left(\frac{\partial a \alpha}{\partial P}\right)_{V}
             = \left(\frac{\partial a \alpha}{\partial T}\right)_{P}
             \cdot\left( \frac{\partial T}{\partial P}\right)_V
-        '''
+        """
         return self.da_alpha_dT*self.dT_dP_g
 
     @property
     def da_alpha_dP_l_V(self):
-        r'''Derivative of the `a_alpha` with respect to
+        r"""Derivative of the `a_alpha` with respect to
         pressure at constant volume (varying T) for the liquid phase,
         [J^2/mol^2/Pa^2].
 
@@ -6808,12 +6861,12 @@ class GCEOS:
             \left(\frac{\partial a \alpha}{\partial P}\right)_{V}
             = \left(\frac{\partial a \alpha}{\partial T}\right)_{P}
             \cdot\left( \frac{\partial T}{\partial P}\right)_V
-        '''
+        """
         return self.da_alpha_dT*self.dT_dP_l
 
     @property
     def d2a_alpha_dTdP_g_V(self):
-        r'''Derivative of the temperature derivative of `a_alpha` with respect
+        r"""Derivative of the temperature derivative of `a_alpha` with respect
         to pressure at constant volume (varying T) for the gas phase,
         [J^2/mol^2/Pa^2/K].
 
@@ -6822,12 +6875,12 @@ class GCEOS:
             \right)_P}{\partial P}\right)_{V}
             = \left(\frac{\partial^2 a \alpha}{\partial T^2}\right)_{P}
             \cdot\left( \frac{\partial T}{\partial P}\right)_V
-        '''
+        """
         return self.d2a_alpha_dT2*self.dT_dP_g
 
     @property
     def d2a_alpha_dTdP_l_V(self):
-        r'''Derivative of the temperature derivative of `a_alpha` with respect
+        r"""Derivative of the temperature derivative of `a_alpha` with respect
         to pressure at constant volume (varying T) for the liquid phase,
         [J^2/mol^2/Pa^2/K].
 
@@ -6836,12 +6889,12 @@ class GCEOS:
             \right)_P}{\partial P}\right)_{V}
             = \left(\frac{\partial^2 a \alpha}{\partial T^2}\right)_{P}
             \cdot\left( \frac{\partial T}{\partial P}\right)_V
-        '''
+        """
         return self.d2a_alpha_dT2*self.dT_dP_l
 
     @property
     def d2P_dVdP_g(self):
-        r'''Second derivative of pressure with respect to molar volume and
+        r"""Second derivative of pressure with respect to molar volume and
         then pressure for the gas phase, [mol/m^3].
 
         .. math::
@@ -6856,7 +6909,7 @@ class GCEOS:
             \right)}}{\left(\delta V{\left(P \right)} + \epsilon + V^{2}
             {\left(P \right)}\right)^{2}}
 
-        '''
+        """
         r"""Feels like a really strange derivative. Have not been able to construct
         it from others yet. Value is Symmetric - can calculate it both ways.
         Still feels like there should be a general method for obtaining these derivatives.
@@ -6880,7 +6933,7 @@ class GCEOS:
 
     @property
     def d2P_dVdP_l(self):
-        r'''Second derivative of pressure with respect to molar volume and
+        r"""Second derivative of pressure with respect to molar volume and
         then pressure for the liquid phase, [mol/m^3].
 
         .. math::
@@ -6895,7 +6948,7 @@ class GCEOS:
             \right)}}{\left(\delta V{\left(P \right)} + \epsilon + V^{2}
             {\left(P \right)}\right)^{2}}
 
-        '''
+        """
         T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
         x0 = self.V_l
         x1 = self.a_alpha
@@ -6908,7 +6961,7 @@ class GCEOS:
 
     @property
     def d2P_dVdT_TP_g(self):
-        r'''Second derivative of pressure with respect to molar volume and
+        r"""Second derivative of pressure with respect to molar volume and
         then temperature at constant temperature then pressure for the gas
         phase, [Pa*mol/m^3/K].
 
@@ -6927,7 +6980,7 @@ class GCEOS:
             \operatorname{a\alpha}{\left(T \right)} \frac{d}{d T} V{\left(T
             \right)}}{\left(\delta V{\left(T \right)} + \epsilon + V^{2}{\left(
             T \right)}\right)^{2}}
-        '''
+        """
         T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
         x0 = self.V_g
         x2 = 2.0*self.dV_dT_g
@@ -6944,7 +6997,7 @@ class GCEOS:
 
     @property
     def d2P_dVdT_TP_l(self):
-        r'''Second derivative of pressure with respect to molar volume and
+        r"""Second derivative of pressure with respect to molar volume and
         then temperature at constant temperature then pressure for the liquid
         phase, [Pa*mol/m^3/K].
 
@@ -6963,7 +7016,7 @@ class GCEOS:
             \operatorname{a\alpha}{\left(T \right)} \frac{d}{d T} V{\left(T
             \right)}}{\left(\delta V{\left(T \right)} + \epsilon + V^{2}{\left(
             T \right)}\right)^{2}}
-        '''
+        """
         T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
         x0 = self.V_l
         x2 = 2.0*self.dV_dT_l
@@ -6980,7 +7033,7 @@ class GCEOS:
 
     @property
     def d2P_dT2_PV_g(self):
-        r'''Second derivative of pressure with respect to temperature twice,
+        r"""Second derivative of pressure with respect to temperature twice,
         but with pressure held constant the first time and volume held
         constant the second time for the gas phase, [Pa/K^2].
 
@@ -6994,7 +7047,7 @@ class GCEOS:
             \right)}\right)^{2}} - \frac{\frac{d^{2}}{d T^{2}}
             \operatorname{a\alpha}{\left(T \right)}}{\delta V{\left(T \right)}
             + \epsilon + V^{2}{\left(T \right)}}
-        '''
+        """
         T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
         V = self.V_g
         dV_dT = self.dV_dT_g
@@ -7009,7 +7062,7 @@ class GCEOS:
 
     @property
     def d2P_dT2_PV_l(self):
-        r'''Second derivative of pressure with respect to temperature twice,
+        r"""Second derivative of pressure with respect to temperature twice,
         but with pressure held constant the first time and volume held
         constant the second time for the liquid phase, [Pa/K^2].
 
@@ -7023,7 +7076,7 @@ class GCEOS:
             \right)}\right)^{2}} - \frac{\frac{d^{2}}{d T^{2}}
             \operatorname{a\alpha}{\left(T \right)}}{\delta V{\left(T \right)}
             + \epsilon + V^{2}{\left(T \right)}}
-        '''
+        """
         T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
         V = self.V_l
         dV_dT = self.dV_dT_l
@@ -7038,7 +7091,7 @@ class GCEOS:
 
     @property
     def d2P_dTdP_g(self):
-        r'''Second derivative of pressure with respect to temperature and,
+        r"""Second derivative of pressure with respect to temperature and,
         then pressure; and with volume held constant at first, then temperature,
         for the gas phase, [1/K].
 
@@ -7050,7 +7103,7 @@ class GCEOS:
             \right) \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)}}
             {\left(\delta V{\left(P \right)} + \epsilon + V^{2}{\left(P
             \right)}\right)^{2}}
-        '''
+        """
         V = self.V_g
         dV_dP = self.dV_dP_g
         T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
@@ -7062,7 +7115,7 @@ class GCEOS:
 
     @property
     def d2P_dTdP_l(self):
-        r'''Second derivative of pressure with respect to temperature and,
+        r"""Second derivative of pressure with respect to temperature and,
         then pressure; and with volume held constant at first, then temperature,
         for the liquid phase, [1/K].
 
@@ -7074,7 +7127,7 @@ class GCEOS:
             \right) \frac{d}{d T} \operatorname{a\alpha}{\left(T \right)}}
             {\left(\delta V{\left(P \right)} + \epsilon + V^{2}{\left(P
             \right)}\right)^{2}}
-        '''
+        """
         V = self.V_l
         dV_dP = self.dV_dP_l
         T, b, delta, epsilon = self.T, self.b, self.delta, self.epsilon
@@ -7085,21 +7138,21 @@ class GCEOS:
 
     @property
     def lnphi_l(self):
-        r'''The natural logarithm of the fugacity coefficient for
+        r"""The natural logarithm of the fugacity coefficient for
         the liquid phase, [-].
-        '''
+        """
         return self.G_dep_l*R_inv/self.T
 
     @property
     def lnphi_g(self):
-        r'''The natural logarithm of the fugacity coefficient for
+        r"""The natural logarithm of the fugacity coefficient for
         the gas phase, [-].
-        '''
-        return log(self.phi_g)
+        """
+        return self.G_dep_g*R_inv/self.T
 
 
 class IG(GCEOS):
-    r'''Class for solving the ideal gas equation in the `GCEOS` framework.
+    r"""Class for solving the ideal gas equation in the `GCEOS` framework.
     This provides access to a number of derivatives and properties easily.
     It also keeps a common interface for all gas models. However, it is
     somewhat slow.
@@ -7139,10 +7192,10 @@ class IG(GCEOS):
     (0.003325785047261296, 'g')
     >>> eos.H_dep_g, eos.S_dep_g, eos.U_dep_g, eos.G_dep_g, eos.A_dep_g
     (0.0, 0.0, 0.0, 0.0, 0.0)
-    >>> eos.beta_g, eos.kappa_g, eos.Cp_dep_g, eos.Cv_dep_g
+    >>> eos.beta_g, eos.isothermal_compressibility_g, eos.Cp_dep_g, eos.Cv_dep_g
     (0.0025, 1e-06, 0.0, 0.0)
     >>> eos.fugacity_g, eos.PIP_g, eos.Z_g, eos.dP_dT_g
-    (1000000.0, 0.9999999999999999, 1.0, 2500.0)
+    (1000000.0, 1.0, 1.0, 2500.0)
 
     Notes
     -----
@@ -7151,7 +7204,7 @@ class IG(GCEOS):
     ----------
     .. [1] Smith, J. M, H. C Van Ness, and Michael M Abbott. Introduction to
        Chemical Engineering Thermodynamics. Boston: McGraw-Hill, 2005.
-    '''
+    """
 
     Zc = 1.0
     """float: Critical compressibility for an ideal gas is 1"""
@@ -7175,32 +7228,32 @@ class IG(GCEOS):
         try:
             doc = GCEOS.d2T_dV2_g.__doc__
         except:
-            doc = ''
+            doc = ""
         d2T_dV2_g = property(_zero, fset=_set_nothing, doc=doc)
         try:
             doc = GCEOS.d2V_dT2_g.__doc__
         except:
-            doc = ''
+            doc = ""
         d2V_dT2_g = property(_zero, fset=_set_nothing, doc=doc)
         try:
             doc = GCEOS.U_dep_g.__doc__
         except:
-            doc = ''
+            doc = ""
         U_dep_g = property(_zero, fset=_set_nothing, doc=doc)
         try:
             doc = GCEOS.A_dep_g.__doc__
         except:
-            doc = ''
+            doc = ""
         A_dep_g = property(_zero, fset=_set_nothing, doc=doc)
         try:
             doc = GCEOS.V_dep_g.__doc__
         except:
-            doc = ''
+            doc = ""
             V_dep_g = property(_zero, fset=_set_nothing, doc=doc)
-        G_dep_g = property(_zero, fset=_set_nothing, doc='Departure Gibbs free energy of an ideal gas is zero, [J/(mol)]')
-        H_dep_g = property(_zero, fset=_set_nothing, doc='Departure enthalpy of an ideal gas is zero, [J/(mol)]')
-        S_dep_g = property(_zero, fset=_set_nothing, doc='Departure entropy of an ideal gas is zero, [J/(mol*K)]')
-        Cp_dep_g = property(_zero, fset=_set_nothing, doc='Departure heat capacity of an ideal gas is zero, [J/(mol*K)]')
+        G_dep_g = property(_zero, fset=_set_nothing, doc="Departure Gibbs free energy of an ideal gas is zero, [J/(mol)]")
+        H_dep_g = property(_zero, fset=_set_nothing, doc="Departure enthalpy of an ideal gas is zero, [J/(mol)]")
+        S_dep_g = property(_zero, fset=_set_nothing, doc="Departure entropy of an ideal gas is zero, [J/(mol*K)]")
+        Cp_dep_g = property(_zero, fset=_set_nothing, doc="Departure heat capacity of an ideal gas is zero, [J/(mol*K)]")
         # Replace methods
         dH_dep_dP_g = property(_zero, doc=GCEOS.dH_dep_dP_g.__doc__)
         dH_dep_dT_g = property(_zero, doc=GCEOS.dH_dep_dT_g.__doc__)
@@ -7226,7 +7279,7 @@ class IG(GCEOS):
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for this EOS. All values are zero.
 
         Parameters
@@ -7245,11 +7298,11 @@ class IG(GCEOS):
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K^2]
 
-        '''
+        """
         return (0.0, 0.0, 0.0)
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` for the ideal gas law, which
+        r"""Method to calculate :math:`a \alpha` for the ideal gas law, which
         is zero.
 
         Parameters
@@ -7261,11 +7314,11 @@ class IG(GCEOS):
         -------
         a_alpha : float
             Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
-        '''
+        """
         return 0.0
 
     def solve_T(self, P, V, solution=None):
-        r'''Method to calculate `T` from a specified `P` and `V` for the
+        r"""Method to calculate `T` from a specified `P` and `V` for the
         ideal gas equation of state.
 
         .. math::
@@ -7287,7 +7340,7 @@ class IG(GCEOS):
 
         Notes
         -----
-        '''
+        """
         self.no_T_spec = True
         return P*V*R_inv
 
@@ -7300,7 +7353,7 @@ class IG(GCEOS):
 
 
 class PR(GCEOS):
-    r'''Class for solving the Peng-Robinson [1]_ [2]_ cubic
+    r"""Class for solving the Peng-Robinson [1]_ [2]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -7362,7 +7415,7 @@ class PR(GCEOS):
     (297.21342811, 210.38840980)
     >>> eos.beta_l, eos.beta_g
     (0.00269337091778, 0.0101232239111)
-    >>> eos.kappa_l, eos.kappa_g
+    >>> eos.isothermal_compressibility_l, eos.isothermal_compressibility_g
     (9.3357215438e-09, 1.97106698097e-06)
     >>> eos.Cp_minus_Cv_l, eos.Cp_minus_Cv_g
     (48.510162249, 44.544161128)
@@ -7410,7 +7463,7 @@ class PR(GCEOS):
     .. [3] Privat, R., and J.-N. Jaubert. "PPR78, a Thermodynamic Model for the
        Prediction of Petroleum Fluid-Phase Behaviour," 11. EDP Sciences, 2011.
        doi:10.1051/jeep/201100011.
-    '''
+    """
 
     # constant part of `a`,
     # X = (-1 + (6*sqrt(2)+8)**Rational(1,3) - (6*sqrt(2)-8)**Rational(1,3))/3
@@ -7494,7 +7547,7 @@ class PR(GCEOS):
         self.solve()
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` for this EOS. Uses the set values of
+        r"""Method to calculate :math:`a \alpha` for this EOS. Uses the set values of
         `Tc`, `kappa`, and `a`.
 
         .. math::
@@ -7523,12 +7576,12 @@ class PR(GCEOS):
         >>> eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
         >>> eos.a_alpha_pure(250.0)
         15.66839156301
-        '''
+        """
         x0 = (1.0 + self.kappa*(1.0 - sqrt(T/self.Tc)))
         return self.a*x0*x0
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for this EOS. Uses the set values of `Tc`, `kappa`, and `a`.
 
         .. math::
@@ -7572,7 +7625,7 @@ class PR(GCEOS):
         >>> eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
         >>> eos.a_alpha_and_derivatives_pure(250.0)
         (15.66839156301, -0.03094091246957, 9.243186769880e-05)
-        '''
+        """
         # TODO custom water a_alpha?
         # Peng, DY, and DB Robinson. "Two-and Three-Phase Equilibrium Calculations
         # for Coal Gasification and Related Processes,", 1980
@@ -7593,7 +7646,7 @@ class PR(GCEOS):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def d3a_alpha_dT3_pure(self, T):
-        r'''Method to calculate the third temperature derivative of `a_alpha`.
+        r"""Method to calculate the third temperature derivative of `a_alpha`.
         Uses the set values of `Tc`, `kappa`, and `a`. This property is not
         normally needed.
 
@@ -7625,7 +7678,7 @@ class PR(GCEOS):
         >>> eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
         >>> eos.d3a_alpha_dT3_pure(500.0)
         -9.8038800671e-08
-        '''
+        """
         kappa = self.kappa
         x0 = 1.0/self.Tc
         T_inv = 1.0/T
@@ -7633,7 +7686,7 @@ class PR(GCEOS):
         return -self.a*0.75*kappa*(kappa*x0 - x1*(kappa*(x1 - 1.0) - 1.0)*T_inv)*T_inv*T_inv
 
     def P_max_at_V(self, V):
-        r'''Method to calculate the maximum pressure the EOS can create at a
+        r"""Method to calculate the maximum pressure the EOS can create at a
         constant volume, if one exists; returns None otherwise.
 
         Parameters
@@ -7656,7 +7709,7 @@ class PR(GCEOS):
         >>> e = PR(P=1e5, V=0.0001437, Tc=512.5, Pc=8084000.0, omega=0.559)
         >>> e.P_max_at_V(e.V)
         2247886208.7
-        '''
+        """
         """# Partial notes on how this was determined.
         from sympy import *
         P, T, V = symbols('P, T, V', positive=True)
@@ -7684,7 +7737,7 @@ class PR(GCEOS):
 
 
     def solve_T(self, P, V, solution=None):
-        r'''Method to calculate `T` from a specified `P` and `V` for the PR
+        r"""Method to calculate `T` from a specified `P` and `V` for the PR
         EOS. Uses `Tc`, `a`, `b`, and `kappa` as well, obtained from the
         class's namespace.
 
@@ -7728,7 +7781,7 @@ class PR(GCEOS):
         >>> eos = PR(Tc=658.0, Pc=1820000.0, omega=0.562, T=500., P=1e5)
         >>> eos.solve_T(P=eos.P, V=eos.V_g)
         500.0000000
-        '''
+        """
         self.no_T_spec = True
         Tc, a, b, kappa = self.Tc, self.a, self.b, self.kappa
         # Needs to be improved to do a NR or two at the end!
@@ -7805,7 +7858,7 @@ class PR(GCEOS):
         Tc_inv = 1.0/Tc
 
         T_calc_high = (x102*(-x100 - x101))
-        if solution is not None and solution == 'g':
+        if solution is not None and solution == "g":
             T_calc = T_calc_high
         if True:
             c1, c2 = R/(V_m_b), a/(V*(V+b) + b*V_m_b)
@@ -7986,7 +8039,7 @@ class PR(GCEOS):
 
 
 class PR78(PR):
-    r'''Class for solving the Peng-Robinson cubic
+    r"""Class for solving the Peng-Robinson cubic
     equation of state for a pure compound according to the 1978 variant [1]_ [2]_.
     Subclasses :obj:`PR`, which provides everything except the variable `kappa`.
     Solves the EOS on initialization. See :obj:`PR` for further documentation.
@@ -8047,7 +8100,7 @@ class PR78(PR):
        Development of the Peng - Robinson Equation and Its Application to Phase
        Equilibrium in a System Containing Methanol." Fluid Phase Equilibria 24,
        no. 1 (January 1, 1985): 25-41. doi:10.1016/0378-3812(85)87035-7.
-    '''
+    """
 
     low_omega_constants = (0.37464, 1.54226, -0.26992)
     """Constants for the `kappa` formula for the low-omega region."""
@@ -8075,7 +8128,7 @@ class PR78(PR):
         self.solve()
 
 class PRTranslated(PR):
-    r'''Class for solving the volume translated Peng-Robinson equation of state.
+    r"""Class for solving the volume translated Peng-Robinson equation of state.
     Subclasses :obj:`PR`. Solves the EOS on initialization.
     This is intended as a base class for all translated variants of the
     Peng-Robinson EOS.
@@ -8131,11 +8184,11 @@ class PRTranslated(PR):
     ----------
     .. [1] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    '''
+    """
 
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
-    kwargs_keys = ('c', 'alpha_coeffs')
+    kwargs_keys = ("c", "alpha_coeffs")
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
         self.Tc = Tc
@@ -8155,7 +8208,7 @@ class PRTranslated(PR):
 
         # Does not have an impact on phase equilibria
         self.alpha_coeffs = alpha_coeffs
-        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+        self.kwargs = {"c": c, "alpha_coeffs": alpha_coeffs}
 #        self.C0, self.C1, self.C2 = Twu_coeffs
 
         b0 = self.c2*R*Tc*Pc_inv
@@ -8171,7 +8224,7 @@ class PRTranslated(PR):
 
 
 class PRTranslatedPPJP(PRTranslated):
-    r'''Class for solving the volume translated Pina-Martinez, Privat, Jaubert,
+    r"""Class for solving the volume translated Pina-Martinez, Privat, Jaubert,
     and Peng revision of the Peng-Robinson equation of state
     for a pure compound according to [1]_.
     Subclasses :obj:`PRTranslated`, which provides everything except the variable `kappa`.
@@ -8230,10 +8283,10 @@ class PRTranslatedPPJP(PRTranslated):
        Suitable for the Redlich-Kwong and Peng-Robinson Equations of State."
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
-    '''
+    """
 
     # Direct solver for T could be implemented but cannot use the PR one
-    kwargs_keys = ('c',)
+    kwargs_keys = ("c",)
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -8247,7 +8300,7 @@ class PRTranslatedPPJP(PRTranslated):
         self.c = c
         # 0.3919 + 1.4996*omega - 0.2721*omega**2+0.1063*omega**3
         self.kappa = omega*(omega*(0.1063*omega - 0.2721) + 1.4996) + 0.3919
-        self.kwargs = {'c': c}
+        self.kwargs = {"c": c}
         b0 = self.c2*R*Tc*Pc_inv
         self.b = b = b0 - c
 
@@ -8261,7 +8314,7 @@ class PRTranslatedPPJP(PRTranslated):
         return None
 
 class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
-    r'''Class for solving the volume translated Peng-Robinson equation of state
+    r"""Class for solving the volume translated Peng-Robinson equation of state
     with a polynomial alpha function. With the right coefficients, this model
     can reproduce any property incredibly well.
     Subclasses :obj:`PRTranslated`. Solves the EOS on initialization.
@@ -8318,13 +8371,13 @@ class PRTranslatedPoly(Poly_a_alpha, PRTranslated):
     Notes
     -----
 
-    '''
+    """
 
 class PRTranslatedMathiasCopeman(Mathias_Copeman_poly_a_alpha, PRTranslated):
     pass
 
 class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):
-    kwargs_keys = ('c', 'alpha_coeffs')
+    kwargs_keys = ("c", "alpha_coeffs")
     def __init__(self, Tc, Pc, omega, c=0.0, alpha_coeffs=None, T=None, P=None, V=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -8345,7 +8398,7 @@ class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):
             alpha_coeffs = list(alpha_coeffs)
             alpha_coeffs.append(1.0)
 
-        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+        self.kwargs = {"c": c, "alpha_coeffs": alpha_coeffs}
         self.alpha_coeffs = alpha_coeffs
         b0 = self.c2*R*Tc*Pc_inv
         self.b = b = b0 - c
@@ -8356,7 +8409,7 @@ class PRTranslatedCoqueletChapoyRichon(PRTranslatedMathiasCopeman):
 
 
 class PRTranslatedTwu(Twu91_a_alpha, PRTranslated):
-    r'''Class for solving the volume translated Peng-Robinson equation of state
+    r"""Class for solving the volume translated Peng-Robinson equation of state
     with the Twu (1991) [1]_ alpha function.
     Subclasses :obj:`thermo.eos_alpha_functions.Twu91_a_alpha` and :obj:`PRTranslated`.
     Solves the EOS on initialization.
@@ -8416,10 +8469,10 @@ class PRTranslatedTwu(Twu91_a_alpha, PRTranslated):
        Coon. "A Cubic Equation of State with a New Alpha Function and a
        New Mixing Rule." Fluid Phase Equilibria 69 (December 10, 1991):
        33-50. doi:10.1016/0378-3812(91)90024-2.
-    '''
+    """
 
 class PRTranslatedConsistent(PRTranslatedTwu):
-    r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
+    r"""Class for solving the volume translated Le Guennec, Privat, and Jaubert
     revision of the Peng-Robinson equation of state
     for a pure compound according to [1]_.
     Subclasses :obj:`PRTranslatedTwu`, which provides everything except the
@@ -8496,9 +8549,9 @@ class PRTranslatedConsistent(PRTranslatedTwu):
        Energetic and Saturation Properties of Pure Compounds in the Sub- and
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
-    '''
+    """
 
-    kwargs_keys = ('c', 'alpha_coeffs')
+    kwargs_keys = ("c", "alpha_coeffs")
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
                  P=None, V=None):
         # estimates volume translation and alpha function parameters
@@ -8523,7 +8576,7 @@ class PRTranslatedConsistent(PRTranslatedTwu):
 
         self.c = c
         self.alpha_coeffs = alpha_coeffs
-        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+        self.kwargs = {"c": c, "alpha_coeffs": alpha_coeffs}
 
         self.a = self.c1*R2*Tc*Tc*Pc_inv
         b0 = self.c2*R*Tc*Pc_inv
@@ -8535,7 +8588,7 @@ class PRTranslatedConsistent(PRTranslatedTwu):
         self.solve()
 
 class PRSV(PR):
-    r'''Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
+    r"""Class for solving the Peng-Robinson-Stryjek-Vera equations of state for
     a pure compound as given in [1]_. The same as the Peng-Robinson EOS,
     except with a different `kappa` formula and with an optional fit parameter.
     Subclasses :obj:`PR`, which provides only several constants. See :obj:`PR` for
@@ -8619,16 +8672,16 @@ class PRSV(PR):
        the Peng-Robinson Equation of State. Parameters for Other Pure Compounds
        of Industrial Interest." The Canadian Journal of Chemical Engineering
        67, no. 1 (February 1, 1989): 170-73. doi:10.1002/cjce.5450670125.
-    '''
+    """
 
     kappa1_Tr_limit = False
-    kwargs_keys = ('kappa1',)
+    kwargs_keys = ("kappa1",)
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=None):
         self.T, self.P, self.V, self.omega, self.Tc, self.Pc = T, P, V, omega, Tc, Pc
 
         if kappa1 is None:
             kappa1 = 0.0
-        self.kwargs = {'kappa1': kappa1}
+        self.kwargs = {"kappa1": kappa1}
 
         self.b = b = self.c2R*Tc/Pc
         self.a = self.c1R2_c2R*Tc*b
@@ -8653,7 +8706,7 @@ class PRSV(PR):
         self.solve()
 
     def solve_T(self, P, V, solution=None):
-        r'''Method to calculate `T` from a specified `P` and `V` for the PRSV
+        r"""Method to calculate `T` from a specified `P` and `V` for the PRSV
         EOS. Uses `Tc`, `a`, `b`, `kappa0`  and `kappa` as well, obtained from
         the class's namespace.
 
@@ -8678,7 +8731,7 @@ class PRSV(PR):
         Not guaranteed to produce a solution. There are actually two solution,
         one much higher than normally desired; it is possible the solver could
         converge on this.
-        '''
+        """
         Tc, a, b, kappa0, kappa1 = self.Tc, self.a, self.b, self.kappa0, self.kappa1
         self.no_T_spec = True
         x0 = V - b
@@ -8704,7 +8757,7 @@ class PRSV(PR):
         return GCEOS.solve_T(self, P, V, solution=solution)
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for this EOS. Uses the set values of `Tc`, `kappa0`,
         `kappa1`, and `a`.
 
@@ -8753,7 +8806,7 @@ class PRSV(PR):
         >>> eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6, kappa1=0.05104)
         >>> eos.a_alpha_and_derivatives_pure(185.0)
         (4.76865472591, -0.0101408587212, 3.9138298092e-05)
-        '''
+        """
         Tc, a, kappa0, kappa1 = self.Tc, self.a, self.kappa0, self.kappa1
         x1 = T/Tc
         T_inv = 1.0/T
@@ -8775,7 +8828,7 @@ class PRSV(PR):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` for this EOS. Uses the set values of `Tc`, `kappa0`,
+        r"""Method to calculate :math:`a \alpha` for this EOS. Uses the set values of `Tc`, `kappa0`,
         `kappa1`, and `a`.
 
         .. math::
@@ -8803,7 +8856,7 @@ class PRSV(PR):
         >>> eos = PRSV(Tc=507.6, Pc=3025000, omega=0.2975, T=406.08, P=1E6, kappa1=0.05104)
         >>> eos.a_alpha_pure(185.0)
         4.7686547259
-        '''
+        """
         Tc, a, kappa0, kappa1 = self.Tc, self.a, self.kappa0, self.kappa1
         Tr = T/Tc
         sqrtTr = sqrt(Tr)
@@ -8812,7 +8865,7 @@ class PRSV(PR):
 
 
 class PRSV2(PR):
-    r'''Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state
+    r"""Class for solving the Peng-Robinson-Stryjek-Vera 2 equations of state
     for a pure compound as given in [1]_. The same as the Peng-Robinson EOS,
     except with a different `kappa` formula and with three fit parameters.
     Subclasses :obj:`PR`, which provides only several constants. See :obj:`PR` for
@@ -8879,9 +8932,9 @@ class PRSV2(PR):
        Accurate Vapor-liquid Equilibria Calculations." The Canadian Journal of
        Chemical Engineering 64, no. 5 (October 1, 1986): 820-26.
        doi:10.1002/cjce.5450640516.
-    '''
+    """
 
-    kwargs_keys = ('kappa1', 'kappa2', 'kappa3')
+    kwargs_keys = ("kappa1", "kappa2", "kappa3")
     def __init__(self, Tc, Pc, omega, T=None, P=None, V=None, kappa1=0, kappa2=0, kappa3=0):
         self.Tc = Tc
         self.Pc = Pc
@@ -8890,7 +8943,7 @@ class PRSV2(PR):
         self.P = P
         self.V = V
         self.check_sufficient_inputs()
-        self.kwargs = {'kappa1': kappa1, 'kappa2': kappa2, 'kappa3': kappa3}
+        self.kwargs = {"kappa1": kappa1, "kappa2": kappa2, "kappa3": kappa3}
 
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
@@ -8910,7 +8963,7 @@ class PRSV2(PR):
         self.solve()
 
     def solve_T(self, P, V, solution=None):
-        r'''Method to calculate `T` from a specified `P` and `V` for the PRSV2
+        r"""Method to calculate `T` from a specified `P` and `V` for the PRSV2
         EOS. Uses `Tc`, `a`, `b`, `kappa0`, `kappa1`, `kappa2`, and `kappa3`
         as well, obtained from the class's namespace.
 
@@ -8944,7 +8997,7 @@ class PRSV2(PR):
         >>> eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
         >>> eos.solve_T(P=eos.P, V=eos.V_g)
         400.0
-        '''
+        """
         self.no_T_spec = True
         if solution is None:
             Tc, a, b, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.b, self.kappa0, self.kappa1, self.kappa2, self.kappa3
@@ -8967,7 +9020,7 @@ class PRSV2(PR):
 
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for this EOS. Uses the set values of `Tc`, `kappa0`, `kappa1`,
         `kappa2`, `kappa3`, and `a`.
 
@@ -9015,7 +9068,7 @@ class PRSV2(PR):
         >>> eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
         >>> eos.a_alpha_and_derivatives_pure(311.0)
         (3.7245418495, -0.0066115440470, 2.05871011677e-05)
-        '''
+        """
         Tc, a, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.kappa0, self.kappa1, self.kappa2, self.kappa3
         Tc_inv = 1.0/Tc
         T_inv = 1.0/T
@@ -9047,7 +9100,7 @@ class PRSV2(PR):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` for this EOS. Uses the set values of `Tc`, `kappa0`, `kappa1`,
+        r"""Method to calculate :math:`a \alpha` for this EOS. Uses the set values of `Tc`, `kappa0`, `kappa1`,
         `kappa2`, `kappa3`, and `a`.
 
         .. math::
@@ -9072,7 +9125,7 @@ class PRSV2(PR):
         >>> eos = PRSV2(Tc=507.6, Pc=3025000, omega=0.2975, T=400., P=1E6, kappa1=0.05104, kappa2=0.8634, kappa3=0.460)
         >>> eos.a_alpha_pure(1276.0)
         33.321674050
-        '''
+        """
         Tc, a, kappa0, kappa1, kappa2, kappa3 = self.Tc, self.a, self.kappa0, self.kappa1, self.kappa2, self.kappa3
         Tr = T/Tc
         sqrtTr = sqrt(Tr)
@@ -9081,7 +9134,7 @@ class PRSV2(PR):
         return a*x0*x0
 
 class VDW(GCEOS):
-    r'''Class for solving the Van der Waals [1]_ [2]_ cubic
+    r"""Class for solving the Van der Waals [1]_ [2]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -9129,7 +9182,7 @@ class VDW(GCEOS):
        edition. New York: McGraw-Hill Professional, 2000.
     .. [2] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
-    '''
+    """
 
     delta = 0.0
     """`delta` is always zero for the :obj:`VDW` EOS"""
@@ -9182,7 +9235,6 @@ class VDW(GCEOS):
 
     _P_zero_l_cheb_coeffs = [0.23949680596158576, -0.28552048884377407, 0.17223773827357045, -0.10535895068953466, 0.06539081523178862, -0.04127943642449526, 0.02647106353835149, -0.017260750015435533, 0.011558172064668568, -0.007830624115831804, 0.005422844032253547, -0.00383463423135285, 0.0027718803475398936, -0.0020570084561681613, 0.0015155074622906842, -0.0011495238177958583, 0.000904782154904249, -0.000683347677699564, 0.0005800187592994201, -0.0004529246894177611, 0.00032901743817593566, -0.0002990561659229427, 0.00023524411148843384, -0.00019464055011993858, 0.0001441665975916752, -0.00013106835607900116, 9.72812311007959e-05, -7.611327134024459e-05, 5.240433315348986e-05, -3.6415012576658176e-05, 3.89310794418167e-05, -2.2160354688301534e-05, 2.7908599229672926e-05, 1.6405692108915904e-05, -1.3931165551671343e-06, -4.80770003354232e-06]
     P_zero_l_cheb_limits = (0.002354706203222534, 9.0)
-    main_derivatives_and_departures = staticmethod(main_derivatives_and_departures_VDW)
     def __init__(self, Tc, Pc, T=None, P=None, V=None, omega=None):
         self.Tc = Tc
         self.Pc = Pc
@@ -9196,7 +9248,7 @@ class VDW(GCEOS):
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for this EOS. Uses the set values of `a`.
 
         .. math::
@@ -9223,11 +9275,11 @@ class VDW(GCEOS):
         d2a_alpha_dT2 : float
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K^2]
-        '''
+        """
         return self.a, 0.0, 0.0
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate :math:`a \alpha`. Uses the set values of `a`.
+        r"""Method to calculate :math:`a \alpha`. Uses the set values of `a`.
 
         .. math::
             a\alpha = a
@@ -9241,11 +9293,11 @@ class VDW(GCEOS):
         -------
         a_alpha : float
             Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
-        '''
+        """
         return self.a
 
     def solve_T(self, P, V, solution=None):
-        r'''Method to calculate `T` from a specified `P` and `V` for the :obj:`VDW`
+        r"""Method to calculate `T` from a specified `P` and `V` for the :obj:`VDW`
         EOS. Uses `a`, and `b`, obtained from the class's namespace.
 
         .. math::
@@ -9267,71 +9319,14 @@ class VDW(GCEOS):
         -------
         T : float
             Temperature, [K]
-        '''
+        """
         self.no_T_spec = True
         return (P*V**2*(V - self.b) + V*self.a - self.a*self.b)/(R*V**2)
 
-    def T_discriminant_zeros_analytical(self, valid=False):
-        r'''Method to calculate the temperatures which zero the discriminant
-        function of the :obj:`VDW` eos. This is an analytical cubic function solved
-        analytically.
-
-        Parameters
-        ----------
-        valid : bool
-            Whether to filter the calculated temperatures so that they are all
-            real, and positive only, [-]
-
-        Returns
-        -------
-        T_discriminant_zeros : list[float]
-            Temperatures which make the discriminant zero, [K]
-
-        Notes
-        -----
-        Calculated analytically. Derived as follows. Has multiple solutions.
-
-        >>> from sympy import * # doctest:+SKIP
-        >>> P, T, V, R, b, a = symbols('P, T, V, R, b, a') # doctest:+SKIP
-        >>> delta, epsilon = 0, 0 # doctest:+SKIP
-        >>> eta = b # doctest:+SKIP
-        >>> B = b*P/(R*T) # doctest:+SKIP
-        >>> deltas = delta*P/(R*T) # doctest:+SKIP
-        >>> thetas = a*P/(R*T)**2 # doctest:+SKIP
-        >>> epsilons = epsilon*(P/(R*T))**2 # doctest:+SKIP
-        >>> etas = eta*P/(R*T) # doctest:+SKIP
-        >>> a_coeff = 1 # doctest:+SKIP
-        >>> b_coeff = (deltas - B - 1) # doctest:+SKIP
-        >>> c = (thetas + epsilons - deltas*(B+1)) # doctest:+SKIP
-        >>> d = -(epsilons*(B+1) + thetas*etas) # doctest:+SKIP
-        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d # doctest:+SKIP
-        >>> base = -(expand(disc/P**2*R**3*T**3/a)) # doctest:+SKIP
-        >>> base_T = simplify(base*T**3) # doctest:+SKIP
-        >>> sln = collect(expand(base_T), T).args # doctest:+SKIP
-        '''
-        P, a, b = self.P, self.a_alpha, self.b
-
-        b2 = b*b
-        x1 = P*b2
-        x0 = 12.0*x1
-
-        d = 4.0*P*R_inv2*R_inv*(a*a + x1*(x1 +  2.0*a))
-        c = (x0 - 20.0*a)*R_inv2*b*P
-        b_coeff = (x0 - a)*R_inv
-        a_coeff = 4.0*b
-
-        roots = roots_cubic(a_coeff, b_coeff, c, d)
-#        roots = np.roots([a_coeff, b_coeff, c, d]).tolist()
-        if valid:
-            # TODO - only include ones when switching phases from l/g to either g/l
-            # Do not know how to handle
-            roots = [r.real for r in roots if (r.real >= 0.0 and (abs(r.imag) <= 1e-12))]
-            roots.sort()
-        return roots
 
     @staticmethod
-    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):
-        r'''Method to calculate the pressures which zero the discriminant
+    def P_discriminant_zeros_analytical(T, b, delta, epsilon, a_alpha, valid=False):  # noqa: ARG004
+        r"""Method to calculate the pressures which zero the discriminant
         function of the :obj:`VDW` eos. This is an cubic function solved
         analytically.
 
@@ -9377,7 +9372,7 @@ class VDW(GCEOS):
         >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d # doctest:+SKIP
         >>> base = -(expand(disc/P**2*R**3*T**3/a)) # doctest:+SKIP
         >>> collect(base, P).args # doctest:+SKIP
-        '''
+        """
 #        T, a_alpha = self.T, self.a_alpha
 #        a = a_alpha
 #        b, epsilon, delta = self.b, self.epsilon, self.delta
@@ -9392,7 +9387,7 @@ class VDW(GCEOS):
         return roots
 
 class RK(GCEOS):
-    r'''Class for solving the Redlich-Kwong [1]_ [2]_ [3]_ cubic
+    r"""Class for solving the Redlich-Kwong [1]_ [2]_ [3]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -9444,7 +9439,7 @@ class RK(GCEOS):
        edition. New York: McGraw-Hill Professional, 2000.
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
-    '''
+    """
 
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     """Full value of the constant in the `a` parameter"""
@@ -9508,7 +9503,7 @@ class RK(GCEOS):
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for this EOS. Uses the set values of `a`.
 
         .. math::
@@ -9535,7 +9530,7 @@ class RK(GCEOS):
         d2a_alpha_dT2 : float
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K^2]
-        '''
+        """
         Tc = self.Tc
         sqrt_Tr_inv = (T/Tc)**-0.5
         a_alpha = self.a*sqrt_Tr_inv
@@ -9545,7 +9540,7 @@ class RK(GCEOS):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` for this EOS. Uses the set
+        r"""Method to calculate :math:`a \alpha` for this EOS. Uses the set
         values of `a`.
 
         .. math::
@@ -9560,13 +9555,13 @@ class RK(GCEOS):
         -------
         a_alpha : float
             Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
-        '''
+        """
         Tc = self.Tc
         sqrt_Tr_inv = sqrt(Tc/T)
         return self.a*sqrt_Tr_inv
 
     def solve_T(self, P, V, solution=None):
-        r'''Method to calculate `T` from a specified `P` and `V` for the RK
+        r"""Method to calculate `T` from a specified `P` and `V` for the RK
         EOS. Uses `a`, and `b`, obtained from the class's namespace.
 
         Parameters
@@ -9596,7 +9591,7 @@ class RK(GCEOS):
         >>> a, b = symbols('a, b')  # doctest:+SKIP
         >>> RK = Eq(P, R*T/(V-b) - a/sqrt(T)/(V*V + b*V))  # doctest:+SKIP
         >>> solve(RK, T)  # doctest:+SKIP
-        '''
+        """
         a, b = self.a, self.b
         a = a*self.Tc**0.5
 #        print([R, V, b, P, a])
@@ -9632,89 +9627,14 @@ class RK(GCEOS):
             # Turns out the above solution does not cover all cases
         return super().solve_T(P, V, solution=solution)
 
-
-    def T_discriminant_zeros_analytical(self, valid=False):
-        r'''Method to calculate the temperatures which zero the discriminant
-        function of the `RK` eos. This is an analytical function with an
-        11-coefficient polynomial which is solved with `numpy`.
-
-        Parameters
-        ----------
-        valid : bool
-            Whether to filter the calculated temperatures so that they are all
-            real, and positive only, [-]
-
-        Returns
-        -------
-        T_discriminant_zeros : float
-            Temperatures which make the discriminant zero, [K]
-
-        Notes
-        -----
-        Calculated analytically. Derived as follows. Has multiple solutions.
-
-        >>> from sympy import *  # doctest:+SKIP
-        >>> P, T, V, R, b, a, Troot = symbols('P, T, V, R, b, a, Troot') # doctest:+SKIP
-        >>> a_alpha = a/sqrt(T) # doctest:+SKIP
-        >>> delta, epsilon = b, 0 # doctest:+SKIP
-        >>> eta = b # doctest:+SKIP
-        >>> B = b*P/(R*T) # doctest:+SKIP
-        >>> deltas = delta*P/(R*T) # doctest:+SKIP
-        >>> thetas = a_alpha*P/(R*T)**2 # doctest:+SKIP
-        >>> epsilons = epsilon*(P/(R*T))**2 # doctest:+SKIP
-        >>> etas = eta*P/(R*T) # doctest:+SKIP
-        >>> a_coeff = 1 # doctest:+SKIP
-        >>> b_coeff = (deltas - B - 1) # doctest:+SKIP
-        >>> c = (thetas + epsilons - deltas*(B+1)) # doctest:+SKIP
-        >>> d = -(epsilons*(B+1) + thetas*etas) # doctest:+SKIP
-        >>> disc = b_coeff*b_coeff*c*c - 4*a_coeff*c*c*c - 4*b_coeff*b_coeff*b_coeff*d - 27*a_coeff*a_coeff*d*d + 18*a_coeff*b_coeff*c*d # doctest:+SKIP
-        >>> new_disc = disc.subs(sqrt(T), Troot) # doctest:+SKIP
-        >>> new_T_base = expand(expand(new_disc)*Troot**15) # doctest:+SKIP
-        >>> ans = collect(new_T_base, Troot).args # doctest:+SKIP
-        '''
-        P, a, b, epsilon, delta = self.P, self.a, self.b, self.epsilon, self.delta
-
-        a *= self.Tc**0.5 # pre-dates change in alpha definition
-
-        P2 = P*P
-        P3 = P2*P
-        P4 = P2*P2
-        R_inv4 = R_inv2*R_inv2
-        R_inv5 = R_inv4*R_inv
-        R_inv6 = R_inv4*R_inv2
-        b2 = b*b
-        b3 = b2*b
-        b4 = b2*b2
-        a2 = a*a
-        x5 = 15.0*a2
-        x8 = 2.0*P3
-        x9 = b4*b*R_inv
-        x13 = 6.0*R_inv*R_inv2
-
-        coeffs = [P2*b2*R_inv2,
-                  0.0,
-                  P3*b3*x13,
-                  -a*b*P2*x13,
-                  13.0*R_inv4*P4*b4,
-                  -32.0*a*P3*R_inv4*b2,
-                  P2*R_inv4*(12.0*P3*x9 + a2),
-                  -42.0*a*b3*P4*R_inv5,
-                  b*R_inv5*x8*(x5 + x8*x9),
-                  -12.0*P2*P3*a*R_inv6*b4,
-                  -R_inv6*b2*P4*x5,
-                  -4.0*a2*a*P3*R_inv6]
-
-        roots = np.roots(coeffs).tolist()
-        roots = [i*i for i in roots]
-        if valid:
-            # TODO - only include ones when switching phases from l/g to either g/l
-            # Do not know how to handle
-            roots = [r.real for r in roots if (r.real >= 0.0 and (abs(r.imag) <= 1e-12))]
-            roots.sort()
-        return roots
+def SRK_P_max_at_V(Tc, a, b, m, V):
+    P_max = -R*Tc*a*(m**2 + 2*m + 1)/(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)
+    if P_max < 0.0:
+        return None
+    return P_max
 
 class SRK(GCEOS):
-    r'''Class for solving the Soave-Redlich-Kwong [1]_ [2]_ [3]_ cubic
+    r"""Class for solving the Soave-Redlich-Kwong [1]_ [2]_ [3]_ cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -9768,7 +9688,7 @@ class SRK(GCEOS):
        edition. New York: McGraw-Hill Professional, 2000.
     .. [3] Walas, Stanley M. Phase Equilibria in Chemical Engineering.
        Butterworth-Heinemann, 1985.
-    '''
+    """
 
     c1 = 0.4274802335403414043909906940611707345513 # 1/(9*(2**(1/3.)-1))
     """Full value of the constant in the `a` parameter"""
@@ -9840,7 +9760,7 @@ class SRK(GCEOS):
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for this EOS. Uses the set values of `Tc`, `m`, and `a`.
 
         .. math::
@@ -9870,7 +9790,7 @@ class SRK(GCEOS):
         d2a_alpha_dT2 : float
             Second temperature derivative of coefficient calculated by
             EOS-specific method, [J^2/mol^2/Pa/K^2]
-        '''
+        """
         a, Tc, m = self.a, self.Tc, self.m
         sqTr = (T/Tc)**0.5
         a_alpha = a*(m*(1. - sqTr) + 1.)**2
@@ -9879,7 +9799,7 @@ class SRK(GCEOS):
         return a_alpha, da_alpha_dT, d2a_alpha_dT2
 
     def a_alpha_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` for this EOS. Uses the set
+        r"""Method to calculate :math:`a \alpha` for this EOS. Uses the set
         values of `Tc`, `m`, and `a`.
 
         .. math::
@@ -9895,14 +9815,14 @@ class SRK(GCEOS):
         -------
         a_alpha : float
             Coefficient calculated by EOS-specific method, [J^2/mol^2/Pa]
-        '''
+        """
         a, Tc, m = self.a, self.Tc, self.m
         sqTr = sqrt(T/Tc)
         x0 = (m*(1. - sqTr) + 1.)
         return a*x0*x0
 
     def P_max_at_V(self, V):
-        r'''Method to calculate the maximum pressure the EOS can create at a
+        r"""Method to calculate the maximum pressure the EOS can create at a
         constant volume, if one exists; returns None otherwise.
 
         Parameters
@@ -9925,7 +9845,7 @@ class SRK(GCEOS):
         >>> e = SRK(P=1e5, V=0.0001437, Tc=512.5, Pc=8084000.0, omega=0.559)
         >>> e.P_max_at_V(e.V)
         490523786.2
-        '''
+        """
         """
         from sympy import *
         # Solve for when T equal
@@ -9945,14 +9865,10 @@ class SRK(GCEOS):
         except:
             Tc, a, m, b = self.Tcs[0], self.ais[0], self.ms[0], self.bs[0]
 
-        P_max = -R*Tc*a*(m**2 + 2*m + 1)/(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)
-        if P_max < 0.0:
-            return None
-        return P_max
-
+        return SRK_P_max_at_V(Tc, a, b, m, V)
 
     def solve_T(self, P, V, solution=None):
-        r'''Method to calculate `T` from a specified `P` and `V` for the SRK
+        r"""Method to calculate `T` from a specified `P` and `V` for the SRK
         EOS. Uses `a`, `b`, and `Tc` obtained from the class's namespace.
 
         Parameters
@@ -9982,7 +9898,7 @@ class SRK(GCEOS):
         >>> a_alpha = a*(1 + m*(1-sqrt(T/Tc)))**2 # doctest:+SKIP
         >>> SRK = R*T/(V-b) - a_alpha/(V*(V+b)) - P # doctest:+SKIP
         >>> solve(SRK, T) # doctest:+SKIP
-        '''
+        """
         # Takes like half an hour to be derived, saved here for convenience
 #         ([(Tc*(V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2
 #        - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4
@@ -10050,7 +9966,7 @@ class SRK(GCEOS):
             return Tc*(-2*a*m*sqrt(V*(V - b)**3*(V + b)*(P*R*Tc*V**2 + P*R*Tc*V*b - P*V*a*m**2 + P*a*b*m**2 + R*Tc*a*m**2 + 2*R*Tc*a*m + R*Tc*a))*(m + 1)*(R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2 + (V - b)*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4)*(P*R*Tc*V**4 + 2*P*R*Tc*V**3*b + P*R*Tc*V**2*b**2 - P*V**3*a*m**2 + P*V*a*b**2*m**2 + R*Tc*V**2*a*m**2 + 2*R*Tc*V**2*a*m + R*Tc*V**2*a + R*Tc*V*a*b*m**2 + 2*R*Tc*V*a*b*m + R*Tc*V*a*b + V*a**2*m**4 + 2*V*a**2*m**3 + V*a**2*m**2 - a**2*b*m**4 - 2*a**2*b*m**3 - a**2*b*m**2))/((R*Tc*V**2 + R*Tc*V*b - V*a*m**2 + a*b*m**2)**2*(R**2*Tc**2*V**4 + 2*R**2*Tc**2*V**3*b + R**2*Tc**2*V**2*b**2 - 2*R*Tc*V**3*a*m**2 + 2*R*Tc*V*a*b**2*m**2 + V**2*a**2*m**4 - 2*V*a**2*b*m**4 + a**2*b**2*m**4))
 
 class SRKTranslated(SRK):
-    r'''Class for solving the volume translated Peng-Robinson equation of state.
+    r"""Class for solving the volume translated Peng-Robinson equation of state.
     Subclasses :obj:`SRK`. Solves the EOS on initialization.
     This is intended as a base class for all translated variants of the
     SRK EOS.
@@ -10082,7 +9998,7 @@ class SRKTranslated(SRK):
         Acentric factor, [-]
     alpha_coeffs : tuple or None
         Coefficients which may be specified by subclasses; set to None to use
-        the original Peng-Robinson alpha function, [-]
+        the original SRK alpha function, [-]
     c : float, optional
         Volume translation parameter, [m^3/mol]
     T : float, optional
@@ -10107,11 +10023,11 @@ class SRKTranslated(SRK):
     ----------
     .. [1] Gmehling, Jürgen, Michael Kleiber, Bärbel Kolbe, and Jürgen Rarey.
        Chemical Thermodynamics for Process Simulation. John Wiley & Sons, 2019.
-    '''
+    """
 
     solve_T = GCEOS.solve_T
     P_max_at_V = GCEOS.P_max_at_V
-    kwargs_keys = ('c', 'alpha_coeffs')
+    kwargs_keys = ("c", "alpha_coeffs")
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=0.0, T=None, P=None,
                  V=None):
         self.Tc = Tc
@@ -10130,7 +10046,7 @@ class SRKTranslated(SRK):
             self.m = 0.480 + 1.574*omega - 0.176*omega*omega
 
         self.alpha_coeffs = alpha_coeffs
-        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+        self.kwargs = {"c": c, "alpha_coeffs": alpha_coeffs}
 
         b0 = self.c2*R*Tc*Pc_inv
         self.b = b0 - c
@@ -10147,7 +10063,7 @@ class SRKTranslated(SRK):
 
 
 class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
-    r'''Class for solving the volume translated Soave (1980) alpha function,
+    r"""Class for solving the volume translated Soave (1980) alpha function,
     revision of the Soave-Redlich-Kwong equation of state
     for a pure compound according to [1]_. Uses two fitting parameters `N` and
     `M` to more accurately fit the vapor pressure of pure species.
@@ -10235,9 +10151,9 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
        "Generalization of a Polar-Fluid Soave-Redlich-Kwong Equation of State."
        Fluid Phase Equilibria 93 (February 11, 1994): 377-83.
        https://doi.org/10.1016/0378-3812(94)87021-7.
-    '''
+    """
 
-    kwargs_keys = ('c', 'alpha_coeffs')
+    kwargs_keys = ("c", "alpha_coeffs")
     def __init__(self, Tc, Pc, omega, M=None, N=None, alpha_coeffs=None, c=0.0,
                  T=None, P=None, V=None):
         # Ready for mixture class implemenentation
@@ -10267,13 +10183,13 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
             alpha_coeffs = (M, N)
         self.alpha_coeffs = alpha_coeffs
 
-        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+        self.kwargs = {"c": c, "alpha_coeffs": alpha_coeffs}
 
         self.solve()
 
     @staticmethod
     def estimate_MN(Tc, Pc, omega, c=0.0):
-        r'''Calculate the alpha values for the MSRK equation to match two pressure
+        r"""Calculate the alpha values for the MSRK equation to match two pressure
         points, and solve analytically for the M, N required to match exactly that.
         Since no experimental data is available, make it up with the original
         SRK EOS.
@@ -10304,7 +10220,7 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
         >>> alpha0, alpha1 = symbols('alpha_10, alpha_760')  # doctest:+SKIP
         >>> Eqs = [Eq(alpha0, 1 + (1 - T0/Tc)*(m + n/(T0/Tc))), Eq(alpha1, 1 + (1 - T1/Tc)*(m + n/(T1/Tc)))]  # doctest:+SKIP
         >>> solve(Eqs, [n, m])  # doctest:+SKIP
-        '''
+        """
         SRK_base = SRKTranslated(T=Tc*0.5, P=Pc*0.5, c=c, Tc=Tc, Pc=Pc, omega=omega)
         # Temperatures at 10 mmHg, 760 mmHg
         P_10, P_760 = 10.0*mmHg, 760.0*mmHg
@@ -10323,7 +10239,7 @@ class MSRKTranslated(Soave_1979_a_alpha, SRKTranslated):
 
 
 class SRKTranslatedPPJP(SRK):
-    r'''Class for solving the volume translated Pina-Martinez, Privat, Jaubert,
+    r"""Class for solving the volume translated Pina-Martinez, Privat, Jaubert,
     and Peng revision of the Soave-Redlich-Kwong equation of state
     for a pure compound according to [1]_.
     Subclasses `SRK`, which provides everything except the variable `kappa`.
@@ -10383,9 +10299,9 @@ class SRKTranslatedPPJP(SRK):
        Suitable for the Redlich-Kwong and Peng-Robinson Equations of State."
        Fluid Phase Equilibria, December 7, 2018.
        https://doi.org/10.1016/j.fluid.2018.12.007.
-    '''
+    """
 
-    kwargs_keys = ('c',)
+    kwargs_keys = ("c",)
     # No point in subclassing SRKTranslated - just disables direct solver for T
     def __init__(self, Tc, Pc, omega, c=0.0, T=None, P=None, V=None):
         self.Tc = Tc
@@ -10399,7 +10315,7 @@ class SRKTranslatedPPJP(SRK):
         self.a = self.c1*R2*Tc*Tc*Pc_inv
         self.c = c
         self.m = omega*(omega*(0.1223*omega - 0.2963) + 1.5963) + 0.4810
-        self.kwargs = {'c': c}
+        self.kwargs = {"c": c}
 
         b0 = self.c2*R*Tc*Pc_inv
         self.b = b0 - c
@@ -10411,7 +10327,7 @@ class SRKTranslatedPPJP(SRK):
 class SRKTranslatedTwu(Twu91_a_alpha, SRKTranslated): pass
 
 class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
-    r'''Class for solving the volume translated Le Guennec, Privat, and Jaubert
+    r"""Class for solving the volume translated Le Guennec, Privat, and Jaubert
     revision of the SRK equation of state
     for a pure compound according to [1]_.
 
@@ -10490,9 +10406,9 @@ class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
        Energetic and Saturation Properties of Pure Compounds in the Sub- and
        Super-Critical Domains." Fluid Phase Equilibria 429 (December 15, 2016):
        301-12. https://doi.org/10.1016/j.fluid.2016.09.003.
-    '''
+    """
 
-    kwargs_keys = ('c', 'alpha_coeffs')
+    kwargs_keys = ("c", "alpha_coeffs")
     def __init__(self, Tc, Pc, omega, alpha_coeffs=None, c=None, T=None,
                  P=None, V=None):
         # estimates volume translation and alpha function parameters
@@ -10517,7 +10433,7 @@ class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
 
         self.c = c
         self.alpha_coeffs = alpha_coeffs
-        self.kwargs = {'c': c, 'alpha_coeffs': alpha_coeffs}
+        self.kwargs = {"c": c, "alpha_coeffs": alpha_coeffs}
 
         self.a = self.c1*R2*Tc*Tc*Pc_inv
         b0 = self.c2*R*Tc*Pc_inv
@@ -10529,7 +10445,7 @@ class SRKTranslatedConsistent(Twu91_a_alpha, SRKTranslated):
         self.solve()
 
 class APISRK(SRK):
-    r'''Class for solving the Refinery Soave-Redlich-Kwong cubic
+    r"""Class for solving the Refinery Soave-Redlich-Kwong cubic
     equation of state for a pure compound shown in the API Databook [1]_.
     Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
@@ -10590,9 +10506,9 @@ class APISRK(SRK):
     ----------
     .. [1] API Technical Data Book: General Properties & Characterization.
        American Petroleum Institute, 7E, 2005.
-    '''
+    """
 
-    kwargs_keys = ('S1', 'S2')
+    kwargs_keys = ("S1", "S2")
 
     def __init__(self, Tc, Pc, omega=None, T=None, P=None, V=None, S1=None,
                  S2=0):
@@ -10605,14 +10521,14 @@ class APISRK(SRK):
         self.check_sufficient_inputs()
 
         if S1 is None and omega is None:
-            raise Exception('Either acentric factor of S1 is required')
+            raise ValueError("Either acentric factor of S1 is required")
 
         if S1 is None:
             self.S1 = S1 = 0.48508 + 1.55171*omega - 0.15613*omega*omega
         else:
             self.S1 = S1
         self.S2 = S2
-        self.kwargs = {'S1': S1, 'S2': S2}
+        self.kwargs = {"S1": S1, "S2": S2}
         self.a = self.c1*R*R*Tc*Tc/Pc
         self.b = self.c2*R*Tc/Pc
         self.delta = self.b
@@ -10620,7 +10536,7 @@ class APISRK(SRK):
         self.solve()
 
     def a_alpha_and_derivatives_pure(self, T):
-        r'''Method to calculate :math:`a \alpha` and its first and second
+        r"""Method to calculate :math:`a \alpha` and its first and second
         derivatives for this EOS. Returns `a_alpha`, `da_alpha_dT`, and
         `d2a_alpha_dT2`. See `GCEOS.a_alpha_and_derivatives` for more
         documentation. Uses the set values of `Tc`, `a`, `S1`, and `S2`.
@@ -10642,7 +10558,7 @@ class APISRK(SRK):
             S_{2} Tc \sqrt{\frac{T}{T_{c}}} + S_{1} T \sqrt{\frac{T}{T_{c}}}
             - 3 S_{2}^{2} Tc \sqrt{\frac{T}{T_{c}}} + 4 S_{2}^{2} Tc + 3 S_{2}
             Tc \sqrt{\frac{T}{T_{c}}}\right)
-        '''
+        """
         # possible TODO: custom hydrogen a_alpha from
         # Graboski, Michael S., and Thomas E. Daubert. "A Modified Soave Equation
         # of State for Phase Equilibrium Calculations. 3. Systems Containing
@@ -10669,7 +10585,7 @@ class APISRK(SRK):
         return a*(S1*(-(T/Tc)**0.5 + 1.) + S2*(-(T/Tc)**0.5 + 1)*(T/Tc)**-0.5 + 1)**2
 
     def solve_T(self, P, V, solution=None):
-        r'''Method to calculate `T` from a specified `P` and `V` for the API
+        r"""Method to calculate `T` from a specified `P` and `V` for the API
         SRK EOS. Uses `a`, `b`, and `Tc` obtained from the class's namespace.
 
         Parameters
@@ -10694,7 +10610,7 @@ class APISRK(SRK):
         is used. Otherwise, newton's method must be used to solve for `T`.
         There are 8 roots of T in that case, six of them real. No guarantee can
         be made regarding which root will be obtained.
-        '''
+        """
         self.no_T_spec = True
         if self.S2 == 0:
             self.m = self.S1
@@ -10721,13 +10637,18 @@ class APISRK(SRK):
 
     def P_max_at_V(self, V):
         if self.S2 == 0:
-            self.m = self.S1
-            return SRK.P_max_at_V(self, V)
+            m = self.S1
+            try:
+                Tc, a, b = self.Tc, self.a, self.b
+            except:
+                Tc, a, b = self.Tcs[0], self.ais[0], self.bs[0]
+            return SRK_P_max_at_V(Tc, a, b, m, V)
+
         return GCEOS.P_max_at_V(self, V)
 
 
 class TWUPR(TwuPR95_a_alpha, PR):
-    r'''Class for solving the Twu (1995) [1]_ variant of the Peng-Robinson cubic
+    r"""Class for solving the Twu (1995) [1]_ variant of the Peng-Robinson cubic
     equation of state for a pure compound. Subclasses :obj:`PR`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -10799,7 +10720,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
        Generalized Alpha Function for a Cubic Equation of State Part 1.
        Peng-Robinson Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 49-59. doi:10.1016/0378-3812(94)02601-V.
-    '''
+    """
 
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T
@@ -10821,7 +10742,7 @@ class TWUPR(TwuPR95_a_alpha, PR):
 
 
 class TWUSRK(TwuSRK95_a_alpha, SRK):
-    r'''Class for solving the Soave-Redlich-Kwong cubic
+    r"""Class for solving the Soave-Redlich-Kwong cubic
     equation of state for a pure compound. Subclasses :obj:`GCEOS`, which
     provides the methods for solving the EOS and calculating its assorted
     relevant thermodynamic properties. Solves the EOS on initialization.
@@ -10893,7 +10814,7 @@ class TWUSRK(TwuSRK95_a_alpha, SRK):
        Generalized Alpha Function for a Cubic Equation of State Part 2.
        Redlich-Kwong Equation." Fluid Phase Equilibria 105, no. 1 (March 15,
        1995): 61-69. doi:10.1016/0378-3812(94)02602-W.
-    '''
+    """
 
     P_max_at_V = GCEOS.P_max_at_V
     solve_T = GCEOS.solve_T

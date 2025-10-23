@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -52,7 +52,6 @@ Ideal Liquid Class
 
 Notes
 -----
-=====
 Excellent references for working with activity coefficient models are [1]_ and
 [2]_.
 
@@ -63,11 +62,11 @@ References
 .. [2] Gmehling, Jurgen. Chemical Thermodynamics: For Process
    Simulation. Weinheim, Germany: Wiley-VCH, 2012.
 
-'''
+"""
 
 
-__all__ = ['GibbsExcess', 'IdealSolution']
-from chemicals.utils import d2xs_to_dxdn_partials, dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, normalize, object_data
+__all__ = ["GibbsExcess", "IdealSolution"]
+from chemicals.utils import d2xs_to_dxdn_partials, dns_to_dn_partials, dxs_to_dn_partials, dxs_to_dns, hash_any_primitive, normalize
 from fluids.constants import R, R_inv
 from fluids.numerics import derivative, exp, hessian, jacobian, log, trunc_exp
 from fluids.numerics import numpy as np
@@ -260,7 +259,7 @@ def d3interaction_exp_dT3(T, N, B, C, E, F, lambdas, dlambdas_dT, d3lambdas_dT3=
     return d3lambdas_dT3
 
 class GibbsExcess:
-    r'''Class for representing an activity coefficient model.
+    r"""Class for representing an activity coefficient model.
     While these are typically presented as tools to compute activity
     coefficients, in truth they are excess Gibbs energy models and activity
     coefficients are just one derived aspect of them.
@@ -281,7 +280,8 @@ class GibbsExcess:
     possible, and for the temperature and composition of an object to be
     immutable.
 
-    '''
+    """
+
     T_DEFAULT = 298.15
     _x_infinite_dilution = 0.0
     """When set, this will be the limiting mole fraction used to approximate
@@ -289,18 +289,34 @@ class GibbsExcess:
     as not all models can mathematically be evaluated at zero mole-fraction."""
 
 
-    __slots__ = ('T', 'N', 'xs', 'vectorized', '_GE', '_dGE_dT', '_SE','_d2GE_dT2', '_d2GE_dTdxs', '_dGE_dxs',
-                  '_gammas', '_dgammas_dns', '_dgammas_dT', '_d2GE_dxixjs',  '_dHE_dxs', '_dSE_dxs',
-                  '_model_hash')
+    __slots__ = (
+        "N",
+        "T",
+        "_GE",
+        "_SE",
+        "_d2GE_dT2",
+        "_d2GE_dTdxs",
+        "_d2GE_dxixjs",
+        "_dGE_dT",
+        "_dGE_dxs",
+        "_dHE_dxs",
+        "_dSE_dxs",
+        "_dgammas_dT",
+        "_dgammas_dns",
+        "_gammas",
+        "_model_hash",
+        "vectorized",
+        "xs",
+    )
 
-    recalculable_attributes = ('_GE', '_dGE_dT', '_SE','_d2GE_dT2', '_d2GE_dTdxs', '_dGE_dxs',
-                  '_gammas', '_dgammas_dns', '_dgammas_dT', '_d2GE_dxixjs',  '_dHE_dxs', '_dSE_dxs')
+    recalculable_attributes = ("_GE", "_dGE_dT", "_SE","_d2GE_dT2", "_d2GE_dTdxs", "_dGE_dxs",
+                  "_gammas", "_dgammas_dns", "_dgammas_dT", "_d2GE_dxixjs",  "_dHE_dxs", "_dSE_dxs")
 
-    _point_properties = ('CpE', 'GE', 'HE', 'SE', 'd2GE_dT2', 'd2GE_dTdns',
-                         'd2GE_dTdxs', 'd2GE_dxixjs', 'd2nGE_dTdns', 'd2nGE_dninjs',
-                         'dGE_dT', 'dGE_dns', 'dGE_dxs', 'dHE_dT', 'dHE_dns', 'dHE_dxs',
-                         'dSE_dT', 'dSE_dns', 'dSE_dxs', 'dgammas_dT', 'dgammas_dns',
-                         'dnGE_dns', 'dnHE_dns', 'dnSE_dns', 'gammas')
+    _point_properties = ("CpE", "GE", "HE", "SE", "d2GE_dT2", "d2GE_dTdns",
+                         "d2GE_dTdxs", "d2GE_dxixjs", "d2nGE_dTdns", "d2nGE_dninjs",
+                         "dGE_dT", "dGE_dns", "dGE_dxs", "dHE_dT", "dHE_dns", "dHE_dxs",
+                         "dSE_dT", "dSE_dns", "dSE_dxs", "dgammas_dT", "dgammas_dns",
+                         "dnGE_dns", "dnHE_dns", "dnSE_dns", "gammas")
     """These are all methods which take no arguments. For use in testing."""
 
     def __init_subclass__(cls):
@@ -308,10 +324,10 @@ class GibbsExcess:
 
     json_version = 1
     obj_references = []
-    non_json_attributes = ['_model_hash']
+    non_json_attributes = ["_model_hash"]
 
     def __repr__(self):
-        r'''Method to create a string representation of the state of the model.
+        r"""Method to create a string representation of the state of the model.
         Included is `T`, `xs`, and all constants necessary to create the model.
         This can be passed into :py:func:`exec` to re-create the
         model. Note that parsing strings like this can be slow.
@@ -325,16 +341,16 @@ class GibbsExcess:
         --------
         >>> IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
         IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
-        '''
+        """
         # Other classes with different parameters should expose them here too
-        s = f'{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r})'
+        s = f"{self.__class__.__name__}(T={self.T!r}, xs={self.xs!r})"
         return s
 
     def __eq__(self, other):
         return self.__hash__() == hash(other)
 
     def model_hash(self):
-        r'''Basic method to calculate a hash of the non-state parts of the model
+        r"""Basic method to calculate a hash of the non-state parts of the model
         This is useful for comparing to models to
         determine if they are the same, i.e. in a VLL flash it is important to
         know if both liquids have the same model.
@@ -346,7 +362,7 @@ class GibbsExcess:
         -------
         model_hash : int
             Hash of the object's model parameters, [-]
-        '''
+        """
         try:
             return self._model_hash
         except AttributeError:
@@ -361,7 +377,7 @@ class GibbsExcess:
         return self._model_hash
 
     def state_hash(self):
-        r'''Basic method to calculate a hash of the state of the model and its
+        r"""Basic method to calculate a hash of the state of the model and its
         model parameters.
 
         Note that the hashes should only be compared on the same system running
@@ -371,28 +387,14 @@ class GibbsExcess:
         -------
         state_hash : int
             Hash of the object's model parameters and state, [-]
-        '''
+        """
         xs = self.xs if not self.vectorized else self.xs.tolist()
         return hash_any_primitive((self.model_hash(), float(self.T), xs))
 
     __hash__ = state_hash
 
-    def exact_hash(self):
-        r'''Method to calculate and return a hash representing the exact state
-        of the object. This includes `T`, `xs`,
-        the model class, and which values have already been calculated.
-
-        Returns
-        -------
-        hash : int
-            Hash of the object, [-]
-        '''
-        d = object_data(self)
-        ans = hash_any_primitive((self.__class__.__name__, d))
-        return ans
-
     def as_json(self, cache=None, option=0):
-        r'''Method to create a JSON-friendly representation of the Gibbs Excess
+        r"""Method to create a JSON-friendly representation of the Gibbs Excess
         model which can be stored, and reloaded later.
 
         Returns
@@ -412,12 +414,12 @@ class GibbsExcess:
         >>> assert type(json_str) is str
         >>> model_copy = IdealSolution.from_json(json.loads(json_str))
         >>> assert model_copy == model
-        '''
+        """
         return JsonOptEncodable.as_json(self, cache, option)
 
     @classmethod
     def from_json(cls, json_repr, cache=None):
-        r'''Method to create a Gibbs Excess model from a JSON-friendly
+        r"""Method to create a Gibbs Excess model from a JSON-friendly
         serialization of another Gibbs Excess model.
 
         Parameters
@@ -441,18 +443,18 @@ class GibbsExcess:
         >>> json_view = model.as_json()
         >>> new_model = IdealSolution.from_json(json_view)
         >>> assert model == new_model
-        '''
+        """
         return JsonOptEncodable.from_json(json_repr, cache)
 
     def _custom_from_json(self, *args):
         vectorized = self.vectorized
-        if vectorized and hasattr(self, 'cmp_group_idx'):
+        if vectorized and hasattr(self, "cmp_group_idx"):
             self.cmp_group_idx = tuple(array(v) for v in self.cmp_group_idx)
-        if vectorized and hasattr(self, 'group_cmp_idx'):
+        if vectorized and hasattr(self, "group_cmp_idx"):
             self.group_cmp_idx = tuple(array(v) for v in self.group_cmp_idx)
 
     def HE(self):
-        r'''Calculate and return the excess entropy of a liquid phase using an
+        r"""Calculate and return the excess entropy of a liquid phase using an
         activity coefficient model.
 
         .. math::
@@ -465,7 +467,7 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         """f = symbols('f', cls=Function)
         T = symbols('T')
         simplify(-T**2*diff(f(T)/T, T))
@@ -473,7 +475,7 @@ class GibbsExcess:
         return -self.T*self.dGE_dT() + self.GE()
 
     def dHE_dT(self):
-        r'''Calculate and return the first temperature derivative of excess
+        r"""Calculate and return the first temperature derivative of excess
         enthalpy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -488,13 +490,13 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         return -self.T*self.d2GE_dT2()
 
     CpE = dHE_dT
 
     def dHE_dxs(self):
-        r'''Calculate and return the mole fraction derivative of excess
+        r"""Calculate and return the mole fraction derivative of excess
         enthalpy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -509,7 +511,7 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         try:
             return self._dHE_dxs
         except:
@@ -527,7 +529,7 @@ class GibbsExcess:
         return dHE_dxs
 
     def dHE_dns(self):
-        r'''Calculate and return the mole number derivative of excess
+        r"""Calculate and return the mole number derivative of excess
         enthalpy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -541,13 +543,13 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dHE_dns = dxs_to_dns(self.dHE_dxs(), self.xs, out)
         return dHE_dns
 
     def dnHE_dns(self):
-        r'''Calculate and return the partial mole number derivative of excess
+        r"""Calculate and return the partial mole number derivative of excess
         enthalpy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -561,13 +563,13 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dnHE_dns = dxs_to_dn_partials(self.dHE_dxs(), self.xs, self.HE(), out)
         return dnHE_dns
 
     def SE(self):
-        r'''Calculates the excess entropy of a liquid phase using an
+        r"""Calculates the excess entropy of a liquid phase using an
         activity coefficient model.
 
         .. math::
@@ -588,7 +590,7 @@ class GibbsExcess:
             + \ln \gamma_i\right)
 
 
-        '''
+        """
         try:
             return self._SE
         except:
@@ -596,7 +598,7 @@ class GibbsExcess:
         return self._SE
 
     def dSE_dT(self):
-        r'''Calculate and return the first temperature derivative of excess
+        r"""Calculate and return the first temperature derivative of excess
         entropy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -613,7 +615,7 @@ class GibbsExcess:
         Notes
         -----
 
-        '''
+        """
         """from sympy import *
         T = symbols('T')
         G, H = symbols('G, H', cls=Function)
@@ -639,7 +641,7 @@ class GibbsExcess:
         return T_inv*(-dGE_dT + dHE_dT - (HE - GE)*T_inv)
 
     def dSE_dxs(self):
-        r'''Calculate and return the mole fraction derivative of excess
+        r"""Calculate and return the mole fraction derivative of excess
         entropy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -655,7 +657,7 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         try:
             return self._dSE_dxs
         except:
@@ -672,7 +674,7 @@ class GibbsExcess:
         return dSE_dxs
 
     def dSE_dns(self):
-        r'''Calculate and return the mole number derivative of excess
+        r"""Calculate and return the mole number derivative of excess
         entropy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -686,13 +688,13 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dSE_dns = dxs_to_dns(self.dSE_dxs(), self.xs, out)
         return dSE_dns
 
     def dnSE_dns(self):
-        r'''Calculate and return the partial mole number derivative of excess
+        r"""Calculate and return the partial mole number derivative of excess
         entropy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -706,13 +708,13 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dnSE_dns = dxs_to_dn_partials(self.dSE_dxs(), self.xs, self.SE(), out)
         return dnSE_dns
 
     def dGE_dns(self):
-        r'''Calculate and return the mole number derivative of excess
+        r"""Calculate and return the mole number derivative of excess
         Gibbs energy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -726,13 +728,13 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dGE_dns = dxs_to_dns(self.dGE_dxs(), self.xs, out)
         return dGE_dns
 
     def dnGE_dns(self):
-        r'''Calculate and return the partial mole number derivative of excess
+        r"""Calculate and return the partial mole number derivative of excess
         Gibbs energy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -746,13 +748,13 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         dnGE_dns = dxs_to_dn_partials(self.dGE_dxs(), self.xs, self.GE(), out)
         return dnGE_dns
 
     def d2GE_dTdns(self):
-        r'''Calculate and return the mole number derivative of the first
+        r"""Calculate and return the mole number derivative of the first
         temperature derivative of excess Gibbs energy of a liquid phase using
         an activity coefficient model.
 
@@ -767,14 +769,14 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         out = [0.0]*self.N if not self.vectorized else zeros(self.N)
         d2GE_dTdns = dxs_to_dns(self.d2GE_dTdxs(), self.xs, out)
         return d2GE_dTdns
 
 
     def d2nGE_dTdns(self):
-        r'''Calculate and return the partial mole number derivative of the first
+        r"""Calculate and return the partial mole number derivative of the first
         temperature derivative of excess Gibbs energy of a liquid phase using
         an activity coefficient model.
 
@@ -789,7 +791,7 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         # needed in gammas temperature derivatives
         dGE_dT = self.dGE_dT()
         d2GE_dTdns = self.d2GE_dTdns()
@@ -799,7 +801,7 @@ class GibbsExcess:
 
 
     def d2nGE_dninjs(self):
-        r'''Calculate and return the second partial mole number derivative of
+        r"""Calculate and return the second partial mole number derivative of
         excess Gibbs energy of a liquid phase using
         an activity coefficient model.
 
@@ -814,7 +816,7 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         # This one worked out
         d2nGE_dninjs = d2xs_to_dxdn_partials(self.d2GE_dxixjs(), self.xs)
         if self.vectorized and type(d2nGE_dninjs) is list:
@@ -822,7 +824,7 @@ class GibbsExcess:
         return d2nGE_dninjs
 
     def gammas_infinite_dilution(self):
-        r'''Calculate and return the infinite dilution activity coefficients
+        r"""Calculate and return the infinite dilution activity coefficients
         of each component.
 
         Returns
@@ -836,7 +838,7 @@ class GibbsExcess:
         zero. Normalize the remaining compositions to 1. Create a new object
         with that composition, and calculate the activity coefficient of the
         component whose concentration was set to zero.
-        '''
+        """
         T, N = self.T, self.N
         xs_base = self.xs
         x_infinite_dilution = self._x_infinite_dilution
@@ -854,7 +856,7 @@ class GibbsExcess:
         return gammas_inf
 
     def gammas(self):
-        r'''Calculate and return the activity coefficients of a liquid phase
+        r"""Calculate and return the activity coefficients of a liquid phase
         using an activity coefficient model.
 
         .. math::
@@ -867,7 +869,7 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         try:
             return self._gammas
         except:
@@ -892,7 +894,7 @@ class GibbsExcess:
         except:
             pass
         return GibbsExcess.gammas(self)
-    
+
     def gammas_numerical(self):
         # for testing purposes
         def nGE_func(ns):
@@ -900,13 +902,13 @@ class GibbsExcess:
             xs = [n / total_n for n in ns]
             return total_n * self.to_T_xs(T=self.T, xs=xs).GE()
         dnGE_dns = jacobian(nGE_func, self.xs, perturbation=1e-7)
-        
+
         RT_inv = 1.0/(self.T *R)
         gammas = np.exp(np.array(dnGE_dns)*RT_inv) if self.vectorized else [exp(v*RT_inv) for v in dnGE_dns]
         return gammas
 
     def lngammas(self):
-        r'''Calculate and return the natural logarithm of the activity coefficients
+        r"""Calculate and return the natural logarithm of the activity coefficients
         of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -919,7 +921,7 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         GE = self.GE()
         dG_dxs = self.dGE_dxs()
         dG_dns = dxs_to_dn_partials(dG_dxs, self.xs, GE)
@@ -930,7 +932,7 @@ class GibbsExcess:
             return array(dG_dns) * RT_inv
 
     def dlngammas_dT(self):
-        r'''Calculate and return the temperature derivatives of the natural logarithm
+        r"""Calculate and return the temperature derivatives of the natural logarithm
         of activity coefficients of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -945,17 +947,17 @@ class GibbsExcess:
         -----
         This method uses the chain rule to calculate the temperature derivative
         of log activity coefficients.
-        '''
+        """
         gammas = self.gammas()
         dgammas_dT = self.dgammas_dT()
-        
+
         if not self.vectorized:
             return [dgamma_dT / gamma for gamma, dgamma_dT in zip(gammas, dgammas_dT)]
         else:
             return dgammas_dT / gammas
-    
+
     def dgammas_dns(self):
-        r'''Calculate and return the mole number derivative of activity
+        r"""Calculate and return the mole number derivative of activity
         coefficients of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -969,7 +971,7 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         try:
             return self._dgammas_dns
         except AttributeError:
@@ -1032,7 +1034,7 @@ class GibbsExcess:
 
 
     def dgammas_dT(self):
-        r'''Calculate and return the temperature derivatives of activity
+        r"""Calculate and return the temperature derivatives of activity
         coefficients of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -1048,7 +1050,7 @@ class GibbsExcess:
 
         Notes
         -----
-        '''
+        """
         r"""
         from sympy import *
         R, T = symbols('R, T')
@@ -1075,9 +1077,9 @@ class GibbsExcess:
                                    use_fit_parameters, initial_guesses=None, analytical_jac=None,
                                    **kwargs):
 
-        fit_kwargs = dict(fit_method='lm',
+        fit_kwargs = dict(fit_method="lm",
                     # fit_method='differential_evolution',
-                   objective='MeanSquareErr', multiple_tries_max_objective='MeanRelErr',
+                   objective="MeanSquareErr", multiple_tries_max_objective="MeanRelErr",
                    initial_guesses=initial_guesses, analytical_jac=analytical_jac,
                    solver_kwargs=None, use_numba=False, multiple_tries=False,
                    do_statistics=True, multiple_tries_max_err=1e-5)
@@ -1089,10 +1091,10 @@ class GibbsExcess:
         return res
 
 
-derivatives_added = [('dGE_dT', 'GE', 1),
- ('d2GE_dT2', 'GE', 2),
- ('d3GE_dT3', 'GE', 3),
- ('d4GE_dT4', 'GE', 4),
+derivatives_added = [("dGE_dT", "GE", 1),
+ ("d2GE_dT2", "GE", 2),
+ ("d3GE_dT3", "GE", 3),
+ ("d4GE_dT4", "GE", 4),
 ]
 for create_derivative, derive_attr, order in derivatives_added:
     def numerical_derivative(self, derive_attr=derive_attr, n=order, ):
@@ -1106,13 +1108,13 @@ for create_derivative, derive_attr, order in derivatives_added:
                 obj = self.to_T_xs(xs=xs, T=T)
             return getattr(obj, derive_attr)()
         return derivative(func, x0=self.T, dx=self.T*perturbation, lower_limit=0.0, n=n, order=order)
-    setattr(GibbsExcess, create_derivative+'_numerical', numerical_derivative)
+    setattr(GibbsExcess, create_derivative+"_numerical", numerical_derivative)
 
 first_comp_derivatives = [
-    ('dGE_dxs', 'GE'),
-    ('d2GE_dTdxs', 'dGE_dT'),
-    ('d3GE_dT2dxs', 'd2GE_dT2'),
-    ('d4GE_dT3dxs', 'd3GE_dT3'),
+    ("dGE_dxs", "GE"),
+    ("d2GE_dTdxs", "dGE_dT"),
+    ("d3GE_dT2dxs", "d2GE_dT2"),
+    ("d4GE_dT3dxs", "d3GE_dT3"),
 ]
 for create_derivative, derive_attr in first_comp_derivatives:
     def numerical_derivative(self, derive_attr=derive_attr):
@@ -1124,13 +1126,13 @@ for create_derivative, derive_attr in first_comp_derivatives:
                 obj = self.to_T_xs(xs=xs, T=self.T)
             return getattr(obj, derive_attr)()
         return jacobian(func, self.xs, perturbation=perturbation)
-    setattr(GibbsExcess, create_derivative+'_numerical', numerical_derivative)
+    setattr(GibbsExcess, create_derivative+"_numerical", numerical_derivative)
 
 second_comp_derivatives = [
-    ('d2GE_dxixjs', 'GE'),
-    ('d3GE_dTdxixjs', 'dGE_dT'),
-    ('d4GE_dT2dxixjs', 'd2GE_dT2'),
-    ('d5GE_dT3dxixjs', 'd3GE_dT3'),
+    ("d2GE_dxixjs", "GE"),
+    ("d3GE_dTdxixjs", "dGE_dT"),
+    ("d4GE_dT2dxixjs", "d2GE_dT2"),
+    ("d5GE_dT3dxixjs", "d3GE_dT3"),
 ]
 for create_derivative, derive_attr in second_comp_derivatives:
     def numerical_derivative(self, derive_attr=derive_attr):
@@ -1142,10 +1144,10 @@ for create_derivative, derive_attr in second_comp_derivatives:
                 obj = self.to_T_xs(xs=xs, T=self.T)
             return getattr(obj, derive_attr)()
         return hessian(func, self.xs, perturbation=perturbation)
-    setattr(GibbsExcess, create_derivative+'_numerical', numerical_derivative)
+    setattr(GibbsExcess, create_derivative+"_numerical", numerical_derivative)
 
 class IdealSolution(GibbsExcess):
-    r'''Class for  representing an ideal liquid, with no excess gibbs energy
+    r"""Class for  representing an ideal liquid, with no excess gibbs energy
     and thus activity coefficients of 1.
 
     Parameters
@@ -1171,7 +1173,7 @@ class IdealSolution(GibbsExcess):
     [1.0, 1.0, 1.0, 1.0]
     >>> model.dgammas_dT()
     [0.0, 0.0, 0.0, 0.0]
-    '''
+    """
 
     _model_attributes = ()
 
@@ -1189,7 +1191,7 @@ class IdealSolution(GibbsExcess):
         self.vectorized = type(xs) is not list
 
     def to_T_xs(self, T, xs):
-        r'''Method to construct a new :obj:`IdealSolution` instance at
+        r"""Method to construct a new :obj:`IdealSolution` instance at
         temperature `T`, and mole fractions `xs`
         with the same parameters as the existing object.
 
@@ -1213,7 +1215,7 @@ class IdealSolution(GibbsExcess):
         >>> p = IdealSolution(T=300.0, xs=[.1, .2, .3, .4])
         >>> p.to_T_xs(T=500.0, xs=[.25, .25, .25, .25])
         IdealSolution(T=500.0, xs=[0.25, 0.25, 0.25, 0.25])
-        '''
+        """
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.xs = xs
@@ -1222,7 +1224,7 @@ class IdealSolution(GibbsExcess):
         return new
 
     def GE(self):
-        r'''Calculate and return the excess Gibbs energy of a liquid phase
+        r"""Calculate and return the excess Gibbs energy of a liquid phase
         using an activity coefficient model.
 
         .. math::
@@ -1235,11 +1237,11 @@ class IdealSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         return 0.0
 
     def dGE_dT(self):
-        r'''Calculate and return the temperature derivative of excess Gibbs
+        r"""Calculate and return the temperature derivative of excess Gibbs
         energy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -1253,11 +1255,11 @@ class IdealSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         return 0.0
 
     def d2GE_dT2(self):
-        r'''Calculate and return the second temperature derivative of excess
+        r"""Calculate and return the second temperature derivative of excess
         Gibbs energy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -1271,11 +1273,11 @@ class IdealSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         return 0.0
 
     def d3GE_dT3(self):
-        r'''Calculate and return the third temperature derivative of excess
+        r"""Calculate and return the third temperature derivative of excess
         Gibbs energy of a liquid phase using an activity coefficient model.
 
         .. math::
@@ -1289,11 +1291,11 @@ class IdealSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         return 0.0
 
     def d2GE_dTdxs(self):
-        r'''Calculate and return the temperature derivative of mole fraction
+        r"""Calculate and return the temperature derivative of mole fraction
         derivatives of excess Gibbs energy of an ideal liquid.
 
         .. math::
@@ -1307,13 +1309,13 @@ class IdealSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 
     def dGE_dxs(self):
-        r'''Calculate and return the mole fraction derivatives of excess Gibbs
+        r"""Calculate and return the mole fraction derivatives of excess Gibbs
         energy of an ideal liquid.
 
         .. math::
@@ -1327,13 +1329,13 @@ class IdealSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         if not self.vectorized:
             return [0.0]*self.N
         return zeros(self.N)
 
     def d2GE_dxixjs(self):
-        r'''Calculate and return the second mole fraction derivatives of excess
+        r"""Calculate and return the second mole fraction derivatives of excess
         Gibbs energy of an ideal liquid.
 
         .. math::
@@ -1347,14 +1349,14 @@ class IdealSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         N = self.N
         if not self.vectorized:
             return [[0.0]*N for i in range(self.N)]
         return zeros((N, N))
 
     def d3GE_dxixjxks(self):
-        r'''Calculate and return the third mole fraction derivatives of excess
+        r"""Calculate and return the third mole fraction derivatives of excess
         Gibbs energy of an ideal liquid.
 
         .. math::
@@ -1368,7 +1370,7 @@ class IdealSolution(GibbsExcess):
 
         Notes
         -----
-        '''
+        """
         N = self.N
         if not self.vectorized:
             return [[[0.0]*N for i in range(N)] for j in range(N)]

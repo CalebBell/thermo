@@ -2,8 +2,8 @@ numpy
 scipy
 pandas
 sympy
-fluids>=1.1.0
-chemicals>=1.3.2
+fluids>=1.2.0
+chemicals>=1.4.0
 pytest
 pytest-cov
 coveralls
