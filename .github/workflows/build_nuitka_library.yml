@@ -29,29 +29,12 @@ jobs:
           # no python builds available on linux 32 bit
           - os: ubuntu-latest
             architecture: x86
-          # scipy dropped 32 bit windows builds 
-          - os: windows-latest
-            architecture: x86
-            python-version: 3.8
-          - os: windows-latest
-            architecture: x86
-            python-version: 3.9
-          - os: windows-latest
-            architecture: x86
-            python-version: 3.10
-          - os: windows-latest
-            architecture: x86
-            python-version: 3.11
-          - os: windows-latest
-            architecture: x86
-            python-version: 3.12
+          # scipy dropped 32 bit windows builds
           - os: windows-latest
             architecture: x86
             python-version: 3.13
 
           # These are arm - old versions of Python are not supported
-          - os: macos-latest
-            python-version: 3.8
           - os: macos-latest
             python-version: 3.9
           - os: macos-latest
@@ -104,7 +87,7 @@ jobs:
         pip install -r requirements_test.txt
         pip install nuitka
     - name: Add numba
-      if: ${{ !contains(fromJSON('["pypy3.9"]'), matrix.python-version) }}
+      if: ${{ !contains(fromJSON('["pypy3.11"]'), matrix.python-version) }}
       run: |
         pip install numba
     - name: Build nuitka library

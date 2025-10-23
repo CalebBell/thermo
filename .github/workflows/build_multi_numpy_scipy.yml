@@ -21,42 +21,24 @@ jobs:
         os: [ubuntu-latest]
         architecture: ['x64']
         include:
-          - numpy: '1.18.5'
-            scipy: '1.8.1'
-            python-version: '3.8'
-          - numpy: '1.18.5'
-            scipy: '1.9.3'
-            python-version: '3.8'
-          - numpy: '1.20.3'
-            scipy: '1.7.3'
-            python-version: '3.8'
-          - numpy: '1.20.3'
-            scipy: '1.8.1'
-            python-version: '3.8'
           - numpy: '1.20.3'
             scipy: '1.9.3'
-            python-version: '3.8'
+            python-version: '3.9'
           - numpy: '1.20.3'
             scipy: '1.10.1'
-            python-version: '3.8'
-          - numpy: '1.22.4'
-            scipy: '1.7.3'
-            python-version: '3.8'
+            python-version: '3.9'
           - numpy: '1.22.4'
             scipy: '1.9.3'
-            python-version: '3.8'
+            python-version: '3.9'
           - numpy: '1.22.4'
             scipy: '1.10.1'
-            python-version: '3.8'
-          - numpy: '1.24.4'
-            scipy: '1.8.1'
-            python-version: '3.8'
+            python-version: '3.9'
           - numpy: '1.24.4'
             scipy: '1.9.3'
             python-version: '3.10'
           - numpy: '1.24.4'
             scipy: '1.10.1'
-            python-version: '3.8'
+            python-version: '3.9'
           - numpy: '1.24.4'
             scipy: '1.12.0'
             python-version: '3.9'
@@ -102,14 +84,14 @@ jobs:
         pip install -r requirements_test.txt
         pip install numpy==${{ matrix.numpy }} scipy==${{ matrix.scipy }}
     - name: Add numba
-      if: ${{ !contains(fromJSON('["pypy3.9", "3.13t"]'), matrix.python-version) }}
+      if: ${{ !contains(fromJSON('["pypy3.11", "3.13t"]'), matrix.python-version) }}
       run: |
         pip install numba
     - name: Install thermo
       run: |
         pip install .
     - name: Generate Files
-      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == '3.12' || matrix.python-version == 'pypy3.9' }}
+      if: ${{ matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == '3.12' || matrix.python-version == 'pypy3.11' }}
       run: |
         python dev/dump_UNIFAC_assignments_to_sqlite.py
     - name: Uninstall thermo
