@@ -16,14 +16,13 @@ try:
     import chemicals
     chemicals_path = os.path.dirname(chemicals.__file__)
     chemicals_data_dirs = ["Critical Properties", "Density", "Electrolytes", "Environment",
-                           "Heat Capacity", "Identifiers", "Law", "Misc", "Phase Change",
-                           "Reactions", "Safety", "Solubility", "Interface", "Triple Properties",
+                           "Heat Capacity", "Identifiers", "Interface", "Law", "Misc",
+                           "Phase Change", "Reactions", "Safety", "Triple Properties",
                            "Thermal Conductivity", "Vapor Pressure", "Viscosity"]
 
     for data_dir in chemicals_data_dirs:
         dir_path = os.path.join(chemicals_path, data_dir)
-        if os.path.exists(dir_path):
-            datas.append((dir_path, os.path.join('chemicals', data_dir)))
+        datas.append((dir_path, os.path.join('chemicals', data_dir)))
 except ImportError:
     print("Warning: chemicals package not found, data files may be missing")
 
