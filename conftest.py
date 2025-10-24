@@ -23,7 +23,7 @@ def pytest_ignore_collect( collection_path, config):
         return True
 
     # Skip utility and development directories
-    skip_paths = ("cx_freeze", "py2exe", "manual_runner", "make_test_stubs", "plot", "prerelease", "benchmarks", "benchmark", "conf.py", "dev", "dump")
+    skip_paths = ("cx_freeze", "py2exe", "manual_runner", "make_test_stubs", "plot", "prerelease", "benchmarks", "benchmark", "conf.py", "dev", "dump", "_custom_build")
     if any(skip_path in path for skip_path in skip_paths):
         return True
 
