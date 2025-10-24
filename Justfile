@@ -156,7 +156,7 @@ test-pyinstaller py="3.13":
     @echo "\n>>> Preparing build directory..."
     @mkdir -p dev/pyinstaller/build
     @echo "\n>>> Building PyInstaller executable..."
-    @.venv-pyinstaller-{{py}}/{{VENV_BIN_DIR}}/pyinstaller{{EXE_SUFFIX}} --onefile --name basic_standalone_thermo_check --distpath dev/pyinstaller/build/dist --workpath dev/pyinstaller/build/build --specpath dev/pyinstaller/build dev/basic_standalone_thermo_check.py
+    @.venv-pyinstaller-{{py}}/{{VENV_BIN_DIR}}/pyinstaller{{EXE_SUFFIX}} dev/pyinstaller/pyinstaller_basic_standalone_check.spec --distpath dev/pyinstaller/build/dist --workpath dev/pyinstaller/build/build
     @echo "\n>>> Testing executable..."
     @./dev/pyinstaller/build/dist/basic_standalone_thermo_check{{EXE_SUFFIX}}
     @echo "\n>>> Cleaning up temporary environment..."
@@ -179,7 +179,7 @@ prepare-multiarch-image arch distro="trixie":
     command -v podman >/dev/null 2>&1 || { echo "❌ Error: podman is not installed. Please install podman first."; exit 1; }
 
     # Tag for cached image
-    tag="thermo-test-{{arch}}-{{distro}}:latest"
+    tag="localhost/thermo-test-{{arch}}-{{distro}}:latest"
 
     # Check if image already exists
     if podman image exists "$tag" 2>/dev/null; then
