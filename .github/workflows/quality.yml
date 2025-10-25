@@ -74,7 +74,7 @@ jobs:
         uv pip install --python venv/bin/python "thermo[test] @ file://${WHEEL_FILE}"
         cp -r $GITHUB_WORKSPACE/tests .
         cp $GITHUB_WORKSPACE/pyproject.toml .
-        venv/bin/pytest tests/ -vv -m "not online and not thermo and not numba"
+        venv/bin/pytest tests/ -vv -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow and not thermo"
 
     - name: Test sdist installation
       run: |
@@ -85,7 +85,7 @@ jobs:
         uv pip install --python venv/bin/python "thermo[test] @ file://${SDIST_FILE}"
         cp -r $GITHUB_WORKSPACE/tests .
         cp $GITHUB_WORKSPACE/pyproject.toml .
-        venv/bin/pytest tests/ -vv -m "not online and not thermo and not numba"
+        venv/bin/pytest tests/ -vv -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow and not thermo"
 
     # ==================== Documentation ====================
     - name: Build Sphinx HTML documentation

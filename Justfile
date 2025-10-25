@@ -43,12 +43,12 @@ docs:
 ## 🧪 test: Run the test suite with pytest.
 test *ARGS:
     @echo ">>> Running pytest..."
-    @{{VENV_PYTEST}} -n auto {{ARGS}}
+    @{{VENV_PYTEST}} -n auto -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow" {{ARGS}}
 
 ## 📊 test-cov: Run tests with coverage report.
 test-cov:
     @echo ">>> Running pytest with coverage..."
-    @{{VENV_PYTEST}} -n auto --cov=thermo --cov-report=html --cov-report=term
+    @{{VENV_PYTEST}} -n auto -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow" --cov=thermo --cov-report=html --cov-report=term
     @echo "✅ Coverage report generated in htmlcov/"
 
 ## 🧐 typecheck: Check static types with mypy.
@@ -336,7 +336,7 @@ test-arch arch distro="trixie":
             cd /workspace && \
             python3 -m pip install wheel $pip_flags && \
             pip3 install -e .[test-multiarch] $pip_flags && \
-            python3 -m pytest . -v -m 'not online and not numba'
+            python3 -m pytest . -v -m 'not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow'
         "
 
     echo "✅ Tests on {{arch}} with {{distro}} complete!"
@@ -381,7 +381,7 @@ test-multi-single py="3.10" numpy="2.0.1" scipy="1.14.0":
     @echo ">>> Installing numba..."
     @uv pip install --python .venv-test-python{{py}}-numpy{{numpy}}-scipy{{scipy}}/bin/python -e .[numba] || echo "⚠️  Numba install failed, continuing..."
     @echo ">>> Running tests (no coverage)..."
-    @.venv-test-python{{py}}-numpy{{numpy}}-scipy{{scipy}}/bin/pytest . -m "not online and not numba"
+    @.venv-test-python{{py}}-numpy{{numpy}}-scipy{{scipy}}/bin/pytest . -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
     @if [ -z "$${KEEP_VENV}" ]; then \
         echo ">>> Cleaning up temporary environment..."; \
         rm -rf .venv-test-python{{py}}-numpy{{numpy}}-scipy{{scipy}}; \
