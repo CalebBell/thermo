@@ -17,8 +17,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: armv6
-            distro: trixie
+          # Disabled: Docker localhost registry connection refused error on armv6/trixie
+          # - arch: armv6
+          #   distro: trixie
           - arch: armv7
             distro: trixie
           - arch: aarch64
