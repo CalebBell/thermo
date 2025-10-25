@@ -82,6 +82,7 @@ test-multiarch = [
     "pint",
     "pytz",
     "IPython",
+    "sqlalchemy",  # Required for UNIFAC database generation
     "mpmath",
     "wheel",
 ]

@@ -73,7 +73,9 @@ jobs:
         WHEEL_FILE=$(ls $GITHUB_WORKSPACE/dist/*.whl)
         uv pip install --python venv/bin/python "thermo[test] @ file://${WHEEL_FILE}"
         cp -r $GITHUB_WORKSPACE/tests .
+        cp -r $GITHUB_WORKSPACE/dev .
         cp $GITHUB_WORKSPACE/pyproject.toml .
+        venv/bin/python dev/dump_UNIFAC_assignments_to_sqlite.py
         venv/bin/pytest tests/ -vv -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow and not thermo"
 
     - name: Test sdist installation
@@ -84,7 +86,9 @@ jobs:
         SDIST_FILE=$(ls $GITHUB_WORKSPACE/dist/*.tar.gz)
         uv pip install --python venv/bin/python "thermo[test] @ file://${SDIST_FILE}"
         cp -r $GITHUB_WORKSPACE/tests .
+        cp -r $GITHUB_WORKSPACE/dev .
         cp $GITHUB_WORKSPACE/pyproject.toml .
+        venv/bin/python dev/dump_UNIFAC_assignments_to_sqlite.py
         venv/bin/pytest tests/ -vv -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow and not thermo"
 
     # ==================== Documentation ====================
