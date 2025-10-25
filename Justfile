@@ -40,25 +40,25 @@ docs:
     @{{VENV_PYTHON}} -m sphinx -b html -d _build/doctrees docs _build/html
     @echo "✅ Docs built in _build/html"
 
-## 🧪 test: Run the test suite with pytest.
-test *ARGS:
+## 🗄️  generate-databases: Generate required database files (UNIFAC assignments).
+generate-databases:
     @if [ ! -f "thermo/Phase Change/DDBST_UNIFAC_assignments.sqlite" ]; then \
         echo ">>> Generating UNIFAC database files..."; \
         {{VENV_PYTHON}} dev/dump_UNIFAC_assignments_to_sqlite.py; \
+        echo "✅ Database files generated."; \
     else \
         echo ">>> UNIFAC database already exists, skipping generation..."; \
     fi
+
+## 🧪 test: Run the test suite with pytest.
+test *ARGS:
+    @just generate-databases
     @echo ">>> Running pytest..."
     @{{VENV_PYTEST}} -n auto -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow" {{ARGS}}
 
 ## 📊 test-cov: Run tests with coverage report.
 test-cov:
-    @if [ ! -f "thermo/Phase Change/DDBST_UNIFAC_assignments.sqlite" ]; then \
-        echo ">>> Generating UNIFAC database files..."; \
-        {{VENV_PYTHON}} dev/dump_UNIFAC_assignments_to_sqlite.py; \
-    else \
-        echo ">>> UNIFAC database already exists, skipping generation..."; \
-    fi
+    @just generate-databases
     @echo ">>> Running pytest with coverage..."
     @{{VENV_PYTEST}} -n auto -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow" --cov=thermo --cov-report=html --cov-report=term
     @echo "✅ Coverage report generated in htmlcov/"
@@ -393,12 +393,8 @@ test-multi-single py="3.10" numpy="2.0.1" scipy="1.14.0":
     @uv pip install --python .venv-test-python{{py}}-numpy{{numpy}}-scipy{{scipy}}/bin/python "numpy=={{numpy}}" "scipy=={{scipy}}"
     @echo ">>> Installing numba..."
     @uv pip install --python .venv-test-python{{py}}-numpy{{numpy}}-scipy{{scipy}}/bin/python -e .[numba] || echo "⚠️  Numba install failed, continuing..."
-    @if [ ! -f "thermo/Phase Change/DDBST_UNIFAC_assignments.sqlite" ]; then \
-        echo ">>> Generating UNIFAC database files..."; \
-        .venv-test-python{{py}}-numpy{{numpy}}-scipy{{scipy}}/bin/python dev/dump_UNIFAC_assignments_to_sqlite.py; \
-    else \
-        echo ">>> UNIFAC database already exists, skipping generation..."; \
-    fi
+    @echo ">>> Generating UNIFAC database files..."
+    @.venv-test-python{{py}}-numpy{{numpy}}-scipy{{scipy}}/bin/python dev/dump_UNIFAC_assignments_to_sqlite.py
     @echo ">>> Running tests (no coverage)..."
     @.venv-test-python{{py}}-numpy{{numpy}}-scipy{{scipy}}/bin/pytest . -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
     @if [ -z "$${KEEP_VENV}" ]; then \
@@ -457,6 +453,7 @@ clean:
     @rm -rf _build .mypy_cache .pytest_cache dist *.egg-info htmlcov prof dev/cx_freeze/build dev/nuitka/build dev/pyinstaller/build .venv-cxfreeze-* .venv-nuitka-* .venv-pyinstaller-*
     @rm -rf .venv-test-*
     @rm -f thermo.*.so thermo.*.pyd
+    @rm -f "thermo/Phase Change/DDBST_UNIFAC_assignments.sqlite"
     @find . -type d -name "__pycache__" -exec rm -rf {} +
     @echo "✅ Cleanup complete."
 
