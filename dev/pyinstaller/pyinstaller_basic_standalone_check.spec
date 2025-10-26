@@ -4,40 +4,30 @@ import glob
 
 # Collect all data files from thermo package (local)
 datas = []
-thermo_data_dirs = ["Critical Properties", "Density", "Electrolytes", "Environment",
-                    "Heat Capacity", "Identifiers", "Law", "Misc", "Phase Change",
-                    "Reactions", "Safety", "Solubility", "Interface", "Triple Properties",
-                    "Thermal Conductivity", "Interaction Parameters", "Scalar Parameters",
-                    "Vapor Pressure", "Viscosity"]
+thermo_data_dirs = ["Interaction Parameters", "Law", "Misc", "Phase Change",
+                    "Scalar Parameters"]
 
 for data_dir in thermo_data_dirs:
-    dir_path = os.path.join('..', 'thermo', data_dir)
-    if os.path.exists(dir_path):
-        datas.append((dir_path, os.path.join('thermo', data_dir)))
-
-# Handle Interaction Parameters/ChemSep subdirectory for thermo
-chemsep_dir = os.path.join('..', 'thermo', 'Interaction Parameters', 'ChemSep')
-if os.path.exists(chemsep_dir):
-    datas.append((chemsep_dir, os.path.join('thermo', 'Interaction Parameters', 'ChemSep')))
+    dir_path = os.path.join('thermo', data_dir)
+    datas.append((os.path.join('..', '..', dir_path), os.path.join('thermo', data_dir)))
 
 # Collect all data files from installed chemicals package
 try:
     import chemicals
     chemicals_path = os.path.dirname(chemicals.__file__)
     chemicals_data_dirs = ["Critical Properties", "Density", "Electrolytes", "Environment",
-                           "Heat Capacity", "Identifiers", "Law", "Misc", "Phase Change",
-                           "Reactions", "Safety", "Solubility", "Interface", "Triple Properties",
+                           "Heat Capacity", "Identifiers", "Interface", "Law", "Misc",
+                           "Phase Change", "Reactions", "Safety", "Triple Properties",
                            "Thermal Conductivity", "Vapor Pressure", "Viscosity"]
 
     for data_dir in chemicals_data_dirs:
         dir_path = os.path.join(chemicals_path, data_dir)
-        if os.path.exists(dir_path):
-            datas.append((dir_path, os.path.join('chemicals', data_dir)))
+        datas.append((dir_path, os.path.join('chemicals', data_dir)))
 except ImportError:
     print("Warning: chemicals package not found, data files may be missing")
 
 a = Analysis(
-    ['basic_standalone_thermo_check.py'],
+    ['../basic_standalone_thermo_check.py'],
     pathex=[],
     binaries=[],
     datas=datas,

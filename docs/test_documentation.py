@@ -29,7 +29,7 @@ Tests that run aspects of the documentation should go in here.
 The only bit included right now are the plots, which should run without an
 error; no contents checking is performed.
 """
-plots_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs', 'plots')
+plots_folder = os.path.join(os.path.dirname(__file__), 'plots')
 plot_files = [i for i in os.listdir(plots_folder) if i.endswith('.py')]
 print(plot_files)
 
