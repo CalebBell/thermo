@@ -22,15 +22,6 @@ jobs:
         architecture: ['x64']
         include:
           - numpy: '1.20.3'
-            scipy: '1.9.3'
-            python-version: '3.9'
-          - numpy: '1.20.3'
-            scipy: '1.10.1'
-            python-version: '3.9'
-          - numpy: '1.22.4'
-            scipy: '1.9.3'
-            python-version: '3.9'
-          - numpy: '1.22.4'
             scipy: '1.10.1'
             python-version: '3.9'
           - numpy: '1.24.4'

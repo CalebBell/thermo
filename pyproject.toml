@@ -5,7 +5,7 @@ backend-path = ["_custom_build"]
 
 [project]
 name = "thermo"
-version = "0.5.0"
+version = "0.6.0"
 description = "Chemical properties component of Chemical Engineering Design Library (ChEDL)"
 readme = "README.rst"
 requires-python = ">=3.9"
@@ -142,7 +142,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/CalebBell/thermo"
-Download = "https://github.com/CalebBell/thermo/tarball/0.5.0"
+Download = "https://github.com/CalebBell/thermo/tarball/0.6.0"
 
 [tool.setuptools]
 packages = ["thermo"]

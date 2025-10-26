@@ -50,8 +50,9 @@ jobs:
             distro: alpine_latest
           - arch: s390x
             distro: alpine_latest
-          - arch: ppc64le
-            distro: alpine_latest
+          # Failing on greenlet build 2025-10-26
+          # - arch: ppc64le
+          #   distro: alpine_latest
 
     steps:
       - uses: actions/checkout@v4
