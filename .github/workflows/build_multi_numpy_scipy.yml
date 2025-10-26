@@ -21,42 +21,15 @@ jobs:
         os: [ubuntu-latest]
         architecture: ['x64']
         include:
-          - numpy: '1.18.5'
-            scipy: '1.8.1'
-            python-version: '3.8'
-          - numpy: '1.18.5'
-            scipy: '1.9.3'
-            python-version: '3.8'
-          - numpy: '1.20.3'
-            scipy: '1.7.3'
-            python-version: '3.8'
-          - numpy: '1.20.3'
-            scipy: '1.8.1'
-            python-version: '3.8'
-          - numpy: '1.20.3'
-            scipy: '1.9.3'
-            python-version: '3.8'
           - numpy: '1.20.3'
             scipy: '1.10.1'
-            python-version: '3.8'
-          - numpy: '1.22.4'
-            scipy: '1.7.3'
-            python-version: '3.8'
-          - numpy: '1.22.4'
-            scipy: '1.9.3'
-            python-version: '3.8'
-          - numpy: '1.22.4'
-            scipy: '1.10.1'
-            python-version: '3.8'
-          - numpy: '1.24.4'
-            scipy: '1.8.1'
-            python-version: '3.8'
+            python-version: '3.9'
           - numpy: '1.24.4'
             scipy: '1.9.3'
             python-version: '3.10'
           - numpy: '1.24.4'
             scipy: '1.10.1'
-            python-version: '3.8'
+            python-version: '3.9'
           - numpy: '1.24.4'
             scipy: '1.12.0'
             python-version: '3.9'
@@ -74,70 +47,12 @@ jobs:
             python-version: '3.10'
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}
-      uses: actions/setup-python@v5 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
       with:
-        python-version: ${{ matrix.python-version }}
-        architecture: ${{ matrix.architecture }}
-    - name: cache Linux
-      uses: actions/cache@v4
-      if: startsWith(runner.os, 'Linux')
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements_test.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ runner.architecture }}-${{ runner.python-version }}pip-
-    - name: Install Ubuntu dependencies
-      if: startsWith(runner.os, 'Linux')
-      run: |
-        # Taken from scipy
-        sudo apt-get update
-        sudo apt-get install -y libopenblas-dev libatlas-base-dev liblapack-dev gfortran libgmp-dev libmpfr-dev libsuitesparse-dev ccache libmpc-dev
-    
-    - name: Install dependencies
-      run: |
-        python -c "import platform; print(platform.platform()); print(platform.architecture())"
-        python -m pip install --upgrade pip
-        python -m pip install wheel
-        pip install -r requirements_test.txt
-        pip install numpy==${{ matrix.numpy }} scipy==${{ matrix.scipy }}
-    - name: Add numba
-      if: ${{ !contains(fromJSON('["pypy3.9", "3.13t"]'), matrix.python-version) }}
-      run: |
-        pip install numba
-    - name: Install thermo
-      run: |
-        pip install .
-    - name: Generate Files
-      if: ${{ matrix.python-version == '3.8' || matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == '3.12' || matrix.python-version == 'pypy3.9' }}
-      run: |
-        python dev/dump_UNIFAC_assignments_to_sqlite.py
-    - name: Uninstall thermo
-      shell: bash
-      run: |
-        pip uninstall -y thermo
-        rm -rf build/
-    - name: Test with pytest
-      run: |
-        pytest . -v --cov-report html --cov=thermo --cov-report term-missing -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow"
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
-        COVERALLS_PARALLEL: true
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Upload coverage HTML report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-html-numpy-${{ matrix.numpy }}-scipy-${{ matrix.scipy }}-py${{ matrix.python-version }}
-        path: htmlcov/
-  finish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finished
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        curl https://coveralls.io/webhook?repo_token=${{ secrets.coveralls }} -d "payload[build_num]=${{ github.sha }}&payload[status]=done"
+        enable-cache: true
+        cache-dependency-glob: "pyproject.toml"
+    - name: Install Just
+      uses: extractions/setup-just@v2
+    - name: Run tests with specific Python/NumPy/SciPy versions
+      run: just test-multi-single ${{ matrix.python-version }} ${{ matrix.numpy }} ${{ matrix.scipy }}

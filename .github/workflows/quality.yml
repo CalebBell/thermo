@@ -1,0 +1,108 @@
+name: Quality & Validation
+
+on:
+  push:
+    branches: [master, release]
+  pull_request:
+    branches: [master, release]
+  workflow_call:
+    outputs:
+      distributions-artifact:
+        description: "Name of the distributions artifact"
+        value: ${{ jobs.quality-validation.outputs.distributions-artifact }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/release' }}
+
+jobs:
+  quality-validation:
+    runs-on: ubuntu-latest
+    outputs:
+      distributions-artifact: distributions
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+        cache-dependency-glob: "pyproject.toml"
+
+    - name: Install just
+      uses: extractions/setup-just@v3
+
+    - name: Install Pandoc (required for docs)
+      uses: r-lib/actions/setup-pandoc@v2
+      with:
+        pandoc-version: '3.1.11'
+
+    - name: Install prek (required for just install)
+      run: uv tool install prek
+
+    - name: Install all dependencies
+      run: just install
+
+    - name: Generate database files
+      run: just generate-databases
+
+    # ==================== Pre-commit checks ====================
+    - name: Run pre-commit (prek)
+      run: just precommit
+
+    # ==================== Security scanning ====================
+    - name: Run security scans (pip-audit + bandit)
+      run: just security
+
+    # ==================== Distribution testing ====================
+    - name: Build distributions
+      run: just build
+
+    - name: Check distributions with twine
+      run: just check-dist
+
+    - name: Test wheel installation
+      run: |
+        WHEEL_TEST_DIR=$(mktemp -d)
+        cd $WHEEL_TEST_DIR
+        uv venv venv
+        WHEEL_FILE=$(ls $GITHUB_WORKSPACE/dist/*.whl)
+        uv pip install --python venv/bin/python "thermo[test] @ file://${WHEEL_FILE}"
+        cp -r $GITHUB_WORKSPACE/tests .
+        cp $GITHUB_WORKSPACE/pyproject.toml .
+        venv/bin/pytest tests/ -vv -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow and not thermo"
+
+    - name: Test sdist installation
+      run: |
+        SDIST_TEST_DIR=$(mktemp -d)
+        cd $SDIST_TEST_DIR
+        uv venv venv
+        SDIST_FILE=$(ls $GITHUB_WORKSPACE/dist/*.tar.gz)
+        uv pip install --python venv/bin/python "thermo[test] @ file://${SDIST_FILE}"
+        cp -r $GITHUB_WORKSPACE/tests .
+        cp $GITHUB_WORKSPACE/pyproject.toml .
+        venv/bin/pytest tests/ -vv -m "not online and not sympy and not numba and not CoolProp and not fuzz and not deprecated and not slow and not thermo"
+
+    # ==================== Documentation ====================
+    - name: Build Sphinx HTML documentation
+      run: just docs
+
+    # ==================== Upload artifacts ====================
+    - name: Upload distributions as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: distributions
+        path: dist/
+
+    - name: Upload documentation as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation-html
+        path: _build/html/

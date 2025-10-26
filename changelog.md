@@ -10,6 +10,52 @@
 
 ### Fixed
 
+## [0.6.0] - 2025-10-26
+
+### Added
+
+- Project is now PEP 517 compliant and doesn't use deprecated setup.py commands anymore
+- GitHub Actions workflow for publishing to PyPI using environment protection
+- `uv` package manager integration across CI workflows for faster dependency resolution
+- New consolidated `quality.yml` workflow for linting and testing
+- New `build_third_party_packagers.yml` workflow consolidating cx_Freeze, PyInstaller, Nuitka, and py2exe testing
+- Pre-commit hooks configuration
+- Justfile with extensive development automation commands - github actions have been refactored use this where possible, making them locally debuggable
+
+### Changed
+
+- Consolidated GitHub Actions workflows for better organization
+- Moved test_documentation.py from tests/ to docs/ directory
+- Updated PyInstaller standalone check specification
+- Migrated all configuration from separate files to pyproject.toml:
+  - Ruff configuration (from .ruff.toml)
+  - pytest configuration (from pytest.ini)
+  - mypy configuration (from mypy.ini)
+- Reorganized requirements files (security, docs, test)
+- Improved build system configuration in pyproject.toml
+
+### Removed
+
+- Removed standalone packaging workflow files:
+  - build_cxfreeze_library.yml
+  - build_pyinstaller_library.yml
+  - build_nuitka_library.yml
+  - build_py2exe_library.yml (including py2exe builder script)
+- Removed pre-commit.yml workflow (consolidated into quality.yml)
+- Removed security.yml workflow (consolidated into quality.yml)
+- Removed configuration files migrated to pyproject.toml:
+  - .ruff.toml
+  - pytest.ini
+  - mypy.ini
+- Removed separate requirements files:
+  - requirements_test.txt
+  - requirements_test_multiarch.txt
+  - requirements_docs.txt
+
+### Fixed
+
+- Test execution issues on certain platforms
+
 ## [0.5.0] - 2025-10-19
 
 ### Added

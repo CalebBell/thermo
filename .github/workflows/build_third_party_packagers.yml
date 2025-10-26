@@ -1,0 +1,51 @@
+name: Check Third-Party Packager Compatibility
+
+on:
+  push:
+    branches: [release]
+  pull_request:
+    branches: [master, release]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/release' }}
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13']
+        os: [windows-latest, ubuntu-latest, macos-15-intel, macos-latest]
+        packager: [pyinstaller, cxfreeze, nuitka]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+        cache-dependency-glob: "pyproject.toml"
+
+    - name: Install just
+      uses: extractions/setup-just@v2
+
+    # https://stackoverflow.com/questions/69250165/github-action-windows-runner-how-to-remove-all-sh-exe-from-path/69251820#69251820
+    # https://github.com/actions/runner-images/issues/7253#issuecomment-1500121978
+    # https://github.com/actions/runner-images/discussions/6049
+    - name: Remove windows bash
+      if: runner.os == 'Windows'
+      shell: bash
+      run: rm 'C:/Windows/System32/bash.exe'
+
+    - name: Test ${{ matrix.packager }}
+      if: runner.os != 'Windows'
+      run: |
+        just test-${{ matrix.packager }}

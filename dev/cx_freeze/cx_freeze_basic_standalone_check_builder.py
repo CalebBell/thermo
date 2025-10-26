@@ -36,7 +36,7 @@ build_exe_options = {
 base = None
 
 executables = [
-    Executable("basic_standalone_thermo_check.py", base=base)
+    Executable("../basic_standalone_thermo_check.py", base=base)
 ]
 
 setup(
