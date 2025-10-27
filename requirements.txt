@@ -1,6 +1,0 @@
-numpy
-scipy>=1.6.0
-pandas
-coolprop
-fluids>=1.1.0
-chemicals>=1.3.3

@@ -1,0 +1,66 @@
+name: Build Multiarch
+
+on:
+  push:
+    branches: [release]
+  pull_request:
+    branches: [master, release]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/release' }}
+
+jobs:
+  multi-arch-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Disabled: Docker localhost registry connection refused error on armv6/trixie
+          # - arch: armv6
+          #   distro: trixie
+          - arch: armv7
+            distro: trixie
+          - arch: aarch64
+            distro: trixie
+          - arch: riscv64
+            distro: trixie
+          - arch: s390x
+            distro: trixie
+          - arch: ppc64le
+            distro: trixie
+
+          - arch: armv7
+            distro: ubuntu_latest
+          - arch: aarch64
+            distro: ubuntu_latest
+          - arch: s390x
+            distro: ubuntu_latest
+          - arch: ppc64le
+            distro: ubuntu_latest
+
+          - arch: armv6
+            distro: alpine_latest
+          - arch: armv7
+            distro: alpine_latest
+          - arch: aarch64
+            distro: alpine_latest
+          - arch: riscv64
+            distro: alpine_latest
+          - arch: s390x
+            distro: alpine_latest
+          # Failing on greenlet build 2025-10-26
+          # - arch: ppc64le
+          #   distro: alpine_latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Just
+        uses: extractions/setup-just@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:qemu-v8.1.5
+      - name: Run tests on ${{ matrix.arch }}/${{ matrix.distro }}
+        run: just test-arch ${{ matrix.arch }} ${{ matrix.distro }}

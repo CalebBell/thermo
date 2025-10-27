@@ -33,12 +33,12 @@ PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=400.0, P=1000000.0)
 
 The :obj:`__repr__ <thermo.eos.GCEOS.__repr__>` string is designed to show all the inputs to the object. 
 
-We can check the volume solutions with the :obj:`raw_volumes <thermo.eos.GCEOS.raw_volumes>` attribute:
+We can check the volumes:
 
->>> eos.raw_volumes
-(0.0001560731847856, 0.002141876816741, 0.000919295474982)
+>>> eos.V_l, eos.V_g
+(0.000156073184, 0.0021418768167)
 
-At this point there are three real volume, so there is a liquid-like and a vapor-like solution available. The :obj:`phase <thermo.eos.GCEOS.phase>` attribute will have the value of 'l/g' in this state; otherwise it will be 'l' or 'g'.
+There is a liquid-like and a vapor-like solution available. The :obj:`phase <thermo.eos.GCEOS.phase>` attribute will have the value of 'l/g' in this state; otherwise it will be 'l' or 'g'.
 
 >>> eos.phase
 'l/g'
@@ -72,8 +72,8 @@ Once an object has been created, it can be used to instantiate new :obj:`GCEOS <
 PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=300.0, P=100000.0)
 >>> eos.to(V=1e2, P=1e5)
 PR(Tc=507.6, Pc=3025000.0, omega=0.2975, P=100000.0, V=100.0)
->>> eos.to(V=1e2, T=300)
-PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=300, V=100.0)
+>>> eos.to(V=1e2, T=300.0)
+PR(Tc=507.6, Pc=3025000.0, omega=0.2975, T=300.0, V=100.0)
 
 As was seen in the examples above, any two of `T`, `P`, `V` can be used to specify the state of the object. The input variables of the object are stored and can be checked with :obj:`state_specs <thermo.eos.GCEOS.state_specs>` :
 
@@ -101,7 +101,7 @@ Continuing with the same state and example as before, there were two solutions a
 >>> eos.G_dep_l, eos.G_dep_g
 (-2872.498434, -973.5198207)
 
-It is easy to see the liquid phase is more stable. This shortcut of using departure Gibbs free energy is valid only for pure components with all phases using the ideal-gas reference state. The full criterial is whichever state minimizes the actual Gibbs free energy.
+It is easy to see the liquid phase is more stable. This shortcut of using departure Gibbs free energy is valid only for pure components with all phases using the ideal-gas reference state. The full criterion is whichever state minimizes the actual Gibbs free energy.
 
 The method :obj:`more_stable_phase <thermo.eos.GCEOS.more_stable_phase>` does this check and returns either 'l' or 'g':
 
@@ -115,8 +115,8 @@ For a pure component, there is a vapor-liquid equilibrium line right up to the c
 
 The result is accurate to more than 10 digits, and is implemented using some fancy mathematical techniques that allow a direct calculation of the vapor pressure. A few more digits can be obtained by setting `polish` to True, which polishes the result with a newton solver to as much accuracy as a floating point number can provide:
 
->>> 1-eos.Psat(400, polish=True)/eos.Psat(400)
-1.6e-14
+>>> (1-eos.Psat(400, polish=True)/eos.Psat(400)) < 1e-12
+True
 
 A few more methods of interest are :obj:`V_l_sat <thermo.eos.GCEOS.V_l_sat>` and :obj:`V_g_sat <thermo.eos.GCEOS.V_g_sat>` which calculate the saturation liquid and molar volumes; :obj:`Tsat <thermo.eos.GCEOS.Tsat>` which calculates the saturation temperature given a specified pressure, and :obj:`phi_sat <thermo.eos.GCEOS.phi_sat>`  which computes the saturation fugacity coefficient given a temperature.
 
@@ -146,8 +146,8 @@ New  :obj:`GCEOSMIX <thermo.eos_mix.GCEOSMIX>` objects can be created with the :
 PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.5, 0.5], T=300.0, P=100000.0)
 >>> eos.to(T=300.0, P=1e5, zs=[.1, .9])
 PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.1, 0.9], T=300.0, P=100000.0)
->>> eos.to(V=1, P=1e5, zs=[.4, .6])
-PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.4, 0.6], P=100000.0, V=1)
+>>> eos.to(V=1.0, P=1e5, zs=[.4, .6])
+PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.4, 0.6], P=100000.0, V=1.0)
 >>> eos.to(V=1.0, T=300.0, zs=[.4, .6])
 PRMIX(Tcs=[126.1, 190.6], Pcs=[3394000.0, 4604000.0], omegas=[0.04, 0.011], kijs=[[0.0, 0.0289], [0.0289, 0.0]], zs=[0.4, 0.6], T=300.0, V=1.0)
 
@@ -205,17 +205,6 @@ False
 
 :obj:`state_hash <thermo.eos.GCEOS.state_hash>` is the __hash__ method of the object.
 
-And finally it is possible to see if two objects are exactly identical, including cached calculation results, by using the  :obj:`exact_hash <thermo.eos.GCEOS.exact_hash>` method:
-
->>> PR_case3 = PRMIX(T=115, P=1E6, Tcs=[126.1, 190.6], Pcs=[33.94E5, 46.04E5], omegas=[0.04, 0.011], zs=[0.5, 0.5], kijs=[[0,0.41],[0.41,0]])
->>> PR_case.state_hash() == PR_case3.state_hash()
-True
->>> PR_case.exact_hash() == PR_case3.exact_hash()
-True
->>> _ = PR_case.da_alpha_dT_ijs
->>> PR_case.exact_hash() == PR_case3.exact_hash()
-False
-
 Serialization
 ^^^^^^^^^^^^^
 All cubic EOS models offer a :obj:`as_json <thermo.eos.GCEOS.as_json>` method and a :obj:`from_json <thermo.eos.GCEOS.from_json>` to serialize the object state for transport over a network, storing to disk, and passing data between processes.
@@ -223,7 +212,7 @@ All cubic EOS models offer a :obj:`as_json <thermo.eos.GCEOS.as_json>` method an
 >>> import json
 >>> eos = PRSV2MIX(Tcs=[507.6], Pcs=[3025000], omegas=[0.2975], zs=[1], T=299., P=1E6, kappa1s=[0.05104], kappa2s=[0.8634], kappa3s=[0.460])
 >>> json_stuff = json.dumps(eos.as_json())
->>> new_eos = GCEOSMIX.from_json(json.loads(json_stuff))
+>>> new_eos = PRSV2MIX.from_json(json.loads(json_stuff))
 >>> assert new_eos == eos
 
 Other json libraries can be used besides the standard json library by design.

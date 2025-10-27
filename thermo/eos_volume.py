@@ -1,4 +1,4 @@
-r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+r"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -71,14 +71,24 @@ Higher-Precision Solvers
 .. autofunction:: volume_solutions_mpmath_float
 .. autofunction:: volume_solutions_sympy
 
-'''
+"""
 
-__all__ = ['volume_solutions_mpmath', 'volume_solutions_mpmath_float',
-           'volume_solutions_NR', 'volume_solutions_NR_low_P', 'volume_solutions_halley',
-           'volume_solutions_fast', 'volume_solutions_Cardano', 'volume_solutions_a1',
-           'volume_solutions_a2', 'volume_solutions_numpy', 'volume_solutions_ideal',
-           'volume_solutions_doubledouble_float',
-           'volume_solution_polish', 'volume_solutions_sympy']
+__all__ = [
+    "volume_solution_polish",
+    "volume_solutions_Cardano",
+    "volume_solutions_NR",
+    "volume_solutions_NR_low_P",
+    "volume_solutions_a1",
+    "volume_solutions_a2",
+    "volume_solutions_doubledouble_float",
+    "volume_solutions_fast",
+    "volume_solutions_halley",
+    "volume_solutions_ideal",
+    "volume_solutions_mpmath",
+    "volume_solutions_mpmath_float",
+    "volume_solutions_numpy",
+    "volume_solutions_sympy",
+]
 
 
 from cmath import sqrt as csqrt
@@ -103,7 +113,7 @@ from fluids.numerics.doubledouble import (
 
 
 def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
-    r'''Solution of this form of the cubic EOS in terms of volumes, using the
+    r"""Solution of this form of the cubic EOS in terms of volumes, using the
     `sympy` mathematical library with real numbers.
 
     This function is generally slow, and somehow still has more than desired
@@ -231,7 +241,7 @@ def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
        Čertík, Sergey B. Kirpichev, Matthew Rocklin, AMiT Kumar, Sergiu Ivanov,
        Jason K. Moore, and Sartaj Singh. "SymPy: Symbolic Computing in Python."
        PeerJ Computer Science 3 (2017): e103.
-    '''
+    """
     if P == 0.0 or T == 0.0:
         raise ValueError("Bad P or T; issue is not the algorithm")
     from sympy import I, Rational, sqrt
@@ -284,7 +294,7 @@ def volume_solutions_sympy(T, P, b, delta, epsilon, a_alpha):
             x20*x26/6 + x22/6 - x25/(6*x26))
 
 def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
-    r'''Solution of this form of the cubic EOS in terms of volumes, using the
+    r"""Solution of this form of the cubic EOS in terms of volumes, using the
     `mpmath` arbitrary precision library. The number of decimal places returned
     is controlled by the `dps` parameter.
 
@@ -341,7 +351,7 @@ def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
     ----------
     .. [1] Johansson, Fredrik. Mpmath: A Python Library for Arbitrary-Precision
        Floating-Point Arithmetic, 2010.
-    '''
+    """
     # Tried to remove some green on physical TV with more than 30, could not
     # 30 is fine, but do not dercease further!
     # No matter the precision, still cannot get better
@@ -386,7 +396,7 @@ def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
 #                        print(e, extraprec)
                     if i == 7:
 #                            print(e, 'failed')
-                        raise e
+                        raise
 
             if all(i == 0 or i == 1 for i in roots):
                 return volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=dps*2)
@@ -411,7 +421,7 @@ def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
         hits = []
         for Vi in guesses:
             try:
-                V_calc = mp.findroot(err, Vi, solver='newton')
+                V_calc = mp.findroot(err, Vi, solver="newton")
                 hits.append(V_calc)
             except Exception as e:
                 pass
@@ -423,7 +433,7 @@ def volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha, dps=50):
     return tuple(sorted(hits, key=sort_fun))
 
 def volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha):
-    r'''Simple wrapper around :obj:`volume_solutions_mpmath` which uses the
+    r"""Simple wrapper around :obj:`volume_solutions_mpmath` which uses the
     default parameters and returns the values as floats.
 
     Parameters
@@ -457,12 +467,12 @@ def volume_solutions_mpmath_float(T, P, b, delta, epsilon, a_alpha):
 
     >>> volume_solutions_mpmath_float(0.01, 1e-05, 2.5405184201558786e-05, 5.081036840311757e-05, -6.454233843151321e-10, 0.3872747173781095)
     ((2.540546134155487e-05+0j), (4.660380256021552+0j), (8309.802187086572+0j))
-    '''
+    """
     Vs = volume_solutions_mpmath(T, P, b, delta, epsilon, a_alpha)
     return tuple(float(Vi.real) + float(Vi.imag)*1.0j for Vi in Vs)
 
 def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
-    r'''Newton-Raphson based solver for cubic EOS volumes based on the idea
+    r"""Newton-Raphson based solver for cubic EOS volumes based on the idea
     of initializing from an analytical solver. This algorithm can only be
     described as a monstrous mess. It is fairly fast for most cases, but about
     3x slower than :obj:`volume_solutions_halley`. In the worst case this
@@ -503,7 +513,7 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
        :scale: 70 %
        :alt: PR EOS methanol volume error low pressure
 
-    '''
+    """
     """Even if mpmath is used for greater precision in the calculated root,
     it gets rounded back to a float - and then error occurs.
     Cannot beat numerical method or numpy roots!
@@ -658,7 +668,7 @@ def volume_solutions_NR(T, P, b, delta, epsilon, a_alpha, tries=0):
     return Vs
 
 def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha):
-    r'''Newton-Raphson based solver for cubic EOS volumes designed specifically
+    r"""Newton-Raphson based solver for cubic EOS volumes designed specifically
     for the low-pressure regime. Seeks only two possible solutions - an ideal
     gas like one, and one near the eos covolume `b` - as the initializations are
     `R*T/P` and `b*1.000001` .
@@ -690,7 +700,7 @@ def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha):
     -----
     The algorithm is NR, with some checks that will switch the solver to
     `brenth` some of the time.
-    '''
+    """
     P_inv = 1.0/P
     def err_fun(V):
         denom1 = 1.0/(V*(V + delta) + epsilon)
@@ -721,7 +731,7 @@ def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha):
             if rel_err < 1e-14 or V == Vi:
                 # Conditional check probably not worth it
                 break
-        if i == 1 and V > 1.5*b or V < b:
+        if (i == 1 and V > 1.5*b) or V < b:
             # try:
                 # try:
             try:
@@ -731,7 +741,7 @@ def volume_solutions_NR_low_P(T, P, b, delta, epsilon, a_alpha):
                     if a_alpha < 1e-5:
                         V = brenth(err_fun, b*1.5, b*5.0, xtol=1e-14)
                     else:
-                        raise e
+                        raise
 
                 denom1 = 1.0/(V*(V + delta) + epsilon)
                 denom0 = 1.0/(V-b)
@@ -803,7 +813,7 @@ def volume_solution_polish(V, T, P, b, delta, epsilon, a_alpha):
 
 
 def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
-    r'''Halley's method based solver for cubic EOS volumes based on the idea
+    r"""Halley's method based solver for cubic EOS volumes based on the idea
     of initializing from a single liquid-like guess which is solved precisely,
     deflating the cubic analytically, solving the quadratic equation for the
     next two volumes, and then performing two halley steps on each of them
@@ -842,7 +852,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
        :scale: 70 %
        :alt: PR EOS methanol volume error low pressure
 
-    '''
+    """
     """
     Cases known to be failing:
     """
@@ -918,7 +928,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
             break
         if V_new <= low_V or V_new >= high_V:
             V_new = 0.5*(low_V + high_V)
-            if V_new == low_V or V_new == high_V: # noqa: SIM109
+            if V_new == low_V or V_new == high_V:
                 # If the bisection has finished (interval cannot be further divided)
                 # the solver is finished
                 break
@@ -996,7 +1006,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     return (0.0, 0.0, 0.0)
 
 def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
-    r'''Solution of this form of the cubic EOS in terms of volumes. Returns
+    r"""Solution of this form of the cubic EOS in terms of volumes. Returns
     three values, all with some complex part. This is believed to be the
     fastest analytical formula, and while it does not suffer from the same
     errors as Cardano's formula, it has plenty of its own numerical issues.
@@ -1046,7 +1056,7 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
        Equations of State in Low Temperature Region." Fluid Phase
        Equilibria 201, no. 2 (September 30, 2002): 287-94.
        https://doi.org/10.1016/S0378-3812(02)00072-9.
-    '''
+    """
     x24 = 1.73205080756887729352744634151j + 1.
     x24_inv = 0.25 - 0.433012701892219323381861585376j
     x26 = -1.73205080756887729352744634151j + 1.
@@ -1096,7 +1106,7 @@ def volume_solutions_fast(T, P, b, delta, epsilon, a_alpha):
 
 
 def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha):
-    r'''Calculate the molar volume solutions to a cubic equation of state using
+    r"""Calculate the molar volume solutions to a cubic equation of state using
     Cardano's formula, and a few tweaks to improve numerical precision.
     This solution is quite fast in general although it involves powers or
     trigonometric functions. However, it has numerical issues at many
@@ -1139,7 +1149,7 @@ def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha):
     ----------
     .. [1] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
-    '''
+    """
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
     B = etas = b*P_RT_inv
@@ -1155,7 +1165,7 @@ def volume_solutions_Cardano(T, P, b, delta, epsilon, a_alpha):
     return [V*RT_P for V in roots]
 
 def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha):
-    r'''Solution of this form of the cubic EOS in terms of volumes. Returns
+    r"""Solution of this form of the cubic EOS in terms of volumes. Returns
     three values, all with some complex part. This uses an analytical solution
     for the cubic equation with the leading coefficient set to 1 as in the EOS
     case; and the analytical solution is the one recommended by Mathematica.
@@ -1198,7 +1208,7 @@ def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha):
 
     >>> volume_solutions_a1(8837.07874361444, 216556124.0631852, 0.0003990176625589891, 0.0010590390565805598, -1.5069972655436541e-07, 7.20417995032918e-15) # doctest:+SKIP
     ((0.000738308-7.5337e-20j), (-0.001186094-6.52444e-20j), (0.000127055+6.52444e-20j))
-    '''
+    """
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
     B = etas = b*P_RT_inv
@@ -1214,7 +1224,7 @@ def volume_solutions_a1(T, P, b, delta, epsilon, a_alpha):
     return tuple(V*RT_P for V in roots_cubic_a1(b, c, d))
 
 def volume_solutions_a2(T, P, b, delta, epsilon, a_alpha):
-    r'''Solution of this form of the cubic EOS in terms of volumes. Returns
+    r"""Solution of this form of the cubic EOS in terms of volumes. Returns
     three values, all with some complex part. This uses an analytical solution
     for the cubic equation with the leading coefficient set to 1 as in the EOS
     case; and the analytical solution is the one recommended by Maple.
@@ -1247,7 +1257,7 @@ def volume_solutions_a2(T, P, b, delta, epsilon, a_alpha):
     .. figure:: eos/volume_error_maple_SRK_decane_high.png
        :scale: 70 %
        :alt: SRK EOS decane volume error high pressure
-    '''
+    """
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
     B = etas = b*P_RT_inv
@@ -1267,7 +1277,7 @@ def volume_solutions_a2(T, P, b, delta, epsilon, a_alpha):
 
 
 def volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha):
-    r'''Calculate the molar volume solutions to a cubic equation of state using
+    r"""Calculate the molar volume solutions to a cubic equation of state using
     NumPy's `roots` function, which is a power series iterative matrix solution
     that is very stable but does not have full precision in some cases.
 
@@ -1305,7 +1315,7 @@ def volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha):
     ----------
     .. [1] Reid, Robert C.; Prausnitz, John M.; Poling, Bruce E.
        Properties of Gases and Liquids. McGraw-Hill Companies, 1987.
-    '''
+    """
     RT_inv = R_inv/T
     P_RT_inv = P*RT_inv
     B = etas = b*P_RT_inv
@@ -1322,7 +1332,7 @@ def volume_solutions_numpy(T, P, b, delta, epsilon, a_alpha):
     return [V*RT_P for V in roots]
 
 def volume_solutions_ideal(T, P, b=0.0, delta=0.0, epsilon=0.0, a_alpha=0.0):
-    r'''Calculate the ideal-gas molar volume in a format compatible with the
+    r"""Calculate the ideal-gas molar volume in a format compatible with the
     other cubic EOS solvers. The ideal gas volume is the first element; and the
     secodn and third elements are zero. This is implemented to allow the
     ideal-gas model to be compatible with the cubic models, whose equations
@@ -1352,7 +1362,7 @@ def volume_solutions_ideal(T, P, b=0.0, delta=0.0, epsilon=0.0, a_alpha=0.0):
     --------
     >>> volume_solutions_ideal(T=300, P=1e7)
     (0.0002494338785445972, 0.0, 0.0)
-    '''
+    """
     return (R*T/P, 0.0, 0.0)
 
 
@@ -1572,7 +1582,7 @@ def horner_and_der_as_error(x, coeffs):
     return (f, der)
 
 def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
-    '''It is not really possible to provide solutions that resolve the equation
+    """It is not really possible to provide solutions that resolve the equation
     for P correctly for extremely high alpha values. P can change from 1e-2
     to 1e8 and change by 1 or 2 bits only.
 
@@ -1586,7 +1596,7 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
     iteration).
 
     If the criteria is not met, 0 is returned and another solver must be used.
-    '''
+    """
     b_eos = b
     RT_inv = R_inv/T
     RT_P = R*T/P
@@ -1601,8 +1611,8 @@ def high_alpha_one_root(T, P, b, delta, epsilon, a_alpha):
     c = (thetas + epsilons - deltas*(B + 1.0))
     d = -(epsilons*(B + 1.0) + thetas*etas)
 
-    a, b, c, d = 1.0, b, c, d
-    coeffs = (1.0, b, c, d)
+    a = 1.0
+    coeffs = (a, b, c, d)
 
     a_inv = 1.0/a
     a_inv2 = a_inv*a_inv

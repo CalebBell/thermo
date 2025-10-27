@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,14 +25,14 @@ For reporting bugs, adding feature requests, or submitting pull requests,
 please use the `GitHub issue tracker <https://github.com/CalebBell/chemicals/>`_.
 
 .. contents:: :local:
-'''
+"""
 # This module SHOULD NOT import anything from thermo
 import sys
 
-from chemicals.utils import PY37, object_data
+from chemicals.utils import object_data
 from fluids.numerics import numpy as np
 
-__all__ = ['object_from_json', 'json_default']
+__all__ = ["json_default", "object_from_json"]
 try:
     array = np.array
     int_types = frozenset([np.short, np.ushort, np.intc, np.uintc, np.int_,
@@ -53,12 +53,12 @@ primitive_serialization_types_no_containers = {type(None), bool, int, float, str
 
 BasicNumpyEncoder = None
 def build_numpy_encoder():
-    '''Create a basic numpy encoder for json applications. All np ints become
+    """Create a basic numpy encoder for json applications. All np ints become
     Python ints; numpy floats become python floats; and all arrays become
     lists-of-lists of floats, ints, bools, or complexes according to Python's
     rules.
-    '''
-    global BasicNumpyEncoder, json, int_types, float_types
+    """
+    global BasicNumpyEncoder, json
 
     import json
     JSONEncoder = json.JSONEncoder
@@ -127,7 +127,7 @@ def build_numpy_decoder():
 
     class BasicNumpyDecoder(json.JSONDecoder):
         def __init__(self, *args, **kwargs):
-            json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+            json.JSONDecoder.__init__(self, *args, object_hook=self.object_hook, **kwargs)
 
         def object_hook(self, obj):
             return naive_lists_to_arrays(obj)
@@ -137,29 +137,29 @@ def _load_orjson():
     global orjson
     import orjson
 
-def dump_json_np(obj, library='json'):
-    '''Serialization tool that handles numpy arrays. By default this will
+def dump_json_np(obj, library="json"):
+    """Serialization tool that handles numpy arrays. By default this will
     use the standard library json, but this can also use orjson.
-    '''
-    if library == 'json':
+    """
+    if library == "json":
         if BasicNumpyEncoder is None:
             build_numpy_encoder()
         return json.dumps(obj, cls=BasicNumpyEncoder)
-    elif library == 'orjson':
+    elif library == "orjson":
         if orjson is None:
             _load_orjson()
         opt = orjson.OPT_SERIALIZE_NUMPY
         return orjson.dumps(obj, option=opt)
 
-def load_json_np(obj, library='json'):
-    '''Serialization tool that handles numpy arrays. By default this will
+def load_json_np(obj, library="json"):
+    """Serialization tool that handles numpy arrays. By default this will
     use the standard library json, but this can also use orjson.
-    '''
-    if library == 'json':
+    """
+    if library == "json":
         if BasicNumpyDecoder is None:
             build_numpy_decoder()
         return json.loads(obj, cls=BasicNumpyDecoder)
-    elif library == 'orjson':
+    elif library == "orjson":
         if orjson is None:
             _load_orjson()
         opt = orjson.OPT_SERIALIZE_NUMPY
@@ -173,28 +173,24 @@ def _load_json():
 
 orjson = None
 
-if PY37:
-    def __getattr__(name):
-        global json, json_loaded
-        if name == 'json':
-            import json
-            json_loaded = True
-            return json
-        raise AttributeError(f"module {__name__} has no attribute {name}")
-else:
-    import json
-    json_loaded = True
+def __getattr__(name):
+    if name == "json":
+        import json
+        globals()["json"] = json
+        globals()["json_loaded"] = True
+        return json
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
 
 
 
 def object_from_json(json_object):
-    if 'py/object' in json_object:
-        pth = json_object['py/object']
+    if "py/object" in json_object:
+        pth = json_object["py/object"]
         # TODO: Cache these lookups
-        bits = pth.split('.')
-        mod = '.'.join(bits[:-1])
+        bits = pth.split(".")
+        mod = ".".join(bits[:-1])
         cls_name = bits[-1]
         obj = getattr(sys.modules[mod], cls_name)
 
@@ -203,7 +199,7 @@ def object_from_json(json_object):
 
 
 def json_default(obj):
-    if hasattr(obj, 'as_json'):
+    if hasattr(obj, "as_json"):
         return obj.as_json()
     raise TypeError()
 
@@ -282,7 +278,7 @@ class JsonOptEncodable:
                         num_str = id_to_num_str[id(v)]
                     else:
                         num = len(id_to_num_str) # May change as we do as_json so we must re-check the length
-                        num_str = f'pyid_{num}'
+                        num_str = f"pyid_{num}"
                         id_to_num_str[id(v)] = num_str # we must claim the number first
                         num_to_object[num_str] = v.as_json(cache)
                     json_obj_list.append(num_str)
@@ -294,7 +290,7 @@ class JsonOptEncodable:
                         num_str = id_to_num_str[id(v)]
                     else:
                         num = len(id_to_num_str) # May change as we do as_json so we must re-check the length
-                        num_str = f'pyid_{num}'
+                        num_str = f"pyid_{num}"
                         id_to_num_str[id(v)] = num_str # we must claim the number first
                         num_to_object[num_str] = v.as_json(cache)
                     json_obj_dict[k] = num_str
@@ -305,7 +301,7 @@ class JsonOptEncodable:
                     num_str = id_to_num_str[id(o)]
                 else:
                     num = len(id_to_num_str) # May change as we do as_json so we must re-check the length
-                    num_str = f'pyid_{num}'
+                    num_str = f"pyid_{num}"
                     id_to_num_str[id(o)] = num_str
                     num_to_object[num_str] = o.as_json(cache)
                 d[obj_name] = num_str
@@ -313,9 +309,9 @@ class JsonOptEncodable:
         if self.vectorized:
             d = arrays_to_lists(d)
         d["py/object"] = self.__full_path__
-        d['json_version'] = self.json_version
+        d["json_version"] = self.json_version
 
-        if hasattr(self, '_custom_as_json'):
+        if hasattr(self, "_custom_as_json"):
             self._custom_as_json(d, cache)
 
         if base_serializer:
@@ -324,15 +320,15 @@ class JsonOptEncodable:
         return d
 
     @classmethod
-    def from_json(cls, json_repr, cache=None, ref_name='pyid_0'):
+    def from_json(cls, json_repr, cache=None, ref_name="pyid_0"):
         if cache is None:
             cache = {}
         d = json_repr[ref_name]
         num_to_object = json_repr
-        class_name = d['py/object']
-        json_version = d['json_version']
-        del d['py/object']
-        del d['json_version']
+        class_name = d["py/object"]
+        json_version = d["json_version"]
+        del d["py/object"]
+        del d["json_version"]
         original_obj = object_lookups[class_name]
         try:
             new = original_obj.__new__(original_obj)
@@ -342,7 +338,7 @@ class JsonOptEncodable:
             cache[ref_name] = new
             return new
         search_recurse = new.obj_references if new.obj_references is not None else list(d.keys())
-        if d.get('vectorized'):
+        if d.get("vectorized"):
             d = naive_lists_to_arrays(d)
 
         for obj_name in search_recurse:
@@ -351,13 +347,13 @@ class JsonOptEncodable:
             except:
                 continue
             t = type(o)
-            if t is str and o.startswith('pyid_'):
+            if t is str and o.startswith("pyid_"):
                 if o not in cache:
                     JsonOptEncodable.from_json(json_repr, cache, ref_name=o)
                 d[obj_name] = cache[o]
             elif t is list and len(o):
                 initial_list_item = o[0]
-                if type(initial_list_item) is str and initial_list_item.startswith('pyid_'):
+                if type(initial_list_item) is str and initial_list_item.startswith("pyid_"):
                     created_objs = []
                     for v in o:
                         if v not in cache:
@@ -366,7 +362,7 @@ class JsonOptEncodable:
                     d[obj_name] = created_objs
             elif t is dict and len(o):
                 initial_list_item = next(iter(o.values()))
-                if type(initial_list_item) is str and initial_list_item.startswith('pyid_'):
+                if type(initial_list_item) is str and initial_list_item.startswith("pyid_"):
                     created_objs = {}
                     for k, v in o.items():
                         if v not in cache:
@@ -377,6 +373,6 @@ class JsonOptEncodable:
         # Cannot use dict update because of slots
         for k, v in d.items():
             setattr(new, k, v)
-        if hasattr(new, '_custom_from_json'):
+        if hasattr(new, "_custom_from_json"):
             new._custom_from_json(num_to_object)
         return new

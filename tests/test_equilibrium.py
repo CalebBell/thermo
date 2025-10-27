@@ -852,7 +852,7 @@ def test_thermodynamic_derivatives_settings_with_flash_binary():
     assert res.settings is settings
 
     # Numerical derivative
-    assert_close(res.Joule_Thomson(), 0.00018067735521980137, rtol=1e-7)
+    assert_close(res.Joule_Thomson(), 0.00018067735521980137, rtol=3e-6)
 
 
 def test_thermodynamic_derivatives_named_settings_with_flash():

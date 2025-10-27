@@ -1,0 +1,51 @@
+name: Publish to PyPI
+on:
+  release:
+    types: [published]
+
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  test:
+    uses: ./.github/workflows/quality.yml
+  
+  publish:
+    # This job publishes to PyPI when a GitHub release is created with a tag starting with 'v' on the release branch.
+    #
+    # Requirements:
+    # - Repository admin must create a release with a tag starting with 'v' (e.g., v1.2.3)
+    # - The tag must be created on the 'release' branch
+    # - The release branch is protected by rulesets requiring all changes go through PR review
+    #
+    # Security notes:
+    # - The tag and branch checks in this job are soft checks (can be bypassed by modifying workflow)
+    # - Real security enforcement comes from the 'pypi' environment which requires manual approval by org admin
+    # - This provides a final gate before any code is published to PyPI
+    needs: test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment:
+      name: pypi
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history to check branch ancestry
+
+      - name: Check if tag is on release branch
+        run: |
+          if ! git branch -r --contains ${{ github.ref }} | grep -q 'origin/release'; then
+            echo "Error: Tag is not on release branch"
+            exit 1
+          fi
+          echo "Tag verified to be on release branch"
+
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+      
+      - name: Upload to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1        

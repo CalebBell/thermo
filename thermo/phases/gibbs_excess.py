@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,8 +19,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-'''
-__all__ = ['GibbsExcessLiquid', 'GibbsExcessSolid']
+"""
+__all__ = ["GibbsExcessLiquid", "GibbsExcessSolid"]
 
 from math import isinf, isnan
 
@@ -37,7 +37,14 @@ from thermo.nrtl import nrtl_dtaus_dT as dln_henries_dT
 from thermo.nrtl import nrtl_taus as ln_henries
 from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
 from thermo.phases.phase import Phase
-from thermo.utils import POLY_FIT, TRANSFORM_SECOND_DERIVATIVE_RATIO, TRANSFORM_SECOND_LOG_DERIVATIVE, TRANSFORM_DERIVATIVE_RATIO, TRANSFORM_LOG_DERIVATIVE, TRANSFORM_LOG
+from thermo.utils import (
+    POLY_FIT,
+    TRANSFORM_DERIVATIVE_RATIO,
+    TRANSFORM_LOG,
+    TRANSFORM_LOG_DERIVATIVE,
+    TRANSFORM_SECOND_DERIVATIVE_RATIO,
+    TRANSFORM_SECOND_LOG_DERIVATIVE,
+)
 from thermo.vapor_pressure import SublimationPressure, VaporPressure
 from thermo.volume import VolumeLiquid, VolumeSolid
 
@@ -47,7 +54,7 @@ except:
     pass
 
 class GibbsExcessLiquid(Phase):
-    r'''Phase based on combining Raoult's law with a
+    r"""Phase based on combining Raoult's law with a
     :obj:`GibbsExcess <thermo.activity.GibbsExcess>` model, optionally
     including saturation fugacity coefficient corrections (if the vapor phase
     is a cubic equation of state) and Poynting correction factors (if more
@@ -206,11 +213,11 @@ class GibbsExcessLiquid(Phase):
         True. This option is not thermodynamically consistent, but is still
         often an assumption that is made.
 
-    '''
+    """
 
     PIP_INCALCULABLE_VALUE = 2
-    force_phase = 'l'
-    phase = 'l'
+    force_phase = "l"
+    phase = "l"
     is_gas = False
     is_liquid = True
     P_DEPENDENT_H_LIQ = True
@@ -230,34 +237,73 @@ class GibbsExcessLiquid(Phase):
     _Tait_B_data = None
     _Tait_C_data = None
 
-    pure_references = ('HeatCapacityGases', 'VolumeLiquids', 'VaporPressures', 'HeatCapacityLiquids',
-                       'EnthalpyVaporizations')
+    pure_references = ("HeatCapacityGases", "VolumeLiquids", "VaporPressures", "HeatCapacityLiquids",
+                       "EnthalpyVaporizations")
     pure_reference_types = (HeatCapacityGas, VolumeLiquid, VaporPressure, HeatCapacityLiquid,
                             EnthalpyVaporization)
 
-    model_attributes = ('Hfs', 'Gfs', 'Sfs', 'GibbsExcessModel',
-                        'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
-                        'use_Tait', 'use_eos_volume', 'henry_components',
-                        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs','henry_mode',
-                        'Psat_extrpolation') + pure_references
+    model_attributes = ("Hfs", "Gfs", "Sfs", "GibbsExcessModel",
+                        "eos_pure_instances", "use_Poynting", "use_phis_sat",
+                        "use_Tait", "use_eos_volume", "henry_components",
+                        "henry_as", "henry_bs", "henry_cs", "henry_ds", "henry_es", "henry_fs","henry_mode",
+                        "Psat_extrpolation") + pure_references
 
-    obj_references = ('GibbsExcessModel', 'eos_pure_instances', 'result', 'constants', 'correlations',
-                        'HeatCapacityGases', 'VolumeLiquids', 'VaporPressures', 'HeatCapacityLiquids',
-                                        'EnthalpyVaporizations')
+    obj_references = ("GibbsExcessModel", "eos_pure_instances", "result", "constants", "correlations",
+                        "HeatCapacityGases", "VolumeLiquids", "VaporPressures", "HeatCapacityLiquids",
+                                        "EnthalpyVaporizations")
 
 
     # Not sure how this will progress
-    __slots__ = ('VaporPressures', 'Psats_poly_fit', 'Psat_extrpolation', 'N', 'HeatCapacityGases', 'Cpgs_poly_fit',
-     '_Cpgs_data', 'HeatCapacityLiquids', 'use_eos_volume', 'VolumeLiquids', 'Vms_sat_poly_fit', 'VolumeSupercriticalLiquids',
-      'Vms_supercritical_poly_fit', 'incompressible', 'use_Tait', 'EnthalpyVaporizations', 'Hvap_poly_fit', 'GibbsExcessModel',
-       'eos_pure_instances', 'equilibrium_basis', 'caloric_basis', 'use_phis_sat', 'use_Poynting', 'use_phis_sat_caloric',
-        'use_Poynting_caloric', 'use_Hvap_caloric', 'has_henry_components', 'henry_components',
-        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs','henry_mode',
-         'composition_independent',
-        'Hfs', 'Gfs', 'Sfs', 'model_id', 'T', 'P', 'zs', '_model_hash_ignore_phase', '_model_hash')
+    __slots__ = (
+        "Cpgs_poly_fit",
+        "EnthalpyVaporizations",
+        "Gfs",
+        "GibbsExcessModel",
+        "HeatCapacityGases",
+        "HeatCapacityLiquids",
+        "Hfs",
+        "Hvap_poly_fit",
+        "N",
+        "P",
+        "Psat_extrpolation",
+        "Psats_poly_fit",
+        "Sfs",
+        "T",
+        "VaporPressures",
+        "Vms_sat_poly_fit",
+        "Vms_supercritical_poly_fit",
+        "VolumeLiquids",
+        "VolumeSupercriticalLiquids",
+        "_Cpgs_data",
+        "_model_hash",
+        "_model_hash_ignore_phase",
+        "caloric_basis",
+        "composition_independent",
+        "eos_pure_instances",
+        "equilibrium_basis",
+        "has_henry_components",
+        "henry_as",
+        "henry_bs",
+        "henry_components",
+        "henry_cs",
+        "henry_ds",
+        "henry_es",
+        "henry_fs",
+        "henry_mode",
+        "incompressible",
+        "model_id",
+        "use_Hvap_caloric",
+        "use_Poynting",
+        "use_Poynting_caloric",
+        "use_Tait",
+        "use_eos_volume",
+        "use_phis_sat",
+        "use_phis_sat_caloric",
+        "zs",
+    )
 
     def __repr__(self):
-        r'''Method to create a string representation of the phase object, with
+        r"""Method to create a string representation of the phase object, with
         the goal of making it easy to obtain standalone code which reproduces
         the current state of the phase. This is extremely helpful in creating
         new test cases.
@@ -268,27 +314,27 @@ class GibbsExcessLiquid(Phase):
             String which is valid Python and recreates the current state of
             the object if ran, [-]
 
-        '''
-        pure_strs = ''
+        """
+        pure_strs = ""
         for k in self.pure_references:
             v = getattr(self, k)
             if v is not None:
                 try:
-                    s = '[' + ', '.join(str(o) for o in v) + ']'
+                    s = "[" + ", ".join(str(o) for o in v) + "]"
                 except:
                     continue
-                pure_strs += f'{k}={s}, '
+                pure_strs += f"{k}={s}, "
 
 
         base = f"""{self.__class__.__name__}(GibbsExcessModel={self.GibbsExcessModel},
                equilibrium_basis={self.equilibrium_basis}, caloric_basis={self.caloric_basis},
                eos_pure_instances={self.eos_pure_instances}, {pure_strs}"""
-        for s in ('Hfs', 'Gfs', 'Sfs', 'T', 'P', 'zs'):
+        for s in ("Hfs", "Gfs", "Sfs", "T", "P", "zs"):
             if hasattr(self, s) and getattr(self, s) is not None:
-                base += f'{s}={getattr(self, s)}, '
-        if base[-2:] == ', ':
+                base += f"{s}={getattr(self, s)}, "
+        if base[-2:] == ", ":
             base = base[:-2]
-        base += ')'
+        base += ")"
         return base
 
 
@@ -313,14 +359,14 @@ class GibbsExcessLiquid(Phase):
                  henry_as=None, henry_bs=None,
                  henry_cs=None, henry_ds=None,
                  henry_es=None, henry_fs=None,
-                 henry_mode='solvents_with_parameters',
+                 henry_mode="solvents_with_parameters",
 
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
-                 Psat_extrpolation='AB',
+                 Psat_extrpolation="AB",
                  equilibrium_basis=None,
                  caloric_basis=None,
                  ):
-        '''It is quite possible to introduce a PVT relation ship for liquid
+        """It is quite possible to introduce a PVT relation ship for liquid
         density and remain thermodynamically consistent. However, must be
         applied on a per-component basis! This class cannot have an
         equation-of-state or VolumeLiquidMixture for a liquid MIXTURE!
@@ -338,7 +384,7 @@ class GibbsExcessLiquid(Phase):
         All mixture volumetric properties have to be averages of the pure
         components properties and derivatives. A Multiphase will be needed to
         allow flashes with different properties from different phases.
-        '''
+        """
         self.N = N = len(VaporPressures)
         if zs is None:
             zs = [1.0/N]*N
@@ -361,9 +407,9 @@ class GibbsExcessLiquid(Phase):
                                [i.poly_fit_d_coeffs for i in VaporPressures],
                                [i.poly_fit_d2_coeffs for i in VaporPressures],
                                [i.DIPPR101_ABC for i in VaporPressures]]
-            if Psat_extrpolation == 'AB':
+            if Psat_extrpolation == "AB":
                 Psats_data.append([i.poly_fit_AB_high_ABC_compat + [0.0] for i in VaporPressures])
-            elif Psat_extrpolation == 'ABC':
+            elif Psat_extrpolation == "ABC":
                 Psats_data.append([i.DIPPR101_ABC_high for i in VaporPressures])
             # Other option: raise?
             self._Psats_data = Psats_data
@@ -451,16 +497,16 @@ class GibbsExcessLiquid(Phase):
         self.caloric_basis = caloric_basis
 
         if equilibrium_basis is not None:
-            if equilibrium_basis == 'Poynting':
+            if equilibrium_basis == "Poynting":
                 self.use_Poynting = True
                 self.use_phis_sat = False
-            elif equilibrium_basis == 'Poynting&PhiSat':
+            elif equilibrium_basis == "Poynting&PhiSat":
                 self.use_Poynting = True
                 self.use_phis_sat = True
-            elif equilibrium_basis == 'PhiSat':
+            elif equilibrium_basis == "PhiSat":
                 self.use_phis_sat = True
                 self.use_Poynting = False
-            elif equilibrium_basis == 'Psat':
+            elif equilibrium_basis == "Psat":
                 self.use_phis_sat = False
                 self.use_Poynting = False
         else:
@@ -468,23 +514,23 @@ class GibbsExcessLiquid(Phase):
             self.use_phis_sat = use_phis_sat
 
         if caloric_basis is not None:
-            if caloric_basis == 'Poynting':
+            if caloric_basis == "Poynting":
                 self.use_Poynting_caloric = True
                 self.use_phis_sat_caloric = False
                 self.use_Hvap_caloric = False
-            elif caloric_basis == 'Poynting&PhiSat':
+            elif caloric_basis == "Poynting&PhiSat":
                 self.use_Poynting_caloric = True
                 self.use_phis_sat_caloric = True
                 self.use_Hvap_caloric = False
-            elif caloric_basis == 'PhiSat':
+            elif caloric_basis == "PhiSat":
                 self.use_phis_sat_caloric = True
                 self.use_Poynting_caloric = False
                 self.use_Hvap_caloric = False
-            elif caloric_basis == 'Psat':
+            elif caloric_basis == "Psat":
                 self.use_phis_sat_caloric = False
                 self.use_Poynting_caloric = False
                 self.use_Hvap_caloric = False
-            elif caloric_basis == 'Hvap':
+            elif caloric_basis == "Hvap":
                 self.use_phis_sat_caloric = False
                 self.use_Poynting_caloric = False
                 self.use_Hvap_caloric = True
@@ -496,7 +542,7 @@ class GibbsExcessLiquid(Phase):
 
 
 
-        if henry_mode not in ('solvents', 'solvents_with_parameters'):
+        if henry_mode not in ("solvents", "solvents_with_parameters"):
             raise ValueError("Henry's law model setting not recognized")
         self.henry_mode = henry_mode
 
@@ -507,12 +553,12 @@ class GibbsExcessLiquid(Phase):
             raise ValueError("Input only one of henry_abcdef, or (henry_as...henry_fs)")
         if henry_abcdef is not None:
             if self.vectorized:
-                self.henry_as = array(henry_abcdef[:,:,0], order='C', copy=True)
-                self.henry_bs = array(henry_abcdef[:,:,1], order='C', copy=True)
-                self.henry_cs = array(henry_abcdef[:,:,2], order='C', copy=True)
-                self.henry_ds = array(henry_abcdef[:,:,3], order='C', copy=True)
-                self.henry_es = array(henry_abcdef[:,:,4], order='C', copy=True)
-                self.henry_fs = array(henry_abcdef[:,:,5], order='C', copy=True)
+                self.henry_as = array(henry_abcdef[:,:,0], order="C", copy=True)
+                self.henry_bs = array(henry_abcdef[:,:,1], order="C", copy=True)
+                self.henry_cs = array(henry_abcdef[:,:,2], order="C", copy=True)
+                self.henry_ds = array(henry_abcdef[:,:,3], order="C", copy=True)
+                self.henry_es = array(henry_abcdef[:,:,4], order="C", copy=True)
+                self.henry_fs = array(henry_abcdef[:,:,5], order="C", copy=True)
             else:
                 self.henry_as = [[i[0] for i in l] for l in henry_abcdef]
                 self.henry_bs = [[i[1] for i in l] for l in henry_abcdef]
@@ -563,7 +609,7 @@ class GibbsExcessLiquid(Phase):
             self.zs = zs
 
     def to_TP_zs(self, T, P, zs):
-        T_equal = hasattr(self, 'T') and T == self.T
+        T_equal = hasattr(self, "T") and T == self.T
         new = self.__class__.__new__(self.__class__)
         new.T = T
         new.P = P
@@ -723,7 +769,7 @@ class GibbsExcessLiquid(Phase):
 
 
     def lnHenry_matrix(self):
-        r'''Method to calculate and return the matrix of log Henry's law constants
+        r"""Method to calculate and return the matrix of log Henry's law constants
         as required by the traditional mixing rule, [-].
 
         .. math::
@@ -738,7 +784,7 @@ class GibbsExcessLiquid(Phase):
         Notes
         -----
         Solvent/solvent and gas/gas values are all 0.
-        '''
+        """
         try:
             return self._lnHenry_matrix
         except:
@@ -754,7 +800,7 @@ class GibbsExcessLiquid(Phase):
         return lnHenry_matrix
 
     def dlnHenry_matrix_dT(self):
-        r'''Method to calculate and return the first temperature derivative
+        r"""Method to calculate and return the first temperature derivative
         of the matrix of log Henry's law constants
         as required by the traditional mixing rule, [-].
 
@@ -766,7 +812,7 @@ class GibbsExcessLiquid(Phase):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._dlnHenry_matrix_dT
         except:
@@ -781,7 +827,7 @@ class GibbsExcessLiquid(Phase):
         return dlnHenry_matrix_dT
 
     def d2lnHenry_matrix_dT2(self):
-        r'''Method to calculate and return the second temperature derivative
+        r"""Method to calculate and return the second temperature derivative
         of the matrix of log Henry's law constants
         as required by the traditional mixing rule, [-].
 
@@ -793,7 +839,7 @@ class GibbsExcessLiquid(Phase):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._d2lnHenry_matrix_dT2
         except:
@@ -809,16 +855,15 @@ class GibbsExcessLiquid(Phase):
 
     def Henry_constants(self):
         zs, vectorized, N, henry_components, henry_mode = self.zs, self.vectorized, self.N, self.henry_components, self.henry_mode
-        solvents_with_parameters = henry_mode == 'solvents_with_parameters'
+        solvents_with_parameters = henry_mode == "solvents_with_parameters"
         lnHenry_matrix = self.lnHenry_matrix()
         Hs = zeros(N) if vectorized else [0.0]*N
         Henry_constants(lnHenry_matrix, zs, henry_components, solvents_with_parameters, Hs)
         return Hs
-        dHenry_constants_dT
 
     def dHenry_constants_dT(self):
         zs, vectorized, N, henry_components, henry_mode = self.zs, self.vectorized, self.N, self.henry_components, self.henry_mode
-        solvents_with_parameters = henry_mode == 'solvents_with_parameters'
+        solvents_with_parameters = henry_mode == "solvents_with_parameters"
         lnHenry_matrix = self.lnHenry_matrix()
         dlnHenry_matrix_dT = self.dlnHenry_matrix_dT()
         dHs = zeros(N) if vectorized else [0.0]*N
@@ -827,7 +872,7 @@ class GibbsExcessLiquid(Phase):
 
     def d2Henry_constants_dT2(self):
         zs, vectorized, N, henry_components, henry_mode = self.zs, self.vectorized, self.N, self.henry_components, self.henry_mode
-        solvents_with_parameters = henry_mode == 'solvents_with_parameters'
+        solvents_with_parameters = henry_mode == "solvents_with_parameters"
         lnHenry_matrix = self.lnHenry_matrix()
         dlnHenry_matrix_dT = self.dlnHenry_matrix_dT()
         d2lnHenry_matrix_dT2 = self.d2lnHenry_matrix_dT2()
@@ -1484,7 +1529,7 @@ class GibbsExcessLiquid(Phase):
         return [exp(Vms[i]*(P-Psats[i])*RT_inv) for i in cmps]
 
     def Poyntings(self):
-        r'''Method to calculate and return the Poynting pressure correction
+        r"""Method to calculate and return the Poynting pressure correction
         factors of the phase, [-].
 
         .. math::
@@ -1506,7 +1551,7 @@ class GibbsExcessLiquid(Phase):
         When a specified model e.g. the Tait equation is used, an analytical
         integral of this term is normally available.
 
-        '''
+        """
         try:
             return self._Poyntings
         except AttributeError:
@@ -1637,11 +1682,11 @@ class GibbsExcessLiquid(Phase):
         return d2Poyntings_dT2
 
     def dPoyntings_dP(self):
-        '''from sympy import *
+        """from sympy import *
         R, T, P, zi = symbols('R, T, P, zi')
         Vml = symbols('Vml', cls=Function)
         cse(diff(exp(Vml(T)*(P - Psati(T))/(R*T)), P), optimizations='basic')
-        '''
+        """
         try:
             return self._dPoyntings_dP
         except AttributeError:
@@ -1661,7 +1706,7 @@ class GibbsExcessLiquid(Phase):
         return dPoyntings_dPs
 
     def d2Poyntings_dPdT(self):
-        '''
+        """
         from sympy import *
         R, T, P = symbols('R, T, P')
         Vml, Psat = symbols('Vml, Psat', cls=Function)
@@ -1669,7 +1714,7 @@ class GibbsExcessLiquid(Phase):
         Poy = exp(Vml(T)*(P-Psat(T))*RT_inv)
         Poyf = symbols('Poyf')
         cse(diff(Poy, T, P).subs(Poy, Poyf), optimizations='basic')
-        '''
+        """
         try:
             return self._d2Poyntings_dPdT
         except AttributeError:
@@ -1728,11 +1773,11 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     phis_sat.append(1.0)
                 else:
-                    raise e
+                    raise
         return phis_sat
 
     def phis_sat(self):
-        r'''Method to calculate and return the saturation fugacity coefficient
+        r"""Method to calculate and return the saturation fugacity coefficient
         correction factors of the phase, [-].
 
         These are calculated from the
@@ -1751,7 +1796,7 @@ class GibbsExcessLiquid(Phase):
             as there is no longer any vapor-liquid pure-component equilibrium
             (by definition).
 
-        '''
+        """
         try:
             return self._phis_sat
         except AttributeError:
@@ -1769,7 +1814,7 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     phis_sat.append(1.0)
                 else:
-                    raise e
+                    raise
         return phis_sat
 
 
@@ -1786,7 +1831,7 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     dphis_sat_dT.append(0.0)
                 else:
-                    raise e
+                    raise
         return dphis_sat_dT
 
     def dphis_sat_dT(self):
@@ -1808,7 +1853,7 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     dphis_sat_dT.append(0.0)
                 else:
-                    raise e
+                    raise
         return dphis_sat_dT
 
     def d2phis_sat_dT2(self):
@@ -1821,6 +1866,7 @@ class GibbsExcessLiquid(Phase):
             self._d2phis_sat_dT2 = [0.0]*self.N
             return self._d2phis_sat_dT2
 
+
         T = self.T
         self._d2phis_sat_dT2 = d2phis_sat_dT2 = []
         for i in self.eos_pure_instances:
@@ -1830,7 +1876,7 @@ class GibbsExcessLiquid(Phase):
                 if T < self.PHI_SAT_IDEAL_TR*i.Tc:
                     d2phis_sat_dT2.append(0.0)
                 else:
-                    raise e
+                    raise
         return d2phis_sat_dT2
 
 
@@ -1848,7 +1894,7 @@ class GibbsExcessLiquid(Phase):
                 for i in range(self.N)]
 
     def phis(self):
-        r'''Method to calculate the fugacity coefficients of the
+        r"""Method to calculate the fugacity coefficients of the
         GibbsExcessLiquid phase. Depending on the settings of the phase, can
         include the effects of activity coefficients `gammas`, pressure
         correction terms `Poyntings`, and pure component saturation fugacities
@@ -1866,7 +1912,7 @@ class GibbsExcessLiquid(Phase):
         Notes
         -----
         Poyntings, gammas, and pure component saturation phis default to 1.
-        '''
+        """
         try:
             return self._phis
         except AttributeError:
@@ -2044,7 +2090,7 @@ class GibbsExcessLiquid(Phase):
         return self._dlnphis_dT
 
     def dlnphis_dP(self):
-        r'''Method to calculate the pressure derivative of log fugacity
+        r"""Method to calculate the pressure derivative of log fugacity
         coefficients of the phase. Depending on the settings of the phase, can
         include the effects of activity coefficients `gammas`, pressure
         correction terms `Poyntings`, and pure component saturation fugacities
@@ -2065,7 +2111,7 @@ class GibbsExcessLiquid(Phase):
         -----
         Poyntings, gammas, and pure component saturation phis default to 1. For
         that case, :math:`\frac{\partial \ln \phi_i}{\partial P}=\frac{1}{P}`.
-        '''
+        """
         try:
             return self._dlnphis_dP
         except AttributeError:
@@ -2096,7 +2142,7 @@ class GibbsExcessLiquid(Phase):
         return self.GibbsExcessModel.to_T_xs(T, zs).dgammas_dT()
 
     def gammas(self):
-        r'''Method to calculate and return the activity coefficients of the
+        r"""Method to calculate and return the activity coefficients of the
         phase, [-]. This is a direct call to
         :obj:`GibbsExcess.gammas <thermo.activity.GibbsExcess.gammas>`.
 
@@ -2104,14 +2150,14 @@ class GibbsExcessLiquid(Phase):
         -------
         gammas : list[float]
             Activity coefficients, [-]
-        '''
+        """
         try:
             return self.GibbsExcessModel._gammas
         except AttributeError:
             return self.GibbsExcessModel.gammas()
 
     def dgammas_dT(self):
-        r'''Method to calculate and return the temperature derivative of
+        r"""Method to calculate and return the temperature derivative of
         activity coefficients of the phase, [-].
 
         This is a direct call to
@@ -2121,7 +2167,7 @@ class GibbsExcessLiquid(Phase):
         -------
         dgammas_dT : list[float]
             First temperature derivative of the activity coefficients, [1/K]
-        '''
+        """
         return self.GibbsExcessModel.dgammas_dT()
 
     def H_old(self):
@@ -2251,7 +2297,7 @@ class GibbsExcessLiquid(Phase):
     del H_old
 
     def H(self):
-        r'''Method to calculate the enthalpy of the
+        r"""Method to calculate the enthalpy of the
         :obj:`GibbsExcessLiquid` phase. Depending on the settings of the phase, this can
         include the effects of activity coefficients
         :obj:`gammas <GibbsExcessLiquid.gammas>`, pressure correction terms
@@ -2306,7 +2352,7 @@ class GibbsExcessLiquid(Phase):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._H
         except AttributeError:
@@ -2373,7 +2419,7 @@ class GibbsExcessLiquid(Phase):
 #            pass
         # Untested
         # Page 650  Chemical Thermodynamics for Process Simulation
-        '''
+        """
         from scipy.integrate import *
         from CoolProp.CoolProp import PropsSI
 
@@ -2391,7 +2437,7 @@ class GibbsExcessLiquid(Phase):
             alpha = PropsSI('ISOBARIC_EXPANSION_COEFFICIENT', 'T', T, 'P', P, fluid)
             return -alpha*Vm
         quad(to_int2, Psat, P2, epsabs=1.49e-14, epsrel=1.49e-14)[0]/dS
-        '''
+        """
         S = 0.0
         T, P, zs, cmps = self.T, self.P, self.zs, range(self.N)
         log_zs = self.log_zs()
@@ -2520,7 +2566,7 @@ class GibbsExcessLiquid(Phase):
         return S
 
     def S(self):
-        r'''Method to calculate the entropy of the
+        r"""Method to calculate the entropy of the
         :obj:`GibbsExcessLiquid` phase. Depending on the settings of the phase, this can
         include the effects of activity coefficients
         :obj:`gammas <GibbsExcessLiquid.gammas>`, pressure correction terms
@@ -2583,7 +2629,7 @@ class GibbsExcessLiquid(Phase):
 
         Notes
         -----
-        '''
+        """
         try:
             return self._S
         except AttributeError:
@@ -3372,20 +3418,20 @@ class GibbsExcessLiquid(Phase):
 
 class GibbsExcessSolid(GibbsExcessLiquid):
     ideal_gas_basis = True
-    force_phase = 's'
-    phase = 's'
+    force_phase = "s"
+    phase = "s"
     is_gas = False
     is_liquid = False
     is_solid = True
-    pure_references = ('HeatCapacityGases','SublimationPressures', 'VolumeSolids', 'EnthalpySublimations')
+    pure_references = ("HeatCapacityGases","SublimationPressures", "VolumeSolids", "EnthalpySublimations")
     pure_reference_types = (HeatCapacityGas, SublimationPressure, VolumeSolid, EnthalpySublimation)
 
 
-    model_attributes = ('Hfs', 'Gfs', 'Sfs','GibbsExcessModel',
-                        'eos_pure_instances', 'use_Poynting', 'use_phis_sat',
-                        'use_eos_volume', 'henry_components',
-                        'henry_as', 'henry_bs', 'henry_cs', 'henry_ds', 'henry_es', 'henry_fs',
-                         'Psat_extrpolation') + pure_references
+    model_attributes = ("Hfs", "Gfs", "Sfs","GibbsExcessModel",
+                        "eos_pure_instances", "use_Poynting", "use_phis_sat",
+                        "use_eos_volume", "henry_components",
+                        "henry_as", "henry_bs", "henry_cs", "henry_ds", "henry_es", "henry_fs",
+                         "Psat_extrpolation") + pure_references
 
     def __init__(self, SublimationPressures, VolumeSolids=None,
                  GibbsExcessModel=IdealSolution,

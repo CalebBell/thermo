@@ -94,7 +94,8 @@ def test_UNIFAC_original():
 
     rdkitmol = Chemical('phthalan').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=UNIFAC_SUBGROUPS, rdkitmol=rdkitmol)
-    assert assignment == {12: 1, 9: 4, 10: 1, 27: 1}
+    # get different solutions depending on algorithm
+    assert (assignment == {9: 4, 10: 2, 27: 1, 2: 1} or assignment == {9: 4, 10: 1, 12: 1, 27: 1})
     assert success
 
     rdkitmol = Chemical('butyl propionate').rdkitmol
@@ -743,6 +744,11 @@ def test_UNIFAC_Larsen_smarts_assigned_to_all_groups():
 @pytest.mark.rdkit
 @pytest.mark.skipif(rdkit is None, reason="requires rdkit")
 def test_PSRK_group_detection():
+    rdkitmol = Chemical('toluene').rdkitmol
+    assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_SUBGROUPS, rdkitmol=rdkitmol)
+    assert assignment == {11: 1, 9: 5}
+    assert success
+
     rdkitmol = Chemical('ammonia').rdkitmol
     assignment, _, _, success, status = smarts_fragment_priority(catalog=PSRK_SUBGROUPS, rdkitmol=rdkitmol)
     assert assignment == {111: 1}

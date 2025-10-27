@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2016, 2017, 2018, 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -54,38 +54,29 @@ Sublimation Pressure
     :exclude-members:
 
 .. autodata:: sublimation_pressure_methods
-'''
+"""
 
 
-__all__ = ['vapor_pressure_methods', 'VaporPressure', 'SublimationPressure',
-           'sublimation_pressure_methods']
+__all__ = [
+    "SublimationPressure",
+    "VaporPressure",
+    "sublimation_pressure_methods",
+    "vapor_pressure_methods",
+]
 
-from math import e, inf
+from math import e
 
 from chemicals import miscdata, vapor_pressure
-from chemicals.dippr import EQ101
 from chemicals.iapws import iapws11_Psub, iapws95_dPsat_dT, iapws95_Psat, iapws95_Tc, iapws95_Tt
 from chemicals.identifiers import CAS_to_int
 from chemicals.miscdata import lookup_VDI_tabular_data
 from chemicals.vapor_pressure import (
     Ambrose_Walton,
-    Antoine,
     Edalat,
     Lee_Kesler,
     Psub_Clapeyron,
     Sanjari,
-    TRC_Antoine_extended,
-    Wagner,
-    Wagner_original,
     boiling_critical_relation,
-    d2Antoine_dT2,
-    d2TRC_Antoine_extended_dT2,
-    d2Wagner_dT2,
-    d2Wagner_original_dT2,
-    dAntoine_dT,
-    dTRC_Antoine_extended_dT,
-    dWagner_dT,
-    dWagner_original_dT,
 )
 from fluids.numerics import NoSolutionError, exp, isnan, log
 
@@ -102,12 +93,12 @@ Psat_extra_correlations = {}
 
 
 def Psat_mercury_Huber_Laesecke_Friend_2006(T):
-    '''Equation 4 in
+    """Equation 4 in
 
     Huber, Marcia L., Arno Laesecke, and Daniel G. Friend. "Correlation for the Vapor
     Pressure of Mercury."" Industrial & Engineering Chemistry Research 45, no. 21
     (October 1, 2006): 7351-61. https://doi.org/10.1021/ie060560s.
-    '''
+    """
     Tc = 1764
     Pc = 167e6
     ais = [-4.57618368, -1.40726277, 2.36263541, -31.0889985, 58.0183959, -27.6304546]
@@ -116,26 +107,26 @@ def Psat_mercury_Huber_Laesecke_Friend_2006(T):
     return Pc*exp(Tc/T*sum(ais[i]*tau**powers[i] for i in range(len(ais))))
 
 
-Psat_extra_correlations['7439-97-6'] = [
-    {'name': 'HUBER_LAESECKE_FRIEND_2006',
-    'Tmax': 1764.0, 'Tmin': 273.15,
-    'f': Psat_mercury_Huber_Laesecke_Friend_2006}
+Psat_extra_correlations["7439-97-6"] = [
+    {"name": "HUBER_LAESECKE_FRIEND_2006",
+    "Tmax": 1764.0, "Tmin": 273.15,
+    "f": Psat_mercury_Huber_Laesecke_Friend_2006}
 ]
 
 def Psat_beryllium_Arblaster_2016(T):
-    '''Table 5 vapor pressure for liquid phase
+    """Table 5 vapor pressure for liquid phase
 
     Arblaster, J. W. “Thermodynamic Properties of Beryllium.” Journal of
     Phase Equilibria and Diffusion 37, no. 5 (October 1, 2016): 581-91.
     https://doi.org/10.1007/s11669-016-0488-5.
-    '''
+    """
     A, B, C, D, E = 18.14516, -0.512217, -37525.7, -1.54090910E-4, 2.18352910584E-9
     return 1e5*exp(A + B*log(T) + C/T + D*T + E*T*T)
 
-Psat_extra_correlations['7440-41-7'] = [
-    {'name': 'ARBLASTER_2016',
-    'Tmax': 2800, 'Tmin': 1560,
-    'f': Psat_beryllium_Arblaster_2016}
+Psat_extra_correlations["7440-41-7"] = [
+    {"name": "ARBLASTER_2016",
+    "Tmax": 2800, "Tmin": 1560,
+    "f": Psat_beryllium_Arblaster_2016}
 ]
 
 """
@@ -145,20 +136,20 @@ End specific correlations
 
 
 
-WAGNER_MCGARRY = 'WAGNER_MCGARRY'
-WAGNER_POLING = 'WAGNER_POLING'
-ANTOINE_POLING = 'ANTOINE_POLING'
-ANTOINE_WEBBOOK = 'ANTOINE_WEBBOOK'
-ANTOINE_EXTENDED_POLING = 'ANTOINE_EXTENDED_POLING'
-ALCOCK_ELEMENTS = 'ALCOCK_ELEMENTS'
-LANDOLT = 'LANDOLT'
-IAPWS_PSAT = 'IAPWS_PSAT'
+WAGNER_MCGARRY = "WAGNER_MCGARRY"
+WAGNER_POLING = "WAGNER_POLING"
+ANTOINE_POLING = "ANTOINE_POLING"
+ANTOINE_WEBBOOK = "ANTOINE_WEBBOOK"
+ANTOINE_EXTENDED_POLING = "ANTOINE_EXTENDED_POLING"
+ALCOCK_ELEMENTS = "ALCOCK_ELEMENTS"
+LANDOLT = "LANDOLT"
+IAPWS_PSAT = "IAPWS_PSAT"
 
-BOILING_CRITICAL = 'BOILING_CRITICAL'
-LEE_KESLER_PSAT = 'LEE_KESLER_PSAT'
-AMBROSE_WALTON = 'AMBROSE_WALTON'
-SANJARI = 'SANJARI'
-EDALAT = 'EDALAT'
+BOILING_CRITICAL = "BOILING_CRITICAL"
+LEE_KESLER_PSAT = "LEE_KESLER_PSAT"
+AMBROSE_WALTON = "AMBROSE_WALTON"
+SANJARI = "SANJARI"
+EDALAT = "EDALAT"
 
 vapor_pressure_methods = [IAPWS_PSAT, HEOS_FIT,
                           WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
@@ -171,7 +162,7 @@ iterating over them."""
 
 
 class VaporPressure(TDependentProperty):
-    '''Class for dealing with vapor pressure as a function of temperature.
+    """Class for dealing with vapor pressure as a function of temperature.
     Consists of six coefficient-based methods and five data sources, one
     source of tabular information, four corresponding-states estimators,
     any provided equation of state, the external library CoolProp,
@@ -308,30 +299,30 @@ class VaporPressure(TDependentProperty):
        Oxygen Containing Organic Compounds". 2000.
     .. [10] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen
        Containing Organic Compounds. Springer, 2001.
-    '''
+    """
 
-    name = 'Vapor pressure'
-    units = 'Pa'
+    name = "Vapor pressure"
+    units = "Pa"
     extra_correlations = Psat_extra_correlations
 
     @staticmethod
     def interpolation_T(T):
-        '''Function to make the data-based interpolation as linear as possible.
+        """Function to make the data-based interpolation as linear as possible.
         This transforms the input `T` into the `1/T` domain.
-        '''
+        """
         return 1./T
 
     @staticmethod
     def interpolation_property(P):
-        '''log(P) interpolation transformation by default.
-        '''
+        """log(P) interpolation transformation by default.
+        """
         return log(P)
 
     @staticmethod
     def interpolation_property_inv(P):
-        '''exp(P) interpolation transformation by default; reverses
+        """exp(P) interpolation transformation by default; reverses
         :obj:`interpolation_property_inv`.
-        '''
+        """
         return exp(P)
 
     tabular_extrapolation_permitted = False
@@ -342,14 +333,14 @@ class VaporPressure(TDependentProperty):
     """Maximum valid value of vapor pressure. Set slightly above the critical
     point estimated for Iridium; Mercury's 160 MPa critical point is the
     highest known."""
-    
+
     ranked_methods = [IAPWS_PSAT, HEOS_FIT, WAGNER_MCGARRY, WAGNER_POLING, ANTOINE_EXTENDED_POLING,
                       DIPPR_PERRY_8E, VDI_PPDS, COOLPROP, ANTOINE_POLING, VDI_TABULAR,
                       ANTOINE_WEBBOOK, ALCOCK_ELEMENTS, LANDOLT, AMBROSE_WALTON,
                       LEE_KESLER_PSAT, EDALAT, BOILING_CRITICAL, EOS, SANJARI]
     """Default rankings of the available methods."""
 
-    custom_args = ('Tb', 'Tc', 'Pc', 'omega')
+    custom_args = ("Tb", "Tc", "Pc", "omega")
 
     extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
     extra_correlations_internal.add(DIPPR_PERRY_8E)
@@ -362,8 +353,8 @@ class VaporPressure(TDependentProperty):
     extra_correlations_internal.add(VDI_PPDS)
     extra_correlations_internal.add(LANDOLT)
 
-    def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN='',
-                 extrapolation='AntoineAB|DIPPR101_ABC', **kwargs):
+    def __init__(self, Tb=None, Tc=None, Pc=None, omega=None, CASRN="",
+                 extrapolation="AntoineAB|DIPPR101_ABC", **kwargs):
         self.CASRN = CASRN
         self.Tb = Tb
         self.Tc = Tc
@@ -373,10 +364,10 @@ class VaporPressure(TDependentProperty):
 
     @staticmethod
     def _method_indexes():
-        '''Returns a dictionary of method: index for all methods
+        """Returns a dictionary of method: index for all methods
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
-        '''
+        """
         return {WAGNER_MCGARRY: vapor_pressure.Psat_data_WagnerMcGarry.index,
                 WAGNER_POLING: vapor_pressure.Psat_data_WagnerPoling.index,
                 ANTOINE_EXTENDED_POLING: vapor_pressure.Psat_data_AntoineExtended.index,
@@ -389,7 +380,7 @@ class VaporPressure(TDependentProperty):
                 }
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         and :obj:`all_methods` as a set of methods for which the data exists for.
@@ -398,66 +389,66 @@ class VaporPressure(TDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         self.T_limits = T_limits = {}
         self.all_methods = set()
         methods = []
         CASRN = self.CASRN
-        if CASRN is not None and CASRN == '7732-18-5':
+        if CASRN is not None and CASRN == "7732-18-5":
             methods.append(IAPWS_PSAT)
             T_limits[IAPWS_PSAT] = (235.0, iapws95_Tc)
         if load_data and CASRN:
             CASRN_int = None if not CASRN else CAS_to_int(CASRN)
             df_wb = miscdata.webbook_data
-            if CASRN_int in df_wb.index and not isnan(float(df_wb.at[CASRN_int, 'AntoineA'])):
-                self.add_correlation(name=ANTOINE_WEBBOOK, model='Antoine', 
-                                     Tmin=float(df_wb.at[CASRN_int, 'AntoineTmin']), 
-                                     Tmax=float(df_wb.at[CASRN_int, 'AntoineTmax']),
-                                     A=float(df_wb.at[CASRN_int, 'AntoineA']), 
-                                     B=float(df_wb.at[CASRN_int, 'AntoineB']), 
-                                     C=float(df_wb.at[CASRN_int, 'AntoineC']), 
+            if CASRN_int in df_wb.index and not isnan(float(df_wb.at[CASRN_int, "AntoineA"])):
+                self.add_correlation(name=ANTOINE_WEBBOOK, model="Antoine",
+                                     Tmin=float(df_wb.at[CASRN_int, "AntoineTmin"]),
+                                     Tmax=float(df_wb.at[CASRN_int, "AntoineTmax"]),
+                                     A=float(df_wb.at[CASRN_int, "AntoineA"]),
+                                     B=float(df_wb.at[CASRN_int, "AntoineB"]),
+                                     C=float(df_wb.at[CASRN_int, "AntoineC"]),
                                      base=e, select=False)
             if CASRN in vapor_pressure.Psat_data_WagnerMcGarry.index:
                 methods.append(WAGNER_MCGARRY)
                 A, B, C, D, WAGNER_MCGARRY_Pc, WAGNER_MCGARRY_Tc, WAGNER_MCGARRY_Tmin = vapor_pressure.Psat_values_WagnerMcGarry[vapor_pressure.Psat_data_WagnerMcGarry.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=WAGNER_MCGARRY, model='Wagner_original', Tmin=WAGNER_MCGARRY_Tmin, Tmax=WAGNER_MCGARRY_Tc, Tc=WAGNER_MCGARRY_Tc, Pc=WAGNER_MCGARRY_Pc,
+                self.add_correlation(name=WAGNER_MCGARRY, model="Wagner_original", Tmin=WAGNER_MCGARRY_Tmin, Tmax=WAGNER_MCGARRY_Tc, Tc=WAGNER_MCGARRY_Tc, Pc=WAGNER_MCGARRY_Pc,
                                      a=A, b=B, c=C, d=D, select=False)
             if CASRN in vapor_pressure.Psat_data_WagnerPoling.index:
                 A, B, C, D, WAGNER_POLING_Tc, WAGNER_POLING_Pc, Tmin, WAGNER_POLING_Tmax = vapor_pressure.Psat_values_WagnerPoling[vapor_pressure.Psat_data_WagnerPoling.index.get_loc(CASRN)].tolist()
                 # Some Tmin values are missing; Arbitrary choice of 0.1 lower limit
                 Tmin = Tmin if not isnan(Tmin) else WAGNER_POLING_Tmax*0.1
-                self.add_correlation(name=WAGNER_POLING, model='Wagner', Tmin=Tmin, Tmax=WAGNER_POLING_Tmax, Tc=WAGNER_POLING_Tc, Pc=WAGNER_POLING_Pc,
+                self.add_correlation(name=WAGNER_POLING, model="Wagner", Tmin=Tmin, Tmax=WAGNER_POLING_Tmax, Tc=WAGNER_POLING_Tc, Pc=WAGNER_POLING_Pc,
                                      a=A, b=B, c=C, d=D, select=False)
             if CASRN in vapor_pressure.Psat_data_AntoineExtended.index:
                 A, B, C, Tc, to, n, E, F, ANTOINE_EXTENDED_POLING_Tmin, ANTOINE_EXTENDED_POLING_Tmax = vapor_pressure.Psat_values_AntoineExtended[vapor_pressure.Psat_data_AntoineExtended.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=ANTOINE_EXTENDED_POLING, model='TRC_Antoine_extended', 
+                self.add_correlation(name=ANTOINE_EXTENDED_POLING, model="TRC_Antoine_extended",
                                      Tmin=ANTOINE_EXTENDED_POLING_Tmin, Tmax=ANTOINE_EXTENDED_POLING_Tmax,
                                      A=A, B=B, C=C, Tc=Tc, to=to, n=n, E=E, F=F, select=False)
             if CASRN in vapor_pressure.Psat_data_AntoinePoling.index:
                 A, B, C, ANTOINE_POLING_Tmin, ANTOINE_POLING_Tmax = vapor_pressure.Psat_values_AntoinePoling[vapor_pressure.Psat_data_AntoinePoling.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=ANTOINE_POLING, model='Antoine', 
+                self.add_correlation(name=ANTOINE_POLING, model="Antoine",
                                      Tmin=ANTOINE_POLING_Tmin, Tmax=ANTOINE_POLING_Tmax,
                                      A=A, B=B, C=C, base=10.0, select=False)
             if CASRN in vapor_pressure.Psat_data_Perrys2_8.index:
                 C1, C2, C3, C4, C5, Perrys2_8_Tmin, Perrys2_8_Tmax = vapor_pressure.Psat_values_Perrys2_8[vapor_pressure.Psat_data_Perrys2_8.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=DIPPR_PERRY_8E, model='DIPPR101', Tmin=Perrys2_8_Tmin, Tmax=Perrys2_8_Tmax, A=C1, B=C2, C=C3, D=C4, E=C5, select=False)
+                self.add_correlation(name=DIPPR_PERRY_8E, model="DIPPR101", Tmin=Perrys2_8_Tmin, Tmax=Perrys2_8_Tmax, A=C1, B=C2, C=C3, D=C4, E=C5, select=False)
             if has_CoolProp() and CASRN in coolprop_dict:
                 methods.append(COOLPROP)
                 self.CP_f = coolprop_fluids[CASRN]
                 T_limits[COOLPROP] = (self.CP_f.Tmin, self.CP_f.Tc)
             if CASRN in miscdata.VDI_saturation_dict:
-                Ts, props = lookup_VDI_tabular_data(CASRN, 'P')
+                Ts, props = lookup_VDI_tabular_data(CASRN, "P")
                 self.add_tabular_data(Ts, props, VDI_TABULAR, check_properties=False, select=False)
             if CASRN in vapor_pressure.Psat_data_Alcock_elements.index:
                 A, B, C, D, E, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psat_values_Alcock_elements[vapor_pressure.Psat_data_Alcock_elements.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=ALCOCK_ELEMENTS, model='DIPPR101', Tmin=Alcock_Tmin, Tmax=Alcock_Tmax, A=A, B=B, C=C, D=D, E=E, select=False)
+                self.add_correlation(name=ALCOCK_ELEMENTS, model="DIPPR101", Tmin=Alcock_Tmin, Tmax=Alcock_Tmax, A=A, B=B, C=C, D=D, E=E, select=False)
             if CASRN in vapor_pressure.Psat_data_VDI_PPDS_3.index:
                 Tm, Tc, Pc, A, B, C, D = vapor_pressure.Psat_values_VDI_PPDS_3[vapor_pressure.Psat_data_VDI_PPDS_3.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=VDI_PPDS, model='Wagner', Tmin=Tm, Tmax=Tc, Tc=Tc, Pc=Pc,
+                self.add_correlation(name=VDI_PPDS, model="Wagner", Tmin=Tm, Tmax=Tc, Tc=Tc, Pc=Pc,
                                      a=A, b=B, c=C, d=D, select=False)
             if CASRN in vapor_pressure.Psat_data_Landolt_Antoine.index:
                 A, B, C, Tmin, Tmax = vapor_pressure.Psat_values_Landolt_Antoine[vapor_pressure.Psat_data_Landolt_Antoine.index.get_loc(CASRN)].tolist()
-                self.add_correlation(name=LANDOLT, model='Antoine', 
+                self.add_correlation(name=LANDOLT, model="Antoine",
                                      Tmin=Tmin, Tmax=Tmax,
                                      A=A, B=B, C=C, base=e, select=False)
         if all((self.Tb, self.Tc, self.Pc)):
@@ -474,7 +465,7 @@ class VaporPressure(TDependentProperty):
         self.all_methods.update(methods)
 
     def calculate(self, T, method):
-        r'''Method to calculate vapor pressure of a fluid at temperature `T`
+        r"""Method to calculate vapor pressure of a fluid at temperature `T`
         with a given method.
 
         This method has no exception handling; see :obj:`thermo.utils.TDependentProperty.T_dependent_property`
@@ -491,9 +482,9 @@ class VaporPressure(TDependentProperty):
         -------
         Psat : float
             Vapor pressure at T, [Pa]
-        '''
+        """
         if method == COOLPROP:
-            Psat = PropsSI('P','T', T,'Q',0, self.CASRN)
+            Psat = PropsSI("P","T", T,"Q",0, self.CASRN)
         elif method == BOILING_CRITICAL:
             Psat = boiling_critical_relation(T, self.Tb, self.Tc, self.Pc)
         elif method == LEE_KESLER_PSAT:
@@ -510,7 +501,7 @@ class VaporPressure(TDependentProperty):
             try:
                 return PR(T=T, P=101325.0, Tc=self.Tc, Pc=self.Pc, omega=self.omega).Psat(T)
             except NoSolutionError as err:
-                if 'is too low for equations' in err.args[0]:
+                if "is too low for equations" in err.args[0]:
                     return 0.0
                 raise e
         else:
@@ -518,7 +509,7 @@ class VaporPressure(TDependentProperty):
         return Psat
 
     def calculate_derivative(self, T, method, order=1):
-        r'''Method to calculate a derivative of a vapor pressure with respect to
+        r"""Method to calculate a derivative of a vapor pressure with respect to
         temperature, of a given order  using a specified method. If the method
         is POLY_FIT, an anlytical derivative is used; otherwise SciPy's
         derivative function, with a delta of 1E-6 K and a number of points
@@ -540,7 +531,7 @@ class VaporPressure(TDependentProperty):
         -------
         derivative : float
             Calculated derivative property, [`units/K^order`]
-        '''
+        """
         Tmin, Tmax = self.T_limits[method]
         if method == IAPWS_PSAT:
             if Tmin <= T <= Tmax:
@@ -548,8 +539,8 @@ class VaporPressure(TDependentProperty):
                     return iapws95_dPsat_dT(T)[0]
         return super().calculate_derivative(T, method, order)
 
-PSUB_CLAPEYRON = 'PSUB_CLAPEYRON'
-IAPWS_PSUB = 'IAPWS_PSUB'
+PSUB_CLAPEYRON = "PSUB_CLAPEYRON"
+IAPWS_PSUB = "IAPWS_PSUB"
 
 sublimation_pressure_methods = [PSUB_CLAPEYRON, ALCOCK_ELEMENTS, IAPWS_PSUB, LANDOLT]
 """Holds all methods available for the SublimationPressure class, for use in
@@ -557,7 +548,7 @@ iterating over them."""
 
 
 class SublimationPressure(TDependentProperty):
-    '''Class for dealing with sublimation pressure as a function of temperature.
+    """Class for dealing with sublimation pressure as a function of temperature.
     Consists of one estimation method, IAPWS for ice, metallic element data,
     and some data for organic species.
 
@@ -623,10 +614,10 @@ class SublimationPressure(TDependentProperty):
        Oxygen Containing Organic Compounds". 2000.
     .. [5] Hall, K. R. Vapor Pressure and Antoine Constants for Nitrogen
        Containing Organic Compounds. Springer, 2001.
-    '''
+    """
 
-    name = 'Sublimation pressure'
-    units = 'Pa'
+    name = "Sublimation pressure"
+    units = "Pa"
 
     interpolation_T = staticmethod(VaporPressure.interpolation_T)
     interpolation_property = staticmethod(VaporPressure.interpolation_property)
@@ -642,14 +633,14 @@ class SublimationPressure(TDependentProperty):
     ranked_methods = [IAPWS_PSUB, ALCOCK_ELEMENTS, LANDOLT, PSUB_CLAPEYRON]
     """Default rankings of the available methods."""
 
-    custom_args = ('Tt', 'Pt', 'Hsub_t')
+    custom_args = ("Tt", "Pt", "Hsub_t")
 
     extra_correlations_internal = TDependentProperty.extra_correlations_internal.copy()
     extra_correlations_internal.add(LANDOLT)
     extra_correlations_internal.add(ALCOCK_ELEMENTS)
 
     def __init__(self, CASRN=None, Tt=None, Pt=None, Hsub_t=None,
-                 extrapolation='Arrhenius', **kwargs):
+                 extrapolation="Arrhenius", **kwargs):
         self.CASRN = CASRN
         self.Tt = Tt
         self.Pt = Pt
@@ -657,7 +648,7 @@ class SublimationPressure(TDependentProperty):
         super().__init__(extrapolation, **kwargs)
 
     def load_all_methods(self, load_data=True):
-        r'''Method which picks out coefficients for the specified chemical
+        r"""Method which picks out coefficients for the specified chemical
         from the various dictionaries and DataFrames storing it. All data is
         stored as attributes. This method also sets :obj:`Tmin`, :obj:`Tmax`,
         and :obj:`all_methods` as a set of methods for which the data exists for.
@@ -666,36 +657,36 @@ class SublimationPressure(TDependentProperty):
         which the coefficients are stored. The coefficients can safely be
         altered once the class is initialized. This method can be called again
         to reset the parameters.
-        '''
+        """
         CASRN = self.CASRN
         methods = []
         self.T_limits = T_limits = {}
         self.all_methods = set(methods)
         if all((self.Tt, self.Pt, self.Hsub_t)):
             methods.append(PSUB_CLAPEYRON)
-            T_limits[PSUB_CLAPEYRON] = (1.0, self.Tt*1.5)
-        if CASRN is not None and CASRN == '7732-18-5':
+            T_limits[PSUB_CLAPEYRON] = (0.02*self.Tt, self.Tt*1.5)
+        if CASRN is not None and CASRN == "7732-18-5":
             methods.append(IAPWS_PSUB)
             T_limits[IAPWS_PSUB] = (50.0, iapws95_Tt)
         if load_data and CASRN is not None and CASRN in vapor_pressure.Psub_data_Alcock_elements.index:
             A, B, C, D, E, Alcock_Tmin, Alcock_Tmax = vapor_pressure.Psub_values_Alcock_elements[vapor_pressure.Psub_data_Alcock_elements.index.get_loc(CASRN)].tolist()
-            self.add_correlation(name=ALCOCK_ELEMENTS, model='DIPPR101', Tmin=Alcock_Tmin, Tmax=Alcock_Tmax, A=A, B=B, C=C, D=D, E=E, select=False)
+            self.add_correlation(name=ALCOCK_ELEMENTS, model="DIPPR101", Tmin=Alcock_Tmin, Tmax=Alcock_Tmax, A=A, B=B, C=C, D=D, E=E, select=False)
         if load_data and CASRN is not None and CASRN in vapor_pressure.Psub_data_Landolt_Antoine.index:
             methods.append(LANDOLT)
             A, B, C, Tmin, Tmax = vapor_pressure.Psub_values_Landolt_Antoine[vapor_pressure.Psub_data_Landolt_Antoine.index.get_loc(CASRN)].tolist()
-            self.add_correlation(name=LANDOLT, model='Antoine', Tmin=Tmin, Tmax=Tmax, A=A, B=B, C=C, base=e, select=False)
+            self.add_correlation(name=LANDOLT, model="Antoine", Tmin=Tmin, Tmax=Tmax, A=A, B=B, C=C, base=e, select=False)
         self.all_methods.update(methods)
 
     @staticmethod
     def _method_indexes():
-        '''Returns a dictionary of method: index for all methods
+        """Returns a dictionary of method: index for all methods
         that use data files to retrieve constants. The use of this function
         ensures the data files are not loaded until they are needed.
-        '''
+        """
         return {}
 
     def calculate(self, T, method):
-        r'''Method to calculate sublimation pressure of a fluid at temperature
+        r"""Method to calculate sublimation pressure of a fluid at temperature
         `T` with a given method.
 
         This method has no exception handling; see :obj:`T_dependent_property <thermo.utils.TDependentProperty.T_dependent_property>`
@@ -712,7 +703,7 @@ class SublimationPressure(TDependentProperty):
         -------
         Psub : float
             Sublimation pressure at T, [Pa]
-        '''
+        """
         if method == PSUB_CLAPEYRON:
             Psub = Psub_Clapeyron(T, Tt=self.Tt, Pt=self.Pt, Hsub_t=self.Hsub_t)
         elif method == IAPWS_PSUB:

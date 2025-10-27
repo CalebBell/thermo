@@ -1,4 +1,4 @@
-'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2019, 2020 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,14 +18,14 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-'''
+"""
 
 __all__ = [
-    'activity_pointer_reference_dicts',
-    'activity_reference_pointer_dicts',
-    'object_lookups',
-    'lnphis_direct',
-    'fugacities_direct',
+    "activity_pointer_reference_dicts",
+    "activity_reference_pointer_dicts",
+    "fugacities_direct",
+    "lnphis_direct",
+    "object_lookups",
 ]
 
 from fluids.numerics import log, trunc_exp
@@ -42,21 +42,21 @@ from thermo.eos_mix_methods import (
     VDW_lnphis_fastest,
 )
 from thermo.nrtl import NRTL, nrtl_gammas_from_args
-from thermo.regular_solution import RegularSolution, Hansen, FloryHuggins, regular_solution_gammas
+from thermo.regular_solution import FloryHuggins, Hansen, RegularSolution, regular_solution_gammas
 from thermo.serialize import object_lookups
 from thermo.unifac import UNIFAC, unifac_gammas_from_args
 from thermo.uniquac import UNIQUAC, uniquac_gammas_from_args
 from thermo.wilson import Wilson, wilson_gammas_from_args
 
 activity_pointer_reference_dicts = {
-    'thermo.activity.IdealSolution': IdealSolution,
-    'thermo.wilson.Wilson': Wilson,
-    'thermo.unifac.UNIFAC': UNIFAC,
-    'thermo.regular_solution.RegularSolution': RegularSolution,
-    'thermo.regular_solution.FloryHuggins': FloryHuggins,
-    'thermo.regular_solution.Hansen': Hansen,
-    'thermo.uniquac.UNIQUAC': UNIQUAC,
-    'thermo.nrtl.NRTL': NRTL,
+    "thermo.activity.IdealSolution": IdealSolution,
+    "thermo.wilson.Wilson": Wilson,
+    "thermo.unifac.UNIFAC": UNIFAC,
+    "thermo.regular_solution.RegularSolution": RegularSolution,
+    "thermo.regular_solution.FloryHuggins": FloryHuggins,
+    "thermo.regular_solution.Hansen": Hansen,
+    "thermo.uniquac.UNIQUAC": UNIQUAC,
+    "thermo.nrtl.NRTL": NRTL,
 }
 activity_reference_pointer_dicts = {
     v: k for k, v in activity_pointer_reference_dicts.items()

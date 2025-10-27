@@ -1,4 +1,4 @@
-r'''Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
+r"""Chemical Engineering Design Library (ChEDL). Utilities for process modeling.
 Copyright (C) 2020, 2021 Caleb Bell <Caleb.Andrew.Bell@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -48,7 +48,7 @@ Faster implementations which do not store N^2 matrices:
 
 .. autofunction:: a_alpha_quadratic_terms
 .. autofunction:: a_alpha_and_derivatives_quadratic_terms
-'''
+"""
 
 # Direct fugacity calls
 # ---------------------
@@ -60,44 +60,57 @@ Faster implementations which do not store N^2 matrices:
 
 # .. autofunction:: PR_lnphis
 # .. autofunction:: PR_lnphis_fastest
-__all__ = ['a_alpha_aijs_composition_independent',
-           'a_alpha_and_derivatives', 'a_alpha_and_derivatives_full',
-           'a_alpha_quadratic_terms', 'a_alpha_and_derivatives_quadratic_terms',
-           'PR_lnphis', 'VDW_lnphis', 'SRK_lnphis', 'eos_mix_lnphis_general',
-
-           'VDW_lnphis_fastest', 'PR_lnphis_fastest',
-           'SRK_lnphis_fastest', 'RK_lnphis_fastest',
-           'PR_translated_lnphis_fastest',
-
-           'G_dep_lnphi_d_helper',
-
-           'RK_d3delta_dninjnks',
-           'PR_ddelta_dzs', 'PR_ddelta_dns',
-           'PR_d2delta_dninjs', 'PR_d3delta_dninjnks',
-
-           'PR_depsilon_dns', 'PR_d2epsilon_dninjs', 'PR_d3epsilon_dninjnks',
-           'PR_d2epsilon_dzizjs', 'PR_depsilon_dzs',
-
-           'PR_translated_d2delta_dninjs', 'PR_translated_d3delta_dninjnks',
-           'PR_translated_d3epsilon_dninjnks',
-
-           'PR_translated_ddelta_dzs', 'PR_translated_ddelta_dns',
-           'PR_translated_depsilon_dzs', 'PR_translated_depsilon_dns',
-           'PR_translated_d2epsilon_dzizjs', 'PR_translated_d2epsilon_dninjs',
-
-           'SRK_translated_ddelta_dns', 'SRK_translated_depsilon_dns',
-           'SRK_translated_d2epsilon_dzizjs', 'SRK_translated_depsilon_dzs',
-           'SRK_translated_d2delta_dninjs',
-           'SRK_translated_d3delta_dninjnks',
-           'SRK_translated_d2epsilon_dninjs', 'SRK_translated_d3epsilon_dninjnks',
-
-
-           'SRK_translated_lnphis_fastest',
-
-
-           'eos_mix_db_dns', 'eos_mix_da_alpha_dns',
-
-           'eos_mix_dV_dzs', 'eos_mix_a_alpha_volume']
+__all__ = [
+    "G_dep_lnphi_d_helper",
+    "PR_d2delta_dninjs",
+    "PR_d2epsilon_dninjs",
+    "PR_d2epsilon_dzizjs",
+    "PR_d3delta_dninjnks",
+    "PR_d3epsilon_dninjnks",
+    "PR_ddelta_dns",
+    "PR_ddelta_dzs",
+    "PR_depsilon_dns",
+    "PR_depsilon_dzs",
+    "PR_lnphis",
+    "PR_lnphis_fastest",
+    "PR_translated_d2delta_dninjs",
+    "PR_translated_d2epsilon_dninjs",
+    "PR_translated_d2epsilon_dzizjs",
+    "PR_translated_d3delta_dninjnks",
+    "PR_translated_d3epsilon_dninjnks",
+    "PR_translated_ddelta_dns",
+    "PR_translated_ddelta_dzs",
+    "PR_translated_depsilon_dns",
+    "PR_translated_depsilon_dzs",
+    "PR_translated_lnphis_fastest",
+    "RK_d3delta_dninjnks",
+    "RK_lnphis_fastest",
+    "SRK_lnphis",
+    "SRK_lnphis_fastest",
+    "SRK_translated_d2delta_dninjs",
+    "SRK_translated_d2epsilon_dninjs",
+    "SRK_translated_d2epsilon_dzizjs",
+    "SRK_translated_d3delta_dninjnks",
+    "SRK_translated_d3epsilon_dninjnks",
+    "SRK_translated_ddelta_dns",
+    "SRK_translated_depsilon_dns",
+    "SRK_translated_depsilon_dzs",
+    "SRK_translated_lnphis_fastest",
+    "VDW_dlnphis_dP",
+    "VDW_dlnphis_dT",
+    "VDW_lnphis",
+    "VDW_lnphis_fastest",
+    "a_alpha_aijs_composition_independent",
+    "a_alpha_and_derivatives",
+    "a_alpha_and_derivatives_full",
+    "a_alpha_and_derivatives_quadratic_terms",
+    "a_alpha_quadratic_terms",
+    "eos_mix_a_alpha_volume",
+    "eos_mix_dV_dzs",
+    "eos_mix_da_alpha_dns",
+    "eos_mix_db_dns",
+    "eos_mix_lnphis_general",
+]
 from math import log, sqrt
 
 from fluids.constants import R
@@ -115,7 +128,7 @@ root_two_p1 = root_two + 1.0
 
 def a_alpha_aijs_composition_independent(a_alphas, one_minus_kijs, a_alpha_ijs=None,
 a_alpha_roots=None, a_alpha_ij_roots_inv=None):
-    r'''Calculates the matrix :math:`(a\alpha)_{ij}` as well as the array
+    r"""Calculates the matrix :math:`(a\alpha)_{ij}` as well as the array
     :math:`\sqrt{(a\alpha)_{i}}` and the matrix
     :math:`\frac{1}{\sqrt{(a\alpha)_{i}}\sqrt{(a\alpha)_{j}}}`.
 
@@ -165,7 +178,7 @@ a_alpha_roots=None, a_alpha_ij_roots_inv=None):
     [0.49910914213, 0.80538784840]
     >>> a_alpha_ij_roots_inv
     [[4.0142919105, 2.487707997796], [2.487707997796, 1.54166443799]]
-    '''
+    """
     N = len(a_alphas)
     _sqrt = sqrt
 
@@ -224,7 +237,7 @@ def a_alpha_and_derivatives(a_alphas, T, zs, one_minus_kijs, a_alpha_ijs=None,
 def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
                                  one_minus_kijs, a_alpha_ijs=None, a_alpha_roots=None,
                                  a_alpha_ij_roots_inv=None):
-    r'''Calculates the `a_alpha` term, and its first two temperature
+    r"""Calculates the `a_alpha` term, and its first two temperature
     derivatives, for an equation of state along with the
     matrix quantities calculated in the process.
 
@@ -342,7 +355,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
     [[-0.000510202800, -0.0006937567844], [-0.000693756784, -0.00111311535]]
     >>> d2a_alpha_dT2_ijs
     [[1.865112885e-06, 2.4734471244e-06], [2.4734471244e-06, 3.8843319e-06]]
-    '''
+    """
     # For 44 components, takes 150 us in PyPy.
 
     N = len(a_alphas)
@@ -429,7 +442,7 @@ def a_alpha_and_derivatives_full(a_alphas, da_alpha_dTs, d2a_alpha_dT2s, T, zs,
 
 def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
                             a_alpha_j_rows=None, vec0=None):
-    r'''Calculates the `a_alpha` term for an equation of state along with the
+    r"""Calculates the `a_alpha` term for an equation of state along with the
     vector quantities needed to compute the fugacities of the mixture. This
     routine is efficient in both numba and PyPy.
 
@@ -486,7 +499,7 @@ def a_alpha_quadratic_terms(a_alphas, a_alpha_roots, T, zs, one_minus_kijs,
     >>> a_alpha, a_alpha_j_rows = a_alpha_quadratic_terms(a_alphas, a_alpha_roots, 299.0, zs, one_minus_kijs)
     >>> a_alpha, a_alpha_j_rows
     (0.58562139582, [0.35469988173, 0.61604757237])
-    '''
+    """
     N = len(a_alphas)
     if a_alpha_j_rows is None:
         a_alpha_j_rows = [0.0]*N
@@ -546,7 +559,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
                                             da_alpha_dTs, d2a_alpha_dT2s, T,
                                             zs, one_minus_kijs, a_alpha_j_rows=None,
                                             da_alpha_dT_j_rows=None):
-    r'''Calculates the `a_alpha` term, and its first two temperature
+    r"""Calculates the `a_alpha` term, and its first two temperature
     derivatives, for an equation of state along with the
     vector quantities needed to compute the fugacitie and temperature
     derivatives of fugacities of the mixture. This
@@ -657,7 +670,7 @@ def a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots,
     >>> d2a_alpha_dT2s = [1.8651128859234162e-06, 3.884331923127011e-06]
     >>> a_alpha_and_derivatives_quadratic_terms(a_alphas, a_alpha_roots, da_alpha_dTs, d2a_alpha_dT2s, 299.0, zs, one_minus_kijs)
     (0.58562139582, -0.001018667672, 3.56669817856e-06, [0.35469988173, 0.61604757237], [-0.000672387374, -0.001064293501])
-    '''
+    """
     N = len(a_alphas)
     a_alpha = da_alpha_dT = d2a_alpha_dT2 = 0.0
 
@@ -745,13 +758,12 @@ def eos_mix_dV_dzs(T, P, Z, b, delta, epsilon, a_alpha, db_dzs, ddelta_dzs,
                    depsilon_dzs, da_alpha_dzs, N, out=None):
     if out is None:
         out = [0.0]*N
-    T = T
     RT = R*T
     V = Z*RT/P
 
     x0 = delta
-    x1 = a_alpha = a_alpha
-    x2 = epsilon = epsilon
+    x1 = a_alpha
+    x2 = epsilon
 
     x0V = x0*V
     Vmb = V - b
@@ -840,9 +852,9 @@ def eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_
         # Use the lowest Gibbs energy root
         V_low = V0
         if V1 != 0.0:
-            if V_low > V1 and V1 > b:
+            if V_low > V1 > b:
                 V_low = V1
-            if V_low > V2 and V2 > b:
+            if V_low > V2 > b:
                 V_low = V2
         V_high = V0
         if V1 != 0.0:
@@ -860,9 +872,9 @@ def eos_mix_a_alpha_volume(g, l, T, P, zs, one_minus_kijs, b, delta, epsilon, a_
     elif not g:
         # Prefer liquid, ensure V0 is the smalest root
         if V1 != 0.0:
-            if V0 > V1 and V1 > b:
+            if V0 > V1 > b:
                 V0 = V1
-            if V0 > V2 and V2 > b:
+            if V0 > V2 > b:
                 V0 = V2
     else:
         if V1 != 0.0:
@@ -1478,3 +1490,50 @@ def SRK_translated_lnphis_fastest(zs, T, P, N, one_minus_kijs, l, g, b0s, bs, cs
                            a_alpha_roots, N, db_dns, da_alpha_dns, ddelta_dns,
                            depsilon_dns, lnphis=lnphis)
 
+def VDW_dlnphis_dT(T, P, Z, dZ_dT, b, a_alpha, da_alpha_dT, bs, ais, N, dlnphis_dT=None):
+    if dlnphis_dT is None:
+        dlnphis_dT = [0.0]*N
+
+    T_inv = 1.0/T
+    T_inv2 = T_inv*T_inv
+    x0 = a_alpha
+    x4 = 1.0/Z
+    x5 = 4.0*P*R2_inv*x4*T_inv2*T_inv
+    x8 = 2*P*R2_inv*T_inv2*dZ_dT/Z**2
+    x9 = P*R2_inv*x4*T_inv2*da_alpha_dT/x0
+    x10 = 1.0/P
+    x11 = R*x10*(T*dZ_dT + Z)/(-R*T*x10*Z + b)**2
+    x13 = b*T_inv*R_inv
+    x14 = P*x13*x4 - 1.0
+    x15 = x4*(P*x13*(T_inv + x4*dZ_dT) - x14*dZ_dT)/x14
+    for i in range(N):
+        x1 = (ais[i]*x0)**0.5
+        d_lhphi_dT = -bs[i]*x11 + x1*x5 + x1*x8 - x1*x9 + x15
+        dlnphis_dT[i] = d_lhphi_dT
+
+    return dlnphis_dT
+
+
+def VDW_dlnphis_dP(T, P, Z, dZ_dP, b, a_alpha, bs, ais, N, dlnphis_dP=None):
+    if dlnphis_dP is None:
+        dlnphis_dP = [0.0]*N
+
+    T_inv = 1.0/T
+    RT_inv = T_inv*R_inv
+    x3 = T_inv*T_inv
+    x5 = 1.0/Z
+    x6 = 2.0*R2_inv*x3*x5
+    x8 = 2.0*P*R2_inv*x3*dZ_dP*x5*x5
+    x9 = 1./P
+    x10 = Z*x9
+    x11 = R*T*x9*(-x10 + dZ_dP)/(-R*T*x10 + b)**2
+    x12 = P*x5
+    x13 = b*RT_inv
+    x14 = x12*x13 - 1.0
+    x15 = -x5*(-x13*(x12*dZ_dP - 1.0) + x14*dZ_dP)/x14
+    for i in range(N):
+        x1 = (ais[i]*a_alpha)**0.5
+        d_lnphi_dP = -bs[i]*x11 - x1*x6 + x1*x8 + x15
+        dlnphis_dP[i] = d_lnphi_dP
+
+    return dlnphis_dP
