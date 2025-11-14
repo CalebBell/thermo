@@ -858,7 +858,7 @@ def volume_solutions_halley(T, P, b, delta, epsilon, a_alpha):
     """
     # Test the case where a_alpha is so low, even with the lowest possible volume `b`,
     # the value of the second term plus P is equal to P.
-    if a_alpha - P * (b*(b + delta) + epsilon) == 0:
+    if a_alpha/(b*(b + delta) + epsilon) + P == P:
         return (b + R*T/P, 0.0, 0.0)
 
     # Run this first, before the low P criteria
