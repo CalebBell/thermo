@@ -1303,7 +1303,7 @@ class GCEOS:
             self.phase = "l/g"
         else:
             # Even in the case of three real roots, it is still the min/max that make sense
-            print([self.T, self.P, b, self.delta, self.epsilon, self.a_alpha, "coordinates of failure"])
+            # print([self.T, self.P, b, self.delta, self.epsilon, self.a_alpha, "coordinates of failure"])
             if self.multicomponent:
                 extra = f", zs is {self.zs}"
             else:
