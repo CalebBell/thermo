@@ -143,7 +143,7 @@ test-nuitka py="3.13":
     @echo ">>> Creating temporary virtual environment with Python {{py}}..."
     @uv venv .venv-nuitka-{{py}} --python {{py}}
     @echo "\n>>> Installing project and Nuitka in temporary environment..."
-    @uv pip install --python .venv-nuitka-{{py}}/{{VENV_BIN_DIR}}/{{PYTHON_EXE}} -e .[test,numba]
+    @uv pip install --python .venv-nuitka-{{py}}/{{VENV_BIN_DIR}}/{{PYTHON_EXE}} -e .[test]
     @uv pip install --python .venv-nuitka-{{py}}/{{VENV_BIN_DIR}}/{{PYTHON_EXE}} nuitka
     @echo "\n>>> Preparing build directory..."
     @mkdir -p dev/nuitka/build

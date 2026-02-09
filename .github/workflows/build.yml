@@ -100,7 +100,7 @@ jobs:
         fi
       shell: bash
     - name: Add numba
-      if: ${{ !contains(fromJSON('["pypy3.11", "3.13t"]'), matrix.python-version) }}
+      if: ${{ !contains(fromJSON('["pypy3.11", "3.13t"]'), matrix.python-version) && !contains(fromJSON('["macos-15-intel"]'), matrix.os) }}
       run: |
         uv pip install --system -e .[numba]
     - name: Generate Files
