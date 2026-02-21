@@ -5335,7 +5335,7 @@ class Phase:
                 return self._n
             except:
                 pass
-            self._n = self.result.n*self.beta
+            self._n = self._n_total*self._beta
             return self._n
         except:
             return None
@@ -5358,7 +5358,7 @@ class Phase:
             try:
                 return self._m
             except:
-                self._m = self.result.m*self.beta_mass
+                self._m = self._m_total*self._beta_mass
                 return self._m
         except:
             return None
@@ -5406,7 +5406,7 @@ class Phase:
             try:
                 return self._ns
             except:
-                n = self.result.n*self.beta
+                n = self._n_total*self._beta
                 if self.vectorized:
                     self._ns = self.zs*n
                 else:
@@ -5436,7 +5436,7 @@ class Phase:
                 return self._ms
             except:
                 pass
-            m = self.result.m*self.beta_mass
+            m = self._m_total*self._beta_mass
             if self.vectorized:
                 self._ms = m*self.ws()
             else:

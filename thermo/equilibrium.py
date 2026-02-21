@@ -349,6 +349,7 @@ class EquilibriumState:
             liquid_bulk.settings = settings
             liquid_bulk._V_liquids_ref = V_liquids_ref
             liquid_bulk._gas_beta = betas[0] if gas_count else 0.0
+            liquid_bulk._beta = sum(betas_liquids)
             for i, l in enumerate(liquids):
                 setattr(self, f"liquid{i}", l)
                 l.assigned_phase = "l"
@@ -369,6 +370,7 @@ class EquilibriumState:
             solid_bulk.flasher = flasher
             solid_bulk._V_liquids_ref = V_liquids_ref
             solid_bulk._gas_beta = betas[0] if gas_count else 0.0
+            solid_bulk._beta = sum(betas_solids)
             for i, s in enumerate(solids):
                 setattr(self, f"solid{i}", s)
 
@@ -380,6 +382,8 @@ class EquilibriumState:
         bulk.settings = settings
         bulk._V_liquids_ref = V_liquids_ref
         bulk._gas_beta = betas[0] if gas_count else 0.0
+        bulk._beta = 1.0
+        bulk._beta_mass = 1.0
 
         self.flash_specs = flash_specs
         self.flash_convergence = flash_convergence
@@ -411,6 +415,16 @@ class EquilibriumState:
             phase._beta_volume = betas_volume[i]
             phase._beta_volume_liquid_ref = betas_volume_liquid_ref[i]
             phase._gas_beta = gas_beta
+        if liquid_count > 1:
+            try:
+                liquid_bulk._beta_mass = sum(betas_mass[gas_count:gas_count + liquid_count])
+            except:
+                liquid_bulk._beta_mass = None
+        if solids:
+            try:
+                solid_bulk._beta_mass = sum(betas_mass[gas_count + liquid_count:])
+            except:
+                solid_bulk._beta_mass = None
 
     def as_json(self, cache=None, option=0):
         return JsonOptEncodable.as_json(self, cache, option)

@@ -2855,6 +2855,21 @@ class EquilibriumStream(EquilibriumState):
         self.ns = [n*zi for zi in zs]
         self._ws = ws = [zi*MWi*MW_inv for zi, MWi in zip(zs, constants.MWs)]
         self.ms = [m*wi for wi in ws]
+        for phase in self.phases:
+            phase._n_total = n
+            phase._m_total = m
+        self.bulk._n_total = n
+        self.bulk._m_total = m
+        try:
+            self.liquid_bulk._n_total = n
+            self.liquid_bulk._m_total = m
+        except AttributeError:
+            pass
+        try:
+            self.solid_bulk._n_total = n
+            self.solid_bulk._m_total = m
+        except AttributeError:
+            pass
 
 
 
