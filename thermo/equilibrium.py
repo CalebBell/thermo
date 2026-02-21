@@ -48,6 +48,7 @@ from fluids.numerics import numpy as np
 from thermo.bulk import Bulk, JsonOptEncodable, default_settings
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage, constants_docstrings
 from thermo.phases import Phase, derivatives_jacobian, derivatives_thermodynamic, derivatives_thermodynamic_mass, gas_phases, liquid_phases, solid_phases
+from thermo.phases.phase import phase_shared_methods
 from thermo.serialize import object_lookups
 
 all_phases = gas_phases + liquid_phases + solid_phases
@@ -1095,136 +1096,6 @@ class EquilibriumState:
         for i in range(self.N):
             MW += zs[i]*MWs[i]
         return MW
-
-    def pseudo_Tc(self, phase=None):
-        r"""Method to calculate and return the pseudocritical temperature
-        calculated using Kay's rule (linear mole fractions):
-
-        .. math::
-            T_{c, pseudo} = \sum_i z_i T_{c,i}
-
-        Returns
-        -------
-        pseudo_Tc : float
-            Pseudocritical temperature of the phase, [K]
-
-        Notes
-        -----
-        """
-        if phase is None:
-            zs = self.zs
-        else:
-            zs = phase.zs
-
-        Tcs = self.constants.Tcs
-        Tc = 0.0
-        for i in range(self.N):
-            Tc += zs[i]*Tcs[i]
-        return Tc
-
-    def pseudo_Pc(self, phase=None):
-        r"""Method to calculate and return the pseudocritical pressure
-        calculated using Kay's rule (linear mole fractions):
-
-        .. math::
-            P_{c, pseudo} = \sum_i z_i P_{c,i}
-
-        Returns
-        -------
-        pseudo_Pc : float
-            Pseudocritical pressure of the phase, [Pa]
-
-        Notes
-        -----
-        """
-        if phase is None:
-            zs = self.zs
-        else:
-            zs = phase.zs
-
-        Pcs = self.constants.Pcs
-        Pc = 0.0
-        for i in range(self.N):
-            Pc += zs[i]*Pcs[i]
-        return Pc
-
-    def pseudo_Vc(self, phase=None):
-        r"""Method to calculate and return the pseudocritical volume
-        calculated using Kay's rule (linear mole fractions):
-
-        .. math::
-            V_{c, pseudo} = \sum_i z_i V_{c,i}
-
-        Returns
-        -------
-        pseudo_Vc : float
-            Pseudocritical volume of the phase, [m^3/mol]
-
-        Notes
-        -----
-        """
-        if phase is None:
-            zs = self.zs
-        else:
-            zs = phase.zs
-
-        Vcs = self.constants.Vcs
-        Vc = 0.0
-        for i in range(self.N):
-            Vc += zs[i]*Vcs[i]
-        return Vc
-
-    def pseudo_Zc(self, phase=None):
-        r"""Method to calculate and return the pseudocritical compressibility
-        calculated using Kay's rule (linear mole fractions):
-
-        .. math::
-            Z_{c, pseudo} = \sum_i z_i Z_{c,i}
-
-        Returns
-        -------
-        pseudo_Zc : float
-            Pseudocritical compressibility of the phase, [-]
-
-        Notes
-        -----
-        """
-        if phase is None:
-            zs = self.zs
-        else:
-            zs = phase.zs
-
-        Zcs = self.constants.Zcs
-        Zc = 0.0
-        for i in range(self.N):
-            Zc += zs[i]*Zcs[i]
-        return Zc
-
-    def pseudo_omega(self, phase=None):
-        r"""Method to calculate and return the pseudocritical acentric factor
-        calculated using Kay's rule (linear mole fractions):
-
-        .. math::
-            \omega_{pseudo} = \sum_i z_i \omega_{i}
-
-        Returns
-        -------
-        pseudo_omega : float
-            Pseudo acentric factor of the phase, [-]
-
-        Notes
-        -----
-        """
-        if phase is None:
-            zs = self.zs
-        else:
-            zs = phase.zs
-
-        omegas = self.constants.omegas
-        omega = 0.0
-        for i in range(self.N):
-            omega += zs[i]*omegas[i]
-        return omega
 
     def Tmc(self, phase=None):
         r"""Method to calculate and return the mechanical critical temperature
@@ -3435,8 +3306,6 @@ for name in PropertyCorrelationsPackage.correlations:
 phases_properties_to_EquilibriumState = ["atom_content", "atom_fractions", "atom_mass_fractions",
                                          "atom_flows","atom_mass_flows", "atom_count_flows", "API",
                                          "Hc", "Hc_mass", "Hc_lower", "Hc_lower_mass", "SG", "SG_gas",
-                                         "pseudo_Tc", "pseudo_Pc", "pseudo_Vc", "pseudo_Zc",
-                                         "pseudo_omega",
                                          "V_gas_standard", "V_gas_normal", "V_gas",
                                          "rho_gas_standard", "rho_gas_normal", "rho_gas",
                                          "rho_mass_gas_standard", "rho_mass_gas_normal", "rho_mass_gas",
@@ -3458,6 +3327,8 @@ for name in phases_properties_to_EquilibriumState:
     method = _make_getter_EquilibriumState(name)
     setattr(Phase, name, method)
 
+for method in phase_shared_methods:
+    setattr(EquilibriumState, method.__name__, method)
 
 # things without any arguments
 phases_properties_argumentless_to_EquilibriumState = ["Psats","Psubs", "Hvaps",

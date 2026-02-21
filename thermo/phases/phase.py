@@ -6130,3 +6130,121 @@ for attr in derivatives_thermodynamic:
     setattr(Phase, s, _der)
     derivatives_thermodynamic_mass.append(s)
 del prop_names, prop_units
+
+
+
+
+def pseudo_Tc(self):
+    r"""Method to calculate and return the pseudocritical temperature
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        T_{c, pseudo} = \sum_i z_i T_{c,i}
+
+    Returns
+    -------
+    pseudo_Tc : float
+        Pseudocritical temperature of the phase, [K]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Tcs = self.constants.Tcs
+    Tc = 0.0
+    for i in range(self.N):
+        Tc += zs[i]*Tcs[i]
+    return Tc
+
+def pseudo_Pc(self):
+    r"""Method to calculate and return the pseudocritical pressure
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        P_{c, pseudo} = \sum_i z_i P_{c,i}
+
+    Returns
+    -------
+    pseudo_Pc : float
+        Pseudocritical pressure of the phase, [Pa]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Pcs = self.constants.Pcs
+    Pc = 0.0
+    for i in range(self.N):
+        Pc += zs[i]*Pcs[i]
+    return Pc
+
+def pseudo_Vc(self):
+    r"""Method to calculate and return the pseudocritical volume
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        V_{c, pseudo} = \sum_i z_i V_{c,i}
+
+    Returns
+    -------
+    pseudo_Vc : float
+        Pseudocritical volume of the phase, [m^3/mol]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Vcs = self.constants.Vcs
+    Vc = 0.0
+    for i in range(self.N):
+        Vc += zs[i]*Vcs[i]
+    return Vc
+
+def pseudo_Zc(self):
+    r"""Method to calculate and return the pseudocritical compressibility
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        Z_{c, pseudo} = \sum_i z_i Z_{c,i}
+
+    Returns
+    -------
+    pseudo_Zc : float
+        Pseudocritical compressibility of the phase, [-]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Zcs = self.constants.Zcs
+    Zc = 0.0
+    for i in range(self.N):
+        Zc += zs[i]*Zcs[i]
+    return Zc
+
+def pseudo_omega(self):
+    r"""Method to calculate and return the pseudocritical acentric factor
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        \omega_{pseudo} = \sum_i z_i \omega_{i}
+
+    Returns
+    -------
+    pseudo_omega : float
+        Pseudo acentric factor of the phase, [-]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    omegas = self.constants.omegas
+    omega = 0.0
+    for i in range(self.N):
+        omega += zs[i]*omegas[i]
+    return omega
+
+phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega]
+
+for method in phase_shared_methods:
+    setattr(Phase, method.__name__, method)
