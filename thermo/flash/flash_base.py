@@ -1941,6 +1941,10 @@ class Flash:
         Notes
         -----
         """
+        try:
+            return self._V_liquids_ref
+        except AttributeError:
+            pass
         T_liquid_volume_ref = self.settings.T_liquid_volume_ref
         if T_liquid_volume_ref == 298.15:
             Vls = self.constants.Vml_STPs
@@ -1948,6 +1952,7 @@ class Flash:
             Vls = self.constants.Vml_60Fs
         else:
             Vls = [i(T_liquid_volume_ref, None) for i in self.correlations.VolumeLiquids]
+        self._V_liquids_ref = Vls
         return Vls
 
 

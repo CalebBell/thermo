@@ -330,6 +330,12 @@ class EquilibriumState:
         self.liquids_betas = betas_liquids = betas[gas_count:gas_count + liquid_count]
         self.solids_betas = betas_solids = betas[gas_count + liquid_count:]
 
+
+        try:
+            V_liquids_ref = flasher.V_liquids_ref()
+        except:
+            V_liquids_ref = None
+
         if liquid_count > 1:
 #                tot_inv = 1.0/sum(values)
 #                return [i*tot_inv for i in values]
@@ -341,6 +347,7 @@ class EquilibriumState:
             liquid_bulk.constants = constants
             liquid_bulk.correlations = correlations
             liquid_bulk.settings = settings
+            liquid_bulk._V_liquids_ref = V_liquids_ref
             for i, l in enumerate(liquids):
                 setattr(self, f"liquid{i}", l)
                 l.assigned_phase = "l"
@@ -359,6 +366,7 @@ class EquilibriumState:
             solid_bulk.constants = constants
             solid_bulk.correlations = correlations
             solid_bulk.flasher = flasher
+            solid_bulk._V_liquids_ref = V_liquids_ref
             for i, s in enumerate(solids):
                 setattr(self, f"solid{i}", s)
 
@@ -368,6 +376,7 @@ class EquilibriumState:
         bulk.correlations = correlations
         bulk.flasher = flasher
         bulk.settings = settings
+        bulk._V_liquids_ref = V_liquids_ref
 
         self.flash_specs = flash_specs
         self.flash_convergence = flash_convergence
@@ -379,6 +388,7 @@ class EquilibriumState:
             phase.result = self
             phase.constants = constants
             phase.correlations = correlations
+            phase._V_liquids_ref = V_liquids_ref
 
     def as_json(self, cache=None, option=0):
         return JsonOptEncodable.as_json(self, cache, option)
@@ -758,14 +768,7 @@ class EquilibriumState:
         Notes
         -----
         """
-        T_liquid_volume_ref = self.settings.T_liquid_volume_ref
-        if T_liquid_volume_ref == 298.15:
-            Vls = self.Vml_STPs
-        elif T_liquid_volume_ref == 288.7055555555555:
-            Vls = self.Vml_60Fs
-        else:
-            Vls = [i(T_liquid_volume_ref) for i in self.VolumeLiquids]
-        return Vls
+        return self.flasher.V_liquids_ref()
 
     def V_liquid_ref(self, phase=None):
         r"""Method to calculate and return the liquid reference molar volume

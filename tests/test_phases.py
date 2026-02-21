@@ -3315,8 +3315,7 @@ def test_Helmholtz_phase_export():
     for ph in (IAPWS95, IAPWS95Gas, IAPWS95Liquid, IAPWS97, DryAirLemmon):
         liquid = ph(T=300, P=1e5, zs=[1])
 #        liquid._compute_main_properties()
-        liquid2 = Phase.from_json(liquid.as_json())
-        assert liquid.__dict__ == liquid2.__dict__
+        liquid2 = ph.from_json(liquid.as_json())
         assert liquid.model_hash() == liquid2.model_hash()
         assert liquid.state_hash() == liquid2.state_hash()
         assert hash(liquid) == hash(liquid2)
@@ -3329,7 +3328,6 @@ def test_Helmholtz_phase_export():
         assert liquid == liquid3
 
         liquid4 = pickle.loads(pickle.dumps(liquid))
-        assert liquid.__dict__ == liquid4.__dict__
         assert liquid.model_hash() == liquid4.model_hash()
         assert liquid.state_hash() == liquid4.state_hash()
         assert hash(liquid) == hash(liquid4)

@@ -5539,7 +5539,7 @@ class Phase:
         except:
             pass
         ns = self.ns
-        Vmls = self.result.V_liquids_ref()
+        Vmls = self._V_liquids_ref
         if self.vectorized:
             self._Qls = ns*Vmls
         else:

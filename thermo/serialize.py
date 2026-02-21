@@ -371,8 +371,13 @@ class JsonOptEncodable:
                     d[obj_name] = created_objs
 
         # Cannot use dict update because of slots
-        for k, v in d.items():
-            setattr(new, k, v)
+        try:
+            for k, v in d.items():
+                setattr(new, k, v)
+        except AttributeError:
+            new = original_obj.from_json(d, cache)
+            cache[ref_name] = new
+            return new
         if hasattr(new, "_custom_from_json"):
             new._custom_from_json(num_to_object)
         return new
