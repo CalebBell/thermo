@@ -7001,10 +7001,7 @@ def Vfls(self):
     -----
     """
     zs = self.zs
-    try:
-        Vls = self._V_liquids_ref
-    except AttributeError:
-        Vls = self.flasher.V_liquids_ref()
+    Vls = self._V_liquids_ref
     V = 0.0
     for i in range(self.N):
         V += zs[i]*Vls[i]
@@ -7028,10 +7025,7 @@ def V_liquid_ref(self):
     -----
     """
     zs = self.zs
-    try:
-        Vls = self._V_liquids_ref
-    except AttributeError:
-        Vls = self.flasher.V_liquids_ref()
+    Vls = self._V_liquids_ref
     V = 0.0
     for i in range(self.N):
         V += zs[i]*Vls[i]

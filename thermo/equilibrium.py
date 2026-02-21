@@ -394,11 +394,13 @@ class EquilibriumState:
         self.settings = settings
         self.constants = constants
         self.correlations = correlations
+        self._V_liquids_ref = V_liquids_ref
         for phase in self.phases:
             phase.result = self
             phase.constants = constants
             phase.correlations = correlations
             phase.settings = settings
+            phase._V_liquids_ref = V_liquids_ref
         gas_beta = self.gas_beta
         try:
             betas_mass = self.betas_mass
@@ -413,7 +415,6 @@ class EquilibriumState:
         except:
             betas_volume_liquid_ref = [None]*self.phase_count
         for i, phase in enumerate(self.phases):
-            phase._V_liquids_ref = V_liquids_ref
             phase._beta = betas[i]
             phase._beta_mass = betas_mass[i]
             phase._beta_volume = betas_volume[i]
