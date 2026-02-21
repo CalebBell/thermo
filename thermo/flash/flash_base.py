@@ -1955,6 +1955,39 @@ class Flash:
         self._V_liquids_ref = Vls
         return Vls
 
+    def phase_as_EquilibriumState(self, phase, flash_specs=None):
+        from thermo.equilibrium import EquilibriumState
+        if flash_specs is None:
+            try:
+                flash_specs = phase.result.flash_specs.copy()
+            except:
+                flash_specs = {"T": phase.T, "P": phase.P}
+        if phase.bulk_phase_type:
+            if phase.phase_bulk == "l":
+                gas, liquids, solids = None, [v.to_TP_zs(T=v.T, P=v.P, zs=v.zs) for v in phase.phases], []
+            elif phase.phase_bulk == "s":
+                gas, liquids, solids = None, [], [v.to_TP_zs(T=v.T, P=v.P, zs=v.zs) for v in phase.phases]
+            betas = phase.phase_fractions
+        else:
+            betas = [1]
+            phase_copy = phase.to_TP_zs(T=phase.T, P=phase.P, zs=phase.zs)
+            if phase.is_gas:
+                gas, liquids, solids = phase_copy, [], []
+            elif phase.is_liquid:
+                gas, liquids, solids = None, [phase_copy], []
+            elif phase.is_solid:
+                gas, liquids, solids = None, [], [phase_copy]
+        flash_specs["phase_as_state"] = True
+        return EquilibriumState(T=phase.T, P=phase.P, zs=phase.zs, gas=gas, liquids=liquids, solids=solids, betas=betas,
+            constants=self.constants, correlations=self.correlations, flasher=self, settings=self.settings,
+            flash_specs=flash_specs)
+
+    def phase_as_EquilibriumStream(self, phase, n=None, flash_specs=None):
+        state = self.phase_as_EquilibriumState(phase, flash_specs=flash_specs)
+        from thermo.stream import EquilibriumStream
+        if n is None:
+            n = phase.n
+        return EquilibriumStream(flasher=self, zs=phase.zs, n=n, P=phase.P, T=phase.T, existing_flash=state)
 
     @property
     def water_index(self):

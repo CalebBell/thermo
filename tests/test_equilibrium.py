@@ -1373,9 +1373,9 @@ def test_Phase_to_EquilibriumState():
     assert gas_state.liquid_count == 0
 
     phases = [gas_state.gas, liquid_state.liquid0, gas, liquid]
-    flashers = [None, None, flasher, flasher]
-    for phase, flasher in zip(phases, flashers):
-        state = phase.as_EquilibriumState(flasher)
+    flashers = [gas_state.flasher, liquid_state.flasher, flasher, flasher]
+    for phase, fl in zip(phases, flashers):
+        state = fl.phase_as_EquilibriumState(phase)
         assert_close1d(state.phis(), phase.phis())
         assert_close1d(state.lnphis(), phase.lnphis())
         assert_close1d(state.fugacities(), phase.fugacities())
