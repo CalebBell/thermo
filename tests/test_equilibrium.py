@@ -166,11 +166,11 @@ def test_two_eos_pure_flash_all_properties():
 
     assert_close1d(eq.Vfgs(), [1])
     assert_close1d(eq.bulk.Vfgs(), [1])
-    assert_close2d([eq.Vfgs(phase) for phase in eq.phases], [[1], [1]])
+    assert_close2d([phase.Vfgs() for phase in eq.phases], [[1], [1]])
 
     assert_close1d(eq.ws(), [1])
     assert_close1d(eq.bulk.ws(), [1])
-    assert_close2d([eq.ws(phase) for phase in eq.phases], [[1], [1]])
+    assert_close2d([phase.ws() for phase in eq.phases], [[1], [1]])
 
 
     # H S G U A

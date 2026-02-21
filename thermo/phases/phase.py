@@ -30,9 +30,14 @@ __all__ = [
 
 from math import sqrt
 
+from chemicals.elements import mass_fractions
+from chemicals.utils import (
+    SG as SG_util,
+)
 from chemicals.utils import (
     Cp_minus_Cv,
     Joule_Thomson,
+    Vm_to_rho,
     dns_to_dn_partials,
     dxs_to_dn_partials,
     dxs_to_dns,
@@ -47,7 +52,7 @@ from chemicals.utils import (
     speed_of_sound,
 )
 from chemicals.virial import B_from_Z
-from fluids.constants import R, R_inv
+from fluids.constants import N_A, R, R_inv
 from fluids.core import c_ideal_gas, thermal_diffusivity
 from fluids.numerics import (
     jacobian,
@@ -6244,7 +6249,466 @@ def pseudo_omega(self):
         omega += zs[i]*omegas[i]
     return omega
 
-phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega]
+def Vfgs(self):
+    r"""Method to calculate and return the ideal-gas volume fractions of
+    the components of the phase. This is the same as the mole fractions.
+
+    Returns
+    -------
+    Vfgs : list[float]
+        Ideal-gas volume fractions of the components of the phase, [-]
+
+    Notes
+    -----
+    """
+    return self.zs
+
+def atom_content(self):
+    r"""Method to calculate and return the number of moles of each atom
+    in the phase per mole of the phase;
+    returns a dictionary of atom counts, containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_content : dict[str: float]
+        Atom counts, [-]
+
+    Notes
+    -----
+    """
+    try:
+        return self._atom_content
+    except:
+        pass
+    zs = self.zs
+    things = dict()
+    for zi, atoms in zip(zs, self.constants.atomss):
+        for atom, count in atoms.items():
+            if atom in things:
+                things[atom] += zi*count
+            else:
+                things[atom] = zi*count
+    self._atom_content = things
+    return things
+
+def atom_fractions(self):
+    r"""Method to calculate and return the atomic composition of the phase;
+    returns a dictionary of atom fraction (by count), containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_fractions : dict[str: float]
+        Atom fractions, [-]
+
+    Notes
+    -----
+    """
+    try:
+        return self._atom_fractions
+    except:
+        pass
+    things = self.atom_content()
+    tot_inv = 1.0/sum(things.values())
+    self._atom_fractions = {atom : value*tot_inv for atom, value in things.items()}
+    return self._atom_fractions
+
+def atom_mass_fractions(self):
+    r"""Method to calculate and return the atomic mass fractions of the phase;
+    returns a dictionary of atom fraction (by mass), containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_mass_fractions : dict[str: float]
+        Atom mass fractions, [-]
+
+    Notes
+    -----
+    """
+    try:
+        return self._atom_mass_fractions
+    except:
+        pass
+    zs = self.zs
+    things = {}
+    for zi, atoms in zip(zs, self.constants.atomss):
+        for atom, count in atoms.items():
+            if atom in things:
+                things[atom] += zi*count
+            else:
+                things[atom] = zi*count
+    self._atom_mass_fractions = mass_fractions(things, self.MW())
+    return self._atom_mass_fractions
+
+def atom_flows(self):
+    r"""Method to calculate and return the atomic flow rates of the phase;
+    returns a dictionary of atom flows, containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_flows : dict[str: float]
+        Atom flows, [mol/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._atom_flows
+    except:
+        pass
+    atom_content = self.atom_content()
+    n = self.n
+    self._atom_flows = {k:v*n for k, v in atom_content.items()}
+    return self._atom_flows
+
+def atom_count_flows(self):
+    r"""Method to calculate and return the atom count flow rates of the phase;
+    returns a dictionary of atom count flows, containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_count_flows : dict[str: float]
+        Atom flows, [atoms/s]
+
+    Notes
+    -----
+    """
+    atom_content = self.atom_content()
+    n = self.n
+    return {k:v*n*N_A for k, v in atom_content.items()}
+
+def atom_mass_flows(self):
+    r"""Method to calculate and return the atomic mass flow rates of the phase;
+    returns a dictionary of atom mass flows, containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_mass_flows : dict[str: float]
+        Atom mass flows, [kg/s]
+
+    Notes
+    -----
+    """
+    atom_mass_fractions = self.atom_mass_fractions()
+    m = self.m
+    return {k:v*m for k, v in atom_mass_fractions.items()}
+
+def Hc(self):
+    r"""Method to calculate and return the molar ideal-gas higher heat of
+    combustion of the object, [J/mol]
+
+    Returns
+    -------
+    Hc : float
+        Molar higher heat of combustion, [J/(mol)]
+
+    Notes
+    -----
+    """
+    return mixing_simple(self.constants.Hcs, self.zs)
+
+def Hc_mass(self):
+    r"""Method to calculate and return the mass ideal-gas higher heat of
+    combustion of the object, [J/mol]
+
+    Returns
+    -------
+    Hc_mass : float
+        Mass higher heat of combustion, [J/(kg)]
+
+    Notes
+    -----
+    """
+    return mixing_simple(self.constants.Hcs_mass, self.ws())
+
+def Hc_lower(self):
+    r"""Method to calculate and return the molar ideal-gas lower heat of
+    combustion of the object, [J/mol]
+
+    Returns
+    -------
+    Hc_lower : float
+        Molar lower heat of combustion, [J/(mol)]
+
+    Notes
+    -----
+    """
+    return mixing_simple(self.constants.Hcs_lower, self.zs)
+
+def Hc_lower_mass(self):
+    r"""Method to calculate and return the mass ideal-gas lower heat of
+    combustion of the object, [J/mol]
+
+    Returns
+    -------
+    Hc_lower_mass : float
+        Mass lower heat of combustion, [J/(kg)]
+
+    Notes
+    -----
+    """
+    return mixing_simple(self.constants.Hcs_lower_mass, self.ws())
+
+def SG(self):
+    r"""Method to calculate and return the standard liquid specific gravity
+    of the phase, using constant liquid pure component densities not
+    calculated by the phase object, at 60 °F.
+
+    Returns
+    -------
+    SG : float
+        Specific gravity of the liquid, [-]
+
+    Notes
+    -----
+    The reference density of water is from the IAPWS-95 standard -
+    999.0170824078306 kg/m^3.
+    """
+    ws = self.ws()
+    rhol_60Fs_mass = self.constants.rhol_60Fs_mass
+    rho_mass_60F = 0.0
+    for i in range(self.N):
+        rho_mass_60F += ws[i]*rhol_60Fs_mass[i]
+    return SG_util(rho_mass_60F, rho_ref=999.0170824078306)
+
+def SG_gas(self):
+    r"""Method to calculate and return the specific gravity of the phase
+    with respect to a gas reference density.
+
+    Returns
+    -------
+    SG_gas : float
+        Specific gravity of the gas, [-]
+
+    Notes
+    -----
+    The reference molecular weight of air used is 28.9586 g/mol.
+    """
+    return self.MW()/28.9586
+
+def API(self):
+    r"""Method to calculate and return the API of the phase.
+
+    .. math::
+        \text{API gravity} = \frac{141.5}{\text{SG}} - 131.5
+
+    Returns
+    -------
+    API : float
+        API of the fluid [-]
+    """
+    return 141.5/self.SG() - 131.5
+
+def V_mass(self):
+    r"""Method to calculate and return the specific volume of the phase.
+
+    .. math::
+        V_{mass} = \frac{1000\cdot VM}{MW}
+
+    Returns
+    -------
+    V_mass : float
+        Specific volume of the phase, [m^3/kg]
+    """
+    return 1.0/Vm_to_rho(self.V(), self.MW())
+
+def H_flow(self):
+    r"""Method to return the flow rate of enthalpy of this phase.
+    This method is only
+    available when the phase is linked to an EquilibriumStream.
+
+    Returns
+    -------
+    H_flow : float
+        Flow rate of energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._H_flow
+    except:
+        pass
+    self._H_flow = H_flow = self.n*self.H()
+    return H_flow
+
+def S_flow(self):
+    r"""Method to return the flow rate of entropy of this phase.
+    This method is only
+    available when the phase is linked to an EquilibriumStream.
+
+    Returns
+    -------
+    S_flow : float
+        Flow rate of entropy, [J/(K*s)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._S_flow
+    except:
+        pass
+    self._S_flow = S_flow = self.n*self.S()
+    return S_flow
+
+def G_flow(self):
+    r"""Method to return the flow rate of Gibbs free energy of this phase.
+
+    Returns
+    -------
+    G_flow : float
+        Flow rate of Gibbs free energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._G_flow
+    except:
+        pass
+    self._G_flow = G_flow = self.n*self.G()
+    return G_flow
+
+def U_flow(self):
+    r"""Method to return the flow rate of internal energy of this phase.
+
+    Returns
+    -------
+    U_flow : float
+        Flow rate of internal energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._U_flow
+    except:
+        pass
+    self._U_flow = U_flow = self.n*self.U()
+    return U_flow
+
+def A_flow(self):
+    r"""Method to return the flow rate of Helmholtz energy of this phase.
+
+    Returns
+    -------
+    A_flow : float
+        Flow rate of Helmholtz energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._A_flow
+    except:
+        pass
+    self._A_flow = A_flow = self.n*self.A()
+    return A_flow
+
+def H_dep_flow(self):
+    r"""Method to return the flow rate of departure enthalpy of this phase.
+
+    Returns
+    -------
+    H_dep_flow : float
+        Flow rate of departure enthalpy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._H_dep_flow
+    except:
+        pass
+    self._H_dep_flow = H_dep_flow = self.n*self.H_dep()
+    return H_dep_flow
+
+def S_dep_flow(self):
+    r"""Method to return the flow rate of departure entropy of this phase.
+
+    Returns
+    -------
+    S_dep_flow : float
+        Flow rate of departure entropy, [J/(K*s)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._S_dep_flow
+    except:
+        pass
+    self._S_dep_flow = S_dep_flow = self.n*self.S_dep()
+    return S_dep_flow
+
+def G_dep_flow(self):
+    r"""Method to return the flow rate of departure Gibbs free energy.
+
+    Returns
+    -------
+    G_dep_flow : float
+        Flow rate of departure Gibbs free energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._G_dep_flow
+    except:
+        pass
+    self._G_dep_flow = G_dep_flow = self.n*self.G_dep()
+    return G_dep_flow
+
+def U_dep_flow(self):
+    r"""Method to return the flow rate of departure internal energy.
+
+    Returns
+    -------
+    U_dep_flow : float
+        Flow rate of departure internal energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._U_dep_flow
+    except:
+        pass
+    self._U_dep_flow = U_dep_flow = self.n*self.U_dep()
+    return U_dep_flow
+
+def A_dep_flow(self):
+    r"""Method to return the flow rate of departure Helmholtz energy.
+
+    Returns
+    -------
+    A_dep_flow : float
+        Flow rate of departure Helmholtz energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._A_dep_flow
+    except:
+        pass
+    self._A_dep_flow = A_dep_flow = self.n*self.A_dep()
+    return A_dep_flow
+
+phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega,
+    Vfgs, atom_content, atom_fractions, atom_mass_fractions,
+    atom_flows, atom_count_flows, atom_mass_flows,
+    Hc, Hc_mass, Hc_lower, Hc_lower_mass,
+    SG, SG_gas, API, V_mass,
+    H_flow, S_flow, G_flow, U_flow, A_flow,
+    H_dep_flow, S_dep_flow, G_dep_flow, U_dep_flow, A_dep_flow,
+]
 
 for method in phase_shared_methods:
     setattr(Phase, method.__name__, method)
