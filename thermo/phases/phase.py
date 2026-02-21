@@ -3733,20 +3733,6 @@ class Phase:
         self._Cpl_integrals_over_T_pure = Cpl_integrals_over_T_pure
         return Cpl_integrals_over_T_pure
 
-    def V_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas molar volume of the
-        phase.
-
-        .. math::
-            V^{ig} = \frac{RT}{P}
-
-        Returns
-        -------
-        V : float
-            Ideal gas molar volume, [m^3/mol]
-        """
-        return self.R*self.T/self.P
-
     def H_ideal_gas(self):
         r"""Method to calculate and return the ideal-gas enthalpy of the phase.
 
@@ -3851,24 +3837,6 @@ class Phase:
         return Cp_ideal_gas_mass
 
 
-    def Cv_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas constant volume heat
-        capacity of the phase.
-
-        .. math::
-            C_v^{ig} = \sum_i z_i {C_{p,i}^{ig}} - R
-
-        Returns
-        -------
-        Cv : float
-            Ideal gas constant volume heat capacity, [J/(mol*K)]
-        """
-        try:
-            Cp = self._Cp_ideal_gas
-        except AttributeError:
-            Cp = self.Cp_ideal_gas()
-        return Cp - self.R
-
     def Cv_dep(self):
         r"""Method to calculate and return the difference between the actual
         `Cv` and the ideal-gas constant volume heat
@@ -3898,65 +3866,6 @@ class Phase:
             Departure ideal gas constant pressure heat capacity, [J/(mol*K)]
         """
         return self.Cp() - self.Cp_ideal_gas()
-
-    def Cp_Cv_ratio_ideal_gas(self):
-        r"""Method to calculate and return the ratio of the ideal-gas heat
-        capacity to its constant-volume heat capacity.
-
-        .. math::
-            \frac{C_p^{ig}}{C_v^{ig}}
-
-        Returns
-        -------
-        Cp_Cv_ratio_ideal_gas : float
-            Cp/Cv for the phase as an ideal gas, [-]
-        """
-        return self.Cp_ideal_gas()/self.Cv_ideal_gas()
-
-    def G_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas Gibbs free energy of
-        the phase.
-
-        .. math::
-            G^{ig} = H^{ig} - T S^{ig}
-
-        Returns
-        -------
-        G_ideal_gas : float
-            Ideal gas free energy, [J/(mol)]
-        """
-        G_ideal_gas = self.H_ideal_gas() - self.T*self.S_ideal_gas()
-        return G_ideal_gas
-
-    def U_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas internal energy of
-        the phase.
-
-        .. math::
-            U^{ig} = H^{ig} - P V^{ig}
-
-        Returns
-        -------
-        U_ideal_gas : float
-            Ideal gas internal energy, [J/(mol)]
-        """
-        U_ideal_gas = self.H_ideal_gas() - self.P*self.V_ideal_gas()
-        return U_ideal_gas
-
-    def A_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas Helmholtz energy of
-        the phase.
-
-        .. math::
-            A^{ig} = U^{ig} - T S^{ig}
-
-        Returns
-        -------
-        A_ideal_gas : float
-            Ideal gas Helmholtz free energy, [J/(mol)]
-        """
-        A_ideal_gas = self.U_ideal_gas() - self.T*self.S_ideal_gas()
-        return A_ideal_gas
 
     def H_ideal_gas_mass(self):
         r"""Method to calculate and return the mass ideal-gas enthalpy of the phase.
@@ -7619,6 +7528,94 @@ def Vss(self):
         self._Vss = array(self._Vss)
     return self._Vss
 
+def V_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas molar volume of the
+    phase.
+
+    .. math::
+        V^{ig} = \frac{RT}{P}
+
+    Returns
+    -------
+    V : float
+        Ideal gas molar volume, [m^3/mol]
+    """
+    return self.R*self.T/self.P
+
+def Cv_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas constant volume heat
+    capacity of the phase.
+
+    .. math::
+        C_v^{ig} = \sum_i z_i {C_{p,i}^{ig}} - R
+
+    Returns
+    -------
+    Cv : float
+        Ideal gas constant volume heat capacity, [J/(mol*K)]
+    """
+    try:
+        Cp = self._Cp_ideal_gas
+    except AttributeError:
+        Cp = self.Cp_ideal_gas()
+    return Cp - self.R
+
+def Cp_Cv_ratio_ideal_gas(self):
+    r"""Method to calculate and return the ratio of the ideal-gas heat
+    capacity to its constant-volume heat capacity.
+
+    .. math::
+        \frac{C_p^{ig}}{C_v^{ig}}
+
+    Returns
+    -------
+    Cp_Cv_ratio_ideal_gas : float
+        Cp/Cv for the phase as an ideal gas, [-]
+    """
+    return self.Cp_ideal_gas()/self.Cv_ideal_gas()
+
+def G_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas Gibbs free energy of
+    the phase.
+
+    .. math::
+        G^{ig} = H^{ig} - T S^{ig}
+
+    Returns
+    -------
+    G_ideal_gas : float
+        Ideal gas free energy, [J/(mol)]
+    """
+    return self.H_ideal_gas() - self.T*self.S_ideal_gas()
+
+def U_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas internal energy of
+    the phase.
+
+    .. math::
+        U^{ig} = H^{ig} - P V^{ig}
+
+    Returns
+    -------
+    U_ideal_gas : float
+        Ideal gas internal energy, [J/(mol)]
+    """
+    return self.H_ideal_gas() - self.P*self.V_ideal_gas()
+
+def A_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas Helmholtz energy of
+    the phase.
+
+    .. math::
+        A^{ig} = U^{ig} - T S^{ig}
+
+    Returns
+    -------
+    A_ideal_gas : float
+        Ideal gas Helmholtz free energy, [J/(mol)]
+    """
+    return self.U_ideal_gas() - self.T*self.S_ideal_gas()
+
 phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega,
     Vfgs, atom_content, atom_fractions, atom_mass_fractions,
     atom_flows, atom_count_flows, atom_mass_flows,
@@ -7638,6 +7635,8 @@ phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega
     water_index, humidity_ratio, zs_no_water, ws_no_water,
     Psats, Psubs, Hsubs, Hvaps, sigmas,
     Cpgs, Cpls, Cpss, kls, kss, kgs, muls, mugs, Vls, Vss,
+    V_ideal_gas, Cv_ideal_gas, Cp_Cv_ratio_ideal_gas,
+    G_ideal_gas, U_ideal_gas, A_ideal_gas,
 ]
 
 for method in phase_shared_methods:

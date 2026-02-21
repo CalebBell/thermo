@@ -225,6 +225,7 @@ class EquilibriumState:
     liquid_bulk = None
     solid_bulk = None
 
+    R = Phase.R
     T_REF_IG = Phase.T_REF_IG
     T_REF_IG_INV = Phase.T_REF_IG_INV
     P_REF_IG = Phase.P_REF_IG
@@ -1112,7 +1113,7 @@ class EquilibriumState:
             phase = self.bulk
         if not phase.bulk_phase_type:
             return phase.Cp_dep()
-        return phase.Cp() - self.Cp_ideal_gas(phase)
+        return phase.Cp() - phase.Cp_ideal_gas()
 
     def Cv_dep(self, phase=None):
         r"""Method to calculate and return the difference between the actual
@@ -1131,7 +1132,7 @@ class EquilibriumState:
             phase = self.bulk
         if not phase.bulk_phase_type:
             return phase.Cv_dep()
-        return phase.Cv() - self.Cv_ideal_gas(phase)
+        return phase.Cv() - phase.Cv_ideal_gas()
 
 
     def H_ideal_gas(self, phase=None):
@@ -1195,96 +1196,6 @@ class EquilibriumState:
             S += zs[i]*Cpig_integrals_over_T_pure[i]
 
         return S
-
-    def Cv_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas constant volume heat
-        capacity of the phase.
-
-        .. math::
-            C_v^{ig} = \sum_i z_i {C_{p,i}^{ig}} - R
-
-        Returns
-        -------
-        Cv : float
-            Ideal gas constant volume heat capacity, [J/(mol*K)]
-        """
-        if phase is None:
-            phase = self.bulk
-        return self.Cp_ideal_gas(phase) - R
-
-    def Cp_Cv_ratio_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ratio of the ideal-gas heat
-        capacity to its constant-volume heat capacity.
-
-        .. math::
-            \frac{C_p^{ig}}{C_v^{ig}}
-
-        Returns
-        -------
-        Cp_Cv_ratio_ideal_gas : float
-            Cp/Cv for the phase as an ideal gas, [-]
-        """
-        return self.Cp_ideal_gas(phase)/self.Cv_ideal_gas(phase)
-
-    def G_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas Gibbs free energy of
-        the phase.
-
-        .. math::
-            G^{ig} = H^{ig} - T S^{ig}
-
-        Returns
-        -------
-        G_ideal_gas : float
-            Ideal gas free energy, [J/(mol)]
-        """
-        G_ideal_gas = self.H_ideal_gas(phase) - self.T*self.S_ideal_gas(phase)
-        return G_ideal_gas
-
-    def U_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas internal energy of
-        the phase.
-
-        .. math::
-            U^{ig} = H^{ig} - P V^{ig}
-
-        Returns
-        -------
-        U_ideal_gas : float
-            Ideal gas internal energy, [J/(mol)]
-        """
-        U_ideal_gas = self.H_ideal_gas(phase) - self.P*self.V_ideal_gas(phase)
-        return U_ideal_gas
-
-    def A_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas Helmholtz energy of
-        the phase.
-
-        .. math::
-            A^{ig} = U^{ig} - T S^{ig}
-
-        Returns
-        -------
-        A_ideal_gas : float
-            Ideal gas Helmholtz free energy, [J/(mol)]
-        """
-        A_ideal_gas = self.U_ideal_gas(phase) - self.T*self.S_ideal_gas(phase)
-        return A_ideal_gas
-
-    def V_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas molar volume of the
-        phase.
-
-        .. math::
-            V^{ig} = \frac{RT}{P}
-
-        Returns
-        -------
-        V : float
-            Ideal gas molar volume, [m^3/mol]
-        """
-        return R*self.T/self.P
-
 
     def H_formation_ideal_gas(self, phase=None):
         r"""Method to calculate and return the ideal-gas enthalpy of formation
@@ -1379,7 +1290,7 @@ class EquilibriumState:
         Notes
         -----
         """
-        Uf = self.H_formation_ideal_gas(phase) - self.P_REF_IG*self.V_ideal_gas(phase)
+        Uf = self.H_formation_ideal_gas(phase) - self.P_REF_IG*self.V_ideal_gas()
         return Uf
 
     def A_formation_ideal_gas(self, phase=None):
@@ -1729,9 +1640,7 @@ for method in phase_shared_methods:
 ### For certain properties not supported by Bulk, allow them to call up to the
 # EquilibriumState to get the property
 Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas',
-       "V_ideal_gas", "G_ideal_gas", "U_ideal_gas",
-        "Cv_ideal_gas", "Cp_Cv_ratio_ideal_gas",
-       "A_ideal_gas", "H_formation_ideal_gas", "S_formation_ideal_gas",
+       "H_formation_ideal_gas", "S_formation_ideal_gas",
        "G_formation_ideal_gas", "U_formation_ideal_gas", "A_formation_ideal_gas",
        "H_dep", "S_dep", "Cp_dep", "Cv_dep"]
 for name in Bulk_properties_to_EquilibriumState:
