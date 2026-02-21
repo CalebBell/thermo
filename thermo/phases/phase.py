@@ -352,9 +352,6 @@ class Phase:
         Notes
         -----
         """
-        if name in ("beta_mass",):
-            return self.result.value(name, self)
-
         v = getattr(self, name)
         try:
             v = v()
@@ -5185,12 +5182,9 @@ class Phase:
         -----
         """
         try:
-            result = self.result
-        except:
+            return self._beta
+        except AttributeError:
             return None
-        for i, p in enumerate(result.phases):
-            if p is self:
-                return result.betas[i]
 
     @property
     def beta_mass(self):
@@ -5207,12 +5201,9 @@ class Phase:
         -----
         """
         try:
-            result = self.result
-        except:
+            return self._beta_mass
+        except AttributeError:
             return None
-        for i, p in enumerate(result.phases):
-            if p is self:
-                return result.betas_mass[i]
 
     @property
     def beta_volume(self):
@@ -5229,12 +5220,9 @@ class Phase:
         -----
         """
         try:
-            result = self.result
-        except:
+            return self._beta_volume
+        except AttributeError:
             return None
-        for i, p in enumerate(result.phases):
-            if p is self:
-                return result.betas_volume[i]
 
     @property
     def beta_volume_liquid_ref(self):
@@ -5251,12 +5239,10 @@ class Phase:
         -----
         """
         try:
-            result = self.result
-        except:
+            return self._beta_volume_liquid_ref
+        except AttributeError:
             return None
-        for i, p in enumerate(result.phases):
-            if p is self:
-                return result.betas_volume_liquid_ref[i]
+
     @property
     def VF(self):
         r"""Method to return the vapor fraction of the phase.
@@ -5271,7 +5257,10 @@ class Phase:
         Notes
         -----
         """
-        return self.result.gas_beta
+        try:
+            return self._gas_beta
+        except AttributeError:
+            return None
 
     @property
     def energy(self):

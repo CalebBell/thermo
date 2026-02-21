@@ -348,6 +348,7 @@ class EquilibriumState:
             liquid_bulk.correlations = correlations
             liquid_bulk.settings = settings
             liquid_bulk._V_liquids_ref = V_liquids_ref
+            liquid_bulk._gas_beta = betas[0] if gas_count else 0.0
             for i, l in enumerate(liquids):
                 setattr(self, f"liquid{i}", l)
                 l.assigned_phase = "l"
@@ -367,6 +368,7 @@ class EquilibriumState:
             solid_bulk.correlations = correlations
             solid_bulk.flasher = flasher
             solid_bulk._V_liquids_ref = V_liquids_ref
+            solid_bulk._gas_beta = betas[0] if gas_count else 0.0
             for i, s in enumerate(solids):
                 setattr(self, f"solid{i}", s)
 
@@ -377,6 +379,7 @@ class EquilibriumState:
         bulk.flasher = flasher
         bulk.settings = settings
         bulk._V_liquids_ref = V_liquids_ref
+        bulk._gas_beta = betas[0] if gas_count else 0.0
 
         self.flash_specs = flash_specs
         self.flash_convergence = flash_convergence
@@ -388,7 +391,26 @@ class EquilibriumState:
             phase.result = self
             phase.constants = constants
             phase.correlations = correlations
+        gas_beta = self.gas_beta
+        try:
+            betas_mass = self.betas_mass
+        except:
+            betas_mass = [None]*self.phase_count
+        try:
+            betas_volume = self.betas_volume
+        except:
+            betas_volume = [None]*self.phase_count
+        try:
+            betas_volume_liquid_ref = self.betas_volume_liquid_ref
+        except:
+            betas_volume_liquid_ref = [None]*self.phase_count
+        for i, phase in enumerate(self.phases):
             phase._V_liquids_ref = V_liquids_ref
+            phase._beta = betas[i]
+            phase._beta_mass = betas_mass[i]
+            phase._beta_volume = betas_volume[i]
+            phase._beta_volume_liquid_ref = betas_volume_liquid_ref[i]
+            phase._gas_beta = gas_beta
 
     def as_json(self, cache=None, option=0):
         return JsonOptEncodable.as_json(self, cache, option)
@@ -626,7 +648,7 @@ class EquilibriumState:
         -----
         """
         try:
-            return self._betas_volume_liquid_ref
+            return self._betas_volume
         except:
             pass
         phase_iter = range(self.phase_count)
@@ -637,8 +659,8 @@ class EquilibriumState:
         for i in phase_iter:
             tot += Vs_phases[i]*betas[i]
         tot_inv = 1.0/tot
-        self._betas_volume_liquid_ref = [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
-        return self._betas_volume_liquid_ref
+        self._betas_volume = [betas[i]*Vs_phases[i]*tot_inv for i in phase_iter]
+        return self._betas_volume
 
     @property
     def betas_volume_liquid_ref(self):
