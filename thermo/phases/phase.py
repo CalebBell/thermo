@@ -6701,6 +6701,382 @@ def A_dep_flow(self):
     self._A_dep_flow = A_dep_flow = self.n*self.A_dep()
     return A_dep_flow
 
+def V_gas_standard(self):
+    r"""Method to calculate and return the ideal-gas molar volume of the
+    phase at the standard temperature and pressure,  according to the
+    temperature variable `T_standard` and pressure variable `P_standard`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+
+    .. math::
+        V^{ig} = \frac{RT_{std}}{P_{std}}
+
+    Returns
+    -------
+    V_gas_standard : float
+        Ideal gas molar volume at standard temperature and pressure,
+        [m^3/mol]
+    """
+    return R*self.settings.T_standard/self.settings.P_standard
+
+def V_gas_normal(self):
+    r"""Method to calculate and return the ideal-gas molar volume of the
+    phase at the normal temperature and pressure,  according to the
+    temperature variable `T_normal` and pressure variable `P_normal`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+
+    .. math::
+        V^{ig} = \frac{RT_{norm}}{P_{norm}}
+
+    Returns
+    -------
+    V_gas_normal : float
+        Ideal gas molar volume at normal temperature and pressure,
+        [m^3/mol]
+    """
+    return R*self.settings.T_normal/self.settings.P_normal
+
+def V_gas(self):
+    r"""Method to calculate and return the ideal-gas molar volume of the
+    phase at the chosen reference temperature and pressure,  according to the
+    temperature variable `T_gas_ref` and pressure variable `P_gas_ref`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+
+    .. math::
+        V^{ig} = \frac{RT_{ref}}{P_{ref}}
+
+    Returns
+    -------
+    V_gas : float
+        Ideal gas molar volume at the reference temperature and pressure,
+        [m^3/mol]
+    """
+    return R*self.settings.T_gas_ref/self.settings.P_gas_ref
+
+def rho_gas_standard(self):
+    r"""Method to calculate and return the ideal-gas molar density of the
+    phase at the standard temperature and pressure,  according to the
+    temperature variable `T_standard` and pressure variable `P_standard`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_gas_standard : float
+        Ideal gas molar density at standard temperature and pressure,
+        [mol/m^3]
+    """
+    return 1.0/self.V_gas_standard()
+
+def rho_gas_normal(self):
+    r"""Method to calculate and return the ideal-gas molar density of the
+    phase at the normal temperature and pressure,  according to the
+    temperature variable `T_normal` and pressure variable `P_normal`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_gas_normal : float
+        Ideal gas molar density at normal temperature and pressure,
+        [mol/m^3]
+    """
+    return 1.0/self.V_gas_normal()
+
+def rho_gas(self):
+    r"""Method to calculate and return the ideal-gas molar density of the
+    phase at the chosen reference temperature and pressure,  according to the
+    temperature variable `T_gas_ref` and pressure variable `P_gas_ref`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_gas : float
+        Ideal gas molar density at the reference temperature and pressure,
+        [mol/m^3]
+    """
+    return 1.0/self.V_gas()
+
+def rho_mass_gas_standard(self):
+    r"""Method to calculate and return the ideal-gas mass density of the
+    phase at the standard temperature and pressure,  according to the
+    temperature variable `T_standard` and pressure variable `P_standard`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_mass_gas_standard : float
+        Ideal gas molar density at standard temperature and pressure,
+        [kg/m^3]
+    """
+    return Vm_to_rho(self.V_gas_standard(), self.MW())
+
+def rho_mass_gas_normal(self):
+    r"""Method to calculate and return the ideal-gas mass density of the
+    phase at the normal temperature and pressure,  according to the
+    temperature variable `T_normal` and pressure variable `P_normal`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_mass_gas_normal : float
+        Ideal gas molar density at normal temperature and pressure,
+        [kg/m^3]
+    """
+    return Vm_to_rho(self.V_gas_normal(), self.MW())
+
+def rho_mass_gas(self):
+    r"""Method to calculate and return the ideal-gas mass density of the
+    phase at the chosen reference temperature and pressure,  according to the
+    temperature variable `T_gas_ref` and pressure variable `P_gas_ref`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_mass_gas : float
+        Ideal gas molar density at the reference temperature and pressure,
+        [kg/m^3]
+    """
+    return Vm_to_rho(self.V_gas(), self.MW())
+
+def H_C_ratio(self):
+    r"""Method to calculate and return the atomic ratio of hydrogen atoms
+    to carbon atoms, based on the current composition of the phase.
+
+    Returns
+    -------
+    H_C_ratio : float
+        H/C ratio on a molar basis, [-]
+
+    Notes
+    -----
+    None is returned if no species are present that have carbon atoms.
+    """
+    atom_fracs = self.atom_fractions()
+    H = atom_fracs.get("H", 0.0)
+    C = atom_fracs.get("C", 0.0)
+    try:
+        return H/C
+    except ZeroDivisionError:
+        return None
+
+def H_C_ratio_mass(self):
+    r"""Method to calculate and return the mass ratio of hydrogen atoms
+    to carbon atoms, based on the current composition of the phase.
+
+    Returns
+    -------
+    H_C_ratio_mass : float
+        H/C ratio on a mass basis, [-]
+
+    Notes
+    -----
+    None is returned if no species are present that have carbon atoms.
+    """
+    atom_fracs = self.atom_mass_fractions()
+    H = atom_fracs.get("H", 0.0)
+    C = atom_fracs.get("C", 0.0)
+    try:
+        return H/C
+    except ZeroDivisionError:
+        return None
+
+def Hc_normal(self):
+    r"""Method to calculate and return the volumetric ideal-gas higher heat
+    of combustion of the object using the normal gas volume, [J/m^3]
+
+    Returns
+    -------
+    Hc_normal : float
+        Volumetric (normal) higher heat of combustion, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return self.Hc()/self.V_gas_normal()
+
+def Hc_standard(self):
+    r"""Method to calculate and return the volumetric ideal-gas higher heat
+    of combustion of the object using the standard gas volume, [J/m^3]
+
+    Returns
+    -------
+    Hc_normal : float
+        Volumetric (standard) higher heat of combustion, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return self.Hc()/self.V_gas_standard()
+
+def Hc_lower_normal(self):
+    r"""Method to calculate and return the volumetric ideal-gas lower heat
+    of combustion of the object using the normal gas volume, [J/m^3]
+
+    Returns
+    -------
+    Hc_lower_normal : float
+        Volumetric (normal) lower heat of combustion, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return self.Hc_lower()/self.V_gas_normal()
+
+def Hc_lower_standard(self):
+    r"""Method to calculate and return the volumetric ideal-gas lower heat
+    of combustion of the object using the standard gas volume, [J/m^3]
+
+    Returns
+    -------
+    Hc_lower_standard : float
+        Volumetric (standard) lower heat of combustion, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return self.Hc_lower()/self.V_gas_standard()
+
+def Wobbe_index(self):
+    r"""Method to calculate and return the molar Wobbe index of the object,
+    [J/mol].
+
+    .. math::
+        I_W = \frac{H_{comb}^{higher}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index : float
+        Molar Wobbe index, [J/(mol)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc())*self.SG_gas()**-0.5
+
+def Wobbe_index_mass(self):
+    r"""Method to calculate and return the mass Wobbe index of the object,
+    [J/kg].
+
+    .. math::
+        I_W = \frac{H_{comb}^{higher}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_mass : float
+        Mass Wobbe index, [J/(kg)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_mass())*self.SG_gas()**-0.5
+
+def Wobbe_index_lower(self):
+    r"""Method to calculate and return the molar lower Wobbe index of the
+     object, [J/mol].
+
+    .. math::
+        I_W = \frac{H_{comb}^{lower}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_lower : float
+        Molar lower Wobbe index, [J/(mol)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_lower())*self.SG_gas()**-0.5
+
+def Wobbe_index_lower_mass(self):
+    r"""Method to calculate and return the lower mass Wobbe index of the
+    object, [J/kg].
+
+    .. math::
+        I_W = \frac{H_{comb}^{lower}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_lower_mass : float
+        Mass lower Wobbe index, [J/(kg)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_lower_mass())*self.SG_gas()**-0.5
+
+def Wobbe_index_standard(self):
+    r"""Method to calculate and return the volumetric standard Wobbe index
+    of the object, [J/m^3]. The standard gas volume is used in this
+    calculation.
+
+    .. math::
+        I_W = \frac{H_{comb}^{higher}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_standard : float
+        Volumetric standard Wobbe index, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_standard())*self.SG_gas()**-0.5
+
+def Wobbe_index_normal(self):
+    r"""Method to calculate and return the volumetric normal Wobbe index
+    of the object, [J/m^3]. The normal gas volume is used in this
+    calculation.
+
+    .. math::
+        I_W = \frac{H_{comb}^{higher}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index : float
+        Volumetric normal Wobbe index, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_normal())*self.SG_gas()**-0.5
+
+def Wobbe_index_lower_standard(self):
+    r"""Method to calculate and return the volumetric standard lower Wobbe
+    index of the object, [J/m^3]. The standard gas volume is used in this
+    calculation.
+
+    .. math::
+        I_W = \frac{H_{comb}^{lower}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_lower_standard : float
+        Volumetric standard lower Wobbe index, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_lower_standard())*self.SG_gas()**-0.5
+
+def Wobbe_index_lower_normal(self):
+    r"""Method to calculate and return the volumetric normal lower Wobbe
+    index of the object, [J/m^3]. The normal gas volume is used in this
+    calculation.
+
+    .. math::
+        I_W = \frac{H_{comb}^{lower}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_lower_normal : float
+        Volumetric normal lower Wobbe index, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_lower_normal())*self.SG_gas()**-0.5
+
 phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega,
     Vfgs, atom_content, atom_fractions, atom_mass_fractions,
     atom_flows, atom_count_flows, atom_mass_flows,
@@ -6708,6 +7084,14 @@ phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega
     SG, SG_gas, API, V_mass,
     H_flow, S_flow, G_flow, U_flow, A_flow,
     H_dep_flow, S_dep_flow, G_dep_flow, U_dep_flow, A_dep_flow,
+    V_gas_standard, V_gas_normal, V_gas,
+    rho_gas_standard, rho_gas_normal, rho_gas,
+    rho_mass_gas_standard, rho_mass_gas_normal, rho_mass_gas,
+    H_C_ratio, H_C_ratio_mass,
+    Hc_normal, Hc_standard, Hc_lower_normal, Hc_lower_standard,
+    Wobbe_index, Wobbe_index_mass, Wobbe_index_lower, Wobbe_index_lower_mass,
+    Wobbe_index_standard, Wobbe_index_normal,
+    Wobbe_index_lower_standard, Wobbe_index_lower_normal,
 ]
 
 for method in phase_shared_methods:
