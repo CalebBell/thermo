@@ -101,7 +101,7 @@ class CEOSPhase(IdealGasDeparturePhase):
 
     pure_references = ("HeatCapacityGases",)
     pure_reference_types = (HeatCapacityGas,)
-    obj_references = ("eos_mix", "result", "constants", "correlations", "HeatCapacityGases")
+    obj_references = ("eos_mix", "result", "constants", "correlations", "settings", "HeatCapacityGases")
 
 
     pointer_references = ("eos_class",)

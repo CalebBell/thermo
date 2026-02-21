@@ -249,6 +249,7 @@ class GibbsExcessLiquid(Phase):
                         "Psat_extrpolation") + pure_references
 
     obj_references = ("GibbsExcessModel", "eos_pure_instances", "result", "constants", "correlations",
+                    "settings",
                         "HeatCapacityGases", "VolumeLiquids", "VaporPressures", "HeatCapacityLiquids",
                                         "EnthalpyVaporizations")
 
