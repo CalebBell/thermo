@@ -162,7 +162,7 @@ def test_two_eos_pure_flash_all_properties():
     # Since liquid fraction does not make any sense, might as well use pure volumes.
     assert_close1d(eq.Vfls(), [1])
     assert_close1d(eq.bulk.Vfls(), [1])
-    assert_close2d([eq.Vfls(phase) for phase in eq.phases], [[1], [1]])
+    assert_close2d([phase.Vfls() for phase in eq.phases], [[1], [1]])
 
     assert_close1d(eq.Vfgs(), [1])
     assert_close1d(eq.bulk.Vfgs(), [1])

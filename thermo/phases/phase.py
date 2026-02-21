@@ -7077,6 +7077,548 @@ def Wobbe_index_lower_normal(self):
     """
     return abs(self.Hc_lower_normal())*self.SG_gas()**-0.5
 
+def Vfls(self):
+    r"""Method to calculate and return the ideal-liquid volume fractions of
+    the components of the phase, using the standard liquid densities at
+    the temperature variable `T_liquid_volume_ref` of
+    :obj:`thermo.bulk.BulkSettings` and the composition of the phase.
+
+    Returns
+    -------
+    Vfls : list[float]
+        Ideal-liquid volume fractions of the components of the phase, [-]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    try:
+        Vls = self._V_liquids_ref
+    except AttributeError:
+        Vls = self.flasher.V_liquids_ref()
+    V = 0.0
+    for i in range(self.N):
+        V += zs[i]*Vls[i]
+    V_inv = 1.0/V
+    return [V_inv*Vls[i]*zs[i] for i in range(self.N)]
+
+def V_liquid_ref(self):
+    r"""Method to calculate and return the liquid reference molar volume
+    according to the temperature variable `T_liquid_volume_ref` of
+    :obj:`thermo.bulk.BulkSettings` and the composition of the phase.
+
+    .. math::
+        V = \sum_i z_i V_i
+
+    Returns
+    -------
+    V_liquid_ref : float
+        Liquid molar volume at the reference condition, [m^3/mol]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    try:
+        Vls = self._V_liquids_ref
+    except AttributeError:
+        Vls = self.flasher.V_liquids_ref()
+    V = 0.0
+    for i in range(self.N):
+        V += zs[i]*Vls[i]
+    return V
+
+def rho_mass_liquid_ref(self):
+    r"""Method to calculate and return the liquid reference mass density
+    according to the temperature variable `T_liquid_volume_ref` of
+    :obj:`thermo.bulk.BulkSettings` and the composition of the phase.
+
+    Returns
+    -------
+    rho_mass_liquid_ref : float
+        Liquid mass density at the reference condition, [kg/m^3]
+
+    Notes
+    -----
+    """
+    return Vm_to_rho(self.V_liquid_ref(), self.MW())
+
+def water_index(self):
+    r"""The index of the component water in the components. None if water
+    is not present. Water is recognized by its CAS number.
+
+    Returns
+    -------
+    water_index : int
+        The index of the component water, [-]
+
+    Notes
+    -----
+    """
+    return self.constants.water_index
+
+def humidity_ratio(self):
+    r"""Method to calculate and return the humidity ratio of the phase;
+    normally defined as the kg water/kg dry air, the definition here is
+    kg water/(kg rest of the phase) [-]
+
+    .. math::
+        \text{humidity ratio} = \text{HR} = \frac{w_{H2O}}{1 - w_{H2O}}
+
+    Returns
+    -------
+    humidity_ratio : float
+        Humidity ratio, [-]
+
+    Notes
+    -----
+    """
+    wi = self.constants.water_index
+    if wi is None:
+        return 0.0
+    w_H2O = self.ws()[wi]
+    return w_H2O/(1.0 - w_H2O)
+
+def zs_no_water(self):
+    r"""Method to calculate and return the mole fractions of all species
+    in the phase, normalized to a water-free basis (the mole fraction of
+    water returned is zero).
+
+    Returns
+    -------
+    zs_no_water : list[float]
+        Mole fractions on a water free basis, [-]
+
+    Notes
+    -----
+    """
+    wi = self.constants.water_index
+    if wi is None:
+        return self.zs
+    zs = array(self.zs) if self.vectorized else list(self.zs)
+    z_water = zs[wi]
+    m = 1.0/(1.0 - z_water)
+    if self.vectorized:
+        zs *= m
+    else:
+        for i in range(self.N):
+            zs[i] *= m
+    zs[wi] = 0.0
+    return zs
+
+def ws_no_water(self):
+    r"""Method to calculate and return the mass fractions of all species
+    in the phase, normalized to a water-free basis (the mass fraction of
+    water returned is zero).
+
+    Returns
+    -------
+    ws_no_water : list[float]
+        Mass fractions on a water free basis, [-]
+
+    Notes
+    -----
+    """
+    wi = self.constants.water_index
+    if wi is None:
+        return self.ws()
+    ws = array(self.ws()) if self.vectorized else list(self.ws())
+    z_water = ws[wi]
+    m = 1.0/(1.0 - z_water)
+    if self.vectorized:
+        ws *= m
+    else:
+        for i in range(self.N):
+            ws[i] *= m
+    ws[wi] = 0.0
+    return ws
+
+def Psats(self):
+    r"""Method to calculate and return the pure-component vapor pressures
+    of each species from the :obj:`thermo.vapor_pressure.VaporPressure`
+    objects.
+
+    Returns
+    -------
+    Psats : list[float]
+        Vapor pressures, [Pa]
+
+    Notes
+    -----
+    .. warning::
+
+        This is not necessarily consistent with the saturation pressure
+        calculated by a flash algorithm.
+    """
+    try:
+        return self._Psats
+    except:
+        pass
+    T = self.T
+    self._Psats = [o.T_dependent_property(T) for o in self.correlations.VaporPressures]
+    if self.vectorized:
+        self._Psats = array(self._Psats)
+    return self._Psats
+
+def Psubs(self):
+    r"""Method to calculate and return the pure-component sublimation
+    of each species from the :obj:`thermo.vapor_pressure.SublimationPressure`
+    objects.
+
+    Returns
+    -------
+    Psubs : list[float]
+        Sublimation pressures, [Pa]
+
+    Notes
+    -----
+    .. warning::
+
+        This is not necessarily consistent with the saturation pressure
+        calculated by a flash algorithm.
+    """
+    try:
+        return self._Psubs
+    except:
+        pass
+    T = self.T
+    self._Psubs = [o.T_dependent_property(T) for o in self.correlations.SublimationPressures]
+    if self.vectorized:
+        self._Psubs = array(self._Psubs)
+    return self._Psubs
+
+def Hsubs(self):
+    r"""Method to calculate and return the pure-component enthalpy of sublimation
+    of each species from the :obj:`thermo.phase_change.EnthalpySublimation`
+    objects.
+
+    Returns
+    -------
+    Hsubs : list[float]
+        Sublimation enthalpies, [J/mol]
+
+    Notes
+    -----
+    .. warning::
+
+        This is not necessarily consistent with the saturation
+        enthalpy change calculated by a flash algorithm.
+    """
+    try:
+        return self._Hsubs
+    except:
+        pass
+    T = self.T
+    self._Hsubs = [o.T_dependent_property(T) for o in self.correlations.EnthalpySublimations]
+    if self.vectorized:
+        self._Hsubs = array(self._Hsubs)
+    return self._Hsubs
+
+def Hvaps(self):
+    r"""Method to calculate and return the pure-component enthalpy of vaporization
+    of each species from the :obj:`thermo.phase_change.EnthalpyVaporization`
+    objects.
+
+    Returns
+    -------
+    Hvaps : list[float]
+        Enthalpies of vaporization, [J/mol]
+
+    Notes
+    -----
+    .. warning::
+
+        This is not necessarily consistent with the saturation
+        enthalpy change calculated by a flash algorithm.
+    """
+    try:
+        return self._Hvaps
+    except:
+        pass
+    T = self.T
+    self._Hvaps = [o.T_dependent_property(T) for o in self.correlations.EnthalpyVaporizations]
+    if self.vectorized:
+        self._Hvaps = array(self._Hvaps)
+    return self._Hvaps
+
+def sigmas(self):
+    r"""Method to calculate and return the pure-component surface tensions
+    of each species from the :obj:`thermo.interface.SurfaceTension`
+    objects.
+
+    Returns
+    -------
+    sigmas : list[float]
+        Surface tensions, [N/m]
+
+    Notes
+    -----
+    """
+    try:
+        return self._sigmas
+    except:
+        pass
+    T = self.T
+    self._sigmas = [o.T_dependent_property(T) for o in self.correlations.SurfaceTensions]
+    if self.vectorized:
+        self._sigmas = array(self._sigmas)
+    return self._sigmas
+
+def Cpgs(self):
+    r"""Method to calculate and return the pure-component ideal gas heat capacities
+    of each species from the :obj:`thermo.heat_capacity.HeatCapacityGas`
+    objects.
+
+    Returns
+    -------
+    Cpgs : list[float]
+        Ideal gas pure component heat capacities, [J/(mol*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Cpgs
+    except:
+        pass
+    T = self.T
+    self._Cpgs = [o.T_dependent_property(T) for o in self.correlations.HeatCapacityGases]
+    if self.vectorized:
+        self._Cpgs = array(self._Cpgs)
+    return self._Cpgs
+
+def Cpls(self):
+    r"""Method to calculate and return the pure-component liquid
+    temperature-dependent heat capacities
+    of each species from the :obj:`thermo.heat_capacity.HeatCapacityLiquid`
+    objects.
+
+    Note that some correlation methods for liquid heat capacity are at
+    low pressure, and others are along the saturation line. There is a
+    large difference in values.
+
+    Returns
+    -------
+    Cpls : list[float]
+        Pure component liquid heat capacities, [J/(mol*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Cpls
+    except:
+        pass
+    T = self.T
+    self._Cpls = [o.T_dependent_property(T) for o in self.correlations.HeatCapacityLiquids]
+    if self.vectorized:
+        self._Cpls = array(self._Cpls)
+    return self._Cpls
+
+def Cpss(self):
+    r"""Method to calculate and return the pure-component solid heat capacities
+    of each species from the :obj:`thermo.heat_capacity.HeatCapacitySolid`
+    objects.
+
+    Returns
+    -------
+    Cpss : list[float]
+        Pure component solid heat capacities, [J/(mol*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Cpss
+    except:
+        pass
+    T = self.T
+    self._Cpss = [o.T_dependent_property(T) for o in self.correlations.HeatCapacitySolids]
+    if self.vectorized:
+        self._Cpss = array(self._Cpss)
+    return self._Cpss
+
+def kls(self):
+    r"""Method to calculate and return the pure-component liquid
+    temperature-dependent thermal conductivity
+    of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`
+    objects.
+
+    These values are normally at low pressure, not along the saturation line.
+
+    Returns
+    -------
+    kls : list[float]
+        Pure component temperature dependent liquid thermal conductivities,
+        [W/(m*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._kls
+    except:
+        pass
+    T = self.T
+    self._kls = [o.T_dependent_property(T) for o in self.correlations.ThermalConductivityLiquids]
+    if self.vectorized:
+        self._kls = array(self._kls)
+    return self._kls
+
+def kss(self):
+    r"""Method to calculate and return the pure-component solid
+    temperature-dependent thermal conductivity
+    of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivitySolid`
+    objects.
+
+    Returns
+    -------
+    kss : list[float]
+        Pure component temperature dependent solid thermal conductivities,
+        [W/(m*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._kss
+    except:
+        pass
+    T = self.T
+    self._kss = [o.T_dependent_property(T) for o in self.correlations.ThermalConductivitySolids]
+    if self.vectorized:
+        self._kss = array(self._kss)
+    return self._kss
+
+def kgs(self):
+    r"""Method to calculate and return the pure-component gas
+    temperature-dependent thermal conductivity
+    of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivityGas`
+    objects.
+
+    These values are normally at low pressure, not along the saturation line.
+
+    Returns
+    -------
+    kgs : list[float]
+        Pure component temperature dependent gas thermal conductivities,
+        [W/(m*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._kgs
+    except:
+        pass
+    T = self.T
+    self._kgs = [o.T_dependent_property(T) for o in self.correlations.ThermalConductivityGases]
+    if self.vectorized:
+        self._kgs = array(self._kgs)
+    return self._kgs
+
+def muls(self):
+    r"""Method to calculate and return the pure-component liquid
+    temperature-dependent viscosity
+    of each species from the :obj:`thermo.viscosity.ViscosityLiquid`
+    objects.
+
+    These values are normally at low pressure, not along the saturation line.
+
+    Returns
+    -------
+    muls : list[float]
+        Pure component temperature dependent liquid viscosities, [Pa*s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._muls
+    except:
+        pass
+    T = self.T
+    self._muls = [o.T_dependent_property(T) for o in self.correlations.ViscosityLiquids]
+    if self.vectorized:
+        self._muls = array(self._muls)
+    return self._muls
+
+def mugs(self):
+    r"""Method to calculate and return the pure-component gas
+    temperature-dependent viscosity
+    of each species from the :obj:`thermo.viscosity.ViscosityGas`
+    objects.
+
+    These values are normally at low pressure, not along the saturation line.
+
+    Returns
+    -------
+    mugs : list[float]
+        Pure component temperature dependent gas viscosities, [Pa*s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._mugs
+    except:
+        pass
+    T = self.T
+    self._mugs = [o.T_dependent_property(T) for o in self.correlations.ViscosityGases]
+    if self.vectorized:
+        self._mugs = array(self._mugs)
+    return self._mugs
+
+def Vls(self):
+    r"""Method to calculate and return the pure-component liquid
+    temperature-dependent molar volume
+    of each species from the :obj:`thermo.volume.VolumeLiquid`
+    objects.
+
+    These values are normally along the saturation line.
+
+    Returns
+    -------
+    Vls : list[float]
+        Pure component temperature dependent liquid molar volume, [m^3/mol]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Vls
+    except:
+        pass
+    T = self.T
+    self._Vls = [o.T_dependent_property(T) for o in self.correlations.VolumeLiquids]
+    if self.vectorized:
+        self._Vls = array(self._Vls)
+    return self._Vls
+
+def Vss(self):
+    r"""Method to calculate and return the pure-component solid
+    temperature-dependent molar volume
+    of each species from the :obj:`thermo.volume.VolumeSolid`
+    objects.
+
+    Returns
+    -------
+    Vss : list[float]
+        Pure component temperature dependent solid molar volume, [m^3/mol]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Vss
+    except:
+        pass
+    T = self.T
+    self._Vss = [o.T_dependent_property(T) for o in self.correlations.VolumeSolids]
+    if self.vectorized:
+        self._Vss = array(self._Vss)
+    return self._Vss
+
 phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega,
     Vfgs, atom_content, atom_fractions, atom_mass_fractions,
     atom_flows, atom_count_flows, atom_mass_flows,
@@ -7092,6 +7634,10 @@ phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega
     Wobbe_index, Wobbe_index_mass, Wobbe_index_lower, Wobbe_index_lower_mass,
     Wobbe_index_standard, Wobbe_index_normal,
     Wobbe_index_lower_standard, Wobbe_index_lower_normal,
+    Vfls, V_liquid_ref, rho_mass_liquid_ref,
+    water_index, humidity_ratio, zs_no_water, ws_no_water,
+    Psats, Psubs, Hsubs, Hvaps, sigmas,
+    Cpgs, Cpls, Cpss, kls, kss, kgs, muls, mugs, Vls, Vss,
 ]
 
 for method in phase_shared_methods:
