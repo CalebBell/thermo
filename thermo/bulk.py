@@ -1004,21 +1004,19 @@ class Bulk(Phase):
             return self._sigma
         except AttributeError:
             pass
-        phase_fractions = self.phase_fractions
-        phase_count = len(phase_fractions)
-        result = self.result
-        state = self.phase_bulk
-        if phase_count == 1 and self.result.gas is None:
+        phase_count = len(self.phase_fractions)
+        if self.phase_bulk is None and self.gas is not None:
+            # Overall bulk with a gas phase - no surface tension
+            self._sigma = None
+            return None
+        if phase_count == 1:
             self._sigma = sigma = self.phases[0].sigma()
             return sigma
-        elif self.phase_bulk == "l" or self.result.gas is None:
-            # Multiple liquids - either a bulk liquid, or a result with no gases
-            sigma = self._property_mixing_rule(self.settings.sigma_LL, self.settings.sigma_LL_power_exponent,
-                                               self.correlations.SurfaceTensionMixture, "sigma")
-            self._sigma = sigma
-            return sigma
-        else:
-            return None
+        # Multiple liquids - either a bulk liquid, or a result with no gases
+        sigma = self._property_mixing_rule(self.settings.sigma_LL, self.settings.sigma_LL_power_exponent,
+                                           self.correlations.SurfaceTensionMixture, "sigma")
+        self._sigma = sigma
+        return sigma
 
 
 

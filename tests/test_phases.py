@@ -2788,7 +2788,7 @@ def test_sigma_bulk():
 
     settings = BulkSettings(sigma_LL=MOLE_WEIGHTED)
     sigma = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.sigma()
-    assert_close(sigma, 0.04719861703424234, rtol=1e-13)
+    assert_close(sigma, 0.04855521689637163, rtol=1e-13)
 
     settings = BulkSettings(sigma_LL=MASS_WEIGHTED)
     sigma = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.sigma()
@@ -2804,7 +2804,7 @@ def test_sigma_bulk():
 
     settings = BulkSettings(sigma_LL=LOG_PROP_MOLE_WEIGHTED)
     sigma = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.sigma()
-    assert_close(sigma, 0.04927871496785133, rtol=1e-13)
+    assert_close(sigma, 0.04519426348988403, rtol=1e-13)
 
     settings = BulkSettings(sigma_LL=LOG_PROP_MASS_WEIGHTED)
     sigma = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.sigma()
@@ -2816,7 +2816,7 @@ def test_sigma_bulk():
 
     settings = BulkSettings(sigma_LL=POWER_PROP_MOLE_WEIGHTED, sigma_LL_power_exponent=0.4)
     sigma = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.sigma()
-    assert_close(sigma, 0.04340766117192312, rtol=1e-13)
+    assert_close(sigma, 0.04659431685428181, rtol=1e-13)
 
     settings = BulkSettings(sigma_LL=POWER_PROP_MASS_WEIGHTED, sigma_LL_power_exponent=0.4)
     sigma = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.sigma()
