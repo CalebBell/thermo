@@ -841,17 +841,6 @@ class Bulk(Phase):
             betas = None
         return property_mixing_rule(betas, props, method, exponent)
 
-    def _mu_k_VL(self, method, props, exponent):
-        if method in mole_methods:
-            VF = self._gas_beta
-            betas = [VF, 1.0 - VF]
-        elif method in mass_methods:
-            betas = self.result.betas_mass_states[:2]
-        elif method in volume_methods:
-            betas = self.result.betas_volume_states[:2]
-        else:
-            betas = None
-        return property_mixing_rule(betas, props, method, exponent)
 
     def mu(self):
         r"""Calculate and return the viscosity of the bulk according to the
@@ -952,11 +941,11 @@ class Bulk(Phase):
             pass
         phase_fractions = self.phase_fractions
         phase_count = len(phase_fractions)
-        result = self.result
+        liquids = self.liquids
         if phase_count == 1:
             self._k = k = self.phases[0].k()
             return k
-        elif self.phase_bulk == "l" or self.result.gas is None:
+        elif self.phase_bulk == "l" or len(liquids) == phase_count:
             # Multiple liquids - either a bulk liquid, or a result with no gases
             k = self._property_mixing_rule(self.settings.k_LL, self.settings.k_LL_power_exponent,
                                            self.correlations.ThermalConductivityLiquidMixture, "k")
@@ -971,16 +960,34 @@ class Bulk(Phase):
             self._k = k = self.correlations.ThermalConductivityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
             return k
 
-        kg = result.gas.k()
-        if phase_count == 2:
-            kl = result.liquids[0].k()
-        else:
-            kl = result.liquid_bulk.k()
+        gas = self.gas
+        if self.phase_bulk is None and gas is not None and liquids:
+            VF = phase_fractions[0]
+            kg = gas.k()
+            if len(liquids) == 1:
+                kl = liquids[0].k()
+            else:
+                liquid_betas = normalize([phase_fractions[i] for i, p in enumerate(self.phases) if p.assigned_phase == "l"])
+                liquid_betas_for_k = phase_subset_betas(liquids, liquid_betas, self.settings.k_LL)
+                kl_props = [v.k() for v in liquids]
+                kl = property_mixing_rule(liquid_betas_for_k, kl_props, self.settings.k_LL, self.settings.k_LL_power_exponent)
 
-        k = self._mu_k_VL(method, props=[kg, kl],
-                            exponent=self.settings.k_VL_power_exponent)
-        self._k = k
-        return k
+            if method in mole_methods:
+                betas_VL = [VF, 1.0 - VF]
+            elif method in mass_methods:
+                bm = self.betas_mass
+                betas_VL = [bm[0], sum(bm[1:])]
+            elif method in volume_methods:
+                bv = self.betas_volume
+                betas_VL = [bv[0], sum(bv[1:])]
+            else:
+                betas_VL = None
+            k = property_mixing_rule(betas_VL, [kg, kl],
+                            method, self.settings.k_VL_power_exponent)
+            self._k = k
+            return k
+        self._k = None
+        return self._k
 
     def sigma(self):
         r"""Calculate and return the surface tension of the bulk according to the

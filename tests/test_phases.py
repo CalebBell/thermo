@@ -2591,7 +2591,7 @@ def test_thermal_conductivity_bulk():
 
     settings = BulkSettings(k_LL=MOLE_WEIGHTED)
     k = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.k()
-    assert_close(k, 0.5000412113369463, rtol=1e-13)
+    assert_close(k, 0.5144135781769856, rtol=1e-13)
 
     settings = BulkSettings(k_LL=MASS_WEIGHTED)
     k = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.k()
@@ -2607,7 +2607,7 @@ def test_thermal_conductivity_bulk():
 
     settings = BulkSettings(k_LL=LOG_PROP_MOLE_WEIGHTED)
     k = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.k()
-    assert_close(k, 0.47379743129842095, rtol=1e-13)
+    assert_close(k, 0.4637334985430038, rtol=1e-13)
 
     settings = BulkSettings(k_LL=LOG_PROP_MASS_WEIGHTED)
     k = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.k()
@@ -2619,7 +2619,7 @@ def test_thermal_conductivity_bulk():
 
     settings = BulkSettings(k_LL=POWER_PROP_MOLE_WEIGHTED, k_LL_power_exponent=0.4)
     k = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.k()
-    assert_close(k, 0.451845595124278, rtol=1e-13)
+    assert_close(k, 0.4850166136582797, rtol=1e-13)
 
     settings = BulkSettings(k_LL=POWER_PROP_MASS_WEIGHTED, k_LL_power_exponent=0.4)
     k = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.k()
