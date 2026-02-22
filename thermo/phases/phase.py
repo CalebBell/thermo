@@ -2025,7 +2025,7 @@ class Phase:
 
     def H_reactive(self):
         r"""Method to calculate and return the enthalpy of the phase on a
-        reactive basis, using the `Hfs` values of the phase.
+        reactive basis, using the formation enthalpies `Hfs` of the phase.
 
         .. math::
             H_{reactive} = H + \sum_i z_i {H_{f,i}}
@@ -2033,10 +2033,7 @@ class Phase:
         Returns
         -------
         H_reactive : float
-            Enthalpy of the phase on a reactive basis, [J/mol]
-
-        Notes
-        -----
+            Enthalpy on a reactive basis, [J/mol]
         """
         try:
             return self._H_reactive
@@ -2053,7 +2050,7 @@ class Phase:
 
     def S_reactive(self):
         r"""Method to calculate and return the entropy of the phase on a
-        reactive basis, using the `Sfs` values of the phase.
+        reactive basis, using the formation entropies `Sfs` of the phase.
 
         .. math::
             S_{reactive} = S + \sum_i z_i {S_{f,i}}
@@ -2061,10 +2058,7 @@ class Phase:
         Returns
         -------
         S_reactive : float
-            Entropy of the phase on a reactive basis, [J/(mol*K)]
-
-        Notes
-        -----
+            Entropy on a reactive basis, [J/(mol*K)]
         """
         try:
             return self._S_reactive
@@ -2089,13 +2083,9 @@ class Phase:
         Returns
         -------
         G_reactive : float
-            Gibbs free energy of the phase on a reactive basis, [J/(mol)]
-
-        Notes
-        -----
+            Gibbs free energy on a reactive basis, [J/(mol)]
         """
-        G = self.H_reactive() - self.T*self.S_reactive()
-        return G
+        return self.H_reactive() - self.T*self.S_reactive()
 
     def U_reactive(self):
         r"""Method to calculate and return the internal energy of the phase
@@ -2107,13 +2097,9 @@ class Phase:
         Returns
         -------
         U_reactive : float
-            Internal energy of the phase on a reactive basis, [J/(mol)]
-
-        Notes
-        -----
+            Internal energy on a reactive basis, [J/(mol)]
         """
-        U = self.H_reactive() - self.P*self.V()
-        return U
+        return self.H_reactive() - self.P*self.V()
 
     def A_reactive(self):
         r"""Method to calculate and return the Helmholtz free energy of the
@@ -2125,17 +2111,13 @@ class Phase:
         Returns
         -------
         A_reactive : float
-            Helmholtz free energy of the phase on a reactive basis, [J/(mol)]
-
-        Notes
-        -----
+            Helmholtz free energy on a reactive basis, [J/(mol)]
         """
-        A = self.U_reactive() - self.T*self.S_reactive()
-        return A
+        return self.U_reactive() - self.T*self.S_reactive()
 
     def H_formation_ideal_gas(self):
         r"""Method to calculate and return the ideal-gas enthalpy of formation
-        of the phase (as if the phase was an ideal gas).
+        of the phase.
 
         .. math::
             H_{formation}^{ig} = \sum_i z_i {H_{f,i}}
@@ -2143,11 +2125,7 @@ class Phase:
         Returns
         -------
         H_formation_ideal_gas : float
-            Enthalpy of formation of the phase on a formation basis
-            as an ideal gas, [J/mol]
-
-        Notes
-        -----
+            Ideal gas formation enthalpy, [J/mol]
         """
         try:
             return self._H_formation_ideal_gas
@@ -2155,7 +2133,7 @@ class Phase:
             pass
         Hf_ideal_gas = 0.0
         if self.vectorized:
-            Hf_ideal_gas = float(self.zs, self.Hfs)
+            Hf_ideal_gas = float(dot(self.zs, self.Hfs))
         else:
             for zi, Hf in zip(self.zs, self.Hfs):
                 Hf_ideal_gas += zi*Hf
@@ -2164,7 +2142,7 @@ class Phase:
 
     def S_formation_ideal_gas(self):
         r"""Method to calculate and return the ideal-gas entropy of formation
-        of the phase (as if the phase was an ideal gas).
+        of the phase.
 
         .. math::
             S_{formation}^{ig} = \sum_i z_i {S_{f,i}}
@@ -2172,11 +2150,7 @@ class Phase:
         Returns
         -------
         S_formation_ideal_gas : float
-            Entropy of formation of the phase on a formation basis
-            as an ideal gas, [J/(mol*K)]
-
-        Notes
-        -----
+            Ideal gas formation entropy, [J/(mol*K)]
         """
         try:
             return self._S_formation_ideal_gas
@@ -2193,7 +2167,7 @@ class Phase:
 
     def G_formation_ideal_gas(self):
         r"""Method to calculate and return the ideal-gas Gibbs free energy of
-        formation of the phase (as if the phase was an ideal gas).
+        formation of the phase.
 
         .. math::
             G_{formation}^{ig} = H_{formation}^{ig} - T_{ref}^{ig}
@@ -2202,18 +2176,13 @@ class Phase:
         Returns
         -------
         G_formation_ideal_gas : float
-            Gibbs free energy of formation of the phase on a formation basis
-            as an ideal gas, [J/(mol)]
-
-        Notes
-        -----
+            Ideal gas formation Gibbs free energy, [J/(mol)]
         """
-        Gf = self.H_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
-        return Gf
+        return self.H_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
 
     def U_formation_ideal_gas(self):
         r"""Method to calculate and return the ideal-gas internal energy of
-        formation of the phase (as if the phase was an ideal gas).
+        formation of the phase.
 
         .. math::
             U_{formation}^{ig} = H_{formation}^{ig} - P_{ref}^{ig}
@@ -2222,18 +2191,13 @@ class Phase:
         Returns
         -------
         U_formation_ideal_gas : float
-            Internal energy of formation of the phase on a formation basis
-            as an ideal gas, [J/(mol)]
-
-        Notes
-        -----
+            Ideal gas formation internal energy, [J/(mol)]
         """
-        Uf = self.H_formation_ideal_gas() - self.P_REF_IG*self.V_ideal_gas()
-        return Uf
+        return self.H_formation_ideal_gas() - self.P_REF_IG*self.V_ideal_gas()
 
     def A_formation_ideal_gas(self):
         r"""Method to calculate and return the ideal-gas Helmholtz energy of
-        formation of the phase (as if the phase was an ideal gas).
+        formation of the phase.
 
         .. math::
             A_{formation}^{ig} = U_{formation}^{ig} - T_{ref}^{ig}
@@ -2242,82 +2206,62 @@ class Phase:
         Returns
         -------
         A_formation_ideal_gas : float
-            Helmholtz energy of formation of the phase on a formation basis
-            as an ideal gas, [J/(mol)]
-
-        Notes
-        -----
+            Ideal gas formation Helmholtz energy, [J/(mol)]
         """
-        Af = self.U_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
-        return Af
+        return self.U_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
 
     def H_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the mass ideal-gas formation enthalpy of
-        the phase.
+        r"""Method to calculate and return the mass ideal-gas formation
+        enthalpy of the phase.
 
         Returns
         -------
-        H_formation_ideal_gas_mass  : float
-            Formation mass enthalpy, [J/kg]
-
-        Notes
-        -----
+        H_formation_ideal_gas_mass : float
+            Ideal gas formation mass enthalpy, [J/kg]
         """
         return property_molar_to_mass(self.H_formation_ideal_gas(), self.MW())
 
     def S_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the mass ideal-gas formation entropy of
-        the phase.
+        r"""Method to calculate and return the mass ideal-gas formation
+        entropy of the phase.
 
         Returns
         -------
-        S_formation_ideal_gas_mass  : float
-            Formation mass entropy, [J/(kg*K)]
-
-        Notes
-        -----
+        S_formation_ideal_gas_mass : float
+            Ideal gas formation mass entropy, [J/(kg*K)]
         """
         return property_molar_to_mass(self.S_formation_ideal_gas(), self.MW())
 
     def G_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the mass ideal-gas formation Gibbs free energy of
-        the phase.
+        r"""Method to calculate and return the mass ideal-gas formation
+        Gibbs free energy of the phase.
 
         Returns
         -------
-        G_formation_ideal_gas_mass  : float
-            Formation mass Gibbs free energy, [J/kg]
-
-        Notes
-        -----
+        G_formation_ideal_gas_mass : float
+            Ideal gas formation mass Gibbs free energy, [J/kg]
         """
         return property_molar_to_mass(self.G_formation_ideal_gas(), self.MW())
 
     def U_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the ideal-gas formation mass internal energy of
-        the phase.
+        r"""Method to calculate and return the mass ideal-gas formation
+        internal energy of the phase.
 
         Returns
         -------
-        U_formation_ideal_gas_mass  : float
-            Formation mass internal energy, [J/kg]
-
-        Notes
-        -----
+        U_formation_ideal_gas_mass : float
+            Ideal gas formation mass internal energy, [J/kg]
         """
         return property_molar_to_mass(self.U_formation_ideal_gas(), self.MW())
 
     def A_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the ideal-gas formation mass Helmholtz energy of
-        the phase.
+        r"""Method to calculate and return the mass ideal-gas formation
+        Helmholtz energy of the phase.
 
         Returns
         -------
-        A_formation_ideal_gas_mass  : float
-            Formation mass Helmholtz energy, [J/kg]
-
-        Notes
-        -----
+        A_formation_ideal_gas_mass : float
+            Ideal gas formation mass Helmholtz energy, [J/kg]
         """
         return property_molar_to_mass(self.A_formation_ideal_gas(), self.MW())
 
