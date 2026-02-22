@@ -892,7 +892,7 @@ class Bulk(Phase):
             if len(liquids) == 1:
                 mul = liquids[0].mu()
             else:
-                liquid_betas = phase_subset_betas(liquids, [self.phase_fractions[i] for i, p in enumerate(self.phases) if p.assigned_phase == "l"], self.settings.mu_LL)
+                liquid_betas = phase_subset_betas(liquids, normalize([self.phase_fractions[i] for i, p in enumerate(self.phases) if p.assigned_phase == "l"]), self.settings.mu_LL)
                 mul_props = [v.mu() for v in liquids]
                 mul = property_mixing_rule(liquid_betas, mul_props, self.settings.mu_LL, self.settings.mu_LL_power_exponent)
 

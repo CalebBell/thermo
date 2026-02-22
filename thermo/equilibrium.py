@@ -370,7 +370,7 @@ class EquilibriumState:
             solid_bulk.constants = constants
             solid_bulk.correlations = correlations
             solid_bulk.flasher = flasher
-            liquid_bulk.settings = settings
+            solid_bulk.settings = settings
             solid_bulk._V_liquids_ref = V_liquids_ref
             solid_bulk._gas_beta = betas[0] if gas_count else 0.0
             solid_bulk._beta = sum(betas_solids)
