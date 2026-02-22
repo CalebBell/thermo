@@ -794,7 +794,7 @@ class Bulk(Phase):
 
     def _mu_k_VL(self, method, props, exponent):
         if method in mole_methods:
-            VF = self.result.VF
+            VF = self._gas_beta
             betas = [VF, 1.0 - VF]
         elif method in mass_methods:
             betas = self.result.betas_mass_states[:2]
