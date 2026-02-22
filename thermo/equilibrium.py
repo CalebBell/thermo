@@ -1058,44 +1058,6 @@ class EquilibriumState:
             Cp += zs[i]*Cpigs_pure[i]
         return Cp
 
-    def H_dep(self, phase=None):
-        r"""Method to calculate and return the difference between the actual
-        `H` and the ideal-gas enthalpy of the phase.
-
-        .. math::
-            H^{dep} = H - H^{ig}
-
-        Returns
-        -------
-        H_dep : float
-            Departure enthalpy, [J/(mol)]
-        """
-        if phase is None:
-            phase = self.bulk
-        if not phase.bulk_phase_type:
-            return phase.H_dep()
-        return phase.H() - self.H_ideal_gas(phase)
-
-    def S_dep(self, phase=None):
-        r"""Method to calculate and return the difference between the actual
-        `S` and the ideal-gas entropy of the phase.
-
-        .. math::
-            S^{dep} = S - S^{ig}
-
-        Returns
-        -------
-        S_dep : float
-            Departure entropy, [J/(mol*K)]
-        """
-        if phase is None:
-            phase = self.bulk
-        if not phase.bulk_phase_type:
-            return phase.S_dep()
-        S_dep = 0.0
-        for p, beta in zip(phase.phases, phase.phase_fractions):
-            S_dep += p.S_dep()*beta
-        return S_dep
 
 
     def H_ideal_gas(self, phase=None):
@@ -1402,24 +1364,6 @@ def _make_getter_correlations(name):
         pass
     return get_correlation
 
-def _make_getter_EquilibriumState(name):
-    def get_EquilibriumState(self):
-        return getattr(self.result, name)(self)
-    try:
-        get_EquilibriumState.__doc__ = getattr(EquilibriumState, name).__doc__
-    except:
-        pass
-    return get_EquilibriumState
-
-def _make_getter_argumentless_EquilibriumState(name):
-    def get_EquilibriumState_argumentless(self):
-        return getattr(self.result, name)()
-    try:
-        get_EquilibriumState_argumentless.__doc__ = getattr(EquilibriumState, name).__doc__
-    except:
-        pass
-    return get_EquilibriumState_argumentless
-
 
 def _make_getter_bulk_props(name):
     def get_bulk_prop(self):
@@ -1483,14 +1427,6 @@ for name in PropertyCorrelationsPackage.correlations:
 for method in phase_shared_methods:
     setattr(EquilibriumState, method.__name__, method)
 
-### For certain properties not supported by Bulk, allow them to call up to the
-# EquilibriumState to get the property
-Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas',
-       "H_dep", "S_dep"]
-for name in Bulk_properties_to_EquilibriumState:
-    method = _make_getter_EquilibriumState(name)
-    setattr(Bulk, name, method)
-
 ### For certain properties of the Bulk phase, make EquilibriumState get it from the Bulk
 bulk_props = ["V", "Z", "rho", "Cp", "Cv", "H", "S", "U", "G", "A", #'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP',
               #'dU_dT', 'dU_dP', 'dG_dT', 'dG_dP', 'dA_dT', 'dA_dP',
@@ -1509,7 +1445,7 @@ bulk_props = ["V", "Z", "rho", "Cp", "Cv", "H", "S", "U", "G", "A", #'dH_dT', 'd
               "PIP", "kappa", "isobaric_expansion", "Joule_Thomson", "speed_of_sound",
               "speed_of_sound_mass", "speed_of_sound_ideal_gas", "speed_of_sound_ideal_gas_mass",
               "U_dep", "G_dep", "A_dep", "V_dep", "B_from_Z",
-              "Cp_dep", "Cv_dep",
+              "H_dep", "S_dep", "Cp_dep", "Cv_dep",
               "Cp_dep_mass", "Cp_ideal_gas_mass", "Cv_dep_mass", "G_min_criteria",
               "mu", "k", "sigma", "Prandtl",
               "isentropic_exponent", "isentropic_exponent_PV", "isentropic_exponent_TV",

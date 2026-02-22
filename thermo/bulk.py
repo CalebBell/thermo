@@ -1768,8 +1768,43 @@ def S_formation_ideal_gas_Bulk(self):
         S += betas[i]*phases[i].S_formation_ideal_gas()
     return S
 
+def H_dep_Bulk(self):
+    r"""Method to calculate and return the departure enthalpy of the bulk
+    phase.
+
+    .. math::
+        H^{dep} = H - H^{ig}
+
+    Returns
+    -------
+    H_dep : float
+        Departure enthalpy of the bulk, [J/mol]
+    """
+    return self.H() - self.H_ideal_gas()
+
+def S_dep_Bulk(self):
+    r"""Method to calculate and return the departure entropy of the bulk
+    phase, computed as the mole-fraction-weighted sum over constituent
+    phases.
+
+    .. math::
+        S^{dep} = \sum_i \beta_i S_{dep,i}
+
+    Returns
+    -------
+    S_dep : float
+        Departure entropy of the bulk, [J/(mol*K)]
+    """
+    betas, phases = self.phase_fractions, self.phases
+    S = 0.0
+    for i in range(len(betas)):
+        S += betas[i]*phases[i].S_dep()
+    return S
+
 Bulk.H_formation_ideal_gas = H_formation_ideal_gas_Bulk
 Bulk.S_formation_ideal_gas = S_formation_ideal_gas_Bulk
+Bulk.H_dep = H_dep_Bulk
+Bulk.S_dep = S_dep_Bulk
 
 object_lookups[Bulk.__full_path__] = Bulk
 object_lookups[BulkSettings.__full_path__] = BulkSettings
