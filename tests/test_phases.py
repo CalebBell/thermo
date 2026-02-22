@@ -2225,6 +2225,82 @@ def test_BulkSettings_normal_standard():
     assert_close(res.liquid0.V_gas_normal(), V_expect, rtol=1e-12)
     assert_close(res.liquid1.V_gas_normal(), V_expect, rtol=1e-12)
 
+def test_bulk_phase_fractions_normalized():
+    T, P = 298.15, 1e5
+    zs = [.25, 0.7, .05]
+    constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0],
+                                         omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844],
+                                         CASs=['71-36-3', '7732-18-5', '64-17-5'])
+    HeatCapacityGases_list=[HeatCapacityGas(poly_fit=(50.0, 1000.0, [-3.787200194613107e-20, 1.7692887427654656e-16, -3.445247207129205e-13, 3.612771874320634e-10, -2.1953250181084466e-07, 7.707135849197655e-05, -0.014658388538054169, 1.5642629364740657, -7.614560475001724])),
+                    HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+                    HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases_list)
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
+    T_VLL = 361.0
+    VLL_betas = [0.027939322463013245, 0.6139152961492603, 0.35814538138772645]
+    VLL_zs_l0 = [7.619975052238078e-05, 0.9989622883894993, 0.0009615118599781685]
+    VLL_zs_l1 = [0.6793120076703765, 0.19699746328631032, 0.12369052904331329]
+    l0 = liq.to(T=T_VLL, P=P, zs=VLL_zs_l0)
+    l1 = liq.to(T=T_VLL, P=P, zs=VLL_zs_l1)
+    gas_VLL = gas.to(T=T_VLL, P=P, zs=[0.23840099709086618, 0.5786839935180893, 0.18291500939104433])
+
+    settings = BulkSettings()
+    obj = EquilibriumState(settings=settings, T=T_VLL, P=P, zs=zs,
+                         gas=gas_VLL, liquids=[l0, l1], solids=[], betas=VLL_betas,
+                         flash_specs=None, flash_convergence=None,
+                         constants=constants, correlations=correlations, flasher=None)
+
+    # Liquid bulk phase_fractions must sum to 1
+    lb = obj.liquid_bulk
+    assert_close(sum(lb.phase_fractions), 1.0, rtol=1e-15)
+    assert_close(lb.beta, 0.9720606775369868, rtol=1e-13)
+
+    # Liquid bulk betas
+    assert_close1d(lb.phase_fractions, [0.6315606734600177, 0.36843932653998246], rtol=1e-13)
+    assert_close1d(lb.betas_mass, [0.3416914554720223, 0.6583085445279777], rtol=1e-13)
+    assert_close1d(lb.betas_volume, [0.32011887950347134, 0.6798811204965285], rtol=1e-13)
+
+    # Liquid bulk thermodynamic properties
+    assert_close(lb.MW(), 33.35605166036794, rtol=1e-13)
+    assert_close(lb.rho_mass(), 672.2793110948363, rtol=1e-13)
+    assert_close(lb.V(), 4.9616359019060324e-05, rtol=1e-13)
+    assert_close(lb.Cp(), 120.60635219463481, rtol=1e-13)
+    assert_close(lb.H(), -39167.79494902861, rtol=1e-13)
+    assert_close(lb.S(), -100.48228803533023, rtol=1e-13)
+    assert_close(lb.dP_dT_frozen(), 2436684.1272664503, rtol=1e-13)
+    assert_close(lb.Tmc(), 611.6608308269351, rtol=1e-13)
+    assert_close(lb.S_dep(), -113.97520037610889, rtol=1e-13)
+    assert_close(lb.H_dep(), -42709.633248078004, rtol=1e-13)
+
+    # Verify rho_mass is consistent with V and MW
+    assert_close(lb.rho_mass(), Vm_to_rho(lb.V(), lb.MW()), rtol=1e-15)
+
+    # Overall bulk phase_fractions must sum to 1
+    b = obj.bulk
+    assert_close(sum(b.phase_fractions), 1.0, rtol=1e-15)
+    assert_close(b.beta, 1.0, rtol=1e-15)
+
+    # Overall bulk betas
+    assert_close1d(b.betas_mass, [0.03051058635329944, 0.33126624881365857, 0.638223164833042], rtol=1e-13)
+    assert_close1d(b.betas_volume, [0.9447956060645747, 0.01767196873027657, 0.037532425205148705], rtol=1e-13)
+
+    # Overall bulk thermodynamic properties
+    assert_close(b.MW(), 33.444517999999995, rtol=1e-13)
+    assert_close(b.rho_mass(), 38.280739702720844, rtol=1e-13)
+    assert_close(b.V(), 0.0008736643612354987, rtol=1e-13)
+    assert_close(b.Cp(), 119.03375533317401, rtol=1e-13)
+    assert_close(b.H(), -37971.3986074547, rtol=1e-13)
+    assert_close(b.S(), -97.1319409020353, rtol=1e-13)
+    assert_close(b.dP_dT_frozen(), 2368612.801863535, rtol=1e-13)
+    assert_close(b.Tmc(), 610.0353667648936, rtol=1e-13)
+    assert_close(b.S_dep(), -110.79789494251537, rtol=1e-13)
+    assert_close(b.H_dep(), -41520.22030258882, rtol=1e-13)
+
+    # Verify overall bulk rho_mass is consistent
+    assert_close(b.rho_mass(), Vm_to_rho(b.V(), b.MW()), rtol=1e-15)
+
 def test_viscosity_bulk():
     T, P = 298.15, 1e5
     zs = [.25, 0.7, .05]
@@ -2289,7 +2365,7 @@ def test_viscosity_bulk():
     # Liquid-Liquid
     settings = BulkSettings(mu_LL=MOLE_WEIGHTED)
     mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.00039882913468437684, rtol=1e-7)
+    assert_close(mu, 0.00041029242710952216, rtol=1e-7)
 
     settings = BulkSettings(mu_LL=MASS_WEIGHTED)
     mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
@@ -2305,7 +2381,7 @@ def test_viscosity_bulk():
 
     settings = BulkSettings(mu_LL=LOG_PROP_MOLE_WEIGHTED)
     mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.0004926221784117713, rtol=1e-7)
+    assert_close(mu, 0.0003957755768170091, rtol=1e-7)
 
     settings = BulkSettings(mu_LL=LOG_PROP_MASS_WEIGHTED)
     mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
@@ -2317,7 +2393,7 @@ def test_viscosity_bulk():
 
     settings = BulkSettings(mu_LL=POWER_PROP_MOLE_WEIGHTED, mu_LL_power_exponent=0.4)
     mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
-    assert_close(mu, 0.000373958122197057, rtol=1e-7)
+    assert_close(mu, 0.0004014112432105026, rtol=1e-7)
 
     settings = BulkSettings(mu_LL=POWER_PROP_MASS_WEIGHTED, mu_LL_power_exponent=0.4)
     mu = EquilibriumState(settings=settings, **VLL_kwargs).liquid_bulk.mu()
@@ -2339,37 +2415,37 @@ def test_viscosity_bulk():
 
     settings = BulkSettings(mu_VL='Beattie Whalley', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 9.444973170122925e-05
+    mu_expect = 9.661776081101065e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='McAdams', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.00020740600899307388
+    mu_expect = 0.0002074060089930738
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Cicchitti', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.0004498945147517062
+    mu_expect = 0.00044989451475170583
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Lin Kwok', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 0.00035505884302088227
+    mu_expect = 0.000355058843020882
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Fourar Bories', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 6.79588952470955e-05
+    mu_expect = 6.903181336326657e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 
     settings = BulkSettings(mu_VL='Duckler', mu_LL=LOG_PROP_MASS_WEIGHTED)
     obj = EquilibriumState(settings=settings, **VLL_kwargs)
-    mu_expect = 3.5494270611410175e-05
+    mu_expect = 3.615472590750441e-05
     assert_close(obj.mu(), mu_expect, rtol=1e-10)
     assert_close(obj.bulk.mu(), mu_expect, rtol=1e-10)
 

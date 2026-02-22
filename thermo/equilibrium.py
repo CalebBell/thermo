@@ -351,7 +351,6 @@ class EquilibriumState:
             liquid_bulk.settings = settings
             liquid_bulk._V_liquids_ref = V_liquids_ref
             liquid_bulk._gas_beta = betas[0] if gas_count else 0.0
-            liquid_bulk._beta = sum(betas_liquids)
             for i, l in enumerate(liquids):
                 setattr(self, f"liquid{i}", l)
                 l.assigned_phase = "l"
@@ -373,7 +372,6 @@ class EquilibriumState:
             solid_bulk.settings = settings
             solid_bulk._V_liquids_ref = V_liquids_ref
             solid_bulk._gas_beta = betas[0] if gas_count else 0.0
-            solid_bulk._beta = sum(betas_solids)
             for i, s in enumerate(solids):
                 setattr(self, f"solid{i}", s)
 
@@ -385,7 +383,6 @@ class EquilibriumState:
         bulk.settings = settings
         bulk._V_liquids_ref = V_liquids_ref
         bulk._gas_beta = betas[0] if gas_count else 0.0
-        bulk._beta = 1.0
         bulk._beta_mass = 1.0
 
         self.flash_specs = flash_specs

@@ -689,7 +689,14 @@ class Bulk(Phase):
         self.P = P
         self.zs = zs
         self.phases = phases
-        self.phase_fractions = phase_fractions
+        self._beta = sum(phase_fractions)
+        if phase_bulk is not None:
+            # Sub-bulk: normalize fractions to sum to 1
+            beta_inv = 1.0 / self._beta
+            self.phase_fractions = [b * beta_inv for b in phase_fractions]
+        else:
+            # Overall bulk: fractions already sum to 1
+            self.phase_fractions = phase_fractions
         self.N = N = len(zs)
         self.phase_bulk = phase_bulk
 
@@ -734,7 +741,7 @@ class Bulk(Phase):
         beta : float
             Phase fraction of bulk, [-]
         """
-        return sum(self.phase_fractions)
+        return self._beta
 
     @property
     def betas_mass(self):
@@ -892,9 +899,10 @@ class Bulk(Phase):
             if len(liquids) == 1:
                 mul = liquids[0].mu()
             else:
-                liquid_betas = phase_subset_betas(liquids, normalize([self.phase_fractions[i] for i, p in enumerate(self.phases) if p.assigned_phase == "l"]), self.settings.mu_LL)
+                liquid_betas = normalize([self.phase_fractions[i] for i, p in enumerate(self.phases) if p.assigned_phase == "l"])
+                liquid_betas_for_viscosity = phase_subset_betas(liquids, liquid_betas, self.settings.mu_LL)
                 mul_props = [v.mu() for v in liquids]
-                mul = property_mixing_rule(liquid_betas, mul_props, self.settings.mu_LL, self.settings.mu_LL_power_exponent)
+                mul = property_mixing_rule(liquid_betas_for_viscosity, mul_props, self.settings.mu_LL, self.settings.mu_LL_power_exponent)
 
             if method in MU_VL_CORRELATIONS_SET:
                 x = self.betas_mass[0]
@@ -907,7 +915,17 @@ class Bulk(Phase):
                     rhol = Vm_to_rho(V_liquid, MW_liquid)
                 mu = gas_liquid_viscosity(x, mul, mug, rhol, rhog, Method=method)
             else:
-                mu = property_mixing_rule([VF, 1.0 - VF], [mug, mul],
+                if method in mole_methods:
+                    betas_VL = [VF, 1.0 - VF]
+                elif method in mass_methods:
+                    bm = self.betas_mass
+                    betas_VL = [bm[0], sum(bm[1:])]
+                elif method in volume_methods:
+                    bv = self.betas_volume
+                    betas_VL = [bv[0], sum(bv[1:])]
+                else:
+                    betas_VL = None
+                mu = property_mixing_rule(betas_VL, [mug, mul],
                                 method, self.settings.mu_VL_power_exponent)
             self._mu = mu
             return mu
