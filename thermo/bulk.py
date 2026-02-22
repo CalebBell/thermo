@@ -73,7 +73,7 @@ Bulk Settings Class
 
 __all__ = ["Bulk", "BulkSettings", "default_settings"]
 
-from chemicals.utils import Joule_Thomson, hash_any_primitive, isobaric_expansion, isothermal_compressibility, object_data, speed_of_sound
+from chemicals.utils import Joule_Thomson, Vm_to_rho, hash_any_primitive, isobaric_expansion, isothermal_compressibility, normalize, object_data, speed_of_sound
 from fluids.constants import R, atm
 from fluids.numerics import exp, log, sqrt
 from fluids.two_phase_voidage import gas_liquid_viscosity
@@ -221,6 +221,41 @@ volume_methods = {VOLUME_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED, POWER_PROP_VOLUME_W
 linear_methods = {MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED}
 log_prop_methods = {LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED}
 prop_power_methods = {POWER_PROP_MOLE_WEIGHTED, POWER_PROP_MASS_WEIGHTED, POWER_PROP_VOLUME_WEIGHTED}
+
+def phase_subset_betas(phases, mole_betas, method):
+    if method in mass_methods:
+        mass_amounts = [b*p.MW() for b, p in zip(mole_betas, phases)]
+        tot = sum(mass_amounts)
+        return [m/tot for m in mass_amounts]
+    elif method in volume_methods:
+        vol_amounts = [b*p.V() for b, p in zip(mole_betas, phases)]
+        tot = sum(vol_amounts)
+        return [v/tot for v in vol_amounts]
+    else:
+        return normalize(mole_betas)
+
+def property_mixing_rule(betas, props, method, exponent=1.0):
+    if method in linear_methods:
+        prop = 0.0
+        for i in range(len(betas)):
+            prop += betas[i]*props[i]
+    elif method in prop_power_methods:
+        prop = 0.0
+        for i in range(len(betas)):
+            prop += betas[i]*props[i]**exponent
+        prop = prop**(1.0/exponent)
+    elif method in log_prop_methods:
+        prop = 0.0
+        for i in range(len(betas)):
+            prop += betas[i]*log(props[i])
+        prop = exp(prop)
+    elif method == MINIMUM_PHASE_PROP:
+        prop = min(props)
+    elif method == MAXIMUM_PHASE_PROP:
+        prop = max(props)
+    else:
+        raise ValueError("Unknown method")
+    return prop
 
 class BulkSettings:
     r"""Class containing configuration methods for determining how properties of
@@ -663,6 +698,31 @@ class Bulk(Phase):
         return self.phase_bulk
 
     @property
+    def gas(self):
+        if self.phase_bulk is not None:
+            return None
+        for p in self.phases:
+            if p.assigned_phase == "g":
+                return p
+        return None
+
+    @property
+    def liquids(self):
+        if self.phase_bulk == "s":
+            return []
+        if self.phase_bulk == "l":
+            return list(self.phases)
+        return [p for p in self.phases if p.assigned_phase == "l"]
+
+    @property
+    def solids(self):
+        if self.phase_bulk == "l":
+            return []
+        if self.phase_bulk == "s":
+            return list(self.phases)
+        return [p for p in self.phases if p.assigned_phase == "s"]
+
+    @property
     def beta(self):
         r"""Phase fraction of the bulk phase. Should always be 1 when
         representing all phases of a flash; but can be less than one if
@@ -762,35 +822,17 @@ class Bulk(Phase):
 
     def _property_mixing_rule(self, method, exponent, mix_obj, attr):
         if method == AS_ONE_LIQUID:
-            prop = mix_obj.mixture_property(self.T, self.P, self.zs, self.ws())
+            return mix_obj.mixture_property(self.T, self.P, self.zs, self.ws())
+        props = [getattr(i, attr)() for i in self.phases]
+        if method in mole_methods:
+            betas = self.phase_fractions
+        elif method in mass_methods:
+            betas = self.betas_mass
+        elif method in volume_methods:
+            betas = self.betas_volume
         else:
-            props = [getattr(i, attr)() for i in self.phases]
-            if method in mole_methods:
-                betas = self.phase_fractions
-            elif method in mass_methods:
-                betas = self.betas_mass
-            elif method in volume_methods:
-                betas = self.betas_volume
-
-            prop = 0.0
-            if method in linear_methods:
-                for i in range(len(self.phase_fractions)):
-                    prop += betas[i]*props[i]
-            elif method in prop_power_methods:
-                for i in range(len(self.phase_fractions)):
-                    prop += betas[i]*props[i]**exponent
-                prop = prop**(1.0/exponent)
-            elif method in log_prop_methods:
-                for i in range(len(self.phase_fractions)):
-                    prop += betas[i]*log(props[i])
-                prop = exp(prop)
-            elif method == MINIMUM_PHASE_PROP:
-                prop = min(props)
-            elif method == MAXIMUM_PHASE_PROP:
-                prop = max(props)
-            else:
-                raise ValueError("Unknown method")
-        return prop
+            betas = None
+        return property_mixing_rule(betas, props, method, exponent)
 
     def _mu_k_VL(self, method, props, exponent):
         if method in mole_methods:
@@ -800,22 +842,9 @@ class Bulk(Phase):
             betas = self.result.betas_mass_states[:2]
         elif method in volume_methods:
             betas = self.result.betas_volume_states[:2]
-
-        if method in linear_methods:
-            prop = betas[0]*props[0] + betas[1]*props[1]
-        elif method in prop_power_methods:
-            prop = (betas[0]*props[0]**exponent + betas[1]*props[1]**exponent)**(1.0/exponent)
-        elif method in log_prop_methods:
-            prop = exp(betas[0]*log(props[0]) + betas[1]*log(props[1]))
-        elif method == MINIMUM_PHASE_PROP:
-            prop = min(props)
-        elif method == MAXIMUM_PHASE_PROP:
-            prop = max(props)
         else:
-            raise ValueError("Unrecognized method")
-
-        return prop
-
+            betas = None
+        return property_mixing_rule(betas, props, method, exponent)
 
     def mu(self):
         r"""Calculate and return the viscosity of the bulk according to the
@@ -837,11 +866,11 @@ class Bulk(Phase):
             pass
         phase_fractions = self.phase_fractions
         phase_count = len(phase_fractions)
-        result = self.result
+        liquids = self.liquids
         if phase_count == 1:
             self._mu = mu = self.phases[0].mu()
             return mu
-        elif self.phase_bulk == "l" or self.result.gas is None:
+        elif self.phase_bulk == "l" or len(liquids) == phase_count:
             # Multiple liquids - either a bulk liquid, or a result with no gases
             mu = self._property_mixing_rule(self.settings.mu_LL, self.settings.mu_LL_power_exponent,
                                             self.correlations.ViscosityLiquidMixture, "mu")
@@ -855,26 +884,35 @@ class Bulk(Phase):
         elif method == AS_ONE_GAS:
             self._mu = mu = self.correlations.ViscosityGasMixture.mixture_property(self.T, self.P, self.zs, self.ws())
             return mu
-
-        mug = result.gas.mu()
-        if phase_count == 2:
-            mul = result.liquids[0].mu()
-        else:
-            mul = result.liquid_bulk.mu()
-
-        if method in MU_VL_CORRELATIONS_SET:
-            x = result.betas_mass[0]
-            rhog = result.gas.rho_mass()
-            if phase_count == 2:
-                rhol = result.liquids[0].rho_mass()
+        gas = self.gas
+        if self.phase_bulk is None and gas is not None and liquids:
+            VF = self.phase_fractions[0]
+            # overall bulk
+            mug = gas.mu()
+            if len(liquids) == 1:
+                mul = liquids[0].mu()
             else:
-                rhol = result.liquid_bulk.rho_mass()
-            mu = gas_liquid_viscosity(x, mul, mug, rhol, rhog, Method=method)
-        else:
-            mu = self._mu_k_VL(method, props=[mug, mul],
-                               exponent=self.settings.mu_VL_power_exponent)
-        self._mu = mu
-        return mu
+                liquid_betas = phase_subset_betas(liquids, [self.phase_fractions[i] for i, p in enumerate(self.phases) if p.assigned_phase == "l"], self.settings.mu_LL)
+                mul_props = [v.mu() for v in liquids]
+                mul = property_mixing_rule(liquid_betas, mul_props, self.settings.mu_LL, self.settings.mu_LL_power_exponent)
+
+            if method in MU_VL_CORRELATIONS_SET:
+                x = self.betas_mass[0]
+                rhog = gas.rho_mass()
+                if len(liquids) == 1:
+                    rhol = liquids[0].rho_mass()
+                else:
+                    V_liquid = sum(b*l.V() for b, l in zip(liquid_betas, liquids))
+                    MW_liquid = sum(b*l.MW() for b, l in zip(liquid_betas, liquids))
+                    rhol = Vm_to_rho(V_liquid, MW_liquid)
+                mu = gas_liquid_viscosity(x, mul, mug, rhol, rhog, Method=method)
+            else:
+                mu = property_mixing_rule([VF, 1.0 - VF], [mug, mul],
+                                method, self.settings.mu_VL_power_exponent)
+            self._mu = mu
+            return mu
+        self._mu = None
+        return self._mu
 
     def k(self):
         r"""Calculate and return the thermal conductivity of the bulk according to the
