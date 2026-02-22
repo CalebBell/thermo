@@ -1730,5 +1730,46 @@ class Bulk(Phase):
         return sum(self.phase_fractions[i]*p.G_min_criteria() for i, p in enumerate(self.phases))
 
 
+def H_formation_ideal_gas_Bulk(self):
+    r"""Method to calculate and return the ideal-gas enthalpy of formation
+    of the bulk phase, computed as the mole-fraction-weighted sum over
+    constituent phases.
+
+    .. math::
+        H_{f}^{ig} = \sum_i \beta_i H_{f,i}^{ig}
+
+    Returns
+    -------
+    H_formation_ideal_gas : float
+        Ideal-gas enthalpy of formation of the bulk, [J/mol]
+    """
+    betas, phases = self.phase_fractions, self.phases
+    H = 0.0
+    for i in range(len(betas)):
+        H += betas[i]*phases[i].H_formation_ideal_gas()
+    return H
+
+def S_formation_ideal_gas_Bulk(self):
+    r"""Method to calculate and return the ideal-gas entropy of formation
+    of the bulk phase, computed as the mole-fraction-weighted sum over
+    constituent phases.
+
+    .. math::
+        S_{f}^{ig} = \sum_i \beta_i S_{f,i}^{ig}
+
+    Returns
+    -------
+    S_formation_ideal_gas : float
+        Ideal-gas entropy of formation of the bulk, [J/(mol*K)]
+    """
+    betas, phases = self.phase_fractions, self.phases
+    S = 0.0
+    for i in range(len(betas)):
+        S += betas[i]*phases[i].S_formation_ideal_gas()
+    return S
+
+Bulk.H_formation_ideal_gas = H_formation_ideal_gas_Bulk
+Bulk.S_formation_ideal_gas = S_formation_ideal_gas_Bulk
+
 object_lookups[Bulk.__full_path__] = Bulk
 object_lookups[BulkSettings.__full_path__] = BulkSettings

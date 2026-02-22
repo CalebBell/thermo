@@ -1198,63 +1198,6 @@ class EquilibriumState:
 
         return S
 
-    def H_formation_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas enthalpy of formation
-        of the phase (as if the phase was an ideal gas).
-
-        .. math::
-            H_{reactive}^{ig} = \sum_i z_i {H_{f,i}}
-
-        Returns
-        -------
-        H_formation_ideal_gas : float
-            Enthalpy of formation of the phase on a reactive basis
-            as an ideal gas, [J/mol]
-
-        Notes
-        -----
-        """
-        if phase is None:
-            phase = self.bulk
-        if not phase.bulk_phase_type:
-            return phase.H_formation_ideal_gas()
-
-        Hf = 0.0
-        zs = phase.zs
-        Hfgs = self.constants.Hfgs
-        for i in range(self.N):
-            Hf += zs[i]*Hfgs[i]
-        return Hf
-
-    def S_formation_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas entropy of formation
-        of the phase (as if the phase was an ideal gas).
-
-        .. math::
-            S_{reactive}^{ig} = \sum_i z_i {S_{f,i}}
-
-        Returns
-        -------
-        S_formation_ideal_gas : float
-            Entropy of formation of the phase on a reactive basis
-            as an ideal gas, [J/(mol*K)]
-
-        Notes
-        -----
-        """
-        if phase is None:
-            phase = self.bulk
-        if not phase.bulk_phase_type:
-            return phase.S_formation_ideal_gas()
-
-        Sf = 0.0
-        zs = phase.zs
-        Sfgs = self.constants.Sfgs
-        for i in range(self.N):
-            Sf += zs[i]*Sfgs[i]
-        return Sf
-
-
 
 
     def nu(self, phase=None):
@@ -1581,7 +1524,6 @@ for method in phase_shared_methods:
 ### For certain properties not supported by Bulk, allow them to call up to the
 # EquilibriumState to get the property
 Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas',
-       "H_formation_ideal_gas", "S_formation_ideal_gas",
        "H_dep", "S_dep", "Cp_dep", "Cv_dep"]
 for name in Bulk_properties_to_EquilibriumState:
     method = _make_getter_EquilibriumState(name)
@@ -1593,6 +1535,7 @@ bulk_props = ["V", "Z", "rho", "Cp", "Cv", "H", "S", "U", "G", "A", #'dH_dT', 'd
               "H_reactive", "S_reactive", "G_reactive", "U_reactive", "A_reactive",
               "H_reactive_mass", "S_reactive_mass", "G_reactive_mass", "U_reactive_mass", "A_reactive_mass",
               "H_ideal_gas_mass", "S_ideal_gas_mass", "G_ideal_gas_mass", "U_ideal_gas_mass", "A_ideal_gas_mass",
+              "H_formation_ideal_gas", "S_formation_ideal_gas",
               "H_formation_ideal_gas_mass", "S_formation_ideal_gas_mass", "G_formation_ideal_gas_mass",
               "U_formation_ideal_gas_mass", "A_formation_ideal_gas_mass",
               "H_dep_mass", "S_dep_mass", "G_dep_mass", "U_dep_mass", "A_dep_mass",
