@@ -1254,66 +1254,6 @@ class EquilibriumState:
             Sf += zs[i]*Sfgs[i]
         return Sf
 
-    def G_formation_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas Gibbs free energy of
-        formation of the phase (as if the phase was an ideal gas).
-
-        .. math::
-            G_{reactive}^{ig} = H_{reactive}^{ig} - T_{ref}^{ig}
-            S_{reactive}^{ig}
-
-        Returns
-        -------
-        G_formation_ideal_gas : float
-            Gibbs free energy of formation of the phase on a reactive basis
-            as an ideal gas, [J/(mol)]
-
-        Notes
-        -----
-        """
-        Gf = self.H_formation_ideal_gas(phase) - self.T_REF_IG*self.S_formation_ideal_gas(phase)
-        return Gf
-
-    def U_formation_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas internal energy of
-        formation of the phase (as if the phase was an ideal gas).
-
-        .. math::
-            U_{reactive}^{ig} = H_{reactive}^{ig} - P_{ref}^{ig}
-            V^{ig}
-
-        Returns
-        -------
-        U_formation_ideal_gas : float
-            Internal energy of formation of the phase on a reactive basis
-            as an ideal gas, [J/(mol)]
-
-        Notes
-        -----
-        """
-        Uf = self.H_formation_ideal_gas(phase) - self.P_REF_IG*self.V_ideal_gas()
-        return Uf
-
-    def A_formation_ideal_gas(self, phase=None):
-        r"""Method to calculate and return the ideal-gas Helmholtz energy of
-        formation of the phase (as if the phase was an ideal gas).
-
-        .. math::
-            A_{reactive}^{ig} = U_{reactive}^{ig} - T_{ref}^{ig}
-            S_{reactive}^{ig}
-
-        Returns
-        -------
-        A_formation_ideal_gas : float
-            Helmholtz energy of formation of the phase on a reactive basis
-            as an ideal gas, [J/(mol)]
-
-        Notes
-        -----
-        """
-        Af = self.U_formation_ideal_gas(phase) - self.T_REF_IG*self.S_formation_ideal_gas(phase)
-        return Af
-
 
 
 
@@ -1642,7 +1582,6 @@ for method in phase_shared_methods:
 # EquilibriumState to get the property
 Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas',
        "H_formation_ideal_gas", "S_formation_ideal_gas",
-       "G_formation_ideal_gas", "U_formation_ideal_gas", "A_formation_ideal_gas",
        "H_dep", "S_dep", "Cp_dep", "Cv_dep"]
 for name in Bulk_properties_to_EquilibriumState:
     method = _make_getter_EquilibriumState(name)
