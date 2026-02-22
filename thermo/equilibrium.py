@@ -1097,44 +1097,6 @@ class EquilibriumState:
             S_dep += p.S_dep()*beta
         return S_dep
 
-    def Cp_dep(self, phase=None):
-        r"""Method to calculate and return the difference between the actual
-        `Cp` and the ideal-gas heat
-        capacity :math:`C_p^{ig}` of the phase.
-
-        .. math::
-            C_p^{dep} = C_p - C_p^{ig}
-
-        Returns
-        -------
-        Cp_dep : float
-            Departure ideal gas heat capacity, [J/(mol*K)]
-        """
-        if phase is None:
-            phase = self.bulk
-        if not phase.bulk_phase_type:
-            return phase.Cp_dep()
-        return phase.Cp() - phase.Cp_ideal_gas()
-
-    def Cv_dep(self, phase=None):
-        r"""Method to calculate and return the difference between the actual
-        `Cv` and the ideal-gas constant volume heat
-        capacity :math:`C_v^{ig}` of the phase.
-
-        .. math::
-            C_v^{dep} = C_v - C_v^{ig}
-
-        Returns
-        -------
-        Cv_dep : float
-            Departure ideal gas constant volume heat capacity, [J/(mol*K)]
-        """
-        if phase is None:
-            phase = self.bulk
-        if not phase.bulk_phase_type:
-            return phase.Cv_dep()
-        return phase.Cv() - phase.Cv_ideal_gas()
-
 
     def H_ideal_gas(self, phase=None):
         r"""Method to calculate and return the ideal-gas enthalpy of the phase.
@@ -1524,7 +1486,7 @@ for method in phase_shared_methods:
 ### For certain properties not supported by Bulk, allow them to call up to the
 # EquilibriumState to get the property
 Bulk_properties_to_EquilibriumState = [#'H_ideal_gas', 'Cp_ideal_gas','S_ideal_gas',
-       "H_dep", "S_dep", "Cp_dep", "Cv_dep"]
+       "H_dep", "S_dep"]
 for name in Bulk_properties_to_EquilibriumState:
     method = _make_getter_EquilibriumState(name)
     setattr(Bulk, name, method)
@@ -1547,6 +1509,7 @@ bulk_props = ["V", "Z", "rho", "Cp", "Cv", "H", "S", "U", "G", "A", #'dH_dT', 'd
               "PIP", "kappa", "isobaric_expansion", "Joule_Thomson", "speed_of_sound",
               "speed_of_sound_mass", "speed_of_sound_ideal_gas", "speed_of_sound_ideal_gas_mass",
               "U_dep", "G_dep", "A_dep", "V_dep", "B_from_Z",
+              "Cp_dep", "Cv_dep",
               "Cp_dep_mass", "Cp_ideal_gas_mass", "Cv_dep_mass", "G_min_criteria",
               "mu", "k", "sigma", "Prandtl",
               "isentropic_exponent", "isentropic_exponent_PV", "isentropic_exponent_TV",
