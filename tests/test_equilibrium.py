@@ -926,7 +926,7 @@ def test_thermodynamic_derivatives_settings():
                             d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
                             d2P_dTdV=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = 2368612.801863535, 2368604.823694247
+    v, v2 = 2368612.801863535, 2436684.1272664503
     assert_close(res.dP_dT_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.dP_dT_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.dP_dT_frozen(), v2)
@@ -935,7 +935,7 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.dP_dT(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.dP_dT(), v2)
 
-    v, v2 = -91302146519714.0, -91302146426651.06
+    v, v2 = -91302146519714.0, -93926386013261.05
     assert_close(res.dP_dV_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.dP_dV_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.dP_dV_frozen(), v2)
@@ -943,7 +943,7 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.dP_dV(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.dP_dV(), v2)
 
-    v, v2 = -2059.854933409936, -2059.854681581265
+    v, v2 = -2059.854933409936, -2119.059775980792
     assert_close(res.d2P_dT2_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dT2_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dT2_frozen(), v2)
@@ -951,7 +951,7 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.d2P_dT2(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dT2(), v2)
 
-    v, v2 =  5.690848954200077e+19, 5.690848954199457e+19
+    v, v2 =  5.690848954200077e+19, 5.854417410051979e+19
     assert_close(res.d2P_dV2_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dV2_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dV2_frozen(), v2, rtol=1e-8)
@@ -959,7 +959,7 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.d2P_dV2(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dV2(), v2, rtol=1e-8)
 
-    v, v2 = -384372661273.9939, -384372661000.05206
+    v, v2 = -384372661273.9939, -395420440186.9006
     assert_close(res.d2P_dTdV_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dTdV_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dTdV_frozen(), v2, rtol=1e-8)
@@ -1137,14 +1137,14 @@ def test_thermodynamic_derivatives_named_settings():
                             d2P_dTdV=VOLUME_WEIGHTED)
 
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (3.7457177005192036e-05, 0.0006765320296813641)
+    v, v2 = (3.7457177005192036e-05, 0.0006576301831475394)
     assert_close(res.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.bulk.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.isobaric_expansion(), v2)
 
     settings = BulkSettings(isobaric_expansion=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (0.0011408916410772427, 0.001059818733856218)
+    v, v2 = (0.0011408916410772427, 0.0010902804303755942)
     assert_close(res.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.bulk.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.isobaric_expansion(), v2)
@@ -1184,14 +1184,14 @@ def test_thermodynamic_derivatives_named_settings():
                             d2P_dV2=VOLUME_WEIGHTED, d2P_dT2=VOLUME_WEIGHTED,
                             d2P_dTdV=VOLUME_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (4.065318446361809e-10, 4.0653229903060884e-10)
+    v, v2 = (4.065318446361809e-10, 3.9517406203636247e-10)
     assert_close(res.kappa(), v, rtol=1e-8)
     assert_close(res.bulk.kappa(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.kappa(), v2)
 
     settings = BulkSettings(kappa=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (2.8465214826316303e-07, 7.371276386739713e-10)
+    v, v2 = (2.8465214826316303e-07, 7.583144300638823e-10)
     assert_close(res.kappa(), v, rtol=1e-8)
     assert_close(res.bulk.kappa(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.kappa(), v2)
@@ -1231,14 +1231,14 @@ def test_thermodynamic_derivatives_named_settings():
                             d2P_dTdV=VOLUME_WEIGHTED)
 
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (-7.240388523395516e-06, -3.1091771780270116e-07)
+    v, v2 = (-7.240388523395516e-06, -3.137248711904908e-07)
     assert_close(res.Joule_Thomson(), v, rtol=1e-8)
     assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.Joule_Thomson(), v2)
 
     settings = BulkSettings(Joule_Thomson=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (3.993637901448662e-07, -2.1061721898004138e-07)
+    v, v2 = (3.993637901448662e-07, -2.1667085589112061e-07)
     assert_close(res.Joule_Thomson(), v, rtol=1e-8)
     assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.Joule_Thomson(), v2)
@@ -1277,14 +1277,14 @@ def test_thermodynamic_derivatives_named_settings():
                             d2P_dV2=VOLUME_WEIGHTED, d2P_dT2=VOLUME_WEIGHTED,
                             d2P_dTdV=VOLUME_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (1472.7188644943863, 377.43483503795505)
+    v, v2 = (1472.7188644943863, 387.1987376112444)
     assert_close(res.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.speed_of_sound(), v2)
 
     settings = BulkSettings(speed_of_sound=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (324.60817499927214, 322.9861514323374)
+    v, v2 = (324.60817499927214, 332.2695371761378)
     assert_close(res.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.speed_of_sound(), v2)

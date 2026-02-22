@@ -1788,44 +1788,44 @@ def test_methane_water_decane_mole_mass_flows():
     for i in range(2):
 
         calc = [state.gas.H_flow(), state.liquid0.H_flow(), state.liquid1.H_flow(), state.liquid_bulk.H_flow(), state.bulk.H_flow(), state.H_flow()]
-        expect = [1025.0344902476986, -1467448.4719594691, -1627495.395822481, -2054769.7382928678, -3093918.8332917024, -3093918.8332917024]
+        expect = [1025.0344902476986, -1467448.4719594691, -1627495.395822481, -3094943.8677819497, -3093918.8332917024, -3093918.8332917024]
         assert_close1d(calc, expect, rtol=1e-6)
 
         calc = [state.gas.S_flow(), state.liquid0.S_flow(), state.liquid1.S_flow(), state.liquid_bulk.S_flow(), state.bulk.S_flow(), state.S_flow()]
-        expect = [-144.62478667806292, -3949.6037477860937, -3778.6417926825343, -5130.873367998199, -7872.870327146691, -7872.870327146691]
+        expect = [-144.62478667806292, -3949.6037477860937, -3778.6417926825343, -7728.245540468625, -7872.870327146691, -7872.870327146691]
         assert_close1d(calc, expect, rtol=1e-6)
 
         calc = [state.gas.G_flow(), state.liquid0.G_flow(), state.liquid1.G_flow(), state.liquid_bulk.G_flow(), state.bulk.G_flow(), state.G_flow()]
-        expect = [44412.47049366657, -282567.34762364114, -493902.8580177207, -515507.72789340816, -732057.7351476949, -732057.7351476949]
+        expect = [44412.47049366657, -282567.34762364114, -493902.8580177207, -776470.2056413618, -732057.7351476949, -732057.7351476949]
         assert_close1d(calc, expect, rtol=1e-6)
 
         calc = [state.gas.U_flow(), state.liquid0.U_flow(), state.liquid1.U_flow(), state.liquid_bulk.U_flow(), state.bulk.U_flow(), state.U_flow()]
-        expect = [-82430.63393802213, -1467578.648879572, -1628829.5857467907, -2055741.9487128956, -3178838.868564385, -3178838.868564385]
+        expect = [-82430.63393802213, -1467578.648879572, -1628829.5857467907, -3096408.234626362, -3178838.868564385, -3178838.868564385]
         assert_close1d(calc, expect, rtol=1e-6)
 
         calc = [state.gas.A_flow(), state.liquid0.A_flow(), state.liquid1.A_flow(), state.liquid_bulk.A_flow(), state.bulk.A_flow(), state.A_flow()]
-        expect = [-39043.19793460326, -282697.524543744, -495237.0479420305, -516479.93831343605, -816977.7704203774, -816977.7704203774]
+        expect = [-39043.19793460326, -282697.524543744, -495237.0479420305, -777934.5724857745, -816977.7704203774, -816977.7704203774]
         assert_close1d(calc, expect, rtol=1e-6)
 
 
         calc = [state.gas.H_dep_flow(), state.liquid0.H_dep_flow(), state.liquid1.H_dep_flow(), state.liquid_bulk.H_dep_flow(), state.bulk.H_dep_flow(), state.H_dep_flow()]
-        expect = [-1221.6033836873603, -1469448.8244505627, -1641935.3674129113, -2071210.0623743918, -3112605.795248172, -3112605.795248172]
+        expect = [-1221.6033836873603, -1469448.8244505627, -1641935.3674129113, -3111384.191863473, -3112605.795248172, -3112605.795248172]
         assert_close1d(calc, expect, rtol=1e-5)
 
         calc = [state.gas.S_dep_flow(), state.liquid0.S_dep_flow(), state.liquid1.S_dep_flow(), state.liquid_bulk.S_dep_flow(), state.bulk.S_dep_flow(), state.S_dep_flow()]
-        expect = [-2.8167554595340234, -3787.928480891734, -3687.7291384401638, -4963.1772679128635, -7478.474374791432, -7478.474374791432]
+        expect = [-2.8167554595340234, -3787.928480891734, -3687.7291384401638, -7475.657619331896, -7478.474374791432, -7478.474374791432]
         assert_close1d(calc, expect, rtol=1e-5)
 
         calc = [state.gas.G_dep_flow(), state.liquid0.G_dep_flow(), state.liquid1.G_dep_flow(), state.liquid_bulk.G_dep_flow(), state.bulk.G_dep_flow(), state.G_dep_flow()]
-        expect = [-376.5767458271534, -333070.28018304234, -535616.6258808621, -582256.8820005328, -869063.4828107425, -869063.4828107425]
+        expect = [-376.5767458271534, -333070.28018304234, -535616.6258808621, -868686.9060639048, -869063.4828107425, -869063.4828107425]
         assert_close1d(calc, expect, rtol=1e-5)
 
         calc = [state.gas.U_dep_flow(), state.liquid0.U_dep_flow(), state.liquid1.U_dep_flow(), state.liquid_bulk.U_dep_flow(), state.bulk.U_dep_flow(), state.U_dep_flow()]
-        expect = [-845.4872742444248, -1389235.490157551, -1558010.974543451, -1906580.178787535, -2948091.9519762574, -2948091.9519762574]
+        expect = [-845.4872742444248, -1389235.490157551, -1558010.974543451, -2947246.4647010015, -2948091.9519762574, -2948091.9519762574]
         assert_close1d(calc, expect, rtol=1e-5)
 
         calc = [state.gas.A_dep_flow(), state.liquid0.A_dep_flow(), state.liquid1.A_dep_flow(), state.liquid_bulk.A_dep_flow(), state.bulk.A_dep_flow(), state.A_dep_flow()]
-        expect = [-0.4606363842178823, -252856.94589003065, -451692.233011402, -417626.9984136762, -704549.6395388279, -704549.6395388279]
+        expect = [-0.4606363842178823, -252856.94589003065, -451692.233011402, -704549.178901433, -704549.6395388279, -704549.6395388279]
         assert_close1d(calc, expect, rtol=1e-5)
 
 def test_ethanol_CO2_water_decane_finding_wrong_two_phase_solution():
