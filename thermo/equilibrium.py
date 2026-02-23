@@ -347,12 +347,10 @@ class EquilibriumState:
                 self.liquid0 = liquids[0]
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.liquids_betas, "l")
             liquid_bulk.flasher = flasher
-            liquid_bulk.result = self
             liquid_bulk.constants = constants
             liquid_bulk.correlations = correlations
             liquid_bulk.settings = settings
             liquid_bulk._V_liquids_ref = V_liquids_ref
-            liquid_bulk._gas_beta = betas[0] if gas_count else 0.0
             for i, l in enumerate(liquids):
                 setattr(self, f"liquid{i}", l)
                 l.assigned_phase = "l"
@@ -361,24 +359,20 @@ class EquilibriumState:
             self.solid_zs = normalize([sum([betas_solids[j]*solids[j].zs[i] for j in range(self.solid_count)])
                                for i in range(self.N)])
             self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.solids_betas, "s")
-            solid_bulk.result = self
             solid_bulk.constants = constants
             solid_bulk.correlations = correlations
             solid_bulk.flasher = flasher
             solid_bulk.settings = settings
             solid_bulk._V_liquids_ref = V_liquids_ref
-            solid_bulk._gas_beta = betas[0] if gas_count else 0.0
             for i, s in enumerate(solids):
                 setattr(self, f"solid{i}", s)
 
         self.bulk = bulk = Bulk(T, P, zs, self.phases, betas)
-        bulk.result = self
         bulk.constants = constants
         bulk.correlations = correlations
         bulk.flasher = flasher
         bulk.settings = settings
         bulk._V_liquids_ref = V_liquids_ref
-        bulk._gas_beta = betas[0] if gas_count else 0.0
         bulk._beta_mass = 1.0
 
         self.flash_specs = flash_specs
@@ -389,12 +383,10 @@ class EquilibriumState:
         self.correlations = correlations
         self._V_liquids_ref = V_liquids_ref
         for phase in self.phases:
-            phase.result = self
             phase.constants = constants
             phase.correlations = correlations
             phase.settings = settings
             phase._V_liquids_ref = V_liquids_ref
-        gas_beta = self.gas_beta
         try:
             betas_mass = self.betas_mass
         except:
@@ -412,7 +404,6 @@ class EquilibriumState:
             phase._beta_mass = betas_mass[i]
             phase._beta_volume = betas_volume[i]
             phase._beta_volume_liquid_ref = betas_volume_liquid_ref[i]
-            phase._gas_beta = gas_beta
         if liquid_count:
             try:
                 liquid_bulk._beta_mass = sum(betas_mass[gas_count:gas_count + liquid_count])

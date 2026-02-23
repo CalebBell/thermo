@@ -146,7 +146,7 @@ class Phase:
 
     supports_lnphis_args = False
 
-    __slots__ = ("__dict__", "constants", "correlations", "result", "settings")
+    __slots__ = ("__dict__", "constants", "correlations", "settings")
 
     pure_references = ()
     """Tuple of attribute names which hold lists of :obj:`thermo.utils.TDependentProperty`
@@ -156,7 +156,7 @@ class Phase:
     """Tuple of types of :obj:`thermo.utils.TDependentProperty`
     or :obj:`thermo.utils.TPDependentProperty` corresponding to `pure_references`."""
 
-    obj_references = ("result", "constants", "correlations", "settings")
+    obj_references = ("constants", "correlations", "settings")
     """Tuple of object instances which should be stored as json using their own
     as_json method.
     """

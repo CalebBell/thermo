@@ -678,9 +678,9 @@ class Bulk(Phase):
 
     bulk_phase_type = True
 
-    __slots__ = ("constants", "correlations", "flasher", "phase_bulk", "phase_fractions", "phases", "result", "settings")
+    __slots__ = ("constants", "correlations", "flasher", "phase_bulk", "phase_fractions", "phases", "settings")
     model_attributes = ()
-    obj_references = ("phases", "result", "constants", "correlations", "flasher", "settings")
+    obj_references = ("phases", "constants", "correlations", "flasher", "settings")
     json_version = 1
     non_json_attributes = []
 
@@ -1514,7 +1514,7 @@ class Bulk(Phase):
         pert = self.settings.equilibrium_perturbation
         wrt_value2 = wrt_value*(1.0 + pert)
         delta = wrt_value2 - wrt_value
-        kwargs = {wrt: wrt_value2, const: const_value}#, 'hot_start':self.result}
+        kwargs = {wrt: wrt_value2, const: const_value}
         results = self.flasher.flash(zs=self.zs, **kwargs)
 
         of_value2 = results.value(of)
