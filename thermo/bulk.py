@@ -692,8 +692,11 @@ class Bulk(Phase):
         self._beta = sum(phase_fractions)
         if phase_bulk is not None:
             # Sub-bulk: normalize fractions to sum to 1
-            beta_inv = 1.0 / self._beta
-            self.phase_fractions = [b * beta_inv for b in phase_fractions]
+            if self._beta:
+                beta_inv = 1.0 / self._beta
+                self.phase_fractions = [b * beta_inv for b in phase_fractions]
+            else:
+                self.phase_fractions = phase_fractions
         else:
             # Overall bulk: fractions already sum to 1
             self.phase_fractions = phase_fractions

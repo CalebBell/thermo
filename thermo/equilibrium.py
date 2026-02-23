@@ -338,11 +338,13 @@ class EquilibriumState:
         except:
             V_liquids_ref = None
 
-        if liquid_count > 1:
-#                tot_inv = 1.0/sum(values)
-#                return [i*tot_inv for i in values]
-            self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(liquid_count)])
-                               for i in range(self.N)])
+        if liquid_count:
+            if liquid_count > 1:
+                self.liquid_zs = normalize([sum([betas_liquids[j]*liquids[j].zs[i] for j in range(liquid_count)])
+                                   for i in range(self.N)])
+            else:
+                self.liquid_zs = liquids[0].zs
+                self.liquid0 = liquids[0]
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.liquids_betas, "l")
             liquid_bulk.flasher = flasher
             liquid_bulk.result = self
@@ -354,12 +356,6 @@ class EquilibriumState:
             for i, l in enumerate(liquids):
                 setattr(self, f"liquid{i}", l)
                 l.assigned_phase = "l"
-        elif liquid_count:
-            l = liquids[0]
-            self.liquid_zs = l.zs
-            self.liquid_bulk = l
-            self.liquid0 = l
-            l.assigned_phase = "l"
 
         if solids:
             self.solid_zs = normalize([sum([betas_solids[j]*solids[j].zs[i] for j in range(self.solid_count)])
@@ -417,7 +413,7 @@ class EquilibriumState:
             phase._beta_volume = betas_volume[i]
             phase._beta_volume_liquid_ref = betas_volume_liquid_ref[i]
             phase._gas_beta = gas_beta
-        if liquid_count > 1:
+        if liquid_count:
             try:
                 liquid_bulk._beta_mass = sum(betas_mass[gas_count:gas_count + liquid_count])
             except:
