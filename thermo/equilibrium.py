@@ -346,7 +346,6 @@ class EquilibriumState:
                 self.liquid_zs = liquids[0].zs
                 self.liquid0 = liquids[0]
             self.liquid_bulk = liquid_bulk = Bulk(T, P, self.liquid_zs, self.liquids, self.liquids_betas, "l")
-            liquid_bulk.flasher = flasher
             liquid_bulk.constants = constants
             liquid_bulk.correlations = correlations
             liquid_bulk.settings = settings
@@ -361,7 +360,6 @@ class EquilibriumState:
             self.solid_bulk = solid_bulk = Bulk(T, P, self.solid_zs, solids, self.solids_betas, "s")
             solid_bulk.constants = constants
             solid_bulk.correlations = correlations
-            solid_bulk.flasher = flasher
             solid_bulk.settings = settings
             solid_bulk._V_liquids_ref = V_liquids_ref
             for i, s in enumerate(solids):
@@ -370,7 +368,6 @@ class EquilibriumState:
         self.bulk = bulk = Bulk(T, P, zs, self.phases, betas)
         bulk.constants = constants
         bulk.correlations = correlations
-        bulk.flasher = flasher
         bulk.settings = settings
         bulk._V_liquids_ref = V_liquids_ref
         bulk._beta_mass = 1.0

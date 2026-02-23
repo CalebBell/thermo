@@ -75,7 +75,7 @@ __all__ = ["Bulk", "BulkSettings", "default_settings"]
 
 from chemicals.utils import Joule_Thomson, Vm_to_rho, hash_any_primitive, isobaric_expansion, isothermal_compressibility, normalize, object_data, speed_of_sound
 from fluids.constants import R, atm
-from fluids.numerics import exp, log, sqrt
+from fluids.numerics import exp, log
 from fluids.two_phase_voidage import gas_liquid_viscosity
 
 from thermo.phase_identification import DENSITY_MASS, PROP_SORT, S_ID_D2P_DVDT, VL_ID_PIP, WATER_NOT_SPECIAL
@@ -90,7 +90,6 @@ I guess it's going to need MW as well.
 Does not have any flow property.
 """
 
-EQUILIBRIUM_DERIVATIVE = "EQUILIBRIUM_DERIVATIVE"
 FROM_DERIVATIVE_SETTINGS = "FROM_DERIVATIVE_SETTINGS"
 
 MOLE_WEIGHTED = "MOLE_WEIGHTED"
@@ -110,7 +109,6 @@ MAXIMUM_PHASE_PROP = "MAXIMUM_PHASE_PROP"
 
 DP_DT_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                  LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED, LOG_PROP_VOLUME_WEIGHTED,
-                 EQUILIBRIUM_DERIVATIVE,
                  MINIMUM_PHASE_PROP, MAXIMUM_PHASE_PROP]
 """List of all valid and implemented calculation methods for the `DP_DT` bulk setting"""
 DP_DV_METHODS = DP_DT_METHODS
@@ -124,20 +122,16 @@ D2P_DT2_METHODS = D2P_DV2_METHODS
 D2P_DTDV_METHODS = D2P_DV2_METHODS
 """List of all valid and implemented calculation methods for the `D2P_DTDV` bulk setting"""
 
-FIROOZABADI_PAN = "FIROOZABADI_PAN"
-
 SPEED_OF_SOUND_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                 LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED,
                 LOG_PROP_VOLUME_WEIGHTED, MINIMUM_PHASE_PROP,
-                MAXIMUM_PHASE_PROP, FROM_DERIVATIVE_SETTINGS,
-                EQUILIBRIUM_DERIVATIVE, FIROOZABADI_PAN]
+                MAXIMUM_PHASE_PROP, FROM_DERIVATIVE_SETTINGS]
 """List of all valid and implemented calculation methods for the `speed_of_sound` bulk setting"""
 
 BETA_METHODS = [MOLE_WEIGHTED, MASS_WEIGHTED, VOLUME_WEIGHTED,
                 LOG_PROP_MOLE_WEIGHTED, LOG_PROP_MASS_WEIGHTED,
                 LOG_PROP_VOLUME_WEIGHTED, MINIMUM_PHASE_PROP,
-                MAXIMUM_PHASE_PROP, EQUILIBRIUM_DERIVATIVE,
-                FROM_DERIVATIVE_SETTINGS]
+                MAXIMUM_PHASE_PROP, FROM_DERIVATIVE_SETTINGS]
 """List of all valid and implemented calculation methods for the `isothermal_compressibility` bulk setting"""
 
 
@@ -196,7 +190,6 @@ __all__.extend([
     "BEATTIE_WHALLEY_MU_VL",
     "CICCHITTI_MU_VL",
     "DUCKLER_MU_VL",
-    "EQUILIBRIUM_DERIVATIVE",
     "FOURAR_BORIES_MU_VL",
     "FROM_DERIVATIVE_SETTINGS",
     "LOG_PROP_MASS_WEIGHTED",
@@ -345,11 +338,6 @@ class BulkSettings:
     sigma_LL_power_exponent : float, optional
         Air-liquid Liquid-liquid surface tension power-law mixing parameter,
         used only when a power law mixing rule is selected, [-]
-    equilibrium_perturbation : float, optional
-        The relative perturbation to use when calculating equilibrium
-        derivatives numerically; for example if this is 1e-3 and `T` is the
-        perturbation variable and the statis is 500 K, the perturbation
-        calculation temperature will be 500.5 K, [various]
     isobaric_expansion : str, optional
         Mixing rule for multiphase isobaric expansion calculations;
         see :obj:`BETA_METHODS` for available options, [-]
@@ -406,9 +394,6 @@ class BulkSettings:
     specified option, those configurations will be used in the calculation
     of this property.
 
-    The mixing rule "EQUILIBRIUM_DERIVATIVE" performs derivative calculations
-    on flashes themselves. This is quite slow in comparison to other methods.
-
     References
     ----------
     .. [1] 14:00-17:00. "ISO 10780:1994." ISO. Accessed March 29, 2021.
@@ -429,7 +414,7 @@ class BulkSettings:
                 "P_standard", "T_gas_ref", "P_gas_ref", "speed_of_sound", "kappa", "isobaric_expansion",
                 "Joule_Thomson", "VL_ID", "VL_ID_settings", "S_ID", "S_ID_settings", "solid_sort_method",
                 "liquid_sort_method", "liquid_sort_cmps", "solid_sort_cmps", "liquid_sort_cmps_neg", "solid_sort_cmps_neg",
-                "liquid_sort_prop", "solid_sort_prop", "phase_sort_higher_first", "water_sort", "equilibrium_perturbation")
+                "liquid_sort_prop", "solid_sort_prop", "phase_sort_higher_first", "water_sort")
 
     def as_json(self, cache=None, option=0):
         r"""Method to create a JSON-friendly representation of the BulkSettings
@@ -559,8 +544,6 @@ class BulkSettings:
                  phase_sort_higher_first=True,
                  water_sort=WATER_NOT_SPECIAL,
 
-                 equilibrium_perturbation=1e-7,
-
                  ):
         self.dP_dT = dP_dT
         self.dP_dV = dP_dV
@@ -599,8 +582,6 @@ class BulkSettings:
         self.T_liquid_volume_ref = T_liquid_volume_ref
         self.T_gas_ref = T_gas_ref
         self.P_gas_ref = P_gas_ref
-
-        self.equilibrium_perturbation = equilibrium_perturbation
 
         self.isobaric_expansion = isobaric_expansion
         self.speed_of_sound = speed_of_sound
@@ -678,9 +659,9 @@ class Bulk(Phase):
 
     bulk_phase_type = True
 
-    __slots__ = ("constants", "correlations", "flasher", "phase_bulk", "phase_fractions", "phases", "settings")
+    __slots__ = ("constants", "correlations", "phase_bulk", "phase_fractions", "phases", "settings")
     model_attributes = ()
-    obj_references = ("phases", "constants", "correlations", "flasher", "settings")
+    obj_references = ("phases", "constants", "correlations", "settings")
     json_version = 1
     non_json_attributes = []
 
@@ -1503,26 +1484,6 @@ class Bulk(Phase):
         self._d2P_dTdV_frozen = d2P_dTdV_frozen
         return d2P_dTdV_frozen
 
-    def _equilibrium_derivative(self, of="P", wrt="T", const="V"):
-        """Calculate the equilibrium derivative of a property by performing
-        a numerical derivative on flash calculations.
-        """
-        const_value = self.value(const)
-        wrt_value = self.value(wrt)
-        of_value = self.value(of)
-
-        pert = self.settings.equilibrium_perturbation
-        wrt_value2 = wrt_value*(1.0 + pert)
-        delta = wrt_value2 - wrt_value
-        kwargs = {wrt: wrt_value2, const: const_value}
-        results = self.flasher.flash(zs=self.zs, **kwargs)
-
-        of_value2 = results.value(of)
-        value = (of_value2 - of_value)/delta
-        return value
-
-
-
     def dP_dT(self):
         r"""Method to calculate and return the first temperature derivative of
         pressure of the bulk according to the selected calculation methodology.
@@ -1535,8 +1496,6 @@ class Bulk(Phase):
         dP_dT_method = self.settings.dP_dT
         if dP_dT_method == MOLE_WEIGHTED:
             return self.dP_dT_frozen()
-        elif dP_dT_method == EQUILIBRIUM_DERIVATIVE:
-            return self._equilibrium_derivative(of="P", wrt="T", const="V")
         return self._property_mixing_rule(dP_dT_method, None, None, "dP_dT")
 
     dP_dT_V = dP_dT
@@ -1553,8 +1512,6 @@ class Bulk(Phase):
         dP_dV_method = self.settings.dP_dV
         if dP_dV_method == MOLE_WEIGHTED:
             return self.dP_dV_frozen()
-        elif dP_dV_method == EQUILIBRIUM_DERIVATIVE:
-            return self._equilibrium_derivative(of="P", wrt="V", const="T")
         return self._property_mixing_rule(dP_dV_method, None, None, "dP_dV")
 
     dP_dV_T = dP_dV
@@ -1616,13 +1573,7 @@ class Bulk(Phase):
             Isobaric coefficient of a thermal expansion, [1/K]
         """
         beta_method = self.settings.isobaric_expansion
-        if beta_method == EQUILIBRIUM_DERIVATIVE:
-            if self.phase_bulk is not None:
-                # Cannot perform an equilibrium derivative for a sub-bulk
-                # equilibrium conditions are not satisfied
-                return None
-            return self._equilibrium_derivative(of="V", wrt="T", const="P")/self.V()
-        elif beta_method == FROM_DERIVATIVE_SETTINGS:
+        if beta_method == FROM_DERIVATIVE_SETTINGS:
             return isobaric_expansion(self.V(), self.dV_dT())
         return self._property_mixing_rule(beta_method, None, None, "isobaric_expansion")
 
@@ -1639,13 +1590,7 @@ class Bulk(Phase):
             Isothermal coefficient of compressibility, [1/Pa]
         """
         kappa_method = self.settings.kappa
-        if kappa_method == EQUILIBRIUM_DERIVATIVE:
-            if self.phase_bulk is not None:
-                # Cannot perform an equilibrium derivative for a sub-bulk
-                # equilibrium conditions are not satisfied
-                return None
-            return -self._equilibrium_derivative(of="V", wrt="P", const="T")/self.V()
-        elif kappa_method == FROM_DERIVATIVE_SETTINGS:
+        if kappa_method == FROM_DERIVATIVE_SETTINGS:
             return isothermal_compressibility(self.V(), self.dV_dP())
         return self._property_mixing_rule(kappa_method, None, None, "kappa")
 
@@ -1662,13 +1607,7 @@ class Bulk(Phase):
             Joule-Thomson coefficient [K/Pa]
         """
         Joule_Thomson_method = self.settings.Joule_Thomson
-        if Joule_Thomson_method == EQUILIBRIUM_DERIVATIVE:
-            if self.phase_bulk is not None:
-                # Cannot perform an equilibrium derivative for a sub-bulk
-                # equilibrium conditions are not satisfied
-                return None
-            return self._equilibrium_derivative(of="T", wrt="P", const="H")
-        elif Joule_Thomson_method == FROM_DERIVATIVE_SETTINGS:
+        if Joule_Thomson_method == FROM_DERIVATIVE_SETTINGS:
             return Joule_Thomson(self.T, self.V(), self.Cp(), self.dV_dT())
         return self._property_mixing_rule(Joule_Thomson_method, None, None, "Joule_Thomson")
 
@@ -1694,12 +1633,6 @@ class Bulk(Phase):
         speed_of_sound_method = self.settings.speed_of_sound
         if speed_of_sound_method == FROM_DERIVATIVE_SETTINGS:
             return speed_of_sound(self.V(), self.dP_dV(), self.Cp(), self.Cv())
-        elif speed_of_sound_method == EQUILIBRIUM_DERIVATIVE:
-            return self._equilibrium_derivative(of="P", wrt="rho", const="S")**0.5
-        elif speed_of_sound_method == FIROOZABADI_PAN:
-            # Equation 3.103 Thermodynamics and Applications in Hydrocarbon Energy Production
-            Cs = -1.0/self.V()*self._equilibrium_derivative(of="V", wrt="P", const="S")
-            return sqrt(self.V()/Cs)
         return self._property_mixing_rule(speed_of_sound_method, None, None, "speed_of_sound")
 
     def Tmc(self):

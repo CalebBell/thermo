@@ -28,7 +28,7 @@ from thermo.bulk import *
 from thermo.eos import *
 from thermo.eos_mix import *
 from thermo.equilibrium import EquilibriumState
-from thermo.flash import FlashPureVLS, FlashVL, FlashVLN
+from thermo.flash import FlashPureVLS, FlashVL, FlashVLN, equilibrium_derivative
 from thermo.heat_capacity import *
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.phase_change import *
@@ -58,7 +58,7 @@ def test_default_settings_storage():
     assert new == default_settings
 
     # Test creating it
-    obj = BulkSettings(dP_dT='MOLE_WEIGHTED', dP_dV='MOLE_WEIGHTED', d2P_dV2='MOLE_WEIGHTED', d2P_dT2='MOLE_WEIGHTED', d2P_dTdV='MOLE_WEIGHTED', mu_LL='LOG_PROP_MASS_WEIGHTED', mu_LL_power_exponent=0.4, mu_VL='McAdams', mu_VL_power_exponent=0.4, k_LL='MASS_WEIGHTED', k_LL_power_exponent=0.4, k_VL='MASS_WEIGHTED', k_VL_power_exponent=0.4, sigma_LL='MASS_WEIGHTED', sigma_LL_power_exponent=0.4, T_liquid_volume_ref=298.15, T_normal=273.15, P_normal=101325.0, T_standard=288.15, P_standard=101325.0, T_gas_ref=288.15, P_gas_ref=101325.0, speed_of_sound='MOLE_WEIGHTED', kappa='MOLE_WEIGHTED', isobaric_expansion='MOLE_WEIGHTED', Joule_Thomson='MOLE_WEIGHTED', VL_ID='PIP', S_ID='d2P_dVdT', solid_sort_method='prop', liquid_sort_method='prop', liquid_sort_cmps=[], solid_sort_cmps=[], liquid_sort_cmps_neg=[], solid_sort_cmps_neg=[], liquid_sort_prop='DENSITY_MASS', solid_sort_prop='DENSITY_MASS', phase_sort_higher_first=True, water_sort='water not special', equilibrium_perturbation=1e-07)
+    obj = BulkSettings(dP_dT='MOLE_WEIGHTED', dP_dV='MOLE_WEIGHTED', d2P_dV2='MOLE_WEIGHTED', d2P_dT2='MOLE_WEIGHTED', d2P_dTdV='MOLE_WEIGHTED', mu_LL='LOG_PROP_MASS_WEIGHTED', mu_LL_power_exponent=0.4, mu_VL='McAdams', mu_VL_power_exponent=0.4, k_LL='MASS_WEIGHTED', k_LL_power_exponent=0.4, k_VL='MASS_WEIGHTED', k_VL_power_exponent=0.4, sigma_LL='MASS_WEIGHTED', sigma_LL_power_exponent=0.4, T_liquid_volume_ref=298.15, T_normal=273.15, P_normal=101325.0, T_standard=288.15, P_standard=101325.0, T_gas_ref=288.15, P_gas_ref=101325.0, speed_of_sound='MOLE_WEIGHTED', kappa='MOLE_WEIGHTED', isobaric_expansion='MOLE_WEIGHTED', Joule_Thomson='MOLE_WEIGHTED', VL_ID='PIP', S_ID='d2P_dVdT', solid_sort_method='prop', liquid_sort_method='prop', liquid_sort_cmps=[], solid_sort_cmps=[], liquid_sort_cmps_neg=[], solid_sort_cmps_neg=[], liquid_sort_prop='DENSITY_MASS', solid_sort_prop='DENSITY_MASS', phase_sort_higher_first=True, water_sort='water not special')
     new = BulkSettings.from_json(json.loads(json.dumps(obj.as_json())))
     assert new == obj
 
@@ -799,10 +799,8 @@ def test_two_eos_pure_flash_all_properties():
 
 
 def test_thermodynamic_derivatives_settings_with_flash():
-    # Slow - any way to mock? Ideally start with a hot start, TODO
     T, P = 298.15, 1e5
     zs = [.25, 0.7, .05]
-    # m = Mixture(['butanol', 'water', 'ethanol'], zs=zs)
     constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0],
                                          omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844],
                                          CASs=['71-36-3', '7732-18-5', '64-17-5'])
@@ -815,22 +813,16 @@ def test_thermodynamic_derivatives_settings_with_flash():
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    settings = BulkSettings(dP_dT=EQUILIBRIUM_DERIVATIVE, dP_dV=EQUILIBRIUM_DERIVATIVE,
-                            d2P_dV2=EQUILIBRIUM_DERIVATIVE, d2P_dT2=EQUILIBRIUM_DERIVATIVE,
-                            d2P_dTdV=EQUILIBRIUM_DERIVATIVE)
-
-    flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas, settings=settings)
+    flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas)
     res = flashN.flash(T=361.0, P=P, zs=zs)
-    assert res.settings is settings
-    assert res.bulk.settings is settings
-    assert res.liquid_bulk.settings is settings
 
-    # This will be taken care of in the future
-    res.dP_dT()
-    flashN.flash(T=361.0, V=res.V(), zs=zs)
+    # Test equilibrium_derivative standalone function
+    dP_dT_eq = equilibrium_derivative(flashN, res, of="P", wrt="T", const="V")
+    assert isinstance(dP_dT_eq, float)
+    dP_dV_eq = equilibrium_derivative(flashN, res, of="P", wrt="V", const="T")
+    assert isinstance(dP_dV_eq, float)
 
 def test_thermodynamic_derivatives_settings_with_flash_binary():
-    # Tests that only need two phases
     T, P = 200.0, 1e5
     constants = ChemicalConstantsPackage(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0],
                                          omegas=[0.098, 0.251], Tms=[90.3, 143.15],
@@ -845,20 +837,17 @@ def test_thermodynamic_derivatives_settings_with_flash_binary():
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    settings = BulkSettings(equilibrium_perturbation=1e-7,Joule_Thomson=EQUILIBRIUM_DERIVATIVE)
-
-    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas, settings=settings)
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     res = flasher.flash(P=P, T=T, zs=zs)
-    assert res.settings is settings
 
-    # Numerical derivative
-    assert_close(res.Joule_Thomson(), 0.00018067735521980137, rtol=3e-6)
+    # Joule-Thomson via standalone equilibrium_derivative
+    JT = equilibrium_derivative(flasher, res, of="T", wrt="P", const="H")
+    assert_close(JT, 0.00018067735521980137, rtol=3e-6)
 
 
 def test_thermodynamic_derivatives_named_settings_with_flash():
     T, P = 298.15, 1e5
     zs = [.25, 0.7, .05]
-    # m = Mixture(['butanol', 'water', 'ethanol'], zs=zs)
     constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0],
                                          omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844],
                                          CASs=['71-36-3', '7732-18-5', '64-17-5'])
@@ -871,20 +860,16 @@ def test_thermodynamic_derivatives_named_settings_with_flash():
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    settings = BulkSettings(isobaric_expansion=EQUILIBRIUM_DERIVATIVE, equilibrium_perturbation=1e-7,
-                            kappa=EQUILIBRIUM_DERIVATIVE)
-
-    flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas, settings=settings)
+    flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas)
 
     res = flashN.flash(T=361.0, P=P, zs=zs)
-    # Numeric derivative
-    assert_close(res.bulk.isobaric_expansion(), 3.9202893172854045, rtol=1e-5)
-    assert_close(res.isobaric_expansion(), 3.9202893172854045, rtol=1e-5)
-    assert res.liquid_bulk.isobaric_expansion() is None
+    # Isobaric expansion via standalone equilibrium_derivative
+    beta = equilibrium_derivative(flashN, res, of="V", wrt="T", const="P")/res.V()
+    assert_close(beta, 3.9202893172854045, rtol=1e-5)
 
-    assert res.liquid_bulk.kappa() is None
-    assert_close(res.kappa(), 0.0010137530158341767, rtol=1e-5)
-    assert_close(res.bulk.kappa(), 0.0010137530158341767, rtol=1e-5)
+    # Kappa via standalone equilibrium_derivative
+    kappa = -equilibrium_derivative(flashN, res, of="V", wrt="P", const="T")/res.V()
+    assert_close(kappa, 0.0010137530158341767, rtol=1e-5)
 
     json_data = res.as_json()
     json_data = json.loads(json.dumps(json_data))
