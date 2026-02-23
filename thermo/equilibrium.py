@@ -475,6 +475,9 @@ class EquilibriumState:
             return self.betas[0]
         return 0.0 # No gas phase
 
+    @property
+    def VF_calc(self):
+        return self.VF
 
     @property
     def LF(self):
@@ -1383,8 +1386,8 @@ def _make_getter_bulk_property(name):
         pass
     return get_bulk_property
 
-### For the pure component fixed properties, allow them to be retrived from the phase
-# and bulk object as well as the Equilibrium State Object
+### For the pure component fixed properties, allow them to be retrived from the
+# Equilibrium State Object
 constant_blacklist = {"atom_fractions"}
 
 for name in ChemicalConstantsPackage.properties:
@@ -1407,7 +1410,6 @@ Returns
         except:
             pass
         setattr(EquilibriumState, name, getter)
-        setattr(Phase, name, getter)
 
 ### For the temperature-dependent correlations, allow them to be retrieved by their
 # name from the EquilibriumState ONLY
@@ -1469,7 +1471,7 @@ bulk_properties = ["Ql", "Ql_calc", "Qls_calc", "Qls", "Qg_calc", "Qg", "Qgs_cal
                      "ns_calc",  "Q_calc", "Q", "m_calc",  "n_calc",
                      "H_calc",
                     #'n','m','ns','ms',
-                    "T_calc", "P_calc", "VF_calc", "zs_calc", "ws_calc",  "Vfls_calc", "Vfgs_calc",
+                    "T_calc", "P_calc","zs_calc", "ws_calc",  "Vfls_calc", "Vfgs_calc",
                     "energy_reactive_calc", "energy_reactive", "energy_calc", "energy"]
 for name in bulk_properties:
     # Maybe take this out and implement it manually for performance?
@@ -1632,7 +1634,7 @@ _comonent_specific_properties = {"water": CAS_H2O,
 def _make_getter_partial_pressure(CAS):
     def get(self):
         try:
-            idx = self.CASs.index(CAS)
+            idx = self.constants.CASs.index(CAS)
         except ValueError:
             # Not present
             return 0.0
@@ -1652,7 +1654,7 @@ for _name, _CAS in _comonent_specific_properties.items():
 def _make_getter_component_molar_weight(CAS):
     def get(self):
         try:
-            idx = self.CASs.index(CAS)
+            idx = self.constants.CASs.index(CAS)
         except ValueError:
             # Not present
             return 0.0

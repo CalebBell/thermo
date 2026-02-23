@@ -993,7 +993,7 @@ def test_EquilibriumStream_different_input_sources():
 
         assert_close(case.T, case.bulk.T, rtol=1e-13)
         assert_close(case.P, case.bulk.P, rtol=1e-13)
-        assert_close(case.VF, case.bulk.VF, rtol=1e-13)
+        assert_close(case.VF, 1.0, rtol=1e-13)
         assert_close(case.energy, case.bulk.energy, rtol=1e-13)
         assert_close(case.energy_reactive, case.bulk.energy_reactive, rtol=1e-13)
 
@@ -1028,7 +1028,7 @@ def test_EquilibriumStream_different_input_sources():
         assert_close(case.T_calc, case.T, rtol=1e-13)
         assert_close(case.P_calc, case.bulk.P_calc, rtol=1e-13)
         assert_close(case.P_calc, case.P, rtol=1e-13)
-        assert_close(case.VF_calc, case.bulk.VF_calc, rtol=1e-13)
+        assert_close(case.VF_calc, 1.0, rtol=1e-13)
         assert_close(case.VF_calc, case.VF, rtol=1e-13)
         assert_close(case.energy_calc, case.bulk.energy_calc, rtol=1e-13)
         assert_close(case.energy_calc, case.energy, rtol=1e-13)

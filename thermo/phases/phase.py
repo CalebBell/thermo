@@ -3776,8 +3776,6 @@ class Phase:
 
 
     def _set_ideal_gas_standard_state(self):
-        # TODO: Do not depend on Chemical infrastructure in the future
-        CASs = self.CASs
         T = self.T
         zs = self.zs
         from thermo.chemical_utils import _standard_state_ideal_gas_formation_direct
@@ -3800,7 +3798,6 @@ class Phase:
         atomss = self.constants.atomss
 
         for i in range(self.N):
-            # Hi, Si, Gi = standard_state_ideal_gas_formation(Chemical(CASs[i]), T)
             Hi, Si, Gi = _standard_state_ideal_gas_formation_direct(T, Hfs[i], Sfs[i], atoms=atomss[i], gas_Cp=HeatCapacityGases[i])
             H_chemicals.append(Hi)
             S_chemicals.append(Si)
@@ -5002,25 +4999,6 @@ class Phase:
             return None
 
     @property
-    def VF(self):
-        r"""Method to return the vapor fraction of the phase.
-        If no vapor/gas is present, 0 is always returned. This method is only
-        available when the phase is linked to an EquilibriumState.
-
-        Returns
-        -------
-        VF : float
-            Vapor fraction, [-]
-
-        Notes
-        -----
-        """
-        try:
-            return self._gas_beta
-        except AttributeError:
-            return None
-
-    @property
     def energy(self):
         r"""Method to return the energy (enthalpy times flow rate) of this
         phase.
@@ -5331,10 +5309,6 @@ class Phase:
     @property
     def P_calc(self):
         return self.P
-
-    @property
-    def VF_calc(self):
-        return self.VF
 
     @property
     def zs_calc(self):
