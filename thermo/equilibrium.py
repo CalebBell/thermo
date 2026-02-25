@@ -40,7 +40,7 @@ EquilibriumState
 __all__ = ["EquilibriumState"]
 
 from chemicals.elements import periodic_table
-from chemicals.utils import Vm_to_rho, hash_any_primitive, normalize, vapor_mass_quality, zs_to_ws
+from chemicals.utils import hash_any_primitive, normalize, vapor_mass_quality
 from fluids.constants import N_A, R
 from fluids.numerics import log
 from fluids.numerics import numpy as np
@@ -795,225 +795,6 @@ class EquilibriumState:
         """
         return self.flasher.V_liquids_ref()
 
-    def ws(self, phase=None):
-        r"""Method to calculate and return the mass fractions of the phase, [-]
-
-        Returns
-        -------
-        ws : list[float]
-            Mass fractions, [-]
-
-        Notes
-        -----
-        """
-        if phase is None:
-            zs = self.zs
-        else:
-            zs = phase.zs
-        return zs_to_ws(zs, self.constants.MWs)
-
-    def MW(self, phase=None):
-        r"""Method to calculate and return the molecular weight of the phase.
-
-        .. math::
-            \text{MW} = \sum_i z_i \text{MW}_{i}
-
-        Returns
-        -------
-        MW : float
-            Molecular weight of the phase, [g/mol]
-
-        Notes
-        -----
-        """
-        if phase is None:
-            zs = self.zs
-        else:
-            zs = phase.zs
-
-        MWs = self.constants.MWs
-        MW = 0.0
-        for i in range(self.N):
-            MW += zs[i]*MWs[i]
-        return MW
-
-    def Tmc(self, phase=None):
-        r"""Method to calculate and return the mechanical critical temperature
-        of the phase.
-
-        Returns
-        -------
-        Tmc : float
-            Mechanical critical temperature, [K]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.Tmc()
-
-    def Pmc(self, phase=None):
-        r"""Method to calculate and return the mechanical critical pressure
-        of the phase.
-
-        Returns
-        -------
-        Pmc : float
-            Mechanical critical pressure, [Pa]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.Pmc()
-
-    def Vmc(self, phase=None):
-        r"""Method to calculate and return the mechanical critical volume
-        of the phase.
-
-        Returns
-        -------
-        Vmc : float
-            Mechanical critical volume, [m^3/mol]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.Vmc()
-
-    def Zmc(self, phase=None):
-        r"""Method to calculate and return the mechanical critical
-        compressibility of the phase.
-
-        Returns
-        -------
-        Zmc : float
-            Mechanical critical compressibility, [-]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.Zmc()
-
-    def rho_mass(self, phase=None):
-        r"""Method to calculate and return mass density of the phase.
-
-        .. math::
-            \rho = \frac{MW}{1000\cdot VM}
-
-        Returns
-        -------
-        rho_mass : float
-            Mass density, [kg/m^3]
-        """
-        if phase is None:
-            phase = self.bulk
-
-        V = phase.V()
-        MW = phase.MW()
-        return Vm_to_rho(V, MW)
-
-    def H_mass(self, phase=None):
-        r"""Method to calculate and return mass enthalpy of the phase.
-
-        .. math::
-            H_{mass} = \frac{1000 H_{molar}}{MW}
-
-        Returns
-        -------
-        H_mass : float
-            Mass enthalpy, [J/kg]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.H()*1e3*phase.MW_inv()
-
-    def S_mass(self, phase=None):
-        r"""Method to calculate and return mass entropy of the phase.
-
-        .. math::
-            S_{mass} = \frac{1000 S_{molar}}{MW}
-
-        Returns
-        -------
-        S_mass : float
-            Mass enthalpy, [J/(kg*K)]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.S()*1e3*phase.MW_inv()
-
-    def U_mass(self, phase=None):
-        r"""Method to calculate and return mass internal energy of the phase.
-
-        .. math::
-            U_{mass} = \frac{1000 U_{molar}}{MW}
-
-        Returns
-        -------
-        U_mass : float
-            Mass internal energy, [J/(kg)]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.U()*1e3*phase.MW_inv()
-
-    def A_mass(self, phase=None):
-        r"""Method to calculate and return mass Helmholtz energy of the phase.
-
-        .. math::
-            A_{mass} = \frac{1000 A_{molar}}{MW}
-
-        Returns
-        -------
-        A_mass : float
-            Mass Helmholtz energy, [J/(kg)]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.A()*1e3*phase.MW_inv()
-
-    def G_mass(self, phase=None):
-        r"""Method to calculate and return mass Gibbs energy of the phase.
-
-        .. math::
-            G_{mass} = \frac{1000 G_{molar}}{MW}
-
-        Returns
-        -------
-        G_mass : float
-            Mass Gibbs energy, [J/(kg)]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.G()*1e3*phase.MW_inv()
-
-    def Cp_mass(self, phase=None):
-        r"""Method to calculate and return mass constant pressure heat capacity
-        of the phase.
-
-        .. math::
-            Cp_{mass} = \frac{1000 Cp_{molar}}{MW}
-
-        Returns
-        -------
-        Cp_mass : float
-            Mass heat capacity, [J/(kg*K)]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.Cp()*1e3*phase.MW_inv()
-
-    def Cv_mass(self, phase=None):
-        r"""Method to calculate and return mass constant volume heat capacity
-        of the phase.
-
-        .. math::
-            Cv_{mass} = \frac{1000 Cv_{molar}}{MW}
-
-        Returns
-        -------
-        Cv_mass : float
-            Mass constant volume heat capacity, [J/(kg*K)]
-        """
-        if phase is None:
-            phase = self.bulk
-        return phase.Cv()*1e3*phase.MW_inv()
-
     def Cp_ideal_gas(self, phase=None):
         r"""Method to calculate and return the ideal-gas heat capacity of the
         phase.
@@ -1107,23 +888,6 @@ class EquilibriumState:
         return S
 
 
-
-    def nu(self, phase=None):
-        r"""Method to calculate and return the kinematic viscosity of the
-        equilibrium state.
-
-        .. math::
-            \nu = \frac{\mu}{\rho}
-
-        Returns
-        -------
-        nu : float
-            Kinematic viscosity, [m^2/s]
-
-        Notes
-        -----
-        """
-        return self.mu(phase)/self.rho_mass(phase)
 
     @property
     def lightest_liquid(self):
@@ -1312,16 +1076,9 @@ class EquilibriumState:
         """Alias of CASs."""
         return self.constants.CASs
 
-    def V_iter(self, phase=None, force=False):
-        if phase is None:
-            phase = self.bulk
-        return phase.V_iter(force=force)
 
-    try:
-        V_iter.__doc__ = Phase.V_iter.__doc__
-    except:
-        pass
-
+    def V_iter(self, force=False):
+        return self.bulk.V_iter(force=force)
 
 _add_attrs_doc = []
 for s in dir(EquilibriumState):
@@ -1411,7 +1168,10 @@ for method in phase_shared_methods:
     setattr(EquilibriumState, method.__name__, method)
 
 ### For certain properties of the Bulk phase, make EquilibriumState get it from the Bulk
-bulk_props = ["V", "Z", "rho", "Cp", "Cv", "H", "S", "U", "G", "A", #'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP',
+bulk_props = ["V", "Z", "rho", "Cp", "Cv", "H", "S", "U", "G", "A",
+              "ws", "MW", "Tmc", "Pmc", "Vmc", "Zmc",
+              "rho_mass", "H_mass", "S_mass", "U_mass", "A_mass", "G_mass",
+              "Cp_mass", "Cv_mass", #'dH_dT', 'dH_dP', 'dS_dT', 'dS_dP',
               #'dU_dT', 'dU_dP', 'dG_dT', 'dG_dP', 'dA_dT', 'dA_dP',
               "H_reactive", "S_reactive", "G_reactive", "U_reactive", "A_reactive",
               "H_reactive_mass", "S_reactive_mass", "G_reactive_mass", "U_reactive_mass", "A_reactive_mass",
