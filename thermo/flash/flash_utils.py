@@ -119,7 +119,7 @@ from fluids.numerics import (
     newton_minimize,
     newton_system,
     one_sided_secant,
-    oscillation_checking_wrapper,
+    OscillationChecker,
     py_solve,
     root,
     secant,
@@ -2550,7 +2550,7 @@ def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
             if P_guess_old is None:
                 raise ValueError(l_undefined_P_msg %(P_guess, xs), e)
             successive_fails += 1
-            T_guess = P_guess_old + copysign(min(max_step_damping, abs(step)), step)
+            P_guess = P_guess_old + copysign(min(max_step_damping, abs(step)), step)
             continue
 
         if successive_fails > 2:
@@ -2846,9 +2846,9 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     # plt.show()
 
     if oscillation_detection and ytol is not None:
-        to_solve2, checker = oscillation_checking_wrapper(to_solve, full=True,
-                                                          minimum_progress=minimum_progress,
-                                                          good_err=ytol*1e6)
+        checker = OscillationChecker(minimum_progress=minimum_progress,
+                                     good_err=ytol*1e6)
+        to_solve2 = checker.wrap(to_solve)
     else:
         to_solve2 = to_solve
         checker = None
@@ -3188,8 +3188,7 @@ def PH_secant_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
         store[:] = (p, err)
         return err
     if oscillation_detection:
-        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
-                                                         minimum_progress=minimum_progress)
+        to_solve = OscillationChecker(minimum_progress=minimum_progress).wrap(to_solve)
 
     T = secant(to_solve, T_guess, xtol=xtol, maxiter=maxiter)
     phase, err = store
@@ -3211,8 +3210,7 @@ def PH_newton_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
         store[:] = (p, err)
         return err, derr_dT
     if oscillation_detection:
-        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
-                                                         minimum_progress=minimum_progress)
+        to_solve = OscillationChecker(minimum_progress=minimum_progress).wrap(to_solve)
 
     T = newton(to_solve, T_guess, fprime=True, xtol=xtol, maxiter=maxiter)
     phase, err = store
