@@ -172,6 +172,12 @@ class GibbsExcessLiquid(Phase):
         Which set of caloric equations to use when calculating fugacities
         and related properties; valid options are 'Psat', 'Poynting&PhiSat',
         'Poynting', 'PhiSat', 'Hvap' [-]
+    henry_components : list[bool], optional
+        List of booleans indicating whether each component follows Henry's
+        law instead of Raoult's law; components marked True require at
+        least one set of Henry's law parameters (henry_abcdef, or one or
+        more of henry_as through henry_fs) to be provided. Defaults to
+        all False (Raoult's law for every component), [-]
     henry_abcdef : tuple[list[list[float]], 6], optional
         Contains the parameters used for henry's law constant, [-]
     henry_as : list[list[float]], optional
@@ -193,7 +199,6 @@ class GibbsExcessLiquid(Phase):
         'solvents_with_parameters' to consider only the solvents with
         parameters (vapor pressures will be used if a component has
         no solvents whatsoever)
-
     use_Hvap_caloric : bool, optional
         If True, enthalpy and entropy will be calculated using ideal-gas
         heat capacity and the heat of vaporization of the fluid only. This
@@ -215,9 +220,6 @@ class GibbsExcessLiquid(Phase):
     use_IG_Cp = True # Deprecated! Remove with S_old and H_old
 
     ideal_gas_basis = True
-
-    Cpls_poly_fit = False
-    _Cpls_data = None
 
     _Tait_B_data = None
     _Tait_C_data = None
