@@ -27,7 +27,7 @@ from math import isinf, isnan
 from chemicals.solubility import Henry_constants, d2Henry_constants_dT2, dHenry_constants_dT
 from chemicals.utils import phase_identification_parameter
 from fluids.constants import R, R_inv
-from fluids.numerics import derivative, evaluate_linear_fits, evaluate_linear_fits_d, evaluate_linear_fits_d2, exp, horner_and_der2, log, secant, trunc_exp
+from fluids.numerics import derivative, evaluate_linear_fits, evaluate_linear_fits_d, evaluate_linear_fits_d2, exp, log, secant, trunc_exp
 from fluids.numerics import numpy as np
 
 from thermo.activity import IdealSolution
@@ -155,11 +155,6 @@ class GibbsExcessLiquid(Phase):
     HeatCapacityLiquids : list[:obj:`thermo.heat_capacity.HeatCapacityLiquid`], optional
         Objects holding liquid heat capacity data and methods; not used at
         present, [-]
-    VolumeSupercriticalLiquids : list[:obj:`thermo.volume.VolumeLiquid`], optional
-        Objects holding liquid volume data and methods but that are used for
-        supercritical temperatures on a per-component basis only; required for
-        Poynting factors and volumetric properties at supercritical conditions;
-        `VolumeLiquids` is used if not provided, [-]
     Hfs : list[float], optional
         Molar ideal-gas standard heats of formation at 298.15 K and 1 atm,
         [J/mol]
@@ -223,7 +218,6 @@ class GibbsExcessLiquid(Phase):
     P_DEPENDENT_H_LIQ = True
     PHI_SAT_IDEAL_TR = 0.1
     _Psats_data = None
-    _Vms_sat_data = None
     _Hvap_data = None
 
     use_IG_Cp = True # Deprecated! Remove with S_old and H_old
@@ -271,10 +265,7 @@ class GibbsExcessLiquid(Phase):
         "Sfs",
         "T",
         "VaporPressures",
-        "Vms_sat_poly_fit",
-        "Vms_supercritical_poly_fit",
         "VolumeLiquids",
-        "VolumeSupercriticalLiquids",
         "_Cpgs_data",
         "_model_hash",
         "_model_hash_ignore_phase",
@@ -345,7 +336,6 @@ class GibbsExcessLiquid(Phase):
                  eos_pure_instances=None,
                  EnthalpyVaporizations=None,
                  HeatCapacityLiquids=None,
-                 VolumeSupercriticalLiquids=None,
 
                  use_Hvap_caloric=False,
                  use_Poynting=False,
@@ -432,38 +422,6 @@ class GibbsExcessLiquid(Phase):
 
         self.use_eos_volume = use_eos_volume
         self.VolumeLiquids = VolumeLiquids
-        self.Vms_sat_poly_fit = ((not use_eos_volume and all(i.method == POLY_FIT for i in VolumeLiquids)) if VolumeLiquids is not None else False)
-        if self.Vms_sat_poly_fit:
-            self._Vms_sat_data = [[i.poly_fit_Tmin for i in VolumeLiquids],
-                                 [i.poly_fit_Tmin_slope for i in VolumeLiquids],
-                                 [i.poly_fit_Tmin_value for i in VolumeLiquids],
-                                 [i.poly_fit_Tmax for i in VolumeLiquids],
-                                 [i.poly_fit_Tmax_slope for i in VolumeLiquids],
-                                 [i.poly_fit_Tmax_value for i in VolumeLiquids],
-                                 [i.poly_fit_coeffs for i in VolumeLiquids],
-                                 [i.poly_fit_d_coeffs for i in VolumeLiquids],
-                                 [i.poly_fit_d2_coeffs for i in VolumeLiquids],
-                                 [i.poly_fit_Tmin_quadratic for i in VolumeLiquids],
-                                 ]
-#            low_fits = self._Vms_sat_data[9]
-#            for i in range(self.N):
-#                low_fits[i][0] = max(0, low_fits[i][0])
-
-        self.VolumeSupercriticalLiquids = VolumeSupercriticalLiquids
-        self.Vms_supercritical_poly_fit = all(i.method == POLY_FIT for i in VolumeSupercriticalLiquids) if VolumeSupercriticalLiquids is not None else False
-        if self.Vms_supercritical_poly_fit:
-            self.Vms_supercritical_data = [[i.poly_fit_Tmin for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmin_slope for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmin_value for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmax for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmax_slope for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmax_value for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_coeffs for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_d_coeffs for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_d2_coeffs for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmin_quadratic for i in VolumeSupercriticalLiquids],
-                                 ]
-
 
         self.incompressible = not use_Tait
         self.use_Tait = use_Tait
@@ -663,9 +621,6 @@ class GibbsExcessLiquid(Phase):
         new.Psats_poly_fit = self.Psats_poly_fit
         new._Psats_data = self._Psats_data
         new.Psat_extrpolation = self.Psat_extrpolation
-
-        new.Vms_sat_poly_fit = self.Vms_sat_poly_fit
-        new._Vms_sat_data = self._Vms_sat_data
 
         new._Hvap_data = self._Hvap_data
         new.Hvap_poly_fit = self.Hvap_poly_fit
@@ -1278,28 +1233,7 @@ class GibbsExcessLiquid(Phase):
         self._d2Psats_dT2_over_Psats = d2Psat_dT2_over_Psats
         return d2Psat_dT2_over_Psats
 
-    @staticmethod
-    def _Vms_sat_at(T, Vms_sat_data, cmps):
-        Tmins, Tmaxes, coeffs, coeffs_Tmin = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[6], Vms_sat_data[9]
-        Vms_sat = []
-        for i in cmps:
-            if T < Tmins[i]:
-                Vm = 0.0
-                for c in coeffs_Tmin[i]:
-                    Vm = Vm*T + c
-#                    Vm = (T - Tmins[i])*Vms_sat_data[1][i] + Vms_sat_data[2][i]
-            elif T > Tmaxes[i]:
-                Vm = (T - Tmaxes[i])*Vms_sat_data[4][i] + Vms_sat_data[5][i]
-            else:
-                Vm = 0.0
-                for c in coeffs[i]:
-                    Vm = Vm*T + c
-            Vms_sat.append(Vm)
-        return Vms_sat
-
     def Vms_sat_at(self, T):
-        if self.Vms_sat_poly_fit:
-            return self._Vms_sat_at(T, self._Vms_sat_data, range(self.N))
         VolumeLiquids = self.VolumeLiquids
         return [VolumeLiquids[i].T_dependent_property(T) for i in range(self.N)]
 
@@ -1309,12 +1243,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T = self.T
-        if self.Vms_sat_poly_fit:
-#            self._Vms_sat = evaluate_linear_fits(self._Vms_sat_data, T)
-#            return self._Vms_sat
-            self._Vms_sat = Vms_sat = self._Vms_sat_at(T, self._Vms_sat_data, range(self.N))
-            return Vms_sat
-        elif self.use_eos_volume:
+        if self.use_eos_volume:
             Vms = []
             eoss = self.eos_pure_instances
             Psats = self.Psats()
@@ -1337,25 +1266,7 @@ class GibbsExcessLiquid(Phase):
         self._Vms_sat = [VolumeLiquids[i].T_dependent_property(T) for i in range(self.N)]
         return self._Vms_sat
 
-    @staticmethod
-    def _dVms_sat_dT_at(T, Vms_sat_data, cmps):
-        Vms_sat_dT = []
-        Tmins, Tmaxes, dcoeffs = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[7]
-        for i in cmps:
-            if T < Tmins[i]:
-                dVm = horner_and_der2(Vms_sat_data[9][i], T)[1]
-            elif T > Tmaxes[i]:
-                dVm = Vms_sat_data[4][i]
-            else:
-                dVm = 0.0
-                for c in dcoeffs[i]:
-                    dVm = dVm*T + c
-            Vms_sat_dT.append(dVm)
-        return Vms_sat_dT
-
     def dVms_sat_dT_at(self, T):
-        if self.Vms_sat_poly_fit:
-            return self._dVms_sat_dT_at(T, self._Vms_sat_data, range(self.N))
         return [obj.T_dependent_property_derivative(T=T) for obj in self.VolumeLiquids]
 
     def dVms_sat_dT(self):
@@ -1364,12 +1275,6 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         T = self.T
-
-        if self.Vms_sat_poly_fit:
-#            self._Vms_sat_dT = evaluate_linear_fits_d(self._Vms_sat_data, T)
-            self._Vms_sat_dT = self._dVms_sat_dT_at(T, self._Vms_sat_data, range(self.N))
-            return self._Vms_sat_dT
-
         VolumeLiquids = self.VolumeLiquids
         self._Vms_sat_dT = Vms_sat_dT = [obj.T_dependent_property_derivative(T=T) for obj in VolumeLiquids]
         return Vms_sat_dT
@@ -1379,26 +1284,7 @@ class GibbsExcessLiquid(Phase):
             return self._d2Vms_sat_dT2
         except:
             pass
-
         T = self.T
-
-        if self.Vms_sat_poly_fit:
-#            self._d2Vms_sat_dT2 = evaluate_linear_fits_d2(self._Vms_sat_data, T)
-#            return self._d2Vms_sat_dT2
-            d2Vms_sat_dT2 = self._d2Vms_sat_dT2 = []
-
-            Vms_sat_data = self._Vms_sat_data
-            Tmins, Tmaxes, d2coeffs = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[8]
-            for i in range(self.N):
-                d2Vm = 0.0
-                if Tmins[i] < T < Tmaxes[i]:
-                    for c in d2coeffs[i]:
-                        d2Vm = d2Vm*T + c
-                elif T < Tmins[i]:
-                    d2Vm = horner_and_der2(Vms_sat_data[9][i], T)[2]
-                d2Vms_sat_dT2.append(d2Vm)
-            return d2Vms_sat_dT2
-
         VolumeLiquids = self.VolumeLiquids
         self._d2Vms_sat_dT2 = [obj.T_dependent_property_derivative(T=T, order=2) for obj in VolumeLiquids]
         return self._d2Vms_sat_dT2
@@ -1409,11 +1295,8 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T_REF_IG = self.T_REF_IG
-        if self.Vms_sat_poly_fit:
-            self._Vms_sat_T_ref = evaluate_linear_fits(self._Vms_sat_data, T_REF_IG)
-        else:
-            VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
-            self._Vms_sat_T_ref = [VolumeLiquids[i].T_dependent_property(T_REF_IG) for i in cmps]
+        VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
+        self._Vms_sat_T_ref = [VolumeLiquids[i].T_dependent_property(T_REF_IG) for i in cmps]
         return self._Vms_sat_T_ref
 
     def dVms_sat_dT_T_ref(self):
@@ -1422,11 +1305,8 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T_REF_IG = self.T_REF_IG
-        if self.Vms_sat_poly_fit:
-            self._dVms_sat_dT_T_ref = evaluate_linear_fits_d(self._Vms_sat_data, self.T)
-        else:
-            VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
-            self._dVms_sat_dT_T_ref = [VolumeLiquids[i].T_dependent_property_derivative(T_REF_IG) for i in cmps]
+        VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
+        self._dVms_sat_dT_T_ref = [VolumeLiquids[i].T_dependent_property_derivative(T_REF_IG) for i in cmps]
         return self._dVms_sat_dT_T_ref
 
     def Vms(self):

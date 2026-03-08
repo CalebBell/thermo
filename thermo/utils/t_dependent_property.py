@@ -199,6 +199,7 @@ from fluids.numerics import (
     poly_convert,
     polyder,
     polyint,
+    quadratic_from_f_ders,
     polyint_over_x,
     polyint_over_x_stable,
     polyint_stable,
@@ -4523,6 +4524,23 @@ class TDependentProperty:
             d0 = self.calculate_derivative(T, method=method, order=1)
             d1 = self.calculate_derivative(T, method=method, order=2)
             coefficients = EQ106_ABC(T, self.Tc, v, d0, d1)
+        elif extrapolation == "quadratic_positive_slope":
+            v_T = self.calculate(T, method=method)
+            coefficients = None
+            for T_trans in linspace(T, Tmax, 25):
+                v_trans = self.calculate(T_trans, method=method)
+                d1_trans = self.calculate_derivative(T_trans, method=method, order=1)
+                d2_trans = self.calculate_derivative(T_trans, method=method, order=2)
+                p = list(quadratic_from_f_ders(T, v_trans, d1_trans, d2_trans))
+                _, d1_at_T, d2_at_T = horner_and_der2(p, T)
+                if d1_at_T < 0.0:
+                    continue
+                if d2_at_T != 0.0 and T - d1_at_T/d2_at_T > 0.0:
+                    d2_at_T = d1_at_T/T
+                coefficients = tuple(quadratic_from_f_ders(T, v_T, d1_at_T, d2_at_T))
+                break
+            if coefficients is None:
+                coefficients = (0.0, 0.0, v_T)
         else:
             raise ValueError("Could not recognize extrapolation setting")
         return coefficients
@@ -4648,6 +4666,9 @@ class TDependentProperty:
             val = Watson(T, Hvap_ref=v0, T_ref=T_lim, Tc=self.Tc, exponent=n)
         elif extrapolation in ("EXP_POLY_LN_TAU2", "EXP_POLY_LN_TAU3"):
             val = exp_horner_backwards_ln_tau(T, self.Tc, coeffs)
+        elif extrapolation == "quadratic_positive_slope":
+            a, b, c = coeffs
+            val = (a*T + b)*T + c
         else:
             raise RuntimeError(f"Unknown extrapolation '{extrapolation}'")
 
@@ -4702,7 +4723,7 @@ class TDependentProperty:
             return 0.
         elif extrapolation == "nolimit":
             return self.calculate_derivative(T, method, order)
-        elif extrapolation in ("linear", "Arrhenius", "DIPPR101_ABC", "AntoineAB", "DIPPR106_AB", "DIPPR106_ABC", "EXP_POLY_LN_TAU2", "EXP_POLY_LN_TAU3"):
+        elif extrapolation in ("linear", "quadratic_positive_slope", "Arrhenius", "DIPPR101_ABC", "AntoineAB", "DIPPR106_AB", "DIPPR106_ABC", "EXP_POLY_LN_TAU2", "EXP_POLY_LN_TAU3"):
             key = (extrapolation, method, low)
             extrapolation_coeffs = self.extrapolation_coeffs
             if key in extrapolation_coeffs:
@@ -4713,6 +4734,14 @@ class TDependentProperty:
                 if order == 1:
                     return coeffs[1]
                 elif order > 1:
+                    return 0.0
+            elif extrapolation == "quadratic_positive_slope":
+                a, b, c = coeffs
+                if order == 1:
+                    return 2.0*a*T + b
+                elif order == 2:
+                    return 2.0*a
+                elif order > 2:
                     return 0.0
             elif extrapolation == "Arrhenius":
                 T_ref, P_ref, slope = coeffs
