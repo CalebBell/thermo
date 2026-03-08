@@ -4525,9 +4525,17 @@ class TDependentProperty:
             d1 = self.calculate_derivative(T, method=method, order=2)
             coefficients = EQ106_ABC(T, self.Tc, v, d0, d1)
         elif extrapolation == "quadratic_positive_slope":
+            # For some methods (liquid volume) there is a thermodynamic requirement
+            # that volume increases with temperature. For some components like water,
+            # the slope and second derivative at Tmin may extrapolate at lower 
+            # temperatures such that volume decreases with temperature (physically inconsistent)
+            # This method arbitrarily tries different T points between Tmin and Tmax looking to
+            # find the component's normal derivative information away from e.g. a 4 deg C bump
+            # for water. 
             v_T = self.calculate(T, method=method)
             coefficients = None
-            for T_trans in linspace(T, Tmax, 25):
+            T_other = Tmax if low else Tmin
+            for T_trans in linspace(T, T_other, 25):
                 v_trans = self.calculate(T_trans, method=method)
                 d1_trans = self.calculate_derivative(T_trans, method=method, order=1)
                 d2_trans = self.calculate_derivative(T_trans, method=method, order=2)
