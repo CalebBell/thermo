@@ -116,16 +116,14 @@ class GibbsExcessLiquid(Phase):
         pressure is. The vapor pressure also tends to reach zero at temperatures
         in the 4-20 K range. These aspects mean extrapolation in the supercritical and
         very low temperature region is critical to ensure the equations will still
-        converge. Extrapolation can be performed using either the equation
-        :math:`P^{\text{sat}} = \exp\left(A - \frac{B}{T}\right)` or
-        :math:`P^{\text{sat}} = \exp\left(A + \frac{B}{T} + C\cdot \ln T\right)` by
-        setting `Psat_extrpolation` to either 'AB' or 'ABC' respectively.
+        converge. Extrapolation is controlled by the `extrapolation` setting on
+        the :obj:`VaporPressure <thermo.vapor_pressure.VaporPressure>` objects
+        passed to this class. Common choices include 'DIPPR101_ABC', 'AntoineAB',
+        and others; see :obj:`TDependentProperty` for details.
         The extremely low temperature region's issue is solved by calculating the
         logarithm of vapor pressures instead of the actual value. While floating
         point values in Python (doubles) can reach a minimum value of around
         1e-308, if only the logarithm of that number is computed no issues arise.
-        Both of these features only work when the vapor pressure correlations are
-        polynomials.
 
     .. warning::
         When using 'PhiSat' as an option, note that the factor cannot be
@@ -174,8 +172,6 @@ class GibbsExcessLiquid(Phase):
         Which set of caloric equations to use when calculating fugacities
         and related properties; valid options are 'Psat', 'Poynting&PhiSat',
         'Poynting', 'PhiSat', 'Hvap' [-]
-    Psat_extrpolation : str, optional
-        One of 'AB' or 'ABC'; configures extrapolation for vapor pressure, [-]
     henry_abcdef : tuple[list[list[float]], 6], optional
         Contains the parameters used for henry's law constant, [-]
     henry_as : list[list[float]], optional
@@ -219,7 +215,6 @@ class GibbsExcessLiquid(Phase):
     use_IG_Cp = True # Deprecated! Remove with S_old and H_old
 
     ideal_gas_basis = True
-    supercritical_volumes = False
 
     Cpls_poly_fit = False
     _Cpls_data = None
@@ -236,7 +231,7 @@ class GibbsExcessLiquid(Phase):
                         "eos_pure_instances", "use_Poynting", "use_phis_sat",
                         "use_Tait", "use_eos_volume", "henry_components",
                         "henry_as", "henry_bs", "henry_cs", "henry_ds", "henry_es", "henry_fs","henry_mode",
-                        "Psat_extrpolation") + pure_references
+                        ) + pure_references
 
     obj_references = ("GibbsExcessModel", "eos_pure_instances", "result", "constants", "correlations",
                     "settings",
@@ -255,7 +250,7 @@ class GibbsExcessLiquid(Phase):
         "Hfs",
         "N",
         "P",
-        "Psat_extrpolation",
+
         "Sfs",
         "T",
         "VaporPressures",
@@ -347,7 +342,7 @@ class GibbsExcessLiquid(Phase):
                  henry_mode="solvents_with_parameters",
 
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
-                 Psat_extrpolation="AB",
+                 Psat_extrpolation=None,
                  equilibrium_basis=None,
                  caloric_basis=None,
                  ):
@@ -379,7 +374,6 @@ class GibbsExcessLiquid(Phase):
         self.henry_components = henry_components
 
         self.VaporPressures = VaporPressures
-        self.Psat_extrpolation = Psat_extrpolation
 
 
         if self.vectorized:
@@ -586,8 +580,6 @@ class GibbsExcessLiquid(Phase):
         new.EnthalpyVaporizations = self.EnthalpyVaporizations
         new.HeatCapacityLiquids = self.HeatCapacityLiquids
 
-
-        new.Psat_extrpolation = self.Psat_extrpolation
 
         new.incompressible = self.incompressible
 
@@ -3003,7 +2995,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                         "eos_pure_instances", "use_Poynting", "use_phis_sat",
                         "use_eos_volume", "henry_components",
                         "henry_as", "henry_bs", "henry_cs", "henry_ds", "henry_es", "henry_fs",
-                         "Psat_extrpolation") + pure_references
+                         ) + pure_references
 
     def __init__(self, SublimationPressures, VolumeSolids=None,
                  GibbsExcessModel=IdealSolution,

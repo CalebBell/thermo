@@ -807,12 +807,12 @@ def test_GibbsExcessLiquid_lnPsats():
     liquid_ABC = GibbsExcessLiquid(VaporPressures=correlations_1.VaporPressures,
                                HeatCapacityGases=correlations_1.HeatCapacityGases,
                                VolumeLiquids=correlations_1.VolumeLiquids,
-                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs, Psat_extrpolation='ABC')
+                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs)
 
     liquid_AB = GibbsExcessLiquid(VaporPressures=correlations_2.VaporPressures,
                                HeatCapacityGases=correlations_2.HeatCapacityGases,
                                VolumeLiquids=correlations_2.VolumeLiquids,
-                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs, Psat_extrpolation='AB')
+                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs)
 
     for liquid in (liquid_AB, liquid_ABC):
         for T in (1, 5, 20, 100, 400, 591.74-1e-4, 591.74, 591.74+1e-10, 1000):

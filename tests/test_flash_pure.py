@@ -1619,7 +1619,7 @@ def test_IG_liq_poy_flashes(hacks):
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_phis_sat=False, use_Poynting=True, Psat_extrpolation='ABC').to_TP_zs(T, P, zs)
+                               use_phis_sat=False, use_Poynting=True).to_TP_zs(T, P, zs)
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     flasher = FlashPureVLS(constants, correlations, liquids=[liquid], gas=gas, solids=[])
