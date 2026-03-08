@@ -145,7 +145,7 @@ from chemicals.volume import (
     Yen_Woods_saturation,
     ideal_gas,
 )
-from fluids.numerics import exp, horner, horner_and_der2, isnan, linspace, np, polyder, quadratic_from_f_ders
+from fluids.numerics import exp, horner, horner_and_der2, isnan, np, polyder
 
 from thermo import electrochem
 from thermo.coolprop import CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp
@@ -443,33 +443,6 @@ class VolumeLiquid(TPDependentProperty):
         self.Psat = Psat
         self.has_hydroxyl = has_hydroxyl
         super().__init__(extrapolation, **kwargs)
-
-    def _custom_set_poly_fit(self):
-        try:
-            Tmin, Tmax = self.poly_fit_Tmin, self.poly_fit_Tmax
-            poly_fit_coeffs = self.poly_fit_coeffs
-            v_Tmin = horner(poly_fit_coeffs, Tmin)
-            for T_trans in linspace(Tmin, Tmax, 25):
-                # Create a new polynomial approximating the fit at T_trans;
-                p = list(quadratic_from_f_ders(Tmin, *horner_and_der2(poly_fit_coeffs, T_trans)))
-                # Evaluate the first and second derivative at Tmin
-                v_Tmin_refit, d1_Tmin, d2_Tmin = horner_and_der2(p, Tmin)
-                # If the first derivative is negative (volume liquid should always be posisitive except for water)
-                # try a point higher up the curve
-                if d1_Tmin < 0.0:
-                    continue
-                # If the second derivative would ever make the first derivative negative until
-                # it reaches zero K, limit the second derivative; this introduces only 1 discontinuity
-                if Tmin - d1_Tmin/d2_Tmin > 0.0:
-                    # When this happens, note the middle `p` coefficient becomes zero - this is expected
-                    d2_Tmin = d1_Tmin/Tmin
-                self._Tmin_T_trans = T_trans
-                p = list(quadratic_from_f_ders(Tmin, v_Tmin, d1_Tmin, d2_Tmin))
-                self.poly_fit_Tmin_quadratic = p
-                break
-
-        except:
-            pass
 
 
     def load_all_methods(self, load_data=True):
@@ -1831,11 +1804,6 @@ class VolumeSolid(TDependentProperty):
             return self._base_calculate(T, method)
         return Vms
 
-
-try:
-    VolumeSolid._custom_set_poly_fit = VolumeLiquid._custom_set_poly_fit
-except:
-    pass
 
 
 volume_solid_mixture_methods = [LINEAR]
