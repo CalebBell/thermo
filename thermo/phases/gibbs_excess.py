@@ -266,7 +266,7 @@ class GibbsExcessLiquid(Phase):
                             EnthalpyVaporization)
 
     model_attributes = ("Hfs", "Gfs", "Sfs", "GibbsExcessModel",
-                        "eos_pure_instances", "use_Poynting", "use_phis_sat",
+                        "eos_pure_instances", "equilibrium_basis", "caloric_basis",
                         "use_Tait", "use_eos_volume", "henry_components",
                         "henry_as", "henry_bs", "henry_cs", "henry_ds", "henry_es", "henry_fs","henry_mode",
                         ) + pure_references
@@ -3029,7 +3029,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
 
 
     model_attributes = ("Hfs", "Gfs", "Sfs","GibbsExcessModel",
-                        "eos_pure_instances", "use_Poynting", "use_phis_sat",
+                        "eos_pure_instances", "equilibrium_basis", "caloric_basis",
                         "use_eos_volume", "henry_components",
                         "henry_as", "henry_bs", "henry_cs", "henry_ds", "henry_es", "henry_fs",
                          ) + pure_references
