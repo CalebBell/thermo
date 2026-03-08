@@ -22,6 +22,7 @@ SOFTWARE.
 """
 __all__ = ["GibbsExcessLiquid", "GibbsExcessSolid"]
 
+import warnings
 from math import isinf, isnan
 
 from chemicals.solubility import Henry_constants, d2Henry_constants_dT2, dHenry_constants_dT
@@ -51,6 +52,41 @@ try:
     zeros, array = np.zeros, np.array
 except:
     pass
+
+def parse_deprecated_basis_flags(use_Poynting, use_phis_sat, use_Hvap_caloric):
+    r"""Convert deprecated boolean flags to ``equilibrium_basis`` and
+    ``caloric_basis`` strings.
+
+    Returns ``(equilibrium_basis, caloric_basis)`` or ``(None, None)`` if no
+    deprecated flags were provided.
+    """
+    if use_Poynting is None and use_phis_sat is None and use_Hvap_caloric is None:
+        return None, None
+
+    warnings.warn(
+        "use_Poynting, use_phis_sat, and use_Hvap_caloric are deprecated. "
+        "Use equilibrium_basis and caloric_basis instead.",
+        DeprecationWarning, stacklevel=3,
+    )
+    use_Poynting = bool(use_Poynting) if use_Poynting is not None else False
+    use_phis_sat = bool(use_phis_sat) if use_phis_sat is not None else False
+    use_Hvap_caloric = bool(use_Hvap_caloric) if use_Hvap_caloric is not None else False
+
+    if use_Poynting and use_phis_sat:
+        equilibrium_basis = 'Poynting&PhiSat'
+    elif use_Poynting:
+        equilibrium_basis = 'Poynting'
+    elif use_phis_sat:
+        equilibrium_basis = 'PhiSat'
+    else:
+        equilibrium_basis = 'Psat'
+
+    if use_Hvap_caloric:
+        caloric_basis = 'Hvap'
+    else:
+        caloric_basis = None
+
+    return equilibrium_basis, caloric_basis
 
 class GibbsExcessLiquid(Phase):
     r"""Phase based on combining Raoult's law with a
@@ -328,9 +364,6 @@ class GibbsExcessLiquid(Phase):
                  EnthalpyVaporizations=None,
                  HeatCapacityLiquids=None,
 
-                 use_Hvap_caloric=False,
-                 use_Poynting=False,
-                 use_phis_sat=False,
                  use_Tait=False,
                  use_eos_volume=False,
 
@@ -344,9 +377,11 @@ class GibbsExcessLiquid(Phase):
                  henry_mode="solvents_with_parameters",
 
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
-                 Psat_extrpolation=None,
-                 equilibrium_basis=None,
+                 equilibrium_basis='Psat',
                  caloric_basis=None,
+                 use_Poynting=None,
+                 use_phis_sat=None,
+                 use_Hvap_caloric=None,
                  ):
         """It is quite possible to introduce a PVT relation ship for liquid
         density and remain thermodynamically consistent. However, must be
@@ -417,51 +452,51 @@ class GibbsExcessLiquid(Phase):
         self.GibbsExcessModel = GibbsExcessModel
         self.eos_pure_instances = eos_pure_instances
 
+        deprecated_eq, deprecated_cal = parse_deprecated_basis_flags(use_Poynting, use_phis_sat, use_Hvap_caloric)
+        if deprecated_eq is not None:
+            equilibrium_basis = deprecated_eq
+            caloric_basis = deprecated_cal
+
+        if equilibrium_basis is None:
+            equilibrium_basis = 'Psat'
         self.equilibrium_basis = equilibrium_basis
+        if caloric_basis is None:
+            caloric_basis = equilibrium_basis
         self.caloric_basis = caloric_basis
 
-        if equilibrium_basis is not None:
-            if equilibrium_basis == "Poynting":
-                self.use_Poynting = True
-                self.use_phis_sat = False
-            elif equilibrium_basis == "Poynting&PhiSat":
-                self.use_Poynting = True
-                self.use_phis_sat = True
-            elif equilibrium_basis == "PhiSat":
-                self.use_phis_sat = True
-                self.use_Poynting = False
-            elif equilibrium_basis == "Psat":
-                self.use_phis_sat = False
-                self.use_Poynting = False
-        else:
-            self.use_Poynting = use_Poynting
-            self.use_phis_sat = use_phis_sat
+        if equilibrium_basis == "Poynting":
+            self.use_Poynting = True
+            self.use_phis_sat = False
+        elif equilibrium_basis == "Poynting&PhiSat":
+            self.use_Poynting = True
+            self.use_phis_sat = True
+        elif equilibrium_basis == "PhiSat":
+            self.use_phis_sat = True
+            self.use_Poynting = False
+        elif equilibrium_basis == "Psat":
+            self.use_phis_sat = False
+            self.use_Poynting = False
 
-        if caloric_basis is not None:
-            if caloric_basis == "Poynting":
-                self.use_Poynting_caloric = True
-                self.use_phis_sat_caloric = False
-                self.use_Hvap_caloric = False
-            elif caloric_basis == "Poynting&PhiSat":
-                self.use_Poynting_caloric = True
-                self.use_phis_sat_caloric = True
-                self.use_Hvap_caloric = False
-            elif caloric_basis == "PhiSat":
-                self.use_phis_sat_caloric = True
-                self.use_Poynting_caloric = False
-                self.use_Hvap_caloric = False
-            elif caloric_basis == "Psat":
-                self.use_phis_sat_caloric = False
-                self.use_Poynting_caloric = False
-                self.use_Hvap_caloric = False
-            elif caloric_basis == "Hvap":
-                self.use_phis_sat_caloric = False
-                self.use_Poynting_caloric = False
-                self.use_Hvap_caloric = True
-        else:
-            self.use_Poynting_caloric = use_Poynting
-            self.use_phis_sat_caloric = use_phis_sat
-            self.use_Hvap_caloric = use_Hvap_caloric
+        if caloric_basis == "Poynting":
+            self.use_Poynting_caloric = True
+            self.use_phis_sat_caloric = False
+            self.use_Hvap_caloric = False
+        elif caloric_basis == "Poynting&PhiSat":
+            self.use_Poynting_caloric = True
+            self.use_phis_sat_caloric = True
+            self.use_Hvap_caloric = False
+        elif caloric_basis == "PhiSat":
+            self.use_phis_sat_caloric = True
+            self.use_Poynting_caloric = False
+            self.use_Hvap_caloric = False
+        elif caloric_basis == "Psat":
+            self.use_phis_sat_caloric = False
+            self.use_Poynting_caloric = False
+            self.use_Hvap_caloric = False
+        elif caloric_basis == "Hvap":
+            self.use_phis_sat_caloric = False
+            self.use_Poynting_caloric = False
+            self.use_Hvap_caloric = True
 
 
 
@@ -3005,12 +3040,12 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                  VolumeLiquidMixture=None,
                  HeatCapacityGases=None,
                  EnthalpySublimations=None,
-                 use_Poynting=False,
-                 use_phis_sat=False,
                  Hfs=None, Gfs=None, Sfs=None,
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
+                 equilibrium_basis='Psat',
+                 caloric_basis=None,
                  ):
         super().__init__(VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
               HeatCapacityGases=HeatCapacityGases, EnthalpyVaporizations=EnthalpySublimations,
-              use_Poynting=use_Poynting,
+              equilibrium_basis=equilibrium_basis, caloric_basis=caloric_basis,
               Hfs=Hfs, Gfs=Gfs, Sfs=Sfs, T=T, P=P, zs=zs)

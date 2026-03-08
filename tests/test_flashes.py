@@ -669,7 +669,7 @@ def test_ideal_bubble_failing():
     liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, VolumeLiquids=correlations.VolumeLiquids,
                      GibbsExcessModel=None,
                      HeatCapacityGases=correlations.HeatCapacityGases,
-                     use_Poynting=True, T=300.0, P=1e5, zs=[.25, .25, .25, .25])
+                     equilibrium_basis='Poynting', T=300.0, P=1e5, zs=[.25, .25, .25, .25])
     # flasher = FlashVLN(constants, correlations, gas=gas, liquids=[liquid])
     # flasher.flash(zs=[0.1, 0.2, 0.3, 0.4], P=2e5, VF=.5)
 
@@ -1056,13 +1056,13 @@ def test_water_wet_bulb_temperature():
     gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], 
             T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
 
-    liquid = GibbsExcessLiquid(equilibrium_basis=None, caloric_basis=None,
+    liquid = GibbsExcessLiquid(
                eos_pure_instances=None, HeatCapacityGases=correlations.HeatCapacityGases,
                VolumeLiquids=correlations.VolumeLiquids, VaporPressures=correlations.VaporPressures,
                Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
 
-    
+
     # Rough test. Only check we converge.
     zs_air = [0.0, 0.2096, 0.7812, 0.0092]
     Ps = [1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 7.5e4, 1e5, 2e5, 4e5, 7e5, 1e6, 1.5e6, 3e6, 5e6, 8e6, 1e7, 1.2e7, 1.5e7, 1.8e7, 2e7, 22048320.0*(1-1e-3)]
@@ -1096,14 +1096,14 @@ def test_water_wet_bulb_temperature_vary_saturation():
     gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], 
             T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
 
-    liquid = GibbsExcessLiquid(equilibrium_basis=None, caloric_basis=None,
+    liquid = GibbsExcessLiquid(
                eos_pure_instances=None, HeatCapacityGases=correlations.HeatCapacityGases,
                VolumeLiquids=correlations.VolumeLiquids, VaporPressures=correlations.VaporPressures,
                Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
 
     zs_air = [0.0, 0.2096, 0.7812, 0.0092]
-    Ps = [1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 7.5e4, 1e5, 2e5, 4e5, 7e5, 1e6, 1.5e6, 3e6, 5e6, 8e6, 1e7, 1.2e7, 1.5e7, 1.8e7, 2e7, 
+    Ps = [1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 7.5e4, 1e5, 2e5, 4e5, 7e5, 1e6, 1.5e6, 3e6, 5e6, 8e6, 1e7, 1.2e7, 1.5e7, 1.8e7, 2e7,
         22048320.0*(1-1e-7)]
     zs_added = [1,0,0,0]
 
@@ -1147,7 +1147,7 @@ def test_water_wet_bulb_temperature_solve_for():
     gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], 
             T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
 
-    liquid = GibbsExcessLiquid(equilibrium_basis=None, caloric_basis=None,
+    liquid = GibbsExcessLiquid(
                eos_pure_instances=None, HeatCapacityGases=correlations.HeatCapacityGases,
                VolumeLiquids=correlations.VolumeLiquids, VaporPressures=correlations.VaporPressures,
                Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])

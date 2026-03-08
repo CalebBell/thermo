@@ -1000,7 +1000,7 @@ def test_P_H_plot_ideal_Poy(fluid):
     liquid = GibbsExcessLiquid(VaporPressures=pure_props.VaporPressures,
                            HeatCapacityGases=pure_props.HeatCapacityGases,
                            VolumeLiquids=pure_props.VolumeLiquids,
-                           use_phis_sat=False, use_Poynting=True).to_TP_zs(T, P, zs)
+                           equilibrium_basis='Poynting').to_TP_zs(T, P, zs)
 
     gas = CEOSGas(IGMIX, T=T, P=P, zs=zs, **ig_kwargs)
 #
@@ -1619,7 +1619,7 @@ def test_IG_liq_poy_flashes(hacks):
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_phis_sat=False, use_Poynting=True).to_TP_zs(T, P, zs)
+                               equilibrium_basis='Poynting').to_TP_zs(T, P, zs)
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     flasher = FlashPureVLS(constants, correlations, liquids=[liquid], gas=gas, solids=[])

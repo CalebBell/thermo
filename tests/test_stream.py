@@ -1364,8 +1364,7 @@ def test_energy_balance():
 
     liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, HeatCapacityGases=correlations.HeatCapacityGases,
                         VolumeLiquids=correlations.VolumeLiquids,
-                        use_Poynting=True,
-                        use_phis_sat=False, eos_pure_instances=None,
+                        equilibrium_basis='Poynting',
                         Hfs=constants.Hfgs, Gfs=constants.Gfgs,
                         T=298.15, P=101325.0, zs=zs)
     flasher = FlashVLN(constants, correlations, liquids=[liquid], gas=gas, solids=[])

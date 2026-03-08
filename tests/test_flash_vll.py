@@ -461,7 +461,7 @@ def test_methane_nitrogen_sharp_T_flash_failure_2_component_dew():
 
 
     liquid = GibbsExcessLiquid(GibbsExcessModel=IdealSolution(T=298.15, xs=[0.5, 0.5]),VaporPressures=correlations.VaporPressures, VolumeLiquids=correlations.VolumeLiquids, HeatCapacityGases=correlations.HeatCapacityGases,
-                               equilibrium_basis=None, caloric_basis=None, eos_pure_instances=None, Hfs=[-74534.0, 0.0], Gfs=[-50443.48000000001, 0.0], T=298.15, P=101325.0, zs=[0.5, 0.5])
+                               eos_pure_instances=None, Hfs=[-74534.0, 0.0], Gfs=[-50443.48000000001, 0.0], T=298.15, P=101325.0, zs=[0.5, 0.5])
 
 
     flasher = FlashVLN(gas=gas, liquids=[liquid, liquid], constants=constants, correlations=correlations)

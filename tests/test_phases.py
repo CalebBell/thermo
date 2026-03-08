@@ -174,7 +174,7 @@ def test_GibbbsExcessLiquid_VolumeLiquids():
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
                                EnthalpyVaporizations=EnthalpyVaporizations,
-                               use_phis_sat=False, eos_pure_instances=eoss).to_TP_zs(T, P, zs)
+                               eos_pure_instances=eoss).to_TP_zs(T, P, zs)
 
     Vms_expect = [1.7835985614552184e-05, 5.44799706327522e-05]
     Vms_calc = liquid.Vms_sat()
@@ -225,7 +225,7 @@ def test_GibbbsExcessLiquid_MiscIdeal():
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
                                EnthalpyVaporizations=EnthalpyVaporizations,
-                               use_phis_sat=False, eos_pure_instances=eoss).to_TP_zs(T, P, zs)
+                               eos_pure_instances=eoss).to_TP_zs(T, P, zs)
 
     dV_dT = liquid.dV_dT()
     dV_dT_num = derivative(lambda T: liquid.to(T=T, P=P, zs=zs).V(), T, dx=T*1e-5, order=3)
@@ -365,8 +365,7 @@ def test_GibbbsExcessLiquid_PoyntingWorking():
 
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=True, # Makes V_from_phi consistent
-                               use_phis_sat=False).to_TP_zs(T, P, zs)
+                               equilibrium_basis='Poynting').to_TP_zs(T, P, zs)
 
     assert_close(liquid.S_phi_consistency(), 0, atol=1e-13)
     assert_close(liquid.H_phi_consistency(), 0, atol=1e-13)
@@ -461,9 +460,7 @@ def test_GibbbsExcessLiquid_NoPoyNoGammaNoPhi():
                                   Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
 
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
-                               VolumeLiquids=VolumeLiquids,
-                               use_Poynting=False,
-                               use_phis_sat=False).to_TP_zs(T, P, zs)
+                               VolumeLiquids=VolumeLiquids).to_TP_zs(T, P, zs)
     dH_dP_num = derivative(lambda P: liquid.to(T=T, P=P, zs=zs).H(), P, dx=P*1e-5)
     dH_dP = liquid.dH_dP()
     assert_close(dH_dP, 0, atol=1e-11)
@@ -509,31 +506,30 @@ def test_GibbsExcessLiquid_Unifac():
 
     liquid_base = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=False,
-                               use_phis_sat=False, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_poy = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=True,
-                               use_phis_sat=False, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_phi = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=False,
-                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='PhiSat',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_phi_poy = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=True,
-                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting&PhiSat',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquids = [liquid_base, liquid_poy, liquid_phi, liquid_phi_poy]
     for model in [GE, GE1, GE2, GE3, GE4, GE5]:
         liquid_phi_poy_gamma = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                             VolumeLiquids=VolumeLiquids,
                             GibbsExcessModel=model,
-                            use_Poynting=True,
-                            use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                            equilibrium_basis='Poynting&PhiSat',
+                            eos_pure_instances=eoss, T=T, P=P, zs=zs)
         liquids.append(liquid_phi_poy_gamma)
 
     for i, liquid in enumerate(liquids):
@@ -572,29 +568,28 @@ def test_GibbsExcessLiquid_H_S_settings():
 
     liquid_base = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=False,
-                               use_phis_sat=False, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_poy = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=True,
-                               use_phis_sat=False, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_phi = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=False,
-                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='PhiSat',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_phi_poy = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=True,
-                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting&PhiSat',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_phi_poy_gamma = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
                                GibbsExcessModel=GE,
-                               use_Poynting=True,
-                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting&PhiSat',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     Hs_sympy = [-33955.85490517719, -33782.17641365815, -32392.64972459377, -32218.97123307472, -32231.87689500188]
     Ss_sympy = [-86.99253060781912, -86.643966007413, -82.62865124423134, -82.28008664382519, -84.6099271604735]
@@ -700,7 +695,7 @@ def test_GibbsExcessLiquid_HS_from_Hvap():
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
                                EnthalpyVaporizations=EnthalpyVaporizations,
-                               use_Hvap_caloric=True, use_phis_sat=False, use_Poynting=False).to_TP_zs(T, P, zs)
+                               caloric_basis='Hvap').to_TP_zs(T, P, zs)
 
     gas = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
 
@@ -761,7 +756,7 @@ def test_GibbsExcessLiquid_HS_from_Hvap_pure():
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
                                EnthalpyVaporizations=EnthalpyVaporizations,
-                               use_Hvap_caloric=True, use_phis_sat=False, use_Poynting=False).to_TP_zs(T, P, zs)
+                               caloric_basis='Hvap').to_TP_zs(T, P, zs)
 
     gas = IdealGas(T=T, P=P, zs=zs, HeatCapacityGases=HeatCapacityGases)
     P = liquid.Psats()[0]
@@ -807,12 +802,12 @@ def test_GibbsExcessLiquid_lnPsats():
     liquid_ABC = GibbsExcessLiquid(VaporPressures=correlations_1.VaporPressures,
                                HeatCapacityGases=correlations_1.HeatCapacityGases,
                                VolumeLiquids=correlations_1.VolumeLiquids,
-                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting', T=T, P=P, zs=zs)
 
     liquid_AB = GibbsExcessLiquid(VaporPressures=correlations_2.VaporPressures,
                                HeatCapacityGases=correlations_2.HeatCapacityGases,
                                VolumeLiquids=correlations_2.VolumeLiquids,
-                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting', T=T, P=P, zs=zs)
 
     for liquid in (liquid_AB, liquid_ABC):
         for T in (1, 5, 20, 100, 400, 591.74-1e-4, 591.74, 591.74+1e-10, 1000):
@@ -879,7 +874,7 @@ def test_GibbsExcessLiquid_dHS_dT_low():
     liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures,
                                HeatCapacityGases=correlations.HeatCapacityGases,
                                VolumeLiquids=correlations.VolumeLiquids,
-                               use_phis_sat=False, use_Poynting=True, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting', T=T, P=P, zs=zs)
     liquid = liquid.to(T=10.0, P=P, zs=zs)
     assert_close(liquid.Psats()[0], 1.8250740791522587e-269)
     assert_close(liquid.S(), -463.15806679753285, rtol=1e-12)
@@ -924,8 +919,7 @@ def test_GibbsExcessLiquid_at_methods():
 
     # With Poy, no phis sat
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids,
-                     HeatCapacityGases=HeatCapacityGases, use_Poynting=True,
-                     use_phis_sat=False)
+                     HeatCapacityGases=HeatCapacityGases, equilibrium_basis='Poynting')
     liq2 = liquid.to(T=285.5, P=1e4, zs=[0.2, 0.0, 0.8])
 
     assert_close1d(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
@@ -950,8 +944,8 @@ def test_GibbsExcessLiquid_at_methods():
     eoss = [PR(Tc=constants.Tcs[i], Pc=constants.Pcs[i], omega=constants.omegas[i], T=300, P=1e5) for i in range(3)]
 
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids,
-                 HeatCapacityGases=HeatCapacityGases, use_Poynting=False,
-                 eos_pure_instances=eoss, use_phis_sat=True)
+                 HeatCapacityGases=HeatCapacityGases,
+                 eos_pure_instances=eoss, equilibrium_basis='PhiSat')
     liq2 = liquid.to(T=285.5, P=1e4, zs=[0.2, 0.0, 0.8])
 
     assert_close1d(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
@@ -974,8 +968,8 @@ def test_GibbsExcessLiquid_at_methods():
 
     # With poy and phi sat
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids,
-                 HeatCapacityGases=HeatCapacityGases, use_Poynting=True,
-                 eos_pure_instances=eoss, use_phis_sat=True)
+                 HeatCapacityGases=HeatCapacityGases,
+                 eos_pure_instances=eoss, equilibrium_basis='Poynting&PhiSat')
     liq2 = liquid.to(T=285.5, P=1e4, zs=[0.2, 0.0, 0.8])
 
     assert_close1d(liq2.Psats(), liquid.Psats_at(285.5), rtol=1e-12)
@@ -1027,29 +1021,28 @@ def test_GibbsExcessLiquid_hashing_and_serialization():
 
     liquid_base = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=False,
-                               use_phis_sat=False, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_poy = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=True,
-                               use_phis_sat=False, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_phi = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=False,
-                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='PhiSat',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_phi_poy = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_Poynting=True,
-                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting&PhiSat',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     liquid_phi_poy_gamma = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
                                GibbsExcessModel=GE,
-                               use_Poynting=True,
-                               use_phis_sat=True, eos_pure_instances=eoss, T=T, P=P, zs=zs)
+                               equilibrium_basis='Poynting&PhiSat',
+                               eos_pure_instances=eoss, T=T, P=P, zs=zs)
 
     for obj in (liquid_base, liquid_poy, liquid_phi, liquid_phi_poy, liquid_phi_poy_gamma):
         h0 = hash(obj)
@@ -2123,8 +2116,7 @@ def test_single_phase_viscosity_thermal_conductivity():
 
     # Gibbs excess liquid
     phase = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids,
-                     HeatCapacityGases=HeatCapacityGases, use_Poynting=True,
-                     use_phis_sat=False,
+                     HeatCapacityGases=HeatCapacityGases, equilibrium_basis='Poynting',
                      T=T, P=P, zs=zs)
     phase.constants = constants
     phase.correlations = correlations

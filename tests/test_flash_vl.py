@@ -103,8 +103,7 @@ def test_flash_TP_K_composition_idependent_unhappiness():
                       VaporPressure(exp_poly_fit=(175.7, 512.49, [-1.446088049406911e-19, 4.565038519454878e-16, -6.278051259204248e-13, 4.935674274379539e-10, -2.443464113936029e-07, 7.893819658700523e-05, -0.016615779444332356, 2.1842496316772264, -134.19766175812708]))]
 
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures, VolumeLiquids=VolumeLiquids,
-                     HeatCapacityGases=HeatCapacityGases, use_Poynting=True,
-                     use_phis_sat=False)
+                     HeatCapacityGases=HeatCapacityGases, equilibrium_basis='Poynting')
 
     correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True, HeatCapacityGases=HeatCapacityGases,
                                                VolumeLiquids=VolumeLiquids, VaporPressures=VaporPressures)
