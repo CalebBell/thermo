@@ -1051,7 +1051,7 @@ def test_GibbsExcessLiquid_hashing_and_serialization():
         assert obj.state_hash() == obj2.state_hash()
         assert h0 == hash(obj)
         assert h0 == hash(obj2)
-        assert obj.__dict__ == obj2.__dict__
+        assert obj == obj2
 
 
     for obj in (liquid_base, liquid_poy, liquid_phi, liquid_phi_poy, liquid_phi_poy_gamma):
@@ -1061,7 +1061,7 @@ def test_GibbsExcessLiquid_hashing_and_serialization():
         assert obj.state_hash() == obj2.state_hash()
         assert h0 == hash(obj)
         assert h0 == hash(obj2)
-        assert obj.__dict__ == obj2.__dict__
+        assert obj == obj2
 
 def test_GibbsExcessLiquid_low_T_phis_sat():
     # Binary water-ethanol
