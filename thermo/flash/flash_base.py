@@ -2047,3 +2047,77 @@ class Flash:
 
         of_value2 = results.value(of)
         return (of_value2 - of_value)/delta
+
+    def water_wet_bulb_temperature(self, zs, T, P, feed=None):
+        r"""Calculate the water wet bulb temperature of a stream.
+
+        Parameters
+        ----------
+        zs : list[float]
+            Mole fractions of stream, [-]
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+        feed : EquilibriumState, optional
+            If the feed at `zs`, `T`, and `P` has already been flashed, this
+            object can be provided to avoid additional calculations, [-]
+
+        Returns
+        -------
+        sat : EquilibriumState
+            The flash results at the wet bulb temperature and composition, [-]
+        """
+        from thermo.flash.flash_utils import water_wet_bulb_temperature
+        return water_wet_bulb_temperature(self, zs=zs, T=T, P=P, feed=feed)
+
+    def solve_water_wet_bulb_temperature(self, zs, T, P, T_wet_bulb):
+        r"""Solve for the water mole fraction that gives a target wet bulb
+        temperature.
+
+        Parameters
+        ----------
+        zs : list[float]
+            Mole fractions of stream, [-]
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+        T_wet_bulb : float
+            Target wet bulb temperature, [K]
+
+        Returns
+        -------
+        x_w : float
+            Water mole fraction that gives the target wet bulb temperature, [-]
+        """
+        from thermo.flash.flash_utils import solve_water_wet_bulb_temperature_direct, solve_water_wet_bulb_temperature_nested
+        try:
+            return solve_water_wet_bulb_temperature_direct(self, zs=zs, T=T, P=P, T_wet_bulb=T_wet_bulb)
+        except:
+            return solve_water_wet_bulb_temperature_nested(self, zs=zs, T=T, P=P, T_wet_bulb=T_wet_bulb)
+
+    def water_dew_point_from_humidity(self, T, P, humidity, zs_air, zs_added):
+        r"""Calculate the dew point from humidity by finding the wet bulb
+        temperature of the humidified air mixture.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+        humidity : float
+            Relative humidity as a fraction, [-]
+        zs_air : list[float]
+            Mole fractions of the dry air stream, [-]
+        zs_added : list[float]
+            Mole fractions of the added component stream, [-]
+
+        Returns
+        -------
+        sat : EquilibriumState or None
+            The flash results at the dew point, or None if not found, [-]
+        """
+        from thermo.flash.flash_utils import water_dew_point_from_humidity
+        return water_dew_point_from_humidity(self, T=T, P=P, humidity=humidity, zs_air=zs_air, zs_added=zs_added)
