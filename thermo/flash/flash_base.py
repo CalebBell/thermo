@@ -2012,3 +2012,38 @@ class Flash:
         except ValueError:
             self._water_index = None
         return self._water_index
+
+    def equilibrium_derivative(self, result, of="P", wrt="T", const="V", perturbation=1e-7):
+        r"""Calculate the equilibrium derivative of a property by performing
+        a numerical derivative on flash calculations.
+
+        Parameters
+        ----------
+        result : EquilibriumState
+            The equilibrium state to differentiate around, [-]
+        of : str
+            The property to differentiate, [-]
+        wrt : str
+            The variable to differentiate with respect to, [-]
+        const : str
+            The variable to hold constant, [-]
+        perturbation : float, optional
+            The relative perturbation to use, [-]
+
+        Returns
+        -------
+        derivative : float
+            The numerical derivative of `of` with respect to `wrt` at constant
+            `const`, [various]
+        """
+        const_value = result.value(const)
+        wrt_value = result.value(wrt)
+        of_value = result.value(of)
+
+        wrt_value2 = wrt_value*(1.0 + perturbation)
+        delta = wrt_value2 - wrt_value
+        kwargs = {wrt: wrt_value2, const: const_value}
+        results = self.flash(zs=result.zs, **kwargs)
+
+        of_value2 = results.value(of)
+        return (of_value2 - of_value)/delta

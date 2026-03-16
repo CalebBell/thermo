@@ -21,7 +21,6 @@ SOFTWARE.
 """
 
 __all__ = [
-    "equilibrium_derivative",
     "LL_boolean_check",
     "SS_VF_simultaneous",
     "TPV_HSGUA_guesses_1P_methods",
@@ -5463,44 +5462,6 @@ def critcondenbar_direct_criteria(res, require_two_phase=True, require_gas=False
     return tot
 
 
-def equilibrium_derivative(flasher, result, of="P", wrt="T", const="V", perturbation=1e-7):
-    r"""Calculate the equilibrium derivative of a property by performing
-    a numerical derivative on flash calculations.
-
-    Parameters
-    ----------
-    flasher : Flash
-        Flash object to use for the perturbed calculation, [-]
-    result : EquilibriumState
-        The equilibrium state to differentiate around, [-]
-    of : str
-        The property to differentiate, [-]
-    wrt : str
-        The variable to differentiate with respect to, [-]
-    const : str
-        The variable to hold constant, [-]
-    perturbation : float, optional
-        The relative perturbation to use, [-]
-
-    Returns
-    -------
-    derivative : float
-        The numerical derivative of `of` with respect to `wrt` at constant
-        `const`, [various]
-    """
-    const_value = result.value(const)
-    wrt_value = result.value(wrt)
-    of_value = result.value(of)
-
-    wrt_value2 = wrt_value*(1.0 + perturbation)
-    delta = wrt_value2 - wrt_value
-    kwargs = {wrt: wrt_value2, const: const_value}
-    results = flasher.flash(zs=result.zs, **kwargs)
-
-    of_value2 = results.value(of)
-    return (of_value2 - of_value)/delta
-
-
 def speed_of_sound_firoozabadi_pan(flasher, result, perturbation=1e-7):
     r"""Speed of sound via the Firoozabadi & Pan method.
 
@@ -5527,5 +5488,5 @@ def speed_of_sound_firoozabadi_pan(flasher, result, perturbation=1e-7):
        Hydrocarbon Energy Production. McGraw-Hill Education, 2015.
     """
     V = result.V()
-    Cs = -1.0/V*equilibrium_derivative(flasher, result, of="V", wrt="P", const="S", perturbation=perturbation)
+    Cs = -1.0/V*flasher.equilibrium_derivative(result, of="V", wrt="P", const="S", perturbation=perturbation)
     return (V/Cs)**0.5

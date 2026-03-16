@@ -28,7 +28,7 @@ from thermo.bulk import *
 from thermo.eos import *
 from thermo.eos_mix import *
 from thermo.equilibrium import EquilibriumState
-from thermo.flash import FlashPureVLS, FlashVL, FlashVLN, equilibrium_derivative
+from thermo.flash import FlashPureVLS, FlashVL, FlashVLN
 from thermo.heat_capacity import *
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.phase_change import *
@@ -816,10 +816,9 @@ def test_thermodynamic_derivatives_settings_with_flash():
     flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas)
     res = flashN.flash(T=361.0, P=P, zs=zs)
 
-    # Test equilibrium_derivative standalone function
-    dP_dT_eq = equilibrium_derivative(flashN, res, of="P", wrt="T", const="V")
+    dP_dT_eq = flashN.equilibrium_derivative(res, of="P", wrt="T", const="V")
     assert isinstance(dP_dT_eq, float)
-    dP_dV_eq = equilibrium_derivative(flashN, res, of="P", wrt="V", const="T")
+    dP_dV_eq = flashN.equilibrium_derivative(res, of="P", wrt="V", const="T")
     assert isinstance(dP_dV_eq, float)
 
 def test_thermodynamic_derivatives_settings_with_flash_binary():
@@ -840,8 +839,7 @@ def test_thermodynamic_derivatives_settings_with_flash_binary():
     flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     res = flasher.flash(P=P, T=T, zs=zs)
 
-    # Joule-Thomson via standalone equilibrium_derivative
-    JT = equilibrium_derivative(flasher, res, of="T", wrt="P", const="H")
+    JT = flasher.equilibrium_derivative(res, of="T", wrt="P", const="H")
     assert_close(JT, 0.00018067735521980137, rtol=3e-6)
 
 
@@ -863,12 +861,10 @@ def test_thermodynamic_derivatives_named_settings_with_flash():
     flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas)
 
     res = flashN.flash(T=361.0, P=P, zs=zs)
-    # Isobaric expansion via standalone equilibrium_derivative
-    beta = equilibrium_derivative(flashN, res, of="V", wrt="T", const="P")/res.V()
+    beta = flashN.equilibrium_derivative(res, of="V", wrt="T", const="P")/res.V()
     assert_close(beta, 3.9202893172854045, rtol=1e-5)
 
-    # Kappa via standalone equilibrium_derivative
-    kappa = -equilibrium_derivative(flashN, res, of="V", wrt="P", const="T")/res.V()
+    kappa = -flashN.equilibrium_derivative(res, of="V", wrt="P", const="T")/res.V()
     assert_close(kappa, 0.0010137530158341767, rtol=1e-5)
 
     json_data = res.as_json()
