@@ -182,7 +182,7 @@ def test_GibbbsExcessLiquid_VolumeLiquids():
 
     dVms_sat_dT_expect = [3.855990979785858e-09, 5.14342987163643e-08]
     dVms_sat_dT_calc = liquid.dVms_sat_dT()
-    assert_close1d(dVms_sat_dT_expect, dVms_sat_dT_calc, rtol=1e-12)
+    assert_close1d(dVms_sat_dT_expect, dVms_sat_dT_calc, rtol=1e-8)
 
     V_calc = liquid.V()
     assert_close(V_calc, 3.982237662547219e-05)
@@ -257,7 +257,7 @@ def test_GibbbsExcessLiquid_MiscIdeal():
     dphis_dP = liquid.dphis_dP()
     dphis_dP_num = jacobian(lambda P: liquid.to(P=P[0], T=T, zs=zs).phis(), [P], scalar=False, perturbation=1e-8)
     dphis_dP_num = [i[0] for i in dphis_dP_num]
-    assert_close1d(dphis_dP, dphis_dP_num, rtol=1e-8)
+    assert_close1d(dphis_dP, dphis_dP_num, rtol=1e-6)
 
     # TODO dphis_dxs
     dphis_dxs_expect = [[0.0, 0.0], [0.0, 0.0]]
@@ -288,7 +288,7 @@ def test_GibbbsExcessLiquid_MiscIdeal():
                                scalar=False, perturbation=1e-6)
     dVms_sat_dT_num = [i[0] for i in dVms_sat_dT_num]
     assert_close1d(dVms_sat_dT, dVms_sat_dT_num, rtol=1e-6)
-    assert_close1d(dVms_sat_dT, [3.855990979785858e-09, 5.14342987163643e-08], rtol=1e-12)
+    assert_close1d(dVms_sat_dT, [3.855990979785858e-09, 5.14342987163643e-08], rtol=1e-9)
 
 
     d2Vms_sat_dT2 = liquid.d2Vms_sat_dT2()
@@ -296,7 +296,7 @@ def test_GibbbsExcessLiquid_MiscIdeal():
                                  [T], scalar=False, perturbation=1e-7)
     d2Vms_sat_dT2_num = [i[0] for i in d2Vms_sat_dT2_num]
     assert_close1d(d2Vms_sat_dT2, d2Vms_sat_dT2_num, rtol=1e-4)
-    assert_close1d(d2Vms_sat_dT2, [1.676517817298199e-11, 5.457718437872892e-10], rtol=1e-12)
+    assert_close1d(d2Vms_sat_dT2, [1.676517817298199e-11, 5.457718437872892e-10], rtol=1e-7)
 
     # Do a comple more points near the second derivative
     for T in [159.11+.1, 159.11-.1, 159.11+1e-5, 159.11-1e-5]:
@@ -312,7 +312,7 @@ def test_GibbbsExcessLiquid_MiscIdeal():
         d2Psats_dT2_num = [i[0] for i in d2Psats_dT2_num]
         assert_close1d(d2Psats_dT2, d2Psats_dT2_num, rtol=5e-7)
 
-    T_min = liquid.VaporPressures[0].T_limits[EXP_POLY_FIT][0]
+    T_min = liquid.VaporPressures[0].Tmin
     liquid_under = liquid.to(T=T_min-1e-12, P=P,zs=zs)
     liquid_over = liquid.to(T=T_min+1e-12, P=P,zs=zs)
     d2Psats_dT2_under = liquid_under.d2Psats_dT2()

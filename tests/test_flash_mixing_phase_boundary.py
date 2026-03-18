@@ -254,7 +254,7 @@ def test_flash_mixing_complex_hydrocarbon():
     # assert min(res.betas) < 1e-4
     # This solution may have a bug or two, thew newly formed phase isn't as incipient as I'd like
     # check that increasing the temperature makes the phase go away
-    assert flasher.flash(res.zs, T=res.T+1, P=res.P).phase_count == 2
+    assert flasher.flash(zs=res.zs, T=res.T+1, P=res.P).phase_count == 2
 
     # for three phases - start with just a gas phase
     small_zs = [.1, .2, .01, .01, .01, .01, .01, .01, .01, .01, .01, .01, .5, .1]

@@ -3528,13 +3528,6 @@ class Phase:
             return self._Cpl_integrals_pure
         except AttributeError:
             pass
-#        def to_quad(T, i):
-#            l2 = self.to_TP_zs(T, self.P, self.zs)
-#            return l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i]
-#        from scipy.integrate import quad
-#        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in range(self.N)]
-##        print(vals, self._Cp_integrals_pure_fast(self._Cpls_data))
-#        return vals
 
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
         Cpl_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
@@ -3549,13 +3542,6 @@ class Phase:
             return self._Cpl_integrals_over_T_pure
         except AttributeError:
             pass
-#        def to_quad(T, i):
-#            l2 = self.to_TP_zs(T, self.P, self.zs)
-#            return (l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i])/T
-#        from scipy.integrate import quad
-#        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in range(self.N)]
-##        print(vals, self._Cp_integrals_over_T_pure_fast(self._Cpls_data))
-#        return vals
 
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
         Cpl_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)

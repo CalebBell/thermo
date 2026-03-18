@@ -871,7 +871,7 @@ class FlashPureVLS(Flash):
                 T = VL_liq.T
                 iterations = 0
                 err = 0.0
-                flash_convergence["VF flash convergence"] = {"iterations": VL_iter, "err": VL_err}
+                flash_convergence["inner_flash_convergence"] = {"iterations": VL_iter, "err": VL_err}
 
         # TODO
         # if G_SF < G_min:
@@ -886,7 +886,7 @@ class FlashPureVLS(Flash):
         #     T = SF_flash.T
         #     iterations = 0
         #     err = 0.0
-        #     flash_convergence['SF flash convergence'] = SF_flash.flash_convergence
+        #     flash_convergence['inner_flash_convergence'] = SF_flash.flash_convergence
 
         if G_min == 1e100:
             """Calculate the values of val at minimum and maximum temperature

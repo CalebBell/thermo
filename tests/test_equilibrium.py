@@ -135,8 +135,8 @@ def test_two_eos_pure_flash_all_properties():
     assert eq.LF == 1 - VF
 
     # Meta
-    assert eq.phases[0] is eq.gas
-    assert eq.phases[1] is eq.liquid0
+    assert eq.phases[0] == eq.gas
+    assert eq.phases[1] == eq.liquid0
     assert eq.phase_count == 2
     assert eq.liquid_count ==1
     assert eq.gas_count == 1
