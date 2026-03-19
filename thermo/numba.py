@@ -291,7 +291,6 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  "phases.iapws_phase.IAPWS95", "phases.iapws_phase.IAPWS95Liquid", "phases.iapws_phase.IAPWS95Gas",
                  "phases.air_phase.DryAirLemmon",
 
-             "phases.phase_utils.lnphis_direct",
 
              "fitting.data_fit_statistics",
 

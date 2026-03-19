@@ -701,21 +701,6 @@ class GibbsExcessLiquid(Phase):
             pass
         return new
 
-    supports_lnphis_args = False
-
-    def lnphis_args(self):
-        try:
-            return self._lnphis_args
-        except:
-            pass
-        lnPsats = self.lnPsats()
-        Poyntings = self.Poyntings()
-        phis_sat = self.phis_sat()
-        activity_args = self.GibbsExcessModel.gammas_args()
-        lnphis = zeros(self.N) if self.vectorized else [0.0]*self.N
-        self._lnphis_args = (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args +(lnphis,)
-        return self._lnphis_args
-
 
     def lnHenry_matrix(self):
         r"""Method to calculate and return the matrix of log Henry's law constants

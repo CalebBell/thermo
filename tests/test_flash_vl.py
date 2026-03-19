@@ -28,7 +28,6 @@ from fluids.core import C2K
 from fluids.numerics import *
 
 from thermo import *
-from thermo.phases.phase_utils import lnphis_direct
 from thermo.unifac import DOUFIP2006, UFIP
 import json
 
@@ -524,12 +523,6 @@ def test_issue106_Michelson_stability_test_log_zero():
     assert res.liquid0 is not None
     assert isinstance(res.liquid0, GibbsExcessLiquid)
 
-
-    # Also need a test for lnphis direct
-    liquid = liquid.to(T=513.994, P=1e4, zs=zs)
-    lnphis_args = liquid.lnphis_args()
-    lnphis_from_args = lnphis_direct(zs, *lnphis_args)
-    assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
 
 
 def test_NRTL_water_ethanol_sample():

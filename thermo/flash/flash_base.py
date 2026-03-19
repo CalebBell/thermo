@@ -874,8 +874,6 @@ class Flash:
             raise ValueError("Can only perform flashes with all phases in a numpy basis or all phases in a pure Python basis")
         self.vectorized = vectorized_statuses.pop()
 
-        self.supports_lnphis_args = all(p.supports_lnphis_args for p in self.phases)
-
         # Make the phases aware of the constants and properties
         constants = self.constants
         correlations = self.correlations

@@ -41,7 +41,6 @@ from thermo.heat_capacity import *
 from thermo.interface import *
 from thermo.phase_change import *
 from thermo.phases import *
-from thermo.phases.phase_utils import fugacities_direct, lnphis_direct
 from thermo.regular_solution import RegularSolution
 from thermo.thermal_conductivity import *
 from thermo.unifac import DOUFIP2016, DOUFSG, PSRKIP, PSRKSG, UFIP, UFSG, UNIFAC, VTPRIP, VTPRSG
@@ -532,11 +531,6 @@ def test_GibbsExcessLiquid_Unifac():
                             eos_pure_instances=eoss, T=T, P=P, zs=zs)
         liquids.append(liquid_phi_poy_gamma)
 
-    for i, liquid in enumerate(liquids):
-        liquid = liquid.to(T=513.994, P=P, zs=zs)
-        lnphis_args = liquid.lnphis_args()
-        lnphis_from_args = lnphis_direct(zs, *lnphis_args)
-        assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
 
 def test_GibbsExcessLiquid_H_S_settings():
     # water-ethanol
@@ -1541,12 +1535,6 @@ def test_GibbsExcessLiquid_RegularSolution():
         equilibrium_basis='Psat', caloric_basis='Psat',
         T=T, P=P, zs=xs)
 
-    xs2 = [.1, .2, .3, .4]
-    # Check that the lnphis direct are the same
-    liquid = liquid.to(T=513.994, P=1e4, zs=xs2)
-    lnphis_args = liquid.lnphis_args()
-    lnphis_from_args = lnphis_direct(xs2, *lnphis_args)
-    assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
 
 def test_GibbsExcessLiquid_UNIQUAC():
     # Totally madeup
@@ -1575,12 +1563,6 @@ def test_GibbsExcessLiquid_UNIQUAC():
         equilibrium_basis='Psat', caloric_basis='Psat',
         T=T, P=1e5, zs=xs)
 
-    xs2 = [.7, .2, .1]
-    # Check that the lnphis direct are the same
-    liquid = liquid.to(T=513.994, P=1e4, zs=xs2)
-    lnphis_args = liquid.lnphis_args()
-    lnphis_from_args = lnphis_direct(xs2, *lnphis_args)
-    assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
 
 def test_GibbsExcessLiquid_Wilson():
     # Totally madeup
@@ -1656,12 +1638,6 @@ def test_GibbsExcessLiquid_Wilson():
         equilibrium_basis='Psat', caloric_basis='Psat',
         T=T, P=P, zs=xs)
 
-
-    xs2 = [.012, .53, .12, .0123, .123, .023, 0.1797]
-    liquid = liquid.to(T=513.994, P=1e4, zs=xs2)
-    lnphis_args = liquid.lnphis_args()
-    lnphis_from_args = lnphis_direct(xs2, *lnphis_args)
-    assert_close1d(lnphis_from_args, liquid.lnphis(), rtol=1e-13)
 
 
 
@@ -3490,10 +3466,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
-    assert_close1d(fugacities_direct(zs, *gas.lnphis_args()), gas.fugacities(), rtol=1e-13)
-    assert_close1d(fugacities_direct(zs, *liquid.lnphis_args()), liquid.fugacities(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3501,8 +3473,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(PR78MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PR78MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3514,8 +3484,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(TWUPRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(TWUPRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3529,8 +3497,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(VDWMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(VDWMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3542,8 +3508,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3555,8 +3519,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(TWUSRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(TWUSRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3568,8 +3530,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(RKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(RKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3581,8 +3541,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3601,8 +3559,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(PRSVMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRSVMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3622,8 +3578,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(PRSV2MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRSV2MIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3642,8 +3596,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(APISRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(APISRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3662,8 +3614,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(PRMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3676,8 +3626,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3689,8 +3637,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(PRMIXTranslatedPPJP, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(PRMIXTranslatedPPJP, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3702,8 +3648,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(SRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(SRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3715,8 +3659,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(SRKMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(SRKMIXTranslatedConsistent, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3728,8 +3670,6 @@ def test_lnphis_at_zs_eos_mix():
     gas = CEOSGas(MSRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liquid = CEOSLiquid(MSRKMIXTranslated, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    assert_close1d(lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis(), rtol=1e-13)
-    assert_close1d(lnphis_direct(zs, *liquid.lnphis_args()), liquid.lnphis(), rtol=1e-13)
 
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
@@ -3737,68 +3677,6 @@ def test_lnphis_at_zs_eos_mix():
     assert_close1d(gas.lnphis_at_zs(zs), gas.lnphis(), rtol=1e-13)
     assert_close1d(liquid.lnphis_at_zs(zs), liquid.lnphis(), rtol=1e-13)
 
-
-
-@pytest.mark.skip
-def test_UNIFAC_lnphis_direct():
-    # Not working anymore
-    from thermo.phases.phase_utils import lnphis_direct
-    from thermo.unifac import DOUFIP2016, DOUFSG, LUFIP, LUFSG, NISTKTUFIP, NISTKTUFSG, PSRKIP, PSRKSG, UFIP, UFSG, VTPRIP, VTPRSG
-    T = 400.0
-    P = 1e6
-    zs = [.4, .6]
-    xs2 = [.3, .7]
-
-    MWs = [18.01528, 46.06844]
-    Tcs = [647.14, 514.0]
-    Pcs = [22048320.0, 6137000.0]
-    omegas = [0.344, 0.635]
-
-    eoss = [PR(Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0], T=T, P=P),
-            PR(Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1], T=T, P=P)]
-
-    # Cover all the varianrs of UNIFAC that are implemented
-    # Note: chemgroups do not always match the components,
-    # as that doesn't impact the tests
-    GE0 = UNIFAC.from_subgroups(T, zs, chemgroups=[{16: 1}, {1: 1, 2: 1, 14: 1}], subgroups=UFSG,
-                           interaction_data=UFIP, version=0)
-
-    GE1 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1:1, 18:1}, {1:1, 2:1, 14:1}], version=1,
-                               interaction_data=DOUFIP2016, subgroups=DOUFSG)
-
-    GE2 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{117: 1}, {1:2, 2:4}], version=2,
-                               interaction_data=PSRKIP, subgroups=PSRKSG)
-
-    GE3 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 18: 1}, {1: 1, 2: 1, 14: 1}], version=3,
-                               interaction_data=VTPRIP, subgroups=VTPRSG)
-
-    GE4 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1: 1, 2: 1, 12: 1}, {1: 2, 2: 3}], version=4,
-                               interaction_data=LUFIP, subgroups=LUFSG)
-
-    GE5 = UNIFAC.from_subgroups(T=T, xs=zs, chemgroups=[{1:1, 15:5, 19:1}, {15:4, 18:2}] , version=5,
-                               interaction_data=NISTKTUFIP, subgroups=NISTKTUFSG)
-
-    GEs = [GE0, GE1, GE2, GE3, GE4, GE5]
-
-    VaporPressures = [VaporPressure(exp_poly_fit=(159.11, 514.7, [-2.3617526481119e-19, 7.318686894378096e-16, -9.835941684445551e-13, 7.518263303343784e-10, -3.598426432676194e-07, 0.00011171481063640762, -0.022458952185007635, 2.802615041941912, -166.43524219017118])),
-                      VaporPressure(exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317]))]
-    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
-                       HeatCapacityGas(poly_fit=(50.0, 1000.0, [-1.162767978165682e-20, 5.4975285700787494e-17, -1.0861242757337942e-13, 1.1582703354362728e-10, -7.160627710867427e-08, 2.5392014654765875e-05, -0.004732593693568646, 0.5072291035198603, 20.037826650765965]))]
-    VolumeLiquids = [VolumeLiquid(extrapolation='quadratic_positive_slope|linear', poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652]),
-                                  Psat=VaporPressures[0], Tc=Tcs[0], Pc=Pcs[0], omega=omegas[0]),
-                     VolumeLiquid(extrapolation='quadratic_positive_slope|linear', poly_fit=(159.11, 504.71000000000004, [5.388587987308587e-23, -1.331077476340645e-19, 1.4083880805283782e-16, -8.327187308842775e-14, 3.006387047487587e-11, -6.781931902982022e-09, 9.331209920256822e-07, -7.153268618320437e-05, 0.0023871634205665524]),
-                                  Psat=VaporPressures[1], Tc=Tcs[1], Pc=Pcs[1], omega=omegas[1])]
-
-    for GE in GEs:
-        for basis in ('Psat', 'Poynting', 'PhiSat', 'Poynting&PhiSat'):
-            liquid_base = GibbsExcessLiquid(VaporPressures=VaporPressures,HeatCapacityGases=HeatCapacityGases,
-                                       VolumeLiquids=VolumeLiquids,
-                                           GibbsExcessModel=GE,
-                                       equilibrium_basis=basis, caloric_basis=basis,
-                                       eos_pure_instances=eoss, T=T, P=P, zs=zs)
-            args = liquid_base.lnphis_args()
-
-            assert_close1d(lnphis_direct(xs2, *args), liquid_base.to(T=T, P=P, zs=xs2).lnphis(), rtol=1e-12)
 
 
 
@@ -3852,33 +3730,6 @@ def test_IdealGas_lnphis_low_P_T_almost_pure():
     assert obj.lnphis() == obj.lnphis_lowest_Gibbs()
     assert_close1d(obj.lnphis(), [0, 0], atol=0, rtol=0)
     assert_close1d(obj.lnphis_at_zs(obj.zs), [0, 0], atol=0, rtol=0)
-
-
-
-def test_IdealSolution_lnphis_direct():
-    constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 1, 'O': 2}, {'O': 2}, {'N': 2}, {'C': 1}], CASs=['7732-18-5', '124-38-9', '7782-44-7', '7727-37-9', '7440-44-0'], Gfgs=[-228554.325, -394338.635, 0.0, 0.0, 671434.94], Hfgs=[-241822.0, -393474.0, 0.0, 0.0, 716873.0], MWs=[18.01528, 44.0095, 31.9988, 28.0134, 12.0107], names=['water', 'carbon dioxide', 'oxygen', 'nitrogen', 'carbon'], omegas=[0.344, 0.2252, 0.021, 0.04, 0.3268], Pcs=[22048320.0, 7376460.0, 5042945.25, 3394387.5, 796719000.0], Tbs=[373.124, 194.67, 90.188, 77.355, 4273.15], Tcs=[647.14, 304.2, 154.58, 126.2, 7020.5], Tms=[273.15, 216.65, 54.36, 63.15, 3823.15], Vcs=[5.6e-05, 9.4e-05, 7.34e-05, 8.95e-05, 2.662e-05])
-    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
-    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 5000.0, [-1.4661028760473505e-27, 2.752229097393049e-23, -1.7636768499746195e-19, 2.2554942241375344e-16, 2.532929281241331e-12, -1.3180823687866557e-08, 2.3666962694229476e-05, -0.005252595370280718, 33.462944538809126])),
-    HeatCapacityGas(load_data=False, poly_fit=(50.0, 5000.0, [3.1443247900514636e-26, -7.0851701556436665e-22, 6.5852998540873565e-18, -3.2424118810829336e-14, 8.987549974516042e-11, -1.351701772544079e-07, 8.839283037372146e-05, 0.009959803723428697, 28.39799703560628])),
-    HeatCapacityGas(load_data=False, poly_fit=(50.0, 5000.0, [1.2283565107055296e-26, -2.7951451726762067e-22, 2.6334919674696596e-18, -1.3233024602402331e-14, 3.7962829852713573e-11, -6.128657296759334e-08, 4.962798152953606e-05, -0.009971787087565588, 29.48256621272467])),
-    HeatCapacityGas(load_data=False, poly_fit=(50.0, 5000.0, [-2.8946147064530805e-27, 5.818275034669907e-23, -4.519291247965907e-19, 1.609185011831327e-15, -1.9359711365420902e-12, -3.146524643467457e-09, 9.702047239977565e-06, -0.0025354183983147998, 29.203539884897914])),
-    HeatCapacityGas(load_data=False, poly_fit=(50.0, 5000.0, [1.444669459095646e-26, -3.2755696676780116e-22, 3.077292987819964e-18, -1.5457733741449398e-14, 4.464764023046143e-11, -7.412889159882564e-08, 6.685374754452863e-05, -0.02841071527425949, 24.771472282967327])),
-    ],
-    VaporPressures=[VaporPressure(load_data=False, exp_poly_fit=(235.0, 647.096, [-2.2804872185158488e-20, 9.150413938315753e-17, -1.5948089451561768e-13, 1.583762733400446e-10, -9.868214067470077e-08, 3.996161556967839e-05, -0.01048791558325078, 1.7034790943304348, -125.70729281239332])),
-    VaporPressure(load_data=False, exp_poly_fit=(217.0, 304.15, [2.1686715260143354e-16, -4.409558436650176e-13, 3.9153332834445145e-10, -1.982764322690522e-07, 6.262949234640648e-05, -0.012633189182318615, 1.5885341125839996, -113.71525460309233, 3551.7686281985934])),
-    VaporPressure(load_data=False, exp_poly_fit=(54.0, 154.7, [-9.531407063492216e-16, 9.489123009949052e-13, -4.093086833338262e-10, 1.0049035481323629e-07, -1.5482475796101542e-05, 0.0015527861689055723, -0.10130889779718814, 4.125643816700549, -72.5217726309476])),
-    VaporPressure(load_data=False, exp_poly_fit=(63.0, 126.2, [3.9193724719504104e-15, -2.53187871639929e-12, 6.734278508393433e-10, -9.117105211306447e-08, 5.6639005382380876e-06, 5.788280293920713e-05, -0.034351124037599184, 2.31496781872175, -46.41606485092371])),
-    VaporPressure(load_data=False, exp_poly_fit=(0.01, 7020.5, [-9.960511935398233e-26, 3.1754119690885334e-21, -4.202063020181678e-17, 2.983244148731088e-13, -1.2260858738709545e-09, 2.9367550951177984e-06, -0.003928943840019784, 2.66730817993541, -744.4667446102892])),
-    ],
-    )
-    liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, VolumeLiquids=correlations.VolumeLiquids,
-                HeatCapacityGases=correlations.HeatCapacityGases, equilibrium_basis='Psat',
-                Hfs=constants.Hfgs, Gfs=constants.Gfgs)
-    zs_test = [0.1, 0.15, 0.2, 0.35, .2]
-    liq = liquid.to(T=300, P=1e5, zs=zs_test)
-    lnphis_args = liq.lnphis_args()
-    lnphis_from_args =  lnphis_direct(zs_test, *lnphis_args)
-    assert_close1d(lnphis_from_args, liq.lnphis(), rtol=1e-13)
 
 
 def test_first_henry_pure_solvent_phase_properties():

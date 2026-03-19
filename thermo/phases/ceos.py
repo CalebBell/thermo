@@ -27,7 +27,6 @@ from fluids.numerics import trunc_exp, trunc_exp_numpy
 from thermo.eos_mix import IGMIX, eos_mix_full_path_dict, eos_mix_full_path_reverse_dict
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.phases.phase import IdealGasDeparturePhase
-from thermo.phases.phase_utils import lnphis_direct
 
 try:
     zeros, ndarray, full, array = np.zeros, np.ndarray, np.full, np.array
@@ -311,39 +310,10 @@ class CEOSPhase(IdealGasDeparturePhase):
         except AttributeError:
             return eos_mix.fugacity_coefficients(eos_mix.Z_l)
 
-    supports_lnphis_args = True
-
-    def lnphis_args(self, most_stable=False):
-        # VTPR, PSRK, anything with GE not yet supported
-        # Could save time by allowing T, P as an argument, and getting a new eos_mix at that
-        N = self.N
-        eos_mix = self.eos_mix
-        if self.vectorized:
-            a_alpha_j_rows, vec0, lnphis = zeros(N), zeros(N), zeros(N)
-        else:
-            a_alpha_j_rows, vec0, lnphis = [0.0]*N, [0.0]*N, [0.0]*N
-        l, g = (self.is_liquid, self.is_gas) #if not most_stable else (True, True)
-        if eos_mix.translated:
-            return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, l, g,
-                   eos_mix.b0s, eos_mix.bs, eos_mix.cs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0, lnphis)
-        else:
-            return (self.eos_class.model_id, self.T, self.P, self.N, eos_mix.one_minus_kijs, l, g,
-                   eos_mix.bs, eos_mix.a_alphas, eos_mix.a_alpha_roots, a_alpha_j_rows, vec0, lnphis)
-
     def lnphis_at_zs(self, zs, most_stable=False):
-        eos_mix = self.eos_mix
-        if eos_mix.__class__.__name__ in ("PRMIX", "VDWMIX", "SRKMIX", "RKMIX"):
-            return lnphis_direct(zs, *self.lnphis_args(most_stable))
         return self.to_TP_zs(self.T, self.P, zs).lnphis()
 
     def fugacities_at_zs(self, zs, most_stable=False):
-        if self.eos_mix.__class__.__name__ in ("PRMIX", "VDWMIX", "SRKMIX", "RKMIX"):
-            P = self.P
-            lnphis = lnphis_direct(zs, *self.lnphis_args(most_stable))
-            if self.vectorized:
-                return trunc_exp_numpy(lnphis)*P*zs
-            else:
-                return [P*zs[i]*trunc_exp(lnphis[i]) for i in range(len(zs))]
         return self.to_TP_zs(self.T, self.P, zs).fugacities()
 
     def T_max_at_V(self, V):

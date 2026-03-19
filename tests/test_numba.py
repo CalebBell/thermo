@@ -413,16 +413,6 @@ def test_numba_dri_air():
     res = flasher.flash(H=4000, P=1e6)
     assert_close(res.T, 146.94641220863562)
 
-@mark_as_numba
-def test_lnphis_direct_works_at_all():
-    zs = np.array([.5, .5])
-    eos_kwargs = {'Pcs': np.array([4872000.0, 3370000.0]), 'Tcs': np.array([305.32, 469.7]),
-                  'omegas': np.array([0.098, 0.251])}
-    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=None, T=300.0, P=1e5, zs=zs)
-    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=None, T=300.0, P=1e5, zs=zs)
-    assert_close1d(thermo.numba.lnphis_direct(zs, *gas.lnphis_args()), gas.lnphis())
-    assert_close1d(thermo.numba.lnphis_direct(zs, *liq.lnphis_args()), liq.lnphis())
-
 
 @mark_as_numba
 def test_fit_T_dep_numba_Rackett():

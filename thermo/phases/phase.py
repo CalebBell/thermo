@@ -144,7 +144,6 @@ class Phase:
     composition_independent = False
     vectorized = False
 
-    supports_lnphis_args = False
 
     __slots__ = ("__dict__", "constants", "correlations", "settings")
 
