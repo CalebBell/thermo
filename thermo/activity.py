@@ -1180,9 +1180,6 @@ class IdealSolution(GibbsExcess):
     model_id = 0
     __slots__ = GibbsExcess.__slots__
 
-    def gammas_args(self, T=None):
-        N = self.N
-        return (N,)
 
     def __init__(self, *, xs, T=GibbsExcess.T_DEFAULT):
         self.T = T

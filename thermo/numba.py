@@ -199,7 +199,6 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  "uniquac.uniquac_d2GE_dxixjs",
                  "uniquac.uniquac_d2GE_dTdxs",
                  "uniquac.UNIQUAC_gammas_binaries",
-                 "uniquac.uniquac_gammas_from_args",
 
                  "nrtl.NRTL",
                  "nrtl.nrtl_gammas",
@@ -268,7 +267,6 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                 "unifac.unifac_d2lngammas_c_dxixjs",
                 "unifac.unifac_d3lngammas_c_dxixjxks",
                 "unifac.UNIFAC",
-                "unifac.unifac_gammas_from_args",
 
                  "activity.gibbs_excess_gammas", "activity.gibbs_excess_dHE_dxs",
                  "activity.gibbs_excess_dgammas_dns", "activity.gibbs_excess_dgammas_dT",

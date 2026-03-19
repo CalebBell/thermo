@@ -424,26 +424,6 @@ def uniquac_d2GE_dxixjs(N, T, xs, qs, taus, phis, thetas, dphis_dxs, d2phis_dxix
             d2GE_dxixjs[i][j] = RT*tot
     return d2GE_dxixjs
 
-def uniquac_gammas_from_args(xs, N, T, z, rs, qs, taus, gammas=None):
-    phis, rsxs_sum_inv = uniquac_phis(N, xs, rs, phis=None)
-    phis_inv = [0.0]*N
-    for i in range(N):
-        phis_inv[i] = 1.0/phis[i]
-
-    thetas, qsxs_sum_inv = uniquac_phis(N, xs, qs)
-    thetaj_taus_jis = uniquac_thetaj_taus_jis(N, taus, thetas, thetaj_taus_jis=None)
-
-    GE = uniquac_GE(T, N, z, xs, qs, phis, thetas, thetaj_taus_jis)
-    dphis_dxs = uniquac_dphis_dxs(N, rs, phis, rsxs_sum_inv, dphis_dxs=None)
-    dthetas_dxs = uniquac_dphis_dxs(N, qs, thetas, qsxs_sum_inv, dphis_dxs=None)
-    thetaj_taus_jis_inv = [0.0]*N
-    for i in range(N):
-        thetaj_taus_jis_inv[i] = 1.0/thetaj_taus_jis[i]
-
-    dGE_dxs = uniquac_dGE_dxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dthetas_dxs,
-                    thetaj_taus_jis, thetaj_taus_jis_inv, dGE_dxs=None)
-    gammas = gibbs_excess_gammas(xs, dGE_dxs, GE, T, gammas=gammas)
-    return gammas
 
 class UNIQUAC(GibbsExcess):
     r"""Class for representing an a liquid with excess gibbs energy represented
@@ -647,19 +627,6 @@ class UNIQUAC(GibbsExcess):
 
     __slots__ = GibbsExcess.__slots__ + _model_attributes + _cached_calculated_attributes + ("zero_coeffs",)
 
-    def gammas_args(self, T=None):
-        if T is not None:
-            obj = self.to_T_xs(T=T, xs=self.xs)
-        else:
-            obj = self
-        try:
-            taus = obj._taus
-        except AttributeError:
-            taus = obj.taus()
-        N = obj.N
-        return (N, obj.T, obj.z, obj.rs, obj.qs, taus)
-
-    gammas_from_args = staticmethod(uniquac_gammas_from_args)
 
     def __repr__(self):
         s = "{}(T={}, xs={}, rs={}, qs={}, ABCDEF={})".format(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),

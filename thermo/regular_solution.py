@@ -535,7 +535,6 @@ class RegularSolution(GibbsExcess):
 
     model_id = 400
 
-    gammas_from_args = staticmethod(regular_solution_gammas)
 
     _cached_calculated_attributes = ("_Hi_sums", "_d3GE_dxixjxks")
     _model_attributes = ("Vs", "SPs", "lambda_coeffs")
@@ -543,18 +542,6 @@ class RegularSolution(GibbsExcess):
     __slots__ = GibbsExcess.__slots__ + ("xsVs_sum", "xsVs_sum_inv", "lambda_coeffs", "His", "Aijs", "_lambda_coeffs_zero", "SPs", "Vs", "xsVs") + _cached_calculated_attributes
     recalculable_attributes = GibbsExcess.recalculable_attributes + _cached_calculated_attributes
 
-    def gammas_args(self, T=None):
-        if T is not None:
-            obj = self.to_T_xs(T=T, xs=self.xs)
-        else:
-            obj = self
-        N = obj.N
-        if self.vectorized:
-            xsVs, Hi_sums, dGE_dxs = [0.0]*N, [0.0]*N, [0.0]*N
-        else:
-            xsVs, Hi_sums, dGE_dxs = zeros(N), zeros(N), zeros(N)
-
-        return (obj.N, obj.T, obj.Vs, obj.SPs, obj.lambda_coeffs, xsVs, Hi_sums, dGE_dxs)
 
     def __init__(self, *, xs, Vs, SPs, T=GibbsExcess.T_DEFAULT, lambda_coeffs=None):
         # lambda_coeffs is N*N of zeros for no interaction parameters
@@ -1285,7 +1272,6 @@ class FloryHuggins(GibbsExcess):
     d2GE_dT2 = RegularSolution.d2GE_dT2
     d3GE_dT3 = RegularSolution.d3GE_dT3
     Hi_sums = RegularSolution.Hi_sums
-    gammas_args = RegularSolution.gammas_args
 
     missing_interaction_parameters = RegularSolution.missing_interaction_parameters
 
