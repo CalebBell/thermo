@@ -37,7 +37,6 @@ from thermo.flash.flash_utils import (
     existence_3P_Michelsen_Mollerup,
     nonlin_equilibrium_NP,
     sequential_substitution_2P,
-    sequential_substitution_2P_functional,
     sequential_substitution_NP,
     solve_P_VF_IG_K_composition_independent,
     solve_T_VF_IG_K_composition_independent,
@@ -731,122 +730,6 @@ def test_flash_iapws95():
     assert_close(res.gas.rho_mass(), 0.025589673682920137, rtol=1e-5)
 
 
-
-def test_sequential_substitution_2P_functional_vs_FlashVL():
-    T, P = 300, 1.6e6
-    constants = ChemicalConstantsPackage(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0],
-                                         omegas=[0.098, 0.251], Tms=[90.3, 143.15],
-                                         Tbs=[184.55, 309.21], CASs=['74-84-0', '109-66-0'],
-                                         names=['ethane', 'pentane'], MWs=[30.06904, 72.14878])
-    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228])),
-                         HeatCapacityGas(poly_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866]))]
-    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases)
-    zs = [.5, .5]
-    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    _, _, VF, xs, ys = flash_wilson(zs=zs, Tcs=eos_kwargs['Tcs'], Pcs=eos_kwargs['Pcs'], omegas=eos_kwargs['omegas'], T=T, P=P)
-
-    # There are a lot of specially-coded numbers
-    # so yes, it is necessary to loop through all the EOSs and check they are the same.
-    hashes = []
-    for obj in eos_mix_list:
-        if obj is IGMIX:
-            continue
-
-        gas = CEOSGas(obj, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-        liq = CEOSLiquid(obj, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-
-        flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
-        hashes.append(hash(flasher))
-        res_expect = flasher.flash(T=T, P=P, zs=zs)
-        VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
-
-
-        VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
-                                       liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
-                                              maxiter=1000, tol=1E-20,
-                                           trivial_solution_tol=1e-5, V_over_F_guess=0.5)
-        assert_close(VF_calc, VF_expect, rtol=1e-6)
-        assert_close1d(xs_calc, xs_expect)
-        assert_close1d(ys_calc, ys_expect)
-
-
-    # Do a test with a mixed-EOS model
-    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-
-    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
-    hashes.append(hash(flasher))
-    res_expect = flasher.flash(T=T, P=P, zs=zs)
-    VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
-
-    VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
-                                   liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
-                                          maxiter=1000, tol=1E-20,
-                                       trivial_solution_tol=1e-5, V_over_F_guess=0.5)
-    assert_close(VF_calc, VF_expect, rtol=1e-6)
-    assert_close1d(xs_calc, xs_expect)
-    assert_close1d(ys_calc, ys_expect)
-
-    # Do an IG gas phase
-    T, P = 300, 1.3e6
-    zs = [.5, .5]
-
-    gas = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-
-    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
-    hashes.append(hash(flasher))
-    res_expect = flasher.flash(T=T, P=P, zs=zs)
-    VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
-
-    VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
-                                   liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
-                                          maxiter=1000, tol=1E-20,
-                                       trivial_solution_tol=1e-5, V_over_F_guess=0.5)
-    assert_close(VF_calc, VF_expect, rtol=1e-6)
-    assert_close1d(xs_calc, xs_expect)
-    assert_close1d(ys_calc, ys_expect)
-
-    assert len(set(hashes)) == len(hashes)
-
-def test_sequential_substitution_2P_functional_trivial_solution():
-    constants = ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4}, {'H': 2, 'O': 1}, {'C': 10, 'H': 22}], MWs=[16.04246, 18.01528, 142.28168], omegas=[0.008, 0.344, 0.49], Pcs=[4599000.0, 22048320.0, 2110000.0], Tcs=[190.564, 647.14, 611.7], Vcs=[9.86e-05, 5.6e-05, 0.000624])
-    HeatCapacityGases = [HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
-    HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
-    HeatCapacityGas(CASRN="124-18-5", MW=142.28168, similarity_variable=0.22490597524572384, extrapolation="linear", method="POLY_FIT", poly_fit=(200.0, 1000.0, [-1.702672546011891e-21, 6.6751002084997075e-18, -7.624102919104147e-15, -4.071140876082743e-12, 1.863822577724324e-08, -1.9741705032236747e-05, 0.009781408958916831, -1.6762677829939379, 252.8975930305735]))]
-
-    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
-
-    eos_kwargs = {'Pcs': [4599000.0, 22048320.0, 2110000.0],
-    'Tcs': [190.564, 647.14, 611.7],
-    'omegas': [0.008, 0.344, 0.49],
-    'kijs': [[0.0, 0, 0.0411], [0, 0.0, 0], [0.0411, 0, 0.0]]}
-    # test is ran at one condition, so just put the input conditions to the phase objects
-    zs = [1/3, 1/3, 1/3]
-    gas = CEOSGas(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
-    liquid1 = CEOSLiquid(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
-    liquid2 = CEOSLiquid(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
-
-    SS_args_direct = {'T': 600.0, 'P': 189900.0,  'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333],
-    'xs_guess': [0.4282287991132575, 0.41544573161462583, 0.1563254692721166],
-    'ys_guess': [0.0030316280767594597, 0.04752552416026615, 0.9494428477629744],
-    'liquid_args':liquid1.lnphis_args(),
-    'gas_args':gas.lnphis_args(),
-    'maxiter': 5000, 'tol': 1e-13, 'trivial_solution_tol': 1e-05, 'V_over_F_guess': 0.2231799086259173}
-
-    with pytest.raises(TrivialSolutionError):
-        sequential_substitution_2P_functional(**SS_args_direct)
-
-    SS_args = {'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333],
-    'xs_guess': [0.4282287991132575, 0.41544573161462583, 0.1563254692721166],
-    'ys_guess': [0.0030316280767594597, 0.04752552416026615, 0.9494428477629744],
-    'liquid_phase':liquid1,
-    'gas_phase':gas,
-    'T': 600.0, 'P': 189900.0, 'V': None,
-    'maxiter': 5000, 'tol': 1e-13, 'trivial_solution_tol': 1e-05, 'V_over_F_guess': 0.2231799086259173}
-
-    with pytest.raises(TrivialSolutionError):
-        sequential_substitution_2P(**SS_args)
 
 
 

@@ -46,7 +46,6 @@ from thermo.flash.flash_utils import (
     nonlin_2P_newton,
     nonlin_spec_NP,
     sequential_substitution_2P,
-    sequential_substitution_2P_functional,
     sequential_substitution_GDEM3_2P,
     sequential_substitution_Mehra_2P,
     solve_P_VF_IG_K_composition_independent,
@@ -708,31 +707,12 @@ class FlashVL(Flash):
 
 
     def sequential_substitution_2P(self, T, P, zs, xs_guess, ys_guess, liquid_phase, gas_phase, V_over_F_guess, maxiter, tol):
-        if self.supports_lnphis_args and 1:  # noqa: SIM223
-
-            if liquid_phase.T != T or liquid_phase.P != P:
-                liquid_phase = liquid_phase.to_TP_zs(T=T, P=P, zs=xs_guess)
-            if gas_phase.T != T or gas_phase.P != P:
-                gas_phase = gas_phase.to_TP_zs(T=T, P=P, zs=ys_guess)
-
-            liquid_args = liquid_phase.lnphis_args()
-            gas_args = gas_phase.lnphis_args()
-            # Can save one fugacity call
-
-            V_over_F, xs, ys, iteration, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
-                               liquid_args=liquid_args, gas_args=gas_args, maxiter=maxiter, tol=tol, trivial_solution_tol=self.PT_TRIVIAL_SOLUTION_TOL,
-                               V_over_F_guess=V_over_F_guess)
-            l = liquid_phase.to(T=T, P=P, zs=xs)
-            g = gas_phase.to(T=T, P=P, zs=ys)
-        else:
-            V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
-                                                                                zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
-                                                                                liquid_phase=liquid_phase,
-                                                                                gas_phase=gas_phase, maxiter=maxiter,
-                                                                                tol=tol,trivial_solution_tol=self.PT_TRIVIAL_SOLUTION_TOL,
-                                                                                V_over_F_guess=V_over_F_guess)
-
-
+        V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
+                                                                            zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
+                                                                            liquid_phase=liquid_phase,
+                                                                            gas_phase=gas_phase, maxiter=maxiter,
+                                                                            tol=tol, trivial_solution_tol=self.PT_TRIVIAL_SOLUTION_TOL,
+                                                                            V_over_F_guess=V_over_F_guess)
         return (V_over_F, xs, ys, l, g, iteration, err)
 
 

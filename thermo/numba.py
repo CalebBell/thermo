@@ -49,7 +49,7 @@ replaced = fluids.numba.numerics_dict.copy()
 def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     import chemicals.numba
 
-    cache_blacklist = {"sequential_substitution_2P_functional",}
+    cache_blacklist = set()
     __funcs.update(normal_fluids.numba.numbafied_fluids_functions.copy())
 
     blacklist = set(["identify_sort_phases", "score_phases_S", "score_phases_VL",
@@ -292,7 +292,6 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  "phases.air_phase.DryAirLemmon",
 
              "phases.phase_utils.lnphis_direct",
-             "flash.flash_utils.sequential_substitution_2P_functional",
 
              "fitting.data_fit_statistics",
 

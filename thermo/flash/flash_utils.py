@@ -64,7 +64,6 @@ __all__ = [
     "nonlin_spec_NP",
     "sequential_substitution_2P",
     "sequential_substitution_2P_HSGUAbeta",
-    "sequential_substitution_2P_functional",
     "sequential_substitution_2P_sat",
     "sequential_substitution_GDEM3_2P",
     "sequential_substitution_Mehra_2P",
@@ -342,77 +341,6 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             error_increases += 1
         err1, err2, err3 = err, err1, err2
     raise UnconvergedError("End of SS without convergence")
-
-def sequential_substitution_2P_functional(T, P, zs, xs_guess, ys_guess,
-                               liquid_args, gas_args, maxiter=1000, tol=1E-13,
-                               trivial_solution_tol=1e-5, V_over_F_guess=0.5):
-    xs, ys = xs_guess, ys_guess
-    V_over_F = V_over_F_guess
-    N = len(zs)
-
-    err, err1, err2, err3 = 0.0, 0.0, 0.0, 0.0
-    V_over_F_old = V_over_F
-    error_increases = 0
-
-    Ks = [0.0]*N
-    for iteration in range(maxiter):
-        lnphis_g = lnphis_direct(ys, *gas_args)
-        lnphis_l = lnphis_direct(xs, *liquid_args)
-
-        for i in range(N):
-            Ks[i] = trunc_exp(lnphis_l[i] - lnphis_g[i])
-
-        V_over_F_old = V_over_F
-        V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
-        for xi in xs_new:
-            if xi < 0.0:
-                # Remove negative mole fractions - may help or may still fail
-                xs_new_sum_inv = 0.0
-                for xj in xs_new:
-                    xs_new_sum_inv += abs(xj)
-                xs_new_sum_inv = 1.0/xs_new_sum_inv
-                for i in range(N):
-                    xs_new[i] = abs(xs_new[i])*xs_new_sum_inv
-                break
-        for yi in ys_new:
-            if yi < 0.0:
-                ys_new_sum_inv = 0.0
-                for yj in ys_new:
-                    ys_new_sum_inv += abs(yj)
-                ys_new_sum_inv = 1.0/ys_new_sum_inv
-                for i in range(N):
-                    ys_new[i] = abs(ys_new[i])*ys_new_sum_inv
-                break
-
-        err = 0.0
-        for Ki, xi, yi in zip(Ks, xs, ys):
-            # equivalent of fugacity ratio
-            # Could divide by the old Ks as well.
-            if yi != 0.0:
-                err_i = Ki*xi/yi - 1.0
-                err += err_i*err_i
-
-        if (err > 0.0 and err in (err1, err2, err3)) or error_increases > 3:
-            raise OscillationError("Converged to cycle in errors, no progress being made")
-
-        comp_difference = 0.0
-        for xi, yi in zip(xs, ys):
-            comp_difference += abs(xi - yi)
-
-        if comp_difference < trivial_solution_tol:
-            raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal")
-
-        if err < tol:
-            if iteration == 0:
-                # We are composition independent!
-                return V_over_F, xs_new, ys_new, iteration, err
-
-            return V_over_F_old, xs, ys, iteration, err
-        if err1 != 0.0 and abs(err/err1) > 20.0:
-            error_increases += 1
-        xs, ys = xs_new, ys_new
-        err1, err2, err3 = err, err1, err2
-    raise ValueError("End of SS without convergence")
 
 
 def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
