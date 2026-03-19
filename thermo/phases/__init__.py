@@ -177,7 +177,7 @@ CoolProp Wrapper
 
 
 
-from thermo.phases import air_phase, ceos, combined, coolprop_phase, gibbs_excess, helmholtz_eos, iapws_phase, ideal_gas, petroleum, phase, virial_phase
+from thermo.phases import air_phase, ceos, combined, coolprop_phase, gibbs_excess, helmholtz_eos, iapws_phase, ideal_gas, petroleum, phase, phase_utils, virial_phase
 from thermo.phases.air_phase import DryAirLemmon, HumidAirRP1485
 from thermo.phases.ceos import CEOSGas, CEOSLiquid
 from thermo.phases.combined import CombinedPhase
