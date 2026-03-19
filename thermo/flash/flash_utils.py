@@ -129,7 +129,6 @@ from fluids.numerics import numpy as np
 
 from thermo.coolprop import CPiP_min
 from thermo.phases import CEOSGas, CEOSLiquid, CoolPropPhase, IAPWS95Gas, IAPWS95Liquid, Phase
-from thermo.phases.phase_utils import lnphis_direct
 
 LASTOVKA_SHAW = "Lastovka Shaw"
 DADGOSTAR_SHAW_1 = "Dadgostar Shaw 1"
@@ -3842,9 +3841,8 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
 
 
 def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, test_phase,
-                                  maxiter=20, xtol=1E-12, functional=False):
-    # If `functional`, call lnphis_direct and `test_phase` is a tuple of parameters
-    # Otherwise, `test_phase` is a phase object and the lnphis_at_zs method should be called.
+                                  maxiter=20, xtol=1E-12):
+    # `test_phase` is a callable that takes zs and returns lnphis.
     # So long as for both trial_phase, and test_phase use the lowest Gibbs energy fugacities, no need to test two phases.
     # Very much no need to converge using acceleration - just keep a low tolerance
     # At any point, can use the Ks working, assume a drop of the new phase, and evaluate two new phases and see if G drops.
@@ -3925,11 +3923,7 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
         # fugacities_test = fugacities_check
         # print(fugacities_test, zs_test)
 
-        if functional:
-            lnphis_test = lnphis_direct(zs_test, *test_phase)
-        else:
-            # lnphis_test = test_phase.lnphis_at_zs(zs_test, most_stable=True)
-            lnphis_test = test_phase(zs_test)
+        lnphis_test = test_phase(zs_test)
 
         fugacities_test = [P*zs_test[i]*trunc_exp(lnphis_test[i]) for i in range(N)]
 

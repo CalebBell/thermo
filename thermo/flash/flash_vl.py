@@ -557,20 +557,13 @@ class FlashVL(Flash):
         fugacities_trial = min_phase.fugacities_lowest_Gibbs()
         zs_trial = min_phase.zs
 
-        if self.supports_lnphis_args and 1:  # noqa: SIM223
-            other_phase_arg = other_phase.lnphis_args()
-            functional = True
-        else:
-            functional = False
-            other_phase_arg = lambda zs: other_phase.lnphis_at_zs(zs, most_stable=True)
-
+        other_phase_arg = lambda zs: other_phase.lnphis_at_zs(zs, most_stable=True)
 
         for i, trial_comp in enumerate(gen):
                 try:
                     sln = stability_iteration_Michelsen(T=T, P=P, zs_trial=zs_trial, fugacities_trial=fugacities_trial,
                                                         zs_test=trial_comp, test_phase=other_phase_arg,
-                                                        maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL,
-                                                        functional=functional)
+                                                        maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT = sln
                     if zs == trial_zs:
                         continue
