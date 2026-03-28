@@ -1743,8 +1743,10 @@ def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var="T", fixed_
                                  f0=check(phase_res), f1=check(non_phase_res), bisection=True,
                                  xtol=xtol, ytol=ytol, maxiter=maxiter, require_eval=True, require_xtol=False)
         res = store[-1]
-        check2_val = check2(res)
-        return res.value(iter_var), res.liquids, res.gas, iterations+bounding_iter, check2_val
+        if res.liquids and res.gas:
+            check2_val = check2(res)
+            return res.value(iter_var), res.liquids, res.gas, iterations+bounding_iter, check2_val
+        raise ValueError("dew_bubble_bounded_naive: no liquid phase in result")
     # import matplotlib.pyplot as plt
     # pts = linspace(non_phase_val, phase_val, 500)
     # vals = [to_solve(p) for p in pts]
