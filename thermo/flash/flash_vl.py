@@ -862,6 +862,9 @@ class FlashVL(Flash):
                                                                              hot_start=hot_start, spec_fun=spec_fun)
                 return None, res.phases, [], res.betas, flash_convergence
             except:
+                if spec_fun is not None:
+                    raise ValueError("spec_fun is not supported by the Newton two-phase fallback solver; "
+                                     "the secant/bisection solver must converge when spec_fun is provided")
                 g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
                                                                                              fixed_var=fixed_var,
                                                                                              spec=spec,

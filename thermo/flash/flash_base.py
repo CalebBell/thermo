@@ -372,6 +372,10 @@ class Flash:
             elif not self.supports_SF_flash:
                 raise ValueError("Cannot flash with a solid fraction spec without at least one gas and liquid phase defined, as well as a solid phase")
 
+        if spec_fun is not None and not HSGUA_spec_count:
+            raise ValueError("spec_fun is only supported for HSGUA flashes "
+                             "(one of T/P/V fixed with one of H/S/G/U/A as the spec)")
+
         if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):
             g, ls, ss, betas, flash_convergence = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution, hot_start=hot_start, solution_target=solution_target)
             # TODO can creating a list here be avoided?
