@@ -76,6 +76,7 @@ __all__ = [
     "stability_iteration_Michelsen",
     "water_dew_point_from_humidity",
     "water_wet_bulb_temperature",
+    "solution_to_criterion",
 ]
 
 from math import copysign, log10
@@ -152,6 +153,78 @@ PH_T_guesses_1P_methods = [LASTOVKA_SHAW, DADGOSTAR_SHAW_1, IG_ENTHALPY,
                            IDEAL_LIQUID_ENTHALPY, FIXED_GUESS, STP_T_GUESS,
                            LAST_CONVERGED]
 TPV_HSGUA_guesses_1P_methods = PH_T_guesses_1P_methods
+
+PROPERTY_GETTERS = {
+    'G': lambda obj: obj.G(),
+    'H': lambda obj: obj.H(),
+    'S': lambda obj: obj.S(),
+    'U': lambda obj: obj.U(),
+    'A': lambda obj: obj.A(),
+    'T': lambda obj: obj.T,
+    'P': lambda obj: obj.P,
+    'V': lambda obj: obj.V(),
+    'rho': lambda obj: obj.rho(),
+    'rho_mass': lambda obj: obj.rho_mass(),
+}
+
+def solution_to_criterion(solution, iter_var=None, solution_target=None):
+    r"""Convert a solution specification to a phase criterion function.
+
+    Returns a callable `fun(obj)` -> float. The phase with the minimum
+    `fun(obj)` is selected.
+
+    Parameters
+    ----------
+    solution : str, int, or None
+        Criterion string. Property names ('G', 'H', 'S', 'U', 'A', 'T', 'P',
+        'V', 'rho', 'rho_mass') select the phase that minimizes that property.
+        Prefix with '-' to maximize instead. 'high' and 'low' maximize/minimize
+        the iteration variable (or T when no iteration variable is set). None
+        defaults to minimizing Gibbs energy.
+    iter_var : str or None, optional
+        Iteration variable name for 'high'/'low' (e.g. 'T', 'P'). When None,
+        falls back to T.
+    solution_target : float or None, optional
+        When provided, selects the solution whose `solution` property value is
+        closest to this target (nearest-value mode).
+
+    Returns
+    -------
+    fun : callable
+        Criterion function `fun(phase_obj)` -> float.
+    """
+    if solution_target is not None:
+        getter = PROPERTY_GETTERS.get(solution)
+        if getter is None:
+            raise ValueError(f"Did not recognize solution {solution!r} for nearest-target mode; "
+                             f"expected one of: {', '.join(repr(k) for k in PROPERTY_GETTERS)}")
+        return lambda obj: abs(getter(obj) - solution_target)
+
+    if solution is None:
+        return lambda obj: obj.G()
+
+    SOLUTION_CRITERIA = {
+        **PROPERTY_GETTERS,
+        '-G': lambda obj: -obj.G(),
+        '-H': lambda obj: -obj.H(),
+        '-S': lambda obj: -obj.S(),
+        '-U': lambda obj: -obj.U(),
+        '-A': lambda obj: -obj.A(),
+        '-T': lambda obj: -obj.T,
+        '-P': lambda obj: -obj.P,
+        '-V': lambda obj: -obj.V(),
+        '-rho': lambda obj: -obj.rho(),
+        '-rho_mass': lambda obj: -obj.rho_mass(),
+        'high': lambda obj: -obj.value(iter_var) if iter_var else -obj.T,
+        'low': lambda obj: obj.value(iter_var) if iter_var else obj.T,
+    }
+
+    if solution in SOLUTION_CRITERIA:
+        return SOLUTION_CRITERIA[solution]
+
+    raise ValueError(f"Did not recognize solution {solution!r}; expected one of: "
+                     f"{', '.join(repr(k) for k in SOLUTION_CRITERIA)}, None, or int")
+
 
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13,

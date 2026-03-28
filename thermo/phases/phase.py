@@ -2314,7 +2314,7 @@ class Phase:
             return fugacities/fugacities_std
         return [fugacities[i]/fugacities_std[i] for i in range(self.N)]
 
-    def gammas(self):
+    def gammas_from_phis(self):
         r"""Method to calculate and return the activity coefficients of the
         phase, [-].
 
@@ -2354,6 +2354,8 @@ class Phase:
 
         self._gammas = gammas
         return gammas
+
+    gammas = gammas_from_phis
 
     _x_infinite_dilution = 0.0
 

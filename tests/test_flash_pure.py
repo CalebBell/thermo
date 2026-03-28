@@ -1581,12 +1581,12 @@ def test_APISRK_multiple_T_slns():
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
 
     for T, sln in zip([10000, 10000, 10000, 6741.680441295266, 6741.680441295266],
-                      [None, 'high', lambda obj: obj.G(), 'low', lambda obj: obj.T]):
+                      [None, 'high', 'G', 'low', 'T']):
         obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution=sln)
         assert_close(obj.T, T)
 
     for T, sln in zip([140184.08901758507, 140184.08901758507, 140184.08901758507, 7220.8089999999975, 7220.8089999999975],
-                      [None, 'high', lambda obj: obj.G(), 'low', lambda obj: obj.T]):
+                      [None, 'high', 'G', 'low', 'T']):
         obj = flasher.flash(V=0.0006354909990692889, P=359381366.3805, zs=[1], solution=sln)
         assert_close(obj.T, T)
 

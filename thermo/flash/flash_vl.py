@@ -51,6 +51,7 @@ from thermo.flash.flash_utils import (
     solve_P_VF_IG_K_composition_independent,
     solve_PTV_HSGUA_1P,
     solve_T_VF_IG_K_composition_independent,
+    solution_to_criterion,
     stability_iteration_Michelsen,
 )
 from thermo.property_package import StabilityTester
@@ -773,7 +774,7 @@ class FlashVL(Flash):
 
 
 
-    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
+    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None, solution_target=None):
         if T is None:
             return self.flash_PV(P, V, zs, solution, hot_start)
         if P is None:
@@ -800,31 +801,27 @@ class FlashVL(Flash):
 
     def flash_TPV_HSGUA(self, fixed_val, spec_val, fixed_var="P", spec="H",
                         iter_var="T", zs=None, solution=None,
-                        selection_fun_1P=None, hot_start=None, spec_fun=None):
+                        selection_fun_1P=None, hot_start=None, spec_fun=None,
+                        solution_target=None):
 
         constants, correlations = self.constants, self.correlations
-        if solution is None:
+        if solution_target is not None:
+            fun = solution_to_criterion(solution, solution_target=solution_target)
+        elif solution is None:
             if fixed_var == "P" and spec == "H":
-                fun = lambda obj: -obj.S()
+                fun = solution_to_criterion('-S')
             elif fixed_var == "P" and spec == "S":
-                fun = lambda obj: obj.H() # Michaelson
+                fun = solution_to_criterion('H')
             elif fixed_var == "V" and spec == "U":
-                fun = lambda obj: -obj.S()
+                fun = solution_to_criterion('-S')
             elif fixed_var == "V" and spec == "S":
-                fun = lambda obj: obj.U()
+                fun = solution_to_criterion('U')
             elif fixed_var == "P" and spec == "U":
-                fun = lambda obj: -obj.S() # promising
+                fun = solution_to_criterion('-S')
             else:
-                fun = lambda obj: obj.G()
+                fun = solution_to_criterion(None)
         else:
-            if solution == "high":
-                fun = lambda obj: -obj.value(iter_var)
-            elif solution == "low":
-                fun = lambda obj: obj.value(iter_var)
-            elif callable(solution):
-                fun = solution
-            else:
-                raise ValueError("Unrecognized solution")
+            fun = solution_to_criterion(solution, iter_var=iter_var)
 
         if selection_fun_1P is None:
             def selection_fun_1P(new, prev):

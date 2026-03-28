@@ -159,7 +159,7 @@ class Flash:
               S=None, G=None, U=None, A=None, solution=None, hot_start=None,
               retry=False, dest=None, rho=None, rho_mass=None, H_mass=None,
               S_mass=None, G_mass=None, U_mass=None, A_mass=None,
-              spec_fun=None, H_reactive=None):
+              spec_fun=None, H_reactive=None, solution_target=None):
         r"""Method to perform a flash calculation and return the result as an
         :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object.
         This generic interface allows flashes with any combination of valid
@@ -373,7 +373,7 @@ class Flash:
                 raise ValueError("Cannot flash with a solid fraction spec without at least one gas and liquid phase defined, as well as a solid phase")
 
         if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):
-            g, ls, ss, betas, flash_convergence = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution, hot_start=hot_start)
+            g, ls, ss, betas, flash_convergence = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution, hot_start=hot_start, solution_target=solution_target)
             # TODO can creating a list here be avoided?
             if g is not None:
                 id_phases = [g] + ls + ss
@@ -473,11 +473,11 @@ class Flash:
             # Only allow one
 #            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
             try:
-                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun, solution_target=solution_target)
             except Exception as e:
                 if retry:
                     print("retrying HSGUA flash")
-                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
+                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun, solution_target=solution_target)
                 else:
                     raise
 #            except UnconvergedError as e:
@@ -964,7 +964,8 @@ class Flash:
                 if TV_iter:
                     kwargs["V"] = state.V_iter(force=False)
                 kwargs["retry"] = retry
-                kwargs["solution"] = lambda new, _state=state: abs(new.value(nearest_check_prop) - _state.value(nearest_check_prop))
+                kwargs["solution"] = nearest_check_prop
+                kwargs["solution_target"] = state.value(nearest_check_prop)
                 try:
                     new = self.flash(**kwargs)
                     if PV_iter:
