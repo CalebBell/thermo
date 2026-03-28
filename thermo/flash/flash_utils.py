@@ -164,7 +164,6 @@ PROPERTY_GETTERS = {
     'P': lambda obj: obj.P,
     'V': lambda obj: obj.V(),
     'rho': lambda obj: obj.rho(),
-    'rho_mass': lambda obj: obj.rho_mass(),
 }
 
 def solution_to_criterion(solution, iter_var=None, solution_target=None):
@@ -177,7 +176,7 @@ def solution_to_criterion(solution, iter_var=None, solution_target=None):
     ----------
     solution : str, int, or None
         Criterion string. Property names ('G', 'H', 'S', 'U', 'A', 'T', 'P',
-        'V', 'rho', 'rho_mass') select the phase that minimizes that property.
+        'V', 'rho') select the phase that minimizes that property.
         Prefix with '-' to maximize instead. 'high' and 'low' maximize/minimize
         the iteration variable (or T when no iteration variable is set). None
         defaults to minimizing Gibbs energy.
@@ -194,6 +193,9 @@ def solution_to_criterion(solution, iter_var=None, solution_target=None):
         Criterion function `fun(phase_obj)` -> float.
     """
     if solution_target is not None:
+        if solution is None:
+            raise ValueError("solution_target requires a property name for solution "
+                             f"(one of: {', '.join(repr(k) for k in PROPERTY_GETTERS)}), got None")
         getter = PROPERTY_GETTERS.get(solution)
         if getter is None:
             raise ValueError(f"Did not recognize solution {solution!r} for nearest-target mode; "
@@ -214,7 +216,6 @@ def solution_to_criterion(solution, iter_var=None, solution_target=None):
         '-P': lambda obj: -obj.P,
         '-V': lambda obj: -obj.V(),
         '-rho': lambda obj: -obj.rho(),
-        '-rho_mass': lambda obj: -obj.rho_mass(),
         'high': lambda obj: -obj.value(iter_var) if iter_var else -obj.T,
         'low': lambda obj: obj.value(iter_var) if iter_var else obj.T,
     }

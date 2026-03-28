@@ -1688,7 +1688,7 @@ def test_chemical_potential():
     gammas_expect = [1.8877873731435573, 1.52276935445383, 1.5173639948878495]
     assert_close1d(liquid.gammas(), gammas_expect, rtol=1e-12)
 
-    gammas_parent = super(CEOSLiquid, liquid).gammas()
+    gammas_parent = liquid.gammas_from_phis()
     assert_close1d(gammas_parent, gammas_expect, rtol=1e-12)
 
 

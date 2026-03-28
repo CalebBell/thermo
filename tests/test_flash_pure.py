@@ -29,7 +29,7 @@ import pytest
 from chemicals.exceptions import PhaseExistenceImpossible
 from fluids.numerics import *
 from fluids.numerics import assert_close, assert_close1d
-from thermo.flash.flash_utils import cm_flash_tol
+from thermo.flash.flash_utils import cm_flash_tol, solution_to_criterion
 
 import thermo
 from thermo import *
@@ -1589,6 +1589,61 @@ def test_APISRK_multiple_T_slns():
                       [None, 'high', 'G', 'low', 'T']):
         obj = flasher.flash(V=0.0006354909990692889, P=359381366.3805, zs=[1], solution=sln)
         assert_close(obj.T, T)
+
+    # Get both solutions for reference
+    obj_high = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution='high')
+    obj_low = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution='low')
+
+    # Property selection: minimize each property
+    # G, A minimize to high (10000); H, S, U, T minimize to low (6741.68)
+    # P, V, rho, rho_mass are equal at both solutions (same PV specs)
+    for T, sln in zip([10000, 6741.680441295266, 6741.680441295266, 6741.680441295266, 10000,
+                       6741.680441295266],
+                      ['G', 'H', 'S', 'U', 'A', 'T']):
+        obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution=sln)
+        assert_close(obj.T, T)
+
+    # Negated property selection: maximize each property
+    for T, sln in zip([6741.680441295266, 10000, 10000, 10000, 6741.680441295266, 10000],
+                      ['-G', '-H', '-S', '-U', '-A', '-T']):
+        obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution=sln)
+        assert_close(obj.T, T)
+
+    # solution_target for each property: target the high solution
+    for sln in ['G', 'H', 'S', 'U', 'A', 'T']:
+        target_val = obj_high.value(sln)
+        obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1],
+                            solution=sln, solution_target=target_val)
+        assert_close(obj.T, obj_high.T)
+
+    # solution_target for each property: target the low solution
+    for sln in ['G', 'H', 'S', 'U', 'A', 'T']:
+        target_val = obj_low.value(sln)
+        obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1],
+                            solution=sln, solution_target=target_val)
+        assert_close(obj.T, obj_low.T)
+
+    # P, V, rho are equal at both solutions; just verify the flash succeeds
+    for sln in ['P', 'V', 'rho']:
+        for target_obj in [obj_high, obj_low]:
+            target_val = target_obj.value(sln)
+            obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1],
+                                solution=sln, solution_target=target_val)
+            assert obj is not None
+
+    # Invalid solution string
+    with pytest.raises(ValueError):
+        flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution='invalid_prop')
+
+    # solution_target with None solution
+    with pytest.raises(ValueError):
+        flasher.flash(V=0.0026896181445157303, P=14954954.954954954, zs=[1],
+                      solution=None, solution_target=100.0)
+
+    # solution_target with non-property string like 'high'
+    with pytest.raises(ValueError):
+        flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1],
+                      solution='high', solution_target=100.0)
 
 
 @pytest.mark.parametrize("hacks", [True, False])
