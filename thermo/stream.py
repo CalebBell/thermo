@@ -335,9 +335,12 @@ class StreamArgs:
         if A is not None:
             state_specs += 1
         if energy is not None:
-            state_specs += 1
+            # energy only acts as a state spec (enthalpy) when a flow rate is known
+            if flow_specs > 0:
+                state_specs += 1
         if energy_reactive is not None:
-            state_specs += 1
+            if flow_specs > 0:
+                state_specs += 1
         if H_reactive is not None:
             state_specs += 1
         if flow_specs > 1 or composition_specs > 1:
@@ -951,7 +954,7 @@ class StreamArgs:
             m = sum(ms)
             MWs = self.flasher.constants.MWs
             MW = mixing_simple(MWs, zs)
-            n = m*1000.0/MW
+            n = property_molar_to_mass(m, MW)
             return [n*zi for zi in zs]
         Qls = s["Qls"]
         if Qls is not None and None not in Qls:
@@ -1657,11 +1660,10 @@ class StreamArgs:
         >>> StreamArgs(P=1e5, n=4).non_pressure_spec_specified
         False
         """
-        state_vars = (i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass,
+        return any(i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass,
                                               self.H_mass, self.H, self.S_mass, self.S,
                                               self.U_mass, self.U, self.A_mass, self.A, self.G_mass, self.G,
                                               self.energy, self.energy_reactive, self.H_reactive))
-        return sum(state_vars) >= 1
 
 
     def clear_flow_spec(self):
@@ -2858,7 +2860,7 @@ class EquilibriumStream(EquilibriumState):
                 for i in range(N):
                     n += Qg*zs[i]/V
             except:
-                raise ValueError("Liquid molar volume could not be calculated to determine the flow rate of the stream.")
+                raise ValueError("Gas molar volume could not be calculated to determine the flow rate of the stream.")
         elif Qgs is not None:
             # Use only ideal gas law; allow user T, P but default to flasher settings when not speced
             if Q_TP is not None and Q_TP[0] is not None and Q_TP[1] is not None:
@@ -2980,7 +2982,7 @@ class EquilibriumStream(EquilibriumState):
         """
         specs = []
         flash_specs = self.flash_specs
-        for i, var in enumerate(("T", "P", "VF", "H", "S", "energy")):
+        for var in ("T", "P", "V", "H", "S", "U", "G", "A", "VF", "SF", "energy"):
             if var in flash_specs:
                 v = flash_specs[var]
                 if v is not None:
