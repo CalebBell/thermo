@@ -256,7 +256,7 @@ class StreamArgs:
                        "U": U, "U_mass": U_mass,
                        "A": A, "A_mass": A_mass,
                        "G": G, "G_mass": G_mass,
-                       "energy": energy, "energy_reactive": energy_reactive, "H_reactive": energy_reactive}
+                       "energy": energy, "energy_reactive": energy_reactive, "H_reactive": H_reactive}
 
         # If this is True, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
         # This makes sense for certain cases but not all.
