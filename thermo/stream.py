@@ -376,21 +376,21 @@ class StreamArgs:
         # multiple_composition_basis may mean multiple sets of specs for comp/flow
         kwargs = self.specifications.copy()
         if kwargs["zs"] is not None:
-            kwargs["zs"] = [i for i in kwargs["zs"]]
+            kwargs["zs"] = list(kwargs["zs"])
         if kwargs["ws"] is not None:
-            kwargs["ws"] = [i for i in kwargs["ws"]]
+            kwargs["ws"] = list(kwargs["ws"])
         if kwargs["ns"] is not None:
-            kwargs["ns"] = [i for i in kwargs["ns"]]
+            kwargs["ns"] = list(kwargs["ns"])
         if kwargs["ms"] is not None:
-            kwargs["ms"] = [i for i in kwargs["ms"]]
+            kwargs["ms"] = list(kwargs["ms"])
         if kwargs["Qls"] is not None:
-            kwargs["Qls"] = [i for i in kwargs["Qls"]]
+            kwargs["Qls"] = list(kwargs["Qls"])
         if kwargs["Qgs"] is not None:
-            kwargs["Qgs"] = [i for i in kwargs["Qgs"]]
+            kwargs["Qgs"] = list(kwargs["Qgs"])
         if kwargs["Vfgs"] is not None:
-            kwargs["Vfgs"] = [i for i in kwargs["Vfgs"]]
+            kwargs["Vfgs"] = list(kwargs["Vfgs"])
         if kwargs["Vfls"] is not None:
-            kwargs["Vfls"] = [i for i in kwargs["Vfls"]]
+            kwargs["Vfls"] = list(kwargs["Vfls"])
         return self.__class__(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, flasher=self.flasher,
                  multiple_composition_basis=self.multiple_composition_basis, **kwargs)
 
@@ -609,7 +609,7 @@ class StreamArgs:
         if H_mass is None:
             self.specifications["H_mass"] = H_mass
             return None
-        if self.specified_state_vars > 1 and self.specifications["H_mass"] is None:
+        if self.state_specified and self.H_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["H_mass"] = H_mass
 
@@ -648,7 +648,7 @@ class StreamArgs:
         if U_mass is None:
             self.specifications["U_mass"] = U_mass
             return None
-        if self.specified_state_vars > 1 and self.U_mass is None:
+        if self.state_specified and self.U_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["U_mass"] = U_mass
 
@@ -676,7 +676,7 @@ class StreamArgs:
         if G_mass is None:
             self.specifications["G_mass"] = G_mass
             return None
-        if self.specified_state_vars > 1 and self.G_mass is None:
+        if self.state_specified and self.G_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["G_mass"] = G_mass
 
@@ -704,7 +704,7 @@ class StreamArgs:
         if A_mass is None:
             self.specifications["A_mass"] = A_mass
             return None
-        if self.specified_state_vars > 1 and self.A_mass is None:
+        if self.state_specified and self.A_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["A_mass"] = A_mass
 
@@ -718,7 +718,7 @@ class StreamArgs:
         if S is None:
             self.specifications["S"] = S
             return None
-        if self.specified_state_vars > 1 and self.S is None:
+        if self.state_specified and self.S is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["S"] = S
 
@@ -732,7 +732,7 @@ class StreamArgs:
         if S_mass is None:
             self.specifications["S_mass"] = S_mass
             return None
-        if self.specified_state_vars > 1 and self.S_mass is None:
+        if self.state_specified and self.S_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["S_mass"] = S_mass
 
@@ -1396,7 +1396,7 @@ class StreamArgs:
                 ms[missing_idx] = m - calc
         if ns is not None and ms is not None:
             try:
-            # Convert any ms to ns
+                # Convert any ms to ns
                 MWs = self.flasher.constants.MWs
             except (AttributeError, TypeError):
                 return False
@@ -1435,7 +1435,7 @@ class StreamArgs:
 
     @property
     def composition_spec(self):
-        """Composition specification if one has been set, as a tuples
+        """Composition specification if one has been set, as a tuple
         of ('specification_name', specification_value); otherwise None.
 
         >>> StreamArgs(T=400, H=500, ws=[.3, .7]).composition_spec
@@ -1465,7 +1465,7 @@ class StreamArgs:
     @property
     def clean(self):
         """If no variables have been specified, True,
-        otherwis False.
+        otherwise False.
         """
         return not (self.composition_specified or self.state_specs or self.flow_specified)
 
@@ -1474,7 +1474,7 @@ class StreamArgs:
     def composition_specified(self):
         """True if a composition for the stream has been defined.
         If component flow rates are the specification, requires all of them to be specified.
-        If `zs` or `ws` or Vfls` or `Vfgs` is set, also requires all of them to be specified
+        If `zs` or `ws` or `Vfls` or `Vfgs` is set, also requires all of them to be specified
         and additionally them not to be an empty list.
         """
         s = self.specifications
@@ -1644,7 +1644,7 @@ class StreamArgs:
             state_vars += 1
         if s["H_reactive"] is not None:
             state_vars += 1
-        return state_vars == 2
+        return state_vars >= 2
 
     @property
     def non_pressure_spec_specified(self):
@@ -1680,7 +1680,7 @@ class StreamArgs:
 
     @property
     def flow_spec(self):
-        """Flow specification if one has been set, as a tuples
+        """Flow specification if one has been set, as a tuple
         of ('specification_name', specification_value); otherwise None.
         Energy is never included in this.
 
