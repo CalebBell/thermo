@@ -71,15 +71,15 @@ class StreamArgs:
     The specification tracking is the key purpose of this object. Once a
     `T` and `P` have been set, `V` **can't** be set because there are no
     degrees of freedom.
-    Another state specification mst be removed by setting it to None
+    Another state specification must be removed by setting it to None
     before a new specification can be set. The specifications supported are the same
     as those of :obj:`EquilibriumStream`.
-    Handling flow flow vs. composition is fuzzier because of the common use cases
+    Handling flow vs. composition is fuzzier because of the common use cases
     where a flow rate may be known, but not composition; or the composition but not
     the flow, however later when the product
     flows are known it is desirable to set it. To allow this,
     the variables `ns`, `ms`, `Qls`, and `Qgs` are allowed to overwrite an existing
-    flow and/or composition specification even if if `multiple_composition_basis` is False.
+    flow and/or composition specification even if `multiple_composition_basis` is False.
 
     Even if the property wasn't set to this object, but if enough degrees of freedom
     are known, the actual value can usually be queried by adding `_calc` to the attribute,
@@ -201,7 +201,7 @@ class StreamArgs:
         The (T, P, phase) at which the actual volumetric flow rate (if specified) is
         calculated to be at, [K] and [Pa]
     multiple_composition_basis : bool, optional
-        Fun toggle to allow the object to recieve multiple different types
+        Toggle to allow the object to receive multiple different types
         of composition information - e.g. a partial list of mole fractions
         and a partial list of mass fractions. This can be useful for some
         problems
@@ -982,6 +982,7 @@ class StreamArgs:
         if Q is not None:
             zs = self.zs_calc
             if zs is not None:
+                V = None
                 Q_TP = self.Q_TP
                 if Q_TP is not None and (Q_TP[0] is not None and Q_TP[1] is not None):
                     if (len(Q_TP) == 2 or (len(Q_TP) == 3 and not Q_TP[-1])):
