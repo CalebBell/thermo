@@ -679,11 +679,11 @@ class StreamArgs:
 
     @property
     def A(self):
-        r"""Molar Hemholtz free energy of the stream specification if specified [J/mol]"""
+        r"""Molar Helmholtz free energy of the stream specification if specified [J/mol]"""
         return self.specifications["A"]
     @A.setter
     def A(self, A):
-        r"""Set the molar Hemholtz free energy of the stream specification [J/mol]"""
+        r"""Set the molar Helmholtz free energy of the stream specification [J/mol]"""
         if A is None:
             self.specifications["A"] = A
             return None
@@ -693,11 +693,11 @@ class StreamArgs:
 
     @property
     def A_mass(self):
-        r"""Mass Hemholtz free energy of the stream specification if specified [J/kg]"""
+        r"""Mass Helmholtz free energy of the stream specification if specified [J/kg]"""
         return self.specifications["A_mass"]
     @A_mass.setter
     def A_mass(self, A_mass):
-        r"""Set the mass Hemholtz free energy of the stream specification [J/kg]"""
+        r"""Set the mass Helmholtz free energy of the stream specification [J/kg]"""
         if A_mass is None:
             self.specifications["A_mass"] = A_mass
             return None
@@ -1279,8 +1279,25 @@ class StreamArgs:
 
     @property
     def energy_reactive_calc(self):
-        r"""Energy flow of the stream; specified or calculated if enough information is available [W]"""
-        return self.specifications["energy_reactive"]
+        r"""Energy flow of the stream on a reactive basis; specified or calculated if enough information is available [W]"""
+        s = self.specifications
+        Q = s["energy_reactive"]
+        if Q is not None:
+            return Q
+        H_reactive = s["H_reactive"]
+        if H_reactive is not None:
+            n = self.n_calc
+            if n is not None:
+                return n*H_reactive
+        n = self.n_calc
+        if n is not None:
+            mixture = self.flash_state()
+            if mixture is not None:
+                try:
+                    return mixture.H_reactive()*n
+                except:
+                    pass
+        return None
 
 
     def __repr__(self):
@@ -1488,7 +1505,7 @@ class StreamArgs:
         for v in ("T", "P", "V", "rho", "rho_mass",
                 "VF", "H_mass", "H", "S_mass", "S",
                 "U_mass", "U", "A_mass", "A", "G_mass", "G",
-                "energy", "energy_reactive"):
+                "energy", "energy_reactive", "H_reactive"):
             s[v] = None
 
     @property
@@ -1539,6 +1556,8 @@ class StreamArgs:
             specs.append(("energy", s["energy"]))
         if s["energy_reactive"] is not None:
             specs.append(("energy_reactive", s["energy_reactive"]))
+        if s["H_reactive"] is not None:
+            specs.append(("H_reactive", s["H_reactive"]))
         return specs
 
     @property
@@ -1568,7 +1587,7 @@ class StreamArgs:
         return sum(s[i] is not None for i in ("T", "P", "V", "rho", "rho_mass",
                                                                 "VF", "H_mass", "H", "S_mass", "S",
                                                                 "U_mass", "U", "A_mass", "A", "G_mass", "G",
-                                                                "energy", "energy_reactive"))
+                                                                "energy", "energy_reactive", "H_reactive"))
 #        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
 
     @property
