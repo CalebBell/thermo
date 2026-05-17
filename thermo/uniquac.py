@@ -426,7 +426,7 @@ def uniquac_d2GE_dxixjs(N, T, xs, qs, taus, phis, thetas, dphis_dxs, d2phis_dxix
 
 
 class UNIQUAC(GibbsExcess):
-    r"""Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing a liquid with excess Gibbs energy represented
     by the UNIQUAC equation. This model is capable of representing VL and LL
     behavior.
 
@@ -471,7 +471,7 @@ class UNIQUAC(GibbsExcess):
     tau_cs : list[list[float]] or None, optional
         `c` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
     tau_ds : list[list[float]] or None, optional
-        `d` paraemeters used in calculating :obj:`UNIQUAC.taus`, [1/K]
+        `d` parameters used in calculating :obj:`UNIQUAC.taus`, [1/K]
     tau_es : list[list[float]] or None, optional
         `e` parameters used in calculating :obj:`UNIQUAC.taus`, [K^2]
     tau_fs : list[list[float]] or None, optional
@@ -1086,12 +1086,12 @@ class UNIQUAC(GibbsExcess):
         if i != j:
 
         .. math::
-            \frac{\partial \theta_i}{x_j} = \frac{-r_i r_j x_i}{(\sum_k r_k x_k)^2}
+            \frac{\partial \theta_i}{x_j} = \frac{-q_i q_j x_i}{(\sum_k q_k x_k)^2}
 
         else:
 
         .. math::
-            \frac{\partial \theta_i}{x_j} = \frac{-r_i r_j x_i}{(\sum_k r_k x_k)^2} + \frac{r_i}{\sum_k r_k x_k}
+            \frac{\partial \theta_i}{x_j} = \frac{-q_i q_j x_i}{(\sum_k q_k x_k)^2} + \frac{q_i}{\sum_k q_k x_k}
 
         """
         try:
@@ -1660,7 +1660,7 @@ class UNIQUAC(GibbsExcess):
         Returns
         -------
         parameters : dict[str, float]
-            Dimentionless interaction parameters of each compound with each
+            Dimensionless interaction parameters of each compound with each
             other; these are the actual `tau` values. [-]
         statistics : dict[str: float]
             Statistics, calculated and returned only if `do_statistics` is True, [-]
@@ -1928,7 +1928,7 @@ def UNIQUAC_gammas(xs, rs, qs, taus):
 
 
     There is no global set of parameters which will make this model yield
-    ideal acitivty coefficients (gammas = 1) for this model.
+    ideal activity coefficients (gammas = 1) for this model.
 
     Examples
     --------

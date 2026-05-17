@@ -400,7 +400,7 @@ def flory_huggins_d3GE_dxixjxks(xs, Vs, SPs, Hi_sums, N, T, GE, xsVs_sum_inv, la
     return d3GE_dxixjxks
 
 class RegularSolution(GibbsExcess):
-    r"""Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing a liquid with excess Gibbs energy represented
     by the Regular Solution model. This model is not temperature dependent and
     has limited predictive ability, but can be used without interaction
     parameters. This model is described in [1]_.

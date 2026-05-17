@@ -454,7 +454,7 @@ def nrtl_d2GE_dTdxs(N, T, xs, taus, dtaus_dT, Gs, dGs_dT, xj_Gs_taus_jis,
     return d2GE_dTdxs
 
 class NRTL(GibbsExcess):
-    r"""Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing a liquid with excess Gibbs energy represented
     by the NRTL equation. This model is capable of representing VL and LL
     behavior. [1]_ and [2]_ are good references on this model.
 
@@ -494,15 +494,15 @@ class NRTL(GibbsExcess):
     tau_es : list[list[float]], optional
         `e` parameters used in calculating :obj:`NRTL.taus`, [-]
     tau_fs : list[list[float]], optional
-        `f` paraemeters used in calculating :obj:`NRTL.taus`, [1/K]
+        `f` parameters used in calculating :obj:`NRTL.taus`, [1/K]
     tau_gs : list[list[float]], optional
-        `e` parameters used in calculating :obj:`NRTL.taus`, [K^2]
+        `g` parameters used in calculating :obj:`NRTL.taus`, [K^2]
     tau_hs : list[list[float]], optional
-        `f` parameters used in calculating :obj:`NRTL.taus`, [1/K^2]
+        `h` parameters used in calculating :obj:`NRTL.taus`, [1/K^2]
     alpha_cs : list[list[float]], optional
         `c` parameters used in calculating :obj:`NRTL.alphas`, [-]
     alpha_ds : list[list[float]], optional
-        `d` paraemeters used in calculating :obj:`NRTL.alphas`, [1/K]
+        `d` parameters used in calculating :obj:`NRTL.alphas`, [1/K]
 
     Attributes
     ----------
@@ -1430,7 +1430,7 @@ class NRTL(GibbsExcess):
         return GE
 
     def dGE_dT(self):
-        r"""Calculate and return the first tempreature derivative of excess
+        r"""Calculate and return the first temperature derivative of excess
         Gibbs energy of a liquid phase represented by the NRTL model.
 
         Returns
@@ -1472,7 +1472,7 @@ class NRTL(GibbsExcess):
 
 
     def d2GE_dT2(self):
-        r"""Calculate and return the second tempreature derivative of excess
+        r"""Calculate and return the second temperature derivative of excess
         Gibbs energy of a liquid phase represented by the NRTL model.
 
         Returns
@@ -1577,7 +1577,7 @@ class NRTL(GibbsExcess):
         .. math::
             \frac{\partial^2 g^E}{\partial x_i \partial x_j} = RT\left[
             + \frac{G_{ij}\tau_{ij}}{\sum_m x_m G_{mj}}
-            + \frac{G_{ji}\tau_{jiij}}{\sum_m x_m G_{mi}}
+            + \frac{G_{ji}\tau_{ji}}{\sum_m x_m G_{mi}}
             -\frac{(\sum_m x_m G_{mj}\tau_{mj})G_{ij}}{(\sum_m x_m G_{mj})^2}
             -\frac{(\sum_m x_m G_{mi}\tau_{mi})G_{ji}}{(\sum_m x_m G_{mi})^2}
             \sum_k \left(\frac{2x_k(\sum_m x_m \tau_{mk}G_{mk})G_{ik}G_{jk}}{(\sum_m x_m G_{mk})^3}
@@ -2044,7 +2044,7 @@ def NRTL_gammas(xs, taus, alphas):
     .. math::
         \tau_{ij}=\frac{b_{ij}}{RT}
 
-    For this model to produce ideal acitivty coefficients (gammas = 1),
+    For this model to produce ideal activity coefficients (gammas = 1),
     all interaction parameters should be 0; the value of alpha does not impact
     the calculation when that is the case.
 

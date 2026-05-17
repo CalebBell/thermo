@@ -175,7 +175,7 @@ class GibbsExcessLiquid(Phase):
         Objects holding liquid volume data and methods; required for Poynting
         factors and volumetric properties, [-]
     HeatCapacityGases : list[:obj:`thermo.heat_capacity.HeatCapacityGas`], optional
-        Objects proiding pure-component heat capacity correlations; required
+        Objects providing pure-component heat capacity correlations; required
         for caloric properties, [-]
     GibbsExcessModel : :obj:`GibbsExcess <thermo.activity.GibbsExcess>`, optional
         Configured instance for calculating activity coefficients and excess properties;
@@ -223,7 +223,7 @@ class GibbsExcessLiquid(Phase):
     henry_cs : list[list[float]], optional
         `c` parameters used in calculating henry's law constant, [-]
     henry_ds : list[list[float]], optional
-        `d` paraemeters used in calculating henry's law constant, [1/K]
+        `d` parameters used in calculating henry's law constant, [1/K]
     henry_es : list[list[float]], optional
         `e` parameters used in calculating henry's law constant, [K^2]
     henry_fs : list[list[float]], optional
