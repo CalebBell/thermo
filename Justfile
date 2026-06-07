@@ -16,6 +16,7 @@ VENV_BANDIT := ".venv/bin/bandit"
 VENV_BIN_DIR := if os_family() == "windows" { "Scripts" } else { "bin" }
 PYTHON_EXE := if os_family() == "windows" { "python.exe" } else { "python" }
 EXE_SUFFIX := if os_family() == "windows" { ".exe" } else { "" }
+S390X_QEMU_CPU := env_var_or_default("QEMU_CPU", "max")
 
 # --- Main Recipes ---
 
@@ -124,7 +125,7 @@ ci: lint typecheck test
     @echo "✅ All CI checks passed!"
 
 ## 🧊 test-cxfreeze: Test cx_Freeze compatibility (build executable and run it).
-test-cxfreeze py="3.13":
+test-cxfreeze py="3.14":
     @echo ">>> Creating temporary virtual environment with Python {{py}}..."
     @uv venv .venv-cxfreeze-{{py}} --python {{py}}
     @echo "\n>>> Installing project and cx_Freeze in temporary environment..."
@@ -159,7 +160,7 @@ test-nuitka py="3.13":
     @echo "✅ Nuitka test complete and cleaned up!"
 
 ## 📦 test-pyinstaller: Test PyInstaller compatibility (build executable and run it).
-test-pyinstaller py="3.13":
+test-pyinstaller py="3.14":
     @echo ">>> Creating temporary virtual environment with Python {{py}}..."
     @uv venv .venv-pyinstaller-{{py}} --python {{py}}
     @echo "\n>>> Installing project and PyInstaller in temporary environment..."
@@ -224,9 +225,16 @@ prepare-multiarch-image arch distro="trixie":
 
     echo "Platform: $platform, Image: $image"
 
+    qemu_cpu_env=""
+    if [[ "{{arch}}" == "s390x" ]]; then
+        export QEMU_CPU="{{S390X_QEMU_CPU}}"
+        qemu_cpu_env="ENV QEMU_CPU={{S390X_QEMU_CPU}}"
+        echo "QEMU_CPU: $QEMU_CPU"
+    fi
+
     # Determine package manager and install commands
     if [[ "{{distro}}" == "alpine_latest" ]]; then
-        install_cmd="apk update && apk add bash python3 py3-pip py3-scipy py3-matplotlib py3-numpy py3-pandas"
+        install_cmd="apk update && apk add bash build-base linux-headers python3 python3-dev py3-pip py3-scipy py3-matplotlib py3-numpy py3-pandas"
     else
         install_cmd="apt-get update && apt-get install -y liblapack-dev gfortran libgmp-dev libmpfr-dev libsuitesparse-dev ccache libmpc-dev python3 python3-pip python3-scipy python3-matplotlib python3-numpy python3-pandas"
     fi
@@ -234,6 +242,7 @@ prepare-multiarch-image arch distro="trixie":
     # Create a temporary Containerfile
     cat > /tmp/Containerfile.thermo.{{arch}}.{{distro}} << EOF
     FROM $image
+    $qemu_cpu_env
     RUN $install_cmd
     EOF
 
@@ -322,6 +331,13 @@ test-arch arch distro="trixie":
     image="localhost/thermo-test-{{arch}}-{{distro}}:latest"
     echo "Platform: $platform, Image: $image"
 
+    podman_env_args=()
+    if [[ "{{arch}}" == "s390x" ]]; then
+        export QEMU_CPU="{{S390X_QEMU_CPU}}"
+        podman_env_args=(-e "QEMU_CPU={{S390X_QEMU_CPU}}")
+        echo "QEMU_CPU: $QEMU_CPU"
+    fi
+
     # Build image if it doesn't exist
     if ! podman image exists "$image" 2>/dev/null; then
         echo ">>> Image $image not found, building it now..."
@@ -339,6 +355,7 @@ test-arch arch distro="trixie":
     # Note: Removed -it flag for CI compatibility, removed :Z flag for broader compatibility
     podman run --rm \
         --platform "$platform" \
+        "${podman_env_args[@]}" \
         -v "$(pwd):/src:ro" \
         "$image" \
         bash -c "

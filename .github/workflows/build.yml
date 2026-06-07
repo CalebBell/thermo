@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.13t', 'pypy3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t', 'pypy3.11']
         os: [windows-latest, ubuntu-latest, macos-15-intel, macos-latest]
         architecture: ['x86', 'x64']
         exclude:
@@ -54,7 +54,10 @@ jobs:
             python-version: 3.13
           - os: windows-latest
             architecture: x86
-            python-version: 3.13t
+            python-version: 3.14
+          - os: windows-latest
+            architecture: x86
+            python-version: 3.14t
 
           # These are arm - old versions of Python are not supported
           - os: macos-latest
@@ -62,21 +65,21 @@ jobs:
           - os: macos-latest
             python-version: 3.10
 
-          # pandas doesn't have wheels for 3.13t on Windows x64
+          # pandas doesn't have wheels for 3.14t on Windows x64
           - os: windows-latest
             architecture: x64
-            python-version: 3.13t
+            python-version: 3.14t
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Python ${{ matrix.python-version }} ${{ matrix.architecture }}
-      uses: actions/setup-python@v5 
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
 
     - name: Install uv
-      if: matrix.python-version != '3.13t'
-      uses: astral-sh/setup-uv@v4
+      if: matrix.python-version != '3.14t'
+      uses: astral-sh/setup-uv@v8.1.0
       with:
         enable-cache: true
         cache-dependency-glob: "pyproject.toml"
@@ -91,8 +94,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -c "import platform; print(platform.platform()); print(platform.architecture())"
-        if [[ "${{ matrix.python-version }}" == "3.13t" ]]; then
-          # Use pip for 3.13t (free-threading) as uv may not fully support it yet
+        if [[ "${{ matrix.python-version }}" == "3.14t" ]]; then
+          # Use pip for 3.14t (free-threading) as uv may not fully support it yet
           python -m pip install --upgrade pip
           pip install -e .[test]
         else
@@ -100,11 +103,11 @@ jobs:
         fi
       shell: bash
     - name: Add numba
-      if: ${{ !contains(fromJSON('["pypy3.11", "3.13t"]'), matrix.python-version) && !contains(fromJSON('["macos-15-intel"]'), matrix.os) }}
+      if: ${{ !contains(fromJSON('["pypy3.11", "3.14t"]'), matrix.python-version) && !contains(fromJSON('["macos-15-intel"]'), matrix.os) }}
       run: |
         uv pip install --system -e .[numba]
     - name: Generate Files
-      if: ${{ matrix.python-version == '3.9' || matrix.python-version == '3.10'  || matrix.python-version == '3.11' || matrix.python-version == '3.12'  || matrix.python-version == '3.13' || matrix.python-version == '3.13t' || matrix.python-version == 'pypy3.11' }}
+      if: ${{ contains(fromJSON('["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "pypy3.11"]'), matrix.python-version) }}
       run: |
         python dev/dump_UNIFAC_assignments_to_sqlite.py
     - name: Test with pytest
@@ -115,11 +118,11 @@ jobs:
         COVERALLS_REPO_TOKEN: ${{ secrets.coveralls }}
         COVERALLS_PARALLEL: true
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PYTHON_GIL: ${{ matrix.python-version == '3.13t' && '0' || '' }}
+        PYTHON_GIL: ${{ matrix.python-version == '3.14t' && '0' || '' }}
 
     - name: Upload coverage HTML report
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: coverage-html-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.architecture }}
         path: htmlcov/
