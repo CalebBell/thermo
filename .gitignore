@@ -69,6 +69,7 @@ ehthumbs.db
 Thumbs.db
 
 .pytest_cache/
+uv.lock
 word_whitelist.txt
 simple_geolocator_cache.sqlite3
 .hypothesis
