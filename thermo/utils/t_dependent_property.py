@@ -3979,11 +3979,14 @@ class TDependentProperty:
 
             calls = self.correlation_models[model][2]
             if order == 1 and "f_der" in calls:
-                return calls["f_der"](T, **kwargs)
+                value = calls["f_der"](T, **kwargs)
+                return value[0] if isinstance(value, tuple) else value
             elif order == 2 and "f_der2" in calls:
-                return calls["f_der2"](T, **kwargs)
+                value = calls["f_der2"](T, **kwargs)
+                return value[0] if isinstance(value, tuple) else value
             elif order == 3 and "f_der3" in calls:
-                return calls["f_der3"](T, **kwargs)
+                value = calls["f_der3"](T, **kwargs)
+                return value[0] if isinstance(value, tuple) else value
 
         if method in self.local_methods:
             local_method = self.local_methods[method]
