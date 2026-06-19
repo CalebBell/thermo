@@ -474,6 +474,14 @@ def test_ViscosityLiquid_PPDS9_limits():
 #    obj = ViscosityLiquid(CASRN='75-71-8', Tm=115.15, Tc=385.0)
 #    low, high = obj.T_limits[VDI_PPDS]
 
+@pytest.mark.meta_T_dept
+def test_ViscosityLiquid_PPDS9_extrapolation():
+    # Make sure extrapolation works using derivative from chemicals.viscosity.dPPDS9_dT
+    mu = ViscosityLiquid(CASRN="91-57-6", MW=142.1971, Tm=306.85, Tc=761.0, Pc=3370000.0, Vc=0.000464, omega=0.3464, Psat=VaporPressure(CASRN="91-57-6", Tb=514.25, Tc=761.0, Pc=3370000.0, omega=0.3464, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY", Tmin=412.0, Tmax=761.0), Vml=VolumeLiquid(CASRN="91-57-6", MW=142.1971, Tb=514.25, Tc=761.0, Pc=3370000.0, Vc=0.000464, Zc=0.24713203171249656, omega=0.3464, dipole=0.4, Psat=VaporPressure(CASRN="91-57-6", Tb=514.25, Tc=761.0, Pc=3370000.0, omega=0.3464, extrapolation="AntoineAB|DIPPR101_ABC", method="WAGNER_MCGARRY", Tmin=412.0, Tmax=761.0), extrapolation="constant", method="VDI_PPDS", method_P="COSTALD_COMPRESSED", tabular_extrapolation_permitted=True, Tmin=228.29999999999998, Tmax=761.0), extrapolation="Arrhenius", method="VDI_PPDS", method_P="LUCAS", tabular_extrapolation_permitted=True, Tmin=306.85, Tmax=577.1663137027967)
+    actual = mu(300, 0.2 * 101325)
+    assert mu.T_limits['VDI_PPDS'][0] > 300 # Make sure testing for extrapolation
+    assert_close(actual, 0.0021504854722795615)
+
 @pytest.mark.skip
 @pytest.mark.slow
 @pytest.mark.fitting
