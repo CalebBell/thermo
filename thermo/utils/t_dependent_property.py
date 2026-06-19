@@ -784,7 +784,7 @@ class TDependentProperty:
     "PPDS5": (["Tc", "a0", "a1", "a2"], [], {"f": PPDS5}, {"fit_params": ["a0", "a1", "a2"]},),
     "mu_TDE": (["A", "B", "C", "D"], [], {"f": mu_TDE}, {"fit_params": ["A", "B", "C", "D"]},),
 
-    "PPDS9": (["A", "B", "C", "D", "E"], [], {"f": PPDS9, "f_der": dPPDS9_dT}, {"fit_params": ["A", "B", "C", "D", "E"]},),
+    "PPDS9": (["A", "B", "C", "D", "E"], [], {"f": PPDS9, "f_der": lambda T, A, B, C, D, E: dPPDS9_dT(T, A, B, C, D, E)[0]}, {"fit_params": ["A", "B", "C", "D", "E"]},),
     "mu_Yaws": (["A", "B",], ["C", "D"], {"f": mu_Yaws, "f_der": dmu_Yaws_dT}, {"fit_params": ["A", "B", "C", "D"], "initial_guesses": [
         {"A": -9.45, "B": 1120.0, "C": 0.014, "D": -1.545e-5}, # near yaws ethanol
         {"A": -25.5319, "B": 3747.19, "C": 0.04659, "D": -0.0}, # near yaws 1-phenyltetradecane
@@ -3979,14 +3979,11 @@ class TDependentProperty:
 
             calls = self.correlation_models[model][2]
             if order == 1 and "f_der" in calls:
-                value = calls["f_der"](T, **kwargs)
-                return value[0] if isinstance(value, tuple) else value
+                return calls["f_der"](T, **kwargs)
             elif order == 2 and "f_der2" in calls:
-                value = calls["f_der2"](T, **kwargs)
-                return value[0] if isinstance(value, tuple) else value
+                return calls["f_der2"](T, **kwargs)
             elif order == 3 and "f_der3" in calls:
-                value = calls["f_der3"](T, **kwargs)
-                return value[0] if isinstance(value, tuple) else value
+                return calls["f_der3"](T, **kwargs)
 
         if method in self.local_methods:
             local_method = self.local_methods[method]
