@@ -34,7 +34,7 @@ __all__ = [
 #import enum
 try:
     from collections import OrderedDict
-except:
+except ImportError:
     pass
 
 from chemicals.exceptions import OverspeficiedError
@@ -71,15 +71,15 @@ class StreamArgs:
     The specification tracking is the key purpose of this object. Once a
     `T` and `P` have been set, `V` **can't** be set because there are no
     degrees of freedom.
-    Another state specification mst be removed by setting it to None
+    Another state specification must be removed by setting it to None
     before a new specification can be set. The specifications supported are the same
     as those of :obj:`EquilibriumStream`.
-    Handling flow flow vs. composition is fuzzier because of the common use cases
+    Handling flow vs. composition is fuzzier because of the common use cases
     where a flow rate may be known, but not composition; or the composition but not
     the flow, however later when the product
     flows are known it is desirable to set it. To allow this,
     the variables `ns`, `ms`, `Qls`, and `Qgs` are allowed to overwrite an existing
-    flow and/or composition specification even if if `multiple_composition_basis` is False.
+    flow and/or composition specification even if `multiple_composition_basis` is False.
 
     Even if the property wasn't set to this object, but if enough degrees of freedom
     are known, the actual value can usually be queried by adding `_calc` to the attribute,
@@ -201,7 +201,7 @@ class StreamArgs:
         The (T, P, phase) at which the actual volumetric flow rate (if specified) is
         calculated to be at, [K] and [Pa]
     multiple_composition_basis : bool, optional
-        Fun toggle to allow the object to recieve multiple different types
+        Toggle to allow the object to receive multiple different types
         of composition information - e.g. a partial list of mole fractions
         and a partial list of mass fractions. This can be useful for some
         problems
@@ -256,7 +256,7 @@ class StreamArgs:
                        "U": U, "U_mass": U_mass,
                        "A": A, "A_mass": A_mass,
                        "G": G, "G_mass": G_mass,
-                       "energy": energy, "energy_reactive": energy_reactive, "H_reactive": energy_reactive}
+                       "energy": energy, "energy_reactive": energy_reactive, "H_reactive": H_reactive}
 
         # If this is True, DO NOT CLEAR OTHER COMPOSITION / FLOW VARIABLES WHEN SETTING ONE!
         # This makes sense for certain cases but not all.
@@ -335,9 +335,12 @@ class StreamArgs:
         if A is not None:
             state_specs += 1
         if energy is not None:
-            state_specs += 1
+            # energy only acts as a state spec (enthalpy) when a flow rate is known
+            if flow_specs > 0:
+                state_specs += 1
         if energy_reactive is not None:
-            state_specs += 1
+            if flow_specs > 0:
+                state_specs += 1
         if H_reactive is not None:
             state_specs += 1
         if flow_specs > 1 or composition_specs > 1:
@@ -373,21 +376,21 @@ class StreamArgs:
         # multiple_composition_basis may mean multiple sets of specs for comp/flow
         kwargs = self.specifications.copy()
         if kwargs["zs"] is not None:
-            kwargs["zs"] = [i for i in kwargs["zs"]]
+            kwargs["zs"] = list(kwargs["zs"])
         if kwargs["ws"] is not None:
-            kwargs["ws"] = [i for i in kwargs["ws"]]
+            kwargs["ws"] = list(kwargs["ws"])
         if kwargs["ns"] is not None:
-            kwargs["ns"] = [i for i in kwargs["ns"]]
+            kwargs["ns"] = list(kwargs["ns"])
         if kwargs["ms"] is not None:
-            kwargs["ms"] = [i for i in kwargs["ms"]]
+            kwargs["ms"] = list(kwargs["ms"])
         if kwargs["Qls"] is not None:
-            kwargs["Qls"] = [i for i in kwargs["Qls"]]
+            kwargs["Qls"] = list(kwargs["Qls"])
         if kwargs["Qgs"] is not None:
-            kwargs["Qgs"] = [i for i in kwargs["Qgs"]]
+            kwargs["Qgs"] = list(kwargs["Qgs"])
         if kwargs["Vfgs"] is not None:
-            kwargs["Vfgs"] = [i for i in kwargs["Vfgs"]]
+            kwargs["Vfgs"] = list(kwargs["Vfgs"])
         if kwargs["Vfls"] is not None:
-            kwargs["Vfls"] = [i for i in kwargs["Vfls"]]
+            kwargs["Vfls"] = list(kwargs["Vfls"])
         return self.__class__(Vf_TP=self.Vf_TP, Q_TP=self.Q_TP, flasher=self.flasher,
                  multiple_composition_basis=self.multiple_composition_basis, **kwargs)
 
@@ -449,7 +452,7 @@ class StreamArgs:
             return T
         try:
             return self.flash_state().T
-        except:
+        except Exception:
             return None
 
     @property
@@ -460,7 +463,7 @@ class StreamArgs:
             return P
         try:
             return self.flash_state().P
-        except:
+        except Exception:
             return None
 
     @property
@@ -471,7 +474,7 @@ class StreamArgs:
             return VF
         try:
             return self.flash_state().VF
-        except:
+        except Exception:
             return None
 
     @property
@@ -568,7 +571,7 @@ class StreamArgs:
             return H
         try:
             return self.flash_state().H()
-        except:
+        except Exception:
             return None
 
     @property
@@ -593,7 +596,7 @@ class StreamArgs:
             return H_reactive
         try:
             return self.flash_state().H_reactive()
-        except:
+        except Exception:
             return None
 
     @property
@@ -606,7 +609,7 @@ class StreamArgs:
         if H_mass is None:
             self.specifications["H_mass"] = H_mass
             return None
-        if self.specified_state_vars > 1 and self.specifications["H_mass"] is None:
+        if self.state_specified and self.H_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["H_mass"] = H_mass
 
@@ -618,7 +621,7 @@ class StreamArgs:
             return H_mass
         try:
             return self.flash_state().H_mass()
-        except:
+        except Exception:
             return None
 
     @property
@@ -645,7 +648,7 @@ class StreamArgs:
         if U_mass is None:
             self.specifications["U_mass"] = U_mass
             return None
-        if self.specified_state_vars > 1 and self.U_mass is None:
+        if self.state_specified and self.U_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["U_mass"] = U_mass
 
@@ -673,17 +676,17 @@ class StreamArgs:
         if G_mass is None:
             self.specifications["G_mass"] = G_mass
             return None
-        if self.specified_state_vars > 1 and self.G_mass is None:
+        if self.state_specified and self.G_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["G_mass"] = G_mass
 
     @property
     def A(self):
-        r"""Molar Hemholtz free energy of the stream specification if specified [J/mol]"""
+        r"""Molar Helmholtz free energy of the stream specification if specified [J/mol]"""
         return self.specifications["A"]
     @A.setter
     def A(self, A):
-        r"""Set the molar Hemholtz free energy of the stream specification [J/mol]"""
+        r"""Set the molar Helmholtz free energy of the stream specification [J/mol]"""
         if A is None:
             self.specifications["A"] = A
             return None
@@ -693,15 +696,15 @@ class StreamArgs:
 
     @property
     def A_mass(self):
-        r"""Mass Hemholtz free energy of the stream specification if specified [J/kg]"""
+        r"""Mass Helmholtz free energy of the stream specification if specified [J/kg]"""
         return self.specifications["A_mass"]
     @A_mass.setter
     def A_mass(self, A_mass):
-        r"""Set the mass Hemholtz free energy of the stream specification [J/kg]"""
+        r"""Set the mass Helmholtz free energy of the stream specification [J/kg]"""
         if A_mass is None:
             self.specifications["A_mass"] = A_mass
             return None
-        if self.specified_state_vars > 1 and self.A_mass is None:
+        if self.state_specified and self.A_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["A_mass"] = A_mass
 
@@ -715,7 +718,7 @@ class StreamArgs:
         if S is None:
             self.specifications["S"] = S
             return None
-        if self.specified_state_vars > 1 and self.S is None:
+        if self.state_specified and self.S is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["S"] = S
 
@@ -729,7 +732,7 @@ class StreamArgs:
         if S_mass is None:
             self.specifications["S_mass"] = S_mass
             return None
-        if self.specified_state_vars > 1 and self.S_mass is None:
+        if self.state_specified and self.S_mass is None:
             raise ValueError("Two state vars already specified; unset another first")
         self.specifications["S_mass"] = S_mass
 
@@ -951,7 +954,7 @@ class StreamArgs:
             m = sum(ms)
             MWs = self.flasher.constants.MWs
             MW = mixing_simple(MWs, zs)
-            n = m*1000.0/MW
+            n = property_molar_to_mass(m, MW)
             return [n*zi for zi in zs]
         Qls = s["Qls"]
         if Qls is not None and None not in Qls:
@@ -979,13 +982,14 @@ class StreamArgs:
         if Q is not None:
             zs = self.zs_calc
             if zs is not None:
+                V = None
                 Q_TP = self.Q_TP
                 if Q_TP is not None and (Q_TP[0] is not None and Q_TP[1] is not None):
                     if (len(Q_TP) == 2 or (len(Q_TP) == 3 and not Q_TP[-1])):
                         # Calculate the volume via the property package
                         expensive_flash = self.flasher.flash(zs=zs, T=Q_TP[0], P=Q_TP[1])
                         V = expensive_flash.V()
-                    if Q_TP[-1] == "l":
+                    elif Q_TP[-1] == "l":
                         V = self.flasher.liquids[0].to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
                     elif Q_TP[-1] == "g":
                         V = self.flasher.gas.to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
@@ -1235,7 +1239,7 @@ class StreamArgs:
             zs = self.zs_calc
             MW = mixing_simple(MWs, zs)
             return MW
-        except:
+        except Exception:
             return None
 
     @property
@@ -1279,8 +1283,25 @@ class StreamArgs:
 
     @property
     def energy_reactive_calc(self):
-        r"""Energy flow of the stream; specified or calculated if enough information is available [W]"""
-        return self.specifications["energy_reactive"]
+        r"""Energy flow of the stream on a reactive basis; specified or calculated if enough information is available [W]"""
+        s = self.specifications
+        Q = s["energy_reactive"]
+        if Q is not None:
+            return Q
+        H_reactive = s["H_reactive"]
+        if H_reactive is not None:
+            n = self.n_calc
+            if n is not None:
+                return n*H_reactive
+        n = self.n_calc
+        if n is not None:
+            mixture = self.flash_state()
+            if mixture is not None:
+                try:
+                    return mixture.H_reactive()*n
+                except Exception:
+                    pass
+        return None
 
 
     def __repr__(self):
@@ -1376,9 +1397,9 @@ class StreamArgs:
                 ms[missing_idx] = m - calc
         if ns is not None and ms is not None:
             try:
-            # Convert any ms to ns
+                # Convert any ms to ns
                 MWs = self.flasher.constants.MWs
-            except:
+            except (AttributeError, TypeError):
                 return False
             for i in range(len(ms)):
                 if ms[i] is not None:
@@ -1398,7 +1419,7 @@ class StreamArgs:
                     ws = [None]*len(MWs)
                 ns, zs, ws = solve_flow_composition_mix(ns, zs, ws, MWs)
                 s["ns"] = ns
-            except:
+            except Exception:
                 return False
 
 
@@ -1415,7 +1436,7 @@ class StreamArgs:
 
     @property
     def composition_spec(self):
-        """Composition specification if one has been set, as a tuples
+        """Composition specification if one has been set, as a tuple
         of ('specification_name', specification_value); otherwise None.
 
         >>> StreamArgs(T=400, H=500, ws=[.3, .7]).composition_spec
@@ -1445,7 +1466,7 @@ class StreamArgs:
     @property
     def clean(self):
         """If no variables have been specified, True,
-        otherwis False.
+        otherwise False.
         """
         return not (self.composition_specified or self.state_specs or self.flow_specified)
 
@@ -1454,7 +1475,7 @@ class StreamArgs:
     def composition_specified(self):
         """True if a composition for the stream has been defined.
         If component flow rates are the specification, requires all of them to be specified.
-        If `zs` or `ws` or Vfls` or `Vfgs` is set, also requires all of them to be specified
+        If `zs` or `ws` or `Vfls` or `Vfgs` is set, also requires all of them to be specified
         and additionally them not to be an empty list.
         """
         s = self.specifications
@@ -1488,7 +1509,7 @@ class StreamArgs:
         for v in ("T", "P", "V", "rho", "rho_mass",
                 "VF", "H_mass", "H", "S_mass", "S",
                 "U_mass", "U", "A_mass", "A", "G_mass", "G",
-                "energy", "energy_reactive"):
+                "energy", "energy_reactive", "H_reactive"):
             s[v] = None
 
     @property
@@ -1539,6 +1560,8 @@ class StreamArgs:
             specs.append(("energy", s["energy"]))
         if s["energy_reactive"] is not None:
             specs.append(("energy_reactive", s["energy_reactive"]))
+        if s["H_reactive"] is not None:
+            specs.append(("H_reactive", s["H_reactive"]))
         return specs
 
     @property
@@ -1568,7 +1591,7 @@ class StreamArgs:
         return sum(s[i] is not None for i in ("T", "P", "V", "rho", "rho_mass",
                                                                 "VF", "H_mass", "H", "S_mass", "S",
                                                                 "U_mass", "U", "A_mass", "A", "G_mass", "G",
-                                                                "energy", "energy_reactive"))
+                                                                "energy", "energy_reactive", "H_reactive"))
 #        return sum(i is not None for i in (self.T, self.P, self.VF, self.Hm, self.H, self.Sm, self.S, self.energy))
 
     @property
@@ -1622,7 +1645,7 @@ class StreamArgs:
             state_vars += 1
         if s["H_reactive"] is not None:
             state_vars += 1
-        return state_vars == 2
+        return state_vars >= 2
 
     @property
     def non_pressure_spec_specified(self):
@@ -1638,11 +1661,10 @@ class StreamArgs:
         >>> StreamArgs(P=1e5, n=4).non_pressure_spec_specified
         False
         """
-        state_vars = (i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass,
+        return any(i is not None for i in (self.T, self.VF, self.V, self.rho, self.rho_mass,
                                               self.H_mass, self.H, self.S_mass, self.S,
                                               self.U_mass, self.U, self.A_mass, self.A, self.G_mass, self.G,
                                               self.energy, self.energy_reactive, self.H_reactive))
-        return sum(state_vars) >= 1
 
 
     def clear_flow_spec(self):
@@ -1659,7 +1681,7 @@ class StreamArgs:
 
     @property
     def flow_spec(self):
-        """Flow specification if one has been set, as a tuples
+        """Flow specification if one has been set, as a tuple
         of ('specification_name', specification_value); otherwise None.
         Energy is never included in this.
 
@@ -1872,7 +1894,7 @@ class StreamArgs:
             if state_cache == self._state_cache:
                 try:
                     return self._flash
-                except:
+                except AttributeError:
                     pass
 
             m = self.flasher.flash(T=T, P=P, zs=zs, H=H_flash, H_mass=s["H_mass"],
@@ -1895,7 +1917,7 @@ class StreamArgs:
         v = getattr(self, name)
         try:
             v = v()
-        except:
+        except TypeError:
             pass
         return v
 
@@ -2090,7 +2112,7 @@ class Stream(Mixture):
         # T and P may not be available if a flash has failed
         try:
             txt += f", T={self.T:.2f} K, P={self.P:.0f} Pa>"
-        except:
+        except Exception:
             txt += ", thermodynamic conditions unknown>"
         return txt
 
@@ -2174,24 +2196,20 @@ class Stream(Mixture):
         elif m is not None:
             self.n = property_molar_to_mass(m, self.MW) # m*10000/MW
         elif Q is not None:
-            try:
-                if Q_TP != (None, None, ""):
-                    if len(Q_TP) == 2 or (len(Q_TP) == 3 and not Q_TP[-1]):
-                        # Calculate the phase via the property package
-                        self.property_package.flash(self.zs, T=Q_TP[0], P=Q_TP[1])
-                        phase = self.property_package.phase if self.property_package.phase in ("l", "g") else "g"
-                    else:
-                        phase = Q_TP[-1]
-                    if phase == "l":
-                        Vm = self.VolumeLiquidMixture(T=Q_TP[0], P=Q_TP[1], zs=self.zs, ws=self.ws)
-                    else:
-                        Vm = self.VolumeGasMixture(T=Q_TP[0], P=Q_TP[1], zs=self.zs, ws=self.ws)
-
+            if Q_TP != (None, None, ""):
+                if len(Q_TP) == 2 or (len(Q_TP) == 3 and not Q_TP[-1]):
+                    # Calculate the phase via the property package
+                    self.property_package.flash(self.zs, T=Q_TP[0], P=Q_TP[1])
+                    phase = self.property_package.phase if self.property_package.phase in ("l", "g") else "g"
                 else:
-                    Vm = self.Vm
-                self.n = Q/Vm
-            except:
-                raise ValueError("Molar volume could not be calculated to determine the flow rate of the stream.")
+                    phase = Q_TP[-1]
+                if phase == "l":
+                    Vm = self.VolumeLiquidMixture(T=Q_TP[0], P=Q_TP[1], zs=self.zs, ws=self.ws)
+                else:
+                    Vm = self.VolumeGasMixture(T=Q_TP[0], P=Q_TP[1], zs=self.zs, ws=self.ws)
+            else:
+                Vm = self.Vm
+            self.n = Q/Vm
         elif ns is not None:
             if isinstance(ns, (OrderedDict, dict)):
                 ns = ns.values()
@@ -2202,19 +2220,13 @@ class Stream(Mixture):
             self.n = property_molar_to_mass(sum(ms), self.MW)
         elif Qls is not None:
             # volume flows and total enthalpy/entropy should be disabled
-            try:
-                if isinstance(Qls, (OrderedDict, dict)):
-                    Qls = Qls.values()
-                self.n = sum([Q/Vml for Q, Vml in zip(Qls, self.Vmls)])
-            except:
-                raise ValueError("Liquid molar volume could not be calculated to determine the flow rate of the stream.")
+            if isinstance(Qls, (OrderedDict, dict)):
+                Qls = Qls.values()
+            self.n = sum([Q/Vml for Q, Vml in zip(Qls, self.Vmls)])
         elif Qgs is not None:
-            try:
-                if isinstance(Qgs, (OrderedDict, dict)):
-                    Qgs = Qgs.values()
-                self.n = sum([Q/Vmg for Q, Vmg in zip(Qgs, [ideal_gas(T, P)]*self.N)])
-            except:
-                raise ValueError("Gas molar volume could not be calculated to determine the flow rate of the stream.")
+            if isinstance(Qgs, (OrderedDict, dict)):
+                Qgs = Qgs.values()
+            self.n = sum([Q/Vmg for Q, Vmg in zip(Qgs, [ideal_gas(T, P)]*self.N)])
         elif energy is not None:
             if H is not None:
                 self.m = energy/H # Watt/(J/kg) = kg/s
@@ -2253,16 +2265,16 @@ class Stream(Mixture):
         self.ms = [m*wi for wi in self.ws]
         try:
             self.Q = m/self.rho
-        except:
+        except Exception:
             pass
         try:
             V_ig = ideal_gas(T, P)
             self.Qgs = [m/Vm_to_rho(V_ig, MW=MW) for m, MW in zip(self.ms, self.MWs)]
-        except:
+        except Exception:
             pass
         try:
             self.Qls = [m/rho for m, rho in zip(self.ms, self.rhols)]
-        except:
+        except Exception:
             pass
 
         if self.phase in ("l/g", "l"):
@@ -2799,47 +2811,35 @@ class EquilibriumStream(EquilibriumState):
         elif ms is not None:
             n = property_molar_to_mass(sum(ms), MW)
         elif Q is not None:
-            try:
-                if Q_TP is not None:
-                    if len(Q_TP) == 2 or (len(Q_TP) == 3 and not Q_TP[-1]):
-                        # Calculate the volume via the property package
-                        expensive_flash = flasher.flash(zs=zs, T=Q_TP[0], P=Q_TP[1])
-                        V = expensive_flash.V()
-                    if Q_TP[-1] == "l":
-                        V = flasher.liquids[0].to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
-                    elif Q_TP[-1] == "g":
-                        V = flasher.gas.to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
-                else:
-                    V = self.V()
-                n = Q/V
-            except:
-                raise ValueError("Molar volume could not be calculated to determine the flow rate of the stream.")
+            if Q_TP is not None:
+                if len(Q_TP) == 2 or (len(Q_TP) == 3 and not Q_TP[-1]):
+                    # Calculate the volume via the property package
+                    expensive_flash = flasher.flash(zs=zs, T=Q_TP[0], P=Q_TP[1])
+                    V = expensive_flash.V()
+                elif Q_TP[-1] == "l":
+                    V = flasher.liquids[0].to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
+                elif Q_TP[-1] == "g":
+                    V = flasher.gas.to(T=Q_TP[0], P=Q_TP[1], zs=zs).V()
+            else:
+                V = self.V()
+            n = Q/V
         elif Qls is not None:
             n = 0.0
             Vms = flasher.V_liquids_ref()
-            try:
-                for i in range(N):
-                    n += Qls[i]/Vms[i]
-            except:
-                raise ValueError("Liquid molar volume could not be calculated to determine the flow rate of the stream.")
+            for i in range(N):
+                n += Qls[i]/Vms[i]
         elif Ql is not None:
             n = 0.0
             Vms = flasher.V_liquids_ref()
             Vfls = zs_to_Vfs(zs, Vms)
-            try:
-                for i in range(N):
-                    n += Ql*Vfls[i]/(Vms[i])
-            except:
-                raise ValueError("Liquid molar volume could not be calculated to determine the flow rate of the stream.")
+            for i in range(N):
+                n += Ql*Vfls[i]/(Vms[i])
         elif Qg is not None:
             n = 0.0
             settings = self.flasher.settings
             V = R*settings.T_gas_ref/settings.P_gas_ref
-            try:
-                for i in range(N):
-                    n += Qg*zs[i]/V
-            except:
-                raise ValueError("Liquid molar volume could not be calculated to determine the flow rate of the stream.")
+            for i in range(N):
+                n += Qg*zs[i]/V
         elif Qgs is not None:
             # Use only ideal gas law; allow user T, P but default to flasher settings when not speced
             if Q_TP is not None and Q_TP[0] is not None and Q_TP[1] is not None:
@@ -2855,6 +2855,21 @@ class EquilibriumStream(EquilibriumState):
         self.ns = [n*zi for zi in zs]
         self._ws = ws = [zi*MWi*MW_inv for zi, MWi in zip(zs, constants.MWs)]
         self.ms = [m*wi for wi in ws]
+        for phase in self.phases:
+            phase._n_total = n
+            phase._m_total = m
+        self.bulk._n_total = n
+        self.bulk._m_total = m
+        try:
+            self.liquid_bulk._n_total = n
+            self.liquid_bulk._m_total = m
+        except AttributeError:
+            pass
+        try:
+            self.solid_bulk._n_total = n
+            self.solid_bulk._m_total = m
+        except AttributeError:
+            pass
 
 
 
@@ -2946,7 +2961,7 @@ class EquilibriumStream(EquilibriumState):
         """
         specs = []
         flash_specs = self.flash_specs
-        for i, var in enumerate(("T", "P", "VF", "H", "S", "energy")):
+        for var in ("T", "P", "V", "H", "S", "U", "G", "A", "VF", "SF", "energy"):
             if var in flash_specs:
                 v = flash_specs[var]
                 if v is not None:
@@ -3229,7 +3244,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
         f = inlets[i]
         try:
             ns = f.specifications["ns"]
-        except:
+        except (AttributeError, KeyError, TypeError):
             ns = f.ns
         if ns is None and use_mass:
             ns = f.ns_calc
@@ -3245,7 +3260,7 @@ def mole_balance(inlets, outlets, compounds, use_mass=True, use_volume=True):
         f = outlets[i]
         try:
             ns = f.specifications["ns"]
-        except:
+        except (AttributeError, KeyError, TypeError):
             ns = f.ns
         if ns is None and use_mass:
             ns = f.ns_calc
@@ -3482,11 +3497,11 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
             if reactive:
                 try:
                     H_reactive_in = fin.H_reactive()
-                except:
+                except (AttributeError, TypeError):
                     H_reactive_in = fin.H_reactive_calc
                 try:
                     H_reactive_out = fout.H_reactive()
-                except:
+                except (AttributeError, TypeError):
                     H_reactive_out = fout.H_reactive_calc
 
                 if H_reactive_in is not None and H_reactive_out is None:
@@ -3498,11 +3513,11 @@ def energy_balance(inlets, outlets, reactive=False, use_mass=False):
             else:
                 try:
                     Hin = fin.H()
-                except:
+                except (AttributeError, TypeError):
                     Hin = fin.H_calc
                 try:
                     Hout = fout.H()
-                except:
+                except (AttributeError, TypeError):
                     Hout = fout.H_calc
 
                 if Hin is not None and Hout is None:

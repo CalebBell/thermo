@@ -265,129 +265,132 @@ def standard_state_ideal_gas_formation(c, T, Hf=None, Sf=None, T_ref=298.15):
     return _standard_state_ideal_gas_formation_direct(T=T, Hf_ref=Hf_ref, Sf_ref=Sf_ref,
             atoms=atoms, gas_Cp=c.HeatCapacityGas, T_ref=T_ref)
 
-_standard_formation_reaction_cache = {}
+standard_formation_reaction_cache = {}
 MAX_STANDARD_FORMATION_CACHE = 250
+
+standard_state_solid_elements = {"C"}
+standard_state_liquid_elements = {""}
+def element_standard_state_integral(ele, T, T_ref=298.15):
+    element_obj = periodic_table[ele]
+    solid_obj = element_HeatCapacitySolid_cache(element_obj.CAS_standard)
+    liquid_obj = element_HeatCapacityLiquid_cache(element_obj.CAS_standard)
+    gas_obj = element_HeatCapacityGas_cache(element_obj.CAS_standard)
+    if ele not in standard_state_supported_elements_set:
+        raise NotImplementedError(f"The element {ele} is not currently supported")
+
+    if ele in shomate_gas_elements:
+        gas_obj.method = "WEBBOOK_SHOMATE"
+        if "WEBBOOK_SHOMATE" in liquid_obj.all_methods:
+            liquid_obj.method = "WEBBOOK_SHOMATE"
+        if "WEBBOOK_SHOMATE" in solid_obj.all_methods:
+            solid_obj.method = "WEBBOOK_SHOMATE"
+    elif ele == "Si":
+        solid_obj.method = "JANAF_FIT"
+        liquid_obj.method = "JANAF_FIT"
+        gas_obj.method = "JANAF_FIT"
+
+    if ele in standard_state_transitions:
+        dat = standard_state_transitions[ele]
+        Tm = dat["Tm"]
+        Tb = dat["Tb"]
+        Hfus = dat["Hfus"]
+        Hvap = dat["Hvap"]
+        Tm_solid_int = min(T, Tm)
+        T_liquid_int = min(T, Tb)
+        dH_ele = solid_obj.T_dependent_property_integral(T_ref, Tm_solid_int)
+        dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, Tm_solid_int)
+        if T > Tm:
+            dH_ele += Hfus
+            dS_ele += Hfus/Tm
+            dH_ele += liquid_obj.T_dependent_property_integral(Tm, T_liquid_int)
+            dS_ele += liquid_obj.T_dependent_property_integral_over_T(Tm, T_liquid_int)
+        if T > Tb:
+            dH_ele += Hvap
+            dS_ele += Hvap/Tb
+            dH_ele += gas_obj.T_dependent_property_integral(Tb, T)
+            dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb, T)
+    elif ele == "P":
+        # White phosphorus is the basis here
+        T_alpha_beta_P = 195.400
+        Htrans_alpha_beta_P = 521.0 # 525.5104 reported in
+        # The thermodynamic properties of elementary phosphorus The heat capacities of two crystalline modifications of red phosphorus, of α and β white phosphorus, and of black phosphorus from 15 to 300 K
+        Tm_P = 317.300
+        Hfus_P = 659
+        Tb_P = 1180.008
+        Hvap_P = 63728.0
+        # https://janaf.nist.gov/tables/P-001.html
+        # ALPHA <--> BETA 195.4 K, BETA <--> LIQUID 317.3 K, LIQUID <--> IDEAL GAS 1180.008 K
+        T_solid_int0 = min(T, T_alpha_beta_P)
+        T_solid_int1 = min(T, Tm_P)
+        T_liquid_int = min(T, Tb_P)
+        if T < T_alpha_beta_P:
+            dH_ele = solid_obj.T_dependent_property_integral(T_ref, T)
+            dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T)
+
+            dH_ele -= Htrans_alpha_beta_P
+            dS_ele -= Htrans_alpha_beta_P/T_alpha_beta_P
+            # dH_ele -= solid_obj.T_dependent_property_integral(T_alpha_beta_P, T_liquid_int)
+            # dS_ele -= solid_obj.T_dependent_property_integral_over_T(Tm_P, T_liquid_int)
+        else:
+            dH_ele = solid_obj.T_dependent_property_integral(T_ref, T_solid_int1)
+            dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T_solid_int1)
+            if T > Tm_P:
+                dH_ele += Hfus_P
+                dS_ele += Hfus_P/Tm_P
+                dH_ele += liquid_obj.T_dependent_property_integral(Tm_P, T_liquid_int)
+                dS_ele += liquid_obj.T_dependent_property_integral_over_T(Tm_P, T_liquid_int)
+            if T > Tb_P:
+                dH_ele += Hvap_P
+                dS_ele += Hvap_P/Tb_P
+                dH_ele += gas_obj.T_dependent_property_integral(Tb_P, T)
+                dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_P, T)
+    elif ele == "S":
+        # CRystal II to Crystal 1 at 368 K
+        # crystal I to liquid at 388 K
+        # 432 K liquid-liquid lambda transition
+        # 882 K liquid to ideal gas transition
+        raise NotImplementedError
+    # Need to do all the metals with no fancy phases at once generically
+    # https://janaf.nist.gov/tables/Ni-001.html
+    # https://janaf.nist.gov/tables/Cu-001.html
+    # https://janaf.nist.gov/tables/Zn-001.html
+
+    elif ele in standard_state_solid_elements:
+        dH_ele = solid_obj.T_dependent_property_integral(T_ref, T)
+        dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T)
+    elif ele in standard_state_liquid_elements:
+        dH_ele = liquid_obj.T_dependent_property_integral(T_ref, T)
+        dS_ele = liquid_obj.T_dependent_property_integral_over_T(T_ref, T)
+    else:
+        dH_ele = gas_obj.T_dependent_property_integral(T_ref, T)
+        dS_ele = gas_obj.T_dependent_property_integral_over_T(T_ref, T)
+    return dH_ele, dS_ele
+
+
 def _standard_state_ideal_gas_formation_direct(T, Hf_ref, Sf_ref, atoms, gas_Cp, T_ref=298.15, cache=True):
     if cache:
         atoms_key = hash(tuple(atoms.items()))
-        if atoms_key in _standard_formation_reaction_cache:
-            reactant_coeff, elemental_counts, elemental_composition = _standard_formation_reaction_cache[atoms_key]
+        if atoms_key in standard_formation_reaction_cache:
+            reactant_coeff, elemental_counts, elemental_composition = standard_formation_reaction_cache[atoms_key]
         else:
             reactant_coeff, elemental_counts, elemental_composition = standard_formation_reaction(atoms)
-            _standard_formation_reaction_cache[atoms_key] = reactant_coeff, elemental_counts, elemental_composition
+            standard_formation_reaction_cache[atoms_key] = reactant_coeff, elemental_counts, elemental_composition
 
-            if len(_standard_formation_reaction_cache) > MAX_STANDARD_FORMATION_CACHE:
+            if len(standard_formation_reaction_cache) > MAX_STANDARD_FORMATION_CACHE:
                 # Prevent the cache growing too much
-                _standard_formation_reaction_cache.pop(next(iter(_standard_formation_reaction_cache)))
+                standard_formation_reaction_cache.pop(next(iter(standard_formation_reaction_cache)))
     else:
-        _standard_formation_reaction_cache[atoms_key] = reactant_coeff, elemental_counts, elemental_composition
+        standard_formation_reaction_cache[atoms_key] = reactant_coeff, elemental_counts, elemental_composition
 
     dH_compound = gas_Cp.T_dependent_property_integral(T_ref, T)
     dS_compound = gas_Cp.T_dependent_property_integral_over_T(T_ref, T)
 
     H_calc = reactant_coeff*Hf_ref + reactant_coeff*dH_compound
     S_calc = reactant_coeff*Sf_ref + reactant_coeff*dS_compound
-    # if the compound is an element it will need special handling to go from solid liquid to gas if needed
-
-    solid_ele = {"C"}
-    liquid_ele = {""}
 
     for coeff, ele_data in zip(elemental_counts, elemental_composition):
         ele = next(iter(ele_data.keys()))
-        element_obj = periodic_table[ele]
-#         element = Chemical(element_obj.CAS_standard)
-        solid_obj = element_HeatCapacitySolid_cache(element_obj.CAS_standard)
-        liquid_obj = element_HeatCapacityLiquid_cache(element_obj.CAS_standard)
-        gas_obj = element_HeatCapacityGas_cache(element_obj.CAS_standard)
-        if ele not in standard_state_supported_elements_set:
-            raise NotImplementedError(f"The element {ele} is not currently supported")
-
-        if ele in shomate_gas_elements:
-            gas_obj.method = "WEBBOOK_SHOMATE"
-            if "WEBBOOK_SHOMATE" in liquid_obj.all_methods:
-                liquid_obj.method = "WEBBOOK_SHOMATE"
-            if "WEBBOOK_SHOMATE" in solid_obj.all_methods:
-                solid_obj.method = "WEBBOOK_SHOMATE"
-        elif ele == "Si":
-            solid_obj.method = "JANAF_FIT"
-            liquid_obj.method = "JANAF_FIT"
-            gas_obj.method = "JANAF_FIT"
-
-        if ele in standard_state_transitions:
-            dat = standard_state_transitions[ele]
-            Tm = dat["Tm"]
-            Tb = dat["Tb"]
-            Hfus = dat["Hfus"]
-            Hvap = dat["Hvap"]
-            Tm_solid_int = min(T, Tm)
-            T_liquid_int = min(T, Tb)
-            dH_ele = solid_obj.T_dependent_property_integral(T_ref, Tm_solid_int)
-            dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, Tm_solid_int)
-            if T > Tm:
-                dH_ele += Hfus
-                dS_ele += Hfus/Tm
-                dH_ele += liquid_obj.T_dependent_property_integral(Tm, T_liquid_int)
-                dS_ele += liquid_obj.T_dependent_property_integral_over_T(Tm, T_liquid_int)
-            if T > Tb:
-                dH_ele += Hvap
-                dS_ele += Hvap/Tb
-                dH_ele += gas_obj.T_dependent_property_integral(Tb, T)
-                dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb, T)
-        elif ele == "P":
-            # White phosphorus is the basis here
-            T_alpha_beta_P = 195.400
-            Htrans_alpha_beta_P = 521.0 # 525.5104 reported in
-            # The thermodynamic properties of elementary phosphorus The heat capacities of two crystalline modifications of red phosphorus, of α and β white phosphorus, and of black phosphorus from 15 to 300 K
-            Tm_P = 317.300
-            Hfus_P = 659
-            Tb_P = 1180.008
-            Hvap_P = 63728.0
-            # https://janaf.nist.gov/tables/P-001.html
-            # ALPHA <--> BETA 195.4 K, BETA <--> LIQUID 317.3 K, LIQUID <--> IDEAL GAS 1180.008 K
-            T_solid_int0 = min(T, T_alpha_beta_P)
-            T_solid_int1 = min(T, Tm_P)
-            T_liquid_int = min(T, Tb_P)
-            if T < T_alpha_beta_P:
-                dH_ele = solid_obj.T_dependent_property_integral(T_ref, T)
-                dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T)
-
-                dH_ele -= Htrans_alpha_beta_P
-                dS_ele -= Htrans_alpha_beta_P/T_alpha_beta_P
-                # dH_ele -= solid_obj.T_dependent_property_integral(T_alpha_beta_P, T_liquid_int)
-                # dS_ele -= solid_obj.T_dependent_property_integral_over_T(Tm_P, T_liquid_int)
-            else:
-                dH_ele = solid_obj.T_dependent_property_integral(T_ref, T_solid_int1)
-                dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T_solid_int1)
-                if T > Tm_P:
-                    dH_ele += Hfus_P
-                    dS_ele += Hfus_P/Tm_P
-                    dH_ele += liquid_obj.T_dependent_property_integral(Tm_P, T_liquid_int)
-                    dS_ele += liquid_obj.T_dependent_property_integral_over_T(Tm_P, T_liquid_int)
-                if T > Tb_P:
-                    dH_ele += Hvap_P
-                    dS_ele += Hvap_P/Tb_P
-                    dH_ele += gas_obj.T_dependent_property_integral(Tb_P, T)
-                    dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_P, T)
-        elif ele == "S":
-            # CRystal II to Crystal 1 at 368 K
-            # crystal I to liquid at 388 K
-            # 432 K liquid-liquid lambda transition
-            # 882 K liquid to ideal gas transition
-            raise NotImplementedError
-        # Need to do all the metals with no fancy phases at once generically
-        # https://janaf.nist.gov/tables/Ni-001.html
-        # https://janaf.nist.gov/tables/Cu-001.html
-        # https://janaf.nist.gov/tables/Zn-001.html
-
-        elif ele in solid_ele:
-            dH_ele = solid_obj.T_dependent_property_integral(T_ref, T)
-            dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, T)
-        elif ele in liquid_ele:
-            dH_ele = liquid_obj.T_dependent_property_integral(T_ref, T)
-            dS_ele = liquid_obj.T_dependent_property_integral_over_T(T_ref, T)
-        else:
-            dH_ele = gas_obj.T_dependent_property_integral(T_ref, T)
-            dS_ele = gas_obj.T_dependent_property_integral_over_T(T_ref, T)
+        dH_ele, dS_ele = element_standard_state_integral(ele, T, T_ref)
         H_calc -= coeff*dH_ele
         S_calc -= coeff*dS_ele
     G_calc = H_calc - T*S_calc
