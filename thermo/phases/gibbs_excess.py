@@ -22,12 +22,13 @@ SOFTWARE.
 """
 __all__ = ["GibbsExcessLiquid", "GibbsExcessSolid"]
 
+import warnings
 from math import isinf, isnan
 
 from chemicals.solubility import Henry_constants, d2Henry_constants_dT2, dHenry_constants_dT
 from chemicals.utils import phase_identification_parameter
 from fluids.constants import R, R_inv
-from fluids.numerics import derivative, evaluate_linear_fits, evaluate_linear_fits_d, evaluate_linear_fits_d2, exp, horner_and_der2, log, secant, trunc_exp
+from fluids.numerics import derivative, evaluate_linear_fits, evaluate_linear_fits_d, evaluate_linear_fits_d2, exp, log, secant, trunc_exp
 from fluids.numerics import numpy as np
 
 from thermo.activity import IdealSolution
@@ -38,7 +39,6 @@ from thermo.nrtl import nrtl_taus as ln_henries
 from thermo.phase_change import EnthalpySublimation, EnthalpyVaporization
 from thermo.phases.phase import Phase
 from thermo.utils import (
-    POLY_FIT,
     TRANSFORM_DERIVATIVE_RATIO,
     TRANSFORM_LOG,
     TRANSFORM_LOG_DERIVATIVE,
@@ -52,6 +52,41 @@ try:
     zeros, array = np.zeros, np.array
 except:
     pass
+
+def parse_deprecated_basis_flags(use_Poynting, use_phis_sat, use_Hvap_caloric):
+    r"""Convert deprecated boolean flags to ``equilibrium_basis`` and
+    ``caloric_basis`` strings.
+
+    Returns ``(equilibrium_basis, caloric_basis)`` or ``(None, None)`` if no
+    deprecated flags were provided.
+    """
+    if use_Poynting is None and use_phis_sat is None and use_Hvap_caloric is None:
+        return None, None
+
+    warnings.warn(
+        "use_Poynting, use_phis_sat, and use_Hvap_caloric are deprecated. "
+        "Use equilibrium_basis and caloric_basis instead.",
+        DeprecationWarning, stacklevel=3,
+    )
+    use_Poynting = bool(use_Poynting) if use_Poynting is not None else False
+    use_phis_sat = bool(use_phis_sat) if use_phis_sat is not None else False
+    use_Hvap_caloric = bool(use_Hvap_caloric) if use_Hvap_caloric is not None else False
+
+    if use_Poynting and use_phis_sat:
+        equilibrium_basis = 'Poynting&PhiSat'
+    elif use_Poynting:
+        equilibrium_basis = 'Poynting'
+    elif use_phis_sat:
+        equilibrium_basis = 'PhiSat'
+    else:
+        equilibrium_basis = 'Psat'
+
+    if use_Hvap_caloric:
+        caloric_basis = 'Hvap'
+    else:
+        caloric_basis = None
+
+    return equilibrium_basis, caloric_basis
 
 class GibbsExcessLiquid(Phase):
     r"""Phase based on combining Raoult's law with a
@@ -117,16 +152,14 @@ class GibbsExcessLiquid(Phase):
         pressure is. The vapor pressure also tends to reach zero at temperatures
         in the 4-20 K range. These aspects mean extrapolation in the supercritical and
         very low temperature region is critical to ensure the equations will still
-        converge. Extrapolation can be performed using either the equation
-        :math:`P^{\text{sat}} = \exp\left(A - \frac{B}{T}\right)` or
-        :math:`P^{\text{sat}} = \exp\left(A + \frac{B}{T} + C\cdot \ln T\right)` by
-        setting `Psat_extrpolation` to either 'AB' or 'ABC' respectively.
+        converge. Extrapolation is controlled by the `extrapolation` setting on
+        the :obj:`VaporPressure <thermo.vapor_pressure.VaporPressure>` objects
+        passed to this class. Common choices include 'DIPPR101_ABC', 'AntoineAB',
+        and others; see :obj:`TDependentProperty` for details.
         The extremely low temperature region's issue is solved by calculating the
         logarithm of vapor pressures instead of the actual value. While floating
         point values in Python (doubles) can reach a minimum value of around
         1e-308, if only the logarithm of that number is computed no issues arise.
-        Both of these features only work when the vapor pressure correlations are
-        polynomials.
 
     .. warning::
         When using 'PhiSat' as an option, note that the factor cannot be
@@ -142,7 +175,7 @@ class GibbsExcessLiquid(Phase):
         Objects holding liquid volume data and methods; required for Poynting
         factors and volumetric properties, [-]
     HeatCapacityGases : list[:obj:`thermo.heat_capacity.HeatCapacityGas`], optional
-        Objects proiding pure-component heat capacity correlations; required
+        Objects providing pure-component heat capacity correlations; required
         for caloric properties, [-]
     GibbsExcessModel : :obj:`GibbsExcess <thermo.activity.GibbsExcess>`, optional
         Configured instance for calculating activity coefficients and excess properties;
@@ -155,11 +188,6 @@ class GibbsExcessLiquid(Phase):
     HeatCapacityLiquids : list[:obj:`thermo.heat_capacity.HeatCapacityLiquid`], optional
         Objects holding liquid heat capacity data and methods; not used at
         present, [-]
-    VolumeSupercriticalLiquids : list[:obj:`thermo.volume.VolumeLiquid`], optional
-        Objects holding liquid volume data and methods but that are used for
-        supercritical temperatures on a per-component basis only; required for
-        Poynting factors and volumetric properties at supercritical conditions;
-        `VolumeLiquids` is used if not provided, [-]
     Hfs : list[float], optional
         Molar ideal-gas standard heats of formation at 298.15 K and 1 atm,
         [J/mol]
@@ -180,8 +208,12 @@ class GibbsExcessLiquid(Phase):
         Which set of caloric equations to use when calculating fugacities
         and related properties; valid options are 'Psat', 'Poynting&PhiSat',
         'Poynting', 'PhiSat', 'Hvap' [-]
-    Psat_extrpolation : str, optional
-        One of 'AB' or 'ABC'; configures extrapolation for vapor pressure, [-]
+    henry_components : list[bool], optional
+        List of booleans indicating whether each component follows Henry's
+        law instead of Raoult's law; components marked True require at
+        least one set of Henry's law parameters (henry_abcdef, or one or
+        more of henry_as through henry_fs) to be provided. Defaults to
+        all False (Raoult's law for every component), [-]
     henry_abcdef : tuple[list[list[float]], 6], optional
         Contains the parameters used for henry's law constant, [-]
     henry_as : list[list[float]], optional
@@ -191,7 +223,7 @@ class GibbsExcessLiquid(Phase):
     henry_cs : list[list[float]], optional
         `c` parameters used in calculating henry's law constant, [-]
     henry_ds : list[list[float]], optional
-        `d` paraemeters used in calculating henry's law constant, [1/K]
+        `d` parameters used in calculating henry's law constant, [1/K]
     henry_es : list[list[float]], optional
         `e` parameters used in calculating henry's law constant, [K^2]
     henry_fs : list[list[float]], optional
@@ -203,7 +235,6 @@ class GibbsExcessLiquid(Phase):
         'solvents_with_parameters' to consider only the solvents with
         parameters (vapor pressures will be used if a component has
         no solvents whatsoever)
-
     use_Hvap_caloric : bool, optional
         If True, enthalpy and entropy will be calculated using ideal-gas
         heat capacity and the heat of vaporization of the fluid only. This
@@ -222,17 +253,9 @@ class GibbsExcessLiquid(Phase):
     is_liquid = True
     P_DEPENDENT_H_LIQ = True
     PHI_SAT_IDEAL_TR = 0.1
-    _Psats_data = None
-    _Vms_sat_data = None
-    _Hvap_data = None
-
     use_IG_Cp = True # Deprecated! Remove with S_old and H_old
 
     ideal_gas_basis = True
-    supercritical_volumes = False
-
-    Cpls_poly_fit = False
-    _Cpls_data = None
 
     _Tait_B_data = None
     _Tait_C_data = None
@@ -243,12 +266,13 @@ class GibbsExcessLiquid(Phase):
                             EnthalpyVaporization)
 
     model_attributes = ("Hfs", "Gfs", "Sfs", "GibbsExcessModel",
-                        "eos_pure_instances", "use_Poynting", "use_phis_sat",
+                        "eos_pure_instances", "equilibrium_basis", "caloric_basis",
                         "use_Tait", "use_eos_volume", "henry_components",
                         "henry_as", "henry_bs", "henry_cs", "henry_ds", "henry_es", "henry_fs","henry_mode",
-                        "Psat_extrpolation") + pure_references
+                        ) + pure_references
 
     obj_references = ("GibbsExcessModel", "eos_pure_instances", "result", "constants", "correlations",
+                    "settings",
                         "HeatCapacityGases", "VolumeLiquids", "VaporPressures", "HeatCapacityLiquids",
                                         "EnthalpyVaporizations")
 
@@ -262,18 +286,13 @@ class GibbsExcessLiquid(Phase):
         "HeatCapacityGases",
         "HeatCapacityLiquids",
         "Hfs",
-        "Hvap_poly_fit",
         "N",
         "P",
-        "Psat_extrpolation",
-        "Psats_poly_fit",
+
         "Sfs",
         "T",
         "VaporPressures",
-        "Vms_sat_poly_fit",
-        "Vms_supercritical_poly_fit",
         "VolumeLiquids",
-        "VolumeSupercriticalLiquids",
         "_Cpgs_data",
         "_model_hash",
         "_model_hash_ignore_phase",
@@ -344,11 +363,7 @@ class GibbsExcessLiquid(Phase):
                  eos_pure_instances=None,
                  EnthalpyVaporizations=None,
                  HeatCapacityLiquids=None,
-                 VolumeSupercriticalLiquids=None,
 
-                 use_Hvap_caloric=False,
-                 use_Poynting=False,
-                 use_phis_sat=False,
                  use_Tait=False,
                  use_eos_volume=False,
 
@@ -362,9 +377,11 @@ class GibbsExcessLiquid(Phase):
                  henry_mode="solvents_with_parameters",
 
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
-                 Psat_extrpolation="AB",
-                 equilibrium_basis=None,
+                 equilibrium_basis='Psat',
                  caloric_basis=None,
+                 use_Poynting=None,
+                 use_phis_sat=None,
+                 use_Hvap_caloric=None,
                  ):
         """It is quite possible to introduce a PVT relation ship for liquid
         density and remain thermodynamically consistent. However, must be
@@ -394,25 +411,6 @@ class GibbsExcessLiquid(Phase):
         self.henry_components = henry_components
 
         self.VaporPressures = VaporPressures
-        self.Psats_poly_fit = (all(i.method == POLY_FIT for i in VaporPressures) and not self.has_henry_components) if VaporPressures is not None else False
-        self.Psat_extrpolation = Psat_extrpolation
-        if self.Psats_poly_fit:
-            Psats_data = [[i.poly_fit_Tmin for i in VaporPressures],
-                               [i.poly_fit_Tmin_slope for i in VaporPressures],
-                               [i.poly_fit_Tmin_value for i in VaporPressures],
-                               [i.poly_fit_Tmax for i in VaporPressures],
-                               [i.poly_fit_Tmax_slope for i in VaporPressures],
-                               [i.poly_fit_Tmax_value for i in VaporPressures],
-                               [i.poly_fit_coeffs for i in VaporPressures],
-                               [i.poly_fit_d_coeffs for i in VaporPressures],
-                               [i.poly_fit_d2_coeffs for i in VaporPressures],
-                               [i.DIPPR101_ABC for i in VaporPressures]]
-            if Psat_extrpolation == "AB":
-                Psats_data.append([i.poly_fit_AB_high_ABC_compat + [0.0] for i in VaporPressures])
-            elif Psat_extrpolation == "ABC":
-                Psats_data.append([i.DIPPR101_ABC_high for i in VaporPressures])
-            # Other option: raise?
-            self._Psats_data = Psats_data
 
 
         if self.vectorized:
@@ -431,38 +429,6 @@ class GibbsExcessLiquid(Phase):
 
         self.use_eos_volume = use_eos_volume
         self.VolumeLiquids = VolumeLiquids
-        self.Vms_sat_poly_fit = ((not use_eos_volume and all(i.method == POLY_FIT for i in VolumeLiquids)) if VolumeLiquids is not None else False)
-        if self.Vms_sat_poly_fit:
-            self._Vms_sat_data = [[i.poly_fit_Tmin for i in VolumeLiquids],
-                                 [i.poly_fit_Tmin_slope for i in VolumeLiquids],
-                                 [i.poly_fit_Tmin_value for i in VolumeLiquids],
-                                 [i.poly_fit_Tmax for i in VolumeLiquids],
-                                 [i.poly_fit_Tmax_slope for i in VolumeLiquids],
-                                 [i.poly_fit_Tmax_value for i in VolumeLiquids],
-                                 [i.poly_fit_coeffs for i in VolumeLiquids],
-                                 [i.poly_fit_d_coeffs for i in VolumeLiquids],
-                                 [i.poly_fit_d2_coeffs for i in VolumeLiquids],
-                                 [i.poly_fit_Tmin_quadratic for i in VolumeLiquids],
-                                 ]
-#            low_fits = self._Vms_sat_data[9]
-#            for i in range(self.N):
-#                low_fits[i][0] = max(0, low_fits[i][0])
-
-        self.VolumeSupercriticalLiquids = VolumeSupercriticalLiquids
-        self.Vms_supercritical_poly_fit = all(i.method == POLY_FIT for i in VolumeSupercriticalLiquids) if VolumeSupercriticalLiquids is not None else False
-        if self.Vms_supercritical_poly_fit:
-            self.Vms_supercritical_data = [[i.poly_fit_Tmin for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmin_slope for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmin_value for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmax for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmax_slope for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmax_value for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_coeffs for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_d_coeffs for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_d2_coeffs for i in VolumeSupercriticalLiquids],
-                                 [i.poly_fit_Tmin_quadratic for i in VolumeSupercriticalLiquids],
-                                 ]
-
 
         self.incompressible = not use_Tait
         self.use_Tait = use_Tait
@@ -477,13 +443,6 @@ class GibbsExcessLiquid(Phase):
 
 
         self.EnthalpyVaporizations = EnthalpyVaporizations
-        self.Hvap_poly_fit = all(i.method == POLY_FIT for i in EnthalpyVaporizations) if EnthalpyVaporizations is not None else False
-        if self.Hvap_poly_fit:
-            self._Hvap_data = [[i.poly_fit_Tmin for i in EnthalpyVaporizations],
-                              [i.poly_fit_Tmax for i in EnthalpyVaporizations],
-                              [i.poly_fit_Tc for i in EnthalpyVaporizations],
-                              [1.0/i.poly_fit_Tc for i in EnthalpyVaporizations],
-                              [i.poly_fit_coeffs for i in EnthalpyVaporizations]]
 
 
 
@@ -493,51 +452,51 @@ class GibbsExcessLiquid(Phase):
         self.GibbsExcessModel = GibbsExcessModel
         self.eos_pure_instances = eos_pure_instances
 
+        deprecated_eq, deprecated_cal = parse_deprecated_basis_flags(use_Poynting, use_phis_sat, use_Hvap_caloric)
+        if deprecated_eq is not None:
+            equilibrium_basis = deprecated_eq
+            caloric_basis = deprecated_cal
+
+        if equilibrium_basis is None:
+            equilibrium_basis = 'Psat'
         self.equilibrium_basis = equilibrium_basis
+        if caloric_basis is None:
+            caloric_basis = equilibrium_basis
         self.caloric_basis = caloric_basis
 
-        if equilibrium_basis is not None:
-            if equilibrium_basis == "Poynting":
-                self.use_Poynting = True
-                self.use_phis_sat = False
-            elif equilibrium_basis == "Poynting&PhiSat":
-                self.use_Poynting = True
-                self.use_phis_sat = True
-            elif equilibrium_basis == "PhiSat":
-                self.use_phis_sat = True
-                self.use_Poynting = False
-            elif equilibrium_basis == "Psat":
-                self.use_phis_sat = False
-                self.use_Poynting = False
-        else:
-            self.use_Poynting = use_Poynting
-            self.use_phis_sat = use_phis_sat
+        if equilibrium_basis == "Poynting":
+            self.use_Poynting = True
+            self.use_phis_sat = False
+        elif equilibrium_basis == "Poynting&PhiSat":
+            self.use_Poynting = True
+            self.use_phis_sat = True
+        elif equilibrium_basis == "PhiSat":
+            self.use_phis_sat = True
+            self.use_Poynting = False
+        elif equilibrium_basis == "Psat":
+            self.use_phis_sat = False
+            self.use_Poynting = False
 
-        if caloric_basis is not None:
-            if caloric_basis == "Poynting":
-                self.use_Poynting_caloric = True
-                self.use_phis_sat_caloric = False
-                self.use_Hvap_caloric = False
-            elif caloric_basis == "Poynting&PhiSat":
-                self.use_Poynting_caloric = True
-                self.use_phis_sat_caloric = True
-                self.use_Hvap_caloric = False
-            elif caloric_basis == "PhiSat":
-                self.use_phis_sat_caloric = True
-                self.use_Poynting_caloric = False
-                self.use_Hvap_caloric = False
-            elif caloric_basis == "Psat":
-                self.use_phis_sat_caloric = False
-                self.use_Poynting_caloric = False
-                self.use_Hvap_caloric = False
-            elif caloric_basis == "Hvap":
-                self.use_phis_sat_caloric = False
-                self.use_Poynting_caloric = False
-                self.use_Hvap_caloric = True
-        else:
-            self.use_Poynting_caloric = use_Poynting
-            self.use_phis_sat_caloric = use_phis_sat
-            self.use_Hvap_caloric = use_Hvap_caloric
+        if caloric_basis == "Poynting":
+            self.use_Poynting_caloric = True
+            self.use_phis_sat_caloric = False
+            self.use_Hvap_caloric = False
+        elif caloric_basis == "Poynting&PhiSat":
+            self.use_Poynting_caloric = True
+            self.use_phis_sat_caloric = True
+            self.use_Hvap_caloric = False
+        elif caloric_basis == "PhiSat":
+            self.use_phis_sat_caloric = True
+            self.use_Poynting_caloric = False
+            self.use_Hvap_caloric = False
+        elif caloric_basis == "Psat":
+            self.use_phis_sat_caloric = False
+            self.use_Poynting_caloric = False
+            self.use_Hvap_caloric = False
+        elif caloric_basis == "Hvap":
+            self.use_phis_sat_caloric = False
+            self.use_Poynting_caloric = False
+            self.use_Hvap_caloric = True
 
 
 
@@ -659,16 +618,6 @@ class GibbsExcessLiquid(Phase):
         new.HeatCapacityLiquids = self.HeatCapacityLiquids
 
 
-        new.Psats_poly_fit = self.Psats_poly_fit
-        new._Psats_data = self._Psats_data
-        new.Psat_extrpolation = self.Psat_extrpolation
-
-        new.Vms_sat_poly_fit = self.Vms_sat_poly_fit
-        new._Vms_sat_data = self._Vms_sat_data
-
-        new._Hvap_data = self._Hvap_data
-        new.Hvap_poly_fit = self.Hvap_poly_fit
-
         new.incompressible = self.incompressible
 
         new.equilibrium_basis = self.equilibrium_basis
@@ -751,21 +700,6 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         return new
-
-    supports_lnphis_args = False
-
-    def lnphis_args(self):
-        try:
-            return self._lnphis_args
-        except:
-            pass
-        lnPsats = self.lnPsats()
-        Poyntings = self.Poyntings()
-        phis_sat = self.phis_sat()
-        activity_args = self.GibbsExcessModel.gammas_args()
-        lnphis = zeros(self.N) if self.vectorized else [0.0]*self.N
-        self._lnphis_args = (self.model_id, self.T, self.P, self.N, lnPsats, Poyntings, phis_sat) + activity_args +(lnphis,)
-        return self._lnphis_args
 
 
     def lnHenry_matrix(self):
@@ -895,42 +829,10 @@ class GibbsExcessLiquid(Phase):
         return self._Psats_T_ref
 
     def Psats_at(self, T):
-        if self.Psats_poly_fit:
-            return self._Psats_at_poly_fit(T, self._Psats_data, range(self.N))
         if self.has_henry_components:
             return self.to(T=T, P=self.P, zs=self.zs).Psats()
         VaporPressures = self.VaporPressures
         return [VaporPressures[i](T) for i in range(self.N)]
-
-    @staticmethod
-    def _Psats_at_poly_fit(T, Psats_data, cmps):
-        Psats = []
-        T_inv = 1.0/T
-        logT = log(T)
-        Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
-        for i in cmps:
-            if T < Tmins[i]:
-                A, B, C = Psats_data[9][i]
-                Psat = (A + B*T_inv + C*logT)
-#                    A, B = _Psats_data[9][i]
-#                    Psat = (A - B*T_inv)
-#                    Psat = (T - Tmins[i])*_Psats_data[1][i] + _Psats_data[2][i]
-            elif T > Tmaxes[i]:
-                A, B, C = Psats_data[10][i]
-                Psat = (A + B*T_inv + C*logT)
-#                A, B = _Psats_data[10][i]
-#                Psat = (A - B*T_inv)
-#                Psat = (T - Tmaxes[i])*_Psats_data[4][i] + _Psats_data[5][i]
-            else:
-                Psat = 0.0
-                for c in coeffs[i]:
-                    Psat = Psat*T + c
-            try:
-                Psats.append(exp(Psat))
-            except:
-                Psats.append(1.6549840276802644e+300)
-
-        return Psats
 
     def Psats(self):
         try:
@@ -938,29 +840,11 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         N = self.N
-        T, cmps = self.T, range(N)
-        if self.Psats_poly_fit:
-            self._Psats = Psats = self._Psats_at_poly_fit(T, self._Psats_data, cmps)
-#            _Psats_data = self._Psats_data
-#            Tmins, Tmaxes, coeffs = _Psats_data[0], _Psats_data[3], _Psats_data[6]
-#            for i in cmps:
-#                if T < Tmins[i]:
-#                    A, B, C = _Psats_data[9][i]
-#                    Psat = (A + B*T_inv + C*logT)
-##                    A, B = _Psats_data[9][i]
-##                    Psat = (A - B*T_inv)
-##                    Psat = (T - Tmins[i])*_Psats_data[1][i] + _Psats_data[2][i]
-#                elif T > Tmaxes[i]:
-#                    Psat = (T - Tmaxes[i])*_Psats_data[4][i] + _Psats_data[5][i]
-#                else:
-#                    Psat = 0.0
-#                    for c in coeffs[i]:
-#                        Psat = Psat*T + c
-#                Psats.append(exp(Psat))
-        else:
-            self._Psats = Psats = []
-            for i in self.VaporPressures:
-                Psats.append(i.T_dependent_property(T))
+        T = self.T
+
+        self._Psats = Psats = []
+        for i in self.VaporPressures:
+            Psats.append(i.T_dependent_property(T))
 
         if self.has_henry_components:
             Hs, henry_components = self.Henry_constants(), self.henry_components
@@ -976,39 +860,7 @@ class GibbsExcessLiquid(Phase):
         return phase_identification_parameter(self.V(), self.dP_dT(), self.dP_dV(),
                                               self.d2P_dV2(), self.d2P_dTdV())
 
-    @staticmethod
-    def _dPsats_dT_at_poly_fit(T, Psats_data, cmps, Psats):
-        T_inv = 1.0/T
-        Tinv2 = T_inv*T_inv
-        dPsats_dT = []
-        Tmins, Tmaxes, dcoeffs, coeffs_low, coeffs_high = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
-        for i in cmps:
-            if T < Tmins[i]:
-#                    A, B = _Psats_data[9][i]
-#                    dPsat_dT = B*Tinv2*Psats[i]
-                dPsat_dT = Psats[i]*(-coeffs_low[i][1]*Tinv2 + coeffs_low[i][2]*T_inv)
-#                    dPsat_dT = _Psats_data[1][i]*Psats[i]#*exp((T - Tmins[i])*_Psats_data[1][i]
-                                             #   + _Psats_data[2][i])
-            elif T > Tmaxes[i]:
-                dPsat_dT = Psats[i]*(-coeffs_high[i][1]*Tinv2 + coeffs_high[i][2]*T_inv)
-
-#                dPsat_dT = _Psats_data[4][i]*Psats[i]#*exp((T - Tmaxes[i])
-#                                                    #*_Psats_data[4][i]
-#                                                    #+ _Psats_data[5][i])
-            else:
-                dPsat_dT = 0.0
-                for c in dcoeffs[i]:
-                    dPsat_dT = dPsat_dT*T + c
-#                    v, der = horner_and_der(coeffs[i], T)
-                dPsat_dT *= Psats[i]
-            dPsats_dT.append(dPsat_dT)
-        return dPsats_dT
-
     def dPsats_dT_at(self, T, Psats=None):
-        if Psats is None:
-            Psats = self.Psats_at(T)
-        if self.Psats_poly_fit:
-            return self._dPsats_dT_at_poly_fit(T, self._Psats_data, range(self.N), Psats)
         if self.has_henry_components:
             return self.to(T=T, P=self.P, zs=self.zs).dPsats_dT()
         return [VaporPressure.T_dependent_property_derivative(T=T)
@@ -1016,20 +868,10 @@ class GibbsExcessLiquid(Phase):
 
     def dPsats_dT(self):
         try:
-            return self._dPsats_dTT_dependent_property_derivative
-        except:
+            return self._dPsats_dT
+        except AttributeError:
             pass
         T, N = self.T, self.N
-        # Need to reset the method because for the T bounded solver,
-        # will normally get a different than prefered method as it starts
-        # at the boundaries
-        if self.Psats_poly_fit:
-            try:
-                Psats = self._Psats
-            except AttributeError:
-                Psats = self.Psats()
-            self._dPsats_dT = dPsats_dT = self._dPsats_dT_at_poly_fit(T, self._Psats_data, range(N), Psats)
-            return dPsats_dT
 
         self._dPsats_dT = dPsats_dT = [VaporPressure.T_dependent_property_derivative(T=T)
                      for VaporPressure in self.VaporPressures]
@@ -1045,43 +887,7 @@ class GibbsExcessLiquid(Phase):
             return self._d2Psats_dT2
         except:
             pass
-        try:
-            Psats = self._Psats
-        except AttributeError:
-            Psats = self.Psats()
-        try:
-            dPsats_dT = self._dPsats_dT
-        except AttributeError:
-            dPsats_dT = self.dPsats_dT()
         T, N = self.T, self.N
-        T_inv = 1.0/T
-        T_inv2 = T_inv*T_inv
-        # Tinv3 = T_inv*T_inv*T_inv
-
-        self._d2Psats_dT2 = d2Psats_dT2 = []
-        if self.Psats_poly_fit:
-            Psats_data = self._Psats_data
-            Tmins, Tmaxes, d2coeffs = Psats_data[0], Psats_data[3], Psats_data[8]
-            for i in range(N):
-                if T < Tmins[i]:
-#                    A, B = _Psats_data[9][i]
-#                    d2Psat_dT2 = B*Psats[i]*(B*T_inv - 2.0)*Tinv3
-                    A, B, C = Psats_data[9][i]
-                    x0 = (B*T_inv - C)
-                    d2Psat_dT2 = Psats[i]*(2.0*B*T_inv - C + x0*x0)*T_inv2
-#                    d2Psat_dT2 = _Psats_data[1][i]*dPsats_dT[i]
-                elif T > Tmaxes[i]:
-                    A, B, C = Psats_data[10][i]
-                    x0 = (B*T_inv - C)
-                    d2Psat_dT2 = Psats[i]*(2.0*B*T_inv - C + x0*x0)*T_inv2
-#                    d2Psat_dT2 = _Psats_data[4][i]*dPsats_dT[i]
-                else:
-                    d2Psat_dT2 = 0.0
-                    for c in d2coeffs[i]:
-                        d2Psat_dT2 = d2Psat_dT2*T + c
-                    d2Psat_dT2 = (dPsats_dT[i]*dPsats_dT[i]/Psats[i] + Psats[i]*d2Psat_dT2)
-                d2Psats_dT2.append(d2Psat_dT2)
-            return d2Psats_dT2
 
         self._d2Psats_dT2 = d2Psats_dT2 = [VaporPressure.T_dependent_property_derivative(T=T, order=2)
                      for VaporPressure in self.VaporPressures]
@@ -1098,27 +904,6 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T, N = self.T, self.N
-        T_inv = 1.0/T
-        logT = log(T)
-        lnPsats = []
-        if self.Psats_poly_fit:
-            Psats_data = self._Psats_data
-            Tmins, Tmaxes, coeffs = Psats_data[0], Psats_data[3], Psats_data[6]
-            for i in range(N):
-                if T < Tmins[i]:
-                    A, B, C = Psats_data[9][i]
-                    Psat = (A + B*T_inv + C*logT)
-                elif T > Tmaxes[i]:
-                    A, B, C = Psats_data[10][i]
-                    Psat = (A + B*T_inv + C*logT)
-#                    Psat = (T - Tmaxes[i])*_Psats_data[4][i] + _Psats_data[5][i]
-                else:
-                    Psat = 0.0
-                    for c in coeffs[i]:
-                        Psat = Psat*T + c
-                lnPsats.append(Psat)
-            self._lnPsats = lnPsats
-            return lnPsats
 
         self._lnPsats = lnPsats = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_LOG)
                                    for VaporPressure in self.VaporPressures]
@@ -1131,26 +916,6 @@ class GibbsExcessLiquid(Phase):
 
     def dlnPsats_dT(self):
         T, N = self.T, self.N
-        T_inv = 1.0/T
-        Tinv2 = T_inv*T_inv
-        if self.Psats_poly_fit:
-            Psats_data = self._Psats_data
-            Tmins, Tmaxes, dcoeffs = Psats_data[0], Psats_data[3], Psats_data[7]
-            dlnPsats_dT = []
-            for i in range(N):
-                if T < Tmins[i]:
-                    A, B, C = Psats_data[9][i]
-                    dPsat_dT = (-B*Tinv2 + C*T_inv)
-                elif T > Tmaxes[i]:
-                    A, B, C = Psats_data[10][i]
-                    dPsat_dT = (-B*Tinv2 + C*T_inv)
-#                    dPsat_dT = _Psats_data[4][i]
-                else:
-                    dPsat_dT = 0.0
-                    for c in dcoeffs[i]:
-                        dPsat_dT = dPsat_dT*T + c
-                dlnPsats_dT.append(dPsat_dT)
-            return dlnPsats_dT
         dlnPsats_dT = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_LOG_DERIVATIVE) for VaporPressure in self.VaporPressures]
         if self.has_henry_components:
             Hs, dHs, henry_components = self.Henry_constants(), self.dHenry_constants_dT(), self.henry_components
@@ -1162,27 +927,6 @@ class GibbsExcessLiquid(Phase):
 
     def d2lnPsats_dT2(self):
         T, N = self.T, self.N
-        T_inv = 1.0/T
-        T_inv2 = T_inv*T_inv
-        # Tinv3 = T_inv*T_inv*T_inv
-        if self.Psats_poly_fit:
-            Psats_data = self._Psats_data
-            Tmins, Tmaxes, d2coeffs = Psats_data[0], Psats_data[3], Psats_data[8]
-            d2lnPsats_dT2 = []
-            for i in range(N):
-                if T < Tmins[i]:
-                    A, B, C = Psats_data[9][i]
-                    d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2
-                elif T > Tmaxes[i]:
-                    A, B, C = Psats_data[10][i]
-                    d2lnPsat_dT2 = (2.0*B*T_inv - C)*T_inv2
-#                    d2lnPsat_dT2 = 0.0
-                else:
-                    d2lnPsat_dT2 = 0.0
-                    for c in d2coeffs[i]:
-                        d2lnPsat_dT2 = d2lnPsat_dT2*T + c
-                d2lnPsats_dT2.append(d2lnPsat_dT2)
-            return d2lnPsats_dT2
         d2lnPsats_dT2 = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_SECOND_LOG_DERIVATIVE) for VaporPressure in self.VaporPressures]
         if self.has_henry_components:
             Hs, dHs, d2Hs, henry_components = self.Henry_constants(), self.dHenry_constants_dT(), self.d2Henry_constants_dT2(), self.henry_components
@@ -1198,27 +942,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T, N = self.T, self.N
-        T_inv = 1.0/T
-        Tinv2 = T_inv*T_inv
-        if self.Psats_poly_fit:
-            dPsat_dT_over_Psats = []
-            Psats_data = self._Psats_data
-            Tmins, Tmaxes, dcoeffs, low_coeffs, high_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
-            for i in range(N):
-                if T < Tmins[i]:
-                    dPsat_dT_over_Psat = (-low_coeffs[i][1]*Tinv2 + low_coeffs[i][2]*T_inv)
-                elif T > Tmaxes[i]:
-                    dPsat_dT_over_Psat = (-high_coeffs[i][1]*Tinv2 + high_coeffs[i][2]*T_inv)
-#                    dPsat_dT_over_Psat = _Psats_data[4][i]
-                else:
-                    dPsat_dT_over_Psat = 0.0
-                    for c in dcoeffs[i]:
-                        dPsat_dT_over_Psat = dPsat_dT_over_Psat*T + c
-                dPsat_dT_over_Psats.append(dPsat_dT_over_Psat)
-            self._dPsats_dT_over_Psats = dPsat_dT_over_Psats
-            return dPsat_dT_over_Psats
 
-        # dPsat_dT_over_Psats = [i/j for i, j in zip(self.dPsats_dT(), self.Psats())]
         dPsat_dT_over_Psats = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_DERIVATIVE_RATIO) for VaporPressure in self.VaporPressures]
 
         if self.has_henry_components:
@@ -1236,37 +960,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T, N = self.T, self.N
-        T_inv = 1.0/T
-        Tinv2 = T_inv*T_inv
-        Tinv4 = Tinv2*Tinv2
-        c0 = (T + T)*Tinv4
-        if self.Psats_poly_fit:
-            d2Psat_dT2_over_Psats = []
-            Psats_data = self._Psats_data
-            Tmins, Tmaxes, dcoeffs, low_coeffs, high_coeffs = Psats_data[0], Psats_data[3], Psats_data[7], Psats_data[9], Psats_data[10]
-            for i in range(N):
-                if T < Tmins[i]:
-                    B, C = low_coeffs[i][1], low_coeffs[i][2]
-                    x0 = (B - C*T)
-                    d2Psat_dT2_over_Psat = c0*B - C*Tinv2 + x0*x0*Tinv4
-#                    d2Psat_dT2_over_Psat = (2*B*T - C*T**2 + (B - C*T)**2)/T**4
-                elif T > Tmaxes[i]:
-                    B, C = high_coeffs[i][1], high_coeffs[i][2]
-                    x0 = (B - C*T)
-                    d2Psat_dT2_over_Psat = c0*B - C*Tinv2 + x0*x0*Tinv4
-                else:
-                    dPsat_dT = 0.0
-                    d2Psat_dT2 = 0.0
-                    for a in dcoeffs[i]:
-                        d2Psat_dT2 = T*d2Psat_dT2 + dPsat_dT
-                        dPsat_dT = T*dPsat_dT + a
-                    d2Psat_dT2_over_Psat = dPsat_dT*dPsat_dT + d2Psat_dT2
 
-                d2Psat_dT2_over_Psats.append(d2Psat_dT2_over_Psat)
-            self._d2Psats_dT2_over_Psats = d2Psat_dT2_over_Psats
-            return d2Psat_dT2_over_Psats
-
-        # d2Psat_dT2_over_Psats = [i/j for i, j in zip(self.d2Psats_dT2(), self.Psats())]
         d2Psat_dT2_over_Psats = [VaporPressure.T_dependent_property_transform(T, TRANSFORM_SECOND_DERIVATIVE_RATIO) for VaporPressure in self.VaporPressures]
         if self.has_henry_components:
             Hs, d2Henry_constants_dT2, henry_components = self.Henry_constants(), self.d2Henry_constants_dT2(), self.henry_components
@@ -1277,28 +971,7 @@ class GibbsExcessLiquid(Phase):
         self._d2Psats_dT2_over_Psats = d2Psat_dT2_over_Psats
         return d2Psat_dT2_over_Psats
 
-    @staticmethod
-    def _Vms_sat_at(T, Vms_sat_data, cmps):
-        Tmins, Tmaxes, coeffs, coeffs_Tmin = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[6], Vms_sat_data[9]
-        Vms_sat = []
-        for i in cmps:
-            if T < Tmins[i]:
-                Vm = 0.0
-                for c in coeffs_Tmin[i]:
-                    Vm = Vm*T + c
-#                    Vm = (T - Tmins[i])*Vms_sat_data[1][i] + Vms_sat_data[2][i]
-            elif T > Tmaxes[i]:
-                Vm = (T - Tmaxes[i])*Vms_sat_data[4][i] + Vms_sat_data[5][i]
-            else:
-                Vm = 0.0
-                for c in coeffs[i]:
-                    Vm = Vm*T + c
-            Vms_sat.append(Vm)
-        return Vms_sat
-
     def Vms_sat_at(self, T):
-        if self.Vms_sat_poly_fit:
-            return self._Vms_sat_at(T, self._Vms_sat_data, range(self.N))
         VolumeLiquids = self.VolumeLiquids
         return [VolumeLiquids[i].T_dependent_property(T) for i in range(self.N)]
 
@@ -1308,12 +981,7 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T = self.T
-        if self.Vms_sat_poly_fit:
-#            self._Vms_sat = evaluate_linear_fits(self._Vms_sat_data, T)
-#            return self._Vms_sat
-            self._Vms_sat = Vms_sat = self._Vms_sat_at(T, self._Vms_sat_data, range(self.N))
-            return Vms_sat
-        elif self.use_eos_volume:
+        if self.use_eos_volume:
             Vms = []
             eoss = self.eos_pure_instances
             Psats = self.Psats()
@@ -1336,25 +1004,7 @@ class GibbsExcessLiquid(Phase):
         self._Vms_sat = [VolumeLiquids[i].T_dependent_property(T) for i in range(self.N)]
         return self._Vms_sat
 
-    @staticmethod
-    def _dVms_sat_dT_at(T, Vms_sat_data, cmps):
-        Vms_sat_dT = []
-        Tmins, Tmaxes, dcoeffs = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[7]
-        for i in cmps:
-            if T < Tmins[i]:
-                dVm = horner_and_der2(Vms_sat_data[9][i], T)[1]
-            elif T > Tmaxes[i]:
-                dVm = Vms_sat_data[4][i]
-            else:
-                dVm = 0.0
-                for c in dcoeffs[i]:
-                    dVm = dVm*T + c
-            Vms_sat_dT.append(dVm)
-        return Vms_sat_dT
-
     def dVms_sat_dT_at(self, T):
-        if self.Vms_sat_poly_fit:
-            return self._dVms_sat_dT_at(T, self._Vms_sat_data, range(self.N))
         return [obj.T_dependent_property_derivative(T=T) for obj in self.VolumeLiquids]
 
     def dVms_sat_dT(self):
@@ -1363,12 +1013,6 @@ class GibbsExcessLiquid(Phase):
         except:
             pass
         T = self.T
-
-        if self.Vms_sat_poly_fit:
-#            self._Vms_sat_dT = evaluate_linear_fits_d(self._Vms_sat_data, T)
-            self._Vms_sat_dT = self._dVms_sat_dT_at(T, self._Vms_sat_data, range(self.N))
-            return self._Vms_sat_dT
-
         VolumeLiquids = self.VolumeLiquids
         self._Vms_sat_dT = Vms_sat_dT = [obj.T_dependent_property_derivative(T=T) for obj in VolumeLiquids]
         return Vms_sat_dT
@@ -1378,26 +1022,7 @@ class GibbsExcessLiquid(Phase):
             return self._d2Vms_sat_dT2
         except:
             pass
-
         T = self.T
-
-        if self.Vms_sat_poly_fit:
-#            self._d2Vms_sat_dT2 = evaluate_linear_fits_d2(self._Vms_sat_data, T)
-#            return self._d2Vms_sat_dT2
-            d2Vms_sat_dT2 = self._d2Vms_sat_dT2 = []
-
-            Vms_sat_data = self._Vms_sat_data
-            Tmins, Tmaxes, d2coeffs = Vms_sat_data[0], Vms_sat_data[3], Vms_sat_data[8]
-            for i in range(self.N):
-                d2Vm = 0.0
-                if Tmins[i] < T < Tmaxes[i]:
-                    for c in d2coeffs[i]:
-                        d2Vm = d2Vm*T + c
-                elif T < Tmins[i]:
-                    d2Vm = horner_and_der2(Vms_sat_data[9][i], T)[2]
-                d2Vms_sat_dT2.append(d2Vm)
-            return d2Vms_sat_dT2
-
         VolumeLiquids = self.VolumeLiquids
         self._d2Vms_sat_dT2 = [obj.T_dependent_property_derivative(T=T, order=2) for obj in VolumeLiquids]
         return self._d2Vms_sat_dT2
@@ -1408,11 +1033,8 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T_REF_IG = self.T_REF_IG
-        if self.Vms_sat_poly_fit:
-            self._Vms_sat_T_ref = evaluate_linear_fits(self._Vms_sat_data, T_REF_IG)
-        else:
-            VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
-            self._Vms_sat_T_ref = [VolumeLiquids[i].T_dependent_property(T_REF_IG) for i in cmps]
+        VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
+        self._Vms_sat_T_ref = [VolumeLiquids[i].T_dependent_property(T_REF_IG) for i in cmps]
         return self._Vms_sat_T_ref
 
     def dVms_sat_dT_T_ref(self):
@@ -1421,11 +1043,8 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T_REF_IG = self.T_REF_IG
-        if self.Vms_sat_poly_fit:
-            self._dVms_sat_dT_T_ref = evaluate_linear_fits_d(self._Vms_sat_data, self.T)
-        else:
-            VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
-            self._dVms_sat_dT_T_ref = [VolumeLiquids[i].T_dependent_property_derivative(T_REF_IG) for i in cmps]
+        VolumeLiquids, cmps = self.VolumeLiquids, range(self.N)
+        self._dVms_sat_dT_T_ref = [VolumeLiquids[i].T_dependent_property_derivative(T_REF_IG) for i in cmps]
         return self._dVms_sat_dT_T_ref
 
     def Vms(self):
@@ -1454,20 +1073,6 @@ class GibbsExcessLiquid(Phase):
             pass
         T, EnthalpyVaporizations, cmps = self.T, self.EnthalpyVaporizations, range(self.N)
 
-        self._Hvaps = Hvaps = []
-        if self.Hvap_poly_fit:
-            Hvap_data = self._Hvap_data
-            Tcs, Tcs_inv, coeffs = Hvap_data[2], Hvap_data[3], Hvap_data[4]
-            for i in cmps:
-                Hvap = 0.0
-                if T < Tcs[i]:
-                    x = log(1.0 - T*Tcs_inv[i])
-                    for c in coeffs[i]:
-                        Hvap = Hvap*x + c
-    #                    Vm = horner(coeffs[i], log(1.0 - T*Tcs_inv[i])
-                Hvaps.append(Hvap)
-            return Hvaps
-
         self._Hvaps = Hvaps = [EnthalpyVaporizations[i](T) for i in cmps]
         for i in cmps:
             if Hvaps[i] is None:
@@ -1480,25 +1085,6 @@ class GibbsExcessLiquid(Phase):
         except AttributeError:
             pass
         T, EnthalpyVaporizations, cmps = self.T, self.EnthalpyVaporizations, range(self.N)
-
-        self._dHvaps_dT = dHvaps_dT = []
-        if self.Hvap_poly_fit:
-            Hvap_data = self._Hvap_data
-            Tcs, Tcs_inv, coeffs = Hvap_data[2], Hvap_data[3], Hvap_data[4]
-            for i in cmps:
-                dHvap_dT = 0.0
-                if T < Tcs[i]:
-                    p = log((Tcs[i] - T)*Tcs_inv[i])
-                    x = 1.0
-                    a = 1.0
-                    for c in coeffs[i][-2::-1]:
-                        dHvap_dT += a*c*x
-                        x *= p
-                        a += 1.0
-                    dHvap_dT /= T - Tcs[i]
-
-                dHvaps_dT.append(dHvap_dT)
-            return dHvaps_dT
 
         self._dHvaps_dT = dHvaps_dT = [EnthalpyVaporizations[i].T_dependent_property_derivative(T) for i in cmps]
         for i in cmps:
@@ -3428,10 +3014,10 @@ class GibbsExcessSolid(GibbsExcessLiquid):
 
 
     model_attributes = ("Hfs", "Gfs", "Sfs","GibbsExcessModel",
-                        "eos_pure_instances", "use_Poynting", "use_phis_sat",
+                        "eos_pure_instances", "equilibrium_basis", "caloric_basis",
                         "use_eos_volume", "henry_components",
                         "henry_as", "henry_bs", "henry_cs", "henry_ds", "henry_es", "henry_fs",
-                         "Psat_extrpolation") + pure_references
+                         ) + pure_references
 
     def __init__(self, SublimationPressures, VolumeSolids=None,
                  GibbsExcessModel=IdealSolution,
@@ -3439,12 +3025,12 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                  VolumeLiquidMixture=None,
                  HeatCapacityGases=None,
                  EnthalpySublimations=None,
-                 use_Poynting=False,
-                 use_phis_sat=False,
                  Hfs=None, Gfs=None, Sfs=None,
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
+                 equilibrium_basis='Psat',
+                 caloric_basis=None,
                  ):
         super().__init__(VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,
               HeatCapacityGases=HeatCapacityGases, EnthalpyVaporizations=EnthalpySublimations,
-              use_Poynting=use_Poynting,
+              equilibrium_basis=equilibrium_basis, caloric_basis=caloric_basis,
               Hfs=Hfs, Gfs=Gfs, Sfs=Sfs, T=T, P=P, zs=zs)
