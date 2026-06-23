@@ -30,9 +30,14 @@ __all__ = [
 
 from math import sqrt
 
+from chemicals.elements import mass_fractions
+from chemicals.utils import (
+    SG as SG_util,
+)
 from chemicals.utils import (
     Cp_minus_Cv,
     Joule_Thomson,
+    Vm_to_rho,
     dns_to_dn_partials,
     dxs_to_dn_partials,
     dxs_to_dns,
@@ -47,7 +52,7 @@ from chemicals.utils import (
     speed_of_sound,
 )
 from chemicals.virial import B_from_Z
-from fluids.constants import R, R_inv
+from fluids.constants import N_A, R, R_inv
 from fluids.core import c_ideal_gas, thermal_diffusivity
 from fluids.numerics import (
     jacobian,
@@ -139,9 +144,8 @@ class Phase:
     composition_independent = False
     vectorized = False
 
-    supports_lnphis_args = False
 
-    __slots__ = ("__dict__", "constants", "correlations", "result")
+    __slots__ = ("__dict__", "constants", "correlations", "settings")
 
     pure_references = ()
     """Tuple of attribute names which hold lists of :obj:`thermo.utils.TDependentProperty`
@@ -151,7 +155,7 @@ class Phase:
     """Tuple of types of :obj:`thermo.utils.TDependentProperty`
     or :obj:`thermo.utils.TPDependentProperty` corresponding to `pure_references`."""
 
-    obj_references = ("result", "constants", "correlations")
+    obj_references = ("constants", "correlations", "settings")
     """Tuple of object instances which should be stored as json using their own
     as_json method.
     """
@@ -352,9 +356,6 @@ class Phase:
         Notes
         -----
         """
-        if name in ("beta_mass",):
-            return self.result.value(name, self)
-
         v = getattr(self, name)
         try:
             v = v()
@@ -2023,7 +2024,7 @@ class Phase:
 
     def H_reactive(self):
         r"""Method to calculate and return the enthalpy of the phase on a
-        reactive basis, using the `Hfs` values of the phase.
+        reactive basis, using the formation enthalpies `Hfs` of the phase.
 
         .. math::
             H_{reactive} = H + \sum_i z_i {H_{f,i}}
@@ -2031,10 +2032,7 @@ class Phase:
         Returns
         -------
         H_reactive : float
-            Enthalpy of the phase on a reactive basis, [J/mol]
-
-        Notes
-        -----
+            Enthalpy on a reactive basis, [J/mol]
         """
         try:
             return self._H_reactive
@@ -2051,7 +2049,7 @@ class Phase:
 
     def S_reactive(self):
         r"""Method to calculate and return the entropy of the phase on a
-        reactive basis, using the `Sfs` values of the phase.
+        reactive basis, using the formation entropies `Sfs` of the phase.
 
         .. math::
             S_{reactive} = S + \sum_i z_i {S_{f,i}}
@@ -2059,10 +2057,7 @@ class Phase:
         Returns
         -------
         S_reactive : float
-            Entropy of the phase on a reactive basis, [J/(mol*K)]
-
-        Notes
-        -----
+            Entropy on a reactive basis, [J/(mol*K)]
         """
         try:
             return self._S_reactive
@@ -2087,13 +2082,9 @@ class Phase:
         Returns
         -------
         G_reactive : float
-            Gibbs free energy of the phase on a reactive basis, [J/(mol)]
-
-        Notes
-        -----
+            Gibbs free energy on a reactive basis, [J/(mol)]
         """
-        G = self.H_reactive() - self.T*self.S_reactive()
-        return G
+        return self.H_reactive() - self.T*self.S_reactive()
 
     def U_reactive(self):
         r"""Method to calculate and return the internal energy of the phase
@@ -2105,13 +2096,9 @@ class Phase:
         Returns
         -------
         U_reactive : float
-            Internal energy of the phase on a reactive basis, [J/(mol)]
-
-        Notes
-        -----
+            Internal energy on a reactive basis, [J/(mol)]
         """
-        U = self.H_reactive() - self.P*self.V()
-        return U
+        return self.H_reactive() - self.P*self.V()
 
     def A_reactive(self):
         r"""Method to calculate and return the Helmholtz free energy of the
@@ -2123,17 +2110,13 @@ class Phase:
         Returns
         -------
         A_reactive : float
-            Helmholtz free energy of the phase on a reactive basis, [J/(mol)]
-
-        Notes
-        -----
+            Helmholtz free energy on a reactive basis, [J/(mol)]
         """
-        A = self.U_reactive() - self.T*self.S_reactive()
-        return A
+        return self.U_reactive() - self.T*self.S_reactive()
 
     def H_formation_ideal_gas(self):
         r"""Method to calculate and return the ideal-gas enthalpy of formation
-        of the phase (as if the phase was an ideal gas).
+        of the phase.
 
         .. math::
             H_{formation}^{ig} = \sum_i z_i {H_{f,i}}
@@ -2141,11 +2124,7 @@ class Phase:
         Returns
         -------
         H_formation_ideal_gas : float
-            Enthalpy of formation of the phase on a formation basis
-            as an ideal gas, [J/mol]
-
-        Notes
-        -----
+            Ideal gas formation enthalpy, [J/mol]
         """
         try:
             return self._H_formation_ideal_gas
@@ -2153,7 +2132,7 @@ class Phase:
             pass
         Hf_ideal_gas = 0.0
         if self.vectorized:
-            Hf_ideal_gas = float(self.zs, self.Hfs)
+            Hf_ideal_gas = float(dot(self.zs, self.Hfs))
         else:
             for zi, Hf in zip(self.zs, self.Hfs):
                 Hf_ideal_gas += zi*Hf
@@ -2162,7 +2141,7 @@ class Phase:
 
     def S_formation_ideal_gas(self):
         r"""Method to calculate and return the ideal-gas entropy of formation
-        of the phase (as if the phase was an ideal gas).
+        of the phase.
 
         .. math::
             S_{formation}^{ig} = \sum_i z_i {S_{f,i}}
@@ -2170,11 +2149,7 @@ class Phase:
         Returns
         -------
         S_formation_ideal_gas : float
-            Entropy of formation of the phase on a formation basis
-            as an ideal gas, [J/(mol*K)]
-
-        Notes
-        -----
+            Ideal gas formation entropy, [J/(mol*K)]
         """
         try:
             return self._S_formation_ideal_gas
@@ -2188,136 +2163,6 @@ class Phase:
                 Sf_ideal_gas += zi*Sf
         self._S_formation_ideal_gas = Sf_ideal_gas
         return Sf_ideal_gas
-
-    def G_formation_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas Gibbs free energy of
-        formation of the phase (as if the phase was an ideal gas).
-
-        .. math::
-            G_{formation}^{ig} = H_{formation}^{ig} - T_{ref}^{ig}
-            S_{formation}^{ig}
-
-        Returns
-        -------
-        G_formation_ideal_gas : float
-            Gibbs free energy of formation of the phase on a formation basis
-            as an ideal gas, [J/(mol)]
-
-        Notes
-        -----
-        """
-        Gf = self.H_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
-        return Gf
-
-    def U_formation_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas internal energy of
-        formation of the phase (as if the phase was an ideal gas).
-
-        .. math::
-            U_{formation}^{ig} = H_{formation}^{ig} - P_{ref}^{ig}
-            V^{ig}
-
-        Returns
-        -------
-        U_formation_ideal_gas : float
-            Internal energy of formation of the phase on a formation basis
-            as an ideal gas, [J/(mol)]
-
-        Notes
-        -----
-        """
-        Uf = self.H_formation_ideal_gas() - self.P_REF_IG*self.V_ideal_gas()
-        return Uf
-
-    def A_formation_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas Helmholtz energy of
-        formation of the phase (as if the phase was an ideal gas).
-
-        .. math::
-            A_{formation}^{ig} = U_{formation}^{ig} - T_{ref}^{ig}
-            S_{formation}^{ig}
-
-        Returns
-        -------
-        A_formation_ideal_gas : float
-            Helmholtz energy of formation of the phase on a formation basis
-            as an ideal gas, [J/(mol)]
-
-        Notes
-        -----
-        """
-        Af = self.U_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
-        return Af
-
-    def H_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the mass ideal-gas formation enthalpy of
-        the phase.
-
-        Returns
-        -------
-        H_formation_ideal_gas_mass  : float
-            Formation mass enthalpy, [J/kg]
-
-        Notes
-        -----
-        """
-        return property_molar_to_mass(self.H_formation_ideal_gas(), self.MW())
-
-    def S_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the mass ideal-gas formation entropy of
-        the phase.
-
-        Returns
-        -------
-        S_formation_ideal_gas_mass  : float
-            Formation mass entropy, [J/(kg*K)]
-
-        Notes
-        -----
-        """
-        return property_molar_to_mass(self.S_formation_ideal_gas(), self.MW())
-
-    def G_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the mass ideal-gas formation Gibbs free energy of
-        the phase.
-
-        Returns
-        -------
-        G_formation_ideal_gas_mass  : float
-            Formation mass Gibbs free energy, [J/kg]
-
-        Notes
-        -----
-        """
-        return property_molar_to_mass(self.G_formation_ideal_gas(), self.MW())
-
-    def U_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the ideal-gas formation mass internal energy of
-        the phase.
-
-        Returns
-        -------
-        U_formation_ideal_gas_mass  : float
-            Formation mass internal energy, [J/kg]
-
-        Notes
-        -----
-        """
-        return property_molar_to_mass(self.U_formation_ideal_gas(), self.MW())
-
-    def A_formation_ideal_gas_mass(self):
-        r"""Method to calculate and return the ideal-gas formation mass Helmholtz energy of
-        the phase.
-
-        Returns
-        -------
-        A_formation_ideal_gas_mass  : float
-            Formation mass Helmholtz energy, [J/kg]
-
-        Notes
-        -----
-        """
-        return property_molar_to_mass(self.A_formation_ideal_gas(), self.MW())
 
     def Cv(self):
         r"""Method to calculate and return the constant-volume heat
@@ -2469,7 +2314,7 @@ class Phase:
             return fugacities/fugacities_std
         return [fugacities[i]/fugacities_std[i] for i in range(self.N)]
 
-    def gammas(self):
+    def gammas_from_phis(self):
         r"""Method to calculate and return the activity coefficients of the
         phase, [-].
 
@@ -2509,6 +2354,8 @@ class Phase:
 
         self._gammas = gammas
         return gammas
+
+    gammas = gammas_from_phis
 
     _x_infinite_dilution = 0.0
 
@@ -3669,9 +3516,6 @@ class Phase:
             return self._Cpls
         except AttributeError:
             pass
-        if self.Cpls_poly_fit:
-            self._Cpls = self._Cp_pure_fast(self._Cpls_data)
-            return self._Cpls
 
         T = self.T
         Cpls = [i.T_dependent_property(T) for i in self.HeatCapacityLiquids]
@@ -3685,17 +3529,6 @@ class Phase:
             return self._Cpl_integrals_pure
         except AttributeError:
             pass
-#        def to_quad(T, i):
-#            l2 = self.to_TP_zs(T, self.P, self.zs)
-#            return l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i]
-#        from scipy.integrate import quad
-#        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in range(self.N)]
-##        print(vals, self._Cp_integrals_pure_fast(self._Cpls_data))
-#        return vals
-
-        if self.Cpls_poly_fit:
-            self._Cpl_integrals_pure = self._Cp_integrals_pure_fast(self._Cpls_data)
-            return self._Cpl_integrals_pure
 
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
         Cpl_integrals_pure = [obj.T_dependent_property_integral(T_REF_IG, T)
@@ -3710,18 +3543,6 @@ class Phase:
             return self._Cpl_integrals_over_T_pure
         except AttributeError:
             pass
-#        def to_quad(T, i):
-#            l2 = self.to_TP_zs(T, self.P, self.zs)
-#            return (l2._Cpls_pure()[i] + (l2.Vms_sat()[i] - T*l2.dVms_sat_dT()[i])*l2.dPsats_dT()[i])/T
-#        from scipy.integrate import quad
-#        vals = [float(quad(to_quad, self.T_REF_IG, self.T, args=i)[0]) for i in range(self.N)]
-##        print(vals, self._Cp_integrals_over_T_pure_fast(self._Cpls_data))
-#        return vals
-
-        if self.Cpls_poly_fit:
-            self._Cpl_integrals_over_T_pure = self._Cp_integrals_over_T_pure_fast(self._Cpls_data)
-            return self._Cpl_integrals_over_T_pure
-
 
         T, T_REF_IG, HeatCapacityLiquids = self.T, self.T_REF_IG, self.HeatCapacityLiquids
         Cpl_integrals_over_T_pure = [obj.T_dependent_property_integral_over_T(T_REF_IG, T)
@@ -3730,20 +3551,6 @@ class Phase:
             Cpl_integrals_over_T_pure = array(Cpl_integrals_over_T_pure)
         self._Cpl_integrals_over_T_pure = Cpl_integrals_over_T_pure
         return Cpl_integrals_over_T_pure
-
-    def V_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas molar volume of the
-        phase.
-
-        .. math::
-            V^{ig} = \frac{RT}{P}
-
-        Returns
-        -------
-        V : float
-            Ideal gas molar volume, [m^3/mol]
-        """
-        return self.R*self.T/self.P
 
     def H_ideal_gas(self):
         r"""Method to calculate and return the ideal-gas enthalpy of the phase.
@@ -3849,24 +3656,6 @@ class Phase:
         return Cp_ideal_gas_mass
 
 
-    def Cv_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas constant volume heat
-        capacity of the phase.
-
-        .. math::
-            C_v^{ig} = \sum_i z_i {C_{p,i}^{ig}} - R
-
-        Returns
-        -------
-        Cv : float
-            Ideal gas constant volume heat capacity, [J/(mol*K)]
-        """
-        try:
-            Cp = self._Cp_ideal_gas
-        except AttributeError:
-            Cp = self.Cp_ideal_gas()
-        return Cp - self.R
-
     def Cv_dep(self):
         r"""Method to calculate and return the difference between the actual
         `Cv` and the ideal-gas constant volume heat
@@ -3896,65 +3685,6 @@ class Phase:
             Departure ideal gas constant pressure heat capacity, [J/(mol*K)]
         """
         return self.Cp() - self.Cp_ideal_gas()
-
-    def Cp_Cv_ratio_ideal_gas(self):
-        r"""Method to calculate and return the ratio of the ideal-gas heat
-        capacity to its constant-volume heat capacity.
-
-        .. math::
-            \frac{C_p^{ig}}{C_v^{ig}}
-
-        Returns
-        -------
-        Cp_Cv_ratio_ideal_gas : float
-            Cp/Cv for the phase as an ideal gas, [-]
-        """
-        return self.Cp_ideal_gas()/self.Cv_ideal_gas()
-
-    def G_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas Gibbs free energy of
-        the phase.
-
-        .. math::
-            G^{ig} = H^{ig} - T S^{ig}
-
-        Returns
-        -------
-        G_ideal_gas : float
-            Ideal gas free energy, [J/(mol)]
-        """
-        G_ideal_gas = self.H_ideal_gas() - self.T*self.S_ideal_gas()
-        return G_ideal_gas
-
-    def U_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas internal energy of
-        the phase.
-
-        .. math::
-            U^{ig} = H^{ig} - P V^{ig}
-
-        Returns
-        -------
-        U_ideal_gas : float
-            Ideal gas internal energy, [J/(mol)]
-        """
-        U_ideal_gas = self.H_ideal_gas() - self.P*self.V_ideal_gas()
-        return U_ideal_gas
-
-    def A_ideal_gas(self):
-        r"""Method to calculate and return the ideal-gas Helmholtz energy of
-        the phase.
-
-        .. math::
-            A^{ig} = U^{ig} - T S^{ig}
-
-        Returns
-        -------
-        A_ideal_gas : float
-            Ideal gas Helmholtz free energy, [J/(mol)]
-        """
-        A_ideal_gas = self.U_ideal_gas() - self.T*self.S_ideal_gas()
-        return A_ideal_gas
 
     def H_ideal_gas_mass(self):
         r"""Method to calculate and return the mass ideal-gas enthalpy of the phase.
@@ -4021,8 +3751,6 @@ class Phase:
 
 
     def _set_ideal_gas_standard_state(self):
-        # TODO: Do not depend on Chemical infrastructure in the future
-        CASs = self.CASs
         T = self.T
         zs = self.zs
         from thermo.chemical_utils import _standard_state_ideal_gas_formation_direct
@@ -4045,7 +3773,6 @@ class Phase:
         atomss = self.constants.atomss
 
         for i in range(self.N):
-            # Hi, Si, Gi = standard_state_ideal_gas_formation(Chemical(CASs[i]), T)
             Hi, Si, Gi = _standard_state_ideal_gas_formation_direct(T, Hfs[i], Sfs[i], atoms=atomss[i], gas_Cp=HeatCapacityGases[i])
             H_chemicals.append(Hi)
             S_chemicals.append(Si)
@@ -5185,12 +4912,9 @@ class Phase:
         -----
         """
         try:
-            result = self.result
-        except:
+            return self._beta
+        except AttributeError:
             return None
-        for i, p in enumerate(result.phases):
-            if p is self:
-                return result.betas[i]
 
     @property
     def beta_mass(self):
@@ -5207,12 +4931,9 @@ class Phase:
         -----
         """
         try:
-            result = self.result
-        except:
+            return self._beta_mass
+        except AttributeError:
             return None
-        for i, p in enumerate(result.phases):
-            if p is self:
-                return result.betas_mass[i]
 
     @property
     def beta_volume(self):
@@ -5229,12 +4950,9 @@ class Phase:
         -----
         """
         try:
-            result = self.result
-        except:
+            return self._beta_volume
+        except AttributeError:
             return None
-        for i, p in enumerate(result.phases):
-            if p is self:
-                return result.betas_volume[i]
 
     @property
     def beta_volume_liquid_ref(self):
@@ -5251,27 +4969,9 @@ class Phase:
         -----
         """
         try:
-            result = self.result
-        except:
+            return self._beta_volume_liquid_ref
+        except AttributeError:
             return None
-        for i, p in enumerate(result.phases):
-            if p is self:
-                return result.betas_volume_liquid_ref[i]
-    @property
-    def VF(self):
-        r"""Method to return the vapor fraction of the phase.
-        If no vapor/gas is present, 0 is always returned. This method is only
-        available when the phase is linked to an EquilibriumState.
-
-        Returns
-        -------
-        VF : float
-            Vapor fraction, [-]
-
-        Notes
-        -----
-        """
-        return self.result.gas_beta
 
     @property
     def energy(self):
@@ -5346,7 +5046,7 @@ class Phase:
                 return self._n
             except:
                 pass
-            self._n = self.result.n*self.beta
+            self._n = self._n_total*self._beta
             return self._n
         except:
             return None
@@ -5369,7 +5069,7 @@ class Phase:
             try:
                 return self._m
             except:
-                self._m = self.result.m*self.beta_mass
+                self._m = self._m_total*self._beta_mass
                 return self._m
         except:
             return None
@@ -5417,7 +5117,7 @@ class Phase:
             try:
                 return self._ns
             except:
-                n = self.result.n*self.beta
+                n = self._n_total*self._beta
                 if self.vectorized:
                     self._ns = self.zs*n
                 else:
@@ -5447,7 +5147,7 @@ class Phase:
                 return self._ms
             except:
                 pass
-            m = self.result.m*self.beta_mass
+            m = self._m_total*self._beta_mass
             if self.vectorized:
                 self._ms = m*self.ws()
             else:
@@ -5478,7 +5178,7 @@ class Phase:
             return self._Qgs
         except:
             pass
-        settings = self.result.settings
+        settings = self.settings
         V = R*settings.T_gas_ref/settings.P_gas_ref
         n = self.n
         Vn = V*n
@@ -5539,7 +5239,7 @@ class Phase:
         except:
             pass
         ns = self.ns
-        Vmls = self.result.V_liquids_ref()
+        Vmls = self._V_liquids_ref
         if self.vectorized:
             self._Qls = ns*Vmls
         else:
@@ -5586,10 +5286,6 @@ class Phase:
         return self.P
 
     @property
-    def VF_calc(self):
-        return self.VF
-
-    @property
     def zs_calc(self):
         return self.zs
 
@@ -5616,53 +5312,6 @@ class Phase:
     @property
     def H_calc(self):
         return self.H()
-
-    def as_EquilibriumState(self, flasher=None):
-        has_result = hasattr(self, "result")
-        if not has_result and flasher is None:
-            raise ValueError("Phase must have been created into an EquilibriumState already or be provided with a flasher")
-        from thermo.equilibrium import EquilibriumState
-        if has_result:
-            flasher = self.result.flasher
-            state = self.assigned_phase
-        else:
-            if self.is_gas:
-                state = "g"
-            elif self.is_liquid:
-                state = "l"
-            elif self.is_solid:
-                state = "s"
-
-        if self.bulk_phase_type:
-            if self.phase_bulk == "l":
-                gas, liquids, solids = None, [v.to_TP_zs(T=v.T, P=v.P, zs=v.zs) for v in self.phases], []
-            elif self.phase_bulk == "s":
-                gas, liquids, solids = None, [], [v.to_TP_zs(T=v.T, P=v.P, zs=v.zs) for v in self.phases]
-            betas = self.phase_fractions
-        else:
-            betas = [1]
-            phase_copy = self.to_TP_zs(T=self.T, P=self.P, zs=self.zs)
-            if state == "l":
-                gas, liquids, solids = None, [phase_copy], []
-            elif state == "g":
-                gas, liquids, solids = phase_copy, [], []
-            elif state == "s":
-                gas, liquids, solids = None, [], [phase_copy]
-        if not hasattr(self, "result"):
-            flash_specs = {"T": self.T, "P": self.P}
-        else:
-            flash_specs = self.result.flash_specs.copy()
-        flash_specs["phase_as_state"] = True
-
-        return EquilibriumState(T=self.T, P=self.P, zs=self.zs, gas=gas, liquids=liquids, solids=solids, betas=betas,
-            constants=flasher.constants, correlations=flasher.correlations, flasher=flasher, settings=flasher.settings,
-            flash_specs=flash_specs)
-
-    def as_EquilibriumStream(self, flasher=None, n=None):
-        state = self.as_EquilibriumState(flasher)
-        from thermo.stream import EquilibriumStream
-        n = self.n if n is None else n
-        return EquilibriumStream(flasher=state.flasher, zs=self.zs, n=n,  P=self.P, T=self.T, existing_flash=state)
 
     def concentrations(self):
         r"""Method to return the molar concentrations of each component in the
@@ -6188,3 +5837,1697 @@ for attr in derivatives_thermodynamic:
     setattr(Phase, s, _der)
     derivatives_thermodynamic_mass.append(s)
 del prop_names, prop_units
+
+
+
+
+def pseudo_Tc(self):
+    r"""Method to calculate and return the pseudocritical temperature
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        T_{c, pseudo} = \sum_i z_i T_{c,i}
+
+    Returns
+    -------
+    pseudo_Tc : float
+        Pseudocritical temperature of the phase, [K]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Tcs = self.constants.Tcs
+    Tc = 0.0
+    for i in range(self.N):
+        Tc += zs[i]*Tcs[i]
+    return Tc
+
+def pseudo_Pc(self):
+    r"""Method to calculate and return the pseudocritical pressure
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        P_{c, pseudo} = \sum_i z_i P_{c,i}
+
+    Returns
+    -------
+    pseudo_Pc : float
+        Pseudocritical pressure of the phase, [Pa]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Pcs = self.constants.Pcs
+    Pc = 0.0
+    for i in range(self.N):
+        Pc += zs[i]*Pcs[i]
+    return Pc
+
+def pseudo_Vc(self):
+    r"""Method to calculate and return the pseudocritical volume
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        V_{c, pseudo} = \sum_i z_i V_{c,i}
+
+    Returns
+    -------
+    pseudo_Vc : float
+        Pseudocritical volume of the phase, [m^3/mol]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Vcs = self.constants.Vcs
+    Vc = 0.0
+    for i in range(self.N):
+        Vc += zs[i]*Vcs[i]
+    return Vc
+
+def pseudo_Zc(self):
+    r"""Method to calculate and return the pseudocritical compressibility
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        Z_{c, pseudo} = \sum_i z_i Z_{c,i}
+
+    Returns
+    -------
+    pseudo_Zc : float
+        Pseudocritical compressibility of the phase, [-]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Zcs = self.constants.Zcs
+    Zc = 0.0
+    for i in range(self.N):
+        Zc += zs[i]*Zcs[i]
+    return Zc
+
+def pseudo_omega(self):
+    r"""Method to calculate and return the pseudocritical acentric factor
+    calculated using Kay's rule (linear mole fractions):
+
+    .. math::
+        \omega_{pseudo} = \sum_i z_i \omega_{i}
+
+    Returns
+    -------
+    pseudo_omega : float
+        Pseudo acentric factor of the phase, [-]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    omegas = self.constants.omegas
+    omega = 0.0
+    for i in range(self.N):
+        omega += zs[i]*omegas[i]
+    return omega
+
+def Vfgs(self):
+    r"""Method to calculate and return the ideal-gas volume fractions of
+    the components of the phase. This is the same as the mole fractions.
+
+    Returns
+    -------
+    Vfgs : list[float]
+        Ideal-gas volume fractions of the components of the phase, [-]
+
+    Notes
+    -----
+    """
+    return self.zs
+
+def atom_content(self):
+    r"""Method to calculate and return the number of moles of each atom
+    in the phase per mole of the phase;
+    returns a dictionary of atom counts, containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_content : dict[str: float]
+        Atom counts, [-]
+
+    Notes
+    -----
+    """
+    try:
+        return self._atom_content
+    except:
+        pass
+    zs = self.zs
+    things = dict()
+    for zi, atoms in zip(zs, self.constants.atomss):
+        for atom, count in atoms.items():
+            if atom in things:
+                things[atom] += zi*count
+            else:
+                things[atom] = zi*count
+    self._atom_content = things
+    return things
+
+def atom_fractions(self):
+    r"""Method to calculate and return the atomic composition of the phase;
+    returns a dictionary of atom fraction (by count), containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_fractions : dict[str: float]
+        Atom fractions, [-]
+
+    Notes
+    -----
+    """
+    try:
+        return self._atom_fractions
+    except:
+        pass
+    things = self.atom_content()
+    tot_inv = 1.0/sum(things.values())
+    self._atom_fractions = {atom : value*tot_inv for atom, value in things.items()}
+    return self._atom_fractions
+
+def atom_mass_fractions(self):
+    r"""Method to calculate and return the atomic mass fractions of the phase;
+    returns a dictionary of atom fraction (by mass), containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_mass_fractions : dict[str: float]
+        Atom mass fractions, [-]
+
+    Notes
+    -----
+    """
+    try:
+        return self._atom_mass_fractions
+    except:
+        pass
+    zs = self.zs
+    things = {}
+    for zi, atoms in zip(zs, self.constants.atomss):
+        for atom, count in atoms.items():
+            if atom in things:
+                things[atom] += zi*count
+            else:
+                things[atom] = zi*count
+    self._atom_mass_fractions = mass_fractions(things, self.MW())
+    return self._atom_mass_fractions
+
+def atom_flows(self):
+    r"""Method to calculate and return the atomic flow rates of the phase;
+    returns a dictionary of atom flows, containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_flows : dict[str: float]
+        Atom flows, [mol/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._atom_flows
+    except:
+        pass
+    atom_content = self.atom_content()
+    n = self.n
+    self._atom_flows = {k:v*n for k, v in atom_content.items()}
+    return self._atom_flows
+
+def atom_count_flows(self):
+    r"""Method to calculate and return the atom count flow rates of the phase;
+    returns a dictionary of atom count flows, containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_count_flows : dict[str: float]
+        Atom flows, [atoms/s]
+
+    Notes
+    -----
+    """
+    atom_content = self.atom_content()
+    n = self.n
+    return {k:v*n*N_A for k, v in atom_content.items()}
+
+def atom_mass_flows(self):
+    r"""Method to calculate and return the atomic mass flow rates of the phase;
+    returns a dictionary of atom mass flows, containing only those
+    elements who are present.
+
+    Returns
+    -------
+    atom_mass_flows : dict[str: float]
+        Atom mass flows, [kg/s]
+
+    Notes
+    -----
+    """
+    atom_mass_fractions = self.atom_mass_fractions()
+    m = self.m
+    return {k:v*m for k, v in atom_mass_fractions.items()}
+
+def Hc(self):
+    r"""Method to calculate and return the molar ideal-gas higher heat of
+    combustion of the object, [J/mol]
+
+    Returns
+    -------
+    Hc : float
+        Molar higher heat of combustion, [J/(mol)]
+
+    Notes
+    -----
+    """
+    return mixing_simple(self.constants.Hcs, self.zs)
+
+def Hc_mass(self):
+    r"""Method to calculate and return the mass ideal-gas higher heat of
+    combustion of the object, [J/mol]
+
+    Returns
+    -------
+    Hc_mass : float
+        Mass higher heat of combustion, [J/(kg)]
+
+    Notes
+    -----
+    """
+    return mixing_simple(self.constants.Hcs_mass, self.ws())
+
+def Hc_lower(self):
+    r"""Method to calculate and return the molar ideal-gas lower heat of
+    combustion of the object, [J/mol]
+
+    Returns
+    -------
+    Hc_lower : float
+        Molar lower heat of combustion, [J/(mol)]
+
+    Notes
+    -----
+    """
+    return mixing_simple(self.constants.Hcs_lower, self.zs)
+
+def Hc_lower_mass(self):
+    r"""Method to calculate and return the mass ideal-gas lower heat of
+    combustion of the object, [J/mol]
+
+    Returns
+    -------
+    Hc_lower_mass : float
+        Mass lower heat of combustion, [J/(kg)]
+
+    Notes
+    -----
+    """
+    return mixing_simple(self.constants.Hcs_lower_mass, self.ws())
+
+def SG(self):
+    r"""Method to calculate and return the standard liquid specific gravity
+    of the phase, using constant liquid pure component densities not
+    calculated by the phase object, at 60 °F.
+
+    Returns
+    -------
+    SG : float
+        Specific gravity of the liquid, [-]
+
+    Notes
+    -----
+    The reference density of water is from the IAPWS-95 standard -
+    999.0170824078306 kg/m^3.
+    """
+    ws = self.ws()
+    rhol_60Fs_mass = self.constants.rhol_60Fs_mass
+    rho_mass_60F = 0.0
+    for i in range(self.N):
+        rho_mass_60F += ws[i]*rhol_60Fs_mass[i]
+    return SG_util(rho_mass_60F, rho_ref=999.0170824078306)
+
+def SG_gas(self):
+    r"""Method to calculate and return the specific gravity of the phase
+    with respect to a gas reference density.
+
+    Returns
+    -------
+    SG_gas : float
+        Specific gravity of the gas, [-]
+
+    Notes
+    -----
+    The reference molecular weight of air used is 28.9586 g/mol.
+    """
+    return self.MW()/28.9586
+
+def API(self):
+    r"""Method to calculate and return the API of the phase.
+
+    .. math::
+        \text{API gravity} = \frac{141.5}{\text{SG}} - 131.5
+
+    Returns
+    -------
+    API : float
+        API of the fluid [-]
+    """
+    return 141.5/self.SG() - 131.5
+
+def V_mass(self):
+    r"""Method to calculate and return the specific volume of the phase.
+
+    .. math::
+        V_{mass} = \frac{1000\cdot VM}{MW}
+
+    Returns
+    -------
+    V_mass : float
+        Specific volume of the phase, [m^3/kg]
+    """
+    return 1.0/Vm_to_rho(self.V(), self.MW())
+
+def H_flow(self):
+    r"""Method to return the flow rate of enthalpy of this phase.
+    This method is only
+    available when the phase is linked to an EquilibriumStream.
+
+    Returns
+    -------
+    H_flow : float
+        Flow rate of energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._H_flow
+    except:
+        pass
+    self._H_flow = H_flow = self.n*self.H()
+    return H_flow
+
+def S_flow(self):
+    r"""Method to return the flow rate of entropy of this phase.
+    This method is only
+    available when the phase is linked to an EquilibriumStream.
+
+    Returns
+    -------
+    S_flow : float
+        Flow rate of entropy, [J/(K*s)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._S_flow
+    except:
+        pass
+    self._S_flow = S_flow = self.n*self.S()
+    return S_flow
+
+def G_flow(self):
+    r"""Method to return the flow rate of Gibbs free energy of this phase.
+
+    Returns
+    -------
+    G_flow : float
+        Flow rate of Gibbs free energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._G_flow
+    except:
+        pass
+    self._G_flow = G_flow = self.n*self.G()
+    return G_flow
+
+def U_flow(self):
+    r"""Method to return the flow rate of internal energy of this phase.
+
+    Returns
+    -------
+    U_flow : float
+        Flow rate of internal energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._U_flow
+    except:
+        pass
+    self._U_flow = U_flow = self.n*self.U()
+    return U_flow
+
+def A_flow(self):
+    r"""Method to return the flow rate of Helmholtz energy of this phase.
+
+    Returns
+    -------
+    A_flow : float
+        Flow rate of Helmholtz energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._A_flow
+    except:
+        pass
+    self._A_flow = A_flow = self.n*self.A()
+    return A_flow
+
+def H_dep_flow(self):
+    r"""Method to return the flow rate of departure enthalpy of this phase.
+
+    Returns
+    -------
+    H_dep_flow : float
+        Flow rate of departure enthalpy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._H_dep_flow
+    except:
+        pass
+    self._H_dep_flow = H_dep_flow = self.n*self.H_dep()
+    return H_dep_flow
+
+def S_dep_flow(self):
+    r"""Method to return the flow rate of departure entropy of this phase.
+
+    Returns
+    -------
+    S_dep_flow : float
+        Flow rate of departure entropy, [J/(K*s)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._S_dep_flow
+    except:
+        pass
+    self._S_dep_flow = S_dep_flow = self.n*self.S_dep()
+    return S_dep_flow
+
+def G_dep_flow(self):
+    r"""Method to return the flow rate of departure Gibbs free energy.
+
+    Returns
+    -------
+    G_dep_flow : float
+        Flow rate of departure Gibbs free energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._G_dep_flow
+    except:
+        pass
+    self._G_dep_flow = G_dep_flow = self.n*self.G_dep()
+    return G_dep_flow
+
+def U_dep_flow(self):
+    r"""Method to return the flow rate of departure internal energy.
+
+    Returns
+    -------
+    U_dep_flow : float
+        Flow rate of departure internal energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._U_dep_flow
+    except:
+        pass
+    self._U_dep_flow = U_dep_flow = self.n*self.U_dep()
+    return U_dep_flow
+
+def A_dep_flow(self):
+    r"""Method to return the flow rate of departure Helmholtz energy.
+
+    Returns
+    -------
+    A_dep_flow : float
+        Flow rate of departure Helmholtz energy, [J/s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._A_dep_flow
+    except:
+        pass
+    self._A_dep_flow = A_dep_flow = self.n*self.A_dep()
+    return A_dep_flow
+
+def V_gas_standard(self):
+    r"""Method to calculate and return the ideal-gas molar volume of the
+    phase at the standard temperature and pressure,  according to the
+    temperature variable `T_standard` and pressure variable `P_standard`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+
+    .. math::
+        V^{ig} = \frac{RT_{std}}{P_{std}}
+
+    Returns
+    -------
+    V_gas_standard : float
+        Ideal gas molar volume at standard temperature and pressure,
+        [m^3/mol]
+    """
+    return R*self.settings.T_standard/self.settings.P_standard
+
+def V_gas_normal(self):
+    r"""Method to calculate and return the ideal-gas molar volume of the
+    phase at the normal temperature and pressure,  according to the
+    temperature variable `T_normal` and pressure variable `P_normal`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+
+    .. math::
+        V^{ig} = \frac{RT_{norm}}{P_{norm}}
+
+    Returns
+    -------
+    V_gas_normal : float
+        Ideal gas molar volume at normal temperature and pressure,
+        [m^3/mol]
+    """
+    return R*self.settings.T_normal/self.settings.P_normal
+
+def V_gas(self):
+    r"""Method to calculate and return the ideal-gas molar volume of the
+    phase at the chosen reference temperature and pressure,  according to the
+    temperature variable `T_gas_ref` and pressure variable `P_gas_ref`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+
+    .. math::
+        V^{ig} = \frac{RT_{ref}}{P_{ref}}
+
+    Returns
+    -------
+    V_gas : float
+        Ideal gas molar volume at the reference temperature and pressure,
+        [m^3/mol]
+    """
+    return R*self.settings.T_gas_ref/self.settings.P_gas_ref
+
+def rho_gas_standard(self):
+    r"""Method to calculate and return the ideal-gas molar density of the
+    phase at the standard temperature and pressure,  according to the
+    temperature variable `T_standard` and pressure variable `P_standard`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_gas_standard : float
+        Ideal gas molar density at standard temperature and pressure,
+        [mol/m^3]
+    """
+    return 1.0/self.V_gas_standard()
+
+def rho_gas_normal(self):
+    r"""Method to calculate and return the ideal-gas molar density of the
+    phase at the normal temperature and pressure,  according to the
+    temperature variable `T_normal` and pressure variable `P_normal`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_gas_normal : float
+        Ideal gas molar density at normal temperature and pressure,
+        [mol/m^3]
+    """
+    return 1.0/self.V_gas_normal()
+
+def rho_gas(self):
+    r"""Method to calculate and return the ideal-gas molar density of the
+    phase at the chosen reference temperature and pressure,  according to the
+    temperature variable `T_gas_ref` and pressure variable `P_gas_ref`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_gas : float
+        Ideal gas molar density at the reference temperature and pressure,
+        [mol/m^3]
+    """
+    return 1.0/self.V_gas()
+
+def rho_mass_gas_standard(self):
+    r"""Method to calculate and return the ideal-gas mass density of the
+    phase at the standard temperature and pressure,  according to the
+    temperature variable `T_standard` and pressure variable `P_standard`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_mass_gas_standard : float
+        Ideal gas molar density at standard temperature and pressure,
+        [kg/m^3]
+    """
+    return Vm_to_rho(self.V_gas_standard(), self.MW())
+
+def rho_mass_gas_normal(self):
+    r"""Method to calculate and return the ideal-gas mass density of the
+    phase at the normal temperature and pressure,  according to the
+    temperature variable `T_normal` and pressure variable `P_normal`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_mass_gas_normal : float
+        Ideal gas molar density at normal temperature and pressure,
+        [kg/m^3]
+    """
+    return Vm_to_rho(self.V_gas_normal(), self.MW())
+
+def rho_mass_gas(self):
+    r"""Method to calculate and return the ideal-gas mass density of the
+    phase at the chosen reference temperature and pressure,  according to the
+    temperature variable `T_gas_ref` and pressure variable `P_gas_ref`
+    of the :obj:`thermo.bulk.BulkSettings`.
+
+    Returns
+    -------
+    rho_mass_gas : float
+        Ideal gas molar density at the reference temperature and pressure,
+        [kg/m^3]
+    """
+    return Vm_to_rho(self.V_gas(), self.MW())
+
+def H_C_ratio(self):
+    r"""Method to calculate and return the atomic ratio of hydrogen atoms
+    to carbon atoms, based on the current composition of the phase.
+
+    Returns
+    -------
+    H_C_ratio : float
+        H/C ratio on a molar basis, [-]
+
+    Notes
+    -----
+    None is returned if no species are present that have carbon atoms.
+    """
+    atom_fracs = self.atom_fractions()
+    H = atom_fracs.get("H", 0.0)
+    C = atom_fracs.get("C", 0.0)
+    try:
+        return H/C
+    except ZeroDivisionError:
+        return None
+
+def H_C_ratio_mass(self):
+    r"""Method to calculate and return the mass ratio of hydrogen atoms
+    to carbon atoms, based on the current composition of the phase.
+
+    Returns
+    -------
+    H_C_ratio_mass : float
+        H/C ratio on a mass basis, [-]
+
+    Notes
+    -----
+    None is returned if no species are present that have carbon atoms.
+    """
+    atom_fracs = self.atom_mass_fractions()
+    H = atom_fracs.get("H", 0.0)
+    C = atom_fracs.get("C", 0.0)
+    try:
+        return H/C
+    except ZeroDivisionError:
+        return None
+
+def Hc_normal(self):
+    r"""Method to calculate and return the volumetric ideal-gas higher heat
+    of combustion of the object using the normal gas volume, [J/m^3]
+
+    Returns
+    -------
+    Hc_normal : float
+        Volumetric (normal) higher heat of combustion, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return self.Hc()/self.V_gas_normal()
+
+def Hc_standard(self):
+    r"""Method to calculate and return the volumetric ideal-gas higher heat
+    of combustion of the object using the standard gas volume, [J/m^3]
+
+    Returns
+    -------
+    Hc_normal : float
+        Volumetric (standard) higher heat of combustion, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return self.Hc()/self.V_gas_standard()
+
+def Hc_lower_normal(self):
+    r"""Method to calculate and return the volumetric ideal-gas lower heat
+    of combustion of the object using the normal gas volume, [J/m^3]
+
+    Returns
+    -------
+    Hc_lower_normal : float
+        Volumetric (normal) lower heat of combustion, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return self.Hc_lower()/self.V_gas_normal()
+
+def Hc_lower_standard(self):
+    r"""Method to calculate and return the volumetric ideal-gas lower heat
+    of combustion of the object using the standard gas volume, [J/m^3]
+
+    Returns
+    -------
+    Hc_lower_standard : float
+        Volumetric (standard) lower heat of combustion, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return self.Hc_lower()/self.V_gas_standard()
+
+def Wobbe_index(self):
+    r"""Method to calculate and return the molar Wobbe index of the object,
+    [J/mol].
+
+    .. math::
+        I_W = \frac{H_{comb}^{higher}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index : float
+        Molar Wobbe index, [J/(mol)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc())*self.SG_gas()**-0.5
+
+def Wobbe_index_mass(self):
+    r"""Method to calculate and return the mass Wobbe index of the object,
+    [J/kg].
+
+    .. math::
+        I_W = \frac{H_{comb}^{higher}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_mass : float
+        Mass Wobbe index, [J/(kg)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_mass())*self.SG_gas()**-0.5
+
+def Wobbe_index_lower(self):
+    r"""Method to calculate and return the molar lower Wobbe index of the
+     object, [J/mol].
+
+    .. math::
+        I_W = \frac{H_{comb}^{lower}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_lower : float
+        Molar lower Wobbe index, [J/(mol)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_lower())*self.SG_gas()**-0.5
+
+def Wobbe_index_lower_mass(self):
+    r"""Method to calculate and return the lower mass Wobbe index of the
+    object, [J/kg].
+
+    .. math::
+        I_W = \frac{H_{comb}^{lower}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_lower_mass : float
+        Mass lower Wobbe index, [J/(kg)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_lower_mass())*self.SG_gas()**-0.5
+
+def Wobbe_index_standard(self):
+    r"""Method to calculate and return the volumetric standard Wobbe index
+    of the object, [J/m^3]. The standard gas volume is used in this
+    calculation.
+
+    .. math::
+        I_W = \frac{H_{comb}^{higher}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_standard : float
+        Volumetric standard Wobbe index, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_standard())*self.SG_gas()**-0.5
+
+def Wobbe_index_normal(self):
+    r"""Method to calculate and return the volumetric normal Wobbe index
+    of the object, [J/m^3]. The normal gas volume is used in this
+    calculation.
+
+    .. math::
+        I_W = \frac{H_{comb}^{higher}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index : float
+        Volumetric normal Wobbe index, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_normal())*self.SG_gas()**-0.5
+
+def Wobbe_index_lower_standard(self):
+    r"""Method to calculate and return the volumetric standard lower Wobbe
+    index of the object, [J/m^3]. The standard gas volume is used in this
+    calculation.
+
+    .. math::
+        I_W = \frac{H_{comb}^{lower}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_lower_standard : float
+        Volumetric standard lower Wobbe index, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_lower_standard())*self.SG_gas()**-0.5
+
+def Wobbe_index_lower_normal(self):
+    r"""Method to calculate and return the volumetric normal lower Wobbe
+    index of the object, [J/m^3]. The normal gas volume is used in this
+    calculation.
+
+    .. math::
+        I_W = \frac{H_{comb}^{lower}}{\sqrt{\text{SG}}}
+
+    Returns
+    -------
+    Wobbe_index_lower_normal : float
+        Volumetric normal lower Wobbe index, [J/(m^3)]
+
+    Notes
+    -----
+    """
+    return abs(self.Hc_lower_normal())*self.SG_gas()**-0.5
+
+def Vfls(self):
+    r"""Method to calculate and return the ideal-liquid volume fractions of
+    the components of the phase, using the standard liquid densities at
+    the temperature variable `T_liquid_volume_ref` of
+    :obj:`thermo.bulk.BulkSettings` and the composition of the phase.
+
+    Returns
+    -------
+    Vfls : list[float]
+        Ideal-liquid volume fractions of the components of the phase, [-]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Vls = self._V_liquids_ref
+    V = 0.0
+    for i in range(self.N):
+        V += zs[i]*Vls[i]
+    V_inv = 1.0/V
+    return [V_inv*Vls[i]*zs[i] for i in range(self.N)]
+
+def V_liquid_ref(self):
+    r"""Method to calculate and return the liquid reference molar volume
+    according to the temperature variable `T_liquid_volume_ref` of
+    :obj:`thermo.bulk.BulkSettings` and the composition of the phase.
+
+    .. math::
+        V = \sum_i z_i V_i
+
+    Returns
+    -------
+    V_liquid_ref : float
+        Liquid molar volume at the reference condition, [m^3/mol]
+
+    Notes
+    -----
+    """
+    zs = self.zs
+    Vls = self._V_liquids_ref
+    V = 0.0
+    for i in range(self.N):
+        V += zs[i]*Vls[i]
+    return V
+
+def rho_mass_liquid_ref(self):
+    r"""Method to calculate and return the liquid reference mass density
+    according to the temperature variable `T_liquid_volume_ref` of
+    :obj:`thermo.bulk.BulkSettings` and the composition of the phase.
+
+    Returns
+    -------
+    rho_mass_liquid_ref : float
+        Liquid mass density at the reference condition, [kg/m^3]
+
+    Notes
+    -----
+    """
+    return Vm_to_rho(self.V_liquid_ref(), self.MW())
+
+def water_index(self):
+    r"""The index of the component water in the components. None if water
+    is not present. Water is recognized by its CAS number.
+
+    Returns
+    -------
+    water_index : int
+        The index of the component water, [-]
+
+    Notes
+    -----
+    """
+    return self.constants.water_index
+
+def humidity_ratio(self):
+    r"""Method to calculate and return the humidity ratio of the phase;
+    normally defined as the kg water/kg dry air, the definition here is
+    kg water/(kg rest of the phase) [-]
+
+    .. math::
+        \text{humidity ratio} = \text{HR} = \frac{w_{H2O}}{1 - w_{H2O}}
+
+    Returns
+    -------
+    humidity_ratio : float
+        Humidity ratio, [-]
+
+    Notes
+    -----
+    """
+    wi = self.constants.water_index
+    if wi is None:
+        return 0.0
+    w_H2O = self.ws()[wi]
+    return w_H2O/(1.0 - w_H2O)
+
+def zs_no_water(self):
+    r"""Method to calculate and return the mole fractions of all species
+    in the phase, normalized to a water-free basis (the mole fraction of
+    water returned is zero).
+
+    Returns
+    -------
+    zs_no_water : list[float]
+        Mole fractions on a water free basis, [-]
+
+    Notes
+    -----
+    """
+    wi = self.constants.water_index
+    if wi is None:
+        return self.zs
+    zs = array(self.zs) if self.vectorized else list(self.zs)
+    z_water = zs[wi]
+    m = 1.0/(1.0 - z_water)
+    if self.vectorized:
+        zs *= m
+    else:
+        for i in range(self.N):
+            zs[i] *= m
+    zs[wi] = 0.0
+    return zs
+
+def ws_no_water(self):
+    r"""Method to calculate and return the mass fractions of all species
+    in the phase, normalized to a water-free basis (the mass fraction of
+    water returned is zero).
+
+    Returns
+    -------
+    ws_no_water : list[float]
+        Mass fractions on a water free basis, [-]
+
+    Notes
+    -----
+    """
+    wi = self.constants.water_index
+    if wi is None:
+        return self.ws()
+    ws = array(self.ws()) if self.vectorized else list(self.ws())
+    z_water = ws[wi]
+    m = 1.0/(1.0 - z_water)
+    if self.vectorized:
+        ws *= m
+    else:
+        for i in range(self.N):
+            ws[i] *= m
+    ws[wi] = 0.0
+    return ws
+
+def Psats(self):
+    r"""Method to calculate and return the pure-component vapor pressures
+    of each species from the :obj:`thermo.vapor_pressure.VaporPressure`
+    objects.
+
+    Returns
+    -------
+    Psats : list[float]
+        Vapor pressures, [Pa]
+
+    Notes
+    -----
+    .. warning::
+
+        This is not necessarily consistent with the saturation pressure
+        calculated by a flash algorithm.
+    """
+    try:
+        return self._Psats
+    except:
+        pass
+    T = self.T
+    self._Psats = [o.T_dependent_property(T) for o in self.correlations.VaporPressures]
+    if self.vectorized:
+        self._Psats = array(self._Psats)
+    return self._Psats
+
+def Psubs(self):
+    r"""Method to calculate and return the pure-component sublimation
+    of each species from the :obj:`thermo.vapor_pressure.SublimationPressure`
+    objects.
+
+    Returns
+    -------
+    Psubs : list[float]
+        Sublimation pressures, [Pa]
+
+    Notes
+    -----
+    .. warning::
+
+        This is not necessarily consistent with the saturation pressure
+        calculated by a flash algorithm.
+    """
+    try:
+        return self._Psubs
+    except:
+        pass
+    T = self.T
+    self._Psubs = [o.T_dependent_property(T) for o in self.correlations.SublimationPressures]
+    if self.vectorized:
+        self._Psubs = array(self._Psubs)
+    return self._Psubs
+
+def Hsubs(self):
+    r"""Method to calculate and return the pure-component enthalpy of sublimation
+    of each species from the :obj:`thermo.phase_change.EnthalpySublimation`
+    objects.
+
+    Returns
+    -------
+    Hsubs : list[float]
+        Sublimation enthalpies, [J/mol]
+
+    Notes
+    -----
+    .. warning::
+
+        This is not necessarily consistent with the saturation
+        enthalpy change calculated by a flash algorithm.
+    """
+    try:
+        return self._Hsubs
+    except:
+        pass
+    T = self.T
+    self._Hsubs = [o.T_dependent_property(T) for o in self.correlations.EnthalpySublimations]
+    if self.vectorized:
+        self._Hsubs = array(self._Hsubs)
+    return self._Hsubs
+
+def Hvaps(self):
+    r"""Method to calculate and return the pure-component enthalpy of vaporization
+    of each species from the :obj:`thermo.phase_change.EnthalpyVaporization`
+    objects.
+
+    Returns
+    -------
+    Hvaps : list[float]
+        Enthalpies of vaporization, [J/mol]
+
+    Notes
+    -----
+    .. warning::
+
+        This is not necessarily consistent with the saturation
+        enthalpy change calculated by a flash algorithm.
+    """
+    try:
+        return self._Hvaps
+    except:
+        pass
+    T = self.T
+    self._Hvaps = [o.T_dependent_property(T) for o in self.correlations.EnthalpyVaporizations]
+    if self.vectorized:
+        self._Hvaps = array(self._Hvaps)
+    return self._Hvaps
+
+def sigmas(self):
+    r"""Method to calculate and return the pure-component surface tensions
+    of each species from the :obj:`thermo.interface.SurfaceTension`
+    objects.
+
+    Returns
+    -------
+    sigmas : list[float]
+        Surface tensions, [N/m]
+
+    Notes
+    -----
+    """
+    try:
+        return self._sigmas
+    except:
+        pass
+    T = self.T
+    self._sigmas = [o.T_dependent_property(T) for o in self.correlations.SurfaceTensions]
+    if self.vectorized:
+        self._sigmas = array(self._sigmas)
+    return self._sigmas
+
+def Cpgs(self):
+    r"""Method to calculate and return the pure-component ideal gas heat capacities
+    of each species from the :obj:`thermo.heat_capacity.HeatCapacityGas`
+    objects.
+
+    Returns
+    -------
+    Cpgs : list[float]
+        Ideal gas pure component heat capacities, [J/(mol*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Cpgs
+    except:
+        pass
+    T = self.T
+    self._Cpgs = [o.T_dependent_property(T) for o in self.correlations.HeatCapacityGases]
+    if self.vectorized:
+        self._Cpgs = array(self._Cpgs)
+    return self._Cpgs
+
+def Cpls(self):
+    r"""Method to calculate and return the pure-component liquid
+    temperature-dependent heat capacities
+    of each species from the :obj:`thermo.heat_capacity.HeatCapacityLiquid`
+    objects.
+
+    Note that some correlation methods for liquid heat capacity are at
+    low pressure, and others are along the saturation line. There is a
+    large difference in values.
+
+    Returns
+    -------
+    Cpls : list[float]
+        Pure component liquid heat capacities, [J/(mol*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Cpls
+    except:
+        pass
+    T = self.T
+    self._Cpls = [o.T_dependent_property(T) for o in self.correlations.HeatCapacityLiquids]
+    if self.vectorized:
+        self._Cpls = array(self._Cpls)
+    return self._Cpls
+
+def Cpss(self):
+    r"""Method to calculate and return the pure-component solid heat capacities
+    of each species from the :obj:`thermo.heat_capacity.HeatCapacitySolid`
+    objects.
+
+    Returns
+    -------
+    Cpss : list[float]
+        Pure component solid heat capacities, [J/(mol*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Cpss
+    except:
+        pass
+    T = self.T
+    self._Cpss = [o.T_dependent_property(T) for o in self.correlations.HeatCapacitySolids]
+    if self.vectorized:
+        self._Cpss = array(self._Cpss)
+    return self._Cpss
+
+def kls(self):
+    r"""Method to calculate and return the pure-component liquid
+    temperature-dependent thermal conductivity
+    of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivityLiquid`
+    objects.
+
+    These values are normally at low pressure, not along the saturation line.
+
+    Returns
+    -------
+    kls : list[float]
+        Pure component temperature dependent liquid thermal conductivities,
+        [W/(m*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._kls
+    except:
+        pass
+    T = self.T
+    self._kls = [o.T_dependent_property(T) for o in self.correlations.ThermalConductivityLiquids]
+    if self.vectorized:
+        self._kls = array(self._kls)
+    return self._kls
+
+def kss(self):
+    r"""Method to calculate and return the pure-component solid
+    temperature-dependent thermal conductivity
+    of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivitySolid`
+    objects.
+
+    Returns
+    -------
+    kss : list[float]
+        Pure component temperature dependent solid thermal conductivities,
+        [W/(m*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._kss
+    except:
+        pass
+    T = self.T
+    self._kss = [o.T_dependent_property(T) for o in self.correlations.ThermalConductivitySolids]
+    if self.vectorized:
+        self._kss = array(self._kss)
+    return self._kss
+
+def kgs(self):
+    r"""Method to calculate and return the pure-component gas
+    temperature-dependent thermal conductivity
+    of each species from the :obj:`thermo.thermal_conductivity.ThermalConductivityGas`
+    objects.
+
+    These values are normally at low pressure, not along the saturation line.
+
+    Returns
+    -------
+    kgs : list[float]
+        Pure component temperature dependent gas thermal conductivities,
+        [W/(m*K)]
+
+    Notes
+    -----
+    """
+    try:
+        return self._kgs
+    except:
+        pass
+    T = self.T
+    self._kgs = [o.T_dependent_property(T) for o in self.correlations.ThermalConductivityGases]
+    if self.vectorized:
+        self._kgs = array(self._kgs)
+    return self._kgs
+
+def muls(self):
+    r"""Method to calculate and return the pure-component liquid
+    temperature-dependent viscosity
+    of each species from the :obj:`thermo.viscosity.ViscosityLiquid`
+    objects.
+
+    These values are normally at low pressure, not along the saturation line.
+
+    Returns
+    -------
+    muls : list[float]
+        Pure component temperature dependent liquid viscosities, [Pa*s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._muls
+    except:
+        pass
+    T = self.T
+    self._muls = [o.T_dependent_property(T) for o in self.correlations.ViscosityLiquids]
+    if self.vectorized:
+        self._muls = array(self._muls)
+    return self._muls
+
+def mugs(self):
+    r"""Method to calculate and return the pure-component gas
+    temperature-dependent viscosity
+    of each species from the :obj:`thermo.viscosity.ViscosityGas`
+    objects.
+
+    These values are normally at low pressure, not along the saturation line.
+
+    Returns
+    -------
+    mugs : list[float]
+        Pure component temperature dependent gas viscosities, [Pa*s]
+
+    Notes
+    -----
+    """
+    try:
+        return self._mugs
+    except:
+        pass
+    T = self.T
+    self._mugs = [o.T_dependent_property(T) for o in self.correlations.ViscosityGases]
+    if self.vectorized:
+        self._mugs = array(self._mugs)
+    return self._mugs
+
+def Vls(self):
+    r"""Method to calculate and return the pure-component liquid
+    temperature-dependent molar volume
+    of each species from the :obj:`thermo.volume.VolumeLiquid`
+    objects.
+
+    These values are normally along the saturation line.
+
+    Returns
+    -------
+    Vls : list[float]
+        Pure component temperature dependent liquid molar volume, [m^3/mol]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Vls
+    except:
+        pass
+    T = self.T
+    self._Vls = [o.T_dependent_property(T) for o in self.correlations.VolumeLiquids]
+    if self.vectorized:
+        self._Vls = array(self._Vls)
+    return self._Vls
+
+def Vss(self):
+    r"""Method to calculate and return the pure-component solid
+    temperature-dependent molar volume
+    of each species from the :obj:`thermo.volume.VolumeSolid`
+    objects.
+
+    Returns
+    -------
+    Vss : list[float]
+        Pure component temperature dependent solid molar volume, [m^3/mol]
+
+    Notes
+    -----
+    """
+    try:
+        return self._Vss
+    except:
+        pass
+    T = self.T
+    self._Vss = [o.T_dependent_property(T) for o in self.correlations.VolumeSolids]
+    if self.vectorized:
+        self._Vss = array(self._Vss)
+    return self._Vss
+
+def V_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas molar volume of the
+    phase.
+
+    .. math::
+        V^{ig} = \frac{RT}{P}
+
+    Returns
+    -------
+    V : float
+        Ideal gas molar volume, [m^3/mol]
+    """
+    return self.R*self.T/self.P
+
+def Cv_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas constant volume heat
+    capacity of the phase.
+
+    .. math::
+        C_v^{ig} = \sum_i z_i {C_{p,i}^{ig}} - R
+
+    Returns
+    -------
+    Cv : float
+        Ideal gas constant volume heat capacity, [J/(mol*K)]
+    """
+    try:
+        Cp = self._Cp_ideal_gas
+    except AttributeError:
+        Cp = self.Cp_ideal_gas()
+    return Cp - self.R
+
+def Cp_Cv_ratio_ideal_gas(self):
+    r"""Method to calculate and return the ratio of the ideal-gas heat
+    capacity to its constant-volume heat capacity.
+
+    .. math::
+        \frac{C_p^{ig}}{C_v^{ig}}
+
+    Returns
+    -------
+    Cp_Cv_ratio_ideal_gas : float
+        Cp/Cv for the phase as an ideal gas, [-]
+    """
+    return self.Cp_ideal_gas()/self.Cv_ideal_gas()
+
+def G_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas Gibbs free energy of
+    the phase.
+
+    .. math::
+        G^{ig} = H^{ig} - T S^{ig}
+
+    Returns
+    -------
+    G_ideal_gas : float
+        Ideal gas free energy, [J/(mol)]
+    """
+    return self.H_ideal_gas() - self.T*self.S_ideal_gas()
+
+def U_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas internal energy of
+    the phase.
+
+    .. math::
+        U^{ig} = H^{ig} - P V^{ig}
+
+    Returns
+    -------
+    U_ideal_gas : float
+        Ideal gas internal energy, [J/(mol)]
+    """
+    return self.H_ideal_gas() - self.P*self.V_ideal_gas()
+
+def A_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas Helmholtz energy of
+    the phase.
+
+    .. math::
+        A^{ig} = U^{ig} - T S^{ig}
+
+    Returns
+    -------
+    A_ideal_gas : float
+        Ideal gas Helmholtz free energy, [J/(mol)]
+    """
+    return self.U_ideal_gas() - self.T*self.S_ideal_gas()
+
+def G_formation_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas Gibbs free energy of
+    formation of the phase.
+
+    .. math::
+        G_{formation}^{ig} = H_{formation}^{ig} - T_{ref}^{ig}
+        S_{formation}^{ig}
+
+    Returns
+    -------
+    G_formation_ideal_gas : float
+        Ideal gas formation Gibbs free energy, [J/(mol)]
+    """
+    return self.H_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
+
+def U_formation_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas internal energy of
+    formation of the phase.
+
+    .. math::
+        U_{formation}^{ig} = H_{formation}^{ig} - P_{ref}^{ig}
+        V^{ig}
+
+    Returns
+    -------
+    U_formation_ideal_gas : float
+        Ideal gas formation internal energy, [J/(mol)]
+    """
+    return self.H_formation_ideal_gas() - self.P_REF_IG*self.V_ideal_gas()
+
+def A_formation_ideal_gas(self):
+    r"""Method to calculate and return the ideal-gas Helmholtz energy of
+    formation of the phase.
+
+    .. math::
+        A_{formation}^{ig} = U_{formation}^{ig} - T_{ref}^{ig}
+        S_{formation}^{ig}
+
+    Returns
+    -------
+    A_formation_ideal_gas : float
+        Ideal gas formation Helmholtz energy, [J/(mol)]
+    """
+    return self.U_formation_ideal_gas() - self.T_REF_IG*self.S_formation_ideal_gas()
+
+def H_formation_ideal_gas_mass(self):
+    r"""Method to calculate and return the mass ideal-gas formation
+    enthalpy of the phase.
+
+    Returns
+    -------
+    H_formation_ideal_gas_mass : float
+        Ideal gas formation mass enthalpy, [J/kg]
+    """
+    return property_molar_to_mass(self.H_formation_ideal_gas(), self.MW())
+
+def S_formation_ideal_gas_mass(self):
+    r"""Method to calculate and return the mass ideal-gas formation
+    entropy of the phase.
+
+    Returns
+    -------
+    S_formation_ideal_gas_mass : float
+        Ideal gas formation mass entropy, [J/(kg*K)]
+    """
+    return property_molar_to_mass(self.S_formation_ideal_gas(), self.MW())
+
+def G_formation_ideal_gas_mass(self):
+    r"""Method to calculate and return the mass ideal-gas formation
+    Gibbs free energy of the phase.
+
+    Returns
+    -------
+    G_formation_ideal_gas_mass : float
+        Ideal gas formation mass Gibbs free energy, [J/kg]
+    """
+    return property_molar_to_mass(self.G_formation_ideal_gas(), self.MW())
+
+def U_formation_ideal_gas_mass(self):
+    r"""Method to calculate and return the mass ideal-gas formation
+    internal energy of the phase.
+
+    Returns
+    -------
+    U_formation_ideal_gas_mass : float
+        Ideal gas formation mass internal energy, [J/kg]
+    """
+    return property_molar_to_mass(self.U_formation_ideal_gas(), self.MW())
+
+def A_formation_ideal_gas_mass(self):
+    r"""Method to calculate and return the mass ideal-gas formation
+    Helmholtz energy of the phase.
+
+    Returns
+    -------
+    A_formation_ideal_gas_mass : float
+        Ideal gas formation mass Helmholtz energy, [J/kg]
+    """
+    return property_molar_to_mass(self.A_formation_ideal_gas(), self.MW())
+
+phase_shared_methods = [pseudo_Tc, pseudo_Pc, pseudo_Vc, pseudo_Zc, pseudo_omega,
+    Vfgs, atom_content, atom_fractions, atom_mass_fractions,
+    atom_flows, atom_count_flows, atom_mass_flows,
+    Hc, Hc_mass, Hc_lower, Hc_lower_mass,
+    SG, SG_gas, API, V_mass,
+    H_flow, S_flow, G_flow, U_flow, A_flow,
+    H_dep_flow, S_dep_flow, G_dep_flow, U_dep_flow, A_dep_flow,
+    V_gas_standard, V_gas_normal, V_gas,
+    rho_gas_standard, rho_gas_normal, rho_gas,
+    rho_mass_gas_standard, rho_mass_gas_normal, rho_mass_gas,
+    H_C_ratio, H_C_ratio_mass,
+    Hc_normal, Hc_standard, Hc_lower_normal, Hc_lower_standard,
+    Wobbe_index, Wobbe_index_mass, Wobbe_index_lower, Wobbe_index_lower_mass,
+    Wobbe_index_standard, Wobbe_index_normal,
+    Wobbe_index_lower_standard, Wobbe_index_lower_normal,
+    Vfls, V_liquid_ref, rho_mass_liquid_ref,
+    water_index, humidity_ratio, zs_no_water, ws_no_water,
+    Psats, Psubs, Hsubs, Hvaps, sigmas,
+    Cpgs, Cpls, Cpss, kls, kss, kgs, muls, mugs, Vls, Vss,
+    V_ideal_gas, Cv_ideal_gas, Cp_Cv_ratio_ideal_gas,
+    G_ideal_gas, U_ideal_gas, A_ideal_gas,
+    G_formation_ideal_gas, U_formation_ideal_gas, A_formation_ideal_gas,
+    H_formation_ideal_gas_mass, S_formation_ideal_gas_mass,
+    G_formation_ideal_gas_mass, U_formation_ideal_gas_mass, A_formation_ideal_gas_mass,
+]
+
+for method in phase_shared_methods:
+    setattr(Phase, method.__name__, method)

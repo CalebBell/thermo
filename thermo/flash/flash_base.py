@@ -159,7 +159,7 @@ class Flash:
               S=None, G=None, U=None, A=None, solution=None, hot_start=None,
               retry=False, dest=None, rho=None, rho_mass=None, H_mass=None,
               S_mass=None, G_mass=None, U_mass=None, A_mass=None,
-              spec_fun=None, H_reactive=None):
+              spec_fun=None, H_reactive=None, solution_target=None):
         r"""Method to perform a flash calculation and return the result as an
         :obj:`EquilibriumState <thermo.equilibrium.EquilibriumState>` object.
         This generic interface allows flashes with any combination of valid
@@ -372,8 +372,12 @@ class Flash:
             elif not self.supports_SF_flash:
                 raise ValueError("Cannot flash with a solid fraction spec without at least one gas and liquid phase defined, as well as a solid phase")
 
+        if spec_fun is not None and not HSGUA_spec_count:
+            raise ValueError("spec_fun is only supported for HSGUA flashes "
+                             "(one of T/P/V fixed with one of H/S/G/U/A as the spec)")
+
         if ((T_spec and (P_spec or V_spec)) or (P_spec and V_spec)):
-            g, ls, ss, betas, flash_convergence = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution, hot_start=hot_start)
+            g, ls, ss, betas, flash_convergence = self.flash_TPV(T=T, P=P, V=V, zs=zs, solution=solution, hot_start=hot_start, solution_target=solution_target)
             # TODO can creating a list here be avoided?
             if g is not None:
                 id_phases = [g] + ls + ss
@@ -473,11 +477,11 @@ class Flash:
             # Only allow one
 #            g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var)
             try:
-                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
+                g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun, solution_target=solution_target)
             except Exception as e:
                 if retry:
                     print("retrying HSGUA flash")
-                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun)
+                    g, ls, ss, betas, flash_convergence = self.flash_TPV_HSGUA(fixed_var_val, spec_val, fixed_var, spec, iter_var_backup, zs=zs, solution=solution, hot_start=hot_start, spec_fun=spec_fun, solution_target=solution_target)
                 else:
                     raise
 #            except UnconvergedError as e:
@@ -874,8 +878,6 @@ class Flash:
             raise ValueError("Can only perform flashes with all phases in a numpy basis or all phases in a pure Python basis")
         self.vectorized = vectorized_statuses.pop()
 
-        self.supports_lnphis_args = all(p.supports_lnphis_args for p in self.phases)
-
         # Make the phases aware of the constants and properties
         constants = self.constants
         correlations = self.correlations
@@ -966,7 +968,8 @@ class Flash:
                 if TV_iter:
                     kwargs["V"] = state.V_iter(force=False)
                 kwargs["retry"] = retry
-                kwargs["solution"] = lambda new, _state=state: abs(new.value(nearest_check_prop) - _state.value(nearest_check_prop))
+                kwargs["solution"] = nearest_check_prop
+                kwargs["solution_target"] = state.value(nearest_check_prop)
                 try:
                     new = self.flash(**kwargs)
                     if PV_iter:
@@ -1941,6 +1944,10 @@ class Flash:
         Notes
         -----
         """
+        try:
+            return self._V_liquids_ref
+        except AttributeError:
+            pass
         T_liquid_volume_ref = self.settings.T_liquid_volume_ref
         if T_liquid_volume_ref == 298.15:
             Vls = self.constants.Vml_STPs
@@ -1948,8 +1955,42 @@ class Flash:
             Vls = self.constants.Vml_60Fs
         else:
             Vls = [i(T_liquid_volume_ref, None) for i in self.correlations.VolumeLiquids]
+        self._V_liquids_ref = Vls
         return Vls
 
+    def phase_as_EquilibriumState(self, phase, flash_specs=None):
+        from thermo.equilibrium import EquilibriumState
+        if flash_specs is None:
+            try:
+                flash_specs = phase.result.flash_specs.copy()
+            except:
+                flash_specs = {"T": phase.T, "P": phase.P}
+        if phase.bulk_phase_type:
+            if phase.phase_bulk == "l":
+                gas, liquids, solids = None, [v.to_TP_zs(T=v.T, P=v.P, zs=v.zs) for v in phase.phases], []
+            elif phase.phase_bulk == "s":
+                gas, liquids, solids = None, [], [v.to_TP_zs(T=v.T, P=v.P, zs=v.zs) for v in phase.phases]
+            betas = phase.phase_fractions
+        else:
+            betas = [1]
+            phase_copy = phase.to_TP_zs(T=phase.T, P=phase.P, zs=phase.zs)
+            if phase.is_gas:
+                gas, liquids, solids = phase_copy, [], []
+            elif phase.is_liquid:
+                gas, liquids, solids = None, [phase_copy], []
+            elif phase.is_solid:
+                gas, liquids, solids = None, [], [phase_copy]
+        flash_specs["phase_as_state"] = True
+        return EquilibriumState(T=phase.T, P=phase.P, zs=phase.zs, gas=gas, liquids=liquids, solids=solids, betas=betas,
+            constants=self.constants, correlations=self.correlations, flasher=self, settings=self.settings,
+            flash_specs=flash_specs)
+
+    def phase_as_EquilibriumStream(self, phase, n=None, flash_specs=None):
+        state = self.phase_as_EquilibriumState(phase, flash_specs=flash_specs)
+        from thermo.stream import EquilibriumStream
+        if n is None:
+            n = phase.n
+        return EquilibriumStream(flasher=self, zs=phase.zs, n=n, P=phase.P, T=phase.T, existing_flash=state)
 
     @property
     def water_index(self):
@@ -1974,3 +2015,112 @@ class Flash:
         except ValueError:
             self._water_index = None
         return self._water_index
+
+    def equilibrium_derivative(self, result, of="P", wrt="T", const="V", perturbation=1e-7):
+        r"""Calculate the equilibrium derivative of a property by performing
+        a numerical derivative on flash calculations.
+
+        Parameters
+        ----------
+        result : EquilibriumState
+            The equilibrium state to differentiate around, [-]
+        of : str
+            The property to differentiate, [-]
+        wrt : str
+            The variable to differentiate with respect to, [-]
+        const : str
+            The variable to hold constant, [-]
+        perturbation : float, optional
+            The relative perturbation to use, [-]
+
+        Returns
+        -------
+        derivative : float
+            The numerical derivative of `of` with respect to `wrt` at constant
+            `const`, [various]
+        """
+        const_value = result.value(const)
+        wrt_value = result.value(wrt)
+        of_value = result.value(of)
+
+        wrt_value2 = wrt_value*(1.0 + perturbation)
+        delta = wrt_value2 - wrt_value
+        kwargs = {wrt: wrt_value2, const: const_value}
+        results = self.flash(zs=result.zs, **kwargs)
+
+        of_value2 = results.value(of)
+        return (of_value2 - of_value)/delta
+
+    def water_wet_bulb_temperature(self, zs, T, P, feed=None):
+        r"""Calculate the water wet bulb temperature of a stream.
+
+        Parameters
+        ----------
+        zs : list[float]
+            Mole fractions of stream, [-]
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+        feed : EquilibriumState, optional
+            If the feed at `zs`, `T`, and `P` has already been flashed, this
+            object can be provided to avoid additional calculations, [-]
+
+        Returns
+        -------
+        sat : EquilibriumState
+            The flash results at the wet bulb temperature and composition, [-]
+        """
+        from thermo.flash.flash_utils import water_wet_bulb_temperature
+        return water_wet_bulb_temperature(self, zs=zs, T=T, P=P, feed=feed)
+
+    def solve_water_wet_bulb_temperature(self, zs, T, P, T_wet_bulb):
+        r"""Solve for the water mole fraction that gives a target wet bulb
+        temperature.
+
+        Parameters
+        ----------
+        zs : list[float]
+            Mole fractions of stream, [-]
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+        T_wet_bulb : float
+            Target wet bulb temperature, [K]
+
+        Returns
+        -------
+        x_w : float
+            Water mole fraction that gives the target wet bulb temperature, [-]
+        """
+        from thermo.flash.flash_utils import solve_water_wet_bulb_temperature_direct, solve_water_wet_bulb_temperature_nested
+        try:
+            return solve_water_wet_bulb_temperature_direct(self, zs=zs, T=T, P=P, T_wet_bulb=T_wet_bulb)
+        except:
+            return solve_water_wet_bulb_temperature_nested(self, zs=zs, T=T, P=P, T_wet_bulb=T_wet_bulb)
+
+    def water_dew_point_from_humidity(self, T, P, humidity, zs_air, zs_added):
+        r"""Calculate the dew point from humidity by finding the wet bulb
+        temperature of the humidified air mixture.
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+        humidity : float
+            Relative humidity as a fraction, [-]
+        zs_air : list[float]
+            Mole fractions of the dry air stream, [-]
+        zs_added : list[float]
+            Mole fractions of the added component stream, [-]
+
+        Returns
+        -------
+        sat : EquilibriumState or None
+            The flash results at the dew point, or None if not found, [-]
+        """
+        from thermo.flash.flash_utils import water_dew_point_from_humidity
+        return water_dew_point_from_humidity(self, T=T, P=P, humidity=humidity, zs_air=zs_air, zs_added=zs_added)

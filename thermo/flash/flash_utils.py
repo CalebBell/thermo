@@ -64,7 +64,6 @@ __all__ = [
     "nonlin_spec_NP",
     "sequential_substitution_2P",
     "sequential_substitution_2P_HSGUAbeta",
-    "sequential_substitution_2P_functional",
     "sequential_substitution_2P_sat",
     "sequential_substitution_GDEM3_2P",
     "sequential_substitution_Mehra_2P",
@@ -73,9 +72,11 @@ __all__ = [
     "solve_T_VF_IG_K_composition_independent",
     "solve_water_wet_bulb_temperature_direct",
     "solve_water_wet_bulb_temperature_nested",
+    "speed_of_sound_firoozabadi_pan",
     "stability_iteration_Michelsen",
     "water_dew_point_from_humidity",
     "water_wet_bulb_temperature",
+    "solution_to_criterion",
 ]
 
 from math import copysign, log10
@@ -117,7 +118,7 @@ from fluids.numerics import (
     newton_minimize,
     newton_system,
     one_sided_secant,
-    oscillation_checking_wrapper,
+    OscillationChecker,
     py_solve,
     root,
     secant,
@@ -129,7 +130,6 @@ from fluids.numerics import numpy as np
 
 from thermo.coolprop import CPiP_min
 from thermo.phases import CEOSGas, CEOSLiquid, CoolPropPhase, IAPWS95Gas, IAPWS95Liquid, Phase
-from thermo.phases.phase_utils import lnphis_direct
 
 LASTOVKA_SHAW = "Lastovka Shaw"
 DADGOSTAR_SHAW_1 = "Dadgostar Shaw 1"
@@ -153,6 +153,79 @@ PH_T_guesses_1P_methods = [LASTOVKA_SHAW, DADGOSTAR_SHAW_1, IG_ENTHALPY,
                            IDEAL_LIQUID_ENTHALPY, FIXED_GUESS, STP_T_GUESS,
                            LAST_CONVERGED]
 TPV_HSGUA_guesses_1P_methods = PH_T_guesses_1P_methods
+
+PROPERTY_GETTERS = {
+    'G': lambda obj: obj.G(),
+    'H': lambda obj: obj.H(),
+    'S': lambda obj: obj.S(),
+    'U': lambda obj: obj.U(),
+    'A': lambda obj: obj.A(),
+    'T': lambda obj: obj.T,
+    'P': lambda obj: obj.P,
+    'V': lambda obj: obj.V(),
+    'rho': lambda obj: obj.rho(),
+}
+
+def solution_to_criterion(solution, iter_var=None, solution_target=None):
+    r"""Convert a solution specification to a phase criterion function.
+
+    Returns a callable `fun(obj)` -> float. The phase with the minimum
+    `fun(obj)` is selected.
+
+    Parameters
+    ----------
+    solution : str, int, or None
+        Criterion string. Property names ('G', 'H', 'S', 'U', 'A', 'T', 'P',
+        'V', 'rho') select the phase that minimizes that property.
+        Prefix with '-' to maximize instead. 'high' and 'low' maximize/minimize
+        the iteration variable (or T when no iteration variable is set). None
+        defaults to minimizing Gibbs energy.
+    iter_var : str or None, optional
+        Iteration variable name for 'high'/'low' (e.g. 'T', 'P'). When None,
+        falls back to T.
+    solution_target : float or None, optional
+        When provided, selects the solution whose `solution` property value is
+        closest to this target (nearest-value mode).
+
+    Returns
+    -------
+    fun : callable
+        Criterion function `fun(phase_obj)` -> float.
+    """
+    if solution_target is not None:
+        if solution is None:
+            raise ValueError("solution_target requires a property name for solution "
+                             f"(one of: {', '.join(repr(k) for k in PROPERTY_GETTERS)}), got None")
+        getter = PROPERTY_GETTERS.get(solution)
+        if getter is None:
+            raise ValueError(f"Did not recognize solution {solution!r} for nearest-target mode; "
+                             f"expected one of: {', '.join(repr(k) for k in PROPERTY_GETTERS)}")
+        return lambda obj: abs(getter(obj) - solution_target)
+
+    if solution is None:
+        return lambda obj: obj.G()
+
+    SOLUTION_CRITERIA = {
+        **PROPERTY_GETTERS,
+        '-G': lambda obj: -obj.G(),
+        '-H': lambda obj: -obj.H(),
+        '-S': lambda obj: -obj.S(),
+        '-U': lambda obj: -obj.U(),
+        '-A': lambda obj: -obj.A(),
+        '-T': lambda obj: -obj.T,
+        '-P': lambda obj: -obj.P,
+        '-V': lambda obj: -obj.V(),
+        '-rho': lambda obj: -obj.rho(),
+        'high': lambda obj: -obj.value(iter_var) if iter_var else -obj.T,
+        'low': lambda obj: obj.value(iter_var) if iter_var else obj.T,
+    }
+
+    if solution in SOLUTION_CRITERIA:
+        return SOLUTION_CRITERIA[solution]
+
+    raise ValueError(f"Did not recognize solution {solution!r}; expected one of: "
+                     f"{', '.join(repr(k) for k in SOLUTION_CRITERIA)}, None, or int")
+
 
 def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
                                gas_phase, maxiter=1000, tol=1E-13,
@@ -341,77 +414,6 @@ def sequential_substitution_2P(T, P, V, zs, xs_guess, ys_guess, liquid_phase,
             error_increases += 1
         err1, err2, err3 = err, err1, err2
     raise UnconvergedError("End of SS without convergence")
-
-def sequential_substitution_2P_functional(T, P, zs, xs_guess, ys_guess,
-                               liquid_args, gas_args, maxiter=1000, tol=1E-13,
-                               trivial_solution_tol=1e-5, V_over_F_guess=0.5):
-    xs, ys = xs_guess, ys_guess
-    V_over_F = V_over_F_guess
-    N = len(zs)
-
-    err, err1, err2, err3 = 0.0, 0.0, 0.0, 0.0
-    V_over_F_old = V_over_F
-    error_increases = 0
-
-    Ks = [0.0]*N
-    for iteration in range(maxiter):
-        lnphis_g = lnphis_direct(ys, *gas_args)
-        lnphis_l = lnphis_direct(xs, *liquid_args)
-
-        for i in range(N):
-            Ks[i] = trunc_exp(lnphis_l[i] - lnphis_g[i])
-
-        V_over_F_old = V_over_F
-        V_over_F, xs_new, ys_new = flash_inner_loop(zs, Ks, guess=V_over_F)
-        for xi in xs_new:
-            if xi < 0.0:
-                # Remove negative mole fractions - may help or may still fail
-                xs_new_sum_inv = 0.0
-                for xj in xs_new:
-                    xs_new_sum_inv += abs(xj)
-                xs_new_sum_inv = 1.0/xs_new_sum_inv
-                for i in range(N):
-                    xs_new[i] = abs(xs_new[i])*xs_new_sum_inv
-                break
-        for yi in ys_new:
-            if yi < 0.0:
-                ys_new_sum_inv = 0.0
-                for yj in ys_new:
-                    ys_new_sum_inv += abs(yj)
-                ys_new_sum_inv = 1.0/ys_new_sum_inv
-                for i in range(N):
-                    ys_new[i] = abs(ys_new[i])*ys_new_sum_inv
-                break
-
-        err = 0.0
-        for Ki, xi, yi in zip(Ks, xs, ys):
-            # equivalent of fugacity ratio
-            # Could divide by the old Ks as well.
-            if yi != 0.0:
-                err_i = Ki*xi/yi - 1.0
-                err += err_i*err_i
-
-        if (err > 0.0 and err in (err1, err2, err3)) or error_increases > 3:
-            raise OscillationError("Converged to cycle in errors, no progress being made")
-
-        comp_difference = 0.0
-        for xi, yi in zip(xs, ys):
-            comp_difference += abs(xi - yi)
-
-        if comp_difference < trivial_solution_tol:
-            raise TrivialSolutionError("Converged to trivial condition, compositions of both phases equal")
-
-        if err < tol:
-            if iteration == 0:
-                # We are composition independent!
-                return V_over_F, xs_new, ys_new, iteration, err
-
-            return V_over_F_old, xs, ys, iteration, err
-        if err1 != 0.0 and abs(err/err1) > 20.0:
-            error_increases += 1
-        xs, ys = xs_new, ys_new
-        err1, err2, err3 = err, err1, err2
-    raise ValueError("End of SS without convergence")
 
 
 def sequential_substitution_NP(T, P, zs, compositions_guesses, betas_guesses,
@@ -1741,8 +1743,10 @@ def dew_bubble_bounded_naive(guess, fixed_val, zs, flasher, iter_var="T", fixed_
                                  f0=check(phase_res), f1=check(non_phase_res), bisection=True,
                                  xtol=xtol, ytol=ytol, maxiter=maxiter, require_eval=True, require_xtol=False)
         res = store[-1]
-        check2_val = check2(res)
-        return res.value(iter_var), res.liquids, res.gas, iterations+bounding_iter, check2_val
+        if res.liquids and res.gas:
+            check2_val = check2(res)
+            return res.value(iter_var), res.liquids, res.gas, iterations+bounding_iter, check2_val
+        raise ValueError("dew_bubble_bounded_naive: no liquid phase in result")
     # import matplotlib.pyplot as plt
     # pts = linspace(non_phase_val, phase_val, 500)
     # vals = [to_solve(p) for p in pts]
@@ -2030,7 +2034,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
             if V_diff is not None:
                 V_iter, V_const = iter_phase.V(), const_phase.V()
                 V_ratio = V_iter/V_const
-                if 1.0 - V_diff < V_ratio < 1.0 + V_diff or skip > 0 or (V_iter_last and (abs(min(V_iter, V_iter_last)/max(V_iter, V_iter_last)) < .8)):
+                if 0 and 1.0 - V_diff < V_ratio < 1.0 + V_diff or skip > 0 or (V_iter_last and (abs(min(V_iter, V_iter_last)/max(V_iter, V_iter_last)) < .8)):
                     # Relax the constraint for the iterating on variable so two different phases exist
                     #if iter_phase.eos_mix.phase in ('l', 'g') and iter_phase.eos_mix.phase == const_phase.eos_mix.phase:
                     # Alternatively, try a stability test here
@@ -2548,7 +2552,7 @@ def dew_P_Michelsen_Mollerup(P_guess, T, zs, liquid_phase, gas_phase,
             if P_guess_old is None:
                 raise ValueError(l_undefined_P_msg %(P_guess, xs), e)
             successive_fails += 1
-            T_guess = P_guess_old + copysign(min(max_step_damping, abs(step)), step)
+            P_guess = P_guess_old + copysign(min(max_step_damping, abs(step)), step)
             continue
 
         if successive_fails > 2:
@@ -2844,9 +2848,9 @@ def TPV_solve_HSGUA_1P(zs, phase, guess, fixed_var_val, spec_val,
     # plt.show()
 
     if oscillation_detection and ytol is not None:
-        to_solve2, checker = oscillation_checking_wrapper(to_solve, full=True,
-                                                          minimum_progress=minimum_progress,
-                                                          good_err=ytol*1e6)
+        checker = OscillationChecker(minimum_progress=minimum_progress,
+                                     good_err=ytol*1e6)
+        to_solve2 = checker.wrap(to_solve)
     else:
         to_solve2 = to_solve
         checker = None
@@ -3186,8 +3190,7 @@ def PH_secant_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
         store[:] = (p, err)
         return err
     if oscillation_detection:
-        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
-                                                         minimum_progress=minimum_progress)
+        to_solve = OscillationChecker(minimum_progress=minimum_progress).wrap(to_solve)
 
     T = secant(to_solve, T_guess, xtol=xtol, maxiter=maxiter)
     phase, err = store
@@ -3209,8 +3212,7 @@ def PH_newton_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
         store[:] = (p, err)
         return err, derr_dT
     if oscillation_detection:
-        to_solve, checker = oscillation_checking_wrapper(to_solve, full=True,
-                                                         minimum_progress=minimum_progress)
+        to_solve = OscillationChecker(minimum_progress=minimum_progress).wrap(to_solve)
 
     T = newton(to_solve, T_guess, fprime=True, xtol=xtol, maxiter=maxiter)
     phase, err = store
@@ -3915,9 +3917,8 @@ def sequential_substitution_2P_HSGUAbeta(zs, xs_guess, ys_guess, liquid_phase,
 
 
 def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, test_phase,
-                                  maxiter=20, xtol=1E-12, functional=False):
-    # If `functional`, call lnphis_direct and `test_phase` is a tuple of parameters
-    # Otherwise, `test_phase` is a phase object and the lnphis_at_zs method should be called.
+                                  maxiter=20, xtol=1E-12):
+    # `test_phase` is a callable that takes zs and returns lnphis.
     # So long as for both trial_phase, and test_phase use the lowest Gibbs energy fugacities, no need to test two phases.
     # Very much no need to converge using acceleration - just keep a low tolerance
     # At any point, can use the Ks working, assume a drop of the new phase, and evaluate two new phases and see if G drops.
@@ -3998,11 +3999,7 @@ def stability_iteration_Michelsen(T, P, zs_trial, fugacities_trial, zs_test, tes
         # fugacities_test = fugacities_check
         # print(fugacities_test, zs_test)
 
-        if functional:
-            lnphis_test = lnphis_direct(zs_test, *test_phase)
-        else:
-            # lnphis_test = test_phase.lnphis_at_zs(zs_test, most_stable=True)
-            lnphis_test = test_phase(zs_test)
+        lnphis_test = test_phase(zs_test)
 
         fugacities_test = [P*zs_test[i]*trunc_exp(lnphis_test[i]) for i in range(N)]
 
@@ -5461,3 +5458,33 @@ def critcondenbar_direct_criteria(res, require_two_phase=True, require_gas=False
     for i in range(res.N):
         tot += ys[i]*(dlnphis_dT_gas[i] - dlnphis_dT_liquid[i])
     return tot
+
+
+def speed_of_sound_firoozabadi_pan(flasher, result, perturbation=1e-7):
+    r"""Speed of sound via the Firoozabadi & Pan method.
+
+    From Equation 3.103 of Thermodynamics and Applications in
+    Hydrocarbon Energy Production [1]_.
+
+    Parameters
+    ----------
+    flasher : Flash
+        Flash object to use for the perturbed calculation, [-]
+    result : EquilibriumState
+        The equilibrium state to compute the speed of sound for, [-]
+    perturbation : float, optional
+        The relative perturbation to use for numerical derivatives, [-]
+
+    Returns
+    -------
+    w : float
+        Speed of sound, [m*kg^0.5/(s*mol^0.5)]
+
+    References
+    ----------
+    .. [1] Firoozabadi, Abbas. Thermodynamics and Applications in
+       Hydrocarbon Energy Production. McGraw-Hill Education, 2015.
+    """
+    V = result.V()
+    Cs = -1.0/V*flasher.equilibrium_derivative(result, of="V", wrt="P", const="S", perturbation=perturbation)
+    return (V/Cs)**0.5

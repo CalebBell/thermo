@@ -37,7 +37,6 @@ from thermo.flash.flash_utils import (
     existence_3P_Michelsen_Mollerup,
     nonlin_equilibrium_NP,
     sequential_substitution_2P,
-    sequential_substitution_2P_functional,
     sequential_substitution_NP,
     solve_P_VF_IG_K_composition_independent,
     solve_T_VF_IG_K_composition_independent,
@@ -669,7 +668,7 @@ def test_ideal_bubble_failing():
     liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, VolumeLiquids=correlations.VolumeLiquids,
                      GibbsExcessModel=None,
                      HeatCapacityGases=correlations.HeatCapacityGases,
-                     use_Poynting=True, T=300.0, P=1e5, zs=[.25, .25, .25, .25])
+                     equilibrium_basis='Poynting', T=300.0, P=1e5, zs=[.25, .25, .25, .25])
     # flasher = FlashVLN(constants, correlations, gas=gas, liquids=[liquid])
     # flasher.flash(zs=[0.1, 0.2, 0.3, 0.4], P=2e5, VF=.5)
 
@@ -731,122 +730,6 @@ def test_flash_iapws95():
     assert_close(res.gas.rho_mass(), 0.025589673682920137, rtol=1e-5)
 
 
-
-def test_sequential_substitution_2P_functional_vs_FlashVL():
-    T, P = 300, 1.6e6
-    constants = ChemicalConstantsPackage(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0],
-                                         omegas=[0.098, 0.251], Tms=[90.3, 143.15],
-                                         Tbs=[184.55, 309.21], CASs=['74-84-0', '109-66-0'],
-                                         names=['ethane', 'pentane'], MWs=[30.06904, 72.14878])
-    HeatCapacityGases = [HeatCapacityGas(poly_fit=(50.0, 1000.0, [7.115386645067898e-21, -3.2034776773408394e-17, 5.957592282542187e-14, -5.91169369931607e-11, 3.391209091071677e-08, -1.158730780040934e-05, 0.002409311277400987, -0.18906638711444712, 37.94602410497228])),
-                         HeatCapacityGas(poly_fit=(200.0, 1000.0, [7.537198394065234e-22, -4.946850205122326e-18, 1.4223747507170372e-14, -2.3451318313798008e-11, 2.4271676873997662e-08, -1.6055220805830093e-05, 0.006379734000450042, -1.0360272314628292, 141.84695243411866]))]
-    correlations = PropertyCorrelationsPackage(constants, HeatCapacityGases=HeatCapacityGases)
-    zs = [.5, .5]
-    eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
-    _, _, VF, xs, ys = flash_wilson(zs=zs, Tcs=eos_kwargs['Tcs'], Pcs=eos_kwargs['Pcs'], omegas=eos_kwargs['omegas'], T=T, P=P)
-
-    # There are a lot of specially-coded numbers
-    # so yes, it is necessary to loop through all the EOSs and check they are the same.
-    hashes = []
-    for obj in eos_mix_list:
-        if obj is IGMIX:
-            continue
-
-        gas = CEOSGas(obj, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-        liq = CEOSLiquid(obj, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-
-        flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
-        hashes.append(hash(flasher))
-        res_expect = flasher.flash(T=T, P=P, zs=zs)
-        VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
-
-
-        VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
-                                       liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
-                                              maxiter=1000, tol=1E-20,
-                                           trivial_solution_tol=1e-5, V_over_F_guess=0.5)
-        assert_close(VF_calc, VF_expect, rtol=1e-6)
-        assert_close1d(xs_calc, xs_expect)
-        assert_close1d(ys_calc, ys_expect)
-
-
-    # Do a test with a mixed-EOS model
-    gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-
-    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
-    hashes.append(hash(flasher))
-    res_expect = flasher.flash(T=T, P=P, zs=zs)
-    VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
-
-    VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
-                                   liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
-                                          maxiter=1000, tol=1E-20,
-                                       trivial_solution_tol=1e-5, V_over_F_guess=0.5)
-    assert_close(VF_calc, VF_expect, rtol=1e-6)
-    assert_close1d(xs_calc, xs_expect)
-    assert_close1d(ys_calc, ys_expect)
-
-    # Do an IG gas phase
-    T, P = 300, 1.3e6
-    zs = [.5, .5]
-
-    gas = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-    liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
-
-    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
-    hashes.append(hash(flasher))
-    res_expect = flasher.flash(T=T, P=P, zs=zs)
-    VF_expect, xs_expect, ys_expect = res_expect.VF, res_expect.liquid0.zs, res_expect.gas.zs
-
-    VF_calc, xs_calc, ys_calc, niter, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs, ys_guess=ys,
-                                   liquid_args=liq.lnphis_args(), gas_args=gas.lnphis_args(),
-                                          maxiter=1000, tol=1E-20,
-                                       trivial_solution_tol=1e-5, V_over_F_guess=0.5)
-    assert_close(VF_calc, VF_expect, rtol=1e-6)
-    assert_close1d(xs_calc, xs_expect)
-    assert_close1d(ys_calc, ys_expect)
-
-    assert len(set(hashes)) == len(hashes)
-
-def test_sequential_substitution_2P_functional_trivial_solution():
-    constants = ChemicalConstantsPackage(atomss=[{'C': 1, 'H': 4}, {'H': 2, 'O': 1}, {'C': 10, 'H': 22}], MWs=[16.04246, 18.01528, 142.28168], omegas=[0.008, 0.344, 0.49], Pcs=[4599000.0, 22048320.0, 2110000.0], Tcs=[190.564, 647.14, 611.7], Vcs=[9.86e-05, 5.6e-05, 0.000624])
-    HeatCapacityGases = [HeatCapacityGas(CASRN="74-82-8", MW=16.04246, similarity_variable=0.3116728980468083, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
-    HeatCapacityGas(CASRN="7732-18-5", MW=18.01528, similarity_variable=0.16652530518537598, extrapolation="linear", method="POLY_FIT", poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
-    HeatCapacityGas(CASRN="124-18-5", MW=142.28168, similarity_variable=0.22490597524572384, extrapolation="linear", method="POLY_FIT", poly_fit=(200.0, 1000.0, [-1.702672546011891e-21, 6.6751002084997075e-18, -7.624102919104147e-15, -4.071140876082743e-12, 1.863822577724324e-08, -1.9741705032236747e-05, 0.009781408958916831, -1.6762677829939379, 252.8975930305735]))]
-
-    properties = PropertyCorrelationsPackage(constants=constants, HeatCapacityGases=HeatCapacityGases, skip_missing=True)
-
-    eos_kwargs = {'Pcs': [4599000.0, 22048320.0, 2110000.0],
-    'Tcs': [190.564, 647.14, 611.7],
-    'omegas': [0.008, 0.344, 0.49],
-    'kijs': [[0.0, 0, 0.0411], [0, 0.0, 0], [0.0411, 0, 0.0]]}
-    # test is ran at one condition, so just put the input conditions to the phase objects
-    zs = [1/3, 1/3, 1/3]
-    gas = CEOSGas(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
-    liquid1 = CEOSLiquid(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
-    liquid2 = CEOSLiquid(PRMIX, zs=zs, T= 600.0, P= 189900.0, eos_kwargs=eos_kwargs, HeatCapacityGases=properties.HeatCapacityGases)
-
-    SS_args_direct = {'T': 600.0, 'P': 189900.0,  'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333],
-    'xs_guess': [0.4282287991132575, 0.41544573161462583, 0.1563254692721166],
-    'ys_guess': [0.0030316280767594597, 0.04752552416026615, 0.9494428477629744],
-    'liquid_args':liquid1.lnphis_args(),
-    'gas_args':gas.lnphis_args(),
-    'maxiter': 5000, 'tol': 1e-13, 'trivial_solution_tol': 1e-05, 'V_over_F_guess': 0.2231799086259173}
-
-    with pytest.raises(TrivialSolutionError):
-        sequential_substitution_2P_functional(**SS_args_direct)
-
-    SS_args = {'zs': [0.3333333333333333, 0.3333333333333333, 0.3333333333333333],
-    'xs_guess': [0.4282287991132575, 0.41544573161462583, 0.1563254692721166],
-    'ys_guess': [0.0030316280767594597, 0.04752552416026615, 0.9494428477629744],
-    'liquid_phase':liquid1,
-    'gas_phase':gas,
-    'T': 600.0, 'P': 189900.0, 'V': None,
-    'maxiter': 5000, 'tol': 1e-13, 'trivial_solution_tol': 1e-05, 'V_over_F_guess': 0.2231799086259173}
-
-    with pytest.raises(TrivialSolutionError):
-        sequential_substitution_2P(**SS_args)
 
 
 
@@ -1056,13 +939,13 @@ def test_water_wet_bulb_temperature():
     gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], 
             T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
 
-    liquid = GibbsExcessLiquid(equilibrium_basis=None, caloric_basis=None,
+    liquid = GibbsExcessLiquid(
                eos_pure_instances=None, HeatCapacityGases=correlations.HeatCapacityGases,
                VolumeLiquids=correlations.VolumeLiquids, VaporPressures=correlations.VaporPressures,
                Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
 
-    
+
     # Rough test. Only check we converge.
     zs_air = [0.0, 0.2096, 0.7812, 0.0092]
     Ps = [1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 7.5e4, 1e5, 2e5, 4e5, 7e5, 1e6, 1.5e6, 3e6, 5e6, 8e6, 1e7, 1.2e7, 1.5e7, 1.8e7, 2e7, 22048320.0*(1-1e-3)]
@@ -1096,14 +979,14 @@ def test_water_wet_bulb_temperature_vary_saturation():
     gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], 
             T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
 
-    liquid = GibbsExcessLiquid(equilibrium_basis=None, caloric_basis=None,
+    liquid = GibbsExcessLiquid(
                eos_pure_instances=None, HeatCapacityGases=correlations.HeatCapacityGases,
                VolumeLiquids=correlations.VolumeLiquids, VaporPressures=correlations.VaporPressures,
                Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
     flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
 
     zs_air = [0.0, 0.2096, 0.7812, 0.0092]
-    Ps = [1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 7.5e4, 1e5, 2e5, 4e5, 7e5, 1e6, 1.5e6, 3e6, 5e6, 8e6, 1e7, 1.2e7, 1.5e7, 1.8e7, 2e7, 
+    Ps = [1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 7.5e4, 1e5, 2e5, 4e5, 7e5, 1e6, 1.5e6, 3e6, 5e6, 8e6, 1e7, 1.2e7, 1.5e7, 1.8e7, 2e7,
         22048320.0*(1-1e-7)]
     zs_added = [1,0,0,0]
 
@@ -1147,7 +1030,7 @@ def test_water_wet_bulb_temperature_solve_for():
     gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], 
             T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
 
-    liquid = GibbsExcessLiquid(equilibrium_basis=None, caloric_basis=None,
+    liquid = GibbsExcessLiquid(
                eos_pure_instances=None, HeatCapacityGases=correlations.HeatCapacityGases,
                VolumeLiquids=correlations.VolumeLiquids, VaporPressures=correlations.VaporPressures,
                Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
@@ -1159,4 +1042,110 @@ def test_water_wet_bulb_temperature_solve_for():
     assert_close(res, 0.09922720470301127)
                                             
     res = solve_water_wet_bulb_temperature_nested(flasher, zs=zs_air, T=330, P=1e5, T_wet_bulb=320)
+    assert_close(res, 0.09922720470301127)
+
+def test_water_wet_bulb_temperature_method():
+    constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'O': 2}, {'N': 2}, {'Ar': 1}], CASs=['7732-18-5', '7782-44-7', '7727-37-9', '7440-37-1'], Gfgs=[-228554.325, 0.0, 0.0, 0.0], Hfgs=[-241822.0, 0.0, 0.0, 0.0], MWs=[18.01528, 31.9988, 28.0134, 39.948], names=['water', 'oxygen', 'nitrogen', 'argon'], omegas=[0.344, 0.021, 0.04, -0.004], Pcs=[22048320.0, 5042945.25, 3394387.5, 4873732.5], Sfgs=[-44.499999999999964, 0.0, 0.0, 0.0], Tbs=[373.124, 90.188, 77.355, 87.302], Tcs=[647.14, 154.58, 126.2, 150.8], Vml_STPs=[1.8087205105724903e-05, 4.20717054123152e-05, 4.940428399628771e-05, 4.2812201767994384e-05], Vml_60Fs=[1.8036021352633123e-05, 4.20717054123152e-05, 4.940428399628771e-05, 4.2812201767994384e-05])
+
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    VaporPressures=[VaporPressure(load_data=False, exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317])),
+    VaporPressure(load_data=False, exp_poly_fit=(54.370999999999995, 154.57100000000003, [-9.865296960381724e-16, 9.716055729011619e-13, -4.163287834047883e-10, 1.0193358930366495e-07, -1.57202974507404e-05, 0.0015832482627752501, -0.10389607830776562, 4.24779829961549, -74.89465804494587])),
+    VaporPressure(load_data=False, exp_poly_fit=(63.2, 126.18199999999999, [5.490876411024536e-15, -3.709517805130509e-12, 1.0593254238679989e-09, -1.6344291780087318e-07, 1.4129990091975526e-05, -0.0005776268289835264, -0.004489180523814208, 1.511854256824242, -36.95425216567675])),
+    VaporPressure(load_data=False, exp_poly_fit=(83.816, 150.67700000000002, [3.156255133278695e-15, -2.788016448186089e-12, 1.065580375727257e-09, -2.2940542608809444e-07, 3.024735996501385e-05, -0.0024702132398995436, 0.11819673125756014, -2.684020790786307, 20.312746972164785])),
+    ],
+    VolumeLiquids=[VolumeLiquid(load_data=False, poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652])),
+    VolumeLiquid(load_data=False, poly_fit=(54.370999999999995, 144.58100000000002, [6.457909929992152e-20, -4.7825644162085234e-17, 1.5319533644419177e-14, -2.7692511820542383e-12, 3.088256295705142e-10, -2.1749171236451626e-08, 9.448300475893009e-07, -2.3081894336450133e-05, 0.00026558114294435354])),
+    VolumeLiquid(load_data=False, poly_fit=(63.2, 116.192, [9.50261462694019e-19, -6.351064785670885e-16, 1.8491415360234833e-13, -3.061531642102745e-11, 3.151588109585604e-09, -2.0650965261816766e-07, 8.411110954342014e-06, -0.00019458305886755787, 0.0019857193167955463])),
+    VolumeLiquid(load_data=False, poly_fit=(83.816, 140.687, [6.384785376493128e-19, -5.452304094035189e-16, 2.030873013507877e-13, -4.3082371353093367e-11, 5.691865080782158e-09, -4.794806581352254e-07, 2.5147558955587817e-05, -0.000750618147035446, 0.00978545135574999])),
+    ],
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [-1.0939921922581918e-31, 4.144146614006628e-28, -6.289942296644484e-25, 4.873620648503505e-22, -2.0309301195845294e-19, 4.3863747689727484e-17, -4.29308508081826e-15, 20.786156545383236])),
+    ],
+    )
+
+    gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0],
+            T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
+
+    liquid = GibbsExcessLiquid(
+               eos_pure_instances=None, HeatCapacityGases=correlations.HeatCapacityGases,
+               VolumeLiquids=correlations.VolumeLiquids, VaporPressures=correlations.VaporPressures,
+               Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
+    flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
+
+    zs_air = [0.0, 0.2096, 0.7812, 0.0092]
+    T_flasher = flasher.water_wet_bulb_temperature(zs=zs_air, T=300, P=1e5).T
+    T_standalone = water_wet_bulb_temperature(flasher, zs=zs_air, T=300, P=1e5).T
+    assert_close(T_flasher, T_standalone)
+
+def test_water_wet_bulb_temperature_vary_saturation_method():
+    constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'O': 2}, {'N': 2}, {'Ar': 1}], CASs=['7732-18-5', '7782-44-7', '7727-37-9', '7440-37-1'], Gfgs=[-228554.325, 0.0, 0.0, 0.0], Hfgs=[-241822.0, 0.0, 0.0, 0.0], MWs=[18.01528, 31.9988, 28.0134, 39.948], names=['water', 'oxygen', 'nitrogen', 'argon'], omegas=[0.344, 0.021, 0.04, -0.004], Pcs=[22048320.0, 5042945.25, 3394387.5, 4873732.5], Sfgs=[-44.499999999999964, 0.0, 0.0, 0.0], Tbs=[373.124, 90.188, 77.355, 87.302], Tcs=[647.14, 154.58, 126.2, 150.8], Vml_STPs=[1.8087205105724903e-05, 4.20717054123152e-05, 4.940428399628771e-05, 4.2812201767994384e-05], Vml_60Fs=[1.8036021352633123e-05, 4.20717054123152e-05, 4.940428399628771e-05, 4.2812201767994384e-05])
+
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    VaporPressures=[VaporPressure(load_data=False, exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317])),
+    VaporPressure(load_data=False, exp_poly_fit=(54.370999999999995, 154.57100000000003, [-9.865296960381724e-16, 9.716055729011619e-13, -4.163287834047883e-10, 1.0193358930366495e-07, -1.57202974507404e-05, 0.0015832482627752501, -0.10389607830776562, 4.24779829961549, -74.89465804494587])),
+    VaporPressure(load_data=False, exp_poly_fit=(63.2, 126.18199999999999, [5.490876411024536e-15, -3.709517805130509e-12, 1.0593254238679989e-09, -1.6344291780087318e-07, 1.4129990091975526e-05, -0.0005776268289835264, -0.004489180523814208, 1.511854256824242, -36.95425216567675])),
+    VaporPressure(load_data=False, exp_poly_fit=(83.816, 150.67700000000002, [3.156255133278695e-15, -2.788016448186089e-12, 1.065580375727257e-09, -2.2940542608809444e-07, 3.024735996501385e-05, -0.0024702132398995436, 0.11819673125756014, -2.684020790786307, 20.312746972164785])),
+    ],
+    VolumeLiquids=[VolumeLiquid(load_data=False, poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652])),
+    VolumeLiquid(load_data=False, poly_fit=(54.370999999999995, 144.58100000000002, [6.457909929992152e-20, -4.7825644162085234e-17, 1.5319533644419177e-14, -2.7692511820542383e-12, 3.088256295705142e-10, -2.1749171236451626e-08, 9.448300475893009e-07, -2.3081894336450133e-05, 0.00026558114294435354])),
+    VolumeLiquid(load_data=False, poly_fit=(63.2, 116.192, [9.50261462694019e-19, -6.351064785670885e-16, 1.8491415360234833e-13, -3.061531642102745e-11, 3.151588109585604e-09, -2.0650965261816766e-07, 8.411110954342014e-06, -0.00019458305886755787, 0.0019857193167955463])),
+    VolumeLiquid(load_data=False, poly_fit=(83.816, 140.687, [6.384785376493128e-19, -5.452304094035189e-16, 2.030873013507877e-13, -4.3082371353093367e-11, 5.691865080782158e-09, -4.794806581352254e-07, 2.5147558955587817e-05, -0.000750618147035446, 0.00978545135574999])),
+    ],
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [-1.0939921922581918e-31, 4.144146614006628e-28, -6.289942296644484e-25, 4.873620648503505e-22, -2.0309301195845294e-19, 4.3863747689727484e-17, -4.29308508081826e-15, 20.786156545383236])),
+    ],
+    )
+
+    gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0],
+            T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
+
+    liquid = GibbsExcessLiquid(
+               eos_pure_instances=None, HeatCapacityGases=correlations.HeatCapacityGases,
+               VolumeLiquids=correlations.VolumeLiquids, VaporPressures=correlations.VaporPressures,
+               Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
+    flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
+
+    zs_air = [0.0, 0.2096, 0.7812, 0.0092]
+    zs_added = [1,0,0,0]
+
+    sln = flasher.water_dew_point_from_humidity(220, 8000000.0, 0.49, zs_air, zs_added)
+    assert_close(sln.T, 219.999846538648, rtol=1e-5)
+
+def test_water_wet_bulb_temperature_solve_for_method():
+    constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'O': 2}, {'N': 2}, {'Ar': 1}], CASs=['7732-18-5', '7782-44-7', '7727-37-9', '7440-37-1'], Gfgs=[-228554.325, 0.0, 0.0, 0.0], Hfgs=[-241822.0, 0.0, 0.0, 0.0], MWs=[18.01528, 31.9988, 28.0134, 39.948], names=['water', 'oxygen', 'nitrogen', 'argon'], omegas=[0.344, 0.021, 0.04, -0.004], Pcs=[22048320.0, 5042945.25, 3394387.5, 4873732.5], Sfgs=[-44.499999999999964, 0.0, 0.0, 0.0], Tbs=[373.124, 90.188, 77.355, 87.302], Tcs=[647.14, 154.58, 126.2, 150.8], Vml_STPs=[1.8087205105724903e-05, 4.20717054123152e-05, 4.940428399628771e-05, 4.2812201767994384e-05], Vml_60Fs=[1.8036021352633123e-05, 4.20717054123152e-05, 4.940428399628771e-05, 4.2812201767994384e-05])
+
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    VaporPressures=[VaporPressure(load_data=False, exp_poly_fit=(273.17, 647.086, [-2.8478502840358144e-21, 1.7295186670575222e-17, -4.034229148562168e-14, 5.0588958391215855e-11, -3.861625996277003e-08, 1.886271475957639e-05, -0.005928371869421494, 1.1494956887882308, -96.74302379151317])),
+    VaporPressure(load_data=False, exp_poly_fit=(54.370999999999995, 154.57100000000003, [-9.865296960381724e-16, 9.716055729011619e-13, -4.163287834047883e-10, 1.0193358930366495e-07, -1.57202974507404e-05, 0.0015832482627752501, -0.10389607830776562, 4.24779829961549, -74.89465804494587])),
+    VaporPressure(load_data=False, exp_poly_fit=(63.2, 126.18199999999999, [5.490876411024536e-15, -3.709517805130509e-12, 1.0593254238679989e-09, -1.6344291780087318e-07, 1.4129990091975526e-05, -0.0005776268289835264, -0.004489180523814208, 1.511854256824242, -36.95425216567675])),
+    VaporPressure(load_data=False, exp_poly_fit=(83.816, 150.67700000000002, [3.156255133278695e-15, -2.788016448186089e-12, 1.065580375727257e-09, -2.2940542608809444e-07, 3.024735996501385e-05, -0.0024702132398995436, 0.11819673125756014, -2.684020790786307, 20.312746972164785])),
+    ],
+    VolumeLiquids=[VolumeLiquid(load_data=False, poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652])),
+    VolumeLiquid(load_data=False, poly_fit=(54.370999999999995, 144.58100000000002, [6.457909929992152e-20, -4.7825644162085234e-17, 1.5319533644419177e-14, -2.7692511820542383e-12, 3.088256295705142e-10, -2.1749171236451626e-08, 9.448300475893009e-07, -2.3081894336450133e-05, 0.00026558114294435354])),
+    VolumeLiquid(load_data=False, poly_fit=(63.2, 116.192, [9.50261462694019e-19, -6.351064785670885e-16, 1.8491415360234833e-13, -3.061531642102745e-11, 3.151588109585604e-09, -2.0650965261816766e-07, 8.411110954342014e-06, -0.00019458305886755787, 0.0019857193167955463])),
+    VolumeLiquid(load_data=False, poly_fit=(83.816, 140.687, [6.384785376493128e-19, -5.452304094035189e-16, 2.030873013507877e-13, -4.3082371353093367e-11, 5.691865080782158e-09, -4.794806581352254e-07, 2.5147558955587817e-05, -0.000750618147035446, 0.00978545135574999])),
+    ],
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [7.682842888382947e-22, -3.3797331490434755e-18, 6.036320672021355e-15, -5.560319277907492e-12, 2.7591871443240986e-09, -7.058034933954475e-07, 9.350023770249747e-05, -0.005794412013028436, 29.229215579932934])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [-6.496329615255804e-23, 2.1505678500404716e-19, -2.2204849352453665e-16, 1.7454757436517406e-14, 9.796496485269412e-11, -4.7671178529502835e-08, 8.384926355629239e-06, -0.0005955479316119903, 29.114778709934264])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [-1.0939921922581918e-31, 4.144146614006628e-28, -6.289942296644484e-25, 4.873620648503505e-22, -2.0309301195845294e-19, 4.3863747689727484e-17, -4.29308508081826e-15, 20.786156545383236])),
+    ],
+    )
+
+    gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0],
+            T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
+
+    liquid = GibbsExcessLiquid(
+               eos_pure_instances=None, HeatCapacityGases=correlations.HeatCapacityGases,
+               VolumeLiquids=correlations.VolumeLiquids, VaporPressures=correlations.VaporPressures,
+               Hfs=[-241822.0, 0.0, 0.0, 0.0], Gfs=[-228554.325, 0.0, 0.0, 0.0], T=298.15, P=101325.0, zs=[0.25, 0.25, 0.25, 0.25])
+    flasher = FlashVL(constants, correlations, liquid=liquid, gas=gas)
+
+    zs_air = [0.0, 0.2096, 0.7812, 0.0092]
+
+    res = flasher.solve_water_wet_bulb_temperature(zs=zs_air, T=330, P=1e5, T_wet_bulb=320)
     assert_close(res, 0.09922720470301127)

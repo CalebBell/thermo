@@ -46,12 +46,12 @@ from thermo.flash.flash_utils import (
     nonlin_2P_newton,
     nonlin_spec_NP,
     sequential_substitution_2P,
-    sequential_substitution_2P_functional,
     sequential_substitution_GDEM3_2P,
     sequential_substitution_Mehra_2P,
     solve_P_VF_IG_K_composition_independent,
     solve_PTV_HSGUA_1P,
     solve_T_VF_IG_K_composition_independent,
+    solution_to_criterion,
     stability_iteration_Michelsen,
 )
 from thermo.property_package import StabilityTester
@@ -558,20 +558,13 @@ class FlashVL(Flash):
         fugacities_trial = min_phase.fugacities_lowest_Gibbs()
         zs_trial = min_phase.zs
 
-        if self.supports_lnphis_args and 0:  # noqa: SIM223
-            other_phase_arg = other_phase.lnphis_args()
-            functional = True
-        else:
-            functional = False
-            other_phase_arg = lambda zs: other_phase.lnphis_at_zs(zs, most_stable=True)
-
+        other_phase_arg = lambda zs: other_phase.lnphis_at_zs(zs, most_stable=True)
 
         for i, trial_comp in enumerate(gen):
                 try:
                     sln = stability_iteration_Michelsen(T=T, P=P, zs_trial=zs_trial, fugacities_trial=fugacities_trial,
                                                         zs_test=trial_comp, test_phase=other_phase_arg,
-                                                        maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL,
-                                                        functional=functional)
+                                                        maxiter=self.PT_STABILITY_MAXITER, xtol=self.PT_STABILITY_XTOL)
                     sum_zs_test, Ks, zs_test, V_over_F, trial_zs, appearing_zs, dG_RT = sln
                     if zs == trial_zs:
                         continue
@@ -708,31 +701,12 @@ class FlashVL(Flash):
 
 
     def sequential_substitution_2P(self, T, P, zs, xs_guess, ys_guess, liquid_phase, gas_phase, V_over_F_guess, maxiter, tol):
-        if self.supports_lnphis_args and 0:  # noqa: SIM223
-
-            if liquid_phase.T != T or liquid_phase.P != P:
-                liquid_phase = liquid_phase.to_TP_zs(T=T, P=P, zs=xs_guess)
-            if gas_phase.T != T or gas_phase.P != P:
-                gas_phase = gas_phase.to_TP_zs(T=T, P=P, zs=ys_guess)
-
-            liquid_args = liquid_phase.lnphis_args()
-            gas_args = gas_phase.lnphis_args()
-            # Can save one fugacity call
-
-            V_over_F, xs, ys, iteration, err = sequential_substitution_2P_functional(T, P, zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
-                               liquid_args=liquid_args, gas_args=gas_args, maxiter=maxiter, tol=tol, trivial_solution_tol=self.PT_TRIVIAL_SOLUTION_TOL,
-                               V_over_F_guess=V_over_F_guess)
-            l = liquid_phase.to(T=T, P=P, zs=xs)
-            g = gas_phase.to(T=T, P=P, zs=ys)
-        else:
-            V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
-                                                                                zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
-                                                                                liquid_phase=liquid_phase,
-                                                                                gas_phase=gas_phase, maxiter=maxiter,
-                                                                                tol=tol,trivial_solution_tol=self.PT_TRIVIAL_SOLUTION_TOL,
-                                                                                V_over_F_guess=V_over_F_guess)
-
-
+        V_over_F, xs, ys, l, g, iteration, err = sequential_substitution_2P(T=T, P=P, V=None,
+                                                                            zs=zs, xs_guess=xs_guess, ys_guess=ys_guess,
+                                                                            liquid_phase=liquid_phase,
+                                                                            gas_phase=gas_phase, maxiter=maxiter,
+                                                                            tol=tol, trivial_solution_tol=self.PT_TRIVIAL_SOLUTION_TOL,
+                                                                            V_over_F_guess=V_over_F_guess)
         return (V_over_F, xs, ys, l, g, iteration, err)
 
 
@@ -800,7 +774,7 @@ class FlashVL(Flash):
 
 
 
-    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
+    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None, solution_target=None):
         if T is None:
             return self.flash_PV(P, V, zs, solution, hot_start)
         if P is None:
@@ -827,31 +801,27 @@ class FlashVL(Flash):
 
     def flash_TPV_HSGUA(self, fixed_val, spec_val, fixed_var="P", spec="H",
                         iter_var="T", zs=None, solution=None,
-                        selection_fun_1P=None, hot_start=None, spec_fun=None):
+                        selection_fun_1P=None, hot_start=None, spec_fun=None,
+                        solution_target=None):
 
         constants, correlations = self.constants, self.correlations
-        if solution is None:
+        if solution_target is not None:
+            fun = solution_to_criterion(solution, solution_target=solution_target)
+        elif solution is None:
             if fixed_var == "P" and spec == "H":
-                fun = lambda obj: -obj.S()
+                fun = solution_to_criterion('-S')
             elif fixed_var == "P" and spec == "S":
-                fun = lambda obj: obj.H() # Michaelson
+                fun = solution_to_criterion('H')
             elif fixed_var == "V" and spec == "U":
-                fun = lambda obj: -obj.S()
+                fun = solution_to_criterion('-S')
             elif fixed_var == "V" and spec == "S":
-                fun = lambda obj: obj.U()
+                fun = solution_to_criterion('U')
             elif fixed_var == "P" and spec == "U":
-                fun = lambda obj: -obj.S() # promising
+                fun = solution_to_criterion('-S')
             else:
-                fun = lambda obj: obj.G()
+                fun = solution_to_criterion(None)
         else:
-            if solution == "high":
-                fun = lambda obj: -obj.value(iter_var)
-            elif solution == "low":
-                fun = lambda obj: obj.value(iter_var)
-            elif callable(solution):
-                fun = solution
-            else:
-                raise ValueError("Unrecognized solution")
+            fun = solution_to_criterion(solution, iter_var=iter_var)
 
         if selection_fun_1P is None:
             def selection_fun_1P(new, prev):
@@ -892,6 +862,9 @@ class FlashVL(Flash):
                                                                              hot_start=hot_start, spec_fun=spec_fun)
                 return None, res.phases, [], res.betas, flash_convergence
             except:
+                if spec_fun is not None:
+                    raise ValueError("spec_fun is not supported by the Newton two-phase fallback solver; "
+                                     "the secant/bisection solver must converge when spec_fun is provided")
                 g, ls, ss, betas, flash_convergence = self.solve_PT_HSGUA_NP_guess_newton_2P(zs, fixed_val, spec_val,
                                                                                              fixed_var=fixed_var,
                                                                                              spec=spec,
