@@ -211,14 +211,6 @@ def wilson_gammas(xs, N, lambdas, xj_Lambda_ijs_inv, gammas=None, vec0=None):
 
     return gammas
 
-def wilson_gammas_from_args(xs, N, lambdas, xj_Lambda_ijs=None, vec0=None, gammas=None,):
-    if xj_Lambda_ijs is None:
-        xj_Lambda_ijs = [0.0]*N
-    xj_Lambda_ijs = wilson_xj_Lambda_ijs(xs, lambdas, N, xj_Lambda_ijs)
-    for i in range(N):
-        # Can make this optimization here only
-        xj_Lambda_ijs[i] = 1.0/xj_Lambda_ijs[i]
-    return wilson_gammas(xs, N, lambdas, xj_Lambda_ijs, gammas=gammas, vec0=vec0)
 
 MIN_LAMBDA_WILSON = 1e-20
 
@@ -369,7 +361,7 @@ def wilson_gammas_binaries_jac(xs, lambda12, lambda21, calc=None):
 
 
 class Wilson(GibbsExcess):
-    r"""Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing a liquid with excess Gibbs energy represented
     by the Wilson equation. This model is capable of representing most
     nonideal liquids for vapor-liquid equilibria, but is not recommended for
     liquid-liquid equilibria.
@@ -395,7 +387,7 @@ class Wilson(GibbsExcess):
         element list with parameters (`a`, `b`, `c`, `d`, `e`, `f`);
         either `lambda_coeffs` or the lambda parameters are required, [various]
     ABCDEF : tuple(list[list[float]], 6), optional
-        The lamba parameters can be provided as a tuple, [various]
+        The lambda parameters can be provided as a tuple, [various]
     lambda_as : list[list[float]], optional
         `a` parameters used in calculating :obj:`Wilson.lambdas`, [-]
     lambda_bs : list[list[float]], optional
@@ -403,7 +395,7 @@ class Wilson(GibbsExcess):
     lambda_cs : list[list[float]], optional
         `c` parameters used in calculating :obj:`Wilson.lambdas`, [-]
     lambda_ds : list[list[float]], optional
-        `d` paraemeters used in calculating :obj:`Wilson.lambdas`, [1/K]
+        `d` parameters used in calculating :obj:`Wilson.lambdas`, [1/K]
     lambda_es : list[list[float]], optional
         `e` parameters used in calculating :obj:`Wilson.lambdas`, [K^2]
     lambda_fs : list[list[float]], optional
@@ -424,7 +416,7 @@ class Wilson(GibbsExcess):
     :obj:`thermo.activity.GibbsExcess` are available as well.
 
     .. warning::
-        If parameters are ommited for all interactions, this model
+        If parameters are omitted for all interactions, this model
         reverts to :obj:`thermo.activity.IdealSolution`. In large systems it
         is common to only regress parameters for the most important components;
         set `lambda` parameters for other components to 0 to "ignore" them and
@@ -587,20 +579,6 @@ class Wilson(GibbsExcess):
     recalculable_attributes = _cached_calculated_attributes + GibbsExcess.recalculable_attributes
 
 
-    gammas_from_args = staticmethod(wilson_gammas_from_args)
-    def gammas_args(self, T=None):
-        if T is not None:
-            obj = self.to_T_xs(T=T, xs=self.xs)
-        else:
-            obj = self
-
-        lambdas = obj.lambdas()
-        N = obj.N
-        if self.vectorized:
-            xj_Lambda_ijs, vec0 = zeros(N), zeros(N)
-        else:
-            xj_Lambda_ijs, vec0 = [0.0]*N, [0.0]*N
-        return (N, lambdas, xj_Lambda_ijs, vec0)
 
     @staticmethod
     def from_DDBST(Vi, Vj, a, b, c, d=0.0, e=0.0, f=0.0, unit_conversion=True):
@@ -713,7 +691,7 @@ class Wilson(GibbsExcess):
         c : list[list[float]]
             `c` parameters in :obj:`Wilson` form, [-]
         d : list[list[float]]
-            `d` paraemeters in :obj:`Wilson` form, [1/K]
+            `d` parameters in :obj:`Wilson` form, [1/K]
         e : list[list[float]]
             `e` parameters in :obj:`Wilson` form, [K^2]
         f : list[list[float]]
@@ -985,7 +963,7 @@ class Wilson(GibbsExcess):
         Returns
         -------
         dlambdas_dT : list[list[float]]
-            Temperature deriavtives of Lambda terms, asymmetric matrix [1/K]
+            Temperature derivatives of Lambda terms, asymmetric matrix [1/K]
 
         Notes
         -----
@@ -1017,7 +995,7 @@ class Wilson(GibbsExcess):
 
     def d2lambdas_dT2(self):
         r"""Calculate and return the second temperature derivative of the
-        `lambda` termsfor the Wilson model at the system temperature.
+        `lambda` terms for the Wilson model at the system temperature.
 
         .. math::
             \frac{\partial^2 \Lambda_{ij}}{\partial^2 T} =
@@ -1031,7 +1009,7 @@ class Wilson(GibbsExcess):
         Returns
         -------
         d2lambdas_dT2 : list[list[float]]
-            Second temperature deriavtives of Lambda terms, asymmetric matrix,
+            Second temperature derivatives of Lambda terms, asymmetric matrix,
             [1/K^2]
 
         Notes
@@ -1083,7 +1061,7 @@ class Wilson(GibbsExcess):
         Returns
         -------
         d3lambdas_dT3 : list[list[float]]
-            Third temperature deriavtives of Lambda terms, asymmetric matrix,
+            Third temperature derivatives of Lambda terms, asymmetric matrix,
             [1/K^3]
 
         Notes
@@ -1760,7 +1738,7 @@ def Wilson_gammas(xs, params):
 
     The Wilson model is not applicable to liquid-liquid systems.
 
-    For this model to produce ideal acitivty coefficients (gammas = 1),
+    For this model to produce ideal activity coefficients (gammas = 1),
     all interaction parameters should be 1.
 
     The specific process simulator implementations are as follows:

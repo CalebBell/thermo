@@ -182,7 +182,6 @@ __all__ = [
     "Van_der_Waals_area",
     "Van_der_Waals_volume",
     "load_group_assignments_DDBST",
-    "unifac_gammas_from_args",
 ]
 import os
 
@@ -4935,43 +4934,6 @@ def unifac_gammas(N, xs, lngammas_r, lngammas_c, gammas=None):
         gammas[i] = exp(lngammas_r[i] + lngammas_c[i])
     return gammas
 
-def unifac_gammas_from_args(xs, N, N_groups, vs, rs, qs, Qs,
-                         psis, lnGammas_subgroups_pure,# Depends on T only
-                         version, rs_34,
-                         gammas=None):
-    skip_comb = version == 3
-
-    Xs, Xs_sum_inv = unifac_Xs(N=N, N_groups=N_groups, xs=xs, vs=vs)
-    Thetas, Thetas_sum_inv = unifac_Thetas(N_groups=N_groups, Xs=Xs, Qs=Qs)
-    Theta_Psi_sums = unifac_Theta_Psi_sums(N_groups=N_groups, Thetas=Thetas, psis=psis)
-
-    Theta_Psi_sum_invs = [0.0]*N_groups
-    for i in range(N_groups):
-        Theta_Psi_sum_invs[i] = 1.0/Theta_Psi_sums[i]
-    lnGammas_subgroups = unifac_lnGammas_subgroups(N_groups=N_groups, Qs=Qs, psis=psis, Thetas=Thetas,
-                                                   Theta_Psi_sums=Theta_Psi_sums, Theta_Psi_sum_invs=Theta_Psi_sum_invs)
-    lngammas_r = unifac_lngammas_r(N=N, N_groups=N_groups, lnGammas_subgroups_pure=lnGammas_subgroups_pure,
-                                   lnGammas_subgroups=lnGammas_subgroups, vs=vs)
-
-    if gammas is None:
-        gammas = [0.0]*N
-    if skip_comb:
-        for i in range(N):
-            gammas[i] = exp(lngammas_r[i])
-    else:
-        Vis, rx_sum_inv = unifac_Vis(rs=rs, xs=xs, N=N)
-        Fis, qx_sum_inv = unifac_Vis(rs=qs, xs=xs, N=N)
-
-        if version in (1, 3, 4):
-            Vis_modified, r34x_sum_inv = unifac_Vis(rs=rs_34, xs=xs, N=N)
-        else:
-            Vis_modified = Vis
-
-        lngammas_c = unifac_lngammas_c(N=N, version=version, qs=qs, Fis=Fis, Vis=Vis, Vis_modified=Vis_modified)
-
-        for i in range(N):
-            gammas[i] = exp(lngammas_r[i] + lngammas_c[i])
-    return gammas
 
 def unifac_dgammas_dxs(N, xs, gammas, dlngammas_r_dxs, dlngammas_c_dxs, dgammas_dxs=None):
     if dgammas_dxs is None:
@@ -5301,7 +5263,6 @@ class UNIFAC(GibbsExcess):
 
     """
 
-    gammas_from_args = staticmethod(unifac_gammas_from_args)
 
     _cached_calculated_attributes = ("_Fis", "_Fs", "_Fs_pure", "_Gs", "_Gs_pure", "_Hs", "_Hs_pure", "_Theta_Psi_sum_invs", "_Theta_Psi_sums",
             "_Theta_pure_Psi_sum_invs", "_Theta_pure_Psi_sums", "_Thetas", "_Thetas_sum_inv", "_VSXS", "_Vis", "_Vis_modified", "_Ws",
@@ -5328,23 +5289,6 @@ class UNIFAC(GibbsExcess):
         """
         return self.version + 500
 
-    def gammas_args(self, T=None):
-        r"""Return a tuple of arguments at the specified tempearture
-        that can be used to efficiently compute gammas at the
-        specified temperature but with varying compositions. This is
-        useful in the context of a TP flash.
-        """
-        if T is not None:
-            obj = self.to_T_xs(T=T, xs=self.xs)
-        else:
-            obj = self
-        try:
-            rs_34 = obj.rs_34
-        except:
-            rs_34 = obj.rs
-        return (obj.N, obj.N_groups, obj.vs, obj.rs, obj.qs, obj.Qs,
-             obj.psis(), obj.lnGammas_subgroups_pure(),# Depends on T only
-             obj.version, rs_34)
 
     @staticmethod
     def from_subgroups(T, xs, chemgroups, subgroups=None,

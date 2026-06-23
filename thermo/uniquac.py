@@ -424,29 +424,9 @@ def uniquac_d2GE_dxixjs(N, T, xs, qs, taus, phis, thetas, dphis_dxs, d2phis_dxix
             d2GE_dxixjs[i][j] = RT*tot
     return d2GE_dxixjs
 
-def uniquac_gammas_from_args(xs, N, T, z, rs, qs, taus, gammas=None):
-    phis, rsxs_sum_inv = uniquac_phis(N, xs, rs, phis=None)
-    phis_inv = [0.0]*N
-    for i in range(N):
-        phis_inv[i] = 1.0/phis[i]
-
-    thetas, qsxs_sum_inv = uniquac_phis(N, xs, qs)
-    thetaj_taus_jis = uniquac_thetaj_taus_jis(N, taus, thetas, thetaj_taus_jis=None)
-
-    GE = uniquac_GE(T, N, z, xs, qs, phis, thetas, thetaj_taus_jis)
-    dphis_dxs = uniquac_dphis_dxs(N, rs, phis, rsxs_sum_inv, dphis_dxs=None)
-    dthetas_dxs = uniquac_dphis_dxs(N, qs, thetas, qsxs_sum_inv, dphis_dxs=None)
-    thetaj_taus_jis_inv = [0.0]*N
-    for i in range(N):
-        thetaj_taus_jis_inv[i] = 1.0/thetaj_taus_jis[i]
-
-    dGE_dxs = uniquac_dGE_dxs(N, T, xs, qs, taus, phis, phis_inv, dphis_dxs, thetas, dthetas_dxs,
-                    thetaj_taus_jis, thetaj_taus_jis_inv, dGE_dxs=None)
-    gammas = gibbs_excess_gammas(xs, dGE_dxs, GE, T, gammas=gammas)
-    return gammas
 
 class UNIQUAC(GibbsExcess):
-    r"""Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing a liquid with excess Gibbs energy represented
     by the UNIQUAC equation. This model is capable of representing VL and LL
     behavior.
 
@@ -491,7 +471,7 @@ class UNIQUAC(GibbsExcess):
     tau_cs : list[list[float]] or None, optional
         `c` parameters used in calculating :obj:`UNIQUAC.taus`, [-]
     tau_ds : list[list[float]] or None, optional
-        `d` paraemeters used in calculating :obj:`UNIQUAC.taus`, [1/K]
+        `d` parameters used in calculating :obj:`UNIQUAC.taus`, [1/K]
     tau_es : list[list[float]] or None, optional
         `e` parameters used in calculating :obj:`UNIQUAC.taus`, [K^2]
     tau_fs : list[list[float]] or None, optional
@@ -647,19 +627,6 @@ class UNIQUAC(GibbsExcess):
 
     __slots__ = GibbsExcess.__slots__ + _model_attributes + _cached_calculated_attributes + ("zero_coeffs",)
 
-    def gammas_args(self, T=None):
-        if T is not None:
-            obj = self.to_T_xs(T=T, xs=self.xs)
-        else:
-            obj = self
-        try:
-            taus = obj._taus
-        except AttributeError:
-            taus = obj.taus()
-        N = obj.N
-        return (N, obj.T, obj.z, obj.rs, obj.qs, taus)
-
-    gammas_from_args = staticmethod(uniquac_gammas_from_args)
 
     def __repr__(self):
         s = "{}(T={}, xs={}, rs={}, qs={}, ABCDEF={})".format(self.__class__.__name__, repr(self.T), repr(self.xs), repr(self.rs), repr(self.qs),
@@ -1119,12 +1086,12 @@ class UNIQUAC(GibbsExcess):
         if i != j:
 
         .. math::
-            \frac{\partial \theta_i}{x_j} = \frac{-r_i r_j x_i}{(\sum_k r_k x_k)^2}
+            \frac{\partial \theta_i}{x_j} = \frac{-q_i q_j x_i}{(\sum_k q_k x_k)^2}
 
         else:
 
         .. math::
-            \frac{\partial \theta_i}{x_j} = \frac{-r_i r_j x_i}{(\sum_k r_k x_k)^2} + \frac{r_i}{\sum_k r_k x_k}
+            \frac{\partial \theta_i}{x_j} = \frac{-q_i q_j x_i}{(\sum_k q_k x_k)^2} + \frac{q_i}{\sum_k q_k x_k}
 
         """
         try:
@@ -1693,7 +1660,7 @@ class UNIQUAC(GibbsExcess):
         Returns
         -------
         parameters : dict[str, float]
-            Dimentionless interaction parameters of each compound with each
+            Dimensionless interaction parameters of each compound with each
             other; these are the actual `tau` values. [-]
         statistics : dict[str: float]
             Statistics, calculated and returned only if `do_statistics` is True, [-]
@@ -1961,7 +1928,7 @@ def UNIQUAC_gammas(xs, rs, qs, taus):
 
 
     There is no global set of parameters which will make this model yield
-    ideal acitivty coefficients (gammas = 1) for this model.
+    ideal activity coefficients (gammas = 1) for this model.
 
     Examples
     --------

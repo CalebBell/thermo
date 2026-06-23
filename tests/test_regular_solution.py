@@ -177,17 +177,6 @@ def test_4_components():
     GE_copy = RegularSolution.from_json(json.loads(json.dumps(GE.as_json(option=1))))
     assert GE_copy == GE
 
-    # Direct call for gammas
-    gammas_args = GE.gammas_args()
-    gammas = GE.gammas_from_args(GE.xs, *gammas_args)
-    assert_close1d(gammas, GE.gammas(), rtol=1e-13)
-
-    # gammas at another T
-    T_another = 401.234
-    gammas_args_at_T = GE.gammas_args(T=T_another)
-    gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
-    assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
-
 def test_regular_solution_additional_test_cases():
     # test case with parameters
     xs = [0.35, 0.25, 0.15, 0.25]

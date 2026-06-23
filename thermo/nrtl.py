@@ -63,16 +63,6 @@ try:
 except (ImportError, AttributeError):
     pass
 
-def nrtl_gammas_from_args(xs, N, Gs, taus, Gs_transposed, Gs_taus_transposed, Gs_taus, xj_Gs_jis=None, xj_Gs_taus_jis=None, vec0=None, vec1=None, gammas=None):
-    if xj_Gs_jis is None:
-        xj_Gs_jis = [0.0]*N
-    if xj_Gs_taus_jis is None:
-        xj_Gs_taus_jis = [0.0]*N
-    nrtl_xj_Gs_jis_and_Gs_taus_jis(N, xs, Gs, taus, Gs_transposed, Gs_taus_transposed, xj_Gs_jis, xj_Gs_taus_jis)
-    for i in range(N):
-        # We can reuse the same list instead of making a new one here for xj_Gs_jis_inv
-        xj_Gs_jis[i] = 1.0/xj_Gs_jis[i]
-    return nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis, xj_Gs_taus_jis, gammas, vec0=vec0, vec1=vec1)
 
 def nrtl_gammas(xs, N, Gs, taus, xj_Gs_jis_inv, xj_Gs_taus_jis, gammas, vec0=None, vec1=None):
     if gammas is None:
@@ -464,7 +454,7 @@ def nrtl_d2GE_dTdxs(N, T, xs, taus, dtaus_dT, Gs, dGs_dT, xj_Gs_taus_jis,
     return d2GE_dTdxs
 
 class NRTL(GibbsExcess):
-    r"""Class for representing an a liquid with excess gibbs energy represented
+    r"""Class for representing a liquid with excess Gibbs energy represented
     by the NRTL equation. This model is capable of representing VL and LL
     behavior. [1]_ and [2]_ are good references on this model.
 
@@ -504,15 +494,15 @@ class NRTL(GibbsExcess):
     tau_es : list[list[float]], optional
         `e` parameters used in calculating :obj:`NRTL.taus`, [-]
     tau_fs : list[list[float]], optional
-        `f` paraemeters used in calculating :obj:`NRTL.taus`, [1/K]
+        `f` parameters used in calculating :obj:`NRTL.taus`, [1/K]
     tau_gs : list[list[float]], optional
-        `e` parameters used in calculating :obj:`NRTL.taus`, [K^2]
+        `g` parameters used in calculating :obj:`NRTL.taus`, [K^2]
     tau_hs : list[list[float]], optional
-        `f` parameters used in calculating :obj:`NRTL.taus`, [1/K^2]
+        `h` parameters used in calculating :obj:`NRTL.taus`, [1/K^2]
     alpha_cs : list[list[float]], optional
         `c` parameters used in calculating :obj:`NRTL.alphas`, [-]
     alpha_ds : list[list[float]], optional
-        `d` paraemeters used in calculating :obj:`NRTL.alphas`, [1/K]
+        `d` parameters used in calculating :obj:`NRTL.alphas`, [1/K]
 
     Attributes
     ----------
@@ -577,32 +567,6 @@ class NRTL(GibbsExcess):
 
 
 
-    def gammas_args(self, T=None):
-        if T is not None:
-            obj = self.to_T_xs(T=T, xs=self.xs)
-        else:
-            obj = self
-        try:
-            taus = obj._taus
-        except AttributeError:
-            taus = obj.taus()
-        try:
-            Gs = obj._Gs
-        except AttributeError:
-            Gs = obj.Gs()
-        Gs_taus_transposed = obj.Gs_taus_transposed()
-        Gs_transposed = obj.Gs_transposed()
-        Gs_taus = obj.Gs_taus()
-
-        N = obj.N
-        if not self.vectorized:
-            xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1 = [0.0]*N, [0.0]*N, [0.0]*N, [0.0]*N
-        else:
-            xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1 = zeros(N), zeros(N), zeros(N),  zeros(N)
-
-        return (N, Gs, taus, Gs_transposed, Gs_taus_transposed, Gs_taus, xj_Gs_jis, xj_Gs_taus_jis, vec0, vec1)
-
-    gammas_from_args = staticmethod(nrtl_gammas_from_args)
 
     def __init__(self, *, xs, T=GibbsExcess.T_DEFAULT, tau_coeffs=None, alpha_coeffs=None,
                  ABEFGHCD=None, tau_as=None, tau_bs=None, tau_es=None,
@@ -1466,7 +1430,7 @@ class NRTL(GibbsExcess):
         return GE
 
     def dGE_dT(self):
-        r"""Calculate and return the first tempreature derivative of excess
+        r"""Calculate and return the first temperature derivative of excess
         Gibbs energy of a liquid phase represented by the NRTL model.
 
         Returns
@@ -1508,7 +1472,7 @@ class NRTL(GibbsExcess):
 
 
     def d2GE_dT2(self):
-        r"""Calculate and return the second tempreature derivative of excess
+        r"""Calculate and return the second temperature derivative of excess
         Gibbs energy of a liquid phase represented by the NRTL model.
 
         Returns
@@ -1613,7 +1577,7 @@ class NRTL(GibbsExcess):
         .. math::
             \frac{\partial^2 g^E}{\partial x_i \partial x_j} = RT\left[
             + \frac{G_{ij}\tau_{ij}}{\sum_m x_m G_{mj}}
-            + \frac{G_{ji}\tau_{jiij}}{\sum_m x_m G_{mi}}
+            + \frac{G_{ji}\tau_{ji}}{\sum_m x_m G_{mi}}
             -\frac{(\sum_m x_m G_{mj}\tau_{mj})G_{ij}}{(\sum_m x_m G_{mj})^2}
             -\frac{(\sum_m x_m G_{mi}\tau_{mi})G_{ji}}{(\sum_m x_m G_{mi})^2}
             \sum_k \left(\frac{2x_k(\sum_m x_m \tau_{mk}G_{mk})G_{ik}G_{jk}}{(\sum_m x_m G_{mk})^3}
@@ -2080,7 +2044,7 @@ def NRTL_gammas(xs, taus, alphas):
     .. math::
         \tau_{ij}=\frac{b_{ij}}{RT}
 
-    For this model to produce ideal acitivty coefficients (gammas = 1),
+    For this model to produce ideal activity coefficients (gammas = 1),
     all interaction parameters should be 0; the value of alpha does not impact
     the calculation when that is the case.
 
