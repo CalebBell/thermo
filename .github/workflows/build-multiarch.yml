@@ -55,12 +55,12 @@ jobs:
           #   distro: alpine_latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Just
         uses: extractions/setup-just@v2
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
         with:
-          image: tonistiigi/binfmt:qemu-v8.1.5
+          image: tonistiigi/binfmt:qemu-v10.2.1-65
       - name: Run tests on ${{ matrix.arch }}/${{ matrix.distro }}
         run: just test-arch ${{ matrix.arch }} ${{ matrix.distro }}

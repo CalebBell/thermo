@@ -29,7 +29,7 @@ jobs:
       name: pypi
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Need full history to check branch ancestry
 
@@ -42,10 +42,10 @@ jobs:
           echo "Tag verified to be on release branch"
 
       - name: Download distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: distributions
           path: dist/
       
       - name: Upload to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1        
+        uses: pypa/gh-action-pypi-publish@release/v1

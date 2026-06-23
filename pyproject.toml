@@ -347,9 +347,9 @@ max-complexity = 10
 "docs/**/*.ipynb" = ["S101", "F403", "F405", "PT011", "B017", "TRY002"]
 
 [tool.pytest.ini_options]
-addopts = "--doctest-glob='*.rst'"
-norecursedirs = [".cache", ".git", "htmlcov", "notebooks", "dist", "build", "*.egg-info", ".tox", "surfaces", "prof", "benchmarks", "dev", "_build", "_custom_build", "__pycache__"]
-doctest_optionflags = ["NORMALIZE_WHITESPACE"]
+addopts = "--doctest-glob='*.rst' --doctest-modules"
+norecursedirs = [".cache", ".git", "htmlcov", "notebooks", "dist", "build", "plots", ".tox", "surfaces", "prof", "cx_freeze", "py2exe", "manual_runner", "make_test_stubs", "plot", "prerelease", "benchmarks", "benchmark", "dev", "_build", "dump", "_custom_build", "__pycache__"]
+doctest_optionflags = ["NORMALIZE_WHITESPACE", "NUMBER"]
 markers = [
     "sympy: Uses sympy",
     "mpmath: Uses mpmath",
