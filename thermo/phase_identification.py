@@ -29,7 +29,7 @@ phase identification parameter is a clear vapor-liquid differentiator in the
 subcritical region and it provides line starting at the critical point for the
 supercritical region.
 
-However for mixtures, there is no clear calcuation that can be performed to
+However for mixtures, there is no clear calculation that can be performed to
 identify the phase of a mixture. Many different criteria that have been
 proposed are included here. The
 :obj:`phase identification parameter or PIP <chemicals.utils.phase_identification_parameter_phase>`.
@@ -80,9 +80,7 @@ __all__ = [
     "SOLID_SORT_METHODS",
     "S_ID_D2P_DVDT",
     "S_ID_METHODS",
-    "S_ID_METHODS",
     "VL_ID_BS",
-    "VL_ID_METHODS",
     "VL_ID_METHODS",
     "VL_ID_PIP",
     "VL_ID_POLING",
@@ -524,7 +522,7 @@ def vapor_score_PIP(V, dP_dT, dP_dV, d2P_dV2, d2P_dVdT):
 
 def vapor_score_Bennett_Schmidt(dbeta_dT):
     r"""Compute a vapor score representing how vapor-like a phase is
-    (higher, above zero = more vapor like) using the Bennet-Schmidt
+    (higher, above zero = more vapor like) using the Bennett-Schmidt
     temperature derivative of isobaric expansion suggestion.
 
     .. math::
@@ -533,7 +531,7 @@ def vapor_score_Bennett_Schmidt(dbeta_dT):
     Parameters
     ----------
     dbeta_dT : float
-        Temperature derivative of isobaric coefficient of a thermal
+        Temperature derivative of isobaric coefficient of thermal
         expansion, [1/K^2]
 
     Returns
@@ -654,7 +652,7 @@ S_ID_METHODS = [S_ID_D2P_DVDT]
 
 def score_phases_S(phases, constants, correlations, method=S_ID_D2P_DVDT,
                    S_ID_settings=None):
-    r"""Score all phases according to how wolid they appear given the
+    r"""Score all phases according to how solid they appear given the
     provided parameters and a selected method.
 
     A score above zero indicates a solid. More than one phase may have
@@ -776,7 +774,7 @@ def identity_phase_states(phases, constants, correlations, VL_method=VL_ID_PIP,
                           S_method=S_ID_D2P_DVDT,
                           VL_ID_settings=None, S_ID_settings=None,
                           skip_solids=False):
-    r"""Identify and the actial phase of all the given phases given the
+    r"""Identify the actual phase of all the given phases given the
     provided settings.
 
     Parameters
@@ -915,7 +913,7 @@ def mini_sort_phases(phases, sort_method, prop, cmps, cmps_neg,
 
 def sort_phases(liquids, solids, constants, settings):
     r"""Identify and sort all phases given the provided parameters.
-    This is not a thermodynamic concept; it is just a convinience
+    This is not a thermodynamic concept; it is just a convenience
     method to make the results of the flash more consistent, because
     the flash algorithms don't care about density or ordering
     the phases.
@@ -928,8 +926,6 @@ def sort_phases(liquids, solids, constants, settings):
         Solids that were identified, [-]
     constants : :obj:`ChemicalConstantsPackage <thermo.chemical_package.ChemicalConstantsPackage>`
         Constants used in the identification, [-]
-    correlations : :obj:`PropertyCorrelationsPackage <thermo.chemical_package.PropertyCorrelationsPackage>`
-        Correlations used in the identification, [-]
     settings : :obj:`BulkSettings <thermo.bulk.BulkSettings>`
         Settings object controlling the phase sorting, [-]
 
@@ -1063,7 +1059,7 @@ def identify_sort_phases(phases, betas, constants, correlations, settings,
         # Probably worth adding a fast path here which avoids index
         new_betas = []
         if gas is not None:
-            # Cannot use .index on the betas lsit as the objects define __hash__.
+            # Cannot use .index on the betas list as the objects define __hash__.
             for i, p in enumerate(phases):
                 if p is gas:
                     new_betas.append(betas[i])

@@ -2,14 +2,14 @@ from cx_Freeze import setup, Executable
 
 build_exe_options = {
     "packages": ["numpy", "scipy", "thermo", "fluids", "chemicals"],
-    "excludes": ["cairo", "locket", "setproctitle", "bcrypt", "beniget", "concurrent", 
-    "curses", "et_xmlfile", "google", "imagesize", "olefile", "pyasn1_modules", "pytest", 
+    "excludes": ["cairo", "locket", "setproctitle", "bcrypt", "beniget",
+    "curses", "et_xmlfile", "google", "imagesize", "olefile", "pyasn1_modules", "pytest",
     "tabulate", "tlz", "xxhash", "_pydevd_frame_eval", "astunparse", "backcall", "constantly",
     "cssselect", "greenlet", "html", "incremental", "iniconfig", "ipywidgets", 
     "matplotlib_inline", "ply", "pydoc_data", "pygtkcompat", "pyximport", "tblib",
     "typed_ast", "xmlrpc", "yapf", "zope", "asgiref", "blib2to3", "certifi", "cloudpickle",
     "dbm", "jupyter_core", "kiwisolver", "lz4", "ptyprocess", "PySide2", "snappy", 
-    "sortedcontainers", "toml", "tomli", "tomllib", "zoneinfo", "blosc", "ephem", 
+    "sortedcontainers", "toml", "tomli", "tomllib", "blosc", "ephem",
     "exceptiongroup", "gast", "http", "jacobi", "lazy_object_proxy", "llvmlite",
     "mpi4py", "mpl_toolkits", "msgpack", "OpenSSL", "past", "pydevd_plugins", "smmap",
     "wrapt", "wsgiref", "xml", "argcomplete", "bs4", "executing", "ipython_genutils",

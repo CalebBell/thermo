@@ -1,0 +1,4 @@
+# SciPy 1.18 introduced dynamically imported array_api_compat modules that
+# cx_Freeze 8.6.x does not detect automatically. Keep the cx_Freeze packaging
+# check on the last known-good SciPy release until cx_Freeze grows a hook for it.
+scipy<1.18

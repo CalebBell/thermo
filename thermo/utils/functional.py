@@ -482,10 +482,11 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
             raise ValueError("Product and feeds have different components in them")
 
         # element balance
+        inlet_atom_flows = [i.atom_flows() for i in inlets]
         feed_cmps, feed_element_flows = mix_multiple_component_flows(
-            IDs=[list(i.atom_flows().keys()) for i in inlets],
+            IDs=[list(af.keys()) for af in inlet_atom_flows],
             flows=[1 for i in inlets],
-            fractions=[list(i.atom_flows().values()) for i in inlets])
+            fractions=[list(af.values()) for af in inlet_atom_flows])
 
         # feed_cmps, feed_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in inlets],
         #                                                       flows=[i.n for i in inlets],
@@ -493,9 +494,10 @@ def assert_component_balance(inlets, outlets, rtol=1E-9, atol=0, reactive=False)
         feed_element_flows = {i:j for i, j in zip(feed_cmps, feed_element_flows)}
 
 
-        product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[list(i.atom_flows().keys()) for i in outlets],
+        outlet_atom_flows = [i.atom_flows() for i in outlets]
+        product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[list(af.keys()) for af in outlet_atom_flows],
                                                               flows=[1 for i in outlets],
-                                                              fractions=[list(i.atom_flows().values()) for i in outlets])
+                                                              fractions=[list(af.values()) for af in outlet_atom_flows])
         # product_cmps, product_element_flows = mix_multiple_component_flows(IDs=[list(i.atoms.keys()) for i in outlets],
         #                                                       flows=[i.n for i in outlets],
         #                                                       fractions=[list(i.atoms.values()) for i in outlets])

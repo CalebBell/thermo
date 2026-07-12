@@ -336,7 +336,7 @@ class FlashVLN(FlashVL):
             liquid = self.liquid0.to(T=T, P=P, zs=xs)
             return gas, [liquid], [], [VF, 1.0 - VF], empty_flash_conv
 
-    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
+    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None, solution_target=None):
         if T is None:
             return self.flash_PV(P, V, zs, solution, hot_start)
         if P is None:

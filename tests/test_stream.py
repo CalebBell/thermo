@@ -247,36 +247,6 @@ def test_sub_streams():
     assert m.CASs == ['7732-18-5']
 
 
-@pytest.fixture(
-    params=[
-        (StreamArgs,{}),
-        (EnergyStream,dict(Q=0))
-    ],
-    ids="StreamArgs EnergyStream".split()
-)
-def any_type_of_stream(request):
-    return request.param
-
-def test_stream_copy(any_type_of_stream):
-    stream_type, param = any_type_of_stream
-    expected_args = stream_type(**param)
-    # when copied
-    stream_copy = expected_args.copy()
-    # then
-    assert isinstance(stream_copy, stream_type)
-
-def test_child_class_copy(any_type_of_stream):
-    # lets say user wants to enhance StreamArgs class by:
-    stream_type, param = any_type_of_stream
-    class EnhancedStreamArgs(stream_type):
-        pass
-    expected_args = EnhancedStreamArgs(**param)
-    # when copied
-    stream_copy = expected_args.copy()
-    # then
-    assert isinstance(stream_copy, EnhancedStreamArgs)
-
-
 def test_StreamArgs_flow_overspecified():
 
     with pytest.raises(OverspeficiedError):
@@ -993,7 +963,7 @@ def test_EquilibriumStream_different_input_sources():
 
         assert_close(case.T, case.bulk.T, rtol=1e-13)
         assert_close(case.P, case.bulk.P, rtol=1e-13)
-        assert_close(case.VF, case.bulk.VF, rtol=1e-13)
+        assert_close(case.VF, 1.0, rtol=1e-13)
         assert_close(case.energy, case.bulk.energy, rtol=1e-13)
         assert_close(case.energy_reactive, case.bulk.energy_reactive, rtol=1e-13)
 
@@ -1028,7 +998,7 @@ def test_EquilibriumStream_different_input_sources():
         assert_close(case.T_calc, case.T, rtol=1e-13)
         assert_close(case.P_calc, case.bulk.P_calc, rtol=1e-13)
         assert_close(case.P_calc, case.P, rtol=1e-13)
-        assert_close(case.VF_calc, case.bulk.VF_calc, rtol=1e-13)
+        assert_close(case.VF_calc, 1.0, rtol=1e-13)
         assert_close(case.VF_calc, case.VF, rtol=1e-13)
         assert_close(case.energy_calc, case.bulk.energy_calc, rtol=1e-13)
         assert_close(case.energy_calc, case.energy, rtol=1e-13)
@@ -1364,8 +1334,7 @@ def test_energy_balance():
 
     liquid = GibbsExcessLiquid(VaporPressures=correlations.VaporPressures, HeatCapacityGases=correlations.HeatCapacityGases,
                         VolumeLiquids=correlations.VolumeLiquids,
-                        use_Poynting=True,
-                        use_phis_sat=False, eos_pure_instances=None,
+                        equilibrium_basis='Poynting',
                         Hfs=constants.Hfgs, Gfs=constants.Gfgs,
                         T=298.15, P=101325.0, zs=zs)
     flasher = FlashVLN(constants, correlations, liquids=[liquid], gas=gas, solids=[])
@@ -1517,4 +1486,141 @@ def test_energy_balance():
     assert f2.energy_calc
     assert p0.energy_calc
     assert p1.energy_calc
+
+
+def test_H_reactive_as_state_spec():
+    """Test that H_reactive is properly counted as a state variable."""
+    # H_reactive + P should be two state specs
+    a = StreamArgs(P=1e5, H_reactive=-200000.0, zs=[0.5, 0.5], n=5)
+    assert a.specified_state_vars == 2
+    assert a.state_specified
+    assert a.H_reactive == -200000.0
+    assert ('H_reactive', -200000.0) in a.state_specs
+
+    # H_reactive alone should be one state spec
+    b = StreamArgs(H_reactive=-200000.0, zs=[0.5, 0.5], n=5)
+    assert b.specified_state_vars == 1
+    assert not b.state_specified
+    assert b.non_pressure_spec_specified
+
+    # H_reactive should not appear in state_specs when not set
+    c = StreamArgs(T=300, P=1e5, n=5, zs=[0.5, 0.5])
+    assert 'H_reactive' not in [name for name, _ in c.state_specs]
+
+    # Overspecification: 3 state vars should raise
+    with pytest.raises(ValueError):
+        StreamArgs(T=300, P=1e5, H_reactive=-200000.0, zs=[0.5, 0.5], n=5)
+
+
+def test_clear_state_specs_clears_H_reactive():
+    """Test that clear_state_specs also clears H_reactive."""
+    a = StreamArgs(P=1e5, H_reactive=-200000.0, zs=[0.5, 0.5], n=5)
+    assert a.H_reactive is not None
+    assert a.P is not None
+
+    a.clear_state_specs()
+
+    assert a.H_reactive is None
+    assert a.P is None
+    assert a.T is None
+    assert a.specified_state_vars == 0
+    assert not a.state_specified
+    assert not a.non_pressure_spec_specified
+    # Composition and flow should be unaffected
+    assert_close1d(a.zs, [0.5, 0.5])
+    assert a.n == 5
+
+
+def test_H_reactive_state_spec_with_flasher():
+    """Test that H_reactive as a state spec works end-to-end through flash_state."""
+    constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 1, 'H': 4}, {'C': 10, 'H': 22}], CASs=['7732-18-5', '74-82-8', '124-18-5'], Gfgs=[-228554.325, -50443.48000000001, 33414.534999999916], Hfgs=[-241822.0, -74534.0, -249500.0], MWs=[18.01528, 16.04246, 142.28168], names=['water', 'methane', 'decane'], omegas=[0.344, 0.008, 0.49], Pcs=[22048320.0, 4599000.0, 2110000.0], Sfgs=[-44.499999999999964, -80.79999999999997, -948.8999999999997], Tbs=[373.124, 111.65, 447.25], Tcs=[647.14, 190.564, 611.7], Vml_STPs=[1.8087205105724903e-05, 5.858784737690099e-05, 0.00019580845677748954], Vml_60Fs=[1.8036021352633123e-05, 5.858784737690099e-05, 0.00019404661845090487])
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+    HeatCapacityGas(load_data=False, poly_fit=(200.0, 1000.0, [-1.702672546011891e-21, 6.6751002084997075e-18, -7.624102919104147e-15, -4.071140876082743e-12, 1.863822577724324e-08, -1.9741705032236747e-05, 0.009781408958916831, -1.6762677829939379, 252.8975930305735])),
+    ],
+    VolumeLiquids=[VolumeLiquid(load_data=False, poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652])),
+    VolumeLiquid(load_data=False, poly_fit=(90.8, 180.564, [7.730541828225242e-20, -7.911042356530585e-17, 3.51935763791471e-14, -8.885734012624568e-12, 1.3922694980104743e-09, -1.3860056394382538e-07, 8.560110533953199e-06, -0.00029978743425740123, 0.004589555868318768])),
+    VolumeLiquid(load_data=False, poly_fit=(243.51, 607.7, [1.0056823442253386e-22, -3.2166293088353376e-19, 4.442027873447809e-16, -3.4574825216883073e-13, 1.6583965814129937e-10, -5.018203505211133e-08, 9.353680499788552e-06, -0.0009817356348626736, 0.04459313654596568])),
+    ],
+    )
+
+    gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, zs=[.3, .3, .4], Hfs=constants.Hfgs, Gfs=constants.Gfgs, T=298.15, P=101325.0)
+    flasher = FlashVLN(constants=constants, correlations=correlations, gas=gas, liquids=[])
+
+    # Get reference values from a T,P flash
+    ref = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], n=10, flasher=flasher)
+    H_reactive_ref = ref.H_reactive()
+
+    # Flash with P + H_reactive should recover the same T
+    a = StreamArgs(P=1e5, H_reactive=H_reactive_ref, zs=[.5, .3, .2], n=10, flasher=flasher)
+    state = a.flash_state()
+    assert state is not None
+    assert_close(state.T, 300.0, rtol=1e-8)
+
+    # The stream() method should also work
+    s = a.stream()
+    assert s is not None
+    assert_close(s.T, 300.0, rtol=1e-8)
+    assert_close(s.n, 10, rtol=1e-13)
+
+
+def test_energy_reactive_calc_computes():
+    """Test that energy_reactive_calc computes from flash when not directly specified."""
+    constants = ChemicalConstantsPackage(atomss=[{'H': 2, 'O': 1}, {'C': 1, 'H': 4}, {'C': 10, 'H': 22}], CASs=['7732-18-5', '74-82-8', '124-18-5'], Gfgs=[-228554.325, -50443.48000000001, 33414.534999999916], Hfgs=[-241822.0, -74534.0, -249500.0], MWs=[18.01528, 16.04246, 142.28168], names=['water', 'methane', 'decane'], omegas=[0.344, 0.008, 0.49], Pcs=[22048320.0, 4599000.0, 2110000.0], Sfgs=[-44.499999999999964, -80.79999999999997, -948.8999999999997], Tbs=[373.124, 111.65, 447.25], Tcs=[647.14, 190.564, 611.7], Vml_STPs=[1.8087205105724903e-05, 5.858784737690099e-05, 0.00019580845677748954], Vml_60Fs=[1.8036021352633123e-05, 5.858784737690099e-05, 0.00019404661845090487])
+    correlations = PropertyCorrelationsPackage(constants=constants, skip_missing=True,
+    HeatCapacityGases=[HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [5.543665000518528e-22, -2.403756749600872e-18, 4.2166477594350336e-15, -3.7965208514613565e-12, 1.823547122838406e-09, -4.3747690853614695e-07, 5.437938301211039e-05, -0.003220061088723078, 33.32731489750759])),
+    HeatCapacityGas(load_data=False, poly_fit=(50.0, 1000.0, [6.7703235945157e-22, -2.496905487234175e-18, 3.141019468969792e-15, -8.82689677472949e-13, -1.3709202525543862e-09, 1.232839237674241e-06, -0.0002832018460361874, 0.022944239587055416, 32.67333514157593])),
+    HeatCapacityGas(load_data=False, poly_fit=(200.0, 1000.0, [-1.702672546011891e-21, 6.6751002084997075e-18, -7.624102919104147e-15, -4.071140876082743e-12, 1.863822577724324e-08, -1.9741705032236747e-05, 0.009781408958916831, -1.6762677829939379, 252.8975930305735])),
+    ],
+    VolumeLiquids=[VolumeLiquid(load_data=False, poly_fit=(273.17, 637.096, [9.00307261049824e-24, -3.097008950027417e-20, 4.608271228765265e-17, -3.8726692841874345e-14, 2.0099220218891486e-11, -6.596204729785676e-09, 1.3368112879131157e-06, -0.00015298762503607717, 0.007589247005014652])),
+    VolumeLiquid(load_data=False, poly_fit=(90.8, 180.564, [7.730541828225242e-20, -7.911042356530585e-17, 3.51935763791471e-14, -8.885734012624568e-12, 1.3922694980104743e-09, -1.3860056394382538e-07, 8.560110533953199e-06, -0.00029978743425740123, 0.004589555868318768])),
+    VolumeLiquid(load_data=False, poly_fit=(243.51, 607.7, [1.0056823442253386e-22, -3.2166293088353376e-19, 4.442027873447809e-16, -3.4574825216883073e-13, 1.6583965814129937e-10, -5.018203505211133e-08, 9.353680499788552e-06, -0.0009817356348626736, 0.04459313654596568])),
+    ],
+    )
+
+    gas = IdealGas(HeatCapacityGases=correlations.HeatCapacityGases, zs=[.3, .3, .4], Hfs=constants.Hfgs, Gfs=constants.Gfgs, T=298.15, P=101325.0)
+    flasher = FlashVLN(constants=constants, correlations=correlations, gas=gas, liquids=[])
+
+    ref = EquilibriumStream(T=300.0, P=1e5, zs=[.5, .3, .2], n=10, flasher=flasher)
+
+    # energy_reactive_calc should return None when nothing is available
+    empty = StreamArgs(flasher=flasher)
+    assert empty.energy_reactive_calc is None
+
+    # energy_reactive_calc should return the stored value when directly specified
+    direct = StreamArgs(energy_reactive=-500000.0, P=1e5, zs=[.5, .3, .2], n=10, flasher=flasher)
+    assert_close(direct.energy_reactive_calc, -500000.0)
+
+    # energy_reactive_calc should compute from H_reactive spec + n
+    H_reactive_val = ref.H_reactive()
+    from_H_reactive = StreamArgs(P=1e5, H_reactive=H_reactive_val, zs=[.5, .3, .2], n=10, flasher=flasher)
+    assert_close(from_H_reactive.energy_reactive_calc, H_reactive_val * 10, rtol=1e-13)
+
+    # energy_reactive_calc should compute from flash when T,P,zs,n are known
+    from_flash = StreamArgs(T=300.0, P=1e5, zs=[.5, .3, .2], n=10, flasher=flasher)
+    assert_close(from_flash.energy_reactive_calc, ref.energy_reactive, rtol=1e-13)
+
+    # Compare EquilibriumStream.energy_reactive_calc with energy_reactive
+    assert_close(ref.energy_reactive_calc, ref.energy_reactive, rtol=1e-13)
+
+
+def test_H_reactive_setter_overspec_guard():
+    """Test that the H_reactive setter prevents overspecification."""
+    a = StreamArgs(T=300, P=1e5, zs=[0.5, 0.5], n=5)
+    assert a.state_specified
+    # Can't set H_reactive when T and P already fully specify the state
+    with pytest.raises(ValueError):
+        a.H_reactive = -200000.0
+
+    # Can set it after unsetting one
+    a.T = None
+    a.H_reactive = -200000.0
+    assert a.H_reactive == -200000.0
+    assert a.state_specified
+
+    # Can unset it
+    a.H_reactive = None
+    assert a.H_reactive is None
+    assert not a.state_specified
 

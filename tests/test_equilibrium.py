@@ -58,7 +58,7 @@ def test_default_settings_storage():
     assert new == default_settings
 
     # Test creating it
-    obj = BulkSettings(dP_dT='MOLE_WEIGHTED', dP_dV='MOLE_WEIGHTED', d2P_dV2='MOLE_WEIGHTED', d2P_dT2='MOLE_WEIGHTED', d2P_dTdV='MOLE_WEIGHTED', mu_LL='LOG_PROP_MASS_WEIGHTED', mu_LL_power_exponent=0.4, mu_VL='McAdams', mu_VL_power_exponent=0.4, k_LL='MASS_WEIGHTED', k_LL_power_exponent=0.4, k_VL='MASS_WEIGHTED', k_VL_power_exponent=0.4, sigma_LL='MASS_WEIGHTED', sigma_LL_power_exponent=0.4, T_liquid_volume_ref=298.15, T_normal=273.15, P_normal=101325.0, T_standard=288.15, P_standard=101325.0, T_gas_ref=288.15, P_gas_ref=101325.0, speed_of_sound='MOLE_WEIGHTED', kappa='MOLE_WEIGHTED', isobaric_expansion='MOLE_WEIGHTED', Joule_Thomson='MOLE_WEIGHTED', VL_ID='PIP', S_ID='d2P_dVdT', solid_sort_method='prop', liquid_sort_method='prop', liquid_sort_cmps=[], solid_sort_cmps=[], liquid_sort_cmps_neg=[], solid_sort_cmps_neg=[], liquid_sort_prop='DENSITY_MASS', solid_sort_prop='DENSITY_MASS', phase_sort_higher_first=True, water_sort='water not special', equilibrium_perturbation=1e-07)
+    obj = BulkSettings(dP_dT='MOLE_WEIGHTED', dP_dV='MOLE_WEIGHTED', d2P_dV2='MOLE_WEIGHTED', d2P_dT2='MOLE_WEIGHTED', d2P_dTdV='MOLE_WEIGHTED', mu_LL='LOG_PROP_MASS_WEIGHTED', mu_LL_power_exponent=0.4, mu_VL='McAdams', mu_VL_power_exponent=0.4, k_LL='MASS_WEIGHTED', k_LL_power_exponent=0.4, k_VL='MASS_WEIGHTED', k_VL_power_exponent=0.4, sigma_LL='MASS_WEIGHTED', sigma_LL_power_exponent=0.4, T_liquid_volume_ref=298.15, T_normal=273.15, P_normal=101325.0, T_standard=288.15, P_standard=101325.0, T_gas_ref=288.15, P_gas_ref=101325.0, speed_of_sound='MOLE_WEIGHTED', kappa='MOLE_WEIGHTED', isobaric_expansion='MOLE_WEIGHTED', Joule_Thomson='MOLE_WEIGHTED', VL_ID='PIP', S_ID='d2P_dVdT', solid_sort_method='prop', liquid_sort_method='prop', liquid_sort_cmps=[], solid_sort_cmps=[], liquid_sort_cmps_neg=[], solid_sort_cmps_neg=[], liquid_sort_prop='DENSITY_MASS', solid_sort_prop='DENSITY_MASS', phase_sort_higher_first=True, water_sort='water not special')
     new = BulkSettings.from_json(json.loads(json.dumps(obj.as_json())))
     assert new == obj
 
@@ -99,7 +99,7 @@ def test_two_eos_pure_flash_all_properties():
     VolumeSolids = [VolumeSolid(poly_fit=(52.677, 175.59, [3.9379562779372194e-30, 1.4859309728437516e-27, 3.897856765862211e-24, 5.012758300685479e-21, 7.115820892078097e-18,
                                                            9.987967202910477e-15, 1.4030825662633013e-11, 1.970935889948393e-08, 2.7686131179275174e-05])),]
 
-    SurfaceTensions = [SurfaceTension(CASRN='67-56-1', method="SOMAYAJULU2")]
+    SurfaceTensions = [SurfaceTension(CASRN='67-56-1', method="SOMAYAJULU2", extrapolation="linear")]
 
     ThermalConductivityLiquids=[ThermalConductivityLiquid(poly_fit=(390.65, 558.9, [-1.7703926719478098e-31, 5.532831178371296e-28, -7.157706109850407e-25, 4.824017093238245e-22, -1.678132299010268e-19, 1.8560214447222824e-17, 6.274769714658382e-15, -0.00020340000228224661, 0.21360000021862866])),]
     ThermalConductivityGases=[ThermalConductivityGas(poly_fit=(390.65, 558.9, [1.303338742188738e-26, -5.948868042722525e-23, 1.2393384322893673e-19, -1.5901481819379786e-16, 1.4993659486913432e-13, -1.367840742416352e-10, 1.7997602278525846e-07, 3.5456258123020795e-06, -9.803647813554084e-05])),]
@@ -135,8 +135,8 @@ def test_two_eos_pure_flash_all_properties():
     assert eq.LF == 1 - VF
 
     # Meta
-    assert eq.phases[0] is eq.gas
-    assert eq.phases[1] is eq.liquid0
+    assert eq.phases[0] == eq.gas
+    assert eq.phases[1] == eq.liquid0
     assert eq.phase_count == 2
     assert eq.liquid_count ==1
     assert eq.gas_count == 1
@@ -162,15 +162,15 @@ def test_two_eos_pure_flash_all_properties():
     # Since liquid fraction does not make any sense, might as well use pure volumes.
     assert_close1d(eq.Vfls(), [1])
     assert_close1d(eq.bulk.Vfls(), [1])
-    assert_close2d([eq.Vfls(phase) for phase in eq.phases], [[1], [1]])
+    assert_close2d([phase.Vfls() for phase in eq.phases], [[1], [1]])
 
     assert_close1d(eq.Vfgs(), [1])
     assert_close1d(eq.bulk.Vfgs(), [1])
-    assert_close2d([eq.Vfgs(phase) for phase in eq.phases], [[1], [1]])
+    assert_close2d([phase.Vfgs() for phase in eq.phases], [[1], [1]])
 
     assert_close1d(eq.ws(), [1])
     assert_close1d(eq.bulk.ws(), [1])
-    assert_close2d([eq.ws(phase) for phase in eq.phases], [[1], [1]])
+    assert_close2d([phase.ws() for phase in eq.phases], [[1], [1]])
 
 
     # H S G U A
@@ -799,10 +799,8 @@ def test_two_eos_pure_flash_all_properties():
 
 
 def test_thermodynamic_derivatives_settings_with_flash():
-    # Slow - any way to mock? Ideally start with a hot start, TODO
     T, P = 298.15, 1e5
     zs = [.25, 0.7, .05]
-    # m = Mixture(['butanol', 'water', 'ethanol'], zs=zs)
     constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0],
                                          omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844],
                                          CASs=['71-36-3', '7732-18-5', '64-17-5'])
@@ -815,22 +813,15 @@ def test_thermodynamic_derivatives_settings_with_flash():
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    settings = BulkSettings(dP_dT=EQUILIBRIUM_DERIVATIVE, dP_dV=EQUILIBRIUM_DERIVATIVE,
-                            d2P_dV2=EQUILIBRIUM_DERIVATIVE, d2P_dT2=EQUILIBRIUM_DERIVATIVE,
-                            d2P_dTdV=EQUILIBRIUM_DERIVATIVE)
-
-    flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas, settings=settings)
+    flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas)
     res = flashN.flash(T=361.0, P=P, zs=zs)
-    assert res.settings is settings
-    assert res.bulk.settings is settings
-    assert res.liquid_bulk.settings is settings
 
-    # This will be taken care of in the future
-    res.dP_dT()
-    flashN.flash(T=361.0, V=res.V(), zs=zs)
+    dP_dT_eq = flashN.equilibrium_derivative(res, of="P", wrt="T", const="V")
+    assert isinstance(dP_dT_eq, float)
+    dP_dV_eq = flashN.equilibrium_derivative(res, of="P", wrt="V", const="T")
+    assert isinstance(dP_dV_eq, float)
 
 def test_thermodynamic_derivatives_settings_with_flash_binary():
-    # Tests that only need two phases
     T, P = 200.0, 1e5
     constants = ChemicalConstantsPackage(Tcs=[305.32, 469.7], Pcs=[4872000.0, 3370000.0],
                                          omegas=[0.098, 0.251], Tms=[90.3, 143.15],
@@ -845,20 +836,16 @@ def test_thermodynamic_derivatives_settings_with_flash_binary():
     gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
 
-    settings = BulkSettings(equilibrium_perturbation=1e-7,Joule_Thomson=EQUILIBRIUM_DERIVATIVE)
-
-    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas, settings=settings)
+    flasher = FlashVL(constants, correlations, liquid=liq, gas=gas)
     res = flasher.flash(P=P, T=T, zs=zs)
-    assert res.settings is settings
 
-    # Numerical derivative
-    assert_close(res.Joule_Thomson(), 0.00018067735521980137, rtol=3e-6)
+    JT = flasher.equilibrium_derivative(res, of="T", wrt="P", const="H")
+    assert_close(JT, 0.00018067735521980137, rtol=3e-6)
 
 
 def test_thermodynamic_derivatives_named_settings_with_flash():
     T, P = 298.15, 1e5
     zs = [.25, 0.7, .05]
-    # m = Mixture(['butanol', 'water', 'ethanol'], zs=zs)
     constants = ChemicalConstantsPackage(Tcs=[563.0, 647.14, 514.0], Pcs=[4414000.0, 22048320.0, 6137000.0],
                                          omegas=[0.59, 0.344, 0.635], MWs=[74.1216, 18.01528, 46.06844],
                                          CASs=['71-36-3', '7732-18-5', '64-17-5'])
@@ -871,20 +858,14 @@ def test_thermodynamic_derivatives_named_settings_with_flash():
     gas = CEOSGas(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
     liq = CEOSLiquid(SRKMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases, T=T, P=P, zs=zs)
 
-    settings = BulkSettings(isobaric_expansion=EQUILIBRIUM_DERIVATIVE, equilibrium_perturbation=1e-7,
-                            kappa=EQUILIBRIUM_DERIVATIVE)
-
-    flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas, settings=settings)
+    flashN = FlashVLN(constants, correlations, liquids=[liq, liq], gas=gas)
 
     res = flashN.flash(T=361.0, P=P, zs=zs)
-    # Numeric derivative
-    assert_close(res.bulk.isobaric_expansion(), 3.9202893172854045, rtol=1e-5)
-    assert_close(res.isobaric_expansion(), 3.9202893172854045, rtol=1e-5)
-    assert res.liquid_bulk.isobaric_expansion() is None
+    beta = flashN.equilibrium_derivative(res, of="V", wrt="T", const="P")/res.V()
+    assert_close(beta, 3.9202893172854045, rtol=1e-5)
 
-    assert res.liquid_bulk.kappa() is None
-    assert_close(res.kappa(), 0.0010137530158341767, rtol=1e-5)
-    assert_close(res.bulk.kappa(), 0.0010137530158341767, rtol=1e-5)
+    kappa = -flashN.equilibrium_derivative(res, of="V", wrt="P", const="T")/res.V()
+    assert_close(kappa, 0.0010137530158341767, rtol=1e-5)
 
     json_data = res.as_json()
     json_data = json.loads(json.dumps(json_data))
@@ -926,7 +907,7 @@ def test_thermodynamic_derivatives_settings():
                             d2P_dV2=MOLE_WEIGHTED, d2P_dT2=MOLE_WEIGHTED,
                             d2P_dTdV=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = 2368612.801863535, 2368604.823694247
+    v, v2 = 2368612.801863535, 2436684.1272664503
     assert_close(res.dP_dT_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.dP_dT_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.dP_dT_frozen(), v2)
@@ -935,7 +916,7 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.dP_dT(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.dP_dT(), v2)
 
-    v, v2 = -91302146519714.0, -91302146426651.06
+    v, v2 = -91302146519714.0, -93926386013261.05
     assert_close(res.dP_dV_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.dP_dV_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.dP_dV_frozen(), v2)
@@ -943,7 +924,7 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.dP_dV(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.dP_dV(), v2)
 
-    v, v2 = -2059.854933409936, -2059.854681581265
+    v, v2 = -2059.854933409936, -2119.059775980792
     assert_close(res.d2P_dT2_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dT2_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dT2_frozen(), v2)
@@ -951,7 +932,7 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.d2P_dT2(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dT2(), v2)
 
-    v, v2 =  5.690848954200077e+19, 5.690848954199457e+19
+    v, v2 =  5.690848954200077e+19, 5.854417410051979e+19
     assert_close(res.d2P_dV2_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dV2_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dV2_frozen(), v2, rtol=1e-8)
@@ -959,7 +940,7 @@ def test_thermodynamic_derivatives_settings():
     assert_close(res.bulk.d2P_dV2(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dV2(), v2, rtol=1e-8)
 
-    v, v2 = -384372661273.9939, -384372661000.05206
+    v, v2 = -384372661273.9939, -395420440186.9006
     assert_close(res.d2P_dTdV_frozen(), v, rtol=1e-8)
     assert_close(res.bulk.d2P_dTdV_frozen(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.d2P_dTdV_frozen(), v2, rtol=1e-8)
@@ -1137,14 +1118,14 @@ def test_thermodynamic_derivatives_named_settings():
                             d2P_dTdV=VOLUME_WEIGHTED)
 
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (3.7457177005192036e-05, 0.0006765320296813641)
+    v, v2 = (3.7457177005192036e-05, 0.0006576301831475394)
     assert_close(res.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.bulk.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.isobaric_expansion(), v2)
 
     settings = BulkSettings(isobaric_expansion=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (0.0011408916410772427, 0.001059818733856218)
+    v, v2 = (0.0011408916410772427, 0.0010902804303755942)
     assert_close(res.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.bulk.isobaric_expansion(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.isobaric_expansion(), v2)
@@ -1184,14 +1165,14 @@ def test_thermodynamic_derivatives_named_settings():
                             d2P_dV2=VOLUME_WEIGHTED, d2P_dT2=VOLUME_WEIGHTED,
                             d2P_dTdV=VOLUME_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (4.065318446361809e-10, 4.0653229903060884e-10)
+    v, v2 = (4.065318446361809e-10, 3.9517406203636247e-10)
     assert_close(res.kappa(), v, rtol=1e-8)
     assert_close(res.bulk.kappa(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.kappa(), v2)
 
     settings = BulkSettings(kappa=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (2.8465214826316303e-07, 7.371276386739713e-10)
+    v, v2 = (2.8465214826316303e-07, 7.583144300638823e-10)
     assert_close(res.kappa(), v, rtol=1e-8)
     assert_close(res.bulk.kappa(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.kappa(), v2)
@@ -1231,14 +1212,14 @@ def test_thermodynamic_derivatives_named_settings():
                             d2P_dTdV=VOLUME_WEIGHTED)
 
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (-7.240388523395516e-06, -3.1091771780270116e-07)
+    v, v2 = (-7.240388523395516e-06, -3.137248711904908e-07)
     assert_close(res.Joule_Thomson(), v, rtol=1e-8)
     assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.Joule_Thomson(), v2)
 
     settings = BulkSettings(Joule_Thomson=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (3.993637901448662e-07, -2.1061721898004138e-07)
+    v, v2 = (3.993637901448662e-07, -2.1667085589112061e-07)
     assert_close(res.Joule_Thomson(), v, rtol=1e-8)
     assert_close(res.bulk.Joule_Thomson(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.Joule_Thomson(), v2)
@@ -1277,14 +1258,14 @@ def test_thermodynamic_derivatives_named_settings():
                             d2P_dV2=VOLUME_WEIGHTED, d2P_dT2=VOLUME_WEIGHTED,
                             d2P_dTdV=VOLUME_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (1472.7188644943863, 377.43483503795505)
+    v, v2 = (1472.7188644943863, 387.1987376112444)
     assert_close(res.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.speed_of_sound(), v2)
 
     settings = BulkSettings(speed_of_sound=MOLE_WEIGHTED)
     res = EquilibriumState(settings=settings, **VLL_kwargs)
-    v, v2 = (324.60817499927214, 322.9861514323374)
+    v, v2 = (324.60817499927214, 332.2695371761378)
     assert_close(res.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.bulk.speed_of_sound(), v, rtol=1e-8)
     assert_close(res.liquid_bulk.speed_of_sound(), v2)
@@ -1373,9 +1354,8 @@ def test_Phase_to_EquilibriumState():
     assert gas_state.liquid_count == 0
 
     phases = [gas_state.gas, liquid_state.liquid0, gas, liquid]
-    flashers = [None, None, flasher, flasher]
-    for phase, flasher in zip(phases, flashers):
-        state = phase.as_EquilibriumState(flasher)
+    for phase in phases:
+        state = flasher.phase_as_EquilibriumState(phase)
         assert_close1d(state.phis(), phase.phis())
         assert_close1d(state.lnphis(), phase.lnphis())
         assert_close1d(state.fugacities(), phase.fugacities())

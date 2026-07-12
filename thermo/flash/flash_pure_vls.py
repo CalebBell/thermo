@@ -33,7 +33,7 @@ from thermo.coolprop import CPiP_min
 from thermo.eos_mix import IGMIX
 from thermo.equilibrium import EquilibriumState
 from thermo.flash.flash_base import Flash
-from thermo.flash.flash_utils import PSF_pure_newton, PVF_pure_newton, TSF_pure_newton, TVF_pure_secant, solve_PTV_HSGUA_1P
+from thermo.flash.flash_utils import PSF_pure_newton, PVF_pure_newton, TSF_pure_newton, TVF_pure_secant, solution_to_criterion, solve_PTV_HSGUA_1P
 from thermo.phases import (
     CEOSGas,
     CEOSLiquid,
@@ -337,19 +337,10 @@ class FlashPureVLS(Flash):
         self._finish_initialization_base()
 
 
-    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None):
+    def flash_TPV(self, T, P, V, zs=None, solution=None, hot_start=None, solution_target=None):
         betas = [1.0]
 
-        if solution is None:
-            fun = lambda obj: obj.G()
-        elif solution == "high":
-            fun = lambda obj: -obj.T
-        elif solution == "low":
-            fun = lambda obj: obj.T
-        elif callable(solution):
-            fun = solution
-        else:
-            raise ValueError(f"Did not recognize solution {solution}")
+        fun = solution_to_criterion(solution, solution_target=solution_target)
 
         if self.phase_count == 1:
             phase = self.phases[0].to(zs=zs, T=T, P=P, V=V)
@@ -697,36 +688,28 @@ class FlashPureVLS(Flash):
     def flash_TPV_HSGUA(self, fixed_var_val, spec_val, fixed_var="P", spec="H",
                         iter_var="T", zs=None, solution=None,
                         selection_fun_1P=None, hot_start=None,
-                        iter_var_backup=None, spec_fun=None):
+                        iter_var_backup=None, spec_fun=None,
+                        solution_target=None):
         # Be prepared to have a flag here to handle zero flow
         zs = [1.0]
         constants, correlations = self.constants, self.correlations
-        if solution is None:
+        if solution_target is not None:
+            fun = solution_to_criterion(solution, solution_target=solution_target)
+        elif solution is None:
             if fixed_var == "P" and spec == "H":
-                fun = lambda obj: -obj.S()
+                fun = solution_to_criterion("-S")
             elif fixed_var == "P" and spec == "S":
-               # fun = lambda obj: obj.G()
-                fun = lambda obj: obj.H() # Michaelson
+                fun = solution_to_criterion("H")
             elif fixed_var == "V" and spec == "U":
-                fun = lambda obj: -obj.S()
+                fun = solution_to_criterion("-S")
             elif fixed_var == "V" and spec == "S":
-                fun = lambda obj: obj.U()
+                fun = solution_to_criterion("U")
             elif fixed_var == "P" and spec == "U":
-                fun = lambda obj: -obj.S() # promising
-                # fun = lambda obj: -obj.H() # not bad not as good as A
-                # fun = lambda obj: obj.A() # Pretty good
-                # fun = lambda obj: -obj.V() # First
+                fun = solution_to_criterion("-S")
             else:
-                fun = lambda obj: obj.G()
+                fun = solution_to_criterion(None)
         else:
-            if solution == "high":
-                fun = lambda obj: -obj.value(iter_var)
-            elif solution == "low":
-                fun = lambda obj: obj.value(iter_var)
-            elif callable(solution):
-                fun = solution
-            else:
-                raise ValueError("Unrecognized solution")
+            fun = solution_to_criterion(solution, iter_var=iter_var)
 
         selection_fun_1P_specified = True
         if selection_fun_1P is None:
@@ -871,7 +854,7 @@ class FlashPureVLS(Flash):
                 T = VL_liq.T
                 iterations = 0
                 err = 0.0
-                flash_convergence["VF flash convergence"] = {"iterations": VL_iter, "err": VL_err}
+                flash_convergence["inner_flash_convergence"] = {"iterations": VL_iter, "err": VL_err}
 
         # TODO
         # if G_SF < G_min:
@@ -886,7 +869,7 @@ class FlashPureVLS(Flash):
         #     T = SF_flash.T
         #     iterations = 0
         #     err = 0.0
-        #     flash_convergence['SF flash convergence'] = SF_flash.flash_convergence
+        #     flash_convergence['inner_flash_convergence'] = SF_flash.flash_convergence
 
         if G_min == 1e100:
             """Calculate the values of val at minimum and maximum temperature

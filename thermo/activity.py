@@ -454,7 +454,7 @@ class GibbsExcess:
             self.group_cmp_idx = tuple(array(v) for v in self.group_cmp_idx)
 
     def HE(self):
-        r"""Calculate and return the excess entropy of a liquid phase using an
+        r"""Calculate and return the excess enthalpy of a liquid phase using an
         activity coefficient model.
 
         .. math::
@@ -723,7 +723,7 @@ class GibbsExcess:
         Returns
         -------
         dGE_dns : list[float]
-            First mole number derivative of excess Gibbs entropy of the liquid
+            First mole number derivative of excess Gibbs energy of the liquid
             phase, [J/(mol^2*K)]
 
         Notes
@@ -743,7 +743,7 @@ class GibbsExcess:
         Returns
         -------
         dnGE_dns : list[float]
-            First partial mole number derivative of excess Gibbs entropy of the
+            First partial mole number derivative of excess Gibbs energy of the
             liquid phase, [J/(mol)]
 
         Notes
@@ -765,7 +765,7 @@ class GibbsExcess:
         -------
         d2GE_dTdns : list[float]
             First mole number derivative of the temperature derivative of
-            excess Gibbs entropy of the liquid phase, [J/(mol^2*K)]
+            excess Gibbs energy of the liquid phase, [J/(mol^2*K)]
 
         Notes
         -----
@@ -787,7 +787,7 @@ class GibbsExcess:
         -------
         d2nGE_dTdns : list[float]
             First partial mole number derivative of the temperature derivative
-            of excess Gibbs entropy of the liquid phase, [J/(mol*K)]
+            of excess Gibbs energy of the liquid phase, [J/(mol*K)]
 
         Notes
         -----
@@ -1147,7 +1147,7 @@ for create_derivative, derive_attr in second_comp_derivatives:
     setattr(GibbsExcess, create_derivative+"_numerical", numerical_derivative)
 
 class IdealSolution(GibbsExcess):
-    r"""Class for  representing an ideal liquid, with no excess gibbs energy
+    r"""Class for  representing an ideal liquid, with no excess Gibbs energy
     and thus activity coefficients of 1.
 
     Parameters
@@ -1180,9 +1180,6 @@ class IdealSolution(GibbsExcess):
     model_id = 0
     __slots__ = GibbsExcess.__slots__
 
-    def gammas_args(self, T=None):
-        N = self.N
-        return (N,)
 
     def __init__(self, *, xs, T=GibbsExcess.T_DEFAULT):
         self.T = T

@@ -1263,6 +1263,7 @@ class Chemical: # pragma: no cover
         self.ThermalConductivitySolid = ThermalConductivitySolid(CASRN=self.CAS, **user_chemical_property_lookup(self.CAS, "ThermalConductivitySolid"))
 
         self.SurfaceTension = SurfaceTension(CASRN=self.CAS, MW=self.MW, Tb=self.Tb, Tc=self.Tc, Pc=self.Pc, Vc=self.Vc, Zc=self.Zc, omega=self.omega, StielPolar=self.StielPolar, Hvap_Tb=self.Hvap_Tb, Vml=self.VolumeLiquid, Cpl=self.HeatCapacityLiquid,
+                                             extrapolation=("linear" if self.Tc is None else "DIPPR106_AB"),
                                              **user_chemical_property_lookup(self.CAS, "SurfaceTension"))
 
         self.Permittivity = self.PermittivityLiquid = PermittivityLiquid(CASRN=self.CAS, **user_chemical_property_lookup(self.CAS, "PermittivityLiquid"))
