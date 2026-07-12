@@ -3221,7 +3221,7 @@ def PH_newton_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
 
 
 def TVF_pure_newton(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
-    one_liquid = len(liquids)
+    one_liquid = len(liquids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3258,7 +3258,7 @@ def TVF_pure_newton(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
     return Psat, l, g, iterations, err
 
 def TVF_pure_secant(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
-    one_liquid = len(liquids)
+    one_liquid = len(liquids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3297,7 +3297,7 @@ def TVF_pure_secant(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
 
 
 def PVF_pure_newton(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
-    one_liquid = len(liquids)
+    one_liquid = len(liquids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3335,7 +3335,7 @@ def PVF_pure_newton(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
 
 
 def PVF_pure_secant(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
-    one_liquid = len(liquids)
+    one_liquid = len(liquids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3369,8 +3369,8 @@ def PVF_pure_secant(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
 
 
 def TSF_pure_newton(P_guess, T, other_phases, solids, maxiter=200, xtol=1E-10):
-    one_other = len(other_phases)
-    one_solid = len(solids)
+    one_other = len(other_phases) == 1
+    one_solid = len(solids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3416,8 +3416,8 @@ def TSF_pure_newton(P_guess, T, other_phases, solids, maxiter=200, xtol=1E-10):
     return Psub, other, solid, iterations, err
 
 def PSF_pure_newton(T_guess, P, other_phases, solids, maxiter=200, xtol=1E-10):
-    one_other = len(other_phases)
-    one_solid = len(solids)
+    one_other = len(other_phases) == 1
+    one_solid = len(solids) == 1
     zs = [1.0]
     store = []
     global iterations
