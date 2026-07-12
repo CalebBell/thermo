@@ -73,16 +73,16 @@ def parse_deprecated_basis_flags(use_Poynting, use_phis_sat, use_Hvap_caloric):
     use_Hvap_caloric = bool(use_Hvap_caloric) if use_Hvap_caloric is not None else False
 
     if use_Poynting and use_phis_sat:
-        equilibrium_basis = 'Poynting&PhiSat'
+        equilibrium_basis = "Poynting&PhiSat"
     elif use_Poynting:
-        equilibrium_basis = 'Poynting'
+        equilibrium_basis = "Poynting"
     elif use_phis_sat:
-        equilibrium_basis = 'PhiSat'
+        equilibrium_basis = "PhiSat"
     else:
-        equilibrium_basis = 'Psat'
+        equilibrium_basis = "Psat"
 
     if use_Hvap_caloric:
-        caloric_basis = 'Hvap'
+        caloric_basis = "Hvap"
     else:
         caloric_basis = None
 
@@ -377,7 +377,7 @@ class GibbsExcessLiquid(Phase):
                  henry_mode="solvents_with_parameters",
 
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
-                 equilibrium_basis='Psat',
+                 equilibrium_basis="Psat",
                  caloric_basis=None,
                  use_Poynting=None,
                  use_phis_sat=None,
@@ -458,7 +458,7 @@ class GibbsExcessLiquid(Phase):
             caloric_basis = deprecated_cal
 
         if equilibrium_basis is None:
-            equilibrium_basis = 'Psat'
+            equilibrium_basis = "Psat"
         self.equilibrium_basis = equilibrium_basis
         if caloric_basis is None:
             caloric_basis = equilibrium_basis
@@ -3027,7 +3027,7 @@ class GibbsExcessSolid(GibbsExcessLiquid):
                  EnthalpySublimations=None,
                  Hfs=None, Gfs=None, Sfs=None,
                  T=Phase.T_DEFAULT, P=Phase.P_DEFAULT, zs=None,
-                 equilibrium_basis='Psat',
+                 equilibrium_basis="Psat",
                  caloric_basis=None,
                  ):
         super().__init__(VaporPressures=SublimationPressures, VolumeLiquids=VolumeSolids,

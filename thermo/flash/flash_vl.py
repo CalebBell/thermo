@@ -48,10 +48,10 @@ from thermo.flash.flash_utils import (
     sequential_substitution_2P,
     sequential_substitution_GDEM3_2P,
     sequential_substitution_Mehra_2P,
+    solution_to_criterion,
     solve_P_VF_IG_K_composition_independent,
     solve_PTV_HSGUA_1P,
     solve_T_VF_IG_K_composition_independent,
-    solution_to_criterion,
     stability_iteration_Michelsen,
 )
 from thermo.property_package import StabilityTester
@@ -809,15 +809,15 @@ class FlashVL(Flash):
             fun = solution_to_criterion(solution, solution_target=solution_target)
         elif solution is None:
             if fixed_var == "P" and spec == "H":
-                fun = solution_to_criterion('-S')
+                fun = solution_to_criterion("-S")
             elif fixed_var == "P" and spec == "S":
-                fun = solution_to_criterion('H')
+                fun = solution_to_criterion("H")
             elif fixed_var == "V" and spec == "U":
-                fun = solution_to_criterion('-S')
+                fun = solution_to_criterion("-S")
             elif fixed_var == "V" and spec == "S":
-                fun = solution_to_criterion('U')
+                fun = solution_to_criterion("U")
             elif fixed_var == "P" and spec == "U":
-                fun = solution_to_criterion('-S')
+                fun = solution_to_criterion("-S")
             else:
                 fun = solution_to_criterion(None)
         else:

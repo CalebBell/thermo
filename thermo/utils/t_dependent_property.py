@@ -199,12 +199,12 @@ from fluids.numerics import (
     poly_convert,
     polyder,
     polyint,
-    quadratic_from_f_ders,
     polyint_over_x,
     polyint_over_x_stable,
     polyint_stable,
     polynomial_offset_scale,
     quad,
+    quadratic_from_f_ders,
     secant,
     sort_paired_lists,
     trunc_exp,
@@ -4527,11 +4527,11 @@ class TDependentProperty:
         elif extrapolation == "quadratic_positive_slope":
             # For some methods (liquid volume) there is a thermodynamic requirement
             # that volume increases with temperature. For some components like water,
-            # the slope and second derivative at Tmin may extrapolate at lower 
+            # the slope and second derivative at Tmin may extrapolate at lower
             # temperatures such that volume decreases with temperature (physically inconsistent)
             # This method arbitrarily tries different T points between Tmin and Tmax looking to
             # find the component's normal derivative information away from e.g. a 4 deg C bump
-            # for water. 
+            # for water.
             v_T = self.calculate(T, method=method)
             coefficients = None
             T_other = Tmax if low else Tmin

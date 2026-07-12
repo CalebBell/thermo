@@ -33,7 +33,7 @@ from thermo.coolprop import CPiP_min
 from thermo.eos_mix import IGMIX
 from thermo.equilibrium import EquilibriumState
 from thermo.flash.flash_base import Flash
-from thermo.flash.flash_utils import PSF_pure_newton, PVF_pure_newton, TSF_pure_newton, TVF_pure_secant, solve_PTV_HSGUA_1P, solution_to_criterion
+from thermo.flash.flash_utils import PSF_pure_newton, PVF_pure_newton, TSF_pure_newton, TVF_pure_secant, solution_to_criterion, solve_PTV_HSGUA_1P
 from thermo.phases import (
     CEOSGas,
     CEOSLiquid,
@@ -697,15 +697,15 @@ class FlashPureVLS(Flash):
             fun = solution_to_criterion(solution, solution_target=solution_target)
         elif solution is None:
             if fixed_var == "P" and spec == "H":
-                fun = solution_to_criterion('-S')
+                fun = solution_to_criterion("-S")
             elif fixed_var == "P" and spec == "S":
-                fun = solution_to_criterion('H')
+                fun = solution_to_criterion("H")
             elif fixed_var == "V" and spec == "U":
-                fun = solution_to_criterion('-S')
+                fun = solution_to_criterion("-S")
             elif fixed_var == "V" and spec == "S":
-                fun = solution_to_criterion('U')
+                fun = solution_to_criterion("U")
             elif fixed_var == "P" and spec == "U":
-                fun = solution_to_criterion('-S')
+                fun = solution_to_criterion("-S")
             else:
                 fun = solution_to_criterion(None)
         else:
