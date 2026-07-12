@@ -2,8 +2,8 @@ from cx_Freeze import setup, Executable
 
 build_exe_options = {
     "packages": ["numpy", "scipy", "thermo", "fluids", "chemicals"],
-    "excludes": ["cairo", "locket", "setproctitle", "bcrypt", "beniget", "concurrent", 
-    "curses", "et_xmlfile", "google", "imagesize", "olefile", "pyasn1_modules", "pytest", 
+    "excludes": ["cairo", "locket", "setproctitle", "bcrypt", "beniget",
+    "curses", "et_xmlfile", "google", "imagesize", "olefile", "pyasn1_modules", "pytest",
     "tabulate", "tlz", "xxhash", "_pydevd_frame_eval", "astunparse", "backcall", "constantly",
     "cssselect", "greenlet", "html", "incremental", "iniconfig", "ipywidgets", 
     "matplotlib_inline", "ply", "pydoc_data", "pygtkcompat", "pyximport", "tblib",

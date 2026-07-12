@@ -145,7 +145,7 @@ from chemicals.volume import (
     Yen_Woods_saturation,
     ideal_gas,
 )
-from fluids.numerics import exp, horner, horner_and_der2, isnan, np, polyder
+from fluids.numerics import exp, horner, isnan, np, polyder
 
 from thermo import electrochem
 from thermo.coolprop import CoolProp_T_dependent_property, PhaseSI, PropsSI, coolprop_dict, coolprop_fluids, has_CoolProp

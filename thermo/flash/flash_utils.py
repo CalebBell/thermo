@@ -68,6 +68,7 @@ __all__ = [
     "sequential_substitution_GDEM3_2P",
     "sequential_substitution_Mehra_2P",
     "sequential_substitution_NP",
+    "solution_to_criterion",
     "solve_P_VF_IG_K_composition_independent",
     "solve_T_VF_IG_K_composition_independent",
     "solve_water_wet_bulb_temperature_direct",
@@ -76,7 +77,6 @@ __all__ = [
     "stability_iteration_Michelsen",
     "water_dew_point_from_humidity",
     "water_wet_bulb_temperature",
-    "solution_to_criterion",
 ]
 
 from math import copysign, log10
@@ -92,6 +92,7 @@ from chemicals.volume import COSTALD
 from fluids.constants import R
 from fluids.numerics import (
     NotBoundedError,
+    OscillationChecker,
     OscillationError,
     SolverInterface,
     UnconvergedError,
@@ -155,15 +156,15 @@ PH_T_guesses_1P_methods = [LASTOVKA_SHAW, DADGOSTAR_SHAW_1, IG_ENTHALPY,
 TPV_HSGUA_guesses_1P_methods = PH_T_guesses_1P_methods
 
 PROPERTY_GETTERS = {
-    'G': lambda obj: obj.G(),
-    'H': lambda obj: obj.H(),
-    'S': lambda obj: obj.S(),
-    'U': lambda obj: obj.U(),
-    'A': lambda obj: obj.A(),
-    'T': lambda obj: obj.T,
-    'P': lambda obj: obj.P,
-    'V': lambda obj: obj.V(),
-    'rho': lambda obj: obj.rho(),
+    "G": lambda obj: obj.G(),
+    "H": lambda obj: obj.H(),
+    "S": lambda obj: obj.S(),
+    "U": lambda obj: obj.U(),
+    "A": lambda obj: obj.A(),
+    "T": lambda obj: obj.T,
+    "P": lambda obj: obj.P,
+    "V": lambda obj: obj.V(),
+    "rho": lambda obj: obj.rho(),
 }
 
 def solution_to_criterion(solution, iter_var=None, solution_target=None):
@@ -207,17 +208,17 @@ def solution_to_criterion(solution, iter_var=None, solution_target=None):
 
     SOLUTION_CRITERIA = {
         **PROPERTY_GETTERS,
-        '-G': lambda obj: -obj.G(),
-        '-H': lambda obj: -obj.H(),
-        '-S': lambda obj: -obj.S(),
-        '-U': lambda obj: -obj.U(),
-        '-A': lambda obj: -obj.A(),
-        '-T': lambda obj: -obj.T,
-        '-P': lambda obj: -obj.P,
-        '-V': lambda obj: -obj.V(),
-        '-rho': lambda obj: -obj.rho(),
-        'high': lambda obj: -obj.value(iter_var) if iter_var else -obj.T,
-        'low': lambda obj: obj.value(iter_var) if iter_var else obj.T,
+        "-G": lambda obj: -obj.G(),
+        "-H": lambda obj: -obj.H(),
+        "-S": lambda obj: -obj.S(),
+        "-U": lambda obj: -obj.U(),
+        "-A": lambda obj: -obj.A(),
+        "-T": lambda obj: -obj.T,
+        "-P": lambda obj: -obj.P,
+        "-V": lambda obj: -obj.V(),
+        "-rho": lambda obj: -obj.rho(),
+        "high": lambda obj: -obj.value(iter_var) if iter_var else -obj.T,
+        "low": lambda obj: obj.value(iter_var) if iter_var else obj.T,
     }
 
     if solution in SOLUTION_CRITERIA:
@@ -2034,7 +2035,7 @@ def dew_bubble_Michelsen_Mollerup(guess, fixed_val, zs, liquid_phase, gas_phase,
             if V_diff is not None:
                 V_iter, V_const = iter_phase.V(), const_phase.V()
                 V_ratio = V_iter/V_const
-                if 0 and 1.0 - V_diff < V_ratio < 1.0 + V_diff or skip > 0 or (V_iter_last and (abs(min(V_iter, V_iter_last)/max(V_iter, V_iter_last)) < .8)):
+                if (0 and 1.0 - V_diff < V_ratio < 1.0 + V_diff) or skip > 0 or (V_iter_last and (abs(min(V_iter, V_iter_last)/max(V_iter, V_iter_last)) < .8)):  # noqa: SIM223
                     # Relax the constraint for the iterating on variable so two different phases exist
                     #if iter_phase.eos_mix.phase in ('l', 'g') and iter_phase.eos_mix.phase == const_phase.eos_mix.phase:
                     # Alternatively, try a stability test here
@@ -3223,7 +3224,7 @@ def PH_newton_1P(T_guess, P, H, zs, phase, maxiter=200, xtol=1E-10,
 
 
 def TVF_pure_newton(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
-    one_liquid = len(liquids)
+    one_liquid = len(liquids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3260,7 +3261,7 @@ def TVF_pure_newton(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
     return Psat, l, g, iterations, err
 
 def TVF_pure_secant(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
-    one_liquid = len(liquids)
+    one_liquid = len(liquids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3299,7 +3300,7 @@ def TVF_pure_secant(P_guess, T, liquids, gas, maxiter=200, xtol=1E-10):
 
 
 def PVF_pure_newton(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
-    one_liquid = len(liquids)
+    one_liquid = len(liquids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3337,7 +3338,7 @@ def PVF_pure_newton(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
 
 
 def PVF_pure_secant(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
-    one_liquid = len(liquids)
+    one_liquid = len(liquids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3371,8 +3372,8 @@ def PVF_pure_secant(T_guess, P, liquids, gas, maxiter=200, xtol=1E-10):
 
 
 def TSF_pure_newton(P_guess, T, other_phases, solids, maxiter=200, xtol=1E-10):
-    one_other = len(other_phases)
-    one_solid = len(solids)
+    one_other = len(other_phases) == 1
+    one_solid = len(solids) == 1
     zs = [1.0]
     store = []
     global iterations
@@ -3418,8 +3419,8 @@ def TSF_pure_newton(P_guess, T, other_phases, solids, maxiter=200, xtol=1E-10):
     return Psub, other, solid, iterations, err
 
 def PSF_pure_newton(T_guess, P, other_phases, solids, maxiter=200, xtol=1E-10):
-    one_other = len(other_phases)
-    one_solid = len(solids)
+    one_other = len(other_phases) == 1
+    one_solid = len(solids) == 1
     zs = [1.0]
     store = []
     global iterations

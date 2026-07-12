@@ -129,7 +129,7 @@ test-cxfreeze py="3.14":
     @echo ">>> Creating temporary virtual environment with Python {{py}}..."
     @uv venv .venv-cxfreeze-{{py}} --python {{py}}
     @echo "\n>>> Installing project and cx_Freeze in temporary environment..."
-    @uv pip install --python .venv-cxfreeze-{{py}}/{{VENV_BIN_DIR}}/{{PYTHON_EXE}} -e .[test]
+    @uv pip install --python .venv-cxfreeze-{{py}}/{{VENV_BIN_DIR}}/{{PYTHON_EXE}} -c dev/cx_freeze/constraints.txt -e .[test]
     @uv pip install --python .venv-cxfreeze-{{py}}/{{VENV_BIN_DIR}}/{{PYTHON_EXE}} cx_Freeze
     @echo "\n>>> Building cx_Freeze executable..."
     @cd dev/cx_freeze && ../../.venv-cxfreeze-{{py}}/{{VENV_BIN_DIR}}/{{PYTHON_EXE}} cx_freeze_basic_standalone_check_builder.py build && cd ../..
