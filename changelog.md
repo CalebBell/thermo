@@ -10,6 +10,32 @@
 
 ### Fixed
 
+## [0.6.1] - 2026-07-12
+
+### Added
+
+- Added `H_reactive` as a stream state specification, including end-to-end flash support and reactive energy calculation from stream state.
+
+### Changed
+
+- Refactored `EquilibriumState`, `Bulk`, and phase state handling so phase, bulk, and stream objects carry shared constants, correlations, settings, reference liquid volumes, and flow totals more consistently.
+- Normalized `GibbsExcessLiquid` equilibrium and caloric basis handling around the `equilibrium_basis` and `caloric_basis` arguments.
+- Removed `gammas_args` from activity coefficient models.
+- Liquid-volume extrapolation defaults now use positive-slope quadratic/linear behavior implemented generically as opposed to hardcoded handling inside the model itself
+- Refreshed documentation navigation, Sphinx custom CSS loading, and CI/development maintenance tasks for newer GitHub Actions, Python 3.14 packaging checks, and multi-architecture test images.
+
+### Removed
+
+- Removed obsolete generated `docs/modules.rst`.
+- Removed direct activity-model gamma helper APIs from NRTL, Wilson, UNIQUAC, UNIFAC, regular-solution, and numba variants.
+
+### Fixed
+
+- Fixed pure-component fdew and bubble flash if there are multiple unique liquids defined in the model selection so the multi-liquid-capable path is selected correctly.
+- Fixed derivative callback handling for temperature-dependent property methods whose derivative functions return tuples.
+- Fixed stream handling for `H_reactive`, `energy_reactive_calc`, state overspecification checks, and reactive energy balances.
+- Fixed documentation text for excess Gibbs energy/enthalpy terminology and several release-maintenance formatting issues.
+
 ## [0.6.0] - 2025-10-26
 
 ### Added

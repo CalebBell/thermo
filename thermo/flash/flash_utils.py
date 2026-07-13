@@ -119,7 +119,6 @@ from fluids.numerics import (
     newton_minimize,
     newton_system,
     one_sided_secant,
-    OscillationChecker,
     py_solve,
     root,
     secant,
