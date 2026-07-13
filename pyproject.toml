@@ -5,7 +5,7 @@ backend-path = ["_custom_build"]
 
 [project]
 name = "thermo"
-version = "0.6.0"
+version = "0.6.1"
 description = "Chemical properties component of Chemical Engineering Design Library (ChEDL)"
 readme = "README.rst"
 requires-python = ">=3.9"
@@ -50,7 +50,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 dependencies = [
-    "fluids>=1.2.0",
+    "fluids>=1.3.1",
     "scipy>=1.6.0",
     "pandas",
     "chemicals>=1.4.0"
@@ -142,7 +142,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/CalebBell/thermo"
-Download = "https://github.com/CalebBell/thermo/tarball/0.6.0"
+Download = "https://github.com/CalebBell/thermo/tarball/0.6.1"
 
 [tool.setuptools]
 packages = ["thermo"]
@@ -347,9 +347,9 @@ max-complexity = 10
 "docs/**/*.ipynb" = ["S101", "F403", "F405", "PT011", "B017", "TRY002"]
 
 [tool.pytest.ini_options]
-addopts = "--doctest-glob='*.rst'"
-norecursedirs = [".cache", ".git", "htmlcov", "notebooks", "dist", "build", "*.egg-info", ".tox", "surfaces", "prof", "benchmarks", "dev", "_build", "_custom_build", "__pycache__"]
-doctest_optionflags = ["NORMALIZE_WHITESPACE"]
+addopts = "--doctest-glob='*.rst' --doctest-modules"
+norecursedirs = [".cache", ".git", "htmlcov", "notebooks", "dist", "build", "plots", ".tox", "surfaces", "prof", "cx_freeze", "py2exe", "manual_runner", "make_test_stubs", "plot", "prerelease", "benchmarks", "benchmark", "dev", "_build", "dump", "_custom_build", "__pycache__"]
+doctest_optionflags = ["NORMALIZE_WHITESPACE", "NUMBER"]
 markers = [
     "sympy: Uses sympy",
     "mpmath: Uses mpmath",

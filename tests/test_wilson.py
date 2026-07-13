@@ -432,18 +432,6 @@ def test_DDBST_example():
     assert GE_copy == GE
     # assert not hasattr(GE_copy, '_GE')
 
-    # Direct call for gammas
-    gammas_args = GE.gammas_args()
-    gammas = GE.gammas_from_args(GE.xs, *gammas_args)
-    assert_close1d(gammas, GE.gammas(), rtol=1e-13)
-
-    # gammas at another T
-    T_another = 401.234
-    gammas_args_at_T = GE.gammas_args(T=T_another)
-    gammas_at_T = GE.gammas_from_args(GE.xs, *gammas_args_at_T)
-    assert_close1d(gammas_at_T, GE.to_T_xs(T=T_another, xs=GE.xs).gammas(), rtol=1e-13)
-
-
 
 def test_wilson_parameter_different_inputs_errors():
     T = 353.15

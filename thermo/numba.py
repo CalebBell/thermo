@@ -49,7 +49,7 @@ replaced = fluids.numba.numerics_dict.copy()
 def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
     import chemicals.numba
 
-    cache_blacklist = {"sequential_substitution_2P_functional",}
+    cache_blacklist = set()
     __funcs.update(normal_fluids.numba.numbafied_fluids_functions.copy())
 
     blacklist = set(["identify_sort_phases", "score_phases_S", "score_phases_VL",
@@ -199,7 +199,6 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  "uniquac.uniquac_d2GE_dxixjs",
                  "uniquac.uniquac_d2GE_dTdxs",
                  "uniquac.UNIQUAC_gammas_binaries",
-                 "uniquac.uniquac_gammas_from_args",
 
                  "nrtl.NRTL",
                  "nrtl.nrtl_gammas",
@@ -268,7 +267,6 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                 "unifac.unifac_d2lngammas_c_dxixjs",
                 "unifac.unifac_d3lngammas_c_dxixjxks",
                 "unifac.UNIFAC",
-                "unifac.unifac_gammas_from_args",
 
                  "activity.gibbs_excess_gammas", "activity.gibbs_excess_dHE_dxs",
                  "activity.gibbs_excess_dgammas_dns", "activity.gibbs_excess_dgammas_dT",
@@ -291,8 +289,6 @@ def transform_complete_thermo(replaced, __funcs, __all__, normal, vec=False):
                  "phases.iapws_phase.IAPWS95", "phases.iapws_phase.IAPWS95Liquid", "phases.iapws_phase.IAPWS95Gas",
                  "phases.air_phase.DryAirLemmon",
 
-             "phases.phase_utils.lnphis_direct",
-             "flash.flash_utils.sequential_substitution_2P_functional",
 
              "fitting.data_fit_statistics",
 

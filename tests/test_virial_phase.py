@@ -41,7 +41,6 @@ from thermo.heat_capacity import *
 from thermo.interface import *
 from thermo.phase_change import *
 from thermo.phases import *
-from thermo.phases.phase_utils import fugacities_direct, lnphis_direct
 from thermo.regular_solution import RegularSolution
 from thermo.thermal_conductivity import *
 from thermo.unifac import DOUFIP2016, DOUFSG, PSRKIP, PSRKSG, UFIP, UFSG, UNIFAC, VTPRIP, VTPRSG

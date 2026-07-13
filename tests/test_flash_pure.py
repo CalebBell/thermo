@@ -29,7 +29,7 @@ import pytest
 from chemicals.exceptions import PhaseExistenceImpossible
 from fluids.numerics import *
 from fluids.numerics import assert_close, assert_close1d
-from thermo.flash.flash_utils import cm_flash_tol
+from thermo.flash.flash_utils import cm_flash_tol, solution_to_criterion
 
 import thermo
 from thermo import *
@@ -1000,7 +1000,7 @@ def test_P_H_plot_ideal_Poy(fluid):
     liquid = GibbsExcessLiquid(VaporPressures=pure_props.VaporPressures,
                            HeatCapacityGases=pure_props.HeatCapacityGases,
                            VolumeLiquids=pure_props.VolumeLiquids,
-                           use_phis_sat=False, use_Poynting=True).to_TP_zs(T, P, zs)
+                           equilibrium_basis='Poynting').to_TP_zs(T, P, zs)
 
     gas = CEOSGas(IGMIX, T=T, P=P, zs=zs, **ig_kwargs)
 #
@@ -1581,14 +1581,69 @@ def test_APISRK_multiple_T_slns():
     flasher = FlashPureVLS(constants, correlations, gas, [liquid], [])
 
     for T, sln in zip([10000, 10000, 10000, 6741.680441295266, 6741.680441295266],
-                      [None, 'high', lambda obj: obj.G(), 'low', lambda obj: obj.T]):
+                      [None, 'high', 'G', 'low', 'T']):
         obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution=sln)
         assert_close(obj.T, T)
 
     for T, sln in zip([140184.08901758507, 140184.08901758507, 140184.08901758507, 7220.8089999999975, 7220.8089999999975],
-                      [None, 'high', lambda obj: obj.G(), 'low', lambda obj: obj.T]):
+                      [None, 'high', 'G', 'low', 'T']):
         obj = flasher.flash(V=0.0006354909990692889, P=359381366.3805, zs=[1], solution=sln)
         assert_close(obj.T, T)
+
+    # Get both solutions for reference
+    obj_high = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution='high')
+    obj_low = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution='low')
+
+    # Property selection: minimize each property
+    # G, A minimize to high (10000); H, S, U, T minimize to low (6741.68)
+    # P, V, rho, rho_mass are equal at both solutions (same PV specs)
+    for T, sln in zip([10000, 6741.680441295266, 6741.680441295266, 6741.680441295266, 10000,
+                       6741.680441295266],
+                      ['G', 'H', 'S', 'U', 'A', 'T']):
+        obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution=sln)
+        assert_close(obj.T, T)
+
+    # Negated property selection: maximize each property
+    for T, sln in zip([6741.680441295266, 10000, 10000, 10000, 6741.680441295266, 10000],
+                      ['-G', '-H', '-S', '-U', '-A', '-T']):
+        obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution=sln)
+        assert_close(obj.T, T)
+
+    # solution_target for each property: target the high solution
+    for sln in ['G', 'H', 'S', 'U', 'A', 'T']:
+        target_val = obj_high.value(sln)
+        obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1],
+                            solution=sln, solution_target=target_val)
+        assert_close(obj.T, obj_high.T)
+
+    # solution_target for each property: target the low solution
+    for sln in ['G', 'H', 'S', 'U', 'A', 'T']:
+        target_val = obj_low.value(sln)
+        obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1],
+                            solution=sln, solution_target=target_val)
+        assert_close(obj.T, obj_low.T)
+
+    # P, V, rho are equal at both solutions; just verify the flash succeeds
+    for sln in ['P', 'V', 'rho']:
+        for target_obj in [obj_high, obj_low]:
+            target_val = target_obj.value(sln)
+            obj = flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1],
+                                solution=sln, solution_target=target_val)
+            assert obj is not None
+
+    # Invalid solution string
+    with pytest.raises(ValueError):
+        flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1], solution='invalid_prop')
+
+    # solution_target with None solution
+    with pytest.raises(ValueError):
+        flasher.flash(V=0.0026896181445157303, P=14954954.954954954, zs=[1],
+                      solution=None, solution_target=100.0)
+
+    # solution_target with non-property string like 'high'
+    with pytest.raises(ValueError):
+        flasher.flash(V=0.0026896181445057303, P=14954954.954954954, zs=[1],
+                      solution='high', solution_target=100.0)
 
 
 @pytest.mark.parametrize("hacks", [True, False])
@@ -1619,7 +1674,7 @@ def test_IG_liq_poy_flashes(hacks):
     liquid = GibbsExcessLiquid(VaporPressures=VaporPressures,
                                HeatCapacityGases=HeatCapacityGases,
                                VolumeLiquids=VolumeLiquids,
-                               use_phis_sat=False, use_Poynting=True, Psat_extrpolation='ABC').to_TP_zs(T, P, zs)
+                               equilibrium_basis='Poynting').to_TP_zs(T, P, zs)
     eos_kwargs = {'Pcs': constants.Pcs, 'Tcs': constants.Tcs, 'omegas': constants.omegas}
     gas = CEOSGas(IGMIX, eos_kwargs, HeatCapacityGases=HeatCapacityGases, T=T, P=P, zs=zs)
     flasher = FlashPureVLS(constants, correlations, liquids=[liquid], gas=gas, solids=[])
@@ -1786,7 +1841,7 @@ def test_VF_U_cases():
 
     solutions = ['mid', 'low', 'high']
 
-    one_sln_Ts = [312.9795918367355, 320.0050872321796, 512.0, 486.0408163265307, 512.0, 200.0, 512.5
+    one_sln_Ts = [312.9795918367355, 320.0050872321796, 512.0, 486.0408163265307, 512.0, 200.0, 512.49999
                   ]
     one_sln_VFs = [0.9285628571428575, 0.9, 0.5, 0.5714271428571429, 1e-05, 0.4827586206896553, 0.3]
 

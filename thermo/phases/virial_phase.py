@@ -969,7 +969,7 @@ class VirialGas(IdealGasDeparturePhase):
     pure_references = ("HeatCapacityGases",)
     pure_reference_types = (HeatCapacityGas, )
 
-    obj_references = ("HeatCapacityGases", "model", "result", "constants", "correlations")
+    obj_references = ("HeatCapacityGases", "model", "result", "constants", "correlations", "settings")
 
     model_attributes = ("Hfs", "Gfs", "Sfs", "model",
                         "B_mixing_rule", "C_mixing_rule") + pure_references

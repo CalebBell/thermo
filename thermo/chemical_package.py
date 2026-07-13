@@ -383,7 +383,9 @@ def _from_IDs(IDs, correlations=False):
 
     SurfaceTensions = [SurfaceTension(CASRN=CASs[i], MW=MWs[i], Tb=Tbs[i], Tc=Tcs[i], Pc=Pcs[i], Vc=Vcs[i], Zc=Zcs[i],
                         omega=omegas[i], StielPolar=StielPolars[i], Hvap_Tb=Hvap_Tbs[i], Vml=VolumeLiquids[i],
-                        Cpl=HeatCapacityLiquids[i], **user_chemical_property_lookup(CASs[i], "SurfaceTension"))
+                        Cpl=HeatCapacityLiquids[i],
+                        extrapolation=("linear" if Tcs[i] is None else "DIPPR106_AB"),
+                        **user_chemical_property_lookup(CASs[i], "SurfaceTension"))
                                             for i in range(N)]
 
     sigma_STPs = [SurfaceTensions[i].T_dependent_property(298.15) for i in range(N)]
@@ -1841,7 +1843,8 @@ class PropertyCorrelationsPackage:
                                               Tc=constants.Tcs[i], Pc=constants.Pcs[i], Vc=constants.Vcs[i],
                                               Zc=constants.Zcs[i], omega=constants.omegas[i], StielPolar=constants.StielPolars[i],
                                               Hvap_Tb=constants.Hvap_Tbs[i], Vml=VolumeLiquids[i],
-                                              Cpl=HeatCapacityLiquids[i])
+                                              Cpl=HeatCapacityLiquids[i],
+                                              extrapolation=("linear" if constants.Tcs[i] is None else "DIPPR106_AB"))
                                     for i in cmps]
 
         self.VaporPressures = VaporPressures
