@@ -27,7 +27,7 @@ from chemicals.elements import periodic_table
 from chemicals.identifiers import pubchem_db
 from fluids.constants import R
 from fluids.numerics import assert_close
-from thermo.chemical_utils import standard_state_ideal_gas_formation
+from thermo.chemical_utils import standard_state_ideal_gas_formation, element_standard_state_integral
 
 from thermo.chemical import Chemical
 
@@ -361,3 +361,136 @@ def test_standard_state_ideal_gas_formation_CrN():
         assert_close(dH_calc, dH_janaf, rtol=rtol)
         assert_close(dG_calc, dG_janaf, rtol=rtol)
         # Dead on
+
+def test_standard_state_ideal_gas_formation_H2S():
+    # JANAF H-080
+    Ts = [298.15, 300.0, 400.0, 500.0, 600.0, 700.0, 800.0]
+    dH_janafs = [-20502.0, -20534.0, -24549.0, -27762.0, -30470.0, -32771.0, -34771.0]
+    dG_janafs = [-33329.0, -33408.0, -37343.0, -40179.0, -42399.0, -44201.0, -45694.0]
+    c = Chemical('Hydrogen sulfide')
+    c.HeatCapacityGas.method = 'WEBBOOK_SHOMATE'
+    for T, dH_janaf, dG_janaf in zip(Ts, dH_janafs, dG_janafs):
+        dH_calc, dS_calc, dG_calc = standard_state_ideal_gas_formation(c, T)
+        assert_close(dH_calc, dH_janaf, rtol=.01)
+        assert_close(dG_calc, dG_janaf, rtol=.01)
+
+def test_standard_state_ideal_gas_formation_SO2():
+    # JANAF O-034
+    Ts = [298.15, 400.0, 500.0, 800.0]
+    dH_janafs = [-296842.0, -300257.0, -302736.0, -307667.0]
+    dG_janafs = [-300125.0, -300971.0, -300871.0, -298370.0]
+    c = Chemical('Sulfur dioxide')
+    c.HeatCapacityGas.method = 'WEBBOOK_SHOMATE'
+    for T, dH_janaf, dG_janaf in zip(Ts, dH_janafs, dG_janafs):
+        dH_calc, dS_calc, dG_calc = standard_state_ideal_gas_formation(c, T)
+        assert_close(dH_calc, dH_janaf, rtol=.01)
+        assert_close(dG_calc, dG_janaf, rtol=.01)
+
+def test_standard_state_ideal_gas_formation_SO3():
+    # JANAF O-058
+    Ts = [298.15, 400.0, 500.0, 800.0]
+    dH_janafs = [-395765.0, -399412.0, -401878.0, -406068.0]
+    dG_janafs = [-371016.0, -362242.0, -352668.0, -321912.0]
+    c = Chemical('Sulfur trioxide')
+    c.HeatCapacityGas.method = 'WEBBOOK_SHOMATE'
+    for T, dH_janaf, dG_janaf in zip(Ts, dH_janafs, dG_janafs):
+        dH_calc, dS_calc, dG_calc = standard_state_ideal_gas_formation(c, T)
+        assert_close(dH_calc, dH_janaf, rtol=.01)
+        assert_close(dG_calc, dG_janaf, rtol=.01)
+
+def test_standard_state_ideal_gas_formation_H2SO4():
+    # JANAF H-076
+    Ts = [298.15, 400.0, 500.0, 800.0]
+    dH_janafs = [-735129.0, -739496.0, -742143.0, -745161.0]
+    dG_janafs = [-653366.0, -624986.0, -596048.0, -507364.0]
+    c = Chemical('Sulfuric acid')
+    c.HeatCapacityGas.method = 'WEBBOOK_SHOMATE'
+    for T, dH_janaf, dG_janaf in zip(Ts, dH_janafs, dG_janafs):
+        dH_calc, dS_calc, dG_calc = standard_state_ideal_gas_formation(c, T)
+        assert_close(dH_calc, dH_janaf, rtol=.01)
+        assert_close(dG_calc, dG_janaf, rtol=.01)
+
+def test_standard_state_ideal_gas_formation_CS2():
+    # JANAF C-099
+    Ts = [298.15, 400.0, 500.0, 800.0]
+    dH_janafs = [116943.0, 111494.0, 107427.0, 98466.0]
+    dG_janafs = [66816.0, 50016.0, 35091.0, -5871.0]
+    c = Chemical('Carbon disulfide')
+    c.HeatCapacityGas.method = 'WEBBOOK_SHOMATE'
+    for T, dH_janaf, dG_janaf in zip(Ts, dH_janafs, dG_janafs):
+        dH_calc, dS_calc, dG_calc = standard_state_ideal_gas_formation(c, T)
+        rtol = .01
+        rtol_G = .03 if T == 800 else .01
+        assert_close(dH_calc, dH_janaf, rtol=rtol)
+        assert_close(dG_calc, dG_janaf, rtol=rtol_G)
+
+def test_standard_state_ideal_gas_formation_TiO2():
+    # JANAF O-046; Ti solid transition at 1166 K not crossed here
+    Ts = [298.15, 500.0, 800.0]
+    dH_janafs = [-305432.0, -307311.0, -309854.0]
+    dG_janafs = [-312660.0, -317004.0, -322177.0]
+    c = Chemical('Titanium dioxide')
+    c.HeatCapacityGas.method = 'WEBBOOK_SHOMATE'
+    for T, dH_janaf, dG_janaf in zip(Ts, dH_janafs, dG_janafs):
+        dH_calc, dS_calc, dG_calc = standard_state_ideal_gas_formation(c, T)
+        assert_close(dH_calc, dH_janaf, rtol=.01)
+        assert_close(dG_calc, dG_janaf, rtol=.01)
+
+def test_standard_state_element_integral_sulfur():
+    # JANAF S-001, H-H298 and S-S298 of the reference state
+    Ts = [300.0, 368.3, 388.36, 400.0, 500.0, 600.0, 800.0, 882.117]
+    dH_janafs = [42.0, 1648.0, 2550.0, 4639.0, 8567.0, 12152.0, 18710.0, 21310.0]
+    dS_janafs = [0.140, 4.959, 7.371, 12.737, 21.476, 28.022, 37.474, 40.568]
+    for T, dH_janaf, dS_janaf in zip(Ts, dH_janafs, dS_janafs):
+        dH_calc, dS_calc = element_standard_state_integral('S', T)
+        if T < 369.0:
+            rtol = .06
+        elif T < 389.0:
+            rtol = .04
+        elif T < 410.0:
+            rtol = .02
+        else:
+            rtol = .01
+        assert_close(dH_calc, dH_janaf, rtol=rtol)
+        assert_close(dS_calc, dS_janaf, rtol=rtol)
+
+def test_standard_state_element_integral_manganese():
+    # JANAF Mn-001
+    Ts = [500.0, 980.0, 1200.0, 1361.0, 1519.0, 2000.0, 2334.526]
+    dH_janafs = [5772.0, 22088.0, 32690.0, 38948.0, 50048.0, 84244.0, 99640.0]
+    dS_janafs = [14.686, 37.290, 47.269, 52.162, 59.983, 80.582, 87.700]
+    for T, dH_janaf, dS_janaf in zip(Ts, dH_janafs, dS_janafs):
+        dH_calc, dS_calc = element_standard_state_integral('Mn', T)
+        assert_close(dH_calc, dH_janaf, rtol=.01)
+        assert_close(dS_calc, dS_janaf, rtol=.01)
+
+def test_standard_state_element_integral_titanium():
+    # JANAF Ti-001
+    Ts = [500.0, 1166.0, 1200.0, 1500.0, 1939.0, 2500.0]
+    dH_janafs = [5401.0, 25791.0, 30961.0, 40150.0, 55394.0, 96040.0]
+    dS_janafs = [13.775, 39.299, 43.720, 50.545, 59.427, 78.726]
+    for T, dH_janaf, dS_janaf in zip(Ts, dH_janafs, dS_janafs):
+        dH_calc, dS_calc = element_standard_state_integral('Ti', T)
+        rtol = .03 if T < 1600.0 else .02
+        assert_close(dH_calc, dH_janaf, rtol=rtol)
+        assert_close(dS_calc, dS_janaf, rtol=rtol)
+
+def test_standard_state_element_integral_beryllium():
+    # JANAF Be-001
+    Ts = [600.0, 1000.0, 1500.0, 1527.0, 1560.0, 2000.0]
+    dH_janafs = [6242.0, 16406.0, 31133.0, 31991.0, 39830.0, 60600.0]
+    dS_janafs = [14.190, 27.085, 38.969, 39.535, 44.662, 56.989]
+    for T, dH_janaf, dS_janaf in zip(Ts, dH_janafs, dS_janafs):
+        dH_calc, dS_calc = element_standard_state_integral('Be', T)
+        assert_close(dH_calc, dH_janaf, rtol=.01)
+        assert_close(dS_calc, dS_janaf, rtol=.01)
+
+def test_standard_state_sulfur_solid_transition_enthalpy():
+    # The 368.3 K S-II -> S-I transition enthalpy (401 J/mol) is added exactly once
+    dH_below, dS_below = element_standard_state_integral('S', 368.3)
+    dH_above, dS_above = element_standard_state_integral('S', 368.31)
+    assert_close(dH_above - dH_below, 401.0, atol=.5)
+
+def test_standard_state_unsupported_element_raises():
+    with pytest.raises(NotImplementedError):
+        element_standard_state_integral('U', 400.0)

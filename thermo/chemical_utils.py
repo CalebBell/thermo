@@ -161,17 +161,17 @@ standard_state_transitions = {
     "K": {"Tm": 336.350, "Tb": 1039.540, "Hfus": 2334, "Hvap": 79556},
     "V": {"Tm": 2190.000, "Tb": 3690.080, "Hfus": 22845, "Hvap": 446977},
     "Cr": {"Tm": 2130.000, "Tb": 2952.078, "Hfus": 20502, "Hvap": 339537},
-    # 'Mn': {'Tm': 1519.000, 'Tb': 2334.526, 'Hfus': 12058, 'Hvap': 225980,  'solid_T_trans': [980.000, 1361.000, 1412.000], 'solid_H_trans': [2226, 2122, 1879]}, # Double TODO,
-    # 'Ti': {'Tm': 1939.000, 'Tb': 3630.956, 'Hfus': 14146, 'Hvap': 409984,  'solid_T_trans': [1166.000], 'solid_H_trans': [4172]}, # TODO
-    # 'Ca': {'Tm': 1115.000, 'Tb': 1773.658, 'Hfus': 8540, 'Hvap': 149047,  'solid_T_trans': [716.000], 'solid_H_trans': [930]}, # TODO
-    # 'S': {'Tm': 388.360, 'Tb': 882.117, 'Hfus': 1721, 'Hvap': 53326,  'solid_T_trans': [368.300], 'solid_H_trans': [401]}, # TODO
-    # 'Be': {'Tm': 1560.000, 'Tb': 2741.437, 'Hfus': 7895, 'Hvap': 291572, 'solid_T_trans': [1527.000], 'solid_H_trans': [6849]}, # TODO
+    "Mn": {"Tm": 1519.000, "Tb": 2334.526, "Hfus": 12058, "Hvap": 225980, "solid_T_trans": [980.000, 1361.000, 1412.000], "solid_H_trans": [2226, 2122, 1879]},
+    "Ti": {"Tm": 1939.000, "Tb": 3630.956, "Hfus": 14146, "Hvap": 409984, "solid_T_trans": [1166.000], "solid_H_trans": [4172]},
+    # 'Ca': {'Tm': 1115.000, 'Tb': 1773.658, 'Hfus': 8540, 'Hvap': 149047, 'solid_T_trans': [716.000], 'solid_H_trans': [930]}, # TODO
+    "S": {"Tm": 388.360, "Tb": 882.117, "Hfus": 1721, "Hvap": 53326, "solid_T_trans": [368.300], "solid_H_trans": [401]},
+    "Be": {"Tm": 1560.000, "Tb": 2741.437, "Hfus": 7895, "Hvap": 291572, "solid_T_trans": [1527.000], "solid_H_trans": [6849]},
     # 'Fe': {'Tm': 3133.345, 'Hfus': 349585, 'solid_T_trans': [1184.000, 1665.000], 'solid_H_trans': [900, 837]}, # TODO
 
     }
 
 shomate_gas_elements = ("H", "O", "N", "F", "P", "Cl", "Br", "I", "Mg", "B", "Pb", "Li", "Na", "Al", "K", "V", "Cr")
-standard_state_supported_elements = shomate_gas_elements + ("C", "Si", "Hg")
+standard_state_supported_elements = shomate_gas_elements + ("C", "Si", "Hg", "S", "Mn", "Ti", "Be")
 standard_state_supported_elements_set = set(standard_state_supported_elements)
 
 element_HeatCapacityGas_dict = {}
@@ -297,8 +297,21 @@ def element_standard_state_integral(ele, T, T_ref=298.15):
         Hvap = dat["Hvap"]
         Tm_solid_int = min(T, Tm)
         T_liquid_int = min(T, Tb)
-        dH_ele = solid_obj.T_dependent_property_integral(T_ref, Tm_solid_int)
-        dS_ele = solid_obj.T_dependent_property_integral_over_T(T_ref, Tm_solid_int)
+        Ts_solid = dat.get("solid_T_trans", [])
+        Hs_solid = dat.get("solid_H_trans", [])
+        dH_ele = 0.0
+        dS_ele = 0.0
+        T_solid_prev = T_ref
+        for T_trans, H_trans in zip(Ts_solid, Hs_solid):
+            if T_trans >= Tm_solid_int:
+                break
+            dH_ele += solid_obj.T_dependent_property_integral(T_solid_prev, T_trans)
+            dS_ele += solid_obj.T_dependent_property_integral_over_T(T_solid_prev, T_trans)
+            dH_ele += H_trans
+            dS_ele += H_trans/T_trans
+            T_solid_prev = T_trans
+        dH_ele += solid_obj.T_dependent_property_integral(T_solid_prev, Tm_solid_int)
+        dS_ele += solid_obj.T_dependent_property_integral_over_T(T_solid_prev, Tm_solid_int)
         if T > Tm:
             dH_ele += Hfus
             dS_ele += Hfus/Tm
@@ -344,12 +357,6 @@ def element_standard_state_integral(ele, T, T_ref=298.15):
                 dS_ele += Hvap_P/Tb_P
                 dH_ele += gas_obj.T_dependent_property_integral(Tb_P, T)
                 dS_ele += gas_obj.T_dependent_property_integral_over_T(Tb_P, T)
-    elif ele == "S":
-        # CRystal II to Crystal 1 at 368 K
-        # crystal I to liquid at 388 K
-        # 432 K liquid-liquid lambda transition
-        # 882 K liquid to ideal gas transition
-        raise NotImplementedError
     # Need to do all the metals with no fancy phases at once generically
     # https://janaf.nist.gov/tables/Ni-001.html
     # https://janaf.nist.gov/tables/Cu-001.html
