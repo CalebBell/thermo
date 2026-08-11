@@ -1404,7 +1404,8 @@ class StreamArgs:
             for i in range(len(ms)):
                 if ms[i] is not None:
                     ni = property_molar_to_mass(ms[i], MWs[i])
-                    if ns[i] is not None and abs((ns[i]  - ni)/ni) > n_tol:
+                    if ns[i] is not None and (ni == 0.0 and ns[i] != 0.0
+                            or (ni != 0.0 and abs((ns[i] - ni)/ni) > n_tol)):
                         raise ValueError(f"Flow specification is overspecified and inconsistent on component {i}")
                     else:
                         ns[i] = ni
@@ -2430,8 +2431,15 @@ present in the first stream; {other.IDs[i]} is not present.")
                 nj = ns_other[other.CASs.index(CAS)]
                 # Merely normalizing the mole flow difference is enough to make
                 # ~1E-16 relative differences; allow for a little tolerance here
-                relative_difference_product = abs(ns_self[i] - nj)/n_product
-                relative_difference_self = abs(ns_self[i] - nj)/ns_self[i]
+                diff = abs(ns_self[i] - nj)
+                if n_product != 0.0:
+                    relative_difference_product = diff/n_product
+                else:
+                    relative_difference_product = float('inf') if diff > 0 else 0.0
+                if ns_self[i] != 0.0:
+                    relative_difference_self = diff/ns_self[i]
+                else:
+                    relative_difference_self = float('inf') if nj > 0 else 0.0
                 if ns_self[i] - nj < 0 and (relative_difference_product > 1E-12 or relative_difference_self > 1E-9):
                     raise ValueError(f"Attempting to remove more {self.IDs[i]} than is in the \
 first stream.")
