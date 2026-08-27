@@ -247,6 +247,25 @@ def test_sub_streams():
     assert m.CASs == ['7732-18-5']
 
 
+@pytest.mark.deprecated
+def test_sub_streams_no_zerodivision():
+    # Regression test: Stream.__sub__ divided by `ns_self[i]` and by
+    # `n_product` with no zero guard. Both are legitimate physical cases
+    # (a tracked component that is present but at zero flow; subtracting a
+    # stream of equal total molar flow) and used to crash with an unhandled
+    # ZeroDivisionError instead of the intended ValueError.
+
+    # ns_self[i] == 0: the component is listed in CASs but has zero flow in
+    # self, while `other` has a nonzero flow of it - over-removal.
+    with pytest.raises(ValueError):
+        Stream(['water', 'ethanol'], ns=[1, 0], T=300, P=1E5) - Stream(['ethanol'], ns=[0.5], T=300, P=1E5)
+
+    # n_product == 0: self and other have equal total molar flow, but per
+    # component the amounts don't match up (over-removal of one component).
+    with pytest.raises(ValueError):
+        Stream(['water', 'ethanol'], ns=[1, 1], T=300, P=1E5) - Stream(['water', 'ethanol'], ns=[1.5, 0.5], T=300, P=1E5)
+
+
 def test_StreamArgs_flow_overspecified():
 
     with pytest.raises(OverspeficiedError):
@@ -320,6 +339,29 @@ def test_StreamArgs_balance_ms():
     f1 = StreamArgs(m=10*(1+5e-16), ms=[3, 2, 5])
     with pytest.raises(ValueError):
         f1.reconcile_flows(m_tol=3e-16)
+
+
+def test_StreamArgs_reconcile_flows_zero_ms_no_zerodivision():
+    # Regression test: when a component's ms (mass flow) is specified as
+    # exactly 0.0 while ns (mole flow) is specified as nonzero for the same
+    # component, `reconcile_flows` used to divide by the zero molar-flow-
+    # from-mass value and raise an unhandled ZeroDivisionError instead of the
+    # intended, informative ValueError for an inconsistent flow spec.
+    class _FakeFlasher:
+        def __init__(self, MWs):
+            self.constants = ChemicalConstantsPackage(MWs=MWs)
+
+    f1 = StreamArgs(multiple_composition_basis=True, ns=[5.0, 2.0], ms=[0.0, None])
+    f1.flasher = _FakeFlasher([18.01528, 46.06844])
+    with pytest.raises(ValueError):
+        f1.reconcile_flows()
+
+    # A genuinely consistent zero/zero spec must not raise at all.
+    f2 = StreamArgs(multiple_composition_basis=True, ns=[0.0, 2.0], ms=[0.0, None])
+    f2.flasher = _FakeFlasher([18.01528, 46.06844])
+    f2.reconcile_flows()
+    assert_close1d(f2.ns, [0.0, 2.0])
+
 
 def test_mole_balance_forward():
     # First test case - solve for an outlet ns
