@@ -376,7 +376,7 @@ class TPDependentProperty(TDependentProperty):
             raise ValueError("Pressures are not sorted in increasing order")
 
         if name is None:
-            name = "Tabular data series #" + str(len(self.tabular_data))  # Will overwrite a poorly named series
+            name = "Tabular data series #" + str(len(self.tabular_data_P))  # Will overwrite a poorly named series
         self.tabular_data_P[name] = [Ts, Ps, properties]
         self.all_methods_P.add(name)
         self.method_P = name
