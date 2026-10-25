@@ -122,6 +122,25 @@ def test_VolumeGas():
     assert_close(H2.TP_dependent_property(300, 1E5), 0.024958843346854165)
 
 @pytest.mark.meta_T_dept
+@pytest.mark.parametrize("low_pressure_tables", [0, 2])
+def test_VolumeGas_unnamed_pressure_tables(low_pressure_tables):
+    obj = VolumeGas(load_data=False)
+    for i in range(low_pressure_tables):
+        obj.add_tabular_data([280.0, 300.0], [0.02, 0.03])
+    for i, volume in enumerate([0.02, 0.03, 0.04]):
+        obj.add_tabular_data_P([280.0, 300.0], [1e5, 2e5], [[volume, volume], [volume, volume]])
+        assert obj.method_P == "Tabular data series #" + str(i)
+        assert_close(obj(290.0, 1.5e5), volume)
+    assert len(obj.tabular_data_P) == 3
+
+    restored = VolumeGas.from_json(json.loads(json.dumps(obj.as_json())))
+    for other in [obj, restored]:
+        for i, volume in enumerate([0.02, 0.03, 0.04]):
+            other.method_P = "Tabular data series #" + str(i)
+            assert_close(other(290.0, 1.5e5), volume)
+
+
+@pytest.mark.meta_T_dept
 def test_VolumeGas_Tabular_json_eval():
     obj = VolumeGas(MW=46.06844, Tc=514.0, Pc=6137000.0, omega=0.635, dipole=1.44, CASRN='64-17-5')
     Ts = [400, 500, 600]
