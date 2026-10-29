@@ -77,6 +77,7 @@ from thermo import functional_groups
 from thermo.electrochem import conductivity, conductivity_methods
 from thermo.eos import IG, PR
 from thermo.functional_groups import group_names
+from math import isfinite
 from thermo.heat_capacity import HeatCapacityGas, HeatCapacityLiquid, HeatCapacitySolid
 from thermo.interface import SurfaceTension
 from thermo.law import economic_status, legal_status
@@ -771,6 +772,10 @@ class Chemical: # pragma: no cover
         return f"<Chemical [{self.name}], T={self.T:.2f} K, P={self.P:.0f} Pa>"
 
     def __init__(self, ID, T=298.15, P=101325, autocalc=True):
+        if not isfinite(T):
+            raise ValueError("Non-finite value specified for Chemical temperature - aborting!")
+        if not isfinite(P):
+            raise ValueError("Non-finite value specified for Chemical pressure - aborting!")
         if isinstance(ID, dict):
             self.CAS = ID["CASRN"]
             self.ID = self.name = ID["name"]
@@ -817,6 +822,10 @@ class Chemical: # pragma: no cover
     def calculate(self, T=None, P=None):
         if (hasattr(self, "T") and T == self.T and hasattr(self, "P") and P == self.P):
             return None
+        if T is not None and not isfinite(T):
+            raise ValueError("Non-finite value specified for Chemical temperature - aborting!")
+        if P is not None and not isfinite(P):
+            raise ValueError("Non-finite value specified for Chemical pressure - aborting!")
         if T:
             if T < 0:
                 raise ValueError("Negative value specified for Chemical temperature - aborting!")

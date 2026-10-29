@@ -32,6 +32,18 @@ from scipy.integrate import quad
 from thermo.chemical import *
 
 
+def test_Chemical_rejects_nonfinite_state():
+    for kwargs in ({"T": float("nan")}, {"T": float("inf")},
+                   {"P": float("nan")}, {"P": float("inf")}):
+        with pytest.raises(ValueError):
+            Chemical("water", **kwargs)
+    chemical = Chemical("water")
+    for kwargs in ({"T": float("nan")}, {"T": float("inf")},
+                   {"P": float("nan")}, {"P": float("inf")}):
+        with pytest.raises(ValueError):
+            chemical.calculate(**kwargs)
+
+
 @pytest.mark.deprecated
 def test_Chemical_properties():
     w = Chemical('water')
