@@ -47,7 +47,7 @@ from thermo import (
 )
 from thermo.stream import EquilibriumStream, Stream, StreamArgs, mole_balance, energy_balance, EnergyStream
 from thermo.chemical_package import ChemicalConstantsPackage, PropertyCorrelationsPackage
-from thermo.flash import FlashPureVLS, FlashVLN
+from thermo.flash import FlashPureVLS, FlashVL, FlashVLN
 from thermo.heat_capacity import HeatCapacityGas
 from thermo.interface import SurfaceTension, SurfaceTensionMixture
 from thermo.phases import CEOSGas, CEOSLiquid, IdealGas, GibbsExcessLiquid
@@ -1624,3 +1624,37 @@ def test_H_reactive_setter_overspec_guard():
     assert a.H_reactive is None
     assert not a.state_specified
 
+
+
+@pytest.mark.parametrize("IDs,zs,P,T_initial,T_target", [
+    (["methane", "ethane"], [0.8, 0.2], 1e6, 300.0, 400.0),
+    (["methane", "ethane"], [0.5, 0.5], 3e6, 200.0, 320.0),
+    (["n-butane", "n-decane"], [0.2, 0.8], 2e6, 300.0, 360.0),
+    (["carbon dioxide", "nitrogen"], [0.95, 0.05], 1e7, 280.0, 330.0),
+    (["methane", "nitrogen"], [0.95, 0.05], 3e6, 400.0, 250.0),
+    (["ethanol", "water"], [0.5, 0.5], 1e5, 300.0, 400.0),
+])
+@pytest.mark.parametrize("update_method", ["setter", "update"])
+def test_StreamArgs_H_mass_invalidates_flash_cache(IDs, zs, P, T_initial, T_target, update_method):
+    constants, correlations = ChemicalConstantsPackage.from_IDs(IDs)
+    eos_kwargs = dict(Tcs=constants.Tcs, Pcs=constants.Pcs, omegas=constants.omegas)
+    gas = CEOSGas(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    liquid = CEOSLiquid(PRMIX, eos_kwargs, HeatCapacityGases=correlations.HeatCapacityGases)
+    flasher = FlashVL(constants, correlations, gas=gas, liquid=liquid)
+    initial = flasher.flash(zs=zs, T=T_initial, P=P)
+    target = flasher.flash(zs=zs, T=T_target, P=P)
+    args = StreamArgs(flasher=flasher, zs=zs, P=P, H_mass=initial.H_mass(), n=100.0)
+    args.stream()  # Warm the cache through the public stream API.
+    cached = args.flash_state()
+    assert args.flash_state() is cached  # Unchanged specifications still hit.
+    if update_method == "setter":
+        args.H_mass = target.H_mass()
+    else:
+        args.update(H_mass=target.H_mass())
+    actual = args.stream()
+    fresh = StreamArgs(flasher=flasher, zs=zs, P=P, H_mass=target.H_mass(), n=100.0).stream()
+    assert_close(actual.H_mass(), target.H_mass(), rtol=1e-9, atol=1e-6)
+    assert_close(actual.T, fresh.T, rtol=1e-9)
+    assert_close(actual.energy, args.energy_calc, rtol=1e-9, atol=1e-6)
+    assert args.flash_state() is not cached
+    assert args.flash_state() is args.flash_state()
