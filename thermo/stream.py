@@ -1888,7 +1888,7 @@ class StreamArgs:
 
             H_flash = s["H"] if s["H"] is not None else H
             H_reactive = s["H_reactive"] if s["H_reactive"] is not None else H_reactive
-            state_cache = (T, P, VF, s["S_mass"], s["S"], s["H"], H_flash, s["H_reactive"], H_reactive,
+            state_cache = (T, P, VF, s["H_mass"], s["S_mass"], s["S"], s["H"], H_flash, s["H_reactive"], H_reactive,
                            s["U"], s["U_mass"], s["G"], s["G_mass"], s["A"], s["A_mass"],
                            s["V"], s["rho"], s["rho_mass"], tuple(zs))
             if state_cache == self._state_cache:
