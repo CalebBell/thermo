@@ -10,6 +10,7 @@ More details on the unit handling library can be found at :doc:`fluids.units <fl
 .. toctree::
     :maxdepth: 1
 
+    Examples/property_calculation_audit
     Examples/Working with Heat Transfer Fluids - Therminol LT.ipynb
     Examples/Validating Flash Calculations.ipynb
     Examples/High Molecular Weight Petroleum Pseudocomponents.ipynb
